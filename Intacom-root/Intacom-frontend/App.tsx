@@ -6,6 +6,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import ProjectPage from './components/ProjectPage';
+import './global.css';
 
 const App: React.FC = () => {
     return (

@@ -6,27 +6,20 @@ import { PostsModule } from './posts/posts.module';
 import { AuthModule } from '/auth/auth.module';
 import { CommentsModule } from './comments/comments.module';
 import { LikesModule } from './likes/likes.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { join } from 'path';
 
-@Module({
-    import: [
-        TypeOrmModule.forRoot({
-            type: 'postgres',
-            host: 'localhost', //Update as needed
-            port: 5432,
-            username: 'your-username',
-            password: 'your-password',
-            database: 'IntelliSpace',
-            entities: [__dirname + '/**/*.entity{.ts,.js}'],
-            synchronize: true, //Disable in production
-        }),
-        UsersModule
-        ProjectsModule,
-        PostsModule,
-        AuthModule,
-        CommentsModule,
-        LikesModule,
+@@Module({
+    imports: [
+      TypeOrmModule.forRoot({
+        // ... your TypeORM configuration
+      }),
+      UsersModule,
+      MulterModule.register({
+        dest: join(__dirname, '..', 'uploads'),
+      }),
     ],
     controllers: [],
     providers: [],
-})
-export class AppModule {}
+  })
+  export class AppModule {}  
