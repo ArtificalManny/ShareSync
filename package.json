@@ -1,0 +1,11 @@
+{
+  "name": "intacom-root",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node index.js",
+    "migration:run": "typeorm migration:run"
+  },
+  "devDependencies": {
+    "typeorm": "^0.3.20"
+  }
+}

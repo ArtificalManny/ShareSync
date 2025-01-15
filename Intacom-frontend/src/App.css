@@ -1,0 +1,4 @@
+.main-container {
+  display: flex;
+  min-height: calc(100vh - 60px); /*Adjust based on header footer height */
+}
