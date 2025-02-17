@@ -11,7 +11,7 @@ import Profile from './components/Profile/Profile';
 const App: React.FC = () => {
   return (
     <Router>
-      <Header />
+      <Header toggleDarkMode={() => {}} />
       <Box sx={{ display: 'flex' }}>
         <Sidebar />
         <Routes>

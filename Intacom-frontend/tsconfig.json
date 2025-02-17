@@ -16,6 +16,4 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "../Intacom-backend/modules/Users/auth/auth.service.ts", "../Intacom-backend/modules/Users/main.ts", "../Intacom-backend/src/user.entity.ts"]
-}
-
+  "include": ["src"]

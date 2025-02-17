@@ -6,7 +6,7 @@ import Sidebar from './components/Sidebar';
 import MainContent from './components/src/components/MainContent';
 import RightSidebar from './components/RightSidebar';
 import Footer from './components/Footer';
-import Profile from './components/Profile';
+import Profile from './components/Profile/Profile';
 
 const App: React.FC = () => {
   return (
