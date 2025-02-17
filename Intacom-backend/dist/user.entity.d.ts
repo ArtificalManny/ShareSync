@@ -1,6 +1,6 @@
-import { Experience } from '../experiences/experience.entity';
-import { Education } from '../education/education.entity';
-import { Project } from '../projects/project.entity';
+import { Experience } from './experiences/experience.entity';
+import { Education } from './education/education.entity';
+import { Project } from './projects/project.entity';
 export declare class User {
     id: string;
     name: string;

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const testing_1 = require("@nestjs/testing");
-const users_controller_1 = require("./users.controller");
+const users_controller_1 = require("../../../Intacom-frontend/src/users/users.controller");
 describe('UsersController', () => {
     let controller;
     beforeEach(async () => {

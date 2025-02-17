@@ -1,4 +1,4 @@
-import { User } from '../users/user.entity';
+import { User } from '../user.entity';
 export declare class Experience {
     id: string;
     title: string;

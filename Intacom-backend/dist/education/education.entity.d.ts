@@ -1,4 +1,4 @@
-import { User } from '../users/user.entity';
+import { User } from '../user.entity';
 export declare class Education {
     id: string;
     degree: string;
