@@ -1,30 +1,89 @@
-<!-- public/index.html -->
 <!DOCTYPE html>
-<link rel="stylesheet" href="%PUBLIC_URL%/fonts/fonts.css" />
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <title>Intacom</title>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2 family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
-    <!-- Font Awesome  CDN-->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
-      integrity="sha512-Fo3rlrZj/kTcA6+1LQ9sD0eYQkBVnHvFjXqVc/Xgw4oyEJrQgPz2+NlB1Y5GOvHdkMlxKfT3pLdwkKb/GJ6vKg=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intacom - Project Management</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar" id="sidebar">
+            <div class="logo">
+                <h1>Intacom</h1>
+            </div>
+            <ul>
+                <li><a href="#" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="#" class="nav-link"><i class="fas fa-project-diagram"></i> My Projects</a></li>
+                <li><button class="button-primary" onclick="createNewProject()">Create New Project</button></li>
+                <li><a href="#" class="nav-link"><i class="fas fa-globe"></i> Global Feed</a></li>
+                <li><a href="#" class="nav-link"><i class="fas fa-calendar"></i> Calendar</a></li>
+                <li><a href="#" class="nav-link"><i class="fas fa-tasks"></i> Tasks</a></li>
+                <li><a href="#" class="nav-link"><i class="fas fa-users"></i> Teams</a></li>
+            </ul>
+            <button class="button-primary" onclick="toggleSidebar()" style="margin-top: 20px;">Toggle Sidebar</button>
+        </nav>
+
+        <main class="main-content">
+            <header>
+                <input type="text" placeholder="Search..." class="search-bar">
+                <div class="header-icons">
+                    <i class="fas fa-bell" style="color: #6A5ACD;"></i>
+                    <i class="fas fa-user" style="color: #6A5ACD;"></i>
+                    <i class="fas fa-moon" style="color: #6A5ACD;"></i>
+                </div>
+            </header>
+
+            <section id="home">
+                <h2>Welcome to Intacom</h2>
+                <div class="quick-access">
+                    <h3>Upcoming Events</h3>
+                    <ul id="upcoming-events">
+                        <li>Project Deadline: March 10, 2025</li>
+                    </ul>
+                    <h3>Quick Access</h3>
+                    <div>
+                        <p>Recent Documents</p>
+                        <p>Pinned Tasks</p>
+                    </div>
+                </div>
+                <div id="projects">
+                    <h2>My Projects</h2>
+                    <div id="project-list"></div>
+                </div>
+                <div id="login">
+                    <input type="text" id="username" placeholder="Username">
+                    <input type="password" id="password" placeholder="Password">
+                    <button onclick="login()">Login</button>
+                </div>
+            </section>
+
+            <div id="announcements-1" class="announcements"></div>
+            <div id="tasks-1" class="tasks"></div>
+
+            <form id="new-post" style="display: none;">
+                <textarea id="post-content" placeholder="Write an announcement..."></textarea>
+                <input type="file" accept="image/*,video/*,audio/*,application/pdf" onchange="handleFileUpload(event)">
+                <button onclick="submitAnnouncement(1)">Post</button>
+            </form>
+            <button onclick="showPostForm(1)">New Announcement</button>
+
+            <form id="new-task" style="display: none;">
+                <input type="text" id="task-title" placeholder="Task Title">
+                <input type="text" id="task-assignee" placeholder="Assignee">
+                <input type="date" id="task-due-date">
+                <button onclick="submitTask(1)">Create Task</button>
+            </form>
+            <button onclick="showTaskForm(1)">New Task</button>
+        </main>
+    </div>
+
+    <footer>
+        <p><a href="#">About Us</a> | <a href="#">Careers</a> | <a href="#">Contact Support</a> | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
 </html>
