@@ -1,18 +1,26 @@
 // src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
-import MainContent from './components/src/components/MainContent';
-import RightSidebar from './components/RightSidebar';
-import Footer from './components/Footer';
+import { Box } from '@mui/material';
+
+// Import components from their dedicated folders
+import Header from './components/Header/Header';
+import Sidebar from './components/Sidebar/Sidebar';
+import MainContent from './components/MainContent/MainContent';
+import RightSidebar from './components/RightSidebar/RightSidebar';
+import Footer from './components/Footer/Footer';
 import Profile from './components/Profile/Profile';
+import Login from './pages/Login';
+
+// Inside <Routes>
+<Route path="/login" element={<Login />} />
 
 const App: React.FC = () => {
   return (
     <Router>
-      <Header />
-      <div style={{ display: 'flex' }}>
+      {/* Header now receives a toggleDarkMode prop */}
+      <Header toggleDarkMode={() => {}} />
+      <Box sx={{ display: 'flex' }}>
         <Sidebar />
         <Routes>
           <Route path="/" element={<MainContent />} />
@@ -20,7 +28,7 @@ const App: React.FC = () => {
           {/* Add other routes as needed */}
         </Routes>
         <RightSidebar />
-      </div>
+      </Box>
       <Footer />
     </Router>
   );

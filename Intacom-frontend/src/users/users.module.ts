@@ -3,7 +3,6 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
-import { User } from '../../../Intacom-backend/src/user.entity'; // Ensure this relative path is correct
 
 @Module({
   imports: [TypeOrmModule.forFeature([User])],

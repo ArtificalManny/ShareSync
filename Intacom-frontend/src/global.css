@@ -1,17 +1,5 @@
 /* src/global.css */
 
-/*---- FONT: Proxima Nova (requires your local font files or a purchased license) ---- */
-/* Using Proxima Nova from local files */
-@font-face {
-  font-family: "Proxima Nova";
-  src: url("/fonts/ProximaNova-Regular.woff2") format("woff2"),
-       url("/fonts/ProximaNova-Regular.woff") format("woff"),
-       url("/fonts/ProximaNova-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-}
-
-
 /* Alternatively, using Montserrat from Google Fonts:
 body {
     font-family: 'Montserrat', sans-serif;
