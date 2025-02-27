@@ -2,7 +2,6 @@ import { Injectable, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 //Import User entity and DTOs
-import { User } from '../../../../Intacom-frontend/src/users/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 

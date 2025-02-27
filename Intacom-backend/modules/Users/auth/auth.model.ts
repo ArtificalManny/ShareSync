@@ -3,7 +3,6 @@ import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule, JwtSecretRequestType } from '@nestjs/jwt';
-import { JwtStrategy } from '../../../../Intacom-frontend/jwt.strategy';
 import { AuthController } from './auth.controller';
 
 @Module({

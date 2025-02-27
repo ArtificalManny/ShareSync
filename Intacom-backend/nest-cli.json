@@ -1,6 +1,9 @@
 {
     "collection": "@nestjs/schematics",
     "sourceRoot": "src",
-    "entryFile": "main"
+    "entryFile": "main",
+    "compilerOptions": {
+      "outDir": "dist"
+    }
   }
   
