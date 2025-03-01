@@ -65,6 +65,7 @@ body::before {
     padding: 20px;
     overflow-y: auto;
     max-height: 100vh;
+    background: rgba(26, 26, 46, 0.8); /* Semi-transparent overlay for readability */
 }
 
 header {
@@ -83,9 +84,18 @@ header {
     color: #FFFFFF;
 }
 
-.header-icons i {
+.header-icons i, .user-profile {
     margin-left: 15px;
     cursor: pointer;
+    color: #6A5ACD;
+    font-size: 20px;
+}
+
+.user-profile {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .button-primary {
@@ -116,6 +126,33 @@ header {
     transform: scale(1.05);
     transition: transform 0.3s ease-in-out;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.announcement img, .task img {
+    max-width: 200px;
+    border-radius: 5px;
+}
+
+.project-details {
+    margin-top: 20px;
+}
+
+.feed, .notifications, .profile, .settings {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    background: #2D2D44;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    width: 300px;
+    display: none;
+    z-index: 1000;
+}
+
+.notifications ul, .profile ul, .settings ul {
+    list-style: none;
+    padding: 0;
 }
 
 footer {
@@ -154,5 +191,9 @@ footer a:hover {
     }
     .search-bar {
         width: 100%;
+    }
+    .feed, .notifications, .profile, .settings {
+        width: 80%;
+        right: 10px;
     }
 }

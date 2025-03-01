@@ -12,7 +12,7 @@
     <div class="container">
         <nav class="sidebar" id="sidebar">
             <div class="logo">
-                <h1>Intacom</h1>
+                <h1 style="color: #6A5ACD;">Intacom</h1>
             </div>
             <ul>
                 <li><a href="#" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
@@ -30,13 +30,13 @@
             <header>
                 <input type="text" placeholder="Search..." class="search-bar">
                 <div class="header-icons">
-                    <i class="fas fa-bell" style="color: #6A5ACD;"></i>
-                    <i class="fas fa-user" style="color: #6A5ACD;"></i>
-                    <i class="fas fa-moon" style="color: #6A5ACD;"></i>
+                    <i class="fas fa-bell" style="color: #6A5ACD;" onclick="showNotifications()"></i>
+                    <img src="default-profile.jpg" alt="User Profile" class="user-profile" onclick="showProfile()">
+                    <i class="fas fa-cog" style="color: #6A5ACD;" onclick="showSettings()"></i>
                 </div>
             </header>
 
-            <section id="home">
+            <section id="home" class="feed">
                 <h2>Welcome to Intacom</h2>
                 <div class="quick-access">
                     <h3>Upcoming Events</h3>
@@ -53,30 +53,55 @@
                     <h2>My Projects</h2>
                     <div id="project-list"></div>
                 </div>
-                <div id="login">
+                <div id="login" style="display: none;">
                     <input type="text" id="username" placeholder="Username">
                     <input type="password" id="password" placeholder="Password">
                     <button onclick="login()">Login</button>
                 </div>
             </section>
 
-            <div id="announcements-1" class="announcements"></div>
-            <div id="tasks-1" class="tasks"></div>
+            <div id="project-details" class="project-details">
+                <h2 id="project-title"></h2>
+                <div id="announcements-1" class="announcements"></div>
+                <div id="tasks-1" class="tasks"></div>
+                <button class="button-primary" onclick="showShareProject(1)">Share Project</button>
+            </div>
 
             <form id="new-post" style="display: none;">
                 <textarea id="post-content" placeholder="Write an announcement..."></textarea>
-                <input type="file" accept="image/*,video/*,audio/*,application/pdf" onchange="handleFileUpload(event)">
+                <input type="file" id="media-upload" accept="image/*,video/*,audio/*,application/pdf" onchange="handleFileUpload(event)">
                 <button onclick="submitAnnouncement(1)">Post</button>
             </form>
-            <button onclick="showPostForm(1)">New Announcement</button>
+            <button class="button-primary" onclick="showPostForm(1)">New Announcement</button>
 
             <form id="new-task" style="display: none;">
                 <input type="text" id="task-title" placeholder="Task Title">
-                <input type="text" id="task-assignee" placeholder="Assignee">
+                <input type="text" id="task-assignee" placeholder="Assignee (Username)">
                 <input type="date" id="task-due-date">
+                <select id="task-status">
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                </select>
                 <button onclick="submitTask(1)">Create Task</button>
             </form>
-            <button onclick="showTaskForm(1)">New Task</button>
+            <button class="button-primary" onclick="showTaskForm(1)">New Task</button>
+
+            <div id="notifications" class="notifications" style="display: none;">
+                <h3>Notifications</h3>
+                <ul id="notification-list">
+                    <li>New project update!</li>
+                </ul>
+            </div>
+            <div id="profile" class="profile" style="display: none;">
+                <h3>User Profile</h3>
+                <img src="default-profile.jpg" alt="Profile" style="max-width: 100px;">
+                <p>Username: [Current User]</p>
+                <button class="button-primary" onclick="logout()">Logout</button>
+            </div>
+            <div id="settings" class="settings" style="display: none;">
+                <h3>Settings</h3>
+                <p>Theme: <button onclick="toggleTheme()">Switch Theme</button></p>
+            </div>
         </main>
     </div>
 
