@@ -4,22 +4,72 @@ let projects = [];
 let currentUser = null;
 let selectedProjectId = 1;
 
+const socket = io('http://localhost:3000');
+
+socket.on('newAnnouncement', (data) => {
+    const project = projects.find(p => p.id === data.projectId);
+    if (project) {
+        project.announcements.push(data.announcement);
+        renderAnnouncements(data.projectId);
+        showNotification(`New announcement in Project ${project.name} by ${data.announcement.user}`);
+    }
+});
+
+socket.on('newTask', (data) => {
+    const project = projects.find(p => p.id === data.projectId);
+    if (project) {
+        project.tasks.push(data.task);
+        renderTasks(data.projectId);
+        showNotification(`New task in Project ${project.name} assigned to ${data.task.assignee}`);
+    }
+});
+
 async function login() {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
+    try {
+        const response = await fetch('http://localhost:3000/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+        if (data.user) {
+            currentUser = data.user;
+            document.getElementById('login').style.display = 'none';
+            document.querySelector('.user-profile').src = currentUser.profilePic || 'assets/default-profile.jpg';
+            await loadUserDashboard();
+        } else {
+            alert('Login failed. Check credentials.');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        alert('Login failed. Check if the backend is running.');
+    }
+}
+
+async function register() {
+    const username = prompt('Enter username:');
+    const password = prompt('Enter password:');
+    const profilePic = prompt('Enter profile picture URL (optional):');
     if (username && password) {
         try {
-            // In a real app, send credentials to backend for authentication
-            currentUser = { username, profilePic: 'default-profile.jpg' }; // Mock user data
-            document.getElementById('login').style.display = 'none';
-            document.querySelector('.user-profile').src = currentUser.profilePic;
-            await loadUserDashboard();
+            const response = await fetch('http://localhost:3000/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, profilePic })
+            });
+            const newUser = await response.json();
+            if (newUser) {
+                currentUser = newUser;
+                document.getElementById('login').style.display = 'none';
+                document.querySelector('.user-profile').src = currentUser.profilePic || 'assets/default-profile.jpg';
+                await loadUserDashboard();
+            }
         } catch (error) {
-            console.error('Login error:', error);
-            alert('Login failed. Check credentials or backend.');
+            console.error('Registration error:', error);
+            alert('Registration failed. Check if the backend is running.');
         }
-    } else {
-        alert('Please enter username and password.');
     }
 }
 
@@ -43,6 +93,7 @@ function renderProjects() {
             <h3>${project.name}</h3>
             <p>${project.description}</p>
             <p>Admin: ${project.admin || 'You'}</p>
+            <p>Shared With: ${project.sharedWith.join(', ') || 'None'}</p>
         </div>
     `).join('');
 }
@@ -53,6 +104,7 @@ function selectProject(id) {
     document.getElementById('project-title').textContent = project.name;
     renderAnnouncements(id);
     renderTasks(id);
+    renderSharedUsers(id);
 }
 
 async function createNewProject() {
@@ -63,7 +115,7 @@ async function createNewProject() {
             const response = await fetch('http://localhost:3000/projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, description, admin: currentUser.username, announcements: [], tasks: [] })
+                body: JSON.stringify({ name, description, admin: currentUser.username, sharedWith: [], announcements: [], tasks: [] })
             });
             const newProject = await response.json();
             projects.push(newProject);
@@ -87,6 +139,8 @@ async function showShareProject(projectId) {
             const updatedProject = await response.json();
             const projectIndex = projects.findIndex(p => p.id === projectId);
             if (projectIndex !== -1) projects[projectIndex] = updatedProject;
+            renderProjects();
+            renderSharedUsers(projectId);
             alert('Project shared successfully!');
         } catch (error) {
             console.error('Error sharing project:', error);
@@ -112,8 +166,13 @@ async function submitAnnouncement(projectId) {
         try {
             let mediaUrl = null;
             if (media) {
-                // For now, use a temporary URL; real backend would handle file upload
-                mediaUrl = URL.createObjectURL(media);
+                const formData = new FormData();
+                formData.append('file', media);
+                const uploadResponse = await fetch(`http://localhost:3000/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                mediaUrl = await uploadResponse.json();
             }
             const response = await fetch(`http://localhost:3000/projects/${projectId}/announcements`, {
                 method: 'POST',
@@ -126,6 +185,7 @@ async function submitAnnouncement(projectId) {
             renderAnnouncements(projectId);
             document.getElementById('post-content').value = '';
             document.getElementById('new-post').style.display = 'none';
+            socket.emit('newAnnouncement', { projectId, announcement: updatedProject.announcements[updatedProject.announcements.length - 1] });
         } catch (error) {
             console.error('Error submitting announcement:', error);
             alert('Failed to submit announcement. Check if the backend is running.');
@@ -143,7 +203,7 @@ async function submitTask(projectId) {
             const response = await fetch(`http://localhost:3000/projects/${projectId}/tasks`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, assignee, dueDate, status, user: currentUser.username })
+                body: JSON.stringify({ title, assignee, dueDate, status: status || "In Progress", user: currentUser.username })
             });
             const updatedProject = await response.json();
             const projectIndex = projects.findIndex(p => p.id === projectId);
@@ -153,6 +213,7 @@ async function submitTask(projectId) {
             document.getElementById('task-assignee').value = '';
             document.getElementById('task-due-date').value = '';
             document.getElementById('new-task').style.display = 'none';
+            socket.emit('newTask', { projectId, task: updatedProject.tasks[updatedProject.tasks.length - 1] });
         } catch (error) {
             console.error('Error submitting task:', error);
             alert('Failed to submit task. Check if the backend is running.');
@@ -165,16 +226,22 @@ async function renderAnnouncements(projectId) {
         const project = projects.find(p => p.id === projectId);
         if (!project) return;
         const announcementsDiv = document.getElementById(`announcements-${projectId}`);
-        announcementsDiv.innerHTML = project.announcements.map(ann => `
-            <div class="announcement">
-                <p><strong>${ann.user || 'Anonymous'}</strong>: ${ann.content || ''}</p>
-                ${ann.media ? `<img src="${ann.media}" alt="Media" style="max-width: 200px;">` : ''}
-                <button onclick="likeAnnouncement(${ann.id}, ${projectId})">Like (${ann.likes || 0})</button>
-                <div class="comments">${(ann.comments || []).map(c => `<p><strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`).join('')}</div>
-                <input type="text" id="comment-${ann.id}" placeholder="Add comment">
-                <button onclick="addComment(${ann.id}, ${projectId})">Comment</button>
-            </div>
-        `).join('');
+        announcementsDiv.innerHTML = project.announcements.map(ann => {
+            const user = await fetchUser(ann.user);
+            return `
+                <div class="announcement">
+                    <p><img src="${user.profilePic || 'assets/default-profile.jpg'}" alt="${ann.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${ann.user || 'Anonymous'}</strong>: ${ann.content || ''}</p>
+                    ${ann.media ? `<img src="${ann.media}" alt="Media" style="max-width: 200px;">` : ''}
+                    <button onclick="likeAnnouncement(${ann.id}, ${projectId})">Like (${ann.likes || 0})</button>
+                    <div class="comments">${(ann.comments || []).map(c => {
+                        const commentUser = await fetchUser(c.user);
+                        return `<p><img src="${commentUser.profilePic || 'assets/default-profile.jpg'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
+                    }).join('')}</div>
+                    <input type="text" id="comment-${ann.id}" placeholder="Add comment">
+                    <button onclick="addComment(${ann.id}, ${projectId})">Comment</button>
+                </div>
+            `;
+        }).join('');
     } catch (error) {
         console.error('Error rendering announcements:', error);
     }
@@ -185,19 +252,36 @@ async function renderTasks(projectId) {
         const project = projects.find(p => p.id === projectId);
         if (!project) return;
         const tasksDiv = document.getElementById(`tasks-${projectId}`);
-        tasksDiv.innerHTML = project.tasks.map(task => `
-            <div class="task">
-                <h3>${task.title}</h3>
-                <p>Assignee: <img src="default-profile.jpg" alt="${task.assignee}" style="width: 30px; border-radius: 50%;"> ${task.assignee} | Due: ${task.dueDate} | Status: ${task.status}</p>
-                <button onclick="toggleTaskStatus(${task.id}, ${projectId})">Mark ${task.status === 'Completed' ? 'Incomplete' : 'Complete'}</button>
-                <div class="comments">${(task.comments || []).map(c => `<p><strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`).join('')}</div>
-                <input type="text" id="task-comment-${task.id}" placeholder="Add comment">
-                <button onclick="addTaskComment(${task.id}, ${projectId})">Comment</button>
-            </div>
-        `).join('');
+        tasksDiv.innerHTML = project.tasks.map(task => {
+            const user = await fetchUser(task.user);
+            const assignee = await fetchUser(task.assignee);
+            return `
+                <div class="task">
+                    <h3>${task.title}</h3>
+                    <p>Assignee: <img src="${assignee.profilePic || 'assets/default-profile.jpg'}" alt="${task.assignee}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${task.assignee} | Due: ${task.dueDate} | Status: ${task.status}</p>
+                    <button onclick="toggleTaskStatus(${task.id}, ${projectId})">Mark ${task.status === 'Completed' ? 'Incomplete' : 'Complete'}</button>
+                    <div class="comments">${(task.comments || []).map(c => {
+                        const commentUser = await fetchUser(c.user);
+                        return `<p><img src="${commentUser.profilePic || 'assets/default-profile.jpg'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
+                    }).join('')}</div>
+                    <input type="text" id="task-comment-${task.id}" placeholder="Add comment">
+                    <button onclick="addTaskComment(${task.id}, ${projectId})">Comment</button>
+                </div>
+            `;
+        }).join('');
     } catch (error) {
         console.error('Error rendering tasks:', error);
     }
+}
+
+async function renderSharedUsers(projectId) {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+    const sharedList = document.getElementById('shared-list');
+    sharedList.innerHTML = project.sharedWith.map(user => {
+        const userData = fetchUser(user);
+        return `<li><img src="${userData.profilePic || 'assets/default-profile.jpg'}" alt="${user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${user}</li>`;
+    }).join('');
 }
 
 async function likeAnnouncement(annId, projectId) {
@@ -279,14 +363,22 @@ async function toggleTaskStatus(taskId, projectId) {
     }
 }
 
-function handleFileUpload(event) {
+async function handleFileUpload(event) {
     const file = event.target.files[0];
     if (file) {
-        // For a real backend, upload the file using FormData
-        alert('File upload not fully implemented. Use backend for persistent storage.');
-        const reader = new FileReader();
-        reader.onload = (e) => submitAnnouncement(selectedProjectId, null, e.target.result);
-        reader.readAsDataURL(file);
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const response = await fetch(`http://localhost:3000/upload`, {
+                method: 'POST',
+                body: formData
+            });
+            const mediaUrl = await response.json();
+            submitAnnouncement(selectedProjectId, null, mediaUrl);
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            alert('Failed to upload file. Check if the backend is running.');
+        }
     }
 }
 
@@ -300,6 +392,7 @@ function showNotifications() {
 
 function showProfile() {
     document.getElementById('profile').style.display = 'block';
+    document.getElementById('profile-username').textContent = currentUser?.username || 'Guest';
 }
 
 function showSettings() {
@@ -322,14 +415,31 @@ function toggleTheme() {
 function logout() {
     currentUser = null;
     document.getElementById('login').style.display = 'block';
-    document.querySelector('.user-profile').src = 'default-profile.jpg';
+    document.querySelector('.user-profile').src = 'assets/default-profile.jpg';
     projects = [];
     document.getElementById('project-list').innerHTML = '';
     document.getElementById('announcements-1').innerHTML = '';
     document.getElementById('tasks-1').innerHTML = '';
+    document.getElementById('shared-list').innerHTML = '';
     document.getElementById('notifications').style.display = 'none';
     document.getElementById('profile').style.display = 'none';
     document.getElementById('settings').style.display = 'none';
+}
+
+async function fetchUser(username) {
+    try {
+        const response = await fetch(`http://localhost:3000/users/${username}`);
+        return await response.json() || { profilePic: 'assets/default-profile.jpg', username };
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        return { profilePic: 'assets/default-profile.jpg', username };
+    }
+}
+
+function showNotification(message) {
+    const notificationList = document.getElementById('notification-list');
+    notificationList.innerHTML += `<li>${message}</li>`;
+    document.getElementById('notifications').style.display = 'block';
 }
 
 // Load dashboard on page load
