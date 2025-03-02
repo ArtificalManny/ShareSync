@@ -36,7 +36,7 @@ body::before {
     height: 100vh;
     width: 250px;
     transition: transform 0.3s ease-in-out;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(138, 43, 226, 0.5);
 }
 
 .sidebar.collapsed {
@@ -58,14 +58,17 @@ body::before {
 
 .sidebar .nav-link:hover {
     color: #8A2BE2;
-    text-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
+    text-shadow: 0 0 10px rgba(138, 43, 226, 0.7);
+    background: rgba(106, 90, 205, 0.2);
 }
 
 .main-content {
     padding: 20px;
     overflow-y: auto;
     max-height: 100vh;
-    background: rgba(26, 26, 46, 0.8); /* Semi-transparent overlay for readability */
+    background: rgba(26, 26, 46, 0.8);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 header {
@@ -82,6 +85,7 @@ header {
     width: 300px;
     background: #2D2D44;
     color: #FFFFFF;
+    box-shadow: 0 0 8px rgba(106, 90, 205, 0.3);
 }
 
 .header-icons i, .user-profile {
@@ -89,6 +93,12 @@ header {
     cursor: pointer;
     color: #6A5ACD;
     font-size: 20px;
+    transition: color 0.3s ease;
+}
+
+.header-icons i:hover, .user-profile:hover {
+    color: #8A2BE2;
+    text-shadow: 0 0 15px rgba(138, 43, 226, 0.7);
 }
 
 .user-profile {
@@ -96,6 +106,7 @@ header {
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
+    border: 2px solid #6A5ACD;
 }
 
 .button-primary {
@@ -112,15 +123,19 @@ header {
 .button-primary:hover {
     opacity: 0.9;
     transform: scale(1.05);
-    transition: transform 0.3s ease-in-out;
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease;
+    box-shadow: 0 6px 20px rgba(106, 90, 205, 0.7), 0 0 15px rgba(138, 43, 226, 0.7);
 }
 
 .project-card, .announcement, .task {
     background: #2D2D44;
     padding: 15px;
     margin-bottom: 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), 0 0 8px rgba(106, 90, 205, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .project-card:hover, .announcement:hover, .task:hover {
@@ -131,8 +146,9 @@ header {
 
 .announcement img, .task img {
     max-width: 200px;
-    border-radius: 5px;
-    border: 2px solid #6A5ACD
+    border-radius: 8px;
+    border: 2px solid #6A5ACD;
+    box-shadow: 0 0 10px rgba(106, 90, 205, 0.4);
 }
 
 .project-details {
@@ -143,13 +159,14 @@ header {
     position: fixed;
     top: 60px;
     right: 20px;
-    background: #2D2D44;
+    background: linear-gradient(135deg, #2D2D44, #3A3A5E);
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(138, 43, 226, 0.5);
     width: 300px;
     display: none;
     z-index: 1000;
+    color: #FFFFFF;
 }
 
 .notifications ul, .profile ul, .settings ul {
@@ -165,6 +182,7 @@ footer {
     padding: 10px;
     text-align: center;
     color: #FFFFFF;
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
 }
 
 footer a {
@@ -174,6 +192,8 @@ footer a {
 
 footer a:hover {
     text-decoration: underline;
+    color: #8A2BE2;
+    text-shadow: 0 0 8px rgba(138, 43, 226, 0.5);
 }
 
 @media (max-width: 768px) {

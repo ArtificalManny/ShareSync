@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-    <button onclick="register()">Register</button>
 </head>
 <body>
     <div class="container">
@@ -16,13 +15,13 @@
                 <h1 style="color: #6A5ACD;">Intacom</h1>
             </div>
             <ul>
-                <li><a href="#" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-project-diagram"></i> My Projects</a></li>
+                <li><a href="#home" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="#projects" class="nav-link"><i class="fas fa-project-diagram"></i> My Projects</a></li>
                 <li><button class="button-primary" onclick="createNewProject()">Create New Project</button></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-globe"></i> Global Feed</a></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-calendar"></i> Calendar</a></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-tasks"></i> Tasks</a></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-users"></i> Teams</a></li>
+                <li><a href="#feed" class="nav-link"><i class="fas fa-globe"></i> Global Feed</a></li>
+                <li><a href="#calendar" class="nav-link"><i class="fas fa-calendar"></i> Calendar</a></li>
+                <li><a href="#tasks" class="nav-link" onclick="showUserTasks()">Tasks</a></li>
+                <li><a href="#teams" class="nav-link"><i class="fas fa-users"></i> Teams</a></li>
             </ul>
             <button class="button-primary" onclick="toggleSidebar()" style="margin-top: 20px;">Toggle Sidebar</button>
         </nav>
@@ -32,7 +31,7 @@
                 <input type="text" placeholder="Search..." class="search-bar">
                 <div class="header-icons">
                     <i class="fas fa-bell" style="color: #6A5ACD;" onclick="showNotifications()"></i>
-                    <img src="default-profile.jpg" alt="User Profile" class="user-profile" onclick="showProfile()">
+                    <img src="assets/default-profile.jpg" alt="User Profile" class="user-profile" onclick="showProfile()">
                     <i class="fas fa-cog" style="color: #6A5ACD;" onclick="showSettings()"></i>
                 </div>
             </header>
@@ -58,22 +57,32 @@
                     <input type="text" id="username" placeholder="Username">
                     <input type="password" id="password" placeholder="Password">
                     <button onclick="login()">Login</button>
+                    <button onclick="register()">Register</button>
                 </div>
             </section>
 
-            <div id="project-details" class="project-details">
+            <div id="project-details" class="project-details" style="display: none;">
                 <h2 id="project-title"></h2>
                 <div id="announcements-1" class="announcements"></div>
                 <div id="tasks-1" class="tasks"></div>
+                <div id="shared-users">
+                    <h4>Shared With:</h4>
+                    <ul id="shared-list"></ul>
+                </div>
                 <button class="button-primary" onclick="showShareProject(1)">Share Project</button>
+            </div>
+
+            <div id="tasks-page" class="feed" style="display: none;">
+                <h2>My Tasks</h2>
+                <div id="user-tasks"></div>
             </div>
 
             <form id="new-post" style="display: none;">
                 <textarea id="post-content" placeholder="Write an announcement..."></textarea>
                 <input type="file" id="media-upload" accept="image/*,video/*,audio/*,application/pdf" onchange="handleFileUpload(event)">
-                <button onclick="submitAnnouncement(1)">Post</button>
+                <button onclick="submitAnnouncement(selectedProjectId)">Post</button>
             </form>
-            <button class="button-primary" onclick="showPostForm(1)">New Announcement</button>
+            <button class="button-primary" onclick="showPostForm(selectedProjectId)">New Announcement</button>
 
             <form id="new-task" style="display: none;">
                 <input type="text" id="task-title" placeholder="Task Title">
@@ -83,25 +92,23 @@
                     <option value="In Progress">In Progress</option>
                     <option value="Completed">Completed</option>
                 </select>
-                <button onclick="submitTask(1)">Create Task</button>
+                <button onclick="submitTask(selectedProjectId)">Create Task</button>
             </form>
-            <button class="button-primary" onclick="showTaskForm(1)">New Task</button>
+            <button class="button-primary" onclick="showTaskForm(selectedProjectId)">New Task</button>
 
             <div id="notifications" class="notifications" style="display: none;">
                 <h3>Notifications</h3>
-                <ul id="notification-list">
-                    <li>New project update!</li>
-                </ul>
+                <ul id="notification-list"></ul>
             </div>
             <div id="profile" class="profile" style="display: none;">
                 <h3>User Profile</h3>
-                <img src="default-profile.jpg" alt="Profile" style="max-width: 100px;">
-                <p>Username: [Current User]</p>
+                <img src="assets/default-profile.jpg" alt="Profile" style="max-width: 100px;">
+                <p>Username: <span id="profile-username"></span></p>
                 <button class="button-primary" onclick="logout()">Logout</button>
             </div>
             <div id="settings" class="settings" style="display: none;">
                 <h3>Settings</h3>
-                <p>Theme: <button onclick="toggleTheme()">Switch Theme</button></p>
+                <p>Theme: <button class="button-primary" onclick="toggleTheme()">Switch Theme</button></p>
             </div>
         </main>
     </div>
@@ -110,7 +117,7 @@
         <p><a href="#">About Us</a> | <a href="#">Careers</a> | <a href="#">Contact Support</a> | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
     </footer>
 
-    <script src="script.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
