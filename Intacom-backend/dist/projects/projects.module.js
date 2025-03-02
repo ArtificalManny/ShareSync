@@ -6,23 +6,22 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppModule = void 0;
+exports.ProjectsModule = void 0;
 const common_1 = require("@nestjs/common");
+const projects_controller_1 = require("./projects.controller");
+const projects_service_1 = require("../../../Intacom-frontend/projects.service");
 const mongoose_1 = require("@nestjs/mongoose");
-const auth_module_1 = require("./routes/auth.module");
-const projects_module_1 = require("./projects/projects.module");
-const uploads_module_1 = require("./uploads/uploads.module");
-let AppModule = class AppModule {
+const project_model_1 = require("../../models/project.model");
+let ProjectsModule = class ProjectsModule {
 };
-exports.AppModule = AppModule;
-exports.AppModule = AppModule = __decorate([
+exports.ProjectsModule = ProjectsModule;
+exports.ProjectsModule = ProjectsModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/intacom'),
-            auth_module_1.AuthModule,
-            projects_module_1.ProjectsModule,
-            uploads_module_1.UploadsModule,
+            mongoose_1.MongooseModule.forFeature([{ name: project_model_1.Project.name, schema: project_model_1.ProjectSchema }]),
         ],
+        controllers: [projects_controller_1.ProjectsController],
+        providers: [projects_service_1.ProjectsService],
     })
-], AppModule);
-//# sourceMappingURL=app.module.js.map
+], ProjectsModule);
+//# sourceMappingURL=projects.module.js.map
