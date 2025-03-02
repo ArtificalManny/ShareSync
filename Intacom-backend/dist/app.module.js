@@ -10,8 +10,8 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const auth_module_1 = require("./routes/auth.module");
-const project_module_1 = require("./routes/project.module");
-const upload_module_1 = require("./routes/upload.module");
+const project_module_1 = require("./projects/project.module");
+const upload_module_1 = require("./uploads/upload.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;

@@ -11,7 +11,7 @@ const common_1 = require("@nestjs/common");
 const auth_controller_1 = require("./auth.controller");
 const auth_service_1 = require("./auth.service");
 const mongoose_1 = require("@nestjs/mongoose");
-const user_model_1 = require("../../models/user.model");
+const user_model_1 = require("../models/user.model");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;

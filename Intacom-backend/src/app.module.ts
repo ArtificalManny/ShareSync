@@ -1,8 +1,9 @@
+// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './routes/auth.module';
-import { ProjectModule } from './routes/project.module';
-import { UploadModule } from './routes/upload.module';
+import { ProjectModule } from './projects/project.module'; // Updated path
+import { UploadModule } from './uploads/upload.module'; // Updated path
 
 @Module({
   imports: [

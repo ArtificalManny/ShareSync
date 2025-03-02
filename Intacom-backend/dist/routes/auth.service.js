@@ -16,7 +16,7 @@ exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
-const user_model_1 = require("../../models/user.model");
+const user_model_1 = require("../models/user.model");
 let AuthService = class AuthService {
     constructor(userModel) {
         this.userModel = userModel;
