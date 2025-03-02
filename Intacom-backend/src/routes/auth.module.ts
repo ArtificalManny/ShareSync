@@ -1,13 +1,12 @@
-// src/routes/auth.module.ts
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { UserSchema } from '../models/user.model'; // Create this file
+import { User, UserSchema } from '../../models/user.model';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: 'User', schema: UserSchema }]),
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   controllers: [AuthController],
   providers: [AuthService],

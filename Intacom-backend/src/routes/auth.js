@@ -36,6 +36,10 @@ router.get('/user', (req, res) => {
     }
 });
 
+router.get('/login', (req, res) => {
+    res.send('Login route');
+  });
+
 router.post('/logout', (req, res) => {
     res.clearCookie('userToken');
     res.json({ message: 'Logged out successfully' });

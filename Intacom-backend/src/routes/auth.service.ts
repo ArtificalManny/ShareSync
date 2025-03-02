@@ -1,12 +1,11 @@
-// src/routes/auth.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from '../models/user.model';
+import { User } from '../../models/user.model';
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectModel('User') private userModel: Model<User>) {}
+  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
   async login(username: string, password: string) {
     return this.userModel.findOne({ username, password });
