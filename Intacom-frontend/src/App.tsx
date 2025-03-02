@@ -1,37 +1,29 @@
-// src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProjectProvider } from './contexts/ProjectContext';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ProjectsPage from './pages/ProjectsPage';
+import UploadPage from './pages/UploadPage';
+import './styles/global.css';
 
-// Import components from their dedicated folders
-import Header from './components/Header/Header';
-import Sidebar from './components/Sidebar/Sidebar';
-import MainContent from './components/MainContent/MainContent';
-import RightSidebar from './components/RightSidebar/RightSidebar';
-import Footer from './components/Footer/Footer';
-import Profile from './components/Profile/Profile';
-import Login from './pages/Login';
-
-// Inside <Routes>
-<Route path="/login" element={<Login />} />
-
-const App: React.FC = () => {
+function App() {
   return (
-    <Router>
-      {/* Header now receives a toggleDarkMode prop */}
-      <Header toggleDarkMode={() => {}} />
-      <Box sx={{ display: 'flex' }}>
-        <Sidebar />
-        <Routes>
-          <Route path="/" element={<MainContent />} />
-          <Route path="/profile" element={<Profile />} />
-          {/* Add other routes as needed */}
-        </Routes>
-        <RightSidebar />
-      </Box>
-      <Footer />
-    </Router>
+    <AuthProvider>
+      <ProjectProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/upload" element={<UploadPage />} />
+            <Route path="/" element={<LoginPage />} />
+          </Routes>
+        </Router>
+      </ProjectProvider>
+    </AuthProvider>
   );
-};
+}
 
 export default App;

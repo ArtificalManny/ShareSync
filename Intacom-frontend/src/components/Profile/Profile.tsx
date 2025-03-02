@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon, Save as SaveIcon } from '@mui/icons-material';
 import { styled } from '@mui/system';
-import api from '../../api/api'; // Axios instance
+import api from '../../services/api'; // Axios instance
 
 // Styled Components
 const CoverImage = styled('div')({
