@@ -21,8 +21,22 @@ socket.on('newTask', (data) => {
         project.tasks.push(data.task);
         renderTasks(data.projectId);
         if (currentUser && project.tasks.some(t => t.assignee === currentUser.username)) {
-            showNotification(`New task assigned to you in Project ${project.name}`);
+            showNotification(`New task '${data.task.title}' assigned to you in Project ${project.name}`);
         }
+    }
+});
+
+socket.on('chatMessage', (data) => {
+    if (data.projectId === selectedProjectId) {
+        const chatMessages = document.getElementById('chat-messages');
+        chatMessages.innerHTML += `<p><img src="${data.user.profilePic || 'assets/default-profile.jpg'}" alt="${data.user.username}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${data.user.username}</strong>: ${data.message}</p>`;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+});
+
+socket.on('notification', (data) => {
+    if (currentUser && data.user === currentUser.username) {
+        showNotification(data.message);
     }
 });
 
@@ -30,7 +44,7 @@ async function login() {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     try {
-        const response = await fetch('http://localhost:3000/login', {
+        const response = await fetch('http://localhost:3000/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -58,7 +72,7 @@ async function register() {
     const profilePic = prompt('Enter profile picture URL (optional):');
     if (username && password) {
         try {
-            const response = await fetch('http://localhost:3000/register', {
+            const response = await fetch('http://localhost:3000/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password, profilePic })
@@ -86,6 +100,8 @@ function updateHeader() {
 }
 
 async function loadUserDashboard() {
+    const projectList = document.getElementById('project-list');
+    projectList.innerHTML = '<div class="loading">Loading...</div>';
     try {
         const response = await fetch('http://localhost:3000/projects');
         projects = await response.json();
@@ -98,6 +114,9 @@ async function loadUserDashboard() {
         document.getElementById('home').style.display = 'block';
         document.getElementById('project-details').style.display = 'none';
         document.getElementById('tasks-page').style.display = 'none';
+        document.getElementById('feed').style.display = 'none';
+        document.getElementById('connections-page').style.display = 'none';
+        document.getElementById('chat').style.display = 'none';
     } catch (error) {
         console.error('Error loading projects:', error);
         alert('Failed to load projects. Check if the backend is running.');
@@ -126,6 +145,9 @@ function selectProject(id) {
     document.getElementById('home').style.display = 'none';
     document.getElementById('project-details').style.display = 'block';
     document.getElementById('tasks-page').style.display = 'none';
+    document.getElementById('feed').style.display = 'none';
+    document.getElementById('connections-page').style.display = 'none';
+    document.getElementById('chat').style.display = 'none';
 }
 
 async function createNewProject() {
@@ -254,15 +276,15 @@ async function renderAnnouncements(projectId) {
             const user = await fetchUser(ann.user);
             return `
                 <div class="announcement">
-                    <p><img src="${user.profilePic || 'assets/default-profile.jpg'}" alt="${ann.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${ann.user || 'Anonymous'}</strong>: ${ann.content || ''}</p>
+                    <p><img src="${user.profilePic || 'https://via.placeholder.com/30'}" alt="${ann.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${ann.user || 'Anonymous'}</strong>: ${ann.content || ''}</p>
                     ${ann.media ? `<img src="${ann.media}" alt="Media" style="max-width: 200px;">` : ''}
-                    <button onclick="likeAnnouncement(${ann.id}, ${projectId})">Like (${ann.likes || 0})</button>
+                    <button class="button-primary" onclick="likeAnnouncement(${ann.id}, ${projectId})">Like (${ann.likes || 0})</button>
                     <div class="comments">${(ann.comments || []).map(c => {
                         const commentUser = await fetchUser(c.user);
-                        return `<p><img src="${commentUser.profilePic || 'assets/default-profile.jpg'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
+                        return `<p><img src="${commentUser.profilePic || 'https://via.placeholder.com/30'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
                     }).join('')}</div>
-                    <input type="text" id="comment-${ann.id}" placeholder="Add comment">
-                    <button onclick="addComment(${ann.id}, ${projectId})">Comment</button>
+                    <input type="text" id="comment-${ann.id}" placeholder="Add comment" class="post-input">
+                    <button class="button-primary" onclick="addComment(${ann.id}, ${projectId})">Comment</button>
                 </div>
             `;
         }).join('');
@@ -282,14 +304,14 @@ async function renderTasks(projectId) {
             return `
                 <div class="task">
                     <h3>${task.title}</h3>
-                    <p>Assignee: <img src="${assignee.profilePic || 'assets/default-profile.jpg'}" alt="${task.assignee}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${task.assignee} | Due: ${task.dueDate} | Status: ${task.status}</p>
-                    <button onclick="toggleTaskStatus(${task.id}, ${projectId})">Mark ${task.status === 'Completed' ? 'Incomplete' : 'Complete'}</button>
+                    <p>Assignee: <img src="${assignee.profilePic || 'https://via.placeholder.com/30'}" alt="${task.assignee}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${task.assignee} | Due: ${task.dueDate} | Status: ${task.status}</p>
+                    <button class="button-primary" onclick="toggleTaskStatus(${task.id}, ${projectId})">Mark ${task.status === 'Completed' ? 'Incomplete' : 'Complete'}</button>
                     <div class="comments">${(task.comments || []).map(c => {
                         const commentUser = await fetchUser(c.user);
-                        return `<p><img src="${commentUser.profilePic || 'assets/default-profile.jpg'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
+                        return `<p><img src="${commentUser.profilePic || 'https://via.placeholder.com/30'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
                     }).join('')}</div>
-                    <input type="text" id="task-comment-${task.id}" placeholder="Add comment">
-                    <button onclick="addTaskComment(${task.id}, ${projectId})">Comment</button>
+                    <input type="text" id="task-comment-${task.id}" placeholder="Add comment" class="post-input">
+                    <button class="button-primary" onclick="addTaskComment(${task.id}, ${projectId})">Comment</button>
                 </div>
             `;
         }).join('');
@@ -304,7 +326,7 @@ async function renderSharedUsers(projectId) {
     const sharedList = document.getElementById('shared-list');
     sharedList.innerHTML = project.sharedWith.map(user => {
         const userData = fetchUser(user);
-        return `<li><img src="${userData.profilePic || 'assets/default-profile.jpg'}" alt="${user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${user}</li>`;
+        return `<li><img src="${userData.profilePic || 'https://via.placeholder.com/30'}" alt="${user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${user}</li>`;
     }).join('');
 }
 
@@ -313,6 +335,8 @@ async function showUserTasks() {
         alert('Please log in to view your tasks.');
         return;
     }
+    const tasksDiv = document.getElementById('user-tasks');
+    tasksDiv.innerHTML = '<div class="loading">Loading...</div>';
     try {
         const userTasks = [];
         projects.forEach(project => {
@@ -322,26 +346,102 @@ async function showUserTasks() {
                 }
             });
         });
-        const tasksDiv = document.getElementById('user-tasks');
         tasksDiv.innerHTML = userTasks.map(task => `
             <div class="task">
                 <h3>${task.title} (Project: ${task.projectName})</h3>
-                <p>Assignee: <img src="${currentUser.profilePic || 'assets/default-profile.jpg'}" alt="${currentUser.username}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${currentUser.username} | Due: ${task.dueDate} | Status: ${task.status}</p>
-                <button onclick="toggleTaskStatus(${task.id}, projects.find(p => p.name === task.projectName).id)">Mark ${task.status === 'Completed' ? 'Incomplete' : 'Complete'}</button>
+                <p>Assignee: <img src="${currentUser.profilePic || 'https://via.placeholder.com/30'}" alt="${currentUser.username}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${currentUser.username} | Due: ${task.dueDate} | Status: ${task.status}</p>
+                <button class="button-primary" onclick="toggleTaskStatus(${task.id}, projects.find(p => p.name === task.projectName).id)">Mark ${task.status === 'Completed' ? 'Incomplete' : 'Complete'}</button>
                 <div class="comments">${(task.comments || []).map(c => {
                     const commentUser = await fetchUser(c.user);
-                    return `<p><img src="${commentUser.profilePic || 'assets/default-profile.jpg'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
+                    return `<p><img src="${commentUser.profilePic || 'https://via.placeholder.com/30'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
                 }).join('')}</div>
-                <input type="text" id="task-comment-${task.id}" placeholder="Add comment">
-                <button onclick="addTaskComment(${task.id}, projects.find(p => p.name === task.projectName).id)">Comment</button>
+                <input type="text" id="task-comment-${task.id}" placeholder="Add comment" class="post-input">
+                <button class="button-primary" onclick="addTaskComment(${task.id}, projects.find(p => p.name === task.projectName).id)">Comment</button>
             </div>
         `).join('');
         document.getElementById('home').style.display = 'none';
         document.getElementById('project-details').style.display = 'none';
         document.getElementById('tasks-page').style.display = 'block';
+        document.getElementById('feed').style.display = 'none';
+        document.getElementById('connections-page').style.display = 'none';
+        document.getElementById('chat').style.display = 'none';
     } catch (error) {
         console.error('Error loading user tasks:', error);
         alert('Failed to load tasks. Check if the backend is running.');
+    }
+}
+
+async function showGlobalFeed() {
+    const feedDiv = document.getElementById('activity-feed');
+    feedDiv.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+        const activities = await fetchActivities();
+        feedDiv.innerHTML = activities.map(activity => `
+            <div class="announcement">
+                <p><img src="${activity.user.profilePic || 'https://via.placeholder.com/30'}" alt="${activity.user.username}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${activity.user.username}</strong>: ${activity.message} (${new Date(activity.timestamp).toLocaleTimeString()})</p>
+            </div>
+        `).join('');
+        document.getElementById('home').style.display = 'none';
+        document.getElementById('project-details').style.display = 'none';
+        document.getElementById('tasks-page').style.display = 'none';
+        document.getElementById('feed').style.display = 'block';
+        document.getElementById('connections-page').style.display = 'none';
+        document.getElementById('chat').style.display = 'none';
+    } catch (error) {
+        console.error('Error loading feed:', error);
+        alert('Failed to load feed. Check if the backend is running.');
+    }
+}
+
+async function showConnections() {
+    if (!currentUser) {
+        alert('Please log in to view connections.');
+        return;
+    }
+    const connectionsDiv = document.getElementById('connection-list');
+    connectionsDiv.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+        const connections = await fetchConnections();
+        connectionsDiv.innerHTML = connections.map(conn => `
+            <li><img src="${conn.profilePic || 'https://via.placeholder.com/30'}" alt="${conn.username}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${conn.username}</li>
+        `).join('');
+        document.getElementById('home').style.display = 'none';
+        document.getElementById('project-details').style.display = 'none';
+        document.getElementById('tasks-page').style.display = 'none';
+        document.getElementById('feed').style.display = 'none';
+        document.getElementById('connections-page').style.display = 'block';
+        document.getElementById('chat').style.display = 'none';
+    } catch (error) {
+        console.error('Error loading connections:', error);
+        alert('Failed to load connections. Check if the backend is running.');
+    }
+}
+
+function showChat(projectId) {
+    if (!currentUser) {
+        alert('Please log in to chat.');
+        return;
+    }
+    selectedProjectId = projectId;
+    document.getElementById('chat-messages').innerHTML = '<div class="loading">Loading...</div>';
+    document.getElementById('home').style.display = 'none';
+    document.getElementById('project-details').style.display = 'none';
+    document.getElementById('tasks-page').style.display = 'none';
+    document.getElementById('feed').style.display = 'none';
+    document.getElementById('connections-page').style.display = 'none';
+    document.getElementById('chat').style.display = 'block';
+    document.getElementById('chat-messages').innerHTML = ''; // Clear loading after initial render
+}
+
+function sendChatMessage(projectId) {
+    if (!currentUser) {
+        alert('Please log in to send a message.');
+        return;
+    }
+    const message = document.getElementById('chat-input').value;
+    if (message) {
+        socket.emit('chatMessage', { projectId, message, user: { username: currentUser.username, profilePic: currentUser.profilePic || 'https://via.placeholder.com/30' } });
+        document.getElementById('chat-input').value = '';
     }
 }
 
@@ -452,10 +552,26 @@ function toggleSidebar() {
 }
 
 function showNotifications() {
-    document.getElementById('notifications').style.display = 'block';
+    if (!currentUser) {
+        alert('Please log in to view notifications.');
+        return;
+    }
+    const notificationList = document.getElementById('notification-list');
+    notificationList.innerHTML = '<div class="loading">Loading...</div>';
+    fetchNotifications().then(notifications => {
+        notificationList.innerHTML = notifications.map(notif => `<li>${notif.message} (${new Date(notif.timestamp).toLocaleTimeString()})</li>`).join('');
+        document.getElementById('notifications').style.display = 'block';
+    }).catch(error => {
+        console.error('Error loading notifications:', error);
+        alert('Failed to load notifications. Check if the backend is running.');
+    });
 }
 
 function showProfile() {
+    if (!currentUser) {
+        alert('Please log in to view your profile.');
+        return;
+    }
     document.getElementById('profile').style.display = 'block';
     document.getElementById('profile-username').textContent = currentUser?.username || 'Guest';
 }
@@ -472,18 +588,25 @@ function toggleTheme() {
         document.querySelectorAll('.button-primary').forEach(btn => btn.style.background = 'linear-gradient(45deg, #4CAF50, #2E7D32)');
         document.querySelectorAll('.sidebar').forEach(s => s.style.background = '#F5F5F5');
         document.querySelectorAll('.main-content').forEach(m => m.style.background = 'rgba(245, 245, 245, 0.8)');
+        document.querySelectorAll('.project-card, .announcement, .task').forEach(c => c.style.background = '#FFFFFF');
+        document.querySelectorAll('.feed, .notifications, .profile, .settings').forEach(f => f.style.background = '#F5F5F5');
+        document.querySelectorAll('.search-bar, .chat-input, .post-input, .task-input, .task-select').forEach(input => input.style.background = '#E0E0E0');
     } else {
         body.style.background = 'linear-gradient(135deg, #1A1A2E, #16213E)';
         body.style.color = '#FFFFFF';
-        document.querySelectorAll('.button-primary').forEach(btn => btn.style.background = 'linear-gradient(45deg, #6A5ACD, #8A2BE2)');
+        document.querySelectorAll('.button-primary').forEach(btn => btn.style.background = 'linear-gradient(45deg, #6A5ACD, #8A2BE2, #FF69B4)');
         document.querySelectorAll('.sidebar').forEach(s => s.style.background = '#16213E');
         document.querySelectorAll('.main-content').forEach(m => m.style.background = 'rgba(26, 26, 46, 0.8)');
+        document.querySelectorAll('.project-card, .announcement, .task').forEach(c => c.style.background = 'linear-gradient(135deg, #2D2D44, #3A3A5E)');
+        document.querySelectorAll('.feed, .notifications, .profile, .settings').forEach(f => f.style.background = 'linear-gradient(135deg, #2D2D44, #3A3A5E)');
+        document.querySelectorAll('.search-bar, .chat-input, .post-input, .task-input, .task-select').forEach(input => input.style.background = '#3A3A5E');
     }
 }
 
 function logout() {
     currentUser = null;
     localStorage.removeItem('currentUser'); // Clear persistent login
+    document.cookie = 'userToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; // Clear cookie
     document.getElementById('login').style.display = 'block';
     document.querySelector('.user-profile').src = 'assets/default-profile.jpg';
     projects = [];
@@ -492,6 +615,9 @@ function logout() {
     document.getElementById('tasks-1').innerHTML = '';
     document.getElementById('shared-list').innerHTML = '';
     document.getElementById('user-tasks').innerHTML = '';
+    document.getElementById('activity-feed').innerHTML = '';
+    document.getElementById('connection-list').innerHTML = '';
+    document.getElementById('chat-messages').innerHTML = '';
     document.getElementById('notification-list').innerHTML = '';
     document.getElementById('notifications').style.display = 'none';
     document.getElementById('profile').style.display = 'none';
@@ -499,27 +625,43 @@ function logout() {
     document.getElementById('home').style.display = 'block';
     document.getElementById('project-details').style.display = 'none';
     document.getElementById('tasks-page').style.display = 'none';
+    document.getElementById('feed').style.display = 'none';
+    document.getElementById('connections-page').style.display = 'none';
+    document.getElementById('chat').style.display = 'none';
+    fetch('http://localhost:3000/auth/logout', { method: 'POST' });
 }
 
 async function fetchUser(username) {
     try {
         const response = await fetch(`http://localhost:3000/users/${username}`);
-        return await response.json() || { profilePic: 'assets/default-profile.jpg', username };
+        return await response.json() || { profilePic: 'https://via.placeholder.com/30', username };
     } catch (error) {
         console.error('Error fetching user:', error);
-        return { profilePic: 'assets/default-profile.jpg', username };
+        return { profilePic: 'https://via.placeholder.com/30', username };
     }
 }
 
-function showNotification(message) {
-    const notificationList = document.getElementById('notification-list');
-    notificationList.innerHTML += `<li>${message}</li>`;
-    document.getElementById('notifications').style.display = 'block';
+async function fetchConnections() {
+    const response = await fetch(`http://localhost:3000/connections/${currentUser.username}`);
+    return await response.json() || [];
+}
+
+async function fetchActivities() {
+    const response = await fetch('http://localhost:3000/activities');
+    return await response.json() || [];
+}
+
+async function fetchNotifications() {
+    const response = await fetch(`http://localhost:3000/notifications/${currentUser.username}`);
+    return await response.json() || [];
 }
 
 // Load dashboard on page load, check for persistent login
 window.onload = () => {
-    if (currentUser) {
+    const token = document.cookie.match(/userToken=([^;]+)/)?.[1];
+    if (token) {
+        currentUser = JSON.parse(decodeURIComponent(token));
+        localStorage.setItem('currentUser', JSON.stringify(currentUser)); // Sync localStorage
         document.getElementById('login').style.display = 'none';
         document.querySelector('.user-profile').src = currentUser.profilePic || 'assets/default-profile.jpg';
         loadUserDashboard();
