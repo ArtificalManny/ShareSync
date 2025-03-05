@@ -29,7 +29,7 @@ socket.on('newTask', (data) => {
 socket.on('chatMessage', (data) => {
     if (data.projectId === selectedProjectId) {
         const chatMessages = document.getElementById('chat-messages');
-        chatMessages.innerHTML += `<p><img src="${data.user.profilePic || 'assets/default-profile.jpg'}" alt="${data.user.username}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${data.user.username}</strong>: ${data.message}</p>`;
+        chatMessages.innerHTML += `<p><img src="${data.user.profilePic || 'https://via.placeholder.com/30'}" alt="${data.user.username}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${data.user.username}</strong>: ${data.message}</p>`;
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 });
@@ -272,19 +272,31 @@ async function renderAnnouncements(projectId) {
         const project = projects.find(p => p.id === projectId);
         if (!project) return;
         const announcementsDiv = document.getElementById(`announcements-${projectId}`);
+        announcementsDiv.innerHTML = '<div class="loading">Loading...</div>';
         announcementsDiv.innerHTML = project.announcements.map(ann => {
             const user = await fetchUser(ann.user);
             return `
-                <div class="announcement">
-                    <p><img src="${user.profilePic || 'https://via.placeholder.com/30'}" alt="${ann.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${ann.user || 'Anonymous'}</strong>: ${ann.content || ''}</p>
-                    ${ann.media ? `<img src="${ann.media}" alt="Media" style="max-width: 200px;">` : ''}
-                    <button class="button-primary" onclick="likeAnnouncement(${ann.id}, ${projectId})">Like (${ann.likes || 0})</button>
-                    <div class="comments">${(ann.comments || []).map(c => {
-                        const commentUser = await fetchUser(c.user);
-                        return `<p><img src="${commentUser.profilePic || 'https://via.placeholder.com/30'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
-                    }).join('')}</div>
-                    <input type="text" id="comment-${ann.id}" placeholder="Add comment" class="post-input">
-                    <button class="button-primary" onclick="addComment(${ann.id}, ${projectId})">Comment</button>
+                <div class="announcement facebook-post-style">
+                    <div class="user-info">
+                        <img src="${user.profilePic || 'https://via.placeholder.com/40'}" alt="${ann.user}" style="width: 40px; border-radius: 50%;">
+                        <strong>${ann.user || 'Anonymous'}</strong>
+                    </div>
+                    <div class="content">
+                        <p>${ann.content || ''}</p>
+                        ${ann.media ? `<img src="${ann.media}" alt="Media" style="max-width: 100%; border-radius: 4px;">` : ''}
+                    </div>
+                    <div class="actions">
+                        <button class="button-primary" onclick="likeAnnouncement(${ann.id}, ${projectId})">Like (${ann.likes || 0})</button>
+                        <button class="button-primary" onclick="addCommentForm(${ann.id}, ${projectId})">Comment</button>
+                    </div>
+                    <div class="comments">
+                        ${(ann.comments || []).map(c => {
+                            const commentUser = await fetchUser(c.user);
+                            return `<p><img src="${commentUser.profilePic || 'https://via.placeholder.com/30'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
+                        }).join('')}
+                        <input type="text" id="comment-${ann.id}" placeholder="Add comment" class="post-input" style="display: none;">
+                        <button class="button-primary" id="comment-btn-${ann.id}" style="display: none;" onclick="addComment(${ann.id}, ${projectId})">Post Comment</button>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -293,11 +305,24 @@ async function renderAnnouncements(projectId) {
     }
 }
 
+function addCommentForm(annId, projectId) {
+    const input = document.getElementById(`comment-${annId}`);
+    const btn = document.getElementById(`comment-btn-${annId}`);
+    if (input.style.display === 'none') {
+        input.style.display = 'block';
+        btn.style.display = 'inline-block';
+    } else {
+        input.style.display = 'none';
+        btn.style.display = 'none';
+    }
+}
+
 async function renderTasks(projectId) {
     try {
         const project = projects.find(p => p.id === projectId);
         if (!project) return;
         const tasksDiv = document.getElementById(`tasks-${projectId}`);
+        tasksDiv.innerHTML = '<div class="loading">Loading...</div>';
         tasksDiv.innerHTML = project.tasks.map(task => {
             const user = await fetchUser(task.user);
             const assignee = await fetchUser(task.assignee);
@@ -377,8 +402,14 @@ async function showGlobalFeed() {
     try {
         const activities = await fetchActivities();
         feedDiv.innerHTML = activities.map(activity => `
-            <div class="announcement">
-                <p><img src="${activity.user.profilePic || 'https://via.placeholder.com/30'}" alt="${activity.user.username}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${activity.user.username}</strong>: ${activity.message} (${new Date(activity.timestamp).toLocaleTimeString()})</p>
+            <div class="announcement facebook-post-style">
+                <div class="user-info">
+                    <img src="${activity.user.profilePic || 'https://via.placeholder.com/40'}" alt="${activity.user.username}" style="width: 40px; border-radius: 50%;">
+                    <strong>${activity.user.username}</strong>
+                </div>
+                <div class="content">
+                    <p>${activity.message} (${new Date(activity.timestamp).toLocaleTimeString()})</p>
+                </div>
             </div>
         `).join('');
         document.getElementById('home').style.display = 'none';
@@ -423,14 +454,15 @@ function showChat(projectId) {
         return;
     }
     selectedProjectId = projectId;
-    document.getElementById('chat-messages').innerHTML = '<div class="loading">Loading...</div>';
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.innerHTML = '<div class="loading">Loading...</div>';
     document.getElementById('home').style.display = 'none';
     document.getElementById('project-details').style.display = 'none';
     document.getElementById('tasks-page').style.display = 'none';
     document.getElementById('feed').style.display = 'none';
     document.getElementById('connections-page').style.display = 'none';
     document.getElementById('chat').style.display = 'block';
-    document.getElementById('chat-messages').innerHTML = ''; // Clear loading after initial render
+    chatMessages.innerHTML = ''; // Clear loading after initial render
 }
 
 function sendChatMessage(projectId) {
@@ -476,6 +508,8 @@ async function addComment(annId, projectId) {
             const projectIndex = projects.findIndex(p => p.id === projectId);
             if (projectIndex !== -1) projects[projectIndex] = updatedProject;
             document.getElementById(`comment-${annId}`).value = '';
+            document.getElementById(`comment-${annId}`).style.display = 'none';
+            document.getElementById(`comment-btn-${annId}`).style.display = 'none';
             renderAnnouncements(projectId);
             showNotification(`You commented on an announcement in Project ${updatedProject.name}`);
         } catch (error) {
@@ -588,18 +622,32 @@ function toggleTheme() {
         document.querySelectorAll('.button-primary').forEach(btn => btn.style.background = 'linear-gradient(45deg, #4CAF50, #2E7D32)');
         document.querySelectorAll('.sidebar').forEach(s => s.style.background = '#F5F5F5');
         document.querySelectorAll('.main-content').forEach(m => m.style.background = 'rgba(245, 245, 245, 0.8)');
-        document.querySelectorAll('.project-card, .announcement, .task').forEach(c => c.style.background = '#FFFFFF');
+        document.querySelectorAll('.project-card, .task').forEach(c => c.style.background = '#FFFFFF');
         document.querySelectorAll('.feed, .notifications, .profile, .settings').forEach(f => f.style.background = '#F5F5F5');
         document.querySelectorAll('.search-bar, .chat-input, .post-input, .task-input, .task-select').forEach(input => input.style.background = '#E0E0E0');
+        document.querySelectorAll('.facebook-post-style').forEach(post => {
+            post.style.background = '#F5F5F5';
+            post.style.color = '#000000';
+            post.style.border = '1px solid #3B5998';
+            post.querySelectorAll('.content, .comments').forEach(section => section.style.background = '#E9E9E9');
+            post.querySelectorAll('.actions button').forEach(btn => btn.style.background = '#3B5998');
+        });
     } else {
         body.style.background = 'linear-gradient(135deg, #1A1A2E, #16213E)';
         body.style.color = '#FFFFFF';
         document.querySelectorAll('.button-primary').forEach(btn => btn.style.background = 'linear-gradient(45deg, #6A5ACD, #8A2BE2, #FF69B4)');
         document.querySelectorAll('.sidebar').forEach(s => s.style.background = '#16213E');
         document.querySelectorAll('.main-content').forEach(m => m.style.background = 'rgba(26, 26, 46, 0.8)');
-        document.querySelectorAll('.project-card, .announcement, .task').forEach(c => c.style.background = 'linear-gradient(135deg, #2D2D44, #3A3A5E)');
+        document.querySelectorAll('.project-card, .task').forEach(c => c.style.background = 'linear-gradient(135deg, #2D2D44, #3A3A5E)');
         document.querySelectorAll('.feed, .notifications, .profile, .settings').forEach(f => f.style.background = 'linear-gradient(135deg, #2D2D44, #3A3A5E)');
         document.querySelectorAll('.search-bar, .chat-input, .post-input, .task-input, .task-select').forEach(input => input.style.background = '#3A3A5E');
+        document.querySelectorAll('.facebook-post-style').forEach(post => {
+            post.style.background = '#1A2A3B';
+            post.style.color = '#FFFFFF';
+            post.style.border = '1px solid #3B5998';
+            post.querySelectorAll('.content, .comments').forEach(section => section.style.background = '#2E4868');
+            post.querySelectorAll('.actions button').forEach(btn => btn.style.background = '#3B5998');
+        });
     }
 }
 
