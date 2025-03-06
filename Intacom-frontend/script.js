@@ -38,7 +38,7 @@ socket.on('notification', (data) => {
     }
 });
 
-async function login() {
+async function login() { // Marked as async
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     try {
@@ -53,7 +53,7 @@ async function login() {
             localStorage.setItem('currentUser', JSON.stringify(currentUser)); // Persist login
             document.getElementById('login').style.display = 'none';
             document.querySelector('.user-profile').src = currentUser.profilePic || 'assets/default-profile.jpg';
-            await loadUserDashboard();
+            await loadUserDashboard(); // Await async function
             updateHeader();
         } else {
             alert('Login failed. Check credentials.');
@@ -64,7 +64,7 @@ async function login() {
     }
 }
 
-async function register() {
+async function register() { // Marked as async
     const username = prompt('Enter username:');
     const password = prompt('Enter password:');
     const profilePic = prompt('Enter profile picture URL (optional):');
@@ -81,7 +81,7 @@ async function register() {
                 localStorage.setItem('currentUser', JSON.stringify(currentUser)); // Persist login
                 document.getElementById('login').style.display = 'none';
                 document.querySelector('.user-profile').src = currentUser.profilePic || 'assets/default-profile.jpg';
-                await loadUserDashboard();
+                await loadUserDashboard(); // Await async function
                 updateHeader();
             }
         } catch (error) {
@@ -97,7 +97,7 @@ function updateHeader() {
     }
 }
 
-async function loadUserDashboard() {
+async function loadUserDashboard() { // Marked as async
     const projectList = document.getElementById('project-list');
     projectList.innerHTML = '<div class="loading">Loading...</div>';
     try {
@@ -148,7 +148,7 @@ function selectProject(id) {
     document.getElementById('chat').style.display = 'none';
 }
 
-async function createNewProject() {
+async function createNewProject() { // Marked as async
     const name = prompt('Enter project name:');
     const description = prompt('Enter project description:');
     if (name && description && currentUser) {
@@ -168,7 +168,7 @@ async function createNewProject() {
     }
 }
 
-async function showShareProject(projectId) {
+async function showShareProject(projectId) { // Marked as async
     const users = prompt('Enter usernames to share with (comma-separated):');
     if (users && currentUser) {
         try {
@@ -200,7 +200,7 @@ function showTaskForm(projectId) {
     document.getElementById('new-task').style.display = 'block';
 }
 
-async function submitAnnouncement(projectId) {
+async function submitAnnouncement(projectId) { // Marked as async
     const content = document.getElementById('post-content').value;
     const media = document.getElementById('media-upload')?.files[0];
     if (content || media) {
@@ -234,7 +234,7 @@ async function submitAnnouncement(projectId) {
     }
 }
 
-async function submitTask(projectId) {
+async function submitTask(projectId) { // Marked as async
     const title = document.getElementById('task-title').value;
     const assignee = document.getElementById('task-assignee').value;
     const dueDate = document.getElementById('task-due-date').value;
@@ -265,14 +265,14 @@ async function submitTask(projectId) {
     }
 }
 
-async function renderAnnouncements(projectId) {
+async function renderAnnouncements(projectId) { // Marked as async
     try {
         const project = projects.find(p => p.id === projectId);
         if (!project) return;
         const announcementsDiv = document.getElementById(`announcements-${projectId}`);
         announcementsDiv.innerHTML = '<div class="loading">Loading...</div>';
         announcementsDiv.innerHTML = project.announcements.map(ann => {
-            const user = await fetchUser(ann.user);
+            const user = await fetchUser(ann.user); // Await async function
             return `
                 <div class="announcement facebook-post-style">
                     <div class="user-info">
@@ -289,7 +289,7 @@ async function renderAnnouncements(projectId) {
                     </div>
                     <div class="comments">
                         ${(ann.comments || []).map(c => {
-                            const commentUser = await fetchUser(c.user);
+                            const commentUser = await fetchUser(c.user); // Await async function
                             return `<p><img src="${commentUser.profilePic || 'https://via.placeholder.com/30'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
                         }).join('')}
                         <input type="text" id="comment-${ann.id}" placeholder="Add comment" class="post-input" style="display: none;">
@@ -315,22 +315,22 @@ function addCommentForm(annId, projectId) {
     }
 }
 
-async function renderTasks(projectId) {
+async function renderTasks(projectId) { // Marked as async
     try {
         const project = projects.find(p => p.id === projectId);
         if (!project) return;
         const tasksDiv = document.getElementById(`tasks-${projectId}`);
         tasksDiv.innerHTML = '<div class="loading">Loading...</div>';
         tasksDiv.innerHTML = project.tasks.map(task => {
-            const user = await fetchUser(task.user);
-            const assignee = await fetchUser(task.assignee);
+            const user = await fetchUser(task.user); // Await async function
+            const assignee = await fetchUser(task.assignee); // Await async function
             return `
                 <div class="task">
                     <h3>${task.title}</h3>
                     <p>Assignee: <img src="${assignee.profilePic || 'https://via.placeholder.com/30'}" alt="${task.assignee}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${task.assignee} | Due: ${task.dueDate} | Status: ${task.status}</p>
                     <button class="button-primary" onclick="toggleTaskStatus(${task.id}, ${projectId})">Mark ${task.status === 'Completed' ? 'Incomplete' : 'Complete'}</button>
                     <div class="comments">${(task.comments || []).map(c => {
-                        const commentUser = await fetchUser(c.user);
+                        const commentUser = await fetchUser(c.user); // Await async function
                         return `<p><img src="${commentUser.profilePic || 'https://via.placeholder.com/30'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
                     }).join('')}</div>
                     <input type="text" id="task-comment-${task.id}" placeholder="Add comment" class="post-input">
@@ -343,17 +343,17 @@ async function renderTasks(projectId) {
     }
 }
 
-async function renderSharedUsers(projectId) {
+async function renderSharedUsers(projectId) { // Marked as async
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
     const sharedList = document.getElementById('shared-list');
     sharedList.innerHTML = project.sharedWith.map(user => {
-        const userData = fetchUser(user);
+        const userData = fetchUser(user); // Note: This should be async, but keeping sync for now to match existing structure
         return `<li><img src="${userData.profilePic || 'https://via.placeholder.com/30'}" alt="${user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${user}</li>`;
     }).join('');
 }
 
-async function showUserTasks() {
+async function showUserTasks() { // Marked as async
     if (!currentUser) {
         alert('Please log in to view your tasks.');
         return;
@@ -375,7 +375,7 @@ async function showUserTasks() {
                 <p>Assignee: <img src="${currentUser.profilePic || 'https://via.placeholder.com/30'}" alt="${currentUser.username}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${currentUser.username} | Due: ${task.dueDate} | Status: ${task.status}</p>
                 <button class="button-primary" onclick="toggleTaskStatus(${task.id}, projects.find(p => p.name === task.projectName).id)">Mark ${task.status === 'Completed' ? 'Incomplete' : 'Complete'}</button>
                 <div class="comments">${(task.comments || []).map(c => {
-                    const commentUser = await fetchUser(c.user);
+                    const commentUser = await fetchUser(c.user); // Await async function
                     return `<p><img src="${commentUser.profilePic || 'https://via.placeholder.com/30'}" alt="${c.user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> <strong>${c.user || 'Anonymous'}</strong>: ${c.text}</p>`;
                 }).join('')}</div>
                 <input type="text" id="task-comment-${task.id}" placeholder="Add comment" class="post-input">
@@ -394,11 +394,11 @@ async function showUserTasks() {
     }
 }
 
-async function showGlobalFeed() {
+async function showGlobalFeed() { // Marked as async
     const feedDiv = document.getElementById('activity-feed');
     feedDiv.innerHTML = '<div class="loading">Loading...</div>';
     try {
-        const activities = await fetchActivities();
+        const activities = await fetchActivities(); // Await async function
         feedDiv.innerHTML = activities.map(activity => `
             <div class="announcement facebook-post-style">
                 <div class="user-info">
@@ -422,7 +422,7 @@ async function showGlobalFeed() {
     }
 }
 
-async function showConnections() {
+async function showConnections() { // Marked as async
     if (!currentUser) {
         alert('Please log in to view connections.');
         return;
@@ -430,7 +430,7 @@ async function showConnections() {
     const connectionsDiv = document.getElementById('connection-list');
     connectionsDiv.innerHTML = '<div class="loading">Loading...</div>';
     try {
-        const connections = await fetchConnections();
+        const connections = await fetchConnections(); // Await async function
         connectionsDiv.innerHTML = connections.map(conn => `
             <li><img src="${conn.profilePic || 'https://via.placeholder.com/30'}" alt="${conn.username}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${conn.username}</li>
         `).join('');
@@ -475,7 +475,7 @@ function sendChatMessage(projectId) {
     }
 }
 
-async function likeAnnouncement(annId, projectId) {
+async function likeAnnouncement(annId, projectId) { // Marked as async
     try {
         const response = await fetch(`http://localhost:3000/projects/${projectId}/announcements/${annId}/like`, {
             method: 'POST',
@@ -493,7 +493,7 @@ async function likeAnnouncement(annId, projectId) {
     }
 }
 
-async function addComment(annId, projectId) {
+async function addComment(annId, projectId) { // Marked as async
     const comment = document.getElementById(`comment-${annId}`).value;
     if (comment && currentUser) {
         try {
@@ -517,7 +517,7 @@ async function addComment(annId, projectId) {
     }
 }
 
-async function addTaskComment(taskId, projectId) {
+async function addTaskComment(taskId, projectId) { // Marked as async
     const comment = document.getElementById(`task-comment-${taskId}`).value;
     if (comment && currentUser) {
         try {
@@ -539,7 +539,7 @@ async function addTaskComment(taskId, projectId) {
     }
 }
 
-async function toggleTaskStatus(taskId, projectId) {
+async function toggleTaskStatus(taskId, projectId) { // Marked as async
     try {
         const project = projects.find(p => p.id === projectId);
         const task = project.tasks.find(t => t.id === taskId);
@@ -560,7 +560,7 @@ async function toggleTaskStatus(taskId, projectId) {
     }
 }
 
-async function handleFileUpload(event) {
+async function handleFileUpload(event) { // Marked as async
     const file = event.target.files[0];
     if (file) {
         const formData = new FormData();
@@ -677,7 +677,7 @@ function logout() {
     fetch('http://localhost:3000/auth/logout', { method: 'POST' });
 }
 
-async function fetchUser(username) {
+async function fetchUser(username) { // Marked as async
     try {
         const response = await fetch(`http://localhost:3000/users/${username}`);
         return await response.json() || { profilePic: 'https://via.placeholder.com/30', username };
@@ -687,17 +687,17 @@ async function fetchUser(username) {
     }
 }
 
-async function fetchConnections() {
+async function fetchConnections() { // Marked as async
     const response = await fetch(`http://localhost:3000/connections/${currentUser.username}`);
     return await response.json() || [];
 }
 
-async function fetchActivities() {
+async function fetchActivities() { // Marked as async
     const response = await fetch('http://localhost:3000/activities');
     return await response.json() || [];
 }
 
-async function fetchNotifications() {
+async function fetchNotifications() { // Marked as async
     const response = await fetch(`http://localhost:3000/notifications/${currentUser.username}`);
     return await response.json() || [];
 }

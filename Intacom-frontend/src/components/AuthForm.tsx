@@ -1,67 +1,72 @@
-import React, { useState } from 'react';
+import React, { FormEvent, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { login, register } from '../services/api';
 
-interface AuthFormProps {
-  onSubmit: (data: any) => Promise<void>;
-  isLogin: boolean;
-}
-
-const AuthForm: React.FC<AuthFormProps> = ({ onSubmit, isLogin }) => {
+export const AuthForm: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [profilePic, setProfilePic] = useState<File | null>(null);
-  const [error, setError] = useState('');
+  const [profilePic, setProfilePic] = useState<string | undefined>(undefined);
+  const { login, register } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      if (isLogin) {
-        await onSubmit({ username, password });
-      } else {
-        const formData = new FormData();
-        formData.append('username', username);
-        formData.append('password', password);
-        if (profilePic) formData.append('profilePic', profilePic);
-        await onSubmit(formData);
-      }
-    } catch (err) {
-      setError(err.response?.data?.error || 'An error occurred');
+      await login(username, password);
+    } catch (err: any) { // Type 'any' for simplicity, or use specific error type if available
+      console.error('Login error:', err.message);
+      alert('Login failed: ' + err.message);
+    }
+  };
+
+  const handleRegister = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      await register(username, password, profilePic);
+    } catch (err: any) { // Type 'any' for simplicity
+      console.error('Registration error:', err.message);
+      alert('Registration failed: ' + err.message);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-6 bg-white rounded shadow">
-      <h2 className="text-xl font-bold mb-4">{isLogin ? 'Login' : 'Register'}</h2>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <input
-        type="text"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Username"
-        className="w-full p-2 mb-4 border rounded"
-        required
-      />
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-        className="w-full p-2 mb-4 border rounded"
-        required
-      />
-      {!isLogin && (
+    <div id="login" style={{ display: 'block' }}>
+      <form onSubmit={handleLogin}>
         <input
-          type="file"
-          onChange={(e) => setProfilePic(e.target.files?.[0] || null)}
-          className="w-full p-2 mb-4 border rounded"
+          type="text"
+          id="username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Username"
         />
-      )}
-      <button type="submit" className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-        {isLogin ? 'Login' : 'Register'}
-      </button>
-    </form>
+        <input
+          type="password"
+          id="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+        />
+        <button type="submit" className="button-primary">Login</button>
+      </form>
+      <form onSubmit={handleRegister}>
+        <input
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Username"
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+        />
+        <input
+          type="url"
+          value={profilePic || ''}
+          onChange={(e) => setProfilePic(e.target.value || undefined)}
+          placeholder="Profile Picture URL (optional)"
+        />
+        <button type="submit" className="button-primary">Register</button>
+      </form>
+    </div>
   );
 };
-
-export default AuthForm;
