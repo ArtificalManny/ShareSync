@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from '../../models/user.model';
+import { User } from '../../../models/user.model'; // Updated path
+import * as bcrypt from 'bcrypt'; // Explicit import for bcrypt
 
 @Injectable()
 export class AuthService {

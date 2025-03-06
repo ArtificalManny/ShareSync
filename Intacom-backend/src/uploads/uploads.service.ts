@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import * as multer from 'multer';
+import * as multer from 'multer'; // Updated import for multer
 import { S3 } from 'aws-sdk';
+import { Request, Response } from 'express'; // Added for type safety
 
 @Injectable()
 export class UploadService {
   private upload = multer({ storage: multer.memoryStorage() });
 
-  uploadFile(req, res) {
+  uploadFile(req: Request, res: Response) {
     this.upload.single('file')(req, res, (err: any) => {
       if (err) {
         console.error(err);
@@ -18,14 +19,14 @@ export class UploadService {
       }
 
       const s3 = new S3({
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        region: process.env.AWS_REGION,
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        region: process.env.AWS_REGION!,
       });
 
       const fileName = `${Date.now()}-${file.originalname}`;
       const params = {
-        Bucket: process.env.S3_BUCKET,
+        Bucket: process.env.S3_BUCKET!, // Non-null assertion operator
         Key: fileName,
         Body: file.buffer,
         ContentType: file.mimetype,
