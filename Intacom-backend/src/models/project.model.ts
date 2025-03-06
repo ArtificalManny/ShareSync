@@ -1,40 +1,47 @@
-import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 
-@Schema()
-export class Project extends Document {
-  @Prop({ required: true })
-  name!: string; // Use ! to indicate it will be assigned
-
-  @Prop({ required: true })
-  description!: string; // Use ! to indicate it will be assigned
-
-  @Prop({ required: true })
-  admin!: string; // Use ! to indicate it will be assigned
-
-  @Prop()
-  sharedWith?: string[]; // Optional with ?
-
-  @Prop()
-  announcements?: {
-    id: number;
+export interface Project extends Document {
+  name: string;
+  description: string;
+  admin: string;
+  sharedWith: string[];
+  announcements: {
     content: string;
-    media: string;
+    media?: string;
+    user: string;
     likes: number;
     comments: { user: string; text: string }[];
-    user: string;
-  }[]; // Optional with ?
-
-  @Prop()
-  tasks?: {
-    id: number;
+  }[];
+  tasks: {
     title: string;
     assignee: string;
     dueDate: Date;
     status: string;
-    comments: { user: string; text: string }[];
     user: string;
-  }[]; // Optional with ?
+    comments: { user: string; text: string }[];
+  }[];
 }
 
-export const ProjectSchema = SchemaFactory.createForClass(Project);
+const ProjectSchema = new Schema({
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  admin: { type: String, required: true },
+  sharedWith: [{ type: String }],
+  announcements: [{
+    content: String,
+    media: String,
+    user: String,
+    likes: { type: Number, default: 0 },
+    comments: [{ user: String, text: String }],
+  }],
+  tasks: [{
+    title: String,
+    assignee: String,
+    dueDate: Date,
+    status: { type: String, default: 'In Progress' },
+    user: String,
+    comments: [{ user: String, text: String }],
+  }],
+});
+
+export default model<Project>('Project', ProjectSchema);

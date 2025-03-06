@@ -1,16 +1,15 @@
-import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 
-@Schema()
-export class User extends Document {
-  @Prop({ required: true })
-  username!: string; // Use ! to indicate it will be assigned
-
-  @Prop({ required: true })
-  password!: string; // Use ! to indicate it will be assigned
-
-  @Prop()
-  profilePic?: string; // Optional with ?
+export interface User extends Document {
+  username: string;
+  password: string;
+  profilePic?: string;
 }
 
-export const UserSchema = SchemaFactory.createForClass(User);
+const UserSchema = new Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  profilePic: { type: String, required: false },
+});
+
+export default model<User>('User', UserSchema);
