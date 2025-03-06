@@ -1,5 +1,3 @@
-// script.js
-
 let projects = [];
 let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
 let selectedProjectId = 1;
