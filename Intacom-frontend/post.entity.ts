@@ -1,5 +1,4 @@
-// src/posts/post.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany } from 'typeorm';
 import { Project } from '../projects/project.entity';
 import { User } from '../users/user.entity';
 import { Comment } from '../comments/comment.entity';
@@ -7,33 +6,27 @@ import { Like } from '../likes/like.entity';
 
 @Entity()
 export class Post {
-  @PrimaryGeneratedColumn('uuid')
+  @Column({ primary: true, type: 'uuid' })
   id: string;
 
-  @ManyToOne(() => Project, (project) => project.posts, { onDelete: 'CASCADE' })
-  project: Project;
-
-  @ManyToOne(() => User, (user) => user.posts, { eager: true })
-  user: User;
-
-  @Column('text')
+  @Column()
   content: string;
 
   @Column({ nullable: true })
-  mediaImage: string;
+  media: string;
 
-  @Column({ nullable: true })
-  mediaVideo: string;
+  @ManyToOne(() => Project, (project) => project.posts)
+  project: Project;
 
-  @Column({ nullable: true })
-  mediaAudio: string;
+  @ManyToOne(() => User, (user) => user.posts)
+  user: User;
+
+  @Column()
+  createdAt: Date;
 
   @OneToMany(() => Comment, (comment) => comment.post)
   comments: Comment[];
 
   @OneToMany(() => Like, (like) => like.post)
   likes: Like[];
-
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date;
 }

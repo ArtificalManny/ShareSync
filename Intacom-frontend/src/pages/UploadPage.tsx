@@ -1,20 +1,20 @@
 import React from 'react';
-import UploadForm from '../components/UploadForm';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 
 const UploadPage: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-
-  if (!user) navigate('/login');
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="p-6 bg-white rounded shadow max-w-md">
-        <h1 className="text-2xl font-bold mb-4">Upload File</h1>
-        <UploadForm />
-      </div>
+    <div>
+      <h1>Upload</h1>
+      {user ? (
+        <form id="upload-form" onSubmit={(e) => { e.preventDefault(); handleFileUpload(e); }}>
+          <input type="file" id="media-upload" accept="image/*,video/*,audio/*,application/pdf" />
+          <button type="submit" className="button-primary">Upload</button>
+        </form>
+      ) : (
+        <p>Please log in to upload files.</p>
+      )}
     </div>
   );
 };

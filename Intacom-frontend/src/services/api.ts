@@ -1,43 +1,57 @@
 import axios, { AxiosResponse } from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
-
-export const api = axios.create({
-  baseURL: API_URL,
-  withCredentials: true, // For cookies (userToken)
+const api = axios.create({
+  baseURL: 'http://localhost:3000',
 });
 
-export const login = (username: string, password: string): Promise<AxiosResponse> =>
-  api.post('/auth/login', { username, password });
+export const login = async (username: string, password: string): Promise<AxiosResponse> => {
+  return api.post('/auth/login', { username, password });
+};
 
-export const register = (username: string, password: string, profilePic?: string): Promise<AxiosResponse> =>
-  api.post('/auth/register', { username, password, profilePic });
+export const register = async (username: string, password: string, profilePic?: string): Promise<AxiosResponse> => {
+  return api.post('/auth/register', { username, password, profilePic });
+};
 
-export const getProjects = (): Promise<AxiosResponse> => api.get('/projects');
+export const getProjects = async (): Promise<AxiosResponse> => {
+  return api.get('/projects');
+};
 
-export const createProject = (data: any): Promise<AxiosResponse> => api.post('/projects', data);
+export const createProject = async (name: string, description: string, admin: string, sharedWith: string[] = [], announcements: any[] = [], tasks: any[] = []): Promise<AxiosResponse> => {
+  return api.post('/projects', { name, description, admin, sharedWith, announcements, tasks });
+};
 
-export const shareProject = (projectId: string, users: string[]): Promise<AxiosResponse> =>
-  api.post(`/projects/${projectId}/share`, { users });
+export const shareProject = async (projectId: string, users: string[], admin: string): Promise<AxiosResponse> => {
+  return api.post(`/projects/${projectId}/share`, { users, admin });
+};
 
-export const addAnnouncement = (projectId: string, data: any): Promise<AxiosResponse> =>
-  api.post(`/projects/${projectId}/announcements`, data);
+export const addAnnouncement = async (projectId: string, content: string, media: string, user: string): Promise<AxiosResponse> => {
+  return api.post(`/projects/${projectId}/announcements`, { content, media, user });
+};
 
-export const addTask = (projectId: string, data: any): Promise<AxiosResponse> =>
-  api.post(`/projects/${projectId}/tasks`, data);
+export const addTask = async (projectId: string, title: string, assignee: string, dueDate: string, status: string, user: string): Promise<AxiosResponse> => {
+  return api.post(`/projects/${projectId}/tasks`, { title, assignee, dueDate, status, user });
+};
 
-export const likeAnnouncement = (projectId: string, annId: number): Promise<AxiosResponse> =>
-  api.post(`/projects/${projectId}/announcements/${annId}/like`);
+export const likeAnnouncement = async (projectId: string, annId: string, user: string): Promise<AxiosResponse> => {
+  return api.post(`/projects/${projectId}/announcements/${annId}/like`, { user });
+};
 
-export const addAnnouncementComment = (projectId: string, annId: number, text: string): Promise<AxiosResponse> =>
-  api.post(`/projects/${projectId}/announcements/${annId}/comments`, { text });
+export const addAnnouncementComment = async (projectId: string, annId: string, text: string, user: string): Promise<AxiosResponse> => {
+  return api.post(`/projects/${projectId}/announcements/${annId}/comments`, { text, user });
+};
 
-export const addTaskComment = (projectId: string, taskId: number, text: string): Promise<AxiosResponse> =>
-  api.post(`/projects/${projectId}/tasks/${taskId}/comments`, { text });
+export const addTaskComment = async (projectId: string, taskId: string, text: string, user: string): Promise<AxiosResponse> => {
+  return api.post(`/projects/${projectId}/tasks/${taskId}/comments`, { text, user });
+};
 
-export const updateTaskStatus = (projectId: string, taskId: number, status: string): Promise<AxiosResponse> =>
-  api.post(`/projects/${projectId}/tasks/${taskId}/status`, { status });
+export const updateTaskStatus = async (projectId: string, taskId: string, status: string, user: string): Promise<AxiosResponse> => {
+  return api.post(`/projects/${projectId}/tasks/${taskId}/status`, { status, user });
+};
 
-export const uploadFile = (formData: FormData): Promise<AxiosResponse> => api.post('/upload', formData, {
-  headers: { 'Content-Type': 'multipart/form-data' },
-});
+export const uploadFile = async (file: File): Promise<AxiosResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post('/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};

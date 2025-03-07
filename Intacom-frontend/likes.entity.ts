@@ -1,18 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
-import { Post } from '../posts/post.entity';
-import { User } from '../users/user.entity';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Post } from '../post.entity';
 
 @Entity()
-export class Like{
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+export class Like {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @ManyToOne(() => Post, (post) => post.likes, { onDelete: 'CASCADE' })
-    post: Post;
+  @Column()
+  user: string;
 
-    @ManyToOne(() => User, (user) => user.likes, { eager: true })
-    user: User;
+  @Column()
+  createdAt: Date;
 
-    @PrimaryGeneratedColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-    createdAt: Date;
+  @ManyToOne(() => Post, (post) => post.likes)
+  post: Post;
 }

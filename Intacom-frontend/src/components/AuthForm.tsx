@@ -11,7 +11,7 @@ export const AuthForm: React.FC = () => {
     e.preventDefault();
     try {
       await login(username, password);
-    } catch (err: any) { // Type 'any' for simplicity, or use specific error type if available
+    } catch (err: any) {
       console.error('Login error:', err.message);
       alert('Login failed: ' + err.message);
     }
@@ -21,7 +21,7 @@ export const AuthForm: React.FC = () => {
     e.preventDefault();
     try {
       await register(username, password, profilePic);
-    } catch (err: any) { // Type 'any' for simplicity
+    } catch (err: any) {
       console.error('Registration error:', err.message);
       alert('Registration failed: ' + err.message);
     }

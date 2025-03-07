@@ -347,10 +347,10 @@ async function renderSharedUsers(projectId) { // Marked as async
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
     const sharedList = document.getElementById('shared-list');
-    sharedList.innerHTML = project.sharedWith.map(user => {
-        const userData = fetchUser(user); // Note: This should be async, but keeping sync for now to match existing structure
+    sharedList.innerHTML = (await Promise.all(project.sharedWith.map(async user => {
+        const userData = await fetchUser(user); // Await async function
         return `<li><img src="${userData.profilePic || 'https://via.placeholder.com/30'}" alt="${user}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${user}</li>`;
-    }).join('');
+    }))).join('');
 }
 
 async function showUserTasks() { // Marked as async
@@ -369,7 +369,7 @@ async function showUserTasks() { // Marked as async
                 }
             });
         });
-        tasksDiv.innerHTML = userTasks.map(task => `
+        tasksDiv.innerHTML = (await Promise.all(userTasks.map(async task => `
             <div class="task">
                 <h3>${task.title} (Project: ${task.projectName})</h3>
                 <p>Assignee: <img src="${currentUser.profilePic || 'https://via.placeholder.com/30'}" alt="${currentUser.username}" style="width: 30px; border-radius: 50%; margin-right: 10px;"> ${currentUser.username} | Due: ${task.dueDate} | Status: ${task.status}</p>
@@ -381,7 +381,7 @@ async function showUserTasks() { // Marked as async
                 <input type="text" id="task-comment-${task.id}" placeholder="Add comment" class="post-input">
                 <button class="button-primary" onclick="addTaskComment(${task.id}, projects.find(p => p.name === task.projectName).id)">Comment</button>
             </div>
-        `).join('');
+        `))).join('');
         document.getElementById('home').style.display = 'none';
         document.getElementById('project-details').style.display = 'none';
         document.getElementById('tasks-page').style.display = 'block';
