@@ -19,12 +19,23 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    async register(username, password, profilePic) {
-        return this.authService.register(username, password, profilePic);
+    async register(username, password, profilePic, res) {
+        try {
+            const user = await this.authService.register(username, password, profilePic);
+            res.status(201).json({ user });
+        }
+        catch (error) {
+            res.status(400).json({ error: error.message });
+        }
     }
-    async login(username, password) {
-        const user = await this.authService.login(username, password);
-        return { user };
+    async login(username, password, res) {
+        try {
+            const user = await this.authService.login(username, password);
+            res.status(200).json({ user });
+        }
+        catch (error) {
+            res.status(401).json({ error: error.message });
+        }
     }
 };
 exports.AuthController = AuthController;
@@ -33,16 +44,18 @@ __decorate([
     __param(0, (0, common_1.Body)('username')),
     __param(1, (0, common_1.Body)('password')),
     __param(2, (0, common_1.Body)('profilePic')),
+    __param(3, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
     (0, common_1.Post)('login'),
     __param(0, (0, common_1.Body)('username')),
     __param(1, (0, common_1.Body)('password')),
+    __param(2, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 exports.AuthController = AuthController = __decorate([

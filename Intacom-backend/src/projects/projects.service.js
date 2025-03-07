@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const project_model_1 = require("../models/project.model");
+const uuid_1 = require("uuid");
 let ProjectsService = class ProjectsService {
     constructor(projectModel) {
         this.projectModel = projectModel;
@@ -43,14 +44,14 @@ let ProjectsService = class ProjectsService {
         const project = await this.projectModel.findById(projectId);
         if (!project)
             throw new Error('Project not found');
-        project.announcements.push({ content, media, user, likes: 0, comments: [] });
+        project.announcements.push({ id: (0, uuid_1.v4)(), content, media, user, likes: 0, comments: [] });
         return project.save();
     }
     async addTask(projectId, title, assignee, dueDate, status, user) {
         const project = await this.projectModel.findById(projectId);
         if (!project)
             throw new Error('Project not found');
-        project.tasks.push({ title, assignee, dueDate, status, user, comments: [] });
+        project.tasks.push({ id: (0, uuid_1.v4)(), title, assignee, dueDate, status, user, comments: [] });
         return project.save();
     }
     async likeAnnouncement(projectId, annId, user) {

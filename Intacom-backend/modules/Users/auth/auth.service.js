@@ -64,7 +64,7 @@ let AuthService = class AuthService {
     }
     async login(username, password) {
         const user = await this.userModel.findOne({ username });
-        if (!user || !await bcrypt.compare(password, user.password)) {
+        if (!user || !(await bcrypt.compare(password, user.password))) {
             throw new Error('Invalid credentials');
         }
         return user;

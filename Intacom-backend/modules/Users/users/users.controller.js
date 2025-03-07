@@ -14,82 +14,75 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
-const users_service_1 = require("./users.service");
-const platform_express_1 = require("@nestjs/platform-express");
-const uuid_1 = require("uuid");
+const multer_1 = require("multer");
 const path_1 = require("path");
+const platform_express_1 = require("@nestjs/platform-express");
 let UsersController = class UsersController {
-    constructor(usersService) {
-        this.usersService = usersService;
+    getProfile() {
+        return { message: 'Profile endpoint' };
     }
-    getProfile(req) {
-        return this.usersService.getUserProfile(req.user.userId);
+    updateProfile(updateUserDto) {
+        return { message: 'Profile updated' };
     }
-    updateProfile(updateUserDto, req) {
-        return this.usersService.updateUserProfile(req.user.userId, updateUserDto);
+    uploadProfileImage(file) {
+        return { message: 'Profile image uploaded', filePath: file.path };
     }
-    uploadProfileImage(file, req) {
-        return this.usersService.updateProfileImage(req.user.userId, file.filename);
-    }
-    uploadCoverImage(file, req) {
-        return this.usersService.updateCoverImage(req.user.userId, file.filename);
+    uploadCoverImage(file) {
+        return { message: 'Cover image uploaded', filePath: file.path };
     }
 };
 exports.UsersController = UsersController;
 __decorate([
-    UseGuards(JwtAuthGuard),
-    Get('profile'),
-    __param(0, Req()),
+    (0, common_1.Get)('profile'),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "getProfile", null);
 __decorate([
-    UseGuards(JwtAuthGuard),
-    Put('profile'),
+    (0, common_1.Put)('profile'),
     __param(0, (0, common_1.Body)()),
-    __param(1, Req()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "updateProfile", null);
 __decorate([
-    UseGuards(JwtAuthGuard),
-    (0, common_1.Post)('upload-profile-image'),
-    UseInterceptors((0, platform_express_1.FileInterceptor)('image', {
-        storage: diskStorage({
-            destination: './uploads/profile',
+    (0, common_1.Post)('profile-image'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
+        storage: (0, multer_1.diskStorage)({
+            destination: './uploads/profile-images',
             filename: (req, file, cb) => {
-                const filename = `${(0, uuid_1.v4)()}${(0, path_1.extname)(file.originalname)}`;
-                cb(null, filename);
+                const randomName = Array(32)
+                    .fill(null)
+                    .map(() => Math.round(Math.random() * 16).toString(16))
+                    .join('');
+                return cb(null, `${randomName}${(0, path_1.extname)(file.originalname)}`);
             },
         }),
     })),
-    __param(0, UploadedFile()),
-    __param(1, Req()),
+    __param(0, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "uploadProfileImage", null);
 __decorate([
-    UseGuards(JwtAuthGuard),
-    (0, common_1.Post)('upload-cover-image'),
-    UseInterceptors((0, platform_express_1.FileInterceptor)('image', {
-        storage: diskStorage({
-            destination: './uploads/cover',
+    (0, common_1.Post)('cover-image'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
+        storage: (0, multer_1.diskStorage)({
+            destination: './uploads/cover-images',
             filename: (req, file, cb) => {
-                const filename = `${(0, uuid_1.v4)()}${(0, path_1.extname)(file.originalname)}`;
-                cb(null, filename);
+                const randomName = Array(32)
+                    .fill(null)
+                    .map(() => Math.round(Math.random() * 16).toString(16))
+                    .join('');
+                return cb(null, `${randomName}${(0, path_1.extname)(file.originalname)}`);
             },
         }),
     })),
-    __param(0, UploadedFile()),
-    __param(1, Req()),
+    __param(0, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "uploadCoverImage", null);
 exports.UsersController = UsersController = __decorate([
-    (0, common_1.Controller)('users'),
-    __metadata("design:paramtypes", [users_service_1.UsersService])
+    (0, common_1.Controller)('users')
 ], UsersController);

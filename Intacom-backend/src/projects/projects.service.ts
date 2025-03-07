@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Project } from '../models/project.model';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class ProjectsService {
@@ -32,14 +33,14 @@ export class ProjectsService {
   async addAnnouncement(projectId: string, content: string, media: string, user: string): Promise<Project> {
     const project = await this.projectModel.findById(projectId);
     if (!project) throw new Error('Project not found');
-    project.announcements.push({ content, media, user, likes: 0, comments: [] });
+    project.announcements.push({ id: uuidv4(), content, media, user, likes: 0, comments: [] });
     return project.save();
   }
 
   async addTask(projectId: string, title: string, assignee: string, dueDate: Date, status: string, user: string): Promise<Project> {
     const project = await this.projectModel.findById(projectId);
     if (!project) throw new Error('Project not found');
-    project.tasks.push({ title, assignee, dueDate, status, user, comments: [] });
+    project.tasks.push({ id: uuidv4(), title, assignee, dueDate, status, user, comments: [] });
     return project.save();
   }
 

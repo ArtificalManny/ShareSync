@@ -1,58 +1,55 @@
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { JwtAuthGiuard } from '../auth/jwt-auth.guard';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { disksStorage } from 'multer';
-import { v4 as uuidv4 } from 'uuid';
+import { Controller, Get, Put, Body, Post, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
-
-  @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@Req() req) {
-    return this.usersService.getUserProfile(req.user.userId);
+  getProfile() {
+    return { message: 'Profile endpoint' };
   }
 
-  @UseGuards(JwtAuthGuard)
   @Put('profile')
-  updateProfile(@Body() updateUserDto: any, @Req() req) {
-    return this.usersService.updateUserProfile(req.user.userId, updateUserDto);
+  updateProfile(@Body() updateUserDto: any) {
+    return { message: 'Profile updated' };
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('upload-profile-image')
+  @Post('profile-image')
   @UseInterceptors(
-    FileInterceptor('image', {
+    FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads/profile',
-        filename: (req, file, cb) => {
-          const filename = `${uuidv4()}${extname(file.originalname)}`;
-          cb(null, filename);
+        destination: './uploads/profile-images',
+        filename: (req: any, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          return cb(null, `${randomName}${extname(file.originalname)}`);
         },
       }),
     }),
   )
-  uploadProfileImage(@UploadedFile() file, @Req() req) {
-    return this.usersService.updateProfileImage(req.user.userId, file.filename);
+  uploadProfileImage(@UploadedFile() file: Express.Multer.File) {
+    return { message: 'Profile image uploaded', filePath: file.path };
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('upload-cover-image')
+  @Post('cover-image')
   @UseInterceptors(
-    FileInterceptor('image', {
+    FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads/cover',
-        filename: (req, file, cb) => {
-          const filename = `${uuidv4()}${extname(file.originalname)}`;
-          cb(null, filename);
+        destination: './uploads/cover-images',
+        filename: (req: any, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          return cb(null, `${randomName}${extname(file.originalname)}`);
         },
       }),
     }),
   )
-  uploadCoverImage(@UploadedFile() file, @Req() req) {
-    return this.usersService.updateCoverImage(req.user.userId, file.filename);
+  uploadCoverImage(@UploadedFile() file: Express.Multer.File) {
+    return { message: 'Cover image uploaded', filePath: file.path };
   }
 }
