@@ -1,13 +1,7 @@
-import { Controller, Post, Req, Res } from '@nestjs/common';
-import { UploadsService } from './uploads.service';
-import { Request, Response } from 'express';
+import { Controller } from '@nestjs/common';
+import { UploadService } from './uploads.service';
 
 @Controller('upload')
 export class UploadsController {
-  constructor(private uploadsService: UploadsService) {}
-
-  @Post()
-  async uploadFile(@Req() req: Request, @Res() res: Response) {
-    await this.uploadsService.uploadFile(req, res);
-  }
+  constructor(private readonly uploadService: UploadService) {}
 }

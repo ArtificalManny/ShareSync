@@ -1,18 +1,58 @@
-import { Schema, model, Document } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
-export interface Project extends Document {
+@Schema()
+export class Project extends Document {
+  @Prop({ required: true })
   name: string;
+
+  @Prop({ required: true })
   description: string;
+
+  @Prop({ required: true })
   admin: string;
+
+  @Prop({ type: [String], default: [] })
   sharedWith: string[];
+
+  @Prop({
+    type: [
+      {
+        id: String,
+        content: String,
+        media: String,
+        user: String,
+        likes: Number,
+        comments: [{ user: String, text: String }],
+      },
+    ],
+    default: [],
+  })
   announcements: {
+    id: string;
     content: string;
     media?: string;
     user: string;
     likes: number;
     comments: { user: string; text: string }[];
   }[];
+
+  @Prop({
+    type: [
+      {
+        id: String,
+        title: String,
+        assignee: String,
+        dueDate: Date,
+        status: String,
+        user: String,
+        comments: [{ user: String, text: String }],
+      },
+    ],
+    default: [],
+  })
   tasks: {
+    id: string;
     title: string;
     assignee: string;
     dueDate: Date;
@@ -22,26 +62,4 @@ export interface Project extends Document {
   }[];
 }
 
-const ProjectSchema = new Schema({
-  name: { type: String, required: true },
-  description: { type: String, required: true },
-  admin: { type: String, required: true },
-  sharedWith: [{ type: String }],
-  announcements: [{
-    content: String,
-    media: String,
-    user: String,
-    likes: { type: Number, default: 0 },
-    comments: [{ user: String, text: String }],
-  }],
-  tasks: [{
-    title: String,
-    assignee: String,
-    dueDate: Date,
-    status: { type: String, default: 'In Progress' },
-    user: String,
-    comments: [{ user: String, text: String }],
-  }],
-});
-
-export default model<Project>('Project', ProjectSchema);
+export const ProjectSchema = SchemaFactory.createForClass(Project);

@@ -49,8 +49,8 @@ exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
-const user_model_1 = require("../../../models/user.model"); // Updated path
-const bcrypt = __importStar(require("bcrypt")); // Explicit import for bcrypt
+const user_model_1 = require("../../../models/user.model");
+const bcrypt = __importStar(require("bcrypt"));
 let AuthService = class AuthService {
     constructor(userModel) {
         this.userModel = userModel;

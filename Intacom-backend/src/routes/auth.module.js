@@ -9,9 +9,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
-const user_model_1 = require("../../../models/user.model"); // Updated path
-const auth_controller_1 = require("../modules/Users/auth/auth.controller"); // Updated path
-const auth_service_1 = require("../modules/Users/auth/auth.service"); // Updated path
+const user_model_1 = require("../models/user.model");
+const auth_controller_1 = require("../modules/Users/auth/auth.controller");
+const auth_service_1 = require("../modules/Users/auth/auth.service");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;

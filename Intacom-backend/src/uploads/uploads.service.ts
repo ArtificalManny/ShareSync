@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import * as multer from 'multer'; // Updated import for multer
+import multer from 'multer';
 import { S3 } from 'aws-sdk';
-import { Request, Response } from 'express'; // Added for type safety
+import { Request, Response } from 'express';
 
 @Injectable()
 export class UploadService {
@@ -26,13 +26,13 @@ export class UploadService {
 
       const fileName = `${Date.now()}-${file.originalname}`;
       const params = {
-        Bucket: process.env.S3_BUCKET!, // Non-null assertion operator
+        Bucket: process.env.S3_BUCKET!,
         Key: fileName,
         Body: file.buffer,
         ContentType: file.mimetype,
       };
 
-      s3.upload(params, (error: Error, data: any) => { // Added explicit types
+      s3.upload(params, (error: Error, data: any) => {
         if (error) {
           return res.status(500).json({ error: 'Upload to S3 failed' });
         }

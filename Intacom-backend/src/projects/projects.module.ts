@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Project, ProjectSchema } from '../../../models/project.model'; // Updated path
+import { Project, ProjectSchema } from '../models/project.model';
 import { ProjectsService } from './projects.service';
 
 @Module({

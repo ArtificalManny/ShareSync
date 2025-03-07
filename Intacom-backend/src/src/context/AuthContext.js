@@ -35,55 +35,54 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.useAuth = exports.AuthProvider = void 0;
 const react_1 = __importStar(require("react"));
-// Create the context
-const AuthContext = (0, react_1.createContext)({
-    user: null,
-    login: async () => { },
-    logout: () => { },
-});
+const AuthContext = (0, react_1.createContext)(undefined);
 const AuthProvider = ({ children }) => {
-    const [user, setUser] = (0, react_1.useState)(null);
-    // On app load, check if a token is saved and fetch user data
-    (0, react_1.useEffect)(() => {
-        const savedToken = localStorage.getItem('token');
-        if (savedToken) {
-            // Attempt to fetch user data with the token
-            fetchUserProfile(savedToken);
+    const login = async (username, password) => {
+        const response = await fetch('http://localhost:3000/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+        });
+        const data = await response.json();
+        if (data.user) {
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            window.location.reload();
         }
-    }, []);
-    // Fetch user profile from the backend using the stored token
-    const fetchUserProfile = async (token) => {
-        try {
-            const res = await fetch('http://localhost:3000/auth/me', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setUser(data);
-            }
-        }
-        catch (err) {
-            console.error(err);
-            // If there's an error, remove token, set user to null
-            localStorage.removeItem('token');
-            setUser(null);
+        else {
+            throw new Error('Login failed');
         }
     };
-    // Called after a successful login
-    const login = async (token) => {
-        localStorage.setItem('token', token);
-        await fetchUserProfile(token);
+    const register = async (username, password, profilePic) => {
+        const response = await fetch('http://localhost:3000/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, profilePic }),
+        });
+        const data = await response.json();
+        if (data) {
+            localStorage.setItem('currentUser', JSON.stringify(data));
+            window.location.reload();
+        }
+        else {
+            throw new Error('Registration failed');
+        }
     };
-    // Log out the user
     const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
+        localStorage.removeItem('currentUser');
+        document.cookie = 'userToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        window.location.reload();
     };
-    return (<AuthContext.Provider value={{ user, login, logout }}>
+    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    return (<AuthContext.Provider value={{ user, login, register, logout }}>
       {children}
     </AuthContext.Provider>);
 };
 exports.AuthProvider = AuthProvider;
-// A helper hook to use the AuthContext in other components
-const useAuth = () => (0, react_1.useContext)(AuthContext);
+const useAuth = () => {
+    const context = (0, react_1.useContext)(AuthContext);
+    if (!context)
+        throw new Error('useAuth must be used within an AuthProvider');
+    return context;
+};
 exports.useAuth = useAuth;
+exports.default = AuthContext;

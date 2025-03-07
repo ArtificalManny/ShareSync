@@ -16,7 +16,7 @@ exports.ProjectsService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
-const project_model_1 = require("../../../models/project.model"); // Updated path
+const project_model_1 = require("../models/project.model");
 let ProjectsService = class ProjectsService {
     constructor(projectModel) {
         this.projectModel = projectModel;

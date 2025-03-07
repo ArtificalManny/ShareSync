@@ -9,7 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
-const project_model_1 = require("../../../models/project.model"); // Updated path
+const project_model_1 = require("../models/project.model");
 const projects_service_1 = require("./projects.service");
 let ProjectsModule = class ProjectsModule {
 };
