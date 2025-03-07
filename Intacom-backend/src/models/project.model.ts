@@ -4,16 +4,16 @@ import { Document } from 'mongoose';
 @Schema()
 export class Project extends Document {
   @Prop({ required: true })
-  name: string;
+  name: string = '';
 
   @Prop({ required: true })
-  description: string;
+  description: string = '';
 
   @Prop({ required: true })
-  admin: string;
+  admin: string = '';
 
   @Prop({ type: [String], default: [] })
-  sharedWith: string[];
+  sharedWith: string[] = [];
 
   @Prop({
     type: [
@@ -35,7 +35,7 @@ export class Project extends Document {
     user: string;
     likes: number;
     comments: { user: string; text: string }[];
-  }[];
+  }[] = [];
 
   @Prop({
     type: [
@@ -59,7 +59,7 @@ export class Project extends Document {
     status: string;
     user: string;
     comments: { user: string; text: string }[];
-  }[];
+  }[] = [];
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

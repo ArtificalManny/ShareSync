@@ -7,13 +7,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 export class UsersController {
   @Get('profile')
   getProfile() {
-    // Implement profile retrieval logic
     return { message: 'Profile endpoint' };
   }
 
   @Put('profile')
   updateProfile(@Body() updateUserDto: any) {
-    // Implement profile update logic
     return { message: 'Profile updated' };
   }
 
@@ -22,7 +20,7 @@ export class UsersController {
     FileInterceptor('file', {
       storage: diskStorage({
         destination: './uploads/profile-images',
-        filename: (req, file, cb) => {
+        filename: (req: any, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
           const randomName = Array(32)
             .fill(null)
             .map(() => Math.round(Math.random() * 16).toString(16))
@@ -41,7 +39,7 @@ export class UsersController {
     FileInterceptor('file', {
       storage: diskStorage({
         destination: './uploads/cover-images',
-        filename: (req, file, cb) => {
+        filename: (req: any, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
           const randomName = Array(32)
             .fill(null)
             .map(() => Math.round(Math.random() * 16).toString(16))

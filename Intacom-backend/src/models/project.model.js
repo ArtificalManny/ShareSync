@@ -13,6 +13,15 @@ exports.ProjectSchema = exports.Project = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 let Project = class Project extends mongoose_2.Document {
+    constructor() {
+        super(...arguments);
+        this.name = '';
+        this.description = '';
+        this.admin = '';
+        this.sharedWith = [];
+        this.announcements = [];
+        this.tasks = [];
+    }
 };
 exports.Project = Project;
 __decorate([

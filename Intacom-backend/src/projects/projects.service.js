@@ -57,7 +57,7 @@ let ProjectsService = class ProjectsService {
         const project = await this.projectModel.findById(projectId);
         if (!project)
             throw new Error('Project not found');
-        const announcement = project.announcements.id(annId);
+        const announcement = project.announcements.find(a => a.id === annId);
         if (!announcement)
             throw new Error('Announcement not found');
         announcement.likes = (announcement.likes || 0) + 1;
@@ -67,7 +67,7 @@ let ProjectsService = class ProjectsService {
         const project = await this.projectModel.findById(projectId);
         if (!project)
             throw new Error('Project not found');
-        const announcement = project.announcements.id(annId);
+        const announcement = project.announcements.find(a => a.id === annId);
         if (!announcement)
             throw new Error('Announcement not found');
         announcement.comments.push({ user, text });
@@ -77,7 +77,7 @@ let ProjectsService = class ProjectsService {
         const project = await this.projectModel.findById(projectId);
         if (!project)
             throw new Error('Project not found');
-        const task = project.tasks.id(taskId);
+        const task = project.tasks.find(t => t.id === taskId);
         if (!task)
             throw new Error('Task not found');
         task.comments.push({ user, text });
@@ -87,7 +87,7 @@ let ProjectsService = class ProjectsService {
         const project = await this.projectModel.findById(projectId);
         if (!project)
             throw new Error('Project not found');
-        const task = project.tasks.id(taskId);
+        const task = project.tasks.find(t => t.id === taskId);
         if (!task)
             throw new Error('Task not found');
         task.status = status;

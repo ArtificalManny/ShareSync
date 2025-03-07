@@ -4,10 +4,10 @@ import { Document } from 'mongoose';
 @Schema()
 export class User extends Document {
   @Prop({ required: true, unique: true })
-  username: string;
+  username: string = '';
 
   @Prop({ required: true })
-  password: string;
+  password: string = '';
 
   @Prop()
   profilePic?: string;

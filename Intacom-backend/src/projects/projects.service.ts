@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Project, ProjectDocument } from '../models/project.model';
+import { Project } from '../models/project.model';
 
 @Injectable()
 export class ProjectsService {
-  constructor(@InjectModel(Project.name) private projectModel: Model<ProjectDocument>) {}
+  constructor(@InjectModel(Project.name) private projectModel: Model<Project>) {}
 
   async createProject(name: string, description: string, admin: string, sharedWith: string[] = [], announcements: any[] = [], tasks: any[] = []): Promise<Project> {
     const project = new this.projectModel({ name, description, admin, sharedWith, announcements, tasks });
@@ -46,7 +46,7 @@ export class ProjectsService {
   async likeAnnouncement(projectId: string, annId: string, user: string): Promise<Project> {
     const project = await this.projectModel.findById(projectId);
     if (!project) throw new Error('Project not found');
-    const announcement = project.announcements.id(annId);
+    const announcement = project.announcements.find(a => a.id === annId);
     if (!announcement) throw new Error('Announcement not found');
     announcement.likes = (announcement.likes || 0) + 1;
     return project.save();
@@ -55,7 +55,7 @@ export class ProjectsService {
   async addAnnouncementComment(projectId: string, annId: string, text: string, user: string): Promise<Project> {
     const project = await this.projectModel.findById(projectId);
     if (!project) throw new Error('Project not found');
-    const announcement = project.announcements.id(annId);
+    const announcement = project.announcements.find(a => a.id === annId);
     if (!announcement) throw new Error('Announcement not found');
     announcement.comments.push({ user, text });
     return project.save();
@@ -64,7 +64,7 @@ export class ProjectsService {
   async addTaskComment(projectId: string, taskId: string, text: string, user: string): Promise<Project> {
     const project = await this.projectModel.findById(projectId);
     if (!project) throw new Error('Project not found');
-    const task = project.tasks.id(taskId);
+    const task = project.tasks.find(t => t.id === taskId);
     if (!task) throw new Error('Task not found');
     task.comments.push({ user, text });
     return project.save();
@@ -73,7 +73,7 @@ export class ProjectsService {
   async updateTaskStatus(projectId: string, taskId: string, status: string, user: string): Promise<Project> {
     const project = await this.projectModel.findById(projectId);
     if (!project) throw new Error('Project not found');
-    const task = project.tasks.id(taskId);
+    const task = project.tasks.find(t => t.id === taskId);
     if (!task) throw new Error('Task not found');
     task.status = status;
     return project.save();
