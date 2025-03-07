@@ -21,8 +21,8 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.2",
-    "@types/bcrypt": "^5.0.2", // Added bcrypt types
-    "@types/multer": "^1.4.11", // Added multer types
+    "@types/bcrypt": "^5.0.2",
+    "@types/multer": "^1.4.11",
     "@types/node": "^20.14.2",
     "typescript": "^5.4.5"
   }

@@ -1,75 +1,65 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { User } from '../types/user';
 
-// Define the shape of your user object
-interface User {
-  id: string;
-  name: string;
-  profilePicture?: string;
-  // ...any other fields from your backend
-}
-
-// Define what our context will provide
-interface AuthContextProps {
+interface AuthContextType {
   user: User | null;
-  login: (token: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string, profilePic?: string) => Promise<void>;
   logout: () => void;
 }
 
-// Create the context
-const AuthContext = createContext<AuthContextProps>({
-  user: null,
-  login: async () => {},
-  logout: () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-
-  // On app load, check if a token is saved and fetch user data
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    if (savedToken) {
-      // Attempt to fetch user data with the token
-      fetchUserProfile(savedToken);
-    }
-  }, []);
-
-  // Fetch user profile from the backend using the stored token
-  const fetchUserProfile = async (token: string) => {
-    try {
-      const res = await fetch('http://localhost:3000/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data: User = await res.json();
-        setUser(data);
-      }
-    } catch (err) {
-      console.error(err);
-      // If there's an error, remove token, set user to null
-      localStorage.removeItem('token');
-      setUser(null);
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const login = async (username: string, password: string) => {
+    const response = await fetch('http://localhost:3000/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await response.json();
+    if (data.user) {
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
+      window.location.reload();
+    } else {
+      throw new Error('Login failed');
     }
   };
 
-  // Called after a successful login
-  const login = async (token: string) => {
-    localStorage.setItem('token', token);
-    await fetchUserProfile(token);
+  const register = async (username: string, password: string, profilePic?: string) => {
+    const response = await fetch('http://localhost:3000/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, profilePic }),
+    });
+    const data = await response.json();
+    if (data) {
+      localStorage.setItem('currentUser', JSON.stringify(data));
+      window.location.reload();
+    } else {
+      throw new Error('Registration failed');
+    }
   };
 
-  // Log out the user
   const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
+    localStorage.removeItem('currentUser');
+    document.cookie = 'userToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    window.location.reload();
   };
+
+  const user = JSON.parse(localStorage.getItem('currentUser') || 'null') as User | null;
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// A helper hook to use the AuthContext in other components
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
+};
+
+export default AuthContext;

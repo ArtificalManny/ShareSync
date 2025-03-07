@@ -32,7 +32,7 @@ export class UploadService {
         ContentType: file.mimetype,
       };
 
-      s3.upload(params, (error, data) => {
+      s3.upload(params, (error: Error, data: any) => { // Added explicit types
         if (error) {
           return res.status(500).json({ error: 'Upload to S3 failed' });
         }
