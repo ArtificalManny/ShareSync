@@ -54,12 +54,12 @@ let AuthService = class AuthService {
     constructor(userModel) {
         this.userModel = userModel;
     }
-    async register(username, password, profilePic) {
+    async register(username, password, email, name, age, profilePic) {
         const existingUser = await this.userModel.findOne({ username });
         if (existingUser)
             throw new Error('Username already exists');
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new this.userModel({ username, password: hashedPassword, profilePic });
+        const user = new this.userModel({ username, password: hashedPassword, email, name, age, profilePic });
         return user.save();
     }
     async login(username, password) {
@@ -71,6 +71,17 @@ let AuthService = class AuthService {
     }
     async findUser(username) {
         return this.userModel.findOne({ username });
+    }
+    async recoverPassword(email) {
+        const user = await this.userModel.findOne({ email });
+        if (!user)
+            throw new Error('Email not found');
+        const token = Math.random().toString(36).substring(2); // Temporary token
+        // In production, use a proper token generation and email service
+        user.resetToken = token;
+        user.resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour expiry
+        await user.save();
+        return token; // Send this token via email in a real system
     }
 };
 exports.AuthService = AuthService;
