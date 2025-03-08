@@ -12,6 +12,11 @@ const App: React.FC = () => {
   const [profilePic, setProfilePic] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [user, setUser] = useState(null);
+  const [showRecover, setShowRecover] = useState(false);
+  const [showReset, setShowReset] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryToken, setRecoveryToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,27 +51,31 @@ const App: React.FC = () => {
     navigate('/');
   };
 
-  const handleRecoverPassword = async () => {
+  const handleRecoverPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const response = await axios.get(`http://localhost:3000/auth/recover`, { params: { email } });
-      alert(response.data.message + ' (Token: ' + response.data.token + '). Check your email in a real system.');
+      const response = await axios.get(`http://localhost:3000/auth/recover`, { params: { email: recoveryEmail } });
+      alert(response.data.message + ' (Token: ' + response.data.token + '). Enter the token below.');
+      setShowRecover(false);
+      setShowReset(true);
     } catch (error) {
       console.error('Error:', error);
       alert(error.response?.data?.error || 'An error occurred');
     }
   };
 
-  const handleResetPassword = async () => {
-    const token = prompt('Enter your recovery token:');
-    const newPassword = prompt('Enter new password:');
-    if (token && newPassword) {
-      try {
-        const response = await axios.put(`http://localhost:3000/auth/reset`, { token, newPassword });
-        alert(response.data.message);
-      } catch (error) {
-        console.error('Error:', error);
-        alert(error.response?.data?.error || 'An error occurred');
-      }
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await axios.put(`http://localhost:3000/auth/reset`, { token: recoveryToken, newPassword });
+      alert(response.data.message);
+      setShowReset(false);
+      setRecoveryEmail('');
+      setRecoveryToken('');
+      setNewPassword('');
+    } catch (error) {
+      console.error('Error:', error);
+      alert(error.response?.data?.error || 'An error occurred');
     }
   };
 
@@ -154,14 +163,9 @@ const App: React.FC = () => {
             <button type="button" onClick={() => setIsLogin(!isLogin)}>
               Switch to {isLogin ? 'Register' : 'Login'}
             </button>
-            {!isLogin && (
-              <button type="button" onClick={handleRecoverPassword}>
-                Forgot Password?
-              </button>
-            )}
             {isLogin && (
-              <button type="button" onClick={handleResetPassword}>
-                Reset Password
+              <button type="button" onClick={() => setShowRecover(true)}>
+                Forgot Password?
               </button>
             )}
           </form>
@@ -171,6 +175,51 @@ const App: React.FC = () => {
             <p>Email: {user.email} | Age: {user.age}</p>
             {user.profilePic && <img src={user.profilePic} alt="Profile" style={{ maxWidth: '100px' }} />}
             <button onClick={handleLogout}>Logout</button>
+          </div>
+        )}
+        {showRecover && (
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)' }}>
+            <h3>Forgot Password</h3>
+            <form onSubmit={handleRecoverPassword}>
+              <label htmlFor="recoveryEmail">Email Address</label>
+              <input
+                id="recoveryEmail"
+                type="email"
+                value={recoveryEmail}
+                onChange={(e) => setRecoveryEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+              />
+              <button type="submit">Recover Password</button>
+              <button type="button" onClick={() => setShowRecover(false)}>Cancel</button>
+            </form>
+          </div>
+        )}
+        {showReset && (
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)' }}>
+            <h3>Reset Password</h3>
+            <form onSubmit={handleResetPassword}>
+              <label htmlFor="recoveryToken">Recovery Token</label>
+              <input
+                id="recoveryToken"
+                type="text"
+                value={recoveryToken}
+                onChange={(e) => setRecoveryToken(e.target.value)}
+                placeholder="Enter recovery token"
+                required
+              />
+              <label htmlFor="newPassword">New Password</label>
+              <input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+                required
+              />
+              <button type="submit">Reset Password</button>
+              <button type="button" onClick={() => setShowReset(false)}>Cancel</button>
+            </form>
           </div>
         )}
       </main>

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from '../../models/user.model'; // Adjusted path
+import { User } from '../../models/user.model';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -33,12 +33,11 @@ export class AuthService {
     const user = await this.userModel.findOne({ email });
     if (!user) throw new Error('Email not found');
 
-    const token = Math.random().toString(36).substring(2); // Temporary token
+    const token = Math.random().toString(36).substring(2);
     user.resetToken = token;
-    user.resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour expiry
+    user.resetTokenExpires = new Date(Date.now() + 3600000);
     await user.save();
 
-    // In production, send token via email (e.g., using nodemailer)
     return { message: 'Recovery token generated', token };
   }
 

@@ -76,11 +76,10 @@ let AuthService = class AuthService {
         const user = await this.userModel.findOne({ email });
         if (!user)
             throw new Error('Email not found');
-        const token = Math.random().toString(36).substring(2); // Temporary token
+        const token = Math.random().toString(36).substring(2);
         user.resetToken = token;
-        user.resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour expiry
+        user.resetTokenExpires = new Date(Date.now() + 3600000);
         await user.save();
-        // In production, send token via email (e.g., using nodemailer)
         return { message: 'Recovery token generated', token };
     }
     async resetPassword(token, newPassword) {
