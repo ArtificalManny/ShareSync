@@ -30,7 +30,7 @@ const UploadPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
       <h2>Upload File</h2>
       <form onSubmit={handleFileUpload}>
         <input type="file" onChange={handleFileChange} />

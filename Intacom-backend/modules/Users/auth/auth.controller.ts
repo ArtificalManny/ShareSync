@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, Get } from '@nestjs/common';
+import { Controller, Post, Body, Res, Get, Put } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
 
@@ -44,9 +44,23 @@ export class AuthController {
     @Body('email') email: string,
   ) {
     try {
-      const token = await this.authService.recoverPassword(email);
-      res.status(200).json({ message: 'Recovery token generated', token });
+      const { message, token } = await this.authService.recoverPassword(email);
+      res.status(200).json({ message, token });
       // In production, send token via email
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  @Put('reset')
+  async resetPassword(
+    @Res() res: Response,
+    @Body('token') token: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    try {
+      const user = await this.authService.resetPassword(token, newPassword);
+      res.status(200).json({ message: 'Password reset successful', user });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

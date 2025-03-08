@@ -39,7 +39,7 @@ const Projects: React.FC = () => {
   };
 
   return (
-    <div>
+    <div style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
       <h2>Projects</h2>
       <form onSubmit={handleCreateProject}>
         <input

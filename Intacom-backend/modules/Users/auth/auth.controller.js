@@ -39,9 +39,18 @@ let AuthController = class AuthController {
     }
     async recoverPassword(res, email) {
         try {
-            const token = await this.authService.recoverPassword(email);
-            res.status(200).json({ message: 'Recovery token generated', token });
+            const { message, token } = await this.authService.recoverPassword(email);
+            res.status(200).json({ message, token });
             // In production, send token via email
+        }
+        catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+    async resetPassword(res, token, newPassword) {
+        try {
+            const user = await this.authService.resetPassword(token, newPassword);
+            res.status(200).json({ message: 'Password reset successful', user });
         }
         catch (error) {
             res.status(400).json({ error: error.message });
@@ -79,6 +88,15 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "recoverPassword", null);
+__decorate([
+    (0, common_1.Put)('reset'),
+    __param(0, (0, common_1.Res)()),
+    __param(1, (0, common_1.Body)('token')),
+    __param(2, (0, common_1.Body)('newPassword')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

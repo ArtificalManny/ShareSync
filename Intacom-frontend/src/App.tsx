@@ -49,10 +49,24 @@ const App: React.FC = () => {
   const handleRecoverPassword = async () => {
     try {
       const response = await axios.get(`http://localhost:3000/auth/recover`, { params: { email } });
-      alert(response.data.message);
+      alert(response.data.message + ' (Token: ' + response.data.token + '). Check your email in a real system.');
     } catch (error) {
       console.error('Error:', error);
       alert(error.response?.data?.error || 'An error occurred');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const token = prompt('Enter your recovery token:');
+    const newPassword = prompt('Enter new password:');
+    if (token && newPassword) {
+      try {
+        const response = await axios.put(`http://localhost:3000/auth/reset`, { token, newPassword });
+        alert(response.data.message);
+      } catch (error) {
+        console.error('Error:', error);
+        alert(error.response?.data?.error || 'An error occurred');
+      }
     }
   };
 
@@ -77,7 +91,8 @@ const App: React.FC = () => {
       </nav>
       <main>
         {!user ? (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
+            <h2>{isLogin ? 'Login' : 'Register'}</h2>
             <label htmlFor="username">Username</label>
             <input
               id="username"
@@ -144,9 +159,14 @@ const App: React.FC = () => {
                 Forgot Password?
               </button>
             )}
+            {isLogin && (
+              <button type="button" onClick={handleResetPassword}>
+                Reset Password
+              </button>
+            )}
           </form>
         ) : (
-          <div>
+          <div style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
             <h2>Welcome, {user.name || user.username}!</h2>
             <p>Email: {user.email} | Age: {user.age}</p>
             {user.profilePic && <img src={user.profilePic} alt="Profile" style={{ maxWidth: '100px' }} />}

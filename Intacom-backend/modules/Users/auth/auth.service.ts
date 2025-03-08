@@ -29,14 +29,30 @@ export class AuthService {
     return this.userModel.findOne({ username });
   }
 
-  async recoverPassword(email: string): Promise<string> {
+  async recoverPassword(email: string): Promise<{ message: string; token: string }> {
     const user = await this.userModel.findOne({ email });
     if (!user) throw new Error('Email not found');
+
     const token = Math.random().toString(36).substring(2); // Temporary token
-    // In production, use a proper token generation and email service
     user.resetToken = token;
     user.resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour expiry
     await user.save();
-    return token; // Send this token via email in a real system
+
+    // In production, send token via email (e.g., using nodemailer)
+    return { message: 'Recovery token generated', token };
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<User> {
+    const user = await this.userModel.findOne({
+      resetToken: token,
+      resetTokenExpires: { $gt: new Date() },
+    });
+    if (!user) throw new Error('Invalid or expired token');
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.resetToken = undefined;
+    user.resetTokenExpires = undefined;
+    return user.save();
   }
 }
