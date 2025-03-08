@@ -19,7 +19,7 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    async register(username, password, profilePic, res) {
+    async register(res, username, password, profilePic) {
         try {
             const user = await this.authService.register(username, password, profilePic);
             res.status(201).json({ user });
@@ -28,7 +28,7 @@ let AuthController = class AuthController {
             res.status(400).json({ error: error.message });
         }
     }
-    async login(username, password, res) {
+    async login(res, username, password) {
         try {
             const user = await this.authService.login(username, password);
             res.status(200).json({ user });
@@ -41,21 +41,21 @@ let AuthController = class AuthController {
 exports.AuthController = AuthController;
 __decorate([
     (0, common_1.Post)('register'),
-    __param(0, (0, common_1.Body)('username')),
-    __param(1, (0, common_1.Body)('password')),
-    __param(2, (0, common_1.Body)('profilePic')),
-    __param(3, (0, common_1.Res)()),
+    __param(0, (0, common_1.Res)()),
+    __param(1, (0, common_1.Body)('username')),
+    __param(2, (0, common_1.Body)('password')),
+    __param(3, (0, common_1.Body)('profilePic')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, Object]),
+    __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
     (0, common_1.Post)('login'),
-    __param(0, (0, common_1.Body)('username')),
-    __param(1, (0, common_1.Body)('password')),
-    __param(2, (0, common_1.Res)()),
+    __param(0, (0, common_1.Res)()),
+    __param(1, (0, common_1.Body)('username')),
+    __param(2, (0, common_1.Body)('password')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 exports.AuthController = AuthController = __decorate([

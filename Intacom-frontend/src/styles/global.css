@@ -1,9 +1,39 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
+  color: #ffffff;
+  height: 100vh;
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "nav main"
+    "footer footer";
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 200px 1fr;
+}
 
-@layer components {
-  .btn-primary {
-    @apply bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2 rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-all;
-  }
+header {
+  grid-area: header;
+  background-color: #2a2a3e;
+  padding: 1rem;
+  text-align: center;
+}
+
+nav {
+  grid-area: nav;
+  background-color: #3a3a50;
+  padding: 1rem;
+}
+
+main {
+  grid-area: main;
+  padding: 1rem;
+}
+
+footer {
+  grid-area: footer;
+  background-color: #2a2a3e;
+  padding: 1rem;
+  text-align: center;
 }

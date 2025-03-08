@@ -1,5 +1,44 @@
-/* Placeholder for custom theme styles (e.g., colors, fonts) */
-:root {
-    --primary-color: #3b82f6;
-    --secondary-color: #9333ea;
+/* Futuristic cityscape background (using a gradient as a placeholder; replace with an image if desired) */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://example.com/futuristic-cityscape.jpg') no-repeat center center fixed; /* Replace with actual image URL */
+    background-size: cover;
+    opacity: 0.2;
+    z-index: -1;
+  }
+  
+  /* Purple accents (#6A5ACD) */
+  button {
+    background-color: #6A5ACD;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  
+  button:hover {
+    background-color: #5d4ab1;
+  }
+  
+  input {
+    background-color: #2a2a3e;
+    color: #ffffff;
+    border: 1px solid #6A5ACD;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    border-radius: 5px;
+  }
+  
+  form {
+    display: flex;
+    flex-direction: column;
+    max-width: 300px;
+    margin: 2rem auto;
+    gap: 1rem;
   }

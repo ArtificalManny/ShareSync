@@ -8,10 +8,10 @@ export class AuthController {
 
   @Post('register')
   async register(
+    @Res() res: Response,
     @Body('username') username: string,
     @Body('password') password: string,
     @Body('profilePic') profilePic?: string,
-    @Res() res: Response,
   ) {
     try {
       const user = await this.authService.register(username, password, profilePic);
@@ -23,9 +23,9 @@ export class AuthController {
 
   @Post('login')
   async login(
+    @Res() res: Response,
     @Body('username') username: string,
     @Body('password') password: string,
-    @Res() res: Response,
   ) {
     try {
       const user = await this.authService.login(username, password);
