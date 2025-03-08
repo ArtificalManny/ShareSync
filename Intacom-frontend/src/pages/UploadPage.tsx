@@ -22,14 +22,16 @@ const UploadPage: React.FC = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       console.log('File uploaded:', response.data);
+      alert('File uploaded successfully');
     } catch (error) {
       console.error('Upload failed:', error);
+      alert('Upload failed');
     }
   };
 
   return (
-    <div className="upload-page">
-      <h1>Upload File</h1>
+    <div>
+      <h2>Upload File</h2>
       <form onSubmit={handleFileUpload}>
         <input type="file" onChange={handleFileChange} />
         <button type="submit">Upload</button>
