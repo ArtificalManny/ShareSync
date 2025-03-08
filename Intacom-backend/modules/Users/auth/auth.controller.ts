@@ -16,7 +16,7 @@ export class AuthController {
     try {
       const user = await this.authService.register(username, password, profilePic);
       res.status(201).json({ user });
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
   }
@@ -30,7 +30,7 @@ export class AuthController {
     try {
       const user = await this.authService.login(username, password);
       res.status(200).json({ user });
-    } catch (error) {
+    } catch (error: any) {
       res.status(401).json({ error: error.message });
     }
   }
