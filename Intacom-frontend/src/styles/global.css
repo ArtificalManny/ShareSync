@@ -7,7 +7,7 @@ body {
   display: grid;
   grid-template-areas:
     "header header header"
-    "nav main sidebar"
+    "sidebar main nav-right"
     "footer footer footer";
   grid-template-rows: auto 1fr auto;
   grid-template-columns: 200px 1fr 300px;
@@ -21,7 +21,7 @@ header {
   text-align: center;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
 }
 
@@ -30,28 +30,35 @@ header img {
   cursor: pointer;
 }
 
+header .top-right {
+  display: flex;
+  align-items: center;
+}
+
+header .top-right .bell {
+  font-size: 1.5rem;
+  margin-right: 1rem;
+  cursor: pointer;
+  color: #6A5ACD;
+}
+
+header .top-right img {
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
 nav {
-  grid-area: nav;
+  grid-area: nav-right;
   background-color: #3a3a50;
   padding: 1rem;
+  display: none; /* Hide for now, can be used later */
 }
 
-nav ul {
-  list-style: none;
-  padding: 0;
-}
-
-nav ul li {
-  margin: 1rem 0;
-}
-
-nav ul li a {
-  color: #6A5ACD;
-  text-decoration: none;
-}
-
-nav ul li a:hover {
-  text-decoration: underline;
+sidebar {
+  grid-area: sidebar;
+  background-color: #3a3a50;
+  padding: 1rem;
 }
 
 main {
@@ -60,12 +67,6 @@ main {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-sidebar {
-  grid-area: sidebar;
-  background-color: #3a3a50;
-  padding: 1rem;
 }
 
 footer {

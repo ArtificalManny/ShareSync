@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBell } from '@fortawesome/free-solid-svg-icons';
 
 const App: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -85,19 +87,15 @@ const App: React.FC = () => {
         <Link to="/">
           <img src="https://via.placeholder.com/40?text=Intacom" alt="Intacom Logo" />
         </Link>
+        <div className="top-right">
+          <FontAwesomeIcon icon={faBell} className="bell" />
+          {user && user.profilePic && <img src={user.profilePic} alt="Profile" />}
+        </div>
       </header>
-      <nav>
-        <ul>
-          <li><Link to="/">Home</Link></li>
-          {user && (
-            <>
-              <li><Link to="/dashboard">Dashboard</Link></li>
-              <li><Link to="/projects">Projects</Link></li>
-              <li><Link to="/upload">Upload</Link></li>
-            </>
-          )}
-        </ul>
-      </nav>
+      <div style={{ gridArea: 'sidebar' }}>
+        <h3>Sidebar</h3>
+        <p>Notifications or quick links could go here.</p>
+      </div>
       <main>
         {!user ? (
           <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
@@ -178,7 +176,7 @@ const App: React.FC = () => {
           </div>
         )}
         {showRecover && (
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)' }}>
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
             <h3>Forgot Password</h3>
             <form onSubmit={handleRecoverPassword}>
               <label htmlFor="recoveryEmail">Email Address</label>
@@ -196,7 +194,7 @@ const App: React.FC = () => {
           </div>
         )}
         {showReset && (
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)' }}>
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
             <h3>Reset Password</h3>
             <form onSubmit={handleResetPassword}>
               <label htmlFor="recoveryToken">Recovery Token</label>
@@ -223,10 +221,6 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
-      <div style={{ gridArea: 'sidebar' }}>
-        <h3>Sidebar</h3>
-        <p>Notifications or quick links could go here.</p>
-      </div>
       <footer>
         <p>© 2025 Intacom. All rights reserved.</p>
       </footer>
