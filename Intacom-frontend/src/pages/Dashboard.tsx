@@ -4,7 +4,7 @@ const Dashboard: React.FC = () => {
   return (
     <div>
       <h2>Dashboard</h2>
-      <p>Welcome to your dashboard! Here you can manage your projects.</p>
+      <p>Welcome to your dashboard! Manage your projects here.</p>
     </div>
   );
 };

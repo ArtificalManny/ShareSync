@@ -68,7 +68,7 @@ const Projects: React.FC = () => {
       <h3>Your Projects</h3>
       <ul>
         {projects.map((project) => (
-          <li key={project.id}>
+          <li key={project._id}>
             {project.name} - {project.description} (Admin: {project.admin})
           </li>
         ))}
