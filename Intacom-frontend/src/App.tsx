@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
@@ -19,7 +19,26 @@ const App: React.FC = () => {
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryToken, setRecoveryToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [projects, setProjects] = useState([]);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [projectDescription, setProjectDescription] = useState('');
+  const [projectColor, setProjectColor] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      const fetchProjects = async () => {
+        try {
+          const response = await axios.get(`http://localhost:3000/projects/${user.username}`);
+          setProjects(response.data);
+        } catch (error) {
+          console.error('Failed to fetch projects:', error);
+        }
+      };
+      fetchProjects();
+    }
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +54,9 @@ const App: React.FC = () => {
       });
       setUser(response.data.user);
       alert(isLogin ? 'Login successful' : 'Registration successful');
-      navigate('/dashboard');
+      if (!isLogin) {
+        setShowCreateProject(true); // Show project creation popup after registration
+      }
     } catch (error) {
       console.error('Error:', error);
       alert(error.response?.data?.error || 'An error occurred');
@@ -81,22 +102,61 @@ const App: React.FC = () => {
     }
   };
 
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post(`http://localhost:3000/projects`, {
+        name: projectName,
+        description: projectDescription,
+        admin: user.username,
+        color: projectColor,
+      });
+      setProjects([...projects, response.data.project]);
+      setShowCreateProject(false);
+      setProjectName('');
+      setProjectDescription('');
+      setProjectColor('');
+      alert('Project created successfully');
+    } catch (error) {
+      console.error('Error:', error);
+      alert(error.response?.data?.error || 'An error occurred');
+    }
+  };
+
   return (
     <>
       <header>
         <Link to="/">
           <img src="https://via.placeholder.com/40?text=Intacom" alt="Intacom Logo" />
         </Link>
-        <div className="top-right">
-          <FontAwesomeIcon icon={faBell} className="bell" />
-          {user && user.profilePic && <img src={user.profilePic} alt="Profile" />}
-        </div>
+        {user && (
+          <div className="top-right">
+            <FontAwesomeIcon icon={faBell} className="bell" />
+            {user.profilePic && <img src={user.profilePic} alt="Profile" />}
+          </div>
+        )}
       </header>
-      <div style={{ gridArea: 'sidebar' }}>
-        <h3>Sidebar</h3>
-        <p>Notifications or quick links could go here.</p>
-      </div>
-      <main>
+      {user && (
+        <sidebar>
+          <div className="profile-section">
+            {user.profilePic && <img src={user.profilePic} alt="Profile" />}
+            <h3>{user.name || user.username}</h3>
+          </div>
+          <ul>
+            <li><a href="#" onClick={() => setShowCreateProject(true)}>Create Project</a></li>
+            <li><Link to="/dashboard">Dashboard</Link></li>
+            <li><Link to="/projects">Projects</Link></li>
+            <li><Link to="/upload">Upload</Link></li>
+            <li><Link to="/settings">Settings</Link></li>
+          </ul>
+          {projects.map((project) => (
+            <div key={project._id} style={{ background: project.color || '#3a3a50', padding: '0.5rem', margin: '0.5rem 0', borderRadius: '5px' }}>
+              <Link to={`/project/${project._id}`}>{project.name}</Link>
+            </div>
+          ))}
+        </sidebar>
+      )}
+      <main className={user ? '' : 'full-screen'}>
         {!user ? (
           <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
             <h2>{isLogin ? 'Login' : 'Register'}</h2>
@@ -217,6 +277,41 @@ const App: React.FC = () => {
               />
               <button type="submit">Reset Password</button>
               <button type="button" onClick={() => setShowReset(false)}>Cancel</button>
+            </form>
+          </div>
+        )}
+        {showCreateProject && (
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
+            <h3>Create Project</h3>
+            <form onSubmit={handleCreateProject}>
+              <label htmlFor="projectName">Project Name</label>
+              <input
+                id="projectName"
+                type="text"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="Project Name"
+                required
+              />
+              <label htmlFor="projectDescription">Description</label>
+              <input
+                id="projectDescription"
+                type="text"
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                placeholder="Description"
+                required
+              />
+              <label htmlFor="projectColor">Color</label>
+              <input
+                id="projectColor"
+                type="color"
+                value={projectColor}
+                onChange={(e) => setProjectColor(e.target.value)}
+                required
+              />
+              <button type="submit">Create Project</button>
+              <button type="button" onClick={() => setShowCreateProject(false)}>Cancel</button>
             </form>
           </div>
         )}

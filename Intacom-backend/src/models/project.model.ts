@@ -1,8 +1,10 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
+export type ProjectDocument = Project & Document;
+
 @Schema()
-export class Project extends Document {
+export class Project {
   @Prop({ required: true })
   name: string = '';
 
@@ -10,56 +12,16 @@ export class Project extends Document {
   description: string = '';
 
   @Prop({ required: true })
-  admin: string = '';
+  admin: string = ''; // Admin username
 
-  @Prop({ type: [String], default: [] })
-  sharedWith: string[] = [];
+  @Prop()
+  color?: string;
 
-  @Prop({
-    type: [
-      {
-        id: String,
-        content: String,
-        media: String,
-        user: String,
-        likes: Number,
-        comments: [{ user: String, text: String }],
-      },
-    ],
-    default: [],
-  })
-  announcements: {
-    id: string;
-    content: string;
-    media?: string;
-    user: string;
-    likes: number;
-    comments: { user: string; text: string }[];
-  }[] = [];
+  @Prop()
+  members: string[] = []; // Array of member usernames
 
-  @Prop({
-    type: [
-      {
-        id: String,
-        title: String,
-        assignee: String,
-        dueDate: Date,
-        status: String,
-        user: String,
-        comments: [{ user: String, text: String }],
-      },
-    ],
-    default: [],
-  })
-  tasks: {
-    id: string;
-    title: string;
-    assignee: string;
-    dueDate: Date;
-    status: string;
-    user: string;
-    comments: { user: string; text: string }[];
-  }[] = [];
+  @Prop()
+  administrators: string[] = []; // Array of admin usernames
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
