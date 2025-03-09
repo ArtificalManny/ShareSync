@@ -27,11 +27,11 @@ export class AuthController {
   @Post('login')
   async login(
     @Res() res: Response,
-    @Body('username') username: string,
+    @Body('identifier') identifier: string,
     @Body('password') password: string,
   ) {
     try {
-      const user = await this.authService.login(username, password);
+      const user = await this.authService.login(identifier, password);
       res.status(200).json({ user });
     } catch (error: any) {
       res.status(401).json({ error: error.message });
@@ -46,7 +46,6 @@ export class AuthController {
     try {
       const { message, token } = await this.authService.recoverPassword(email);
       res.status(200).json({ message, token });
-      // In production, send token via email
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

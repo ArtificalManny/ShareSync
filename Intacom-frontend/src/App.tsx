@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell } from '@fortawesome/free-solid-svg-icons';
 
 const App: React.FC = () => {
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState(''); // Email or username
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -45,7 +45,7 @@ const App: React.FC = () => {
     try {
       const url = isLogin ? '/auth/login' : '/auth/register';
       const response = await axios.post(`http://localhost:3000${url}`, {
-        username,
+        identifier: isLogin ? identifier : undefined,
         password,
         email: isLogin ? undefined : email,
         name: isLogin ? undefined : name,
@@ -65,7 +65,7 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     setUser(null);
-    setUsername('');
+    setIdentifier('');
     setPassword('');
     setEmail('');
     setName('');
@@ -159,14 +159,14 @@ const App: React.FC = () => {
       <main className={user ? '' : 'full-screen'}>
         {!user ? (
           <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
-            <h2>{isLogin ? 'Login' : 'Register'}</h2>
-            <label htmlFor="username">Username</label>
+            <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '1rem' }}>Intacom</h2>
+            <label htmlFor="identifier">Email or Username</label>
             <input
-              id="username"
+              id="identifier"
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Username"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="Email or Username"
               required
             />
             <label htmlFor="password">Password</label>
@@ -218,14 +218,12 @@ const App: React.FC = () => {
               </>
             )}
             <button type="submit">{isLogin ? 'Login' : 'Register'}</button>
+            <button type="button" onClick={() => setShowRecover(true)}>
+              Forgot Password?
+            </button>
             <button type="button" onClick={() => setIsLogin(!isLogin)}>
               Switch to {isLogin ? 'Register' : 'Login'}
             </button>
-            {isLogin && (
-              <button type="button" onClick={() => setShowRecover(true)}>
-                Forgot Password?
-              </button>
-            )}
           </form>
         ) : (
           <div style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
@@ -317,7 +315,7 @@ const App: React.FC = () => {
         )}
       </main>
       <footer>
-        <p>© 2025 Intacom. All rights reserved.</p>
+        <p style={{ color: '#b0b0ff' }}>© 2025 Intacom. All rights reserved.</p>
       </footer>
     </>
   );
