@@ -11,16 +11,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectSchema = exports.Project = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
-const mongoose_2 = require("mongoose");
-let Project = class Project extends mongoose_2.Document {
+let Project = class Project {
     constructor() {
-        super(...arguments);
         this.name = '';
         this.description = '';
         this.admin = '';
-        this.sharedWith = [];
-        this.announcements = [];
-        this.tasks = [];
+        this.members = [];
+        this.administrators = [];
     }
 };
 exports.Project = Project;
@@ -37,42 +34,17 @@ __decorate([
     __metadata("design:type", String)
 ], Project.prototype, "admin", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: [String], default: [] }),
-    __metadata("design:type", Array)
-], Project.prototype, "sharedWith", void 0);
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], Project.prototype, "color", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({
-        type: [
-            {
-                id: String,
-                content: String,
-                media: String,
-                user: String,
-                likes: Number,
-                comments: [{ user: String, text: String }],
-            },
-        ],
-        default: [],
-    }),
+    (0, mongoose_1.Prop)(),
     __metadata("design:type", Array)
-], Project.prototype, "announcements", void 0);
+], Project.prototype, "members", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({
-        type: [
-            {
-                id: String,
-                title: String,
-                assignee: String,
-                dueDate: Date,
-                status: String,
-                user: String,
-                comments: [{ user: String, text: String }],
-            },
-        ],
-        default: [],
-    }),
+    (0, mongoose_1.Prop)(),
     __metadata("design:type", Array)
-], Project.prototype, "tasks", void 0);
+], Project.prototype, "administrators", void 0);
 exports.Project = Project = __decorate([
     (0, mongoose_1.Schema)()
 ], Project);

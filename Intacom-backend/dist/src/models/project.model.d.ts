@@ -1,39 +1,19 @@
 import { Document } from 'mongoose';
-export declare class Project extends Document {
+export type ProjectDocument = Project & Document;
+export declare class Project {
     name: string;
     description: string;
     admin: string;
-    sharedWith: string[];
-    announcements: {
-        id: string;
-        content: string;
-        media?: string;
-        user: string;
-        likes: number;
-        comments: {
-            user: string;
-            text: string;
-        }[];
-    }[];
-    tasks: {
-        id: string;
-        title: string;
-        assignee: string;
-        dueDate: Date;
-        status: string;
-        user: string;
-        comments: {
-            user: string;
-            text: string;
-        }[];
-    }[];
+    color?: string;
+    members: string[];
+    administrators: string[];
 }
-export declare const ProjectSchema: import("mongoose").Schema<Project, import("mongoose").Model<Project, any, any, any, Document<unknown, any, Project> & Project & Required<{
-    _id: unknown;
-}> & {
+export declare const ProjectSchema: import("mongoose").Schema<Project, import("mongoose").Model<Project, any, any, any, Document<unknown, any, Project> & Project & {
+    _id: import("mongoose").Types.ObjectId;
+} & {
     __v: number;
-}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Project, Document<unknown, {}, import("mongoose").FlatRecord<Project>> & import("mongoose").FlatRecord<Project> & Required<{
-    _id: unknown;
-}> & {
+}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Project, Document<unknown, {}, import("mongoose").FlatRecord<Project>> & import("mongoose").FlatRecord<Project> & {
+    _id: import("mongoose").Types.ObjectId;
+} & {
     __v: number;
 }>;

@@ -5,6 +5,12 @@ export type UserDocument = User & Document;
 
 @Schema()
 export class User {
+  @Prop({ required: true })
+  firstName: string = '';
+
+  @Prop({ required: true })
+  lastName: string = '';
+
   @Prop({ required: true, unique: true })
   username: string = '';
 
@@ -14,11 +20,11 @@ export class User {
   @Prop({ required: true, unique: true })
   email: string = '';
 
-  @Prop({ required: true })
-  name: string = '';
+  @Prop({ required: true, enum: ['Male', 'Female'] })
+  gender: string = '';
 
   @Prop({ required: true })
-  age: number = 0;
+  birthday: { month: string; day: string; year: string } = { month: '', day: '', year: '' };
 
   @Prop()
   profilePic?: string;

@@ -13,14 +13,24 @@ exports.UserSchema = exports.User = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 let User = class User {
     constructor() {
+        this.firstName = '';
+        this.lastName = '';
         this.username = '';
         this.password = '';
         this.email = '';
-        this.name = '';
-        this.age = 0;
+        this.gender = '';
+        this.birthday = { month: '', day: '', year: '' };
     }
 };
 exports.User = User;
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], User.prototype, "firstName", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], User.prototype, "lastName", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, unique: true }),
     __metadata("design:type", String)
@@ -34,13 +44,13 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "email", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_1.Prop)({ required: true, enum: ['Male', 'Female'] }),
     __metadata("design:type", String)
-], User.prototype, "name", void 0);
+], User.prototype, "gender", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", Number)
-], User.prototype, "age", void 0);
+    __metadata("design:type", Object)
+], User.prototype, "birthday", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)

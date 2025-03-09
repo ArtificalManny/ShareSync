@@ -21,23 +21,32 @@ let AuthService = class AuthService {
     constructor(userModel) {
         this.userModel = userModel;
     }
-    async register(username, password, email, name, age, profilePic) {
+    async register(firstName, lastName, username, password, email, gender, birthday, profilePic) {
         const existingUser = await this.userModel.findOne({ username });
         if (existingUser)
             throw new Error('Username already exists');
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new this.userModel({ username, password: hashedPassword, email, name, age, profilePic });
+        const user = new this.userModel({
+            firstName,
+            lastName,
+            username,
+            password: hashedPassword,
+            email,
+            gender,
+            birthday,
+            profilePic,
+        });
         return user.save();
     }
-    async login(username, password) {
-        const user = await this.userModel.findOne({ username });
+    async login(identifier, password) {
+        const user = await this.userModel.findOne({ $or: [{ username: identifier }, { email: identifier }] });
         if (!user || !(await bcrypt.compare(password, user.password))) {
             throw new Error('Invalid credentials');
         }
         return user;
     }
-    async findUser(username) {
-        return this.userModel.findOne({ username });
+    async findUser(identifier) {
+        return this.userModel.findOne({ $or: [{ username: identifier }, { email: identifier }] });
     }
     async recoverPassword(email) {
         const user = await this.userModel.findOne({ email });

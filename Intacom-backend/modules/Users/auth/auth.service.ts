@@ -1,19 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from '../../../models/user.model'; // Adjusted to relative path
+import { User } from '../../../models/user.model';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
   constructor(@InjectModel('User') private userModel: Model<User>) {}
 
-  async register(username: string, password: string, email: string, name: string, age: number, profilePic?: string): Promise<User> {
+  async register(firstName: string, lastName: string, username: string, password: string, email: string, gender: string, birthday: { month: string; day: string; year: string }, profilePic?: string): Promise<User> {
     const existingUser = await this.userModel.findOne({ username });
     if (existingUser) throw new Error('Username already exists');
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new this.userModel({ username, password: hashedPassword, email, name, age, profilePic });
+    const user = new this.userModel({
+      firstName,
+      lastName,
+      username,
+      password: hashedPassword,
+      email,
+      gender,
+      birthday,
+      profilePic,
+    });
     return user.save();
   }
 

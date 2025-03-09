@@ -6,11 +6,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell } from '@fortawesome/free-solid-svg-icons';
 
 const App: React.FC = () => {
-  const [identifier, setIdentifier] = useState(''); // Email or username
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('');
+  const [birthday, setBirthday] = useState({ month: '', day: '', year: '' });
   const [profilePic, setProfilePic] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [user, setUser] = useState(null);
@@ -24,6 +27,7 @@ const App: React.FC = () => {
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [projectColor, setProjectColor] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,24 +46,28 @@ const App: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(''); // Reset error message
     try {
       const url = isLogin ? '/auth/login' : '/auth/register';
       const response = await axios.post(`http://localhost:3000${url}`, {
         identifier: isLogin ? identifier : undefined,
+        firstName: isLogin ? undefined : firstName,
+        lastName: isLogin ? undefined : lastName,
+        username: isLogin ? undefined : username,
         password,
         email: isLogin ? undefined : email,
-        name: isLogin ? undefined : name,
-        age: isLogin ? undefined : parseInt(age),
+        gender: isLogin ? undefined : gender,
+        birthday: isLogin ? undefined : birthday,
         profilePic: isLogin ? undefined : profilePic,
       });
       setUser(response.data.user);
       alert(isLogin ? 'Login successful' : 'Registration successful');
       if (!isLogin) {
-        setShowCreateProject(true); // Show project creation popup after registration
+        setShowCreateProject(true);
       }
     } catch (error) {
       console.error('Error:', error);
-      alert(error.response?.data?.error || 'An error occurred');
+      setErrorMessage(error.response?.data?.error || 'An error occurred');
     }
   };
 
@@ -67,9 +75,12 @@ const App: React.FC = () => {
     setUser(null);
     setIdentifier('');
     setPassword('');
+    setFirstName('');
+    setLastName('');
+    setUsername('');
     setEmail('');
-    setName('');
-    setAge('');
+    setGender('');
+    setBirthday({ month: '', day: '', year: '' });
     setProfilePic('');
     navigate('/');
   };
@@ -83,7 +94,7 @@ const App: React.FC = () => {
       setShowReset(true);
     } catch (error) {
       console.error('Error:', error);
-      alert(error.response?.data?.error || 'An error occurred');
+      setErrorMessage(error.response?.data?.error || 'An error occurred');
     }
   };
 
@@ -98,7 +109,7 @@ const App: React.FC = () => {
       setNewPassword('');
     } catch (error) {
       console.error('Error:', error);
-      alert(error.response?.data?.error || 'An error occurred');
+      setErrorMessage(error.response?.data?.error || 'An error occurred');
     }
   };
 
@@ -119,9 +130,13 @@ const App: React.FC = () => {
       alert('Project created successfully');
     } catch (error) {
       console.error('Error:', error);
-      alert(error.response?.data?.error || 'An error occurred');
+      setErrorMessage(error.response?.data?.error || 'An error occurred');
     }
   };
+
+  const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+  const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+  const years = Array.from({ length: 100 }, (_, i) => (new Date().getFullYear() - i).toString());
 
   return (
     <>
@@ -140,7 +155,7 @@ const App: React.FC = () => {
         <sidebar>
           <div className="profile-section">
             {user.profilePic && <img src={user.profilePic} alt="Profile" />}
-            <h3>{user.name || user.username}</h3>
+            <h3>{user.firstName || user.username}</h3>
           </div>
           <ul>
             <li><a href="#" onClick={() => setShowCreateProject(true)}>Create Project</a></li>
@@ -159,27 +174,81 @@ const App: React.FC = () => {
       <main className={user ? '' : 'full-screen'}>
         {!user ? (
           <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
-            <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '1rem' }}>Intacom</h2>
-            <label htmlFor="identifier">Email or Username</label>
-            <input
-              id="identifier"
-              type="text"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="Email or Username"
-              required
-            />
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              required
-            />
-            {!isLogin && (
+            <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>Intacom</h2>
+            {isLogin ? (
               <>
+                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                <label htmlFor="identifier">Username</label>
+                <input
+                  id="identifier"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="Username"
+                  required
+                />
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  required
+                />
+                <button type="submit">Login</button>
+                <button type="button" onClick={() => setShowRecover(true)}>
+                  Forgot Password?
+                </button>
+                <button type="button" onClick={() => setIsLogin(!isLogin)}>
+                  Switch to Register
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="subtitle">Create an account</div>
+                <div className="name-container">
+                  <div>
+                    <label htmlFor="firstName">First Name</label>
+                    <input
+                      id="firstName"
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="First Name"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="lastName">Last Name</label>
+                    <input
+                      id="lastName"
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Last Name"
+                      required
+                    />
+                  </div>
+                </div>
+                <label htmlFor="username">Username</label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Username"
+                  required
+                />
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  required
+                />
                 <label htmlFor="email">Email Address</label>
                 <input
                   id="email"
@@ -189,24 +258,50 @@ const App: React.FC = () => {
                   placeholder="Email Address"
                   required
                 />
-                <label htmlFor="name">Name</label>
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Full Name"
+                <label htmlFor="gender">Gender</label>
+                <select
+                  id="gender"
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
                   required
-                />
-                <label htmlFor="age">Age</label>
-                <input
-                  id="age"
-                  type="number"
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                  placeholder="Age"
-                  required
-                />
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+                <label>Birthday</label>
+                <div className="birthday-container">
+                  <select
+                    value={birthday.month}
+                    onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
+                    required
+                  >
+                    <option value="">Month</option>
+                    {months.map((month) => (
+                      <option key={month} value={month}>{month}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={birthday.day}
+                    onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
+                    required
+                  >
+                    <option value="">Day</option>
+                    {days.map((day) => (
+                      <option key={day} value={day}>{day}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={birthday.year}
+                    onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
+                    required
+                  >
+                    <option value="">Year</option>
+                    {years.map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
                 <label htmlFor="profilePic">Profile Picture URL (optional)</label>
                 <input
                   id="profilePic"
@@ -215,20 +310,20 @@ const App: React.FC = () => {
                   onChange={(e) => setProfilePic(e.target.value)}
                   placeholder="Profile Picture URL (optional)"
                 />
+                <button type="submit">Register</button>
+                <button type="button" onClick={() => setShowRecover(true)}>
+                  Forgot Password?
+                </button>
+                <button type="button" onClick={() => setIsLogin(!isLogin)}>
+                  Switch to Login
+                </button>
               </>
             )}
-            <button type="submit">{isLogin ? 'Login' : 'Register'}</button>
-            <button type="button" onClick={() => setShowRecover(true)}>
-              Forgot Password?
-            </button>
-            <button type="button" onClick={() => setIsLogin(!isLogin)}>
-              Switch to {isLogin ? 'Register' : 'Login'}
-            </button>
           </form>
         ) : (
           <div style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
-            <h2>Welcome, {user.name || user.username}!</h2>
-            <p>Email: {user.email} | Age: {user.age}</p>
+            <h2>Welcome, {user.firstName || user.username}!</h2>
+            <p>Email: {user.email}</p>
             {user.profilePic && <img src={user.profilePic} alt="Profile" style={{ maxWidth: '100px' }} />}
             <button onClick={handleLogout}>Logout</button>
           </div>

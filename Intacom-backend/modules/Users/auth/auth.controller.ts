@@ -9,15 +9,17 @@ export class AuthController {
   @Post('register')
   async register(
     @Res() res: Response,
+    @Body('firstName') firstName: string,
+    @Body('lastName') lastName: string,
     @Body('username') username: string,
     @Body('password') password: string,
     @Body('email') email: string,
-    @Body('name') name: string,
-    @Body('age') age: number,
+    @Body('gender') gender: string,
+    @Body('birthday') birthday: { month: string; day: string; year: string },
     @Body('profilePic') profilePic?: string,
   ) {
     try {
-      const user = await this.authService.register(username, password, email, name, age, profilePic);
+      const user = await this.authService.register(firstName, lastName, username, password, email, gender, birthday, profilePic);
       res.status(201).json({ user });
     } catch (error: any) {
       res.status(400).json({ error: error.message });

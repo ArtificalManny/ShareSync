@@ -3,9 +3,13 @@ import { User } from '../../../models/user.model';
 export declare class AuthService {
     private userModel;
     constructor(userModel: Model<User>);
-    register(username: string, password: string, email: string, name: string, age: number, profilePic?: string): Promise<User>;
-    login(username: string, password: string): Promise<User>;
-    findUser(username: string): Promise<User | null>;
+    register(firstName: string, lastName: string, username: string, password: string, email: string, gender: string, birthday: {
+        month: string;
+        day: string;
+        year: string;
+    }, profilePic?: string): Promise<User>;
+    login(identifier: string, password: string): Promise<User>;
+    findUser(identifier: string): Promise<User | null>;
     recoverPassword(email: string): Promise<{
         message: string;
         token: string;

@@ -109,12 +109,13 @@ main.full-screen {
   background: rgba(42, 42, 62, 0.95);
   z-index: 1000;
   padding: 0;
+  overflow-y: auto; /* Enable scrolling */
 }
 
 main.full-screen form {
   max-width: 500px;
   width: 100%;
-  margin: auto;
+  margin: 2rem auto;
   background: rgba(42, 42, 62, 0.8);
   padding: 2rem;
   border-radius: 10px;
@@ -127,7 +128,29 @@ main.full-screen h2 {
   font-size: 2.5rem;
   color: #6A5ACD;
   text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+main.full-screen .subtitle {
+  font-size: 1.2rem;
+  color: #b0b0ff;
+  text-align: center;
   margin-bottom: 1rem;
+}
+
+main.full-screen .error-message {
+  color: #ff4040;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+main.full-screen .name-container, main.full-screen .birthday-container {
+  display: flex;
+  gap: 1rem;
+}
+
+main.full-screen .name-container input, main.full-screen .birthday-container select {
+  flex: 1;
 }
 
 footer {
@@ -136,5 +159,5 @@ footer {
   padding: 1rem;
   text-align: center;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
-  color: #b0b0ff; /* Lighter color for legibility */
+  color: #b0b0ff;
 }

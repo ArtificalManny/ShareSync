@@ -19,18 +19,18 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    async register(res, username, password, email, name, age, profilePic) {
+    async register(res, firstName, lastName, username, password, email, gender, birthday, profilePic) {
         try {
-            const user = await this.authService.register(username, password, email, name, age, profilePic);
+            const user = await this.authService.register(firstName, lastName, username, password, email, gender, birthday, profilePic);
             res.status(201).json({ user });
         }
         catch (error) {
             res.status(400).json({ error: error.message });
         }
     }
-    async login(res, username, password) {
+    async login(res, identifier, password) {
         try {
-            const user = await this.authService.login(username, password);
+            const user = await this.authService.login(identifier, password);
             res.status(200).json({ user });
         }
         catch (error) {
@@ -60,20 +60,22 @@ exports.AuthController = AuthController;
 __decorate([
     (0, common_1.Post)('register'),
     __param(0, (0, common_1.Res)()),
-    __param(1, (0, common_1.Body)('username')),
-    __param(2, (0, common_1.Body)('password')),
-    __param(3, (0, common_1.Body)('email')),
-    __param(4, (0, common_1.Body)('name')),
-    __param(5, (0, common_1.Body)('age')),
-    __param(6, (0, common_1.Body)('profilePic')),
+    __param(1, (0, common_1.Body)('firstName')),
+    __param(2, (0, common_1.Body)('lastName')),
+    __param(3, (0, common_1.Body)('username')),
+    __param(4, (0, common_1.Body)('password')),
+    __param(5, (0, common_1.Body)('email')),
+    __param(6, (0, common_1.Body)('gender')),
+    __param(7, (0, common_1.Body)('birthday')),
+    __param(8, (0, common_1.Body)('profilePic')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String, String, String, Number, String]),
+    __metadata("design:paramtypes", [Object, String, String, String, String, String, String, Object, String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
     (0, common_1.Post)('login'),
     __param(0, (0, common_1.Res)()),
-    __param(1, (0, common_1.Body)('username')),
+    __param(1, (0, common_1.Body)('identifier')),
     __param(2, (0, common_1.Body)('password')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String]),
