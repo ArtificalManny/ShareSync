@@ -136,10 +136,10 @@ main.full-screen .subtitle {
   color: #b0b0ff;
   text-align: center;
   margin-bottom: 1rem;
-  white-space: nowrap; /* Prevent cutoff */
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal; /* Allow text to wrap */
+  overflow-wrap: break-word;
   max-width: 100%;
+  padding: 0 1rem; /* Add padding to prevent cutoff */
 }
 
 main.full-screen .error-message {

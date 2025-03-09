@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from '../../../models/user.model';
+import { User } from '../../models/user.model';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectModel('User') private userModel: Model<User>) {}
+  constructor(@InjectModel('User') private userModel: Model<User>) {} // Proper dependency injection
 
   async register(firstName: string, lastName: string, username: string, password: string, email: string, gender: string, birthday: { month: string; day: string; year: string }, profilePic?: string): Promise<User> {
     const existingUser = await this.userModel.findOne({ username });
@@ -64,3 +64,5 @@ export class AuthService {
     return user.save();
   }
 }
+
+export { AuthService }; // Ensure export
