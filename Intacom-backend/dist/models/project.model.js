@@ -10,37 +10,43 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectSchema = exports.Project = void 0;
-const mongoose_1 = require("@nestjs/mongoose");
-const mongoose_2 = require("mongoose");
-let Project = class Project extends mongoose_2.Document {
+const mongoose_3 = require("@nestjs/mongoose");
+let Project = class Project {
+    constructor() {
+        this.name = '';
+        this.description = '';
+        this.admin = '';
+        this.members = [];
+        this.administrators = [];
+    }
 };
 exports.Project = Project;
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_3.Prop)({ required: true }),
     __metadata("design:type", String)
 ], Project.prototype, "name", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_3.Prop)({ required: true }),
     __metadata("design:type", String)
 ], Project.prototype, "description", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_3.Prop)({ required: true }),
     __metadata("design:type", String)
 ], Project.prototype, "admin", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
-    __metadata("design:type", Array)
-], Project.prototype, "sharedWith", void 0);
+    (0, mongoose_3.Prop)(),
+    __metadata("design:type", String)
+], Project.prototype, "color", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_3.Prop)(),
     __metadata("design:type", Array)
-], Project.prototype, "announcements", void 0);
+], Project.prototype, "members", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_3.Prop)(),
     __metadata("design:type", Array)
-], Project.prototype, "tasks", void 0);
+], Project.prototype, "administrators", void 0);
 exports.Project = Project = __decorate([
-    (0, mongoose_1.Schema)()
+    (0, mongoose_3.Schema)()
 ], Project);
-exports.ProjectSchema = mongoose_1.SchemaFactory.createForClass(Project);
+exports.ProjectSchema = mongoose_3.SchemaFactory.createForClass(Project);
 //# sourceMappingURL=project.model.js.map

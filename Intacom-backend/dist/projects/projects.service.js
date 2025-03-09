@@ -13,93 +13,44 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsService = void 0;
-const common_1 = require("@nestjs/common");
-const mongoose_1 = require("@nestjs/mongoose");
-const mongoose_2 = require("mongoose");
-const project_model_1 = require("../../models/project.model");
+const common_2 = require("@nestjs/common");
+const mongoose_3 = require("@nestjs/mongoose");
+const mongoose_4 = require("mongoose");
 let ProjectsService = class ProjectsService {
     constructor(projectModel) {
         this.projectModel = projectModel;
     }
-    async getProjects() {
-        return this.projectModel.find();
-    }
-    async createProject(body, admin) {
-        const newProject = new this.projectModel({
-            ...body,
-            id: Date.now(),
+    async createProject(name, description, admin, color) {
+        const project = new this.projectModel({
+            name,
+            description,
             admin,
-            sharedWith: [],
+            color,
+            administrators: [admin],
+            members: [admin],
         });
-        return newProject.save();
-    }
-    async shareProject(projectId, username, users) {
-        const project = await this.projectModel.findById(projectId);
-        if (!project || (username !== project.admin && !project.sharedWith.includes(username))) {
-            throw new Error('Unauthorized');
-        }
-        project.sharedWith = [...new Set([...project.sharedWith, ...users])];
         return project.save();
     }
-    async addAnnouncement(projectId, username, body) {
+    async getUserProjects(username) {
+        return this.projectModel.find({ $or: [{ members: username }, { administrators: username }] }).exec();
+    }
+    async addMember(projectId, username, role) {
         const project = await this.projectModel.findById(projectId);
-        if (!project || (username !== project.admin && !project.sharedWith.includes(username))) {
-            throw new Error('Unauthorized');
+        if (!project)
+            throw new Error('Project not found');
+        if (role === 'member' && !project.members.includes(username)) {
+            project.members.push(username);
         }
-        project.announcements.push({ ...body, id: Date.now(), likes: 0, comments: [], user: username });
-        await project.save();
-        return project;
-    }
-    async addTask(projectId, username, body) {
-        const project = await this.projectModel.findById(projectId);
-        if (!project || (username !== project.admin && !project.sharedWith.includes(username))) {
-            throw new Error('Unauthorized');
+        else if (role === 'administrator' && !project.administrators.includes(username)) {
+            project.administrators.push(username);
         }
-        project.tasks.push({ ...body, id: Date.now(), comments: [], user: username });
-        await project.save();
-        return project;
-    }
-    async likeAnnouncement(projectId, annId) {
-        const project = await this.projectModel.findById(projectId);
-        const announcement = project.announcements.find(a => a.id === annId);
-        if (announcement)
-            announcement.likes += 1;
-        await project.save();
-        return project;
-    }
-    async addAnnouncementComment(projectId, annId, username, body) {
-        const project = await this.projectModel.findById(projectId);
-        const announcement = project.announcements.find(a => a.id === annId);
-        if (announcement)
-            announcement.comments.push({ ...body, user: username });
-        await project.save();
-        return project;
-    }
-    async addTaskComment(projectId, taskId, username, body) {
-        const project = await this.projectModel.findById(projectId);
-        const task = project.tasks.find(t => t.id === taskId);
-        if (task)
-            task.comments.push({ ...body, user: username });
-        await project.save();
-        return project;
-    }
-    async updateTaskStatus(projectId, taskId, username, status) {
-        const project = await this.projectModel.findById(projectId);
-        const task = project.tasks.find(t => t.id === taskId);
-        if (task && (username === task.assignee || username === project.admin)) {
-            task.status = status;
-            await project.save();
-            return project;
-        }
-        else {
-            throw new Error('Unauthorized to update task status');
-        }
+        return project.save();
     }
 };
 exports.ProjectsService = ProjectsService;
 exports.ProjectsService = ProjectsService = __decorate([
-    (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)(project_model_1.Project.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model])
+    (0, common_2.Injectable)(),
+    __param(0, (0, mongoose_3.InjectModel)('Project')),
+    __metadata("design:paramtypes", [mongoose_4.Model])
 ], ProjectsService);
 //# sourceMappingURL=projects.service.js.map

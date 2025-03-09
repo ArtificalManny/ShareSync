@@ -1,12 +1,18 @@
 import { Model } from 'mongoose';
-import { User } from '../models/user.model';
+import { User } from '../../models/user.model';
 export declare class AuthService {
     private userModel;
     constructor(userModel: Model<User>);
-    login(username: string, password: string): Promise<(import("mongoose").Document<unknown, {}, User> & User & {
-        _id: import("mongoose").Types.ObjectId;
-    }) | null>;
-    register(username: string, password: string, profilePic?: string): Promise<import("mongoose").Document<unknown, {}, User> & User & {
-        _id: import("mongoose").Types.ObjectId;
+    register(firstName: string, lastName: string, username: string, password: string, email: string, gender: string, birthday: {
+        month: string;
+        day: string;
+        year: string;
+    }, profilePic?: string): Promise<User>;
+    login(identifier: string, password: string): Promise<User>;
+    findUser(identifier: string): Promise<User | null>;
+    recoverPassword(email: string): Promise<{
+        message: string;
+        token: string;
     }>;
+    resetPassword(token: string, newPassword: string): Promise<User>;
 }

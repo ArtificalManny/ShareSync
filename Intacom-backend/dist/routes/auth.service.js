@@ -13,30 +13,69 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
-const common_1 = require("@nestjs/common");
-const mongoose_1 = require("@nestjs/mongoose");
-const mongoose_2 = require("mongoose");
-const user_model_1 = require("../models/user.model");
+const common_2 = require("@nestjs/common");
+const mongoose_3 = require("@nestjs/mongoose");
+const mongoose_4 = require("mongoose");
+const bcrypt = require("bcrypt");
 let AuthService = class AuthService {
     constructor(userModel) {
         this.userModel = userModel;
     }
-    async login(username, password) {
-        return this.userModel.findOne({ username, password });
-    }
-    async register(username, password, profilePic) {
+    async register(firstName, lastName, username, password, email, gender, birthday, profilePic) {
         const existingUser = await this.userModel.findOne({ username });
-        if (existingUser) {
-            throw new Error('Username taken');
+        if (existingUser)
+            throw new Error('Username already exists');
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new this.userModel({
+            firstName,
+            lastName,
+            username,
+            password: hashedPassword,
+            email,
+            gender,
+            birthday,
+            profilePic,
+        });
+        return user.save();
+    }
+    async login(identifier, password) {
+        const user = await this.userModel.findOne({ $or: [{ username: identifier }, { email: identifier }] });
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            throw new Error('Invalid credentials');
         }
-        const newUser = new this.userModel({ username, password, profilePic: profilePic || 'default-profile.jpg' });
-        return newUser.save();
+        return user;
+    }
+    async findUser(identifier) {
+        return this.userModel.findOne({ $or: [{ username: identifier }, { email: identifier }] });
+    }
+    async recoverPassword(email) {
+        const user = await this.userModel.findOne({ email });
+        if (!user)
+            throw new Error('Email not found');
+        const token = Math.random().toString(36).substring(2);
+        user.resetToken = token;
+        user.resetTokenExpires = new Date(Date.now() + 3600000);
+        await user.save();
+        return { message: 'Recovery token generated', token };
+    }
+    async resetPassword(token, newPassword) {
+        const user = await this.userModel.findOne({
+            resetToken: token,
+            resetTokenExpires: { $gt: new Date() },
+        });
+        if (!user)
+            throw new Error('Invalid or expired token');
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        user.resetToken = undefined;
+        user.resetTokenExpires = undefined;
+        return user.save();
     }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
-    (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)(user_model_1.User.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model])
+    (0, common_2.Injectable)(),
+    __param(0, (0, mongoose_3.InjectModel)('User')),
+    __metadata("design:paramtypes", [mongoose_4.Model])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

@@ -1,7 +1,5 @@
-import { UploadsService } from './uploads.service';
-import { Request, Response } from 'express';
+import { UploadService } from './uploads.service';
 export declare class UploadsController {
-    private uploadsService;
-    constructor(uploadsService: UploadsService);
-    uploadFile(req: Request, res: Response): Promise<void>;
+    private readonly uploadService;
+    constructor(uploadService: UploadService);
 }

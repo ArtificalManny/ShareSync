@@ -1,16 +1,22 @@
 "use strict";
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+        r = Reflect.decorate(decorators, target, key, desc);
+    else
+        for (var i = decorators.length - 1; i >= 0; i--)
+            if (d = decorators[i])
+                r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
+        return Reflect.metadata(k, v);
 };
 var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
+    return function (target, key) { decorator(target, key, paramIndex); };
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
@@ -19,87 +25,41 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    async register(res, firstName, lastName, username, password, email, gender, birthday, profilePic) {
-        try {
-            const user = await this.authService.register(firstName, lastName, username, password, email, gender, birthday, profilePic);
-            res.status(201).json({ user });
+    async login(body, res) {
+        const user = await this.authService.login(body.username, body.password);
+        if (user) {
+            res.cookie('userToken', JSON.stringify({ username: user.username, profilePic: user.profilePic }), { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+            res.json({ user, token: 'mock-token' });
         }
-        catch (error) {
-            res.status(400).json({ error: error.message });
-        }
-    }
-    async login(res, identifier, password) {
-        try {
-            const user = await this.authService.login(identifier, password);
-            res.status(200).json({ user });
-        }
-        catch (error) {
-            res.status(401).json({ error: error.message });
+        else {
+            res.status(401).json({ error: 'Invalid credentials' });
         }
     }
-    async recoverPassword(res, email) {
-        try {
-            const { message, token } = await this.authService.recoverPassword(email);
-            res.status(200).json({ message, token });
-        }
-        catch (error) {
-            res.status(400).json({ error: error.message });
-        }
-    }
-    async resetPassword(res, token, newPassword) {
-        try {
-            const user = await this.authService.resetPassword(token, newPassword);
-            res.status(200).json({ message: 'Password reset successful', user });
-        }
-        catch (error) {
-            res.status(400).json({ error: error.message });
-        }
+    async register(body, res) {
+        const newUser = await this.authService.register(body.username, body.password, body.profilePic);
+        res.cookie('userToken', JSON.stringify({ username: newUser.username, profilePic: newUser.profilePic }), { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+        res.json(newUser);
     }
 };
 exports.AuthController = AuthController;
 __decorate([
-    (0, common_1.Post)('register'),
-    __param(0, (0, common_1.Res)()),
-    __param(1, (0, common_1.Body)('firstName')),
-    __param(2, (0, common_1.Body)('lastName')),
-    __param(3, (0, common_1.Body)('username')),
-    __param(4, (0, common_1.Body)('password')),
-    __param(5, (0, common_1.Body)('email')),
-    __param(6, (0, common_1.Body)('gender')),
-    __param(7, (0, common_1.Body)('birthday')),
-    __param(8, (0, common_1.Body)('profilePic')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String, String, String, String, String, Object, String]),
-    __metadata("design:returntype", Promise)
-], AuthController.prototype, "register", null);
-__decorate([
     (0, common_1.Post)('login'),
-    __param(0, (0, common_1.Res)()),
-    __param(1, (0, common_1.Body)('identifier')),
-    __param(2, (0, common_1.Body)('password')),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
-    (0, common_1.Get)('recover'),
-    __param(0, (0, common_1.Res)()),
-    __param(1, (0, common_1.Body)('email')),
+    (0, common_1.Post)('register'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
-], AuthController.prototype, "recoverPassword", null);
-__decorate([
-    (0, common_1.Put)('reset'),
-    __param(0, (0, common_1.Res)()),
-    __param(1, (0, common_1.Body)('token')),
-    __param(2, (0, common_1.Body)('newPassword')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String]),
-    __metadata("design:returntype", Promise)
-], AuthController.prototype, "resetPassword", null);
+], AuthController.prototype, "register", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
-    __metadata("design:paramtypes", [auth_service_1.AuthService])
+    __metadata("design:paramtypes", [typeof (_a = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _a : Object])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

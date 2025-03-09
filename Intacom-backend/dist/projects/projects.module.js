@@ -7,19 +7,17 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsModule = void 0;
-const common_1 = require("@nestjs/common");
+const common_2 = require("@nestjs/common");
+const mongoose_3 = require("@nestjs/mongoose");
+const project_model_1 = require("../models/project.model");
 const projects_controller_1 = require("./projects.controller");
-const projects_service_1 = require("../../../Intacom-frontend/projects.service");
-const mongoose_1 = require("@nestjs/mongoose");
-const project_model_1 = require("../../models/project.model");
+const projects_service_1 = require("./projects.service");
 let ProjectsModule = class ProjectsModule {
 };
 exports.ProjectsModule = ProjectsModule;
 exports.ProjectsModule = ProjectsModule = __decorate([
-    (0, common_1.Module)({
-        imports: [
-            mongoose_1.MongooseModule.forFeature([{ name: project_model_1.Project.name, schema: project_model_1.ProjectSchema }]),
-        ],
+    (0, common_2.Module)({
+        imports: [mongoose_3.MongooseModule.forFeature([{ name: project_model_1.Project.name, schema: project_model_1.ProjectSchema }])],
         controllers: [projects_controller_1.ProjectsController],
         providers: [projects_service_1.ProjectsService],
     })

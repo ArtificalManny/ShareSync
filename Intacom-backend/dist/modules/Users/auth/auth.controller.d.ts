@@ -1,14 +1,12 @@
-import { AuthService } from './auth.service';
-import { Response } from 'express';
-export declare class AuthController {
-    private readonly authService;
-    constructor(authService: AuthService);
-    register(res: Response, firstName: string, lastName: string, username: string, password: string, email: string, gender: string, birthday: {
-        month: string;
-        day: string;
-        year: string;
-    }, profilePic?: string): Promise<void>;
-    login(res: Response, identifier: string, password: string): Promise<void>;
-    recoverPassword(res: Response, email: string): Promise<void>;
-    resetPassword(res: Response, token: string, newPassword: string): Promise<void>;
-}
+declare var __decorate: any;
+declare var __metadata: any;
+declare var __param: any;
+declare var _a: any;
+declare const common_1: any;
+declare const auth_service_1: any;
+declare let AuthController: {
+    new (authService: any): {
+        login(body: any, res: any): Promise<void>;
+        register(body: any, res: any): Promise<void>;
+    };
+};
