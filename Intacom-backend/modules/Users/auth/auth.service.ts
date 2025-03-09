@@ -3,10 +3,19 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '../../models/user.model';
 import * as bcrypt from 'bcrypt';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectModel('User') private userModel: Model<User>) {} // Proper dependency injection
+  constructor(@InjectModel('User') private userModel: Model<User>) {}
+
+  private transporter = nodemailer.createTransport({
+    service: 'gmail', // Use your email service
+    auth: {
+      user: process.env.EMAIL_USER, // Set in .env
+      pass: process.env.EMAIL_PASS, // Set in .env
+    },
+  });
 
   async register(firstName: string, lastName: string, username: string, password: string, email: string, gender: string, birthday: { month: string; day: string; year: string }, profilePic?: string): Promise<User> {
     const existingUser = await this.userModel.findOne({ username });
@@ -23,7 +32,17 @@ export class AuthService {
       birthday,
       profilePic,
     });
-    return user.save();
+    const savedUser = await user.save();
+
+    // Send confirmation email
+    await this.transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Welcome to Intacom - Confirm Your Account',
+      text: `Hello ${firstName},\n\nThank you for registering with Intacom! Please confirm your account by logging in.\n\nBest,\nThe Intacom Team`,
+    });
+
+    return savedUser;
   }
 
   async login(identifier: string, password: string): Promise<User> {
@@ -65,4 +84,4 @@ export class AuthService {
   }
 }
 
-export { AuthService }; // Ensure export
+export { AuthService };

@@ -135,11 +135,10 @@ main.full-screen .subtitle {
   font-size: 1.2rem;
   color: #b0b0ff;
   text-align: center;
-  margin-bottom: 1rem;
+  margin: 0 1rem 1rem 1rem; /* Add margins to prevent cutoff */
   white-space: normal; /* Allow text to wrap */
   overflow-wrap: break-word;
   max-width: 100%;
-  padding: 0 1rem; /* Add padding to prevent cutoff */
 }
 
 main.full-screen .error-message {
@@ -171,6 +170,7 @@ main.full-screen .birthday-container select {
 
   main.full-screen .subtitle {
     font-size: 1rem;
+    margin: 0 0.5rem 1rem 0.5rem; /* Adjust for smaller screens */
   }
 }
 

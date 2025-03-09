@@ -4,7 +4,7 @@ import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {} // Proper dependency injection
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   async register(
@@ -20,7 +20,8 @@ export class AuthController {
   ) {
     try {
       const user = await this.authService.register(firstName, lastName, username, password, email, gender, birthday, profilePic);
-      res.status(201).json({ user });
+      // Send confirmation email (to be implemented in auth.service.ts)
+      res.status(201).json({ message: 'Registration successful. Check your email for confirmation.', user });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
@@ -68,4 +69,4 @@ export class AuthController {
   }
 }
 
-export { AuthController }; // Ensure export
+export { AuthController };

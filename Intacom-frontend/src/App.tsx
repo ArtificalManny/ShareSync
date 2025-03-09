@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Outlet } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell } from '@fortawesome/free-solid-svg-icons';
@@ -46,7 +46,7 @@ const App: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(''); // Reset error message
+    setErrorMessage('');
     try {
       const url = isLogin ? '/auth/login' : '/auth/register';
       const response = await axios.post(`http://localhost:3000${url}`, {
@@ -61,7 +61,7 @@ const App: React.FC = () => {
         profilePic: isLogin ? undefined : profilePic,
       });
       setUser(response.data.user);
-      alert(isLogin ? 'Login successful' : 'Registration successful');
+      alert(isLogin ? 'Login successful' : 'Registration successful. Check your email for confirmation.');
       if (!isLogin) {
         setShowCreateProject(true);
       }
@@ -178,13 +178,13 @@ const App: React.FC = () => {
             {isLogin ? (
               <>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
-                <label htmlFor="identifier">Username</label>
+                <label htmlFor="identifier">Email or Username</label>
                 <input
                   id="identifier"
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Username"
+                  placeholder="Email or Username"
                   required
                 />
                 <label htmlFor="password">Password</label>
@@ -321,12 +321,7 @@ const App: React.FC = () => {
             )}
           </form>
         ) : (
-          <div style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
-            <h2>Welcome, {user.firstName || user.username}!</h2>
-            <p>Email: {user.email}</p>
-            {user.profilePic && <img src={user.profilePic} alt="Profile" style={{ maxWidth: '100px' }} />}
-            <button onClick={handleLogout}>Logout</button>
-          </div>
+          <Outlet />
         )}
         {showRecover && (
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
