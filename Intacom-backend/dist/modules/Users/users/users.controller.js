@@ -13,7 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
-const common_1 = require("@nestjs/common");
+const common_2 = require("@nestjs/common");
 const multer_1 = require("multer");
 const path_1 = require("path");
 const platform_express_1 = require("@nestjs/platform-express");
@@ -33,21 +33,21 @@ let UsersController = class UsersController {
 };
 exports.UsersController = UsersController;
 __decorate([
-    (0, common_1.Get)('profile'),
+    (0, common_2.Get)('profile'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "getProfile", null);
 __decorate([
-    (0, common_1.Put)('profile'),
-    __param(0, (0, common_1.Body)()),
+    (0, common_2.Put)('profile'),
+    __param(0, (0, common_2.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "updateProfile", null);
 __decorate([
-    (0, common_1.Post)('profile-image'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
+    (0, common_2.Post)('profile-image'),
+    (0, common_2.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
         storage: (0, multer_1.diskStorage)({
             destination: './uploads/profile-images',
             filename: (req, file, cb) => {
@@ -59,14 +59,14 @@ __decorate([
             },
         }),
     })),
-    __param(0, (0, common_1.UploadedFile)()),
+    __param(0, (0, common_2.UploadedFile)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "uploadProfileImage", null);
 __decorate([
-    (0, common_1.Post)('cover-image'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
+    (0, common_2.Post)('cover-image'),
+    (0, common_2.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
         storage: (0, multer_1.diskStorage)({
             destination: './uploads/cover-images',
             filename: (req, file, cb) => {
@@ -78,12 +78,12 @@ __decorate([
             },
         }),
     })),
-    __param(0, (0, common_1.UploadedFile)()),
+    __param(0, (0, common_2.UploadedFile)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "uploadCoverImage", null);
 exports.UsersController = UsersController = __decorate([
-    (0, common_1.Controller)('users')
+    (0, common_2.Controller)('users')
 ], UsersController);
 //# sourceMappingURL=users.controller.js.map

@@ -7,7 +7,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UploadService = void 0;
-const common_1 = require("@nestjs/common");
+const common_2 = require("@nestjs/common");
 const multer_1 = require("multer");
 const aws_sdk_1 = require("aws-sdk");
 let UploadService = class UploadService {
@@ -47,6 +47,6 @@ let UploadService = class UploadService {
 };
 exports.UploadService = UploadService;
 exports.UploadService = UploadService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_2.Injectable)()
 ], UploadService);
 //# sourceMappingURL=uploads.service.js.map

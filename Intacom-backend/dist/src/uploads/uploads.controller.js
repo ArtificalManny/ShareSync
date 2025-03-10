@@ -10,7 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UploadsController = void 0;
-const common_1 = require("@nestjs/common");
+const common_2 = require("@nestjs/common");
 const uploads_service_1 = require("./uploads.service");
 let UploadsController = class UploadsController {
     constructor(uploadService) {
@@ -19,7 +19,7 @@ let UploadsController = class UploadsController {
 };
 exports.UploadsController = UploadsController;
 exports.UploadsController = UploadsController = __decorate([
-    (0, common_1.Controller)('upload'),
+    (0, common_2.Controller)('upload'),
     __metadata("design:paramtypes", [uploads_service_1.UploadService])
 ], UploadsController);
 //# sourceMappingURL=uploads.controller.js.map

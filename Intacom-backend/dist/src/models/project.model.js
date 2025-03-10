@@ -10,43 +10,43 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectSchema = exports.Project = void 0;
-const mongoose_1 = require("@nestjs/mongoose");
+const mongoose_3 = require("@nestjs/mongoose");
 let Project = class Project {
     constructor() {
         this.name = '';
         this.description = '';
-        this.admin = '';
-        this.members = [];
-        this.administrators = [];
+        this.admin = ''; // Admin username
+        this.members = []; // Array of member usernames
+        this.administrators = []; // Array of admin usernames
     }
 };
 exports.Project = Project;
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_3.Prop)({ required: true }),
     __metadata("design:type", String)
 ], Project.prototype, "name", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_3.Prop)({ required: true }),
     __metadata("design:type", String)
 ], Project.prototype, "description", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_3.Prop)({ required: true }),
     __metadata("design:type", String)
 ], Project.prototype, "admin", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_3.Prop)(),
     __metadata("design:type", String)
 ], Project.prototype, "color", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_3.Prop)(),
     __metadata("design:type", Array)
 ], Project.prototype, "members", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_3.Prop)(),
     __metadata("design:type", Array)
 ], Project.prototype, "administrators", void 0);
 exports.Project = Project = __decorate([
-    (0, mongoose_1.Schema)()
+    (0, mongoose_3.Schema)()
 ], Project);
-exports.ProjectSchema = mongoose_1.SchemaFactory.createForClass(Project);
+exports.ProjectSchema = mongoose_3.SchemaFactory.createForClass(Project);
 //# sourceMappingURL=project.model.js.map

@@ -1,18 +1,20 @@
-declare var __createBinding: any;
-declare var __setModuleDefault: any;
-declare var __decorate: any;
-declare var __importStar: any;
-declare var __metadata: any;
-declare var __param: any;
-declare const common_1: any;
-declare const mongoose_1: any;
-declare const mongoose_2: any;
-declare const user_model_1: any;
-declare const bcrypt: any;
-declare let AuthService: {
-    new (userModel: any): {
-        register(username: any, password: any, profilePic: any): Promise<any>;
-        login(username: any, password: any): Promise<any>;
-        findUser(username: any): Promise<any>;
-    };
-};
+import { Model } from 'mongoose';
+import { User } from '../../models/user.model';
+export declare class AuthService {
+    private userModel;
+    constructor(userModel: Model<User>);
+    private transporter;
+    register(firstName: string, lastName: string, username: string, password: string, email: string, gender: string, birthday: {
+        month: string;
+        day: string;
+        year: string;
+    }, profilePic?: string): Promise<User>;
+    login(identifier: string, password: string): Promise<User>;
+    findUser(identifier: string): Promise<User | null>;
+    recoverPassword(email: string): Promise<{
+        message: string;
+        token: string;
+    }>;
+    resetPassword(token: string, newPassword: string): Promise<User>;
+}
+export { AuthService };

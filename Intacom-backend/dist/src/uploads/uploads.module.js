@@ -7,12 +7,12 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UploadsModule = void 0;
-const common_1 = require("@nestjs/common");
+const common_2 = require("@nestjs/common");
 let UploadsModule = class UploadsModule {
 };
 exports.UploadsModule = UploadsModule;
 exports.UploadsModule = UploadsModule = __decorate([
-    (0, common_1.Module)({
+    (0, common_2.Module)({
         controllers: [],
         providers: [],
     })

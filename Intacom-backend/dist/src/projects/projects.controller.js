@@ -13,7 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsController = void 0;
-const common_1 = require("@nestjs/common");
+const common_2 = require("@nestjs/common");
 const projects_service_1 = require("./projects.service");
 let ProjectsController = class ProjectsController {
     constructor(projectsService) {
@@ -41,6 +41,7 @@ let ProjectsController = class ProjectsController {
         try {
             const project = await this.projectsService.addMember(projectId, username, role);
             res.status(200).json({ project });
+            // In production, send email notification to the user
         }
         catch (error) {
             res.status(400).json({ error: error.message });
@@ -49,36 +50,36 @@ let ProjectsController = class ProjectsController {
 };
 exports.ProjectsController = ProjectsController;
 __decorate([
-    (0, common_1.Post)(),
-    __param(0, (0, common_1.Res)()),
-    __param(1, (0, common_1.Body)('name')),
-    __param(2, (0, common_1.Body)('description')),
-    __param(3, (0, common_1.Body)('admin')),
-    __param(4, (0, common_1.Body)('color')),
+    (0, common_2.Post)(),
+    __param(0, (0, common_2.Res)()),
+    __param(1, (0, common_2.Body)('name')),
+    __param(2, (0, common_2.Body)('description')),
+    __param(3, (0, common_2.Body)('admin')),
+    __param(4, (0, common_2.Body)('color')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "createProject", null);
 __decorate([
-    (0, common_1.Get)(':username'),
-    __param(0, (0, common_1.Res)()),
-    __param(1, (0, common_1.Param)('username')),
+    (0, common_2.Get)(':username'),
+    __param(0, (0, common_2.Res)()),
+    __param(1, (0, common_2.Param)('username')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "getUserProjects", null);
 __decorate([
-    (0, common_1.Post)(':projectId/addMember'),
-    __param(0, (0, common_1.Res)()),
-    __param(1, (0, common_1.Param)('projectId')),
-    __param(2, (0, common_1.Body)('username')),
-    __param(3, (0, common_1.Body)('role')),
+    (0, common_2.Post)(':projectId/addMember'),
+    __param(0, (0, common_2.Res)()),
+    __param(1, (0, common_2.Param)('projectId')),
+    __param(2, (0, common_2.Body)('username')),
+    __param(3, (0, common_2.Body)('role')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "addMember", null);
 exports.ProjectsController = ProjectsController = __decorate([
-    (0, common_1.Controller)('projects'),
+    (0, common_2.Controller)('projects'),
     __metadata("design:paramtypes", [projects_service_1.ProjectsService])
 ], ProjectsController);
 //# sourceMappingURL=projects.controller.js.map
