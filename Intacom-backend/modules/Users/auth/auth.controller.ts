@@ -20,7 +20,6 @@ export class AuthController {
   ) {
     try {
       const user = await this.authService.register(firstName, lastName, username, password, email, gender, birthday, profilePic);
-      // Send confirmation email (to be implemented in auth.service.ts)
       res.status(201).json({ message: 'Registration successful. Check your email for confirmation.', user });
     } catch (error: any) {
       res.status(400).json({ error: error.message });

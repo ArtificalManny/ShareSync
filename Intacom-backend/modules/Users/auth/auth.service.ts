@@ -10,10 +10,10 @@ export class AuthService {
   constructor(@InjectModel('User') private userModel: Model<User>) {}
 
   private transporter = nodemailer.createTransport({
-    service: 'gmail', // Use your email service
+    service: 'gmail',
     auth: {
-      user: process.env.EMAIL_USER, // Set in .env
-      pass: process.env.EMAIL_PASS, // Set in .env
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
   });
 
@@ -34,7 +34,6 @@ export class AuthService {
     });
     const savedUser = await user.save();
 
-    // Send confirmation email
     await this.transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
