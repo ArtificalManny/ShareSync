@@ -8,18 +8,33 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UploadsController = void 0;
 const common_2 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
 const uploads_service_1 = require("./uploads.service");
 let UploadsController = class UploadsController {
-    constructor(uploadService) {
-        this.uploadService = uploadService;
+    constructor(uploadsService) {
+        this.uploadsService = uploadsService;
+    }
+    uploadFile(file) {
+        return { filename: file.filename };
     }
 };
 exports.UploadsController = UploadsController;
+__decorate([
+    (0, common_2.Post)('file'),
+    (0, common_2.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    __param(0, (0, common_2.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], UploadsController.prototype, "uploadFile", null);
 exports.UploadsController = UploadsController = __decorate([
-    (0, common_2.Controller)('upload'),
-    __metadata("design:paramtypes", [uploads_service_1.UploadService])
+    (0, common_2.Controller)('uploads'),
+    __metadata("design:paramtypes", [uploads_service_1.UploadsService])
 ], UploadsController);
 //# sourceMappingURL=uploads.controller.js.map

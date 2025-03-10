@@ -68,4 +68,4 @@ export class AuthController {
   }
 }
 
-export { AuthController };
+export { AuthController }; // Single export

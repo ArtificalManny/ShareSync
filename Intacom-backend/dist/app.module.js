@@ -10,7 +10,6 @@ exports.AppModule = void 0;
 const common_2 = require("@nestjs/common");
 const mongoose_3 = require("@nestjs/mongoose");
 const auth_module_1 = require("./routes/auth.module");
-const projects_module_1 = require("./projects/projects.module");
 const uploads_module_1 = require("./uploads/uploads.module");
 let AppModule = class AppModule {
 };
@@ -20,7 +19,6 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             mongoose_3.MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost/intacom'),
             auth_module_1.AuthModule,
-            projects_module_1.ProjectsModule,
             uploads_module_1.UploadsModule,
         ],
     })

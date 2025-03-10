@@ -1,5 +1,8 @@
-import { UploadService } from './uploads.service';
+import { UploadsService } from './uploads.service';
 export declare class UploadsController {
-    private readonly uploadService;
-    constructor(uploadService: UploadService);
+    private readonly uploadsService;
+    constructor(uploadsService: UploadsService);
+    uploadFile(file: Express.Multer.File): {
+        filename: string;
+    };
 }

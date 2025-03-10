@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-export declare class UploadService {
-    private upload;
-    uploadFile(req: Request, res: Response): void;
+import multer from 'multer';
+export declare class UploadsService {
+    private storage;
+    upload: multer.Multer;
 }

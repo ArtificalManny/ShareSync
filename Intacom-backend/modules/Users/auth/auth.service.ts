@@ -83,4 +83,4 @@ export class AuthService {
   }
 }
 
-export { AuthService };
+export { AuthService }; // Single export
