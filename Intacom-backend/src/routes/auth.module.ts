@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { UserModule } from '../modules/users/user.module'; // Fixed case: Users -> users
+import { UserModule } from '../modules/users/user.module';
 
 @Module({
   imports: [UserModule],

@@ -82,5 +82,3 @@ export class AuthService {
     return user.save();
   }
 }
-
-export { AuthService }; // Single export
