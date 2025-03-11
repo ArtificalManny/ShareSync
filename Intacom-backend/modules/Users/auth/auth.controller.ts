@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Res, Get, Put } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { AuthService } from '../modules/Users/auth/auth.service'; // Corrected import path
 import { Response } from 'express';
 
 @Controller('auth')
