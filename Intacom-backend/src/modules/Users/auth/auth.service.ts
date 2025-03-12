@@ -17,9 +17,7 @@ export class AuthService {
     },
   });
 
-  async register(firstName: string, lastName: string, username: string, 
-password: string, email: string, gender: string, birthday: { month: string; 
-day: string; year: string }, profilePic?: string): Promise<User> {
+  async register(firstName: string, lastName: string, username: string, password: string, email: string, gender: string, birthday: { month: string; day: string; year: string }, profilePic?: string): Promise<User> {
     const existingUser = await this.userModel.findOne({ username });
     if (existingUser) throw new Error('Username already exists');
 
@@ -40,16 +38,14 @@ day: string; year: string }, profilePic?: string): Promise<User> {
       from: process.env.EMAIL_USER,
       to: email,
       subject: 'Welcome to Intacom - Confirm Your Account',
-      text: `Hello ${firstName},\n\nThank you for registering with Intacom! 
-Please confirm your account by logging in.\n\nBest,\nThe Intacom Team`,
+      text: `Hello ${firstName},\n\nThank you for registering with Intacom! Please confirm your account by logging in.\n\nBest,\nThe Intacom Team`,
     });
 
     return savedUser;
   }
 
   async login(identifier: string, password: string): Promise<User> {
-    const user = await this.userModel.findOne({ $or: [{ username: identifier 
-}, { email: identifier }] });
+    const user = await this.userModel.findOne({ $or: [{ username: identifier }, { email: identifier }] });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new Error('Invalid credentials');
     }
@@ -57,12 +53,10 @@ Please confirm your account by logging in.\n\nBest,\nThe Intacom Team`,
   }
 
   async findUser(identifier: string): Promise<User | null> {
-    return this.userModel.findOne({ $or: [{ username: identifier }, { email: 
-identifier }] });
+    return this.userModel.findOne({ $or: [{ username: identifier }, { email: identifier }] });
   }
 
-  async recoverPassword(email: string): Promise<{ message: string; token: 
-string }> {
+  async recoverPassword(email: string): Promise<{ message: string; token: string }> {
     const user = await this.userModel.findOne({ email });
     if (!user) throw new Error('Email not found');
 

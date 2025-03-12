@@ -15,15 +15,12 @@ export class AuthController {
     @Body('password') password: string,
     @Body('email') email: string,
     @Body('gender') gender: string,
-    @Body('birthday') birthday: { month: string; day: string; year: string 
-},
+    @Body('birthday') birthday: { month: string; day: string; year: string },
     @Body('profilePic') profilePic?: string,
   ) {
     try {
-      const user = await this.authService.register(firstName, lastName, 
-username, password, email, gender, birthday, profilePic);
-      res.status(201).json({ message: 'Registration successful. Check your 
-email for confirmation.', user });
+      const user = await this.authService.register(firstName, lastName, username, password, email, gender, birthday, profilePic);
+      res.status(201).json({ message: 'Registration successful. Check your email for confirmation.', user });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
@@ -49,8 +46,7 @@ email for confirmation.', user });
     @Body('email') email: string,
   ) {
     try {
-      const { message, token } = await 
-this.authService.recoverPassword(email);
+      const { message, token } = await this.authService.recoverPassword(email);
       res.status(200).json({ message, token });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
