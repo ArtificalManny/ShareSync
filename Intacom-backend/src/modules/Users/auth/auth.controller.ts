@@ -1,59 +1,73 @@
-"use strict";
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
-var _a;
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.AuthController = void 0;
-const common_1 = require("@nestjs/common");
-const auth_service_1 = require("./auth.service");
-let AuthController = class AuthController {
-    constructor(authService) {
-        this.authService = authService;
+import { Controller, Post, Body, Res, Get, Put } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { Response } from 'express';
+
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @Post('register')
+  async register(
+    @Res() res: Response,
+    @Body('firstName') firstName: string,
+    @Body('lastName') lastName: string,
+    @Body('username') username: string,
+    @Body('password') password: string,
+    @Body('email') email: string,
+    @Body('gender') gender: string,
+    @Body('birthday') birthday: { month: string; day: string; year: string 
+},
+    @Body('profilePic') profilePic?: string,
+  ) {
+    try {
+      const user = await this.authService.register(firstName, lastName, 
+username, password, email, gender, birthday, profilePic);
+      res.status(201).json({ message: 'Registration successful. Check your 
+email for confirmation.', user });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
     }
-    async login(body, res) {
-        const user = await this.authService.login(body.username, body.password);
-        if (user) {
-            res.cookie('userToken', JSON.stringify({ username: user.username, profilePic: user.profilePic }), { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
-            res.json({ user, token: 'mock-token' });
-        }
-        else {
-            res.status(401).json({ error: 'Invalid credentials' });
-        }
+  }
+
+  @Post('login')
+  async login(
+    @Res() res: Response,
+    @Body('identifier') identifier: string,
+    @Body('password') password: string,
+  ) {
+    try {
+      const user = await this.authService.login(identifier, password);
+      res.status(200).json({ user });
+    } catch (error: any) {
+      res.status(401).json({ error: error.message });
     }
-    async register(body, res) {
-        const newUser = await this.authService.register(body.username, body.password, body.profilePic);
-        res.cookie('userToken', JSON.stringify({ username: newUser.username, profilePic: newUser.profilePic }), { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
-        res.json(newUser);
+  }
+
+  @Get('recover')
+  async recoverPassword(
+    @Res() res: Response,
+    @Body('email') email: string,
+  ) {
+    try {
+      const { message, token } = await 
+this.authService.recoverPassword(email);
+      res.status(200).json({ message, token });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
     }
-};
-exports.AuthController = AuthController;
-__decorate([
-    (0, common_1.Post)('login'),
-    __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Res)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
-    __metadata("design:returntype", Promise)
-], AuthController.prototype, "login", null);
-__decorate([
-    (0, common_1.Post)('register'),
-    __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Res)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
-    __metadata("design:returntype", Promise)
-], AuthController.prototype, "register", null);
-exports.AuthController = AuthController = __decorate([
-    (0, common_1.Controller)('auth'),
-    __metadata("design:paramtypes", [typeof (_a = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _a : Object])
-], AuthController);
+  }
+
+  @Put('reset')
+  async resetPassword(
+    @Res() res: Response,
+    @Body('token') token: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    try {
+      const user = await this.authService.resetPassword(token, newPassword);
+      res.status(200).json({ message: 'Password reset successful', user });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+}
