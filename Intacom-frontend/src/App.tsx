@@ -49,24 +49,27 @@ const App: React.FC = () => {
     setErrorMessage('');
     try {
       const url = isLogin ? '/auth/login' : '/auth/register';
-      const response = await axios.post(`http://localhost:3000${url}`, {
-        identifier: isLogin ? identifier : undefined,
-        firstName: isLogin ? undefined : firstName,
-        lastName: isLogin ? undefined : lastName,
-        username: isLogin ? undefined : username,
-        password,
-        email: isLogin ? undefined : email,
-        gender: isLogin ? undefined : gender,
-        birthday: isLogin ? undefined : birthday,
-        profilePic: isLogin ? undefined : profilePic,
-      });
+      const payload = isLogin
+        ? { identifier, password }
+        : {
+            firstName,
+            lastName,
+            username,
+            password,
+            email,
+            gender,
+            birthday,
+            profilePic,
+          };
+      console.log('Submitting payload:', payload);
+      const response = await axios.post(`http://localhost:3000${url}`, payload);
       setUser(response.data.user);
       alert(isLogin ? 'Login successful' : 'Registration successful. Check your email for confirmation.');
       if (!isLogin) {
         setShowCreateProject(true);
       }
     } catch (error: any) {
-      console.error('Form submission error:', error);
+      console.error('Form submission error:', error.response?.data || error.message);
       setErrorMessage(error.response?.data?.error || 'An error occurred');
     }
   };
@@ -87,19 +90,21 @@ const App: React.FC = () => {
 
   const handleRecoverPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     try {
       const response = await axios.get(`http://localhost:3000/auth/recover`, { params: { email: recoveryEmail } });
       alert(response.data.message + ' (Token: ' + response.data.token + '). Enter the token below.');
       setShowRecover(false);
       setShowReset(true);
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      console.error('Recover password error:', error.response?.data || error.message);
       setErrorMessage(error.response?.data?.error || 'An error occurred');
     }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     try {
       const response = await axios.put(`http://localhost:3000/auth/reset`, { token: recoveryToken, newPassword });
       alert(response.data.message);
@@ -107,14 +112,15 @@ const App: React.FC = () => {
       setRecoveryEmail('');
       setRecoveryToken('');
       setNewPassword('');
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      console.error('Reset password error:', error.response?.data || error.message);
       setErrorMessage(error.response?.data?.error || 'An error occurred');
     }
   };
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     try {
       const response = await axios.post(`http://localhost:3000/projects`, {
         name: projectName,
@@ -128,8 +134,8 @@ const App: React.FC = () => {
       setProjectDescription('');
       setProjectColor('');
       alert('Project created successfully');
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      console.error('Create project error:', error.response?.data || error.message);
       setErrorMessage(error.response?.data?.error || 'An error occurred');
     }
   };
@@ -163,6 +169,7 @@ const App: React.FC = () => {
             <li><Link to="/projects">Projects</Link></li>
             <li><Link to="/upload">Upload</Link></li>
             <li><Link to="/settings">Settings</Link></li>
+            <li><a href="#" onClick={handleLogout}>Logout</a></li>
           </ul>
           {projects.map((project) => (
             <div key={project._id} style={{ background: project.color || '#3a3a50', padding: '0.5rem', margin: '0.5rem 0', borderRadius: '5px' }}>
@@ -175,9 +182,9 @@ const App: React.FC = () => {
         {!user ? (
           <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
             <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>Intacom</h2>
+            {errorMessage && <div className="error-message">{errorMessage}</div>}
             {isLogin ? (
               <>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
                 <label htmlFor="identifier">Email or Username</label>
                 <input
                   id="identifier"
