@@ -65,8 +65,8 @@ const App: React.FC = () => {
       if (!isLogin) {
         setShowCreateProject(true);
       }
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      console.error('Form submission error:', error);
       setErrorMessage(error.response?.data?.error || 'An error occurred');
     }
   };

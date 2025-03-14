@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "nest start",
     "build": "tsc",
+    "start": "node -r tsconfig-paths/register dist/main.js",
     "dev": "nest start --watch"
   },
   "dependencies": {
@@ -26,6 +26,7 @@
     "@types/bcrypt": "^5.0.2",
     "@types/multer": "^1.4.11",
     "@types/node": "^20.14.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.4.5"
   }
 }

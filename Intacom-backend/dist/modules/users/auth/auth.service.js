@@ -63,6 +63,58 @@ let AuthService = class AuthService {
         });
     }
     async register(firstName, lastName, username, password, email, gender, birthday, profilePic) {
+        if (!firstName)
+            throw new Error('First name is required');
+        if (!lastName)
+            throw new Error('Last name is required');
+        if (!username)
+            throw new Error('Username is required');
+        if (!password)
+            throw new Error('Password is required');
+        if (!email)
+            throw new Error('Email is required');
+        if (!gender)
+            throw new Error('Gender is required');
+        if (!birthday || !birthday.month || !birthday.day || !birthday.year)
+            throw new Error('Birthday (month, day, year) is required');
+        const existingUser = await this.userModel.findOne({ username });
+        if (existingUser)
+            throw new Error('Username already exists');
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new this.userModel({
+            firstName,
+            lastName,
+            username,
+            password: hashedPassword,
+            email,
+            gender,
+            birthday,
+            profilePic,
+        });
+        const savedUser = await user.save();
+        await this.transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Welcome to Intacom - Confirm Your Account',
+            text: `Hello ${firstName},\n\nThank you for registering with Intacom! Please confirm your account by logging in.\n\nBest,\nThe Intacom Team`,
+        });
+        return savedUser;
+    }
+    async register(firstName, lastName, username, password, email, gender, birthday, profilePic) {
+        if (!firstName)
+            throw new Error('First name is required');
+        if (!lastName)
+            throw new Error('Last name is required');
+        if (!username)
+            throw new Error('Username is required');
+        if (!password)
+            throw new Error('Password is required');
+        if (!email)
+            throw new Error('Email is required');
+        if (!gender)
+            throw new Error('Gender is required');
+        if (!birthday || !birthday.month || !birthday.day || !birthday.year)
+            throw new Error('Birthday (month, day, year) is required');
         const existingUser = await this.userModel.findOne({ username });
         if (existingUser)
             throw new Error('Username already exists');

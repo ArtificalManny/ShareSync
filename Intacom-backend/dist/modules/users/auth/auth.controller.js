@@ -20,11 +20,13 @@ let AuthController = class AuthController {
         this.authService = authService;
     }
     async register(res, firstName, lastName, username, password, email, gender, birthday, profilePic) {
+        console.log('Received registration data:', { firstName, lastName, username, password, email, gender, birthday, profilePic });
         try {
             const user = await this.authService.register(firstName, lastName, username, password, email, gender, birthday, profilePic);
             res.status(201).json({ message: 'Registration successful. Check your email for confirmation.', user });
         }
         catch (error) {
+            console.error('Registration error:', error.message);
             res.status(400).json({ error: error.message });
         }
     }

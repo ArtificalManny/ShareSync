@@ -23,7 +23,15 @@ export class User {
   @Prop({ required: true, enum: ['Male', 'Female'] })
   gender: string = '';
 
-  @Prop({ required: true })
+  @Prop({
+    type: {
+      month: { type: String, required: true },
+      day: { type: String, required: true },
+      year: { type: String, required: true },
+    },
+    required: true,
+    _id: false, // Disable _id for the sub-schema
+  })
   birthday: { month: string; day: string; year: string } = { month: '', day: '', year: '' };
 
   @Prop()
