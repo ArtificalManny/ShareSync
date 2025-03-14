@@ -67,6 +67,8 @@ const App: React.FC = () => {
       alert(isLogin ? 'Login successful' : 'Registration successful. Check your email for confirmation.');
       if (!isLogin) {
         setShowCreateProject(true);
+      } else {
+        navigate('/dashboard'); // Navigate to dashboard after login
       }
     } catch (error: any) {
       console.error('Form submission error:', error.response?.data || error.message);
