@@ -23,7 +23,7 @@ export class AuthController {
       const user = await this.authService.register(firstName, lastName, username, password, email, gender, birthday, profilePic);
       res.status(201).json({ message: 'Registration successful. Check your email for confirmation.', user });
     } catch (error: any) {
-      console.error('Registration error:', error.message);
+      console.error('Registration error:', error.message, error.stack);
       res.status(400).json({ error: error.message });
     }
   }
@@ -39,7 +39,7 @@ export class AuthController {
       const user = await this.authService.login(identifier, password);
       res.status(200).json({ user });
     } catch (error: any) {
-      console.error('Login error:', error.message);
+      console.error('Login error:', error.message, error.stack);
       res.status(401).json({ error: error.message });
     }
   }
@@ -54,7 +54,7 @@ export class AuthController {
       const { message, token } = await this.authService.recoverPassword(email);
       res.status(200).json({ message, token });
     } catch (error: any) {
-      console.error('Recover password error:', error.message);
+      console.error('Recover password error:', error.message, error.stack);
       res.status(400).json({ error: error.message });
     }
   }
@@ -70,7 +70,7 @@ export class AuthController {
       const user = await this.authService.resetPassword(token, newPassword);
       res.status(200).json({ message: 'Password reset successful', user });
     } catch (error: any) {
-      console.error('Reset password error:', error.message);
+      console.error('Reset password error:', error.message, error.stack);
       res.status(400).json({ error: error.message });
     }
   }

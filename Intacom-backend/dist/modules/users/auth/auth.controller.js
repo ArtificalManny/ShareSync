@@ -26,7 +26,7 @@ let AuthController = class AuthController {
             res.status(201).json({ message: 'Registration successful. Check your email for confirmation.', user });
         }
         catch (error) {
-            console.error('Registration error:', error.message);
+            console.error('Registration error:', error.message, error.stack);
             res.status(400).json({ error: error.message });
         }
     }
@@ -37,7 +37,7 @@ let AuthController = class AuthController {
             res.status(200).json({ user });
         }
         catch (error) {
-            console.error('Login error:', error.message);
+            console.error('Login error:', error.message, error.stack);
             res.status(401).json({ error: error.message });
         }
     }
@@ -48,7 +48,7 @@ let AuthController = class AuthController {
             res.status(200).json({ message, token });
         }
         catch (error) {
-            console.error('Recover password error:', error.message);
+            console.error('Recover password error:', error.message, error.stack);
             res.status(400).json({ error: error.message });
         }
     }
@@ -59,7 +59,7 @@ let AuthController = class AuthController {
             res.status(200).json({ message: 'Password reset successful', user });
         }
         catch (error) {
-            console.error('Reset password error:', error.message);
+            console.error('Reset password error:', error.message, error.stack);
             res.status(400).json({ error: error.message });
         }
     }
