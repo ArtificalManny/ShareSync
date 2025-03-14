@@ -80,6 +80,9 @@ let AuthService = class AuthService {
         const existingUser = await this.userModel.findOne({ username });
         if (existingUser)
             throw new Error('Username already exists');
+        const existingEmail = await this.userModel.findOne({ email });
+        if (existingEmail)
+            throw new Error('Email already exists');
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = new this.userModel({
             firstName,
@@ -92,53 +95,24 @@ let AuthService = class AuthService {
             profilePic,
         });
         const savedUser = await user.save();
-        await this.transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Welcome to Intacom - Confirm Your Account',
-            text: `Hello ${firstName},\n\nThank you for registering with Intacom! Please confirm your account by logging in.\n\nBest,\nThe Intacom Team`,
-        });
-        return savedUser;
-    }
-    async register(firstName, lastName, username, password, email, gender, birthday, profilePic) {
-        if (!firstName)
-            throw new Error('First name is required');
-        if (!lastName)
-            throw new Error('Last name is required');
-        if (!username)
-            throw new Error('Username is required');
-        if (!password)
-            throw new Error('Password is required');
-        if (!email)
-            throw new Error('Email is required');
-        if (!gender)
-            throw new Error('Gender is required');
-        if (!birthday || !birthday.month || !birthday.day || !birthday.year)
-            throw new Error('Birthday (month, day, year) is required');
-        const existingUser = await this.userModel.findOne({ username });
-        if (existingUser)
-            throw new Error('Username already exists');
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new this.userModel({
-            firstName,
-            lastName,
-            username,
-            password: hashedPassword,
-            email,
-            gender,
-            birthday,
-            profilePic,
-        });
-        const savedUser = await user.save();
-        await this.transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Welcome to Intacom - Confirm Your Account',
-            text: `Hello ${firstName},\n\nThank you for registering with Intacom! Please confirm your account by logging in.\n\nBest,\nThe Intacom Team`,
-        });
+        try {
+            await this.transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Welcome to Intacom - Confirm Your Account',
+                text: `Hello ${firstName},\n\nThank you for registering with Intacom! Please confirm your account by logging in.\n\nBest,\nThe Intacom Team`,
+            });
+        }
+        catch (emailError) {
+            console.error('Email sending error:', emailError.message);
+        }
         return savedUser;
     }
     async login(identifier, password) {
+        if (!identifier)
+            throw new Error('Email or username is required');
+        if (!password)
+            throw new Error('Password is required');
         const user = await this.userModel.findOne({ $or: [{ username: identifier }, { email: identifier }] });
         if (!user || !(await bcrypt.compare(password, user.password))) {
             throw new Error('Invalid credentials');
@@ -149,6 +123,8 @@ let AuthService = class AuthService {
         return this.userModel.findOne({ $or: [{ username: identifier }, { email: identifier }] });
     }
     async recoverPassword(email) {
+        if (!email)
+            throw new Error('Email is required');
         const user = await this.userModel.findOne({ email });
         if (!user)
             throw new Error('Email not found');
@@ -159,6 +135,10 @@ let AuthService = class AuthService {
         return { message: 'Recovery token generated', token };
     }
     async resetPassword(token, newPassword) {
+        if (!token)
+            throw new Error('Token is required');
+        if (!newPassword)
+            throw new Error('New password is required');
         const user = await this.userModel.findOne({
             resetToken: token,
             resetTokenExpires: { $gt: new Date() },

@@ -40,7 +40,7 @@ export class User {
   @Prop()
   resetToken?: string;
 
-  @Prop()
+  @Prop({ type: Date })
   resetTokenExpires?: Date;
 }
 

@@ -31,29 +31,35 @@ let AuthController = class AuthController {
         }
     }
     async login(res, identifier, password) {
+        console.log('Received login data:', { identifier, password });
         try {
             const user = await this.authService.login(identifier, password);
             res.status(200).json({ user });
         }
         catch (error) {
+            console.error('Login error:', error.message);
             res.status(401).json({ error: error.message });
         }
     }
     async recoverPassword(res, email) {
+        console.log('Received recover password request:', { email });
         try {
             const { message, token } = await this.authService.recoverPassword(email);
             res.status(200).json({ message, token });
         }
         catch (error) {
+            console.error('Recover password error:', error.message);
             res.status(400).json({ error: error.message });
         }
     }
     async resetPassword(res, token, newPassword) {
+        console.log('Received reset password request:', { token, newPassword });
         try {
             const user = await this.authService.resetPassword(token, newPassword);
             res.status(200).json({ message: 'Password reset successful', user });
         }
         catch (error) {
+            console.error('Reset password error:', error.message);
             res.status(400).json({ error: error.message });
         }
     }

@@ -68,7 +68,7 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "resetToken", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_1.Prop)({ type: Date }),
     __metadata("design:type", Date)
 ], User.prototype, "resetTokenExpires", void 0);
 exports.User = User = __decorate([
