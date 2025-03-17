@@ -5,6 +5,62 @@ import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell } from '@fortawesome/free-solid-svg-icons';
 
+// Define User type
+interface User {
+  _id?: string;
+  firstName?: string;
+  username: string;
+  email?: string;
+  profilePic?: string;
+}
+
+// Define Project type
+interface Project {
+  _id: string;
+  name: string;
+  description?: string;
+  admin?: string;
+  color?: string;
+}
+
+// Define Axios response types
+interface RegisterResponse {
+  data: {
+    user: User;
+    message: string;
+  };
+}
+
+interface LoginResponse {
+  data: {
+    user: User;
+  };
+}
+
+interface RecoverResponse {
+  data: {
+    message: string;
+    token: string;
+  };
+}
+
+interface ResetResponse {
+  data: {
+    message: string;
+    user: User;
+  };
+}
+
+interface ProjectResponse {
+  data: {
+    project: Project;
+  };
+}
+
+interface ProjectsResponse {
+  data: Project[];
+}
+
 const App: React.FC = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -16,13 +72,13 @@ const App: React.FC = () => {
   const [birthday, setBirthday] = useState({ month: '', day: '', year: '' });
   const [profilePic, setProfilePic] = useState('');
   const [isLogin, setIsLogin] = useState(true);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [showRecover, setShowRecover] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryToken, setRecoveryToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [projects, setProjects] = useState([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
@@ -34,8 +90,8 @@ const App: React.FC = () => {
     if (user) {
       const fetchProjects = async () => {
         try {
-          const response = await axios.get(`http://localhost:3000/projects/${user.username}`);
-          setProjects(response.data);
+          const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
+          setProjects(response.data.data);
         } catch (error) {
           console.error('Failed to fetch projects:', error);
         }
@@ -62,13 +118,16 @@ const App: React.FC = () => {
             profilePic,
           };
       console.log('Submitting payload:', payload);
-      const response = await axios.post(`http://localhost:3000${url}`, payload);
-      setUser(response.data.user);
-      alert(isLogin ? 'Login successful' : 'Registration successful. Check your email for confirmation.');
-      if (!isLogin) {
-        setShowCreateProject(true);
+      if (isLogin) {
+        const response = await axios.post<LoginResponse>(`http://localhost:3000${url}`, payload);
+        setUser(response.data.user);
+        alert('Login successful');
+        navigate('/dashboard');
       } else {
-        navigate('/dashboard'); // Navigate to dashboard after login
+        const response = await axios.post<RegisterResponse>(`http://localhost:3000${url}`, payload);
+        setUser(response.data.user);
+        alert('Registration successful. Check your email for confirmation.');
+        setShowCreateProject(true);
       }
     } catch (error: any) {
       console.error('Form submission error:', error.response?.data || error.message);
@@ -94,7 +153,7 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      const response = await axios.get(`http://localhost:3000/auth/recover`, { params: { email: recoveryEmail } });
+      const response = await axios.get<RecoverResponse>(`http://localhost:3000/auth/recover`, { params: { email: recoveryEmail } });
       alert(response.data.message + ' (Token: ' + response.data.token + '). Enter the token below.');
       setShowRecover(false);
       setShowReset(true);
@@ -108,7 +167,7 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      const response = await axios.put(`http://localhost:3000/auth/reset`, { token: recoveryToken, newPassword });
+      const response = await axios.put<ResetResponse>(`http://localhost:3000/auth/reset`, { token: recoveryToken, newPassword });
       alert(response.data.message);
       setShowReset(false);
       setRecoveryEmail('');
@@ -124,10 +183,10 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      const response = await axios.post(`http://localhost:3000/projects`, {
+      const response = await axios.post<ProjectResponse>(`http://localhost:3000/projects`, {
         name: projectName,
         description: projectDescription,
-        admin: user.username,
+        admin: user?.username,
         color: projectColor,
       });
       setProjects([...projects, response.data.project]);
@@ -160,7 +219,7 @@ const App: React.FC = () => {
         )}
       </header>
       {user && (
-        <sidebar>
+        <aside>
           <div className="profile-section">
             {user.profilePic && <img src={user.profilePic} alt="Profile" />}
             <h3>{user.firstName || user.username}</h3>
@@ -178,7 +237,7 @@ const App: React.FC = () => {
               <Link to={`/project/${project._id}`}>{project.name}</Link>
             </div>
           ))}
-        </sidebar>
+        </aside>
       )}
       <main className={user ? '' : 'full-screen'}>
         {!user ? (

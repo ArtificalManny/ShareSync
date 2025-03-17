@@ -3,9 +3,10 @@ import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 
 async function bootstrap() {
-  dotenv.config();
+  dotenv.config(); // Load .env file
+  console.log('Loaded MONGODB_URI:', process.env.MONGODB_URI); // Debug log
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT || 3000);
-  console.log(`Server running on http://localhost:${process.env.PORT || 3000}`);
+  app.enableCors();
+  await app.listen(process.env.PORT || 3000); // Use PORT from .env or default to 3000
 }
 bootstrap();

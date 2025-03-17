@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthModule } from './modules/users/auth.module';
+import { AuthModule } from './modules/users/auth.module'; // Lowercase 'users'
 import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
