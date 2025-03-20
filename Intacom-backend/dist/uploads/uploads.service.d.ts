@@ -1,5 +1,7 @@
-import multer from 'multer';
 export declare class UploadsService {
-    private storage;
-    upload: multer.Multer;
+    private s3;
+    constructor();
+    uploadFile(file: Express.Multer.File): Promise<{
+        url: string;
+    }>;
 }
