@@ -21,7 +21,14 @@ export class User extends Document {
   @Prop({ required: true })
   gender: string;
 
-  @Prop({ required: true })
+  @Prop({
+    type: {
+      month: { type: String, required: true },
+      day: { type: String, required: true },
+      year: { type: String, required: true },
+    },
+    required: true,
+  })
   birthday: { month: string; day: string; year: string };
 
   @Prop()
