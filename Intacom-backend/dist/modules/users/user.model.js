@@ -40,7 +40,14 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "gender", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_1.Prop)({
+        type: {
+            month: { type: String, required: true },
+            day: { type: String, required: true },
+            year: { type: String, required: true },
+        },
+        required: true,
+    }),
     __metadata("design:type", Object)
 ], User.prototype, "birthday", void 0);
 __decorate([
