@@ -65,14 +65,17 @@ interface ProjectResponse {
 }
 
 interface ProjectsResponse {
-  data: Project[];
+  data?: Project[];
+  // Allow for direct array in case backend doesn't wrap in data
+  [key: number]: Project;
+  length?: number;
 }
 
 const App: React.FC = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [lastName, setFirstName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [gender, setGender] = useState('');
@@ -106,9 +109,13 @@ const App: React.FC = () => {
           console.log('Fetching projects for user:', user.username); // Debug log
           const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
           console.log('Projects response:', response.data); // Debug log
-          setProjects(response.data.data);
+          // Handle both response formats: { data: [...] } or [...]
+          const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
+          console.log('Setting projects to:', projectsData); // Debug log
+          setProjects(projectsData);
         } catch (error) {
           console.error('Failed to fetch projects:', error);
+          setProjects([]); // Ensure projects is an array even if fetch fails
         }
       };
       fetchProjects();

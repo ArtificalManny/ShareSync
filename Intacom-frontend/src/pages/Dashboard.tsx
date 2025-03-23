@@ -10,21 +10,24 @@ interface Project {
 }
 
 interface DashboardProps {
-  projects: Project[];
+  projects: Project[] | undefined;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ projects }) => {
+  console.log('Rendering Dashboard with projects:', projects); // Debug log to verify rendering
+  // Ensure projects is an array; default to empty array if undefined or not an array
+  const safeProjects = Array.isArray(projects) ? projects : [];
   return (
     <div style={{ padding: '2rem' }}>
       <h2>Dashboard</h2>
       <p>Manage your projects and tasks here.</p>
-      {projects.length === 0 ? (
+      {safeProjects.length === 0 ? (
         <p>No projects yet. Create a project to get started!</p>
       ) : (
         <div>
           <h3>Your Projects</h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-            {projects.map((project) => (
+            {safeProjects.map((project) => (
               <div
                 key={project._id}
                 style={{
