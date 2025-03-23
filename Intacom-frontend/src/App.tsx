@@ -4,6 +4,7 @@ import { useNavigate, Outlet } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell } from '@fortawesome/free-solid-svg-icons';
+import AppRoutes from './Routes';
 
 // Define User type
 interface User {
@@ -86,8 +87,11 @@ const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
+  // UseEffect to handle navigation and fetch projects when user state changes
   useEffect(() => {
+    console.log('User state:', user); // Debug log to verify user state
     if (user) {
+      navigate('/dashboard'); // Force navigation if user is set
       const fetchProjects = async () => {
         try {
           const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
@@ -98,8 +102,9 @@ const App: React.FC = () => {
       };
       fetchProjects();
     }
-  }, [user]);
+  }, [user, navigate]);
 
+  // Handle form submission for login and registration
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -117,12 +122,14 @@ const App: React.FC = () => {
             birthday,
             profilePic,
           };
-      console.log('Submitting payload:', payload);
+      console.log('Submitting payload:', payload); // Debug log to verify payload
       if (isLogin) {
         const response = await axios.post<LoginResponse>(`http://localhost:3000${url}`, payload);
+        console.log('Login response:', response.data); // Debug log to verify response
         setUser(response.data.user);
-        alert('Login successful');
-        navigate('/dashboard');
+        console.log('User set to:', response.data.user); // Debug log to verify state update
+        console.log('Navigating to /dashboard'); // Debug log to verify navigation
+        navigate('/dashboard'); // Navigate to dashboard without pop-up
       } else {
         const response = await axios.post<RegisterResponse>(`http://localhost:3000${url}`, payload);
         setUser(response.data.user);
@@ -135,6 +142,7 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle logout
   const handleLogout = () => {
     setUser(null);
     setIdentifier('');
@@ -149,6 +157,7 @@ const App: React.FC = () => {
     navigate('/');
   };
 
+  // Handle password recovery
   const handleRecoverPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -163,6 +172,7 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle password reset
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -179,6 +189,7 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle project creation
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -389,7 +400,7 @@ const App: React.FC = () => {
             )}
           </form>
         ) : (
-          <Outlet />
+          <AppRoutes projects={projects} />
         )}
         {showRecover && (
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
