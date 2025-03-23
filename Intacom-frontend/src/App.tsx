@@ -33,9 +33,15 @@ interface RegisterResponse {
 }
 
 interface LoginResponse {
-  data: {
+  data?: {
     user: User;
   };
+  // Allow for direct user object in case backend doesn't wrap in data
+  _id?: string;
+  firstName?: string;
+  username?: string;
+  email?: string;
+  profilePic?: string;
 }
 
 interface RecoverResponse {
@@ -87,14 +93,19 @@ const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
+  console.log('App component rendering, user:', user); // Debug log to verify App rendering
+
   // UseEffect to handle navigation and fetch projects when user state changes
   useEffect(() => {
     console.log('User state:', user); // Debug log to verify user state
     if (user) {
+      console.log('User is set, navigating to /dashboard'); // Debug log
       navigate('/dashboard'); // Force navigation if user is set
       const fetchProjects = async () => {
         try {
+          console.log('Fetching projects for user:', user.username); // Debug log
           const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
+          console.log('Projects response:', response.data); // Debug log
           setProjects(response.data.data);
         } catch (error) {
           console.error('Failed to fetch projects:', error);
@@ -122,28 +133,48 @@ const App: React.FC = () => {
             birthday,
             profilePic,
           };
-      console.log('Submitting payload:', payload); // Debug log to verify payload
+      console.log('Submitting payload to', url, ':', payload); // Debug log to verify payload
       if (isLogin) {
         const response = await axios.post<LoginResponse>(`http://localhost:3000${url}`, payload);
         console.log('Login response:', response.data); // Debug log to verify response
-        setUser(response.data.user);
-        console.log('User set to:', response.data.user); // Debug log to verify state update
+        let userData: User;
+        if (response.data && 'data' in response.data && response.data.data && response.data.data.user) {
+          // Handle response format: { data: { user: ... } }
+          userData = response.data.data.user;
+        } else if (response.data && 'username' in response.data) {
+          // Handle direct user object: { _id: ..., username: ..., ... }
+          userData = response.data as User;
+        } else {
+          console.error('Login response does not contain user data:', response.data);
+          setErrorMessage('Login failed: Invalid response from server');
+          return;
+        }
+        setUser(userData);
+        console.log('User set to:', userData); // Debug log to verify state update
         console.log('Navigating to /dashboard'); // Debug log to verify navigation
         navigate('/dashboard'); // Navigate to dashboard without pop-up
       } else {
         const response = await axios.post<RegisterResponse>(`http://localhost:3000${url}`, payload);
-        setUser(response.data.user);
-        alert('Registration successful. Check your email for confirmation.');
-        setShowCreateProject(true);
+        console.log('Register response:', response.data); // Debug log to verify response
+        if (response.data && response.data.user) {
+          setUser(response.data.user);
+          console.log('User set to:', response.data.user); // Debug log to verify state update
+          alert('Registration successful. Check your email for confirmation.');
+          setShowCreateProject(true);
+        } else {
+          console.error('Register response does not contain user data:', response.data);
+          setErrorMessage('Registration failed: Invalid response from server');
+        }
       }
     } catch (error: any) {
       console.error('Form submission error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred');
+      setErrorMessage(error.response?.data?.error || 'An error occurred during login/registration');
     }
   };
 
   // Handle logout
   const handleLogout = () => {
+    console.log('Logging out user'); // Debug log
     setUser(null);
     setIdentifier('');
     setPassword('');
@@ -162,13 +193,15 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
+      console.log('Sending recovery request for email:', recoveryEmail); // Debug log
       const response = await axios.get<RecoverResponse>(`http://localhost:3000/auth/recover`, { params: { email: recoveryEmail } });
+      console.log('Recovery response:', response.data); // Debug log
       alert(response.data.message + ' (Token: ' + response.data.token + '). Enter the token below.');
       setShowRecover(false);
       setShowReset(true);
     } catch (error: any) {
       console.error('Recover password error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred');
+      setErrorMessage(error.response?.data?.error || 'An error occurred during password recovery');
     }
   };
 
@@ -177,7 +210,9 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
+      console.log('Sending reset request with token:', recoveryToken, 'and new password:', newPassword); // Debug log
       const response = await axios.put<ResetResponse>(`http://localhost:3000/auth/reset`, { token: recoveryToken, newPassword });
+      console.log('Reset response:', response.data); // Debug log
       alert(response.data.message);
       setShowReset(false);
       setRecoveryEmail('');
@@ -185,7 +220,7 @@ const App: React.FC = () => {
       setNewPassword('');
     } catch (error: any) {
       console.error('Reset password error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred');
+      setErrorMessage(error.response?.data?.error || 'An error occurred during password reset');
     }
   };
 
@@ -194,12 +229,14 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
+      console.log('Creating project with data:', { name: projectName, description: projectDescription, admin: user?.username, color: projectColor }); // Debug log
       const response = await axios.post<ProjectResponse>(`http://localhost:3000/projects`, {
         name: projectName,
         description: projectDescription,
         admin: user?.username,
         color: projectColor,
       });
+      console.log('Create project response:', response.data); // Debug log
       setProjects([...projects, response.data.project]);
       setShowCreateProject(false);
       setProjectName('');
@@ -208,7 +245,7 @@ const App: React.FC = () => {
       alert('Project created successfully');
     } catch (error: any) {
       console.error('Create project error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred');
+      setErrorMessage(error.response?.data?.error || 'An error occurred during project creation');
     }
   };
 
@@ -216,278 +253,284 @@ const App: React.FC = () => {
   const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
   const years = Array.from({ length: 100 }, (_, i) => (new Date().getFullYear() - i).toString());
 
-  return (
-    <>
-      <header>
-        <Link to="/">
-          <img src="https://via.placeholder.com/40?text=Intacom" alt="Intacom Logo" />
-        </Link>
-        {user && (
-          <div className="top-right">
-            <FontAwesomeIcon icon={faBell} className="bell" />
-            {user.profilePic && <img src={user.profilePic} alt="Profile" />}
-          </div>
-        )}
-      </header>
-      {user && (
-        <aside>
-          <div className="profile-section">
-            {user.profilePic && <img src={user.profilePic} alt="Profile" />}
-            <h3>{user.firstName || user.username}</h3>
-          </div>
-          <ul>
-            <li><a href="#" onClick={() => setShowCreateProject(true)}>Create Project</a></li>
-            <li><Link to="/dashboard">Dashboard</Link></li>
-            <li><Link to="/projects">Projects</Link></li>
-            <li><Link to="/upload">Upload</Link></li>
-            <li><Link to="/settings">Settings</Link></li>
-            <li><a href="#" onClick={handleLogout}>Logout</a></li>
-          </ul>
-          {projects.map((project) => (
-            <div key={project._id} style={{ background: project.color || '#3a3a50', padding: '0.5rem', margin: '0.5rem 0', borderRadius: '5px' }}>
-              <Link to={`/project/${project._id}`}>{project.name}</Link>
+  try {
+    return (
+      <>
+        <header>
+          <Link to="/">
+            <img src="https://via.placeholder.com/40?text=Intacom" alt="Intacom Logo" />
+          </Link>
+          {user && (
+            <div className="top-right">
+              <FontAwesomeIcon icon={faBell} className="bell" />
+              {user.profilePic && <img src={user.profilePic} alt="Profile" />}
             </div>
-          ))}
-        </aside>
-      )}
-      <main className={user ? '' : 'full-screen'}>
-        {!user ? (
-          <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
-            <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>Intacom</h2>
-            {errorMessage && <div className="error-message">{errorMessage}</div>}
-            {isLogin ? (
-              <>
-                <label htmlFor="identifier">Email or Username</label>
-                <input
-                  id="identifier"
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Email or Username"
-                  required
-                />
-                <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  required
-                />
-                <button type="submit">Login</button>
-                <button type="button" onClick={() => setShowRecover(true)}>
-                  Forgot Password?
-                </button>
-                <button type="button" onClick={() => setIsLogin(!isLogin)}>
-                  Switch to Register
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="subtitle">Create an account</div>
-                <div className="name-container">
-                  <div>
-                    <label htmlFor="firstName">First Name</label>
-                    <input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="First Name"
-                      required
-                    />
+          )}
+        </header>
+        {user && (
+          <aside>
+            <div className="profile-section">
+              {user.profilePic && <img src={user.profilePic} alt="Profile" />}
+              <h3>{user.firstName || user.username}</h3>
+            </div>
+            <ul>
+              <li><a href="#" onClick={() => setShowCreateProject(true)}>Create Project</a></li>
+              <li><Link to="/dashboard">Dashboard</Link></li>
+              <li><Link to="/projects">Projects</Link></li>
+              <li><Link to="/upload">Upload</Link></li>
+              <li><Link to="/settings">Settings</Link></li>
+              <li><a href="#" onClick={handleLogout}>Logout</a></li>
+            </ul>
+            {projects.map((project) => (
+              <div key={project._id} style={{ background: project.color || '#3a3a50', padding: '0.5rem', margin: '0.5rem 0', borderRadius: '5px' }}>
+                <Link to={`/project/${project._id}`}>{project.name}</Link>
+              </div>
+            ))}
+          </aside>
+        )}
+        <main className={user ? '' : 'full-screen'}>
+          {console.log('Rendering main, user:', user)} {/* Debug log */}
+          {!user ? (
+            <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
+              <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>Intacom</h2>
+              {errorMessage && <div className="error-message">{errorMessage}</div>}
+              {isLogin ? (
+                <>
+                  <label htmlFor="identifier">Email or Username</label>
+                  <input
+                    id="identifier"
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="Email or Username"
+                    required
+                  />
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    required
+                  />
+                  <button type="submit">Login</button>
+                  <button type="button" onClick={() => setShowRecover(true)}>
+                    Forgot Password?
+                  </button>
+                  <button type="button" onClick={() => setIsLogin(!isLogin)}>
+                    Switch to Register
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="subtitle">Create an account</div>
+                  <div className="name-container">
+                    <div>
+                      <label htmlFor="firstName">First Name</label>
+                      <input
+                        id="firstName"
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First Name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="lastName">Last Name</label>
+                      <input
+                        id="lastName"
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last Name"
+                        required
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label htmlFor="lastName">Last Name</label>
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Last Name"
+                  <label htmlFor="username">Username</label>
+                  <input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Username"
+                    required
+                  />
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    required
+                  />
+                  <label htmlFor="email">Email Address</label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email Address"
+                    required
+                  />
+                  <label htmlFor="gender">Gender</label>
+                  <select
+                    id="gender"
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    required
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                  <label>Birthday</label>
+                  <div className="birthday-container">
+                    <select
+                      value={birthday.month}
+                      onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
                       required
-                    />
+                    >
+                      <option value="">Month</option>
+                      {months.map((month) => (
+                        <option key={month} value={month}>{month}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={birthday.day}
+                      onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
+                      required
+                    >
+                      <option value="">Day</option>
+                      {days.map((day) => (
+                        <option key={day} value={day}>{day}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={birthday.year}
+                      onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
+                      required
+                    >
+                      <option value="">Year</option>
+                      {years.map((year) => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
                   </div>
-                </div>
-                <label htmlFor="username">Username</label>
+                  <label htmlFor="profilePic">Profile Picture URL (optional)</label>
+                  <input
+                    id="profilePic"
+                    type="text"
+                    value={profilePic}
+                    onChange={(e) => setProfilePic(e.target.value)}
+                    placeholder="Profile Picture URL (optional)"
+                  />
+                  <button type="submit">Register</button>
+                  <button type="button" onClick={() => setShowRecover(true)}>
+                    Forgot Password?
+                  </button>
+                  <button type="button" onClick={() => setIsLogin(!isLogin)}>
+                    Switch to Login
+                  </button>
+                </>
+              )}
+            </form>
+          ) : (
+            <AppRoutes projects={projects} />
+          )}
+          {showRecover && (
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
+              <h3>Forgot Password</h3>
+              <form onSubmit={handleRecoverPassword}>
+                <label htmlFor="recoveryEmail">Email Address</label>
                 <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Username"
-                  required
-                />
-                <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  required
-                />
-                <label htmlFor="email">Email Address</label>
-                <input
-                  id="email"
+                  id="recoveryEmail"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email Address"
+                  value={recoveryEmail}
+                  onChange={(e) => setRecoveryEmail(e.target.value)}
+                  placeholder="Enter your email"
                   required
                 />
-                <label htmlFor="gender">Gender</label>
-                <select
-                  id="gender"
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  required
-                >
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </select>
-                <label>Birthday</label>
-                <div className="birthday-container">
-                  <select
-                    value={birthday.month}
-                    onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
-                    required
-                  >
-                    <option value="">Month</option>
-                    {months.map((month) => (
-                      <option key={month} value={month}>{month}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={birthday.day}
-                    onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
-                    required
-                  >
-                    <option value="">Day</option>
-                    {days.map((day) => (
-                      <option key={day} value={day}>{day}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={birthday.year}
-                    onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
-                    required
-                  >
-                    <option value="">Year</option>
-                    {years.map((year) => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
-                </div>
-                <label htmlFor="profilePic">Profile Picture URL (optional)</label>
+                <button type="submit">Recover Password</button>
+                <button type="button" onClick={() => setShowRecover(false)}>Cancel</button>
+              </form>
+            </div>
+          )}
+          {showReset && (
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
+              <h3>Reset Password</h3>
+              <form onSubmit={handleResetPassword}>
+                <label htmlFor="recoveryToken">Recovery Token</label>
                 <input
-                  id="profilePic"
+                  id="recoveryToken"
                   type="text"
-                  value={profilePic}
-                  onChange={(e) => setProfilePic(e.target.value)}
-                  placeholder="Profile Picture URL (optional)"
+                  value={recoveryToken}
+                  onChange={(e) => setRecoveryToken(e.target.value)}
+                  placeholder="Enter recovery token"
+                  required
                 />
-                <button type="submit">Register</button>
-                <button type="button" onClick={() => setShowRecover(true)}>
-                  Forgot Password?
-                </button>
-                <button type="button" onClick={() => setIsLogin(!isLogin)}>
-                  Switch to Login
-                </button>
-              </>
-            )}
-          </form>
-        ) : (
-          <AppRoutes projects={projects} />
-        )}
-        {showRecover && (
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
-            <h3>Forgot Password</h3>
-            <form onSubmit={handleRecoverPassword}>
-              <label htmlFor="recoveryEmail">Email Address</label>
-              <input
-                id="recoveryEmail"
-                type="email"
-                value={recoveryEmail}
-                onChange={(e) => setRecoveryEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-              />
-              <button type="submit">Recover Password</button>
-              <button type="button" onClick={() => setShowRecover(false)}>Cancel</button>
-            </form>
-          </div>
-        )}
-        {showReset && (
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
-            <h3>Reset Password</h3>
-            <form onSubmit={handleResetPassword}>
-              <label htmlFor="recoveryToken">Recovery Token</label>
-              <input
-                id="recoveryToken"
-                type="text"
-                value={recoveryToken}
-                onChange={(e) => setRecoveryToken(e.target.value)}
-                placeholder="Enter recovery token"
-                required
-              />
-              <label htmlFor="newPassword">New Password</label>
-              <input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password"
-                required
-              />
-              <button type="submit">Reset Password</button>
-              <button type="button" onClick={() => setShowReset(false)}>Cancel</button>
-            </form>
-          </div>
-        )}
-        {showCreateProject && (
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
-            <h3>Create Project</h3>
-            <form onSubmit={handleCreateProject}>
-              <label htmlFor="projectName">Project Name</label>
-              <input
-                id="projectName"
-                type="text"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                placeholder="Project Name"
-                required
-              />
-              <label htmlFor="projectDescription">Description</label>
-              <input
-                id="projectDescription"
-                type="text"
-                value={projectDescription}
-                onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder="Description"
-                required
-              />
-              <label htmlFor="projectColor">Color</label>
-              <input
-                id="projectColor"
-                type="color"
-                value={projectColor}
-                onChange={(e) => setProjectColor(e.target.value)}
-                required
-              />
-              <button type="submit">Create Project</button>
-              <button type="button" onClick={() => setShowCreateProject(false)}>Cancel</button>
-            </form>
-          </div>
-        )}
-      </main>
-      <footer>
-        <p style={{ color: '#b0b0ff' }}>© 2025 Intacom. All rights reserved.</p>
-      </footer>
-    </>
-  );
+                <label htmlFor="newPassword">New Password</label>
+                <input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  required
+                />
+                <button type="submit">Reset Password</button>
+                <button type="button" onClick={() => setShowReset(false)}>Cancel</button>
+              </form>
+            </div>
+          )}
+          {showCreateProject && (
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
+              <h3>Create Project</h3>
+              <form onSubmit={handleCreateProject}>
+                <label htmlFor="projectName">Project Name</label>
+                <input
+                  id="projectName"
+                  type="text"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  placeholder="Project Name"
+                  required
+                />
+                <label htmlFor="projectDescription">Description</label>
+                <input
+                  id="projectDescription"
+                  type="text"
+                  value={projectDescription}
+                  onChange={(e) => setProjectDescription(e.target.value)}
+                  placeholder="Description"
+                  required
+                />
+                <label htmlFor="projectColor">Color</label>
+                <input
+                  id="projectColor"
+                  type="color"
+                  value={projectColor}
+                  onChange={(e) => setProjectColor(e.target.value)}
+                  required
+                />
+                <button type="submit">Create Project</button>
+                <button type="button" onClick={() => setShowCreateProject(false)}>Cancel</button>
+              </form>
+            </div>
+          )}
+        </main>
+        <footer>
+          <p style={{ color: '#b0b0ff' }}>© 2025 Intacom. All rights reserved.</p>
+        </footer>
+      </>
+    );
+  } catch (error) {
+    console.error('Error rendering App component:', error);
+    return <div>Error rendering the application. Please check the console for details.</div>;
+  }
 };
 
 export default App;
