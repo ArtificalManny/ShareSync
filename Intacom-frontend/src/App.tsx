@@ -75,7 +75,7 @@ const App: React.FC = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
-  const [lastName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState(''); // Fixed typo: changed setFirstName to setLastName
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [gender, setGender] = useState('');
