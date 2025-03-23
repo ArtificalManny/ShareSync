@@ -7,13 +7,14 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() userData: any) {
-    return this.authService.register(userData);
+    const user = await this.authService.register(userData);
+    return { data: { user } }; // Wrap the user in a data field
   }
 
   @Post('login')
-  async login(@Body() loginData: { identifier: string; password: string }) {
-    return this.authService.login(loginData.identifier, loginData.password);
-  }
+async login(@Body() loginData: { identifier: string; password: string }) {
+  return this.authService.login(loginData.identifier, loginData.password);
+}
 
   @Get('recover')
   async recover(@Query('email') email: string) {
