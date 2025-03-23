@@ -41,68 +41,32 @@ var __importStar = (this && this.__importStar) || (function () {
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AuthService = void 0;
+exports.UploadsService = void 0;
 const common_1 = require("@nestjs/common");
-const mongoose_1 = require("@nestjs/mongoose");
-const mongoose_2 = require("mongoose");
-const nodemailer = __importStar(require("nodemailer"));
-let AuthService = class AuthService {
-    constructor(userModel) {
-        this.userModel = userModel;
-    }
-    async register(userData) {
-        const newUser = new this.userModel(userData);
-        await newUser.save();
-        return newUser;
-    }
-    async login(identifier, password) {
-        const user = await this.userModel.findOne({
-            $or: [{ email: identifier }, { username: identifier }],
-            password,
+const AWS = __importStar(require("aws-sdk"));
+let UploadsService = class UploadsService {
+    constructor() {
+        this.s3 = new AWS.S3({
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            region: process.env.AWS_REGION,
         });
-        if (!user) {
-            throw new Error('Invalid credentials');
-        }
-        return user;
     }
-    async recover(email) {
-        const user = await this.userModel.findOne({ email });
-        if (!user) {
-            throw new Error('User not found');
-        }
-        const token = Math.random().toString(36).substring(2, 15);
-        const transporter = nodemailer.createTransport({
-            service: 'Gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-        });
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Password Recovery - Intacom',
-            text: `Hello,\n\nYou requested a password recovery. Use this token to reset your password: ${token}\n\nBest regards,\nThe Intacom Team`,
+    async uploadFile(file) {
+        const params = {
+            Bucket: process.env.S3_BUCKET,
+            Key: `${Date.now()}-${file.originalname}`,
+            Body: file.buffer,
+            ACL: 'public-read',
         };
-        await transporter.sendMail(mailOptions);
-        return { message: 'Recovery email sent', token };
-    }
-    async reset(token, newPassword) {
-        const user = await this.userModel.findOneAndUpdate({ email: { $exists: true } }, { password: newPassword }, { new: true });
-        if (!user) {
-            throw new Error('Invalid token or user not found');
-        }
-        return user;
+        const result = await this.s3.upload(params).promise();
+        return { url: result.Location };
     }
 };
-exports.AuthService = AuthService;
-exports.AuthService = AuthService = __decorate([
+exports.UploadsService = UploadsService;
+exports.UploadsService = UploadsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)('User')),
-    __metadata("design:paramtypes", [mongoose_2.Model])
-], AuthService);
-//# sourceMappingURL=auth.service.js.map
+    __metadata("design:paramtypes", [])
+], UploadsService);
+//# sourceMappingURL=uploads.service.js.map
