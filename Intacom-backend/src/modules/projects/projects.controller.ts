@@ -8,12 +8,18 @@ export class ProjectsController {
   @Post()
   async create(@Body() projectData: any) {
     const project = await this.projectsService.create(projectData);
-    return { data: { project } }; // Wrap the project in a data field
+    return { data: { project } };
   }
 
   @Get(':admin')
   async findByAdmin(@Param('admin') admin: string) {
     const projects = await this.projectsService.findByAdmin(admin);
-    return { data: projects }; // Wrap the projects array in a data field
+    return { data: projects };
+  }
+
+  @Get('by-id/:id')
+  async findById(@Param('id') id: string) {
+    const project = await this.projectsService.findById(id);
+    return { data: { project } };
   }
 }
