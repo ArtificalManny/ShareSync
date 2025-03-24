@@ -42,6 +42,28 @@ body {
     font-size: 1.5rem;
   }
   
+  .user-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .user-profile span {
+    color: #b0b0ff;
+    font-size: 1rem;
+  }
+  
+  .profile-pic {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+  }
+  
+  .profile-icon {
+    color: #b0b0ff;
+    font-size: 1.5rem;
+  }
+  
   aside {
     position: fixed;
     top: 72px;
@@ -72,6 +94,14 @@ body {
   
   aside ul li {
     margin: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  aside ul li .menu-icon {
+    color: #b0b0ff;
+    font-size: 1.2rem;
   }
   
   aside ul li a {
@@ -112,6 +142,42 @@ body {
     gap: 1rem;
     width: 100%;
     max-width: 500px;
+  }
+  
+  .create-project-form {
+    background: #2a2a3e;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    margin-top: 1rem;
+  }
+  
+  .share-section {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  
+  .share-section input,
+  .share-section select {
+    flex: 1;
+  }
+  
+  .shared-users ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .shared-users li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+  }
+  
+  .remove-user-icon {
+    color: #ff5555;
+    cursor: pointer;
   }
   
   label {
@@ -185,4 +251,23 @@ body {
     background: #2a2a3e;
     padding: 1rem;
     text-align: center;
+  }
+  
+  .project-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .project-tabs button {
+    padding: 0.5rem 1rem;
+    background: #3a3a50;
+    color: #b0b0ff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .project-tabs button:hover {
+    background: #4a4a60;
   }

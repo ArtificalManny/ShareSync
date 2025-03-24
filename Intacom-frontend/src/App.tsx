@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBell } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faUserCircle } from '@fortawesome/free-solid-svg-icons';
 import AppRoutes from './Routes';
 
 // Define User type
@@ -22,6 +22,7 @@ interface Project {
   description?: string;
   admin?: string;
   color?: string;
+  sharedWith?: { userId: string; role: 'Admin' | 'Editor' | 'Viewer' }[];
 }
 
 // Define Axios response types
@@ -36,7 +37,6 @@ interface LoginResponse {
   data?: {
     user: User;
   };
-  // Allow for direct user object in case backend doesn't wrap in data
   _id?: string;
   firstName?: string;
   username?: string;
@@ -66,7 +66,6 @@ interface ProjectResponse {
 
 interface ProjectsResponse {
   data?: Project[];
-  // Allow for direct array in case backend doesn't wrap in data
   [key: number]: Project;
   length?: number;
 }
@@ -75,14 +74,18 @@ const App: React.FC = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState(''); // Fixed typo: changed setFirstName to setLastName
+  const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [gender, setGender] = useState('');
   const [birthday, setBirthday] = useState({ month: '', day: '', year: '' });
   const [profilePic, setProfilePic] = useState('');
   const [isLogin, setIsLogin] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    // Restore user from localStorage on page load
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [showRecover, setShowRecover] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState('');
@@ -93,29 +96,36 @@ const App: React.FC = () => {
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [projectColor, setProjectColor] = useState('');
+  const [sharedUsers, setSharedUsers] = useState<{ email: string; role: 'Admin' | 'Editor' | 'Viewer' }[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
-  console.log('App component rendering, user:', user); // Debug log to verify App rendering
-
-  // UseEffect to handle navigation and fetch projects when user state changes
+  // Save user to localStorage whenever it changes
   useEffect(() => {
-    console.log('User state:', user); // Debug log to verify user state
     if (user) {
-      console.log('User is set, navigating to /dashboard'); // Debug log
-      navigate('/dashboard'); // Force navigation if user is set
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('user');
+    }
+  }, [user]);
+
+  // Fetch projects when user logs in
+  useEffect(() => {
+    console.log('User state:', user);
+    if (user) {
+      console.log('User is set, navigating to /home');
+      navigate('/home');
       const fetchProjects = async () => {
         try {
-          console.log('Fetching projects for user:', user.username); // Debug log
+          console.log('Fetching projects for user:', user.username);
           const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
-          console.log('Projects response:', response.data); // Debug log
-          // Handle both response formats: { data: [...] } or [...]
+          console.log('Projects response:', response.data);
           const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
-          console.log('Setting projects to:', projectsData); // Debug log
+          console.log('Setting projects to:', projectsData);
           setProjects(projectsData);
         } catch (error) {
           console.error('Failed to fetch projects:', error);
-          setProjects([]); // Ensure projects is an array even if fetch fails
+          setProjects([]);
         }
       };
       fetchProjects();
@@ -140,16 +150,14 @@ const App: React.FC = () => {
             birthday,
             profilePic,
           };
-      console.log('Submitting payload to', url, ':', payload); // Debug log to verify payload
+      console.log('Submitting payload to', url, ':', payload);
       if (isLogin) {
         const response = await axios.post<LoginResponse>(`http://localhost:3000${url}`, payload);
-        console.log('Login response:', response.data); // Debug log to verify response
+        console.log('Login response:', response.data);
         let userData: User;
         if (response.data && 'data' in response.data && response.data.data && response.data.data.user) {
-          // Handle response format: { data: { user: ... } }
           userData = response.data.data.user;
         } else if (response.data && 'username' in response.data) {
-          // Handle direct user object: { _id: ..., username: ..., ... }
           userData = response.data as User;
         } else {
           console.error('Login response does not contain user data:', response.data);
@@ -157,16 +165,15 @@ const App: React.FC = () => {
           return;
         }
         setUser(userData);
-        console.log('User set to:', userData); // Debug log to verify state update
-        console.log('Navigating to /dashboard'); // Debug log to verify navigation
-        navigate('/dashboard'); // Navigate to dashboard without pop-up
+        console.log('User set to:', userData);
+        console.log('Navigating to /home');
+        navigate('/home');
       } else {
         const response = await axios.post<RegisterResponse>(`http://localhost:3000${url}`, payload);
-        console.log('Register response:', response.data); // Debug log to verify response
+        console.log('Register response:', response.data);
         if (response.data && response.data.user) {
           setUser(response.data.user);
-          console.log('User set to:', response.data.user); // Debug log to verify state update
-          alert('Registration successful. Check your email for confirmation.');
+          console.log('User set to:', response.data.user);
           setShowCreateProject(true);
         } else {
           console.error('Register response does not contain user data:', response.data);
@@ -181,7 +188,7 @@ const App: React.FC = () => {
 
   // Handle logout
   const handleLogout = () => {
-    console.log('Logging out user'); // Debug log
+    console.log('Logging out user');
     setUser(null);
     setIdentifier('');
     setPassword('');
@@ -200,9 +207,9 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      console.log('Sending recovery request for email:', recoveryEmail); // Debug log
+      console.log('Sending recovery request for email:', recoveryEmail);
       const response = await axios.get<RecoverResponse>(`http://localhost:3000/auth/recover`, { params: { email: recoveryEmail } });
-      console.log('Recovery response:', response.data); // Debug log
+      console.log('Recovery response:', response.data);
       alert(response.data.message + ' (Token: ' + response.data.token + '). Enter the token below.');
       setShowRecover(false);
       setShowReset(true);
@@ -217,9 +224,9 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      console.log('Sending reset request with token:', recoveryToken, 'and new password:', newPassword); // Debug log
+      console.log('Sending reset request with token:', recoveryToken, 'and new password:', newPassword);
       const response = await axios.put<ResetResponse>(`http://localhost:3000/auth/reset`, { token: recoveryToken, newPassword });
-      console.log('Reset response:', response.data); // Debug log
+      console.log('Reset response:', response.data);
       alert(response.data.message);
       setShowReset(false);
       setRecoveryEmail('');
@@ -231,25 +238,45 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle adding a user to share the project with
+  const handleAddSharedUser = (email: string, role: 'Admin' | 'Editor' | 'Viewer') => {
+    setSharedUsers([...sharedUsers, { email, role }]);
+  };
+
+  // Handle removing a shared user
+  const handleRemoveSharedUser = (email: string) => {
+    setSharedUsers(sharedUsers.filter((user) => user.email !== email));
+  };
+
   // Handle project creation
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      console.log('Creating project with data:', { name: projectName, description: projectDescription, admin: user?.username, color: projectColor }); // Debug log
+      console.log('Creating project with data:', {
+        name: projectName,
+        description: projectDescription,
+        admin: user?.username,
+        color: projectColor,
+        sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
+      });
       const response = await axios.post<ProjectResponse>(`http://localhost:3000/projects`, {
         name: projectName,
         description: projectDescription,
         admin: user?.username,
         color: projectColor,
+        sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
       });
-      console.log('Create project response:', response.data); // Debug log
-      setProjects([...projects, response.data.project]);
+      console.log('Create project response:', response.data);
+      const newProject = response.data.project;
+      setProjects([...projects, newProject]);
       setShowCreateProject(false);
       setProjectName('');
       setProjectDescription('');
       setProjectColor('');
-      alert('Project created successfully');
+      setSharedUsers([]);
+      // Navigate directly to the project's home page
+      navigate(`/project/${newProject._id}`);
     } catch (error: any) {
       console.error('Create project error:', error.response?.data || error.message);
       setErrorMessage(error.response?.data?.error || 'An error occurred during project creation');
@@ -270,23 +297,52 @@ const App: React.FC = () => {
           {user && (
             <div className="top-right">
               <FontAwesomeIcon icon={faBell} className="bell" />
-              {user.profilePic && <img src={user.profilePic} alt="Profile" />}
+              <div className="user-profile">
+                <span>{user.firstName || user.username}</span>
+                {user.profilePic ? (
+                  <img src={user.profilePic} alt="Profile" className="profile-pic" />
+                ) : (
+                  <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+                )}
+              </div>
             </div>
           )}
         </header>
         {user && (
           <aside>
             <div className="profile-section">
-              {user.profilePic && <img src={user.profilePic} alt="Profile" />}
+              {user.profilePic ? (
+                <img src={user.profilePic} alt="Profile" className="profile-pic" />
+              ) : (
+                <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+              )}
               <h3>{user.firstName || user.username}</h3>
             </div>
             <ul>
-              <li><a href="#" onClick={() => setShowCreateProject(true)}>Create Project</a></li>
-              <li><Link to="/dashboard">Dashboard</Link></li>
-              <li><Link to="/projects">Projects</Link></li>
-              <li><Link to="/upload">Upload</Link></li>
-              <li><Link to="/settings">Settings</Link></li>
-              <li><a href="#" onClick={handleLogout}>Logout</a></li>
+              <li>
+                <FontAwesomeIcon icon="plus-circle" className="menu-icon" />
+                <a href="#" onClick={() => setShowCreateProject(true)}>Create Project</a>
+              </li>
+              <li>
+                <FontAwesomeIcon icon="home" className="menu-icon" />
+                <Link to="/home">Home</Link>
+              </li>
+              <li>
+                <FontAwesomeIcon icon="folder" className="menu-icon" />
+                <Link to="/projects">Projects</Link>
+              </li>
+              <li>
+                <FontAwesomeIcon icon="upload" className="menu-icon" />
+                <Link to="/upload">Upload</Link>
+              </li>
+              <li>
+                <FontAwesomeIcon icon="cog" className="menu-icon" />
+                <Link to="/settings">Settings</Link>
+              </li>
+              <li>
+                <FontAwesomeIcon icon="sign-out-alt" className="menu-icon" />
+                <a href="#" onClick={handleLogout}>Logout</a>
+              </li>
             </ul>
             {projects.map((project) => (
               <div key={project._id} style={{ background: project.color || '#3a3a50', padding: '0.5rem', margin: '0.5rem 0', borderRadius: '5px' }}>
@@ -296,7 +352,7 @@ const App: React.FC = () => {
           </aside>
         )}
         <main className={user ? '' : 'full-screen'}>
-          {console.log('Rendering main, user:', user)} {/* Debug log */}
+          {console.log('Rendering main, user:', user)}
           {!user ? (
             <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
               <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>Intacom</h2>
@@ -446,7 +502,21 @@ const App: React.FC = () => {
               )}
             </form>
           ) : (
-            <AppRoutes projects={projects} />
+            <AppRoutes
+              projects={projects}
+              showCreateProject={showCreateProject}
+              setShowCreateProject={setShowCreateProject}
+              projectName={projectName}
+              setProjectName={setProjectName}
+              projectDescription={projectDescription}
+              setProjectDescription={setProjectDescription}
+              projectColor={projectColor}
+              setProjectColor={setProjectColor}
+              sharedUsers={sharedUsers}
+              handleAddSharedUser={handleAddSharedUser}
+              handleRemoveSharedUser={handleRemoveSharedUser}
+              handleCreateProject={handleCreateProject}
+            />
           )}
           {showRecover && (
             <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
@@ -490,41 +560,6 @@ const App: React.FC = () => {
                 />
                 <button type="submit">Reset Password</button>
                 <button type="button" onClick={() => setShowReset(false)}>Cancel</button>
-              </form>
-            </div>
-          )}
-          {showCreateProject && (
-            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
-              <h3>Create Project</h3>
-              <form onSubmit={handleCreateProject}>
-                <label htmlFor="projectName">Project Name</label>
-                <input
-                  id="projectName"
-                  type="text"
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  placeholder="Project Name"
-                  required
-                />
-                <label htmlFor="projectDescription">Description</label>
-                <input
-                  id="projectDescription"
-                  type="text"
-                  value={projectDescription}
-                  onChange={(e) => setProjectDescription(e.target.value)}
-                  placeholder="Description"
-                  required
-                />
-                <label htmlFor="projectColor">Color</label>
-                <input
-                  id="projectColor"
-                  type="color"
-                  value={projectColor}
-                  onChange={(e) => setProjectColor(e.target.value)}
-                  required
-                />
-                <button type="submit">Create Project</button>
-                <button type="button" onClick={() => setShowCreateProject(false)}>Cancel</button>
               </form>
             </div>
           )}

@@ -36,6 +36,7 @@ const Upload: React.FC = () => {
     }
   };
 
+  console.log('Rendering Upload component');
   return (
     <div style={{ padding: '2rem' }}>
       <h2>Upload File</h2>
