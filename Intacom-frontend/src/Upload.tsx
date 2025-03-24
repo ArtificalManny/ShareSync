@@ -41,7 +41,10 @@ const Upload: React.FC = () => {
     <div style={{ padding: '2rem' }}>
       <h2>Upload File</h2>
       <form onSubmit={handleUpload}>
-        <input type="file" onChange={handleFileChange} />
+        <div className="form-group">
+          <label htmlFor="fileUpload">Select File</label>
+          <input id="fileUpload" type="file" onChange={handleFileChange} />
+        </div>
         <button type="submit">Upload</button>
       </form>
       {errorMessage && <div className="error-message">{errorMessage}</div>}

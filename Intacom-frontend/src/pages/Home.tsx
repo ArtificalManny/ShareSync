@@ -66,66 +66,76 @@ const Home: React.FC<HomeProps> = ({
         <div className="create-project-form">
           <h3>Create Project</h3>
           <form onSubmit={handleCreateProject}>
-            <label htmlFor="projectName">Project Name</label>
-            <input
-              id="projectName"
-              type="text"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              placeholder="Project Name"
-              required
-            />
-            <label htmlFor="projectDescription">Description</label>
-            <input
-              id="projectDescription"
-              type="text"
-              value={projectDescription}
-              onChange={(e) => setProjectDescription(e.target.value)}
-              placeholder="Description"
-              required
-            />
-            <label htmlFor="projectColor">Color</label>
-            <input
-              id="projectColor"
-              type="color"
-              value={projectColor}
-              onChange={(e) => setProjectColor(e.target.value)}
-              required
-            />
-            <label>Share With</label>
-            <div className="share-section">
+            <div className="form-group">
+              <label htmlFor="projectName">Project Name</label>
               <input
-                type="email"
-                value={shareEmail}
-                onChange={(e) => setShareEmail(e.target.value)}
-                placeholder="Enter email to share"
+                id="projectName"
+                type="text"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="Enter project name"
+                required
               />
-              <select value={shareRole} onChange={(e) => setShareRole(e.target.value as 'Admin' | 'Editor' | 'Viewer')}>
-                <option value="Admin">Admin</option>
-                <option value="Editor">Editor</option>
-                <option value="Viewer">Viewer</option>
-              </select>
-              <button type="button" onClick={handleAddShare}>Add</button>
             </div>
-            {sharedUsers.length > 0 && (
-              <div className="shared-users">
-                <h4>Shared With:</h4>
-                <ul>
-                  {sharedUsers.map((sharedUser) => (
-                    <li key={sharedUser.email}>
-                      {sharedUser.email} ({sharedUser.role})
-                      <FontAwesomeIcon
-                        icon={faTrash}
-                        className="remove-user-icon"
-                        onClick={() => handleRemoveSharedUser(sharedUser.email)}
-                      />
-                    </li>
-                  ))}
-                </ul>
+            <div className="form-group">
+              <label htmlFor="projectDescription">Description</label>
+              <textarea
+                id="projectDescription"
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                placeholder="Enter project description"
+                required
+                rows={4}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="projectColor">Color</label>
+              <input
+                id="projectColor"
+                type="color"
+                value={projectColor}
+                onChange={(e) => setProjectColor(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Share With</label>
+              <div className="share-section">
+                <input
+                  type="email"
+                  value={shareEmail}
+                  onChange={(e) => setShareEmail(e.target.value)}
+                  placeholder="Enter email to share"
+                />
+                <select value={shareRole} onChange={(e) => setShareRole(e.target.value as 'Admin' | 'Editor' | 'Viewer')}>
+                  <option value="Admin">Admin</option>
+                  <option value="Editor">Editor</option>
+                  <option value="Viewer">Viewer</option>
+                </select>
+                <button type="button" onClick={handleAddShare}>Add</button>
               </div>
-            )}
-            <button type="submit">Create Project</button>
-            <button type="button" onClick={() => setShowCreateProject(false)}>Cancel</button>
+              {sharedUsers.length > 0 && (
+                <div className="shared-users">
+                  <h4>Shared With:</h4>
+                  <ul>
+                    {sharedUsers.map((sharedUser) => (
+                      <li key={sharedUser.email}>
+                        {sharedUser.email} ({sharedUser.role})
+                        <FontAwesomeIcon
+                          icon={faTrash}
+                          className="remove-user-icon"
+                          onClick={() => handleRemoveSharedUser(sharedUser.email)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <div className="form-actions">
+              <button type="submit">Create Project</button>
+              <button type="button" onClick={() => setShowCreateProject(false)}>Cancel</button>
+            </div>
           </form>
         </div>
       )}

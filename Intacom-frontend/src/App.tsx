@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBell, faUserCircle } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faUserCircle, faPlusCircle, faHome, faFolder, faUpload, faCog, faSignOutAlt, faUser } from '@fortawesome/free-solid-svg-icons';
 import AppRoutes from './Routes';
 
 // Define User type
@@ -82,7 +82,6 @@ const App: React.FC = () => {
   const [profilePic, setProfilePic] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [user, setUser] = useState<User | null>(() => {
-    // Restore user from localStorage on page load
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
@@ -131,6 +130,33 @@ const App: React.FC = () => {
       fetchProjects();
     }
   }, [user, navigate]);
+
+  // Handle profile picture upload
+  const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await axios.post<{ url: string }>('http://localhost:3000/uploads', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        const profilePicUrl = response.data.url;
+        setProfilePic(profilePicUrl);
+
+        // Update user profile with new picture
+        const updatedUser = { ...user, profilePic: profilePicUrl };
+        await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
+        setUser(updatedUser);
+      } catch (error: any) {
+        console.error('Profile picture upload error:', error.response?.data || error.message);
+        setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload');
+      }
+    }
+  };
 
   // Handle form submission for login and registration
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,7 +208,7 @@ const App: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Form submission error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred during login/registration');
+      setErrorMessage(error.response?.data?.error || 'An error occurred during login/registration. Please check if the backend server is running.');
     }
   };
 
@@ -275,7 +301,6 @@ const App: React.FC = () => {
       setProjectDescription('');
       setProjectColor('');
       setSharedUsers([]);
-      // Navigate directly to the project's home page
       navigate(`/project/${newProject._id}`);
     } catch (error: any) {
       console.error('Create project error:', error.response?.data || error.message);
@@ -311,36 +336,45 @@ const App: React.FC = () => {
         {user && (
           <aside>
             <div className="profile-section">
-              {user.profilePic ? (
-                <img src={user.profilePic} alt="Profile" className="profile-pic" />
-              ) : (
-                <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
-              )}
+              <label htmlFor="profilePicUpload" className="profile-pic-label">
+                {user.profilePic ? (
+                  <img src={user.profilePic} alt="Profile" className="profile-pic" />
+                ) : (
+                  <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+                )}
+                <input
+                  id="profilePicUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePicUpload}
+                  style={{ display: 'none' }}
+                />
+              </label>
               <h3>{user.firstName || user.username}</h3>
             </div>
             <ul>
               <li>
-                <FontAwesomeIcon icon="plus-circle" className="menu-icon" />
+                <FontAwesomeIcon icon={faPlusCircle} className="menu-icon" />
                 <a href="#" onClick={() => setShowCreateProject(true)}>Create Project</a>
               </li>
               <li>
-                <FontAwesomeIcon icon="home" className="menu-icon" />
+                <FontAwesomeIcon icon={faHome} className="menu-icon" />
                 <Link to="/home">Home</Link>
               </li>
               <li>
-                <FontAwesomeIcon icon="folder" className="menu-icon" />
+                <FontAwesomeIcon icon={faFolder} className="menu-icon" />
                 <Link to="/projects">Projects</Link>
               </li>
               <li>
-                <FontAwesomeIcon icon="upload" className="menu-icon" />
+                <FontAwesomeIcon icon={faUpload} className="menu-icon" />
                 <Link to="/upload">Upload</Link>
               </li>
               <li>
-                <FontAwesomeIcon icon="cog" className="menu-icon" />
+                <FontAwesomeIcon icon={faCog} className="menu-icon" />
                 <Link to="/settings">Settings</Link>
               </li>
               <li>
-                <FontAwesomeIcon icon="sign-out-alt" className="menu-icon" />
+                <FontAwesomeIcon icon={faSignOutAlt} className="menu-icon" />
                 <a href="#" onClick={handleLogout}>Logout</a>
               </li>
             </ul>
