@@ -38,22 +38,24 @@ const Upload: React.FC = () => {
 
   console.log('Rendering Upload component');
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="intacom-upload">
       <h2>Upload File</h2>
-      <form onSubmit={handleUpload}>
-        <div className="form-group">
-          <label htmlFor="fileUpload">Select File</label>
-          <input id="fileUpload" type="file" onChange={handleFileChange} />
-        </div>
-        <button type="submit">Upload</button>
-      </form>
-      {errorMessage && <div className="error-message">{errorMessage}</div>}
-      {uploadUrl && (
-        <div>
-          <p>File uploaded successfully!</p>
-          <a href={uploadUrl} target="_blank" rel="noopener noreferrer">View File</a>
-        </div>
-      )}
+      <div className="intacom-card">
+        <form onSubmit={handleUpload}>
+          <div className="form-group">
+            <label htmlFor="fileUpload">Select File</label>
+            <input id="fileUpload" type="file" onChange={handleFileChange} />
+          </div>
+          <button type="submit" className="intacom-button">Upload</button>
+        </form>
+        {errorMessage && <div className="error-message">{errorMessage}</div>}
+        {uploadUrl && (
+          <div>
+            <p>File uploaded successfully!</p>
+            <a href={uploadUrl} target="_blank" rel="noopener noreferrer">View File</a>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

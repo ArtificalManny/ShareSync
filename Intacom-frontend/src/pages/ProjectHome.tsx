@@ -39,13 +39,13 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
   }
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="intacom-project-home">
       <h2>{project.name}</h2>
       <p>{project.description || 'No description'}</p>
       <div className="project-tabs">
-        <button onClick={() => setActiveTab('home')}>Home</button>
-        <button onClick={() => setActiveTab('upload')}>Upload</button>
-        <button onClick={() => setActiveTab('settings')}>Settings</button>
+        <button onClick={() => setActiveTab('home')} className={activeTab === 'home' ? 'active' : ''}>Home</button>
+        <button onClick={() => setActiveTab('upload')} className={activeTab === 'upload' ? 'active' : ''}>Upload</button>
+        <button onClick={() => setActiveTab('settings')} className={activeTab === 'settings' ? 'active' : ''}>Settings</button>
       </div>
       {activeTab === 'home' && (
         <div>

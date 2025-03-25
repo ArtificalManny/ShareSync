@@ -1,10 +1,11 @@
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
-import Home from './pages/Home'; // Renamed from Dashboard
+import Home from './pages/Home';
 import ProjectsPage from './pages/ProjectsPage';
 import Upload from './Upload';
 import Settings from './Settings';
 import ProjectHome from './pages/ProjectHome';
+import Profile from './pages/Profile';
 
 interface Project {
   _id: string;
@@ -75,6 +76,7 @@ const AppRoutes: React.FC<RoutesProps> = ({
         <Route path="/upload" element={<Upload />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/project/:id" element={<ProjectHome projects={projects} />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
     );
   } catch (error) {
