@@ -25,6 +25,13 @@ interface Project {
   sharedWith?: { userId: string; role: 'Admin' | 'Editor' | 'Viewer' }[];
 }
 
+// Define Notification type
+interface Notification {
+  _id: string;
+  message: string;
+  createdAt: string;
+}
+
 // Define Axios response types
 interface RegisterResponse {
   data: {
@@ -70,6 +77,10 @@ interface ProjectsResponse {
   length?: number;
 }
 
+interface NotificationsResponse {
+  data: Notification[];
+}
+
 const App: React.FC = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -97,6 +108,8 @@ const App: React.FC = () => {
   const [projectColor, setProjectColor] = useState('');
   const [sharedUsers, setSharedUsers] = useState<{ email: string; role: 'Admin' | 'Editor' | 'Viewer' }[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
 
   // Save user to localStorage whenever it changes
@@ -108,7 +121,7 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  // Fetch projects when user logs in
+  // Fetch projects and notifications when user logs in
   useEffect(() => {
     console.log('User state:', user);
     if (user) {
@@ -127,7 +140,19 @@ const App: React.FC = () => {
           setProjects([]);
         }
       };
+      const fetchNotifications = async () => {
+        try {
+          console.log('Fetching notifications for user:', user._id);
+          const response = await axios.get<NotificationsResponse>(`http://localhost:3000/notifications/${user._id}`);
+          console.log('Notifications response:', response.data);
+          setNotifications(response.data.data || []);
+        } catch (error) {
+          console.error('Failed to fetch notifications:', error);
+          setNotifications([]);
+        }
+      };
       fetchProjects();
+      fetchNotifications();
     }
   }, [user, navigate]);
 
@@ -321,14 +346,41 @@ const App: React.FC = () => {
           </Link>
           {user && (
             <div className="top-right">
-              <FontAwesomeIcon icon={faBell} className="bell" />
-              <div className="user-profile">
-                <span>{user.firstName || user.username}</span>
-                {user.profilePic ? (
-                  <img src={user.profilePic} alt="Profile" className="profile-pic" />
-                ) : (
-                  <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+              <div className="notifications">
+                <FontAwesomeIcon
+                  icon={faBell}
+                  className="bell"
+                  onClick={() => setShowNotifications(!showNotifications)}
+                />
+                {notifications.length > 0 && (
+                  <span className="notification-count">{notifications.length}</span>
                 )}
+                {showNotifications && (
+                  <div className="notification-dropdown">
+                    <h4>Notifications</h4>
+                    {notifications.length === 0 ? (
+                      <p>No new notifications</p>
+                    ) : (
+                      <ul>
+                        {notifications.map((notification) => (
+                          <li key={notification._id}>
+                            {notification.message} - {new Date(notification.createdAt).toLocaleString()}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="user-profile">
+                <Link to="/profile">
+                  <span>{user.firstName || user.username}</span>
+                  {user.profilePic ? (
+                    <img src={user.profilePic} alt="Profile" className="profile-pic" />
+                  ) : (
+                    <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+                  )}
+                </Link>
               </div>
             </div>
           )}
@@ -336,21 +388,23 @@ const App: React.FC = () => {
         {user && (
           <aside>
             <div className="profile-section">
-              <label htmlFor="profilePicUpload" className="profile-pic-label">
-                {user.profilePic ? (
-                  <img src={user.profilePic} alt="Profile" className="profile-pic" />
-                ) : (
-                  <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
-                )}
-                <input
-                  id="profilePicUpload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfilePicUpload}
-                  style={{ display: 'none' }}
-                />
-              </label>
-              <h3>{user.firstName || user.username}</h3>
+              <Link to="/profile">
+                <label htmlFor="profilePicUpload" className="profile-pic-label">
+                  {user.profilePic ? (
+                    <img src={user.profilePic} alt="Profile" className="profile-pic" />
+                  ) : (
+                    <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+                  )}
+                  <input
+                    id="profilePicUpload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfilePicUpload}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                <h3>{user.firstName || user.username}</h3>
+              </Link>
             </div>
             <ul>
               <li>
