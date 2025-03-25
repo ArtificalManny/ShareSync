@@ -47,31 +47,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const formData = new FormData();
-      formData.append('file', file);
-
-      try {
-        const response = await axios.post<{ url: string }>('http://localhost:3000/uploads', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        const profilePicUrl = response.data.url;
-        const updatedUser = { ...user, profilePic: profilePicUrl };
-        await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        setSuccessMessage('Profile picture updated successfully');
-      } catch (error: any) {
-        console.error('Profile picture upload error:', error.response?.data || error.message);
-        setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload');
-      }
-    }
-  };
-
   if (!user) {
     return <div style={{ padding: '2rem', textAlign: 'center' }}>Please log in to view your profile.</div>;
   }
@@ -92,39 +67,30 @@ const Profile: React.FC = () => {
           alignItems: 'center',
         }}
       >
-        <label htmlFor="profilePicUpload" className="profile-pic-label">
-          {user.profilePic ? (
-            <img
-              src={user.profilePic}
-              alt="Profile"
-              style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary-color)' }}
-            />
-          ) : (
-            <div
-              style={{
-                width: '120px',
-                height: '120px',
-                borderRadius: '50%',
-                background: 'var(--secondary-color)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '2rem',
-                color: 'var(--text-color)',
-                border: '3px solid var(--primary-color)',
-              }}
-            >
-              {user.firstName ? user.firstName[0] : user.username[0]}
-            </div>
-          )}
-          <input
-            id="profilePicUpload"
-            type="file"
-            accept="image/*"
-            onChange={handleProfilePicUpload}
-            style={{ display: 'none' }}
+        {user.profilePic ? (
+          <img
+            src={user.profilePic}
+            alt="Profile"
+            style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary-color)' }}
           />
-        </label>
+        ) : (
+          <div
+            style={{
+              width: '120px',
+              height: '120px',
+              borderRadius: '50%',
+              background: 'var(--secondary-color)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '2rem',
+              color: 'var(--text-color)',
+              border: '3px solid var(--primary-color)',
+            }}
+          >
+            {user.firstName ? user.firstName[0] : user.username[0]}
+          </div>
+        )}
         <div>
           <h3 style={{ fontSize: '1.5rem', fontWeight: 600, margin: '0 0 0.5rem 0' }}>
             {user.firstName} {user.lastName}

@@ -123,17 +123,12 @@ const App: React.FC = () => {
 
   // Fetch projects and notifications when user logs in
   useEffect(() => {
-    console.log('User state:', user);
     if (user) {
-      console.log('User is set, navigating to /home');
       navigate('/home');
       const fetchProjects = async () => {
         try {
-          console.log('Fetching projects for user:', user.username);
           const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
-          console.log('Projects response:', response.data);
           const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
-          console.log('Setting projects to:', projectsData);
           setProjects(projectsData);
         } catch (error) {
           console.error('Failed to fetch projects:', error);
@@ -142,9 +137,7 @@ const App: React.FC = () => {
       };
       const fetchNotifications = async () => {
         try {
-          console.log('Fetching notifications for user:', user._id);
           const response = await axios.get<NotificationsResponse>(`http://localhost:3000/notifications/${user._id}`);
-          console.log('Notifications response:', response.data);
           setNotifications(response.data.data || []);
         } catch (error) {
           console.error('Failed to fetch notifications:', error);
@@ -175,7 +168,7 @@ const App: React.FC = () => {
         // Update user profile with new picture
         const updatedUser = { ...user, profilePic: profilePicUrl };
         await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
-        setUser(updatedUser);
+        setUser(updatedUser as User);
       } catch (error: any) {
         console.error('Profile picture upload error:', error.response?.data || error.message);
         setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload');
@@ -201,10 +194,8 @@ const App: React.FC = () => {
             birthday,
             profilePic,
           };
-      console.log('Submitting payload to', url, ':', payload);
       if (isLogin) {
         const response = await axios.post<LoginResponse>(`http://localhost:3000${url}`, payload);
-        console.log('Login response:', response.data);
         let userData: User;
         if (response.data && 'data' in response.data && response.data.data && response.data.data.user) {
           userData = response.data.data.user;
@@ -216,15 +207,10 @@ const App: React.FC = () => {
           return;
         }
         setUser(userData);
-        console.log('User set to:', userData);
-        console.log('Navigating to /home');
-        navigate('/home');
       } else {
         const response = await axios.post<RegisterResponse>(`http://localhost:3000${url}`, payload);
-        console.log('Register response:', response.data);
         if (response.data && response.data.user) {
           setUser(response.data.user);
-          console.log('User set to:', response.data.user);
           setShowCreateProject(true);
         } else {
           console.error('Register response does not contain user data:', response.data);
@@ -239,7 +225,6 @@ const App: React.FC = () => {
 
   // Handle logout
   const handleLogout = () => {
-    console.log('Logging out user');
     setUser(null);
     setIdentifier('');
     setPassword('');
@@ -258,9 +243,7 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      console.log('Sending recovery request for email:', recoveryEmail);
       const response = await axios.get<RecoverResponse>(`http://localhost:3000/auth/recover`, { params: { email: recoveryEmail } });
-      console.log('Recovery response:', response.data);
       alert(response.data.message + ' (Token: ' + response.data.token + '). Enter the token below.');
       setShowRecover(false);
       setShowReset(true);
@@ -275,9 +258,7 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      console.log('Sending reset request with token:', recoveryToken, 'and new password:', newPassword);
       const response = await axios.put<ResetResponse>(`http://localhost:3000/auth/reset`, { token: recoveryToken, newPassword });
-      console.log('Reset response:', response.data);
       alert(response.data.message);
       setShowReset(false);
       setRecoveryEmail('');
@@ -304,13 +285,6 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      console.log('Creating project with data:', {
-        name: projectName,
-        description: projectDescription,
-        admin: user?.username,
-        color: projectColor,
-        sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
-      });
       const response = await axios.post<ProjectResponse>(`http://localhost:3000/projects`, {
         name: projectName,
         description: projectDescription,
@@ -318,7 +292,6 @@ const App: React.FC = () => {
         color: projectColor,
         sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
       });
-      console.log('Create project response:', response.data);
       const newProject = response.data.project;
       setProjects([...projects, newProject]);
       setShowCreateProject(false);
@@ -453,7 +426,23 @@ const App: React.FC = () => {
         </aside>
       )}
       <main className={user ? '' : 'full-screen'}>
-        {!user ? (
+        {user ? (
+          <AppRoutes
+            projects={projects}
+            showCreateProject={showCreateProject}
+            setShowCreateProject={setShowCreateProject}
+            projectName={projectName}
+            setProjectName={setProjectName}
+            projectDescription={projectDescription}
+            setProjectDescription={setProjectDescription}
+            projectColor={projectColor}
+            setProjectColor={setProjectColor}
+            sharedUsers={sharedUsers}
+            handleAddSharedUser={handleAddSharedUser}
+            handleRemoveSharedUser={handleRemoveSharedUser}
+            handleCreateProject={handleCreateProject}
+          />
+        ) : (
           <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
             <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>
               Intacom
@@ -603,22 +592,6 @@ const App: React.FC = () => {
               </>
             )}
           </form>
-        ) : (
-          <AppRoutes
-            projects={projects}
-            showCreateProject={showCreateProject}
-            setShowCreateProject={setShowCreateProject}
-            projectName={projectName}
-            setProjectName={setProjectName}
-            projectDescription={projectDescription}
-            setProjectDescription={setProjectDescription}
-            projectColor={projectColor}
-            setProjectColor={setProjectColor}
-            sharedUsers={sharedUsers}
-            handleAddSharedUser={handleAddSharedUser}
-            handleRemoveSharedUser={handleRemoveSharedUser}
-            handleCreateProject={handleCreateProject}
-          />
         )}
         {showRecover && (
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>

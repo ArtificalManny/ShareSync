@@ -5,6 +5,7 @@ const Upload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadUrl, setUploadUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -29,7 +30,9 @@ const Upload: React.FC = () => {
         },
       });
       setUploadUrl(response.data.url);
+      setSuccessMessage('File uploaded successfully!');
       setErrorMessage('');
+      setFile(null);
     } catch (error: any) {
       console.error('Upload error:', error.response?.data || error.message);
       setErrorMessage(error.response?.data?.error || 'An error occurred during upload');
@@ -51,6 +54,11 @@ const Upload: React.FC = () => {
         <button type="submit">Upload</button>
       </form>
       {errorMessage && <div className="error-message">{errorMessage}</div>}
+      {successMessage && (
+        <div style={{ color: '#4caf50', textAlign: 'center', fontSize: '0.9rem', marginTop: '1rem' }}>
+          {successMessage}
+        </div>
+      )}
       {uploadUrl && (
         <div style={{ marginTop: '1.5rem' }}>
           <p style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>File uploaded successfully!</p>
@@ -58,7 +66,7 @@ const Upload: React.FC = () => {
             href={uploadUrl}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#b0b0ff', textDecoration: 'none' }}
+            style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
           >
             View File
           </a>

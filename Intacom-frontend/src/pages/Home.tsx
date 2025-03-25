@@ -165,18 +165,16 @@ const Home: React.FC<HomeProps> = ({
             <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>
               Your Projects
             </h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
               {safeProjects.map((project) => (
                 <div
                   key={project._id}
+                  className="project-card"
                   style={{
-                    background: project.color || '#3a3a50',
-                    padding: '1rem',
-                    borderRadius: '5px',
-                    width: '200px',
+                    borderLeft: `4px solid ${project.color || '#3a3a50'}`,
                   }}
                 >
-                  <Link to={`/project/${project._id}`} style={{ color: '#b0b0ff' }}>
+                  <Link to={`/project/${project._id}`}>
                     <h4>{project.name}</h4>
                   </Link>
                   <p>{project.description || 'No description'}</p>
