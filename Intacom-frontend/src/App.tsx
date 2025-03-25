@@ -105,7 +105,7 @@ const App: React.FC = () => {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
-  const [projectColor, setProjectColor] = useState('#6A5ACD');
+  const [projectColor, setProjectColor] = useState('');
   const [sharedUsers, setSharedUsers] = useState<{ email: string; role: 'Admin' | 'Editor' | 'Viewer' }[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -319,12 +319,12 @@ const App: React.FC = () => {
         sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
       });
       console.log('Create project response:', response.data);
-      const newProject = response.data.data.project; // Adjusted to match backend response structure
+      const newProject = response.data.project;
       setProjects([...projects, newProject]);
       setShowCreateProject(false);
       setProjectName('');
       setProjectDescription('');
-      setProjectColor('#6A5ACD');
+      setProjectColor('');
       setSharedUsers([]);
       navigate(`/project/${newProject._id}`);
     } catch (error: any) {
@@ -340,9 +340,9 @@ const App: React.FC = () => {
   try {
     return (
       <>
-        <header className="intacom-header">
+        <header>
           <Link to="/">
-            <img src="https://via.placeholder.com/40?text=Intacom" alt="Intacom Logo" className="intacom-logo" />
+            <img src="https://via.placeholder.com/40?text=Intacom" alt="Intacom Logo" />
           </Link>
           {user && (
             <div className="top-right">
@@ -373,7 +373,7 @@ const App: React.FC = () => {
                 )}
               </div>
               <div className="user-profile">
-                <Link to="/profile">
+                <Link to="/profile" onClick={() => console.log('Navigating to /profile')}>
                   <span>{user.firstName || user.username}</span>
                   {user.profilePic ? (
                     <img src={user.profilePic} alt="Profile" className="profile-pic" />
@@ -386,9 +386,9 @@ const App: React.FC = () => {
           )}
         </header>
         {user && (
-          <aside className="intacom-sidebar">
+          <aside>
             <div className="profile-section">
-              <Link to="/profile">
+              <Link to="/profile" onClick={() => console.log('Navigating to /profile from sidebar')}>
                 <label htmlFor="profilePicUpload" className="profile-pic-label">
                   {user.profilePic ? (
                     <img src={user.profilePic} alt="Profile" className="profile-pic" />
@@ -409,207 +409,210 @@ const App: React.FC = () => {
             <ul>
               <li>
                 <FontAwesomeIcon icon={faPlusCircle} className="menu-icon" />
-                <a href="#" onClick={() => setShowCreateProject(true)}>Create Project</a>
+                <a href="#" onClick={() => setShowCreateProject(true)}>
+                  Create Project
+                </a>
               </li>
               <li>
                 <FontAwesomeIcon icon={faHome} className="menu-icon" />
-                <Link to="/home">Home</Link>
+                <Link to="/home" onClick={() => console.log('Navigating to /home')}>
+                  Home
+                </Link>
               </li>
               <li>
                 <FontAwesomeIcon icon={faFolder} className="menu-icon" />
-                <Link to="/projects">Projects</Link>
+                <Link to="/projects" onClick={() => console.log('Navigating to /projects')}>
+                  Projects
+                </Link>
               </li>
               <li>
                 <FontAwesomeIcon icon={faUpload} className="menu-icon" />
-                <Link to="/upload">Upload</Link>
+                <Link to="/upload" onClick={() => console.log('Navigating to /upload')}>
+                  Upload
+                </Link>
               </li>
               <li>
                 <FontAwesomeIcon icon={faCog} className="menu-icon" />
-                <Link to="/settings">Settings</Link>
+                <Link to="/settings" onClick={() => console.log('Navigating to /settings')}>
+                  Settings
+                </Link>
               </li>
               <li>
                 <FontAwesomeIcon icon={faSignOutAlt} className="menu-icon" />
-                <a href="#" onClick={handleLogout}>Logout</a>
+                <a href="#" onClick={handleLogout}>
+                  Logout
+                </a>
               </li>
             </ul>
-            <div className="project-list">
-              <h4>Your Projects</h4>
-              {projects.map((project) => (
-                <div key={project._id} className="project-item" style={{ background: project.color || '#3a3a50' }}>
-                  <Link to={`/project/${project._id}`}>{project.name}</Link>
-                </div>
-              ))}
-            </div>
+            {projects.map((project) => (
+              <div
+                key={project._id}
+                style={{
+                  background: project.color || '#3a3a50',
+                  padding: '0.5rem',
+                  margin: '0.5rem 0',
+                  borderRadius: '5px',
+                }}
+              >
+                <Link to={`/project/${project._id}`} onClick={() => console.log(`Navigating to /project/${project._id}`)}>
+                  {project.name}
+                </Link>
+              </div>
+            ))}
           </aside>
         )}
-        <main className={user ? 'intacom-main' : 'intacom-main full-screen'}>
+        <main className={user ? '' : 'full-screen'}>
           {console.log('Rendering main, user:', user)}
           {!user ? (
-            <div className="intacom-card">
-              <form onSubmit={handleSubmit}>
-                <h2>Intacom</h2>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
-                {isLogin ? (
-                  <>
-                    <div className="form-group">
-                      <label htmlFor="identifier">Email or Username</label>
+            <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
+              <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>
+                Intacom
+              </h2>
+              {errorMessage && <div className="error-message">{errorMessage}</div>}
+              {isLogin ? (
+                <>
+                  <label htmlFor="identifier">Email or Username</label>
+                  <input
+                    id="identifier"
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="Email or Username"
+                    required
+                  />
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    required
+                  />
+                  <button type="submit">Login</button>
+                  <button type="button" onClick={() => setShowRecover(true)}>
+                    Forgot Password?
+                  </button>
+                  <button type="button" onClick={() => setIsLogin(!isLogin)}>
+                    Switch to Register
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="subtitle">Create an account</div>
+                  <div className="name-container">
+                    <div>
+                      <label htmlFor="firstName">First Name</label>
                       <input
-                        id="identifier"
+                        id="firstName"
                         type="text"
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        placeholder="Email or Username"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First Name"
                         required
                       />
                     </div>
-                    <div className="form-group">
-                      <label htmlFor="password">Password</label>
+                    <div>
+                      <label htmlFor="lastName">Last Name</label>
                       <input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Password"
-                        required
-                      />
-                    </div>
-                    <button type="submit" className="intacom-button">Login</button>
-                    <button type="button" className="intacom-button secondary" onClick={() => setShowRecover(true)}>
-                      Forgot Password?
-                    </button>
-                    <button type="button" className="intacom-button secondary" onClick={() => setIsLogin(!isLogin)}>
-                      Switch to Register
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="subtitle">Create an account</div>
-                    <div className="form-group name-container">
-                      <div>
-                        <label htmlFor="firstName">First Name</label>
-                        <input
-                          id="firstName"
-                          type="text"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          placeholder="First Name"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="lastName">Last Name</label>
-                        <input
-                          id="lastName"
-                          type="text"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          placeholder="Last Name"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="username">Username</label>
-                      <input
-                        id="username"
+                        id="lastName"
                         type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Username"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last Name"
                         required
                       />
                     </div>
-                    <div className="form-group">
-                      <label htmlFor="password">Password</label>
-                      <input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Password"
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="email">Email Address</label>
-                      <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Email Address"
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="gender">Gender</label>
-                      <select
-                        id="gender"
-                        value={gender}
-                        onChange={(e) => setGender(e.target.value)}
-                        required
-                      >
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Birthday</label>
-                      <div className="birthday-container">
-                        <select
-                          value={birthday.month}
-                          onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
-                          required
-                        >
-                          <option value="">Month</option>
-                          {months.map((month) => (
-                            <option key={month} value={month}>{month}</option>
-                          ))}
-                        </select>
-                        <select
-                          value={birthday.day}
-                          onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
-                          required
-                        >
-                          <option value="">Day</option>
-                          {days.map((day) => (
-                            <option key={day} value={day}>{day}</option>
-                          ))}
-                        </select>
-                        <select
-                          value={birthday.year}
-                          onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
-                          required
-                        >
-                          <option value="">Year</option>
-                          {years.map((year) => (
-                            <option key={year} value={year}>{year}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="profilePic">Profile Picture URL (optional)</label>
-                      <input
-                        id="profilePic"
-                        type="text"
-                        value={profilePic}
-                        onChange={(e) => setProfilePic(e.target.value)}
-                        placeholder="Profile Picture URL (optional)"
-                      />
-                    </div>
-                    <button type="submit" className="intacom-button">Register</button>
-                    <button type="button" className="intacom-button secondary" onClick={() => setShowRecover(true)}>
-                      Forgot Password?
-                    </button>
-                    <button type="button" className="intacom-button secondary" onClick={() => setIsLogin(!isLogin)}>
-                      Switch to Login
-                    </button>
-                  </>
-                )}
-              </form>
-            </div>
+                  </div>
+                  <label htmlFor="username">Username</label>
+                  <input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Username"
+                    required
+                  />
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    required
+                  />
+                  <label htmlFor="email">Email Address</label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email Address"
+                    required
+                  />
+                  <label htmlFor="gender">Gender</label>
+                  <select
+                    id="gender"
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    required
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                  <label>Birthday</label>
+                  <div className="birthday-container">
+                    <select
+                      value={birthday.month}
+                      onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
+                      required
+                    >
+                      <option value="">Month</option>
+                      {months.map((month) => (
+                        <option key={month} value={month}>{month}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={birthday.day}
+                      onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
+                      required
+                    >
+                      <option value="">Day</option>
+                      {days.map((day) => (
+                        <option key={day} value={day}>{day}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={birthday.year}
+                      onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
+                      required
+                    >
+                      <option value="">Year</option>
+                      {years.map((year) => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <label htmlFor="profilePic">Profile Picture URL (optional)</label>
+                  <input
+                    id="profilePic"
+                    type="text"
+                    value={profilePic}
+                    onChange={(e) => setProfilePic(e.target.value)}
+                    placeholder="Profile Picture URL (optional)"
+                  />
+                  <button type="submit">Register</button>
+                  <button type="button" onClick={() => setShowRecover(true)}>
+                    Forgot Password?
+                  </button>
+                  <button type="button" onClick={() => setIsLogin(!isLogin)}>
+                    Switch to Login
+                  </button>
+                </>
+              )}
+            </form>
           ) : (
             <AppRoutes
               projects={projects}
@@ -628,67 +631,53 @@ const App: React.FC = () => {
             />
           )}
           {showRecover && (
-            <div className="intacom-modal">
-              <div className="intacom-card">
-                <h3>Forgot Password</h3>
-                <form onSubmit={handleRecoverPassword}>
-                  <div className="form-group">
-                    <label htmlFor="recoveryEmail">Email Address</label>
-                    <input
-                      id="recoveryEmail"
-                      type="email"
-                      value={recoveryEmail}
-                      onChange={(e) => setRecoveryEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      required
-                    />
-                  </div>
-                  <div className="form-actions">
-                    <button type="submit" className="intacom-button">Recover Password</button>
-                    <button type="button" className="intacom-button secondary" onClick={() => setShowRecover(false)}>Cancel</button>
-                  </div>
-                </form>
-              </div>
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
+              <h3>Forgot Password</h3>
+              <form onSubmit={handleRecoverPassword}>
+                <label htmlFor="recoveryEmail">Email Address</label>
+                <input
+                  id="recoveryEmail"
+                  type="email"
+                  value={recoveryEmail}
+                  onChange={(e) => setRecoveryEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                />
+                <button type="submit">Recover Password</button>
+                <button type="button" onClick={() => setShowRecover(false)}>Cancel</button>
+              </form>
             </div>
           )}
           {showReset && (
-            <div className="intacom-modal">
-              <div className="intacom-card">
-                <h3>Reset Password</h3>
-                <form onSubmit={handleResetPassword}>
-                  <div className="form-group">
-                    <label htmlFor="recoveryToken">Recovery Token</label>
-                    <input
-                      id="recoveryToken"
-                      type="text"
-                      value={recoveryToken}
-                      onChange={(e) => setRecoveryToken(e.target.value)}
-                      placeholder="Enter recovery token"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="newPassword">New Password</label>
-                    <input
-                      id="newPassword"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Enter new password"
-                      required
-                    />
-                  </div>
-                  <div className="form-actions">
-                    <button type="submit" className="intacom-button">Reset Password</button>
-                    <button type="button" className="intacom-button secondary" onClick={() => setShowReset(false)}>Cancel</button>
-                  </div>
-                </form>
-              </div>
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
+              <h3>Reset Password</h3>
+              <form onSubmit={handleResetPassword}>
+                <label htmlFor="recoveryToken">Recovery Token</label>
+                <input
+                  id="recoveryToken"
+                  type="text"
+                  value={recoveryToken}
+                  onChange={(e) => setRecoveryToken(e.target.value)}
+                  placeholder="Enter recovery token"
+                  required
+                />
+                <label htmlFor="newPassword">New Password</label>
+                <input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  required
+                />
+                <button type="submit">Reset Password</button>
+                <button type="button" onClick={() => setShowReset(false)}>Cancel</button>
+              </form>
             </div>
           )}
         </main>
-        <footer className="intacom-footer">
-          <p>© 2025 Intacom. All rights reserved.</p>
+        <footer>
+          <p style={{ color: '#b0b0ff' }}>© 2025 Intacom. All rights reserved.</p>
         </footer>
       </>
     );

@@ -1,10 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+
+interface Project {
+  _id: string;
+  name: string;
+}
+
+interface ProjectsResponse {
+  data?: Project[];
+  [key: number]: Project;
+  length?: number;
+}
 
 const Upload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadUrl, setUploadUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>('');
+  const [user, setUser] = useState<{ username: string } | null>(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  useEffect(() => {
+    if (user) {
+      const fetchProjects = async () => {
+        try {
+          const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
+          const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
+          setProjects(projectsData);
+        } catch (error) {
+          console.error('Failed to fetch projects:', error);
+          setProjects([]);
+        }
+      };
+      fetchProjects();
+    }
+  }, [user]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -18,6 +52,10 @@ const Upload: React.FC = () => {
       setErrorMessage('Please select a file to upload');
       return;
     }
+    if (!selectedProject) {
+      setErrorMessage('Please select a project to associate the file with');
+      return;
+    }
 
     const formData = new FormData();
     formData.append('file', file);
@@ -29,33 +67,65 @@ const Upload: React.FC = () => {
         },
       });
       setUploadUrl(response.data.url);
+      setSuccessMessage('File uploaded successfully!');
       setErrorMessage('');
+      setFile(null);
+      setSelectedProject('');
     } catch (error: any) {
       console.error('Upload error:', error.response?.data || error.message);
       setErrorMessage(error.response?.data?.error || 'An error occurred during upload');
     }
   };
 
-  console.log('Rendering Upload component');
+  console.log('Rendering Upload page');
   return (
-    <div className="intacom-upload">
-      <h2>Upload File</h2>
-      <div className="intacom-card">
-        <form onSubmit={handleUpload}>
-          <div className="form-group">
-            <label htmlFor="fileUpload">Select File</label>
-            <input id="fileUpload" type="file" onChange={handleFileChange} />
-          </div>
-          <button type="submit" className="intacom-button">Upload</button>
-        </form>
-        {errorMessage && <div className="error-message">{errorMessage}</div>}
-        {uploadUrl && (
-          <div>
-            <p>File uploaded successfully!</p>
-            <a href={uploadUrl} target="_blank" rel="noopener noreferrer">View File</a>
-          </div>
-        )}
-      </div>
+    <div style={{ padding: '2rem' }}>
+      <h2 style={{ fontSize: '1.8rem', fontWeight: 600, marginBottom: '0.5rem' }}>Upload File</h2>
+      <p style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '1.5rem' }}>
+        Upload files to share with your project team.
+      </p>
+      <form onSubmit={handleUpload}>
+        <div className="form-group">
+          <label htmlFor="projectSelect">Select Project</label>
+          <select
+            id="projectSelect"
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            required
+          >
+            <option value="">Select a project</option>
+            {projects.map((project) => (
+              <option key={project._id} value={project._id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group">
+          <label htmlFor="fileUpload">Select File</label>
+          <input id="fileUpload" type="file" onChange={handleFileChange} />
+        </div>
+        <button type="submit">Upload</button>
+      </form>
+      {errorMessage && <div className="error-message">{errorMessage}</div>}
+      {successMessage && (
+        <div style={{ color: '#4caf50', textAlign: 'center', fontSize: '0.9rem', marginTop: '1rem' }}>
+          {successMessage}
+        </div>
+      )}
+      {uploadUrl && (
+        <div style={{ marginTop: '1.5rem' }}>
+          <p style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>File uploaded successfully!</p>
+          <a
+            href={uploadUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
+          >
+            View File
+          </a>
+        </div>
+      )}
     </div>
   );
 };
