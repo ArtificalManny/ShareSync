@@ -174,7 +174,7 @@ const Home: React.FC<HomeProps> = ({
                     borderLeft: `4px solid ${project.color || '#3a3a50'}`,
                   }}
                 >
-                  <Link to={`/project/${project._id}`}>
+                  <Link to={`/project/${project._id}`} onClick={() => console.log(`Navigating to /project/${project._id}`)}>
                     <h4>{project.name}</h4>
                   </Link>
                   <p>{project.description || 'No description'}</p>

@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { useNavigate, Routes, Route, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell, faUserCircle, faPlusCircle, faHome, faFolder, faUpload, faCog, faSignOutAlt, faUser } from '@fortawesome/free-solid-svg-icons';
-import AppRoutes from './Routes';
+import Home from './pages/Home';
+import ProjectsPage from './pages/ProjectsPage';
+import Upload from './Upload';
+import Settings from './Settings';
+import ProjectHome from './pages/ProjectHome';
+import Profile from './pages/Profile';
 
 // Define User type
 interface User {
@@ -121,10 +125,12 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  // Fetch projects and notifications when user logs in
+  // Fetch projects and notifications when user logs in, but only navigate to /home on initial login
   useEffect(() => {
-    if (user) {
+    if (user && window.location.pathname === '/') {
       navigate('/home');
+    }
+    if (user) {
       const fetchProjects = async () => {
         try {
           const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
@@ -427,21 +433,34 @@ const App: React.FC = () => {
       )}
       <main className={user ? '' : 'full-screen'}>
         {user ? (
-          <AppRoutes
-            projects={projects}
-            showCreateProject={showCreateProject}
-            setShowCreateProject={setShowCreateProject}
-            projectName={projectName}
-            setProjectName={setProjectName}
-            projectDescription={projectDescription}
-            setProjectDescription={setProjectDescription}
-            projectColor={projectColor}
-            setProjectColor={setProjectColor}
-            sharedUsers={sharedUsers}
-            handleAddSharedUser={handleAddSharedUser}
-            handleRemoveSharedUser={handleRemoveSharedUser}
-            handleCreateProject={handleCreateProject}
-          />
+          <Routes>
+            <Route path="/" element={<div>Redirecting to login...</div>} />
+            <Route
+              path="/home"
+              element={
+                <Home
+                  projects={projects}
+                  showCreateProject={showCreateProject}
+                  setShowCreateProject={setShowCreateProject}
+                  projectName={projectName}
+                  setProjectName={setProjectName}
+                  projectDescription={projectDescription}
+                  setProjectDescription={setProjectDescription}
+                  projectColor={projectColor}
+                  setProjectColor={setProjectColor}
+                  sharedUsers={sharedUsers}
+                  handleAddSharedUser={handleAddSharedUser}
+                  handleRemoveSharedUser={handleRemoveSharedUser}
+                  handleCreateProject={handleCreateProject}
+                />
+              }
+            />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/upload" element={<Upload />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/project/:id" element={<ProjectHome projects={projects} />} />
+            <Route path="/profile" element={<Profile />} />
+          </Routes>
         ) : (
           <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
             <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>
