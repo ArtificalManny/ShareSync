@@ -86,6 +86,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
+  const [badges, setBadges] = useState<string[]>([]); // Track user badges
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -100,7 +101,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
         }
       } catch (error: any) {
         console.error('Failed to fetch project:', error.response?.data || error.message);
-        setErrorMessage(error.response?.data?.error || 'Failed to load project. Please ensure the backend server is running and the project exists.');
+        setErrorMessage(error.response?.data?.error || 'Failed to load project. Please ensure the project exists in the database.');
       }
     };
 
@@ -197,6 +198,13 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       ...activities,
       { _id: `${activities.length + 1}`, type: 'task', content: `${user?.username} updated task status to "${newStatus}"`, createdAt: new Date().toISOString() },
     ]);
+    if (newStatus === 'Done') {
+      // Award a badge for completing a task
+      if (!badges.includes('Task Master')) {
+        setBadges([...badges, 'Task Master']);
+        setSuccessMessage('🎉 Congratulations! You earned the "Task Master" badge for completing a task!');
+      }
+    }
   };
 
   const handleAddSubtask = (taskId: string, subtaskTitle: string, subtaskDescription: string) => {
@@ -315,6 +323,11 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
     ]);
   };
 
+  // Calculate project progress
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((task) => task.status === 'Done').length;
+  const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
   if (errorMessage) {
     return <div className="error-message">{errorMessage}</div>;
   }
@@ -329,6 +342,26 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
     <div className="project-container">
       <h2>{project.name}</h2>
       <p>{project.description || 'No description'}</p>
+      {/* Project Summary Section */}
+      <div className="section glassmorphic project-summary">
+        <h3>Project Summary</h3>
+        <p>Total Tasks: {totalTasks}</p>
+        <p>Completed Tasks: {completedTasks}</p>
+        <div className="progress-bar">
+          <div className="progress" style={{ width: `${progress}%` }}></div>
+        </div>
+        <p>Progress: {progress.toFixed(1)}%</p>
+        {badges.length > 0 && (
+          <div className="badges">
+            <h4>Your Badges</h4>
+            <ul>
+              {badges.map((badge, index) => (
+                <li key={index} className="badge">{badge}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
       <div className="project-tabs">
         <button className="tab-button glassmorphic" onClick={() => setActiveTab('home')}>Home</button>
         <button className="tab-button glassmorphic" onClick={() => setActiveTab('upload')}>Upload</button>
@@ -415,9 +448,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                       {task.subtasks && task.subtasks.length > 0 ? (
                         <ul className="subtask-list">
                           {task.subtasks.map((subtask) => (
-                            <li
-                              key={subtask._id}
-                            >
+                            <li key={subtask._id}>
                               <div>
                                 <strong>{subtask.title}</strong>
                                 <p>{subtask.description}</p>
@@ -512,16 +543,12 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                     style={{ borderLeft: '4px solid var(--primary-color)' }}
                   >
                     <div className="post-header">
-                      <div
-                        className="post-author-pic"
-                      >
+                      <div className="post-author-pic">
                         {post.author[0]}
                       </div>
                       <div>
                         <p>{post.author}</p>
-                        <p>
-                          {new Date(post.createdAt).toLocaleString()}
-                        </p>
+                        <p>{new Date(post.createdAt).toLocaleString()}</p>
                       </div>
                     </div>
                     <p>{post.content}</p>
@@ -552,20 +579,14 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                       {post.comments.length > 0 && (
                         <ul className="comment-list">
                           {post.comments.map((comment) => (
-                            <li
-                              key={comment._id}
-                            >
-                              <div
-                                className="comment-author-pic"
-                              >
+                            <li key={comment._id}>
+                              <div className="comment-author-pic">
                                 {comment.author[0]}
                               </div>
                               <div>
                                 <p>{comment.author}</p>
                                 <p>{comment.content}</p>
-                                <p>
-                                  {new Date(comment.createdAt).toLocaleString()}
-                                </p>
+                                <p>{new Date(comment.createdAt).toLocaleString()}</p>
                               </div>
                             </li>
                           ))}
@@ -632,9 +653,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
           ) : (
             <ul className="activity-list">
               {filteredActivities.map((activity) => (
-                <li
-                  key={activity._id}
-                >
+                <li key={activity._id}>
                   {activity.content} - {new Date(activity.createdAt).toLocaleString()}
                 </li>
               ))}
@@ -656,16 +675,12 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                   style={{ borderLeft: '4px solid var(--primary-color)' }}
                 >
                   <div className="file-header">
-                    <div
-                      className="file-author-pic"
-                    >
+                    <div className="file-author-pic">
                       {file.uploadedBy[0]}
                     </div>
                     <div>
                       <p>{file.uploadedBy}</p>
-                      <p>
-                        {new Date(file.createdAt).toLocaleString()}
-                      </p>
+                      <p>{new Date(file.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
                   <p>{file.name}</p>

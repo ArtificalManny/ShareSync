@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 interface Project {
@@ -41,19 +41,39 @@ const Home: React.FC<HomeProps> = ({
   handleRemoveSharedUser,
   handleCreateProject,
 }) => {
-  const [sharedEmail, setSharedEmail] = React.useState('');
-  const [sharedRole, setSharedRole] = React.useState<'Admin' | 'Editor' | 'Viewer'>('Viewer');
+  const [sharedEmail, setSharedEmail] = useState('');
+  const [sharedRole, setSharedRole] = useState<'Admin' | 'Editor' | 'Viewer'>('Viewer');
+
+  // Mocked metrics for dashboard; in a real app, fetch from backend
+  const totalProjects = projects.length;
+  const activeProjects = projects.filter((project) => project.admin === 'ArtificalManny').length; // Example filter
 
   console.log('Rendering Home page');
   return (
     <div className="home-container">
       <h2>Home</h2>
       <p>Manage your projects and tasks here.</p>
-      <button className="neumorphic create-project-btn" onClick={() => setShowCreateProject(true)}>
-        Create New Project!
-      </button>
+      {/* Dashboard Section */}
+      <div className="section glassmorphic dashboard">
+        <h3>Dashboard</h3>
+        <div className="metrics">
+          <div className="metric">
+            <h4>Total Projects</h4>
+            <p>{totalProjects}</p>
+          </div>
+          <div className="metric">
+            <h4>Active Projects</h4>
+            <p>{activeProjects}</p>
+          </div>
+        </div>
+      </div>
+      {!showCreateProject && (
+        <button className="neumorphic create-project-btn" onClick={() => setShowCreateProject(true)}>
+          Create New Project!
+        </button>
+      )}
       {showCreateProject && (
-        <div className="modal glassmorphic">
+        <div className="create-project-panel-content glassmorphic">
           <h3>Create Project</h3>
           <form onSubmit={handleCreateProject} className="create-project-form">
             <div className="form-group">

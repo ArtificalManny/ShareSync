@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate, Routes, Route, Link } from 'react-router-dom';
+import { useNavigate, Routes, Route, Link, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBell, faUserCircle, faPlusCircle, faHome, faFolder, faUpload, faCog, faSignOutAlt, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faUserCircle, faPlusCircle, faHome, faFolder, faUpload, faCog, faSignOutAlt, faUser, faComment } from '@fortawesome/free-solid-svg-icons';
 import Home from './pages/Home';
 import ProjectsPage from './pages/ProjectsPage';
 import Upload from './Upload';
@@ -90,6 +90,49 @@ interface NotificationsResponse {
   data: Notification[];
 }
 
+interface UserResponse {
+  data: {
+    user: User;
+  };
+}
+
+// Public Profile Component
+const PublicProfile: React.FC = () => {
+  const { username } = useParams<{ username: string }>();
+  const [publicUser, setPublicUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchPublicUser = async () => {
+      try {
+        const response = await axios.get<UserResponse>(`http://localhost:3000/users/by-username/${username}`);
+        setPublicUser(response.data.data.user);
+      } catch (error: any) {
+        console.error('Failed to fetch public user:', error.response?.data || error.message);
+      }
+    };
+    fetchPublicUser();
+  }, [username]);
+
+  if (!publicUser) {
+    return <div className="loading">Loading public profile...</div>;
+  }
+
+  return (
+    <div className="public-profile">
+      <div className="profile-section">
+        {publicUser.profilePic ? (
+          <img src={publicUser.profilePic} alt="Profile" className="profile-pic" />
+        ) : (
+          <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+        )}
+        <h3>{publicUser.firstName || publicUser.username}</h3>
+        <p>@{publicUser.username}</p>
+        <p>{publicUser.bio || 'No bio available'}</p>
+      </div>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -119,6 +162,8 @@ const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
   const navigate = useNavigate();
 
   // Save user to localStorage whenever it changes
@@ -169,17 +214,26 @@ const App: React.FC = () => {
       formData.append('file', file);
 
       try {
+        console.log('Uploading profile picture...');
         const response = await axios.post<{ url: string }>('http://localhost:3000/uploads', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
+        console.log('Upload response:', response.data);
         const profilePicUrl = response.data.url;
         const updatedUser = { ...user, profilePic: profilePicUrl };
+        console.log('Updating user with new profile picture:', updatedUser);
         const responseUser = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
+        console.log('Update user response:', responseUser.data);
         const newUserData = responseUser.data.data.user;
         setUser(newUserData);
         localStorage.setItem('user', JSON.stringify(newUserData));
+        setNotifications([...notifications, {
+          _id: `${notifications.length + 1}`,
+          message: 'Profile picture updated successfully!',
+          createdAt: new Date().toISOString(),
+        }]);
       } catch (error: any) {
         console.error('Profile picture upload error:', error.response?.data || error.message);
         setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload. Please ensure the backend server is running.');
@@ -296,6 +350,13 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
+      console.log('Creating project with payload:', {
+        name: projectName,
+        description: projectDescription,
+        admin: user?.username,
+        color: projectColor,
+        sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
+      });
       const response = await axios.post<ProjectResponse>(`http://localhost:3000/projects`, {
         name: projectName,
         description: projectDescription,
@@ -303,6 +364,7 @@ const App: React.FC = () => {
         color: projectColor,
         sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
       });
+      console.log('Create project response:', response.data);
       const newProject = response.data.project;
       setProjects([...projects, newProject]);
       setShowCreateProject(false);
@@ -311,9 +373,34 @@ const App: React.FC = () => {
       setProjectColor('');
       setSharedUsers([]);
       navigate(`/project/${newProject._id}`);
+      setNotifications([...notifications, {
+        _id: `${notifications.length + 1}`,
+        message: `Project "${newProject.name}" created successfully!`,
+        createdAt: new Date().toISOString(),
+      }]);
     } catch (error: any) {
       console.error('Create project error:', error.response?.data || error.message);
       setErrorMessage(error.response?.data?.error || 'An error occurred during project creation. Please check if the backend server is running.');
+    }
+  };
+
+  // Handle feedback submission
+  const handleFeedbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    try {
+      // Mocked for now; in a real app, you'd send this to the backend
+      console.log('Feedback submitted:', feedbackMessage);
+      setFeedbackMessage('');
+      setShowFeedback(false);
+      setNotifications([...notifications, {
+        _id: `${notifications.length + 1}`,
+        message: 'Thank you for your feedback!',
+        createdAt: new Date().toISOString(),
+      }]);
+    } catch (error: any) {
+      console.error('Feedback submission error:', error.response?.data || error.message);
+      setErrorMessage(error.response?.data?.error || 'An error occurred while submitting feedback.');
     }
   };
 
@@ -368,299 +455,354 @@ const App: React.FC = () => {
           </div>
         )}
       </header>
-      {user && (
-        <aside className="sidebar-modern glassmorphic">
-          <div className="profile-section">
-            <Link to="/profile">
-              <label htmlFor="profilePicUpload" className="profile-pic-label">
-                {user.profilePic ? (
-                  <img src={user.profilePic} alt="Profile" className="profile-pic" />
-                ) : (
-                  <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
-                )}
-                <input
-                  id="profilePicUpload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfilePicUpload}
-                  style={{ display: 'none' }}
-                />
-              </label>
-              <h3>{user.firstName || user.username}</h3>
-            </Link>
-          </div>
-          <ul>
-            <li>
-              <FontAwesomeIcon icon={faPlusCircle} className="menu-icon" />
-              <a href="#" onClick={() => setShowCreateProject(true)}>
-                Create Project
-              </a>
-            </li>
-            <li>
-              <FontAwesomeIcon icon={faHome} className="menu-icon" />
-              <Link to="/home">Home</Link>
-            </li>
-            <li>
-              <FontAwesomeIcon icon={faFolder} className="menu-icon" />
-              <Link to="/projects">Projects</Link>
-            </li>
-            <li>
-              <FontAwesomeIcon icon={faUpload} className="menu-icon" />
-              <Link to="/upload">Upload</Link>
-            </li>
-            <li>
-              <FontAwesomeIcon icon={faCog} className="menu-icon" />
-              <Link to="/settings">Settings</Link>
-            </li>
-            <li>
-              <FontAwesomeIcon icon={faSignOutAlt} className="menu-icon" />
-              <a href="#" onClick={handleLogout}>
-                Logout
-              </a>
-            </li>
-          </ul>
-          {projects.map((project) => (
-            <div
-              key={project._id}
-              className="project-link glassmorphic"
-              style={{
-                background: project.color || '#3a3a50',
-              }}
-            >
-              <Link to={`/project/${project._id}`}>
-                {project.name}
+      <div className="app-container">
+        {user ? (
+          <aside className="sidebar-modern glassmorphic">
+            <div className="profile-section">
+              <Link to="/profile">
+                <label htmlFor="profilePicUpload" className="profile-pic-label">
+                  {user.profilePic ? (
+                    <img src={user.profilePic} alt="Profile" className="profile-pic" />
+                  ) : (
+                    <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+                  )}
+                  <input
+                    id="profilePicUpload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfilePicUpload}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                <h3>{user.firstName || user.username}</h3>
               </Link>
             </div>
-          ))}
-        </aside>
-      )}
-      <main className={user ? 'main-modern' : 'full-screen'}>
-        {user ? (
-          <Routes>
-            <Route path="/" element={<div>Redirecting to login...</div>} />
-            <Route
-              path="/home"
-              element={
-                <Home
-                  projects={projects}
-                  showCreateProject={showCreateProject}
-                  setShowCreateProject={setShowCreateProject}
-                  projectName={projectName}
-                  setProjectName={setProjectName}
-                  projectDescription={projectDescription}
-                  setProjectDescription={setProjectDescription}
-                  projectColor={projectColor}
-                  setProjectColor={setProjectColor}
-                  sharedUsers={sharedUsers}
-                  handleAddSharedUser={handleAddSharedUser}
-                  handleRemoveSharedUser={handleRemoveSharedUser}
-                  handleCreateProject={handleCreateProject}
-                />
-              }
-            />
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/upload" element={<Upload projects={projects} />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/project/:id" element={<ProjectHome projects={projects} />} />
-            <Route path="/profile" element={<Profile setUser={setUser} />} />
-          </Routes>
+            <ul>
+              <li>
+                <FontAwesomeIcon icon={faPlusCircle} className="menu-icon" />
+                <a href="#" onClick={() => setShowCreateProject(true)}>
+                  Create Project
+                </a>
+              </li>
+              <li>
+                <FontAwesomeIcon icon={faHome} className="menu-icon" />
+                <Link to="/home">Home</Link>
+              </li>
+              <li>
+                <FontAwesomeIcon icon={faFolder} className="menu-icon" />
+                <Link to="/projects">Projects</Link>
+              </li>
+              <li>
+                <FontAwesomeIcon icon={faUpload} className="menu-icon" />
+                <Link to="/upload">Upload</Link>
+              </li>
+              <li>
+                <FontAwesomeIcon icon={faCog} className="menu-icon" />
+                <Link to="/settings">Settings</Link>
+              </li>
+              <li>
+                <FontAwesomeIcon icon={faComment} className="menu-icon" />
+                <a href="#" onClick={() => setShowFeedback(true)}>
+                  Feedback
+                </a>
+              </li>
+              <li>
+                <FontAwesomeIcon icon={faSignOutAlt} className="menu-icon" />
+                <a href="#" onClick={handleLogout}>
+                  Logout
+                </a>
+              </li>
+            </ul>
+            {projects.map((project) => (
+              <div
+                key={project._id}
+                className="project-link glassmorphic"
+                style={{
+                  background: project.color || '#3a3a50',
+                }}
+              >
+                <Link to={`/project/${project._id}`}>
+                  {project.name}
+                </Link>
+              </div>
+            ))}
+          </aside>
         ) : (
-          <form onSubmit={handleSubmit} className="glassmorphic">
-            <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>
-              Intacom
-            </h2>
-            {errorMessage && <div className="error-message">{errorMessage}</div>}
-            {isLogin ? (
-              <>
-                <label htmlFor="identifier">Email or Username</label>
-                <input
-                  id="identifier"
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Email or Username"
-                  required
-                />
-                <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  required
-                />
-                <button type="submit" className="neumorphic">Login</button>
-                <button type="button" className="neumorphic" onClick={() => setShowRecover(true)}>
-                  Forgot Password?
-                </button>
-                <button type="button" className="neumorphic" onClick={() => setIsLogin(!isLogin)}>
-                  Switch to Register
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="subtitle">Create an account</div>
-                <div className="name-container">
-                  <div>
-                    <label htmlFor="firstName">First Name</label>
-                    <input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="First Name"
-                      required
+          <aside className="sidebar-modern glassmorphic">
+            <Routes>
+              <Route path="/user/:username" element={<PublicProfile />} />
+            </Routes>
+          </aside>
+        )}
+        <main className={user ? 'main-modern' : 'full-screen'}>
+          {user ? (
+            <>
+              <Routes>
+                <Route path="/" element={<div>Redirecting to login...</div>} />
+                <Route
+                  path="/home"
+                  element={
+                    <Home
+                      projects={projects}
+                      showCreateProject={showCreateProject}
+                      setShowCreateProject={setShowCreateProject}
+                      projectName={projectName}
+                      setProjectName={setProjectName}
+                      projectDescription={projectDescription}
+                      setProjectDescription={setProjectDescription}
+                      projectColor={projectColor}
+                      setProjectColor={setProjectColor}
+                      sharedUsers={sharedUsers}
+                      handleAddSharedUser={handleAddSharedUser}
+                      handleRemoveSharedUser={handleRemoveSharedUser}
+                      handleCreateProject={handleCreateProject}
                     />
-                  </div>
-                  <div>
-                    <label htmlFor="lastName">Last Name</label>
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Last Name"
-                      required
-                    />
-                  </div>
+                  }
+                />
+                <Route path="/projects" element={<ProjectsPage />} />
+                <Route path="/upload" element={<Upload projects={projects} />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/project/:id" element={<ProjectHome projects={projects} />} />
+                <Route path="/profile" element={<Profile setUser={setUser} />} />
+              </Routes>
+              {showCreateProject && (
+                <div className={`create-project-panel ${showCreateProject ? 'open' : ''}`}>
+                  <Home
+                    projects={projects}
+                    showCreateProject={showCreateProject}
+                    setShowCreateProject={setShowCreateProject}
+                    projectName={projectName}
+                    setProjectName={setProjectName}
+                    projectDescription={projectDescription}
+                    setProjectDescription={setProjectDescription}
+                    projectColor={projectColor}
+                    setProjectColor={setProjectColor}
+                    sharedUsers={sharedUsers}
+                    handleAddSharedUser={handleAddSharedUser}
+                    handleRemoveSharedUser={handleRemoveSharedUser}
+                    handleCreateProject={handleCreateProject}
+                  />
                 </div>
-                <label htmlFor="username">Username</label>
+              )}
+              {showFeedback && (
+                <div className="modal glassmorphic">
+                  <h3>Provide Feedback</h3>
+                  <form onSubmit={handleFeedbackSubmit}>
+                    <div className="form-group">
+                      <label htmlFor="feedbackMessage">Your Feedback</label>
+                      <textarea
+                        id="feedbackMessage"
+                        value={feedbackMessage}
+                        onChange={(e) => setFeedbackMessage(e.target.value)}
+                        placeholder="Share your thoughts..."
+                        rows={4}
+                        required
+                      />
+                    </div>
+                    <button type="submit" className="neumorphic">Submit</button>
+                    <button type="button" className="neumorphic" onClick={() => setShowFeedback(false)}>Cancel</button>
+                  </form>
+                </div>
+              )}
+            </>
+          ) : (
+            <form onSubmit={handleSubmit} className="glassmorphic">
+              <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>
+                Intacom
+              </h2>
+              {errorMessage && <div className="error-message">{errorMessage}</div>}
+              {isLogin ? (
+                <>
+                  <label htmlFor="identifier">Email or Username</label>
+                  <input
+                    id="identifier"
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="Email or Username"
+                    required
+                  />
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    required
+                  />
+                  <button type="submit" className="neumorphic">Login</button>
+                  <button type="button" className="neumorphic" onClick={() => setShowRecover(true)}>
+                    Forgot Password?
+                  </button>
+                  <button type="button" className="neumorphic" onClick={() => setIsLogin(!isLogin)}>
+                    Switch to Register
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="subtitle">Create an account</div>
+                  <div className="name-container">
+                    <div>
+                      <label htmlFor="firstName">First Name</label>
+                      <input
+                        id="firstName"
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First Name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="lastName">Last Name</label>
+                      <input
+                        id="lastName"
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last Name"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <label htmlFor="username">Username</label>
+                  <input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Username"
+                    required
+                  />
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    required
+                  />
+                  <label htmlFor="email">Email Address</label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email Address"
+                    required
+                  />
+                  <label htmlFor="gender">Gender</label>
+                  <select
+                    id="gender"
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    required
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                  <label>Birthday</label>
+                  <div className="birthday-container">
+                    <select
+                      value={birthday.month}
+                      onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
+                      required
+                    >
+                      <option value="">Month</option>
+                      {months.map((month) => (
+                        <option key={month} value={month}>{month}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={birthday.day}
+                      onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
+                      required
+                    >
+                      <option value="">Day</option>
+                      {days.map((day) => (
+                        <option key={day} value={day}>{day}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={birthday.year}
+                      onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
+                      required
+                    >
+                      <option value="">Year</option>
+                      {years.map((year) => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <label htmlFor="profilePic">Profile Picture URL (optional)</label>
+                  <input
+                    id="profilePic"
+                    type="text"
+                    value={profilePic}
+                    onChange={(e) => setProfilePic(e.target.value)}
+                    placeholder="Profile Picture URL (optional)"
+                  />
+                  <button type="submit" className="neumorphic">Register</button>
+                  <button type="button" className="neumorphic" onClick={() => setShowRecover(true)}>
+                    Forgot Password?
+                  </button>
+                  <button type="button" className="neumorphic" onClick={() => setIsLogin(!isLogin)}>
+                    Switch to Login
+                  </button>
+                </>
+              )}
+            </form>
+          )}
+          {showRecover && (
+            <div className="modal glassmorphic">
+              <h3>Forgot Password</h3>
+              <form onSubmit={handleRecoverPassword}>
+                <label htmlFor="recoveryEmail">Email Address</label>
                 <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Username"
-                  required
-                />
-                <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  required
-                />
-                <label htmlFor="email">Email Address</label>
-                <input
-                  id="email"
+                  id="recoveryEmail"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email Address"
+                  value={recoveryEmail}
+                  onChange={(e) => setRecoveryEmail(e.target.value)}
+                  placeholder="Enter your email"
                   required
                 />
-                <label htmlFor="gender">Gender</label>
-                <select
-                  id="gender"
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  required
-                >
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </select>
-                <label>Birthday</label>
-                <div className="birthday-container">
-                  <select
-                    value={birthday.month}
-                    onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
-                    required
-                  >
-                    <option value="">Month</option>
-                    {months.map((month) => (
-                      <option key={month} value={month}>{month}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={birthday.day}
-                    onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
-                    required
-                  >
-                    <option value="">Day</option>
-                    {days.map((day) => (
-                      <option key={day} value={day}>{day}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={birthday.year}
-                    onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
-                    required
-                  >
-                    <option value="">Year</option>
-                    {years.map((year) => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
-                </div>
-                <label htmlFor="profilePic">Profile Picture URL (optional)</label>
+                <button type="submit" className="neumorphic">Recover Password</button>
+                <button type="button" className="neumorphic" onClick={() => setShowRecover(false)}>Cancel</button>
+              </form>
+            </div>
+          )}
+          {showReset && (
+            <div className="modal glassmorphic">
+              <h3>Reset Password</h3>
+              <form onSubmit={handleResetPassword}>
+                <label htmlFor="recoveryToken">Recovery Token</label>
                 <input
-                  id="profilePic"
+                  id="recoveryToken"
                   type="text"
-                  value={profilePic}
-                  onChange={(e) => setProfilePic(e.target.value)}
-                  placeholder="Profile Picture URL (optional)"
+                  value={recoveryToken}
+                  onChange={(e) => setRecoveryToken(e.target.value)}
+                  placeholder="Enter recovery token"
+                  required
                 />
-                <button type="submit" className="neumorphic">Register</button>
-                <button type="button" className="neumorphic" onClick={() => setShowRecover(true)}>
-                  Forgot Password?
-                </button>
-                <button type="button" className="neumorphic" onClick={() => setIsLogin(!isLogin)}>
-                  Switch to Login
-                </button>
-              </>
-            )}
-          </form>
-        )}
-        {showRecover && (
-          <div className="modal glassmorphic">
-            <h3>Forgot Password</h3>
-            <form onSubmit={handleRecoverPassword}>
-              <label htmlFor="recoveryEmail">Email Address</label>
-              <input
-                id="recoveryEmail"
-                type="email"
-                value={recoveryEmail}
-                onChange={(e) => setRecoveryEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-              />
-              <button type="submit" className="neumorphic">Recover Password</button>
-              <button type="button" className="neumorphic" onClick={() => setShowRecover(false)}>Cancel</button>
-            </form>
-          </div>
-        )}
-        {showReset && (
-          <div className="modal glassmorphic">
-            <h3>Reset Password</h3>
-            <form onSubmit={handleResetPassword}>
-              <label htmlFor="recoveryToken">Recovery Token</label>
-              <input
-                id="recoveryToken"
-                type="text"
-                value={recoveryToken}
-                onChange={(e) => setRecoveryToken(e.target.value)}
-                placeholder="Enter recovery token"
-                required
-              />
-              <label htmlFor="newPassword">New Password</label>
-              <input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password"
-                required
-              />
-              <button type="submit" className="neumorphic">Reset Password</button>
-              <button type="button" className="neumorphic" onClick={() => setShowReset(false)}>Cancel</button>
-            </form>
-          </div>
-        )}
-      </main>
+                <label htmlFor="newPassword">New Password</label>
+                <input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  required
+                />
+                <button type="submit" className="neumorphic">Reset Password</button>
+                <button type="button" className="neumorphic" onClick={() => setShowReset(false)}>Cancel</button>
+              </form>
+            </div>
+          )}
+        </main>
+      </div>
       <footer className="footer-modern">
         <p>© 2025 Intacom. All rights reserved.</p>
       </footer>

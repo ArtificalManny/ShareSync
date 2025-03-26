@@ -103,7 +103,9 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
     setSuccessMessage('');
     try {
       const updatedUser = { ...user, firstName, lastName, email, bio, school, occupation, hobbies };
+      console.log('Updating profile with payload:', updatedUser);
       const response = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
+      console.log('Update profile response:', response.data);
       const newUserData = response.data.data.user;
       setLocalUser(newUserData);
       setUser(newUserData);
@@ -122,14 +124,18 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
       formData.append('file', file);
 
       try {
+        console.log('Uploading cover photo...');
         const response = await axios.post<{ url: string }>('http://localhost:3000/uploads', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
+        console.log('Upload cover photo response:', response.data);
         const coverPhotoUrl = response.data.url;
         const updatedUser = { ...user, coverPhoto: coverPhotoUrl };
+        console.log('Updating user with new cover photo:', updatedUser);
         const responseUser = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
+        console.log('Update user response:', responseUser.data);
         const newUserData = responseUser.data.data.user;
         setLocalUser(newUserData);
         setUser(newUserData);
@@ -149,14 +155,18 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
       formData.append('file', file);
 
       try {
+        console.log('Uploading profile picture...');
         const response = await axios.post<{ url: string }>('http://localhost:3000/uploads', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
+        console.log('Upload profile picture response:', response.data);
         const profilePicUrl = response.data.url;
         const updatedUser = { ...user, profilePic: profilePicUrl };
+        console.log('Updating user with new profile picture:', updatedUser);
         const responseUser = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
+        console.log('Update user response:', responseUser.data);
         const newUserData = responseUser.data.data.user;
         setLocalUser(newUserData);
         setUser(newUserData);
@@ -402,9 +412,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         ) : (
           <ul className="activity-list">
             {activities.map((activity) => (
-              <li
-                key={activity._id}
-              >
+              <li key={activity._id}>
                 {activity.content} - {new Date(activity.createdAt).toLocaleString()}
               </li>
             ))}
