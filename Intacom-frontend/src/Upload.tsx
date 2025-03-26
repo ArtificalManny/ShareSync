@@ -42,8 +42,8 @@ const Upload: React.FC = () => {
   console.log('Rendering Upload page');
   return (
     <div style={{ padding: '2rem' }}>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: 600, marginBottom: '0.5rem' }}>Upload File</h2>
-      <p style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '1.5rem' }}>
+      <h2 style={{ fontSize: '1.8rem', fontWeight: '600', marginBottom: '0.5rem' }}>Upload File</h2>
+      <p style={{ fontSize: '1rem', opacity: '0.8', marginBottom: '1.5rem' }}>
         Upload files to share with your project team.
       </p>
       <form onSubmit={handleUpload}>
