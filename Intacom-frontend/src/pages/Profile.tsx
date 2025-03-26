@@ -12,6 +12,9 @@ interface User {
   profilePic?: string;
   coverPhoto?: string;
   bio?: string;
+  school?: string;
+  occupation?: string;
+  hobbies?: string[];
 }
 
 interface Project {
@@ -21,6 +24,7 @@ interface Project {
   admin?: string;
   color?: string;
   sharedWith?: { userId: string; role: 'Admin' | 'Editor' | 'Viewer' }[];
+  status?: 'current' | 'past';
 }
 
 interface Activity {
@@ -30,8 +34,12 @@ interface Activity {
   createdAt: string;
 }
 
-const Profile: React.FC = () => {
-  const [user, setUser] = useState<User | null>(() => {
+interface ProfileProps {
+  setUser: (user: User | null) => void;
+}
+
+const Profile: React.FC<ProfileProps> = ({ setUser }) => {
+  const [user, setLocalUser] = useState<User | null>(() => {
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
@@ -39,6 +47,10 @@ const Profile: React.FC = () => {
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [email, setEmail] = useState(user?.email || '');
   const [bio, setBio] = useState(user?.bio || '');
+  const [school, setSchool] = useState(user?.school || '');
+  const [occupation, setOccupation] = useState(user?.occupation || '');
+  const [hobbies, setHobbies] = useState<string[]>(user?.hobbies || []);
+  const [newHobby, setNewHobby] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
@@ -50,13 +62,21 @@ const Profile: React.FC = () => {
       setLastName(user.lastName || '');
       setEmail(user.email || '');
       setBio(user.bio || '');
+      setSchool(user.school || '');
+      setOccupation(user.occupation || '');
+      setHobbies(user.hobbies || []);
 
       // Fetch projects
       const fetchProjects = async () => {
         try {
           const response = await axios.get(`http://localhost:3000/projects/${user.username}`);
           const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
-          setProjects(projectsData);
+          // Mock project status for now; in a real app, this would come from the backend
+          const updatedProjects = projectsData.map((project: Project, index: number) => ({
+            ...project,
+            status: index % 2 === 0 ? 'current' : 'past',
+          }));
+          setProjects(updatedProjects);
         } catch (error) {
           console.error('Failed to fetch projects:', error);
           setProjects([]);
@@ -81,9 +101,10 @@ const Profile: React.FC = () => {
     setErrorMessage('');
     setSuccessMessage('');
     try {
-      const updatedUser = { ...user, firstName, lastName, email, bio };
+      const updatedUser = { ...user, firstName, lastName, email, bio, school, occupation, hobbies };
       const response = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
       const newUserData = response.data.data.user;
+      setLocalUser(newUserData);
       setUser(newUserData);
       localStorage.setItem('user', JSON.stringify(newUserData));
       setSuccessMessage('Profile updated successfully');
@@ -109,6 +130,7 @@ const Profile: React.FC = () => {
         const updatedUser = { ...user, coverPhoto: coverPhotoUrl };
         const responseUser = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
         const newUserData = responseUser.data.data.user;
+        setLocalUser(newUserData);
         setUser(newUserData);
         localStorage.setItem('user', JSON.stringify(newUserData));
         setSuccessMessage('Cover photo updated successfully');
@@ -117,6 +139,44 @@ const Profile: React.FC = () => {
         setErrorMessage(error.response?.data?.error || 'An error occurred during cover photo upload');
       }
     }
+  };
+
+  const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await axios.post<{ url: string }>('http://localhost:3000/uploads', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        const profilePicUrl = response.data.url;
+        const updatedUser = { ...user, profilePic: profilePicUrl };
+        const responseUser = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
+        const newUserData = responseUser.data.data.user;
+        setLocalUser(newUserData);
+        setUser(newUserData);
+        localStorage.setItem('user', JSON.stringify(newUserData));
+        setSuccessMessage('Profile picture updated successfully');
+      } catch (error: any) {
+        console.error('Profile picture upload error:', error.response?.data || error.message);
+        setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload');
+      }
+    }
+  };
+
+  const handleAddHobby = () => {
+    if (newHobby.trim()) {
+      setHobbies([...hobbies, newHobby.trim()]);
+      setNewHobby('');
+    }
+  };
+
+  const handleRemoveHobby = (hobby: string) => {
+    setHobbies(hobbies.filter((h) => h !== hobby));
   };
 
   if (!user) {
@@ -178,6 +238,16 @@ const Profile: React.FC = () => {
               {user.firstName ? user.firstName[0] : user.username[0]}
             </div>
           )}
+          <label htmlFor="profilePicUpload" style={{ display: 'block', marginTop: '0.5rem', cursor: 'pointer' }}>
+            <button type="button">Change Profile Picture</button>
+            <input
+              id="profilePicUpload"
+              type="file"
+              accept="image/*"
+              onChange={handleProfilePicUpload}
+              style={{ display: 'none' }}
+            />
+          </label>
         </div>
         <div style={{ flex: 1 }}>
           <h2 style={{ fontSize: '2rem', fontWeight: 600, marginBottom: '0.5rem' }}>
@@ -257,6 +327,50 @@ const Profile: React.FC = () => {
               rows={4}
             />
           </div>
+          <div className="form-group">
+            <label htmlFor="school">School</label>
+            <input
+              id="school"
+              type="text"
+              value={school}
+              onChange={(e) => setSchool(e.target.value)}
+              placeholder="Enter your school"
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="occupation">Occupation</label>
+            <input
+              id="occupation"
+              type="text"
+              value={occupation}
+              onChange={(e) => setOccupation(e.target.value)}
+              placeholder="Enter your occupation"
+            />
+          </div>
+          <div className="form-group">
+            <label>Hobbies</label>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <input
+                type="text"
+                value={newHobby}
+                onChange={(e) => setNewHobby(e.target.value)}
+                placeholder="Add a hobby"
+              />
+              <button type="button" onClick={handleAddHobby}>Add</button>
+            </div>
+            {hobbies.length > 0 && (
+              <ul style={{ listStyle: 'none', padding: '0' }}>
+                {hobbies.map((hobby) => (
+                  <li key={hobby} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                    {hobby}
+                    <button type="button" onClick={() => handleRemoveHobby(hobby)} style={{ background: '#ff5555' }}>
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <button type="submit">Update Profile</button>
         </form>
         {errorMessage && <div className="error-message">{errorMessage}</div>}
@@ -281,20 +395,38 @@ const Profile: React.FC = () => {
         {projects.length === 0 ? (
           <p style={{ fontSize: '1rem', opacity: '0.8' }}>No projects yet.</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
-            {projects.map((project) => (
-              <div
-                key={project._id}
-                className="project-card"
-                style={{
-                  borderLeft: `4px solid ${project.color || '#3a3a50'}`,
-                }}
-              >
-                <h4>{project.name}</h4>
-                <p>{project.description || 'No description'}</p>
-              </div>
-            ))}
-          </div>
+          <>
+            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '0.5rem' }}>Current Projects</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '1rem' }}>
+              {projects.filter((project) => project.status === 'current').map((project) => (
+                <div
+                  key={project._id}
+                  className="project-card"
+                  style={{
+                    borderLeft: `4px solid ${project.color || '#3a3a50'}`,
+                  }}
+                >
+                  <h4>{project.name}</h4>
+                  <p>{project.description || 'No description'}</p>
+                </div>
+              ))}
+            </div>
+            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '0.5rem' }}>Past Projects</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
+              {projects.filter((project) => project.status === 'past').map((project) => (
+                <div
+                  key={project._id}
+                  className="project-card"
+                  style={{
+                    borderLeft: `4px solid ${project.color || '#3a3a50'}`,
+                  }}
+                >
+                  <h4>{project.name}</h4>
+                  <p>{project.description || 'No description'}</p>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

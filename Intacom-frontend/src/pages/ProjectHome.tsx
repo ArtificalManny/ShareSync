@@ -49,8 +49,16 @@ interface Comment {
 
 interface Activity {
   _id: string;
-  type: 'post' | 'comment' | 'like' | 'task' | 'subtask';
+  type: 'post' | 'comment' | 'like' | 'task' | 'subtask' | 'file';
   content: string;
+  createdAt: string;
+}
+
+interface File {
+  _id: string;
+  url: string;
+  name: string;
+  uploadedBy: string;
   createdAt: string;
 }
 
@@ -69,8 +77,9 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostImage, setNewPostImage] = useState<File | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [activityFilter, setActivityFilter] = useState<'all' | 'post' | 'comment' | 'like' | 'task' | 'subtask'>('all');
-  const [activeTab, setActiveTab] = useState<'home' | 'upload' | 'settings' | 'activity'>('home');
+  const [files, setFiles] = useState<File[]>([]);
+  const [activityFilter, setActivityFilter] = useState<'all' | 'post' | 'comment' | 'like' | 'task' | 'subtask' | 'file'>('all');
+  const [activeTab, setActiveTab] = useState<'home' | 'upload' | 'settings' | 'activity' | 'files'>('home');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [user, setUser] = useState<{ username: string } | null>(() => {
@@ -84,13 +93,31 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
         console.log(`Fetching project with ID: ${id}`);
         const response = await axios.get(`http://localhost:3000/projects/by-id/${id}`);
         console.log('Fetch project response:', response.data);
-        setProject(response.data.data.project);
+        if (response.data && response.data.data && response.data.data.project) {
+          setProject(response.data.data.project);
+        } else {
+          throw new Error('Invalid response structure');
+        }
       } catch (error: any) {
         console.error('Failed to fetch project:', error.response?.data || error.message);
-        setErrorMessage('Failed to load project. Please try again later.');
+        setErrorMessage(error.response?.data?.error || 'Failed to load project. Please ensure the backend server is running and try again.');
       }
     };
+
+    const fetchFiles = async () => {
+      try {
+        // Mocked for now; in a real app, you'd have a backend endpoint like GET /files/project/:id
+        setFiles([
+          { _id: '1', url: 'https://via.placeholder.com/150', name: 'project-plan.pdf', uploadedBy: 'ArtificalManny', createdAt: new Date().toISOString() },
+        ]);
+      } catch (error) {
+        console.error('Failed to fetch files:', error);
+        setFiles([]);
+      }
+    };
+
     fetchProject();
+    fetchFiles();
 
     // Fetch tasks (mocked for now; in a real app, you'd have a backend endpoint)
     setTasks([
@@ -301,7 +328,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
   return (
     <div style={{ padding: '2rem' }}>
       <h2 style={{ fontSize: '1.8rem', fontWeight: 600, marginBottom: '0.5rem' }}>{project.name}</h2>
-      <p style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '1.5rem' }}>
+      <p style={{ fontSize: '1rem', opacity: '0.8', marginBottom: '1.5rem' }}>
         {project.description || 'No description'}
       </p>
       <div className="project-tabs">
@@ -309,6 +336,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
         <button onClick={() => setActiveTab('upload')}>Upload</button>
         <button onClick={() => setActiveTab('settings')}>Settings</button>
         <button onClick={() => setActiveTab('activity')}>Activity Log</button>
+        <button onClick={() => setActiveTab('files')}>Files</button>
       </div>
       {activeTab === 'home' && (
         <div>
@@ -322,7 +350,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
               marginBottom: '2rem',
             }}
           >
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>Tasks</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>Tasks</h3>
             <form onSubmit={handleAddTask} style={{ marginBottom: '2rem' }}>
               <div className="form-group">
                 <label htmlFor="taskTitle">Task Title</label>
@@ -394,7 +422,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                     </select>
                     {/* Subtasks Section */}
                     <div style={{ marginTop: '1rem' }}>
-                      <h5 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '0.5rem' }}>Subtasks</h5>
+                      <h5 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '0.5rem' }}>Subtasks</h5>
                       {task.subtasks && task.subtasks.length > 0 ? (
                         <ul style={{ listStyle: 'none', padding: '0' }}>
                           {task.subtasks.map((subtask) => (
@@ -476,7 +504,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
               marginBottom: '2rem',
             }}
           >
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>Posts</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>Posts</h3>
             <form onSubmit={handleAddPost} style={{ marginBottom: '2rem' }}>
               <div className="form-group">
                 <label htmlFor="postContent">What's on your mind?</label>
@@ -526,7 +554,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                         {post.author[0]}
                       </div>
                       <div>
-                        <p style={{ margin: '0', fontWeight: 600 }}>{post.author}</p>
+                        <p style={{ margin: '0', fontWeight: '600' }}>{post.author}</p>
                         <p style={{ margin: '0', fontSize: '0.8rem', opacity: '0.8' }}>
                           {new Date(post.createdAt).toLocaleString()}
                         </p>
@@ -584,7 +612,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                                 {comment.author[0]}
                               </div>
                               <div>
-                                <p style={{ margin: '0', fontWeight: 600, fontSize: '0.9rem' }}>{comment.author}</p>
+                                <p style={{ margin: '0', fontWeight: '600', fontSize: '0.9rem' }}>{comment.author}</p>
                                 <p style={{ margin: '0', fontSize: '0.9rem' }}>{comment.content}</p>
                                 <p style={{ margin: '0', fontSize: '0.8rem', opacity: '0.8' }}>
                                   {new Date(comment.createdAt).toLocaleString()}
@@ -623,7 +651,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
           </div>
         </div>
       )}
-      {activeTab === 'upload' && <Upload />}
+      {activeTab === 'upload' && <Upload projects={projects} />}
       {activeTab === 'settings' && <Settings />}
       {activeTab === 'activity' && (
         <div
@@ -634,7 +662,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
           }}
         >
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>Activity Log</h3>
+          <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>Activity Log</h3>
           <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
             <button onClick={() => setActivityFilter('all')} style={{ background: activityFilter === 'all' ? 'var(--primary-color)' : 'var(--card-background)' }}>
               All
@@ -654,6 +682,9 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
             <button onClick={() => setActivityFilter('subtask')} style={{ background: activityFilter === 'subtask' ? 'var(--primary-color)' : 'var(--card-background)' }}>
               Subtasks
             </button>
+            <button onClick={() => setActivityFilter('file')} style={{ background: activityFilter === 'file' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+              Files
+            </button>
           </div>
           {filteredActivities.length === 0 ? (
             <p style={{ fontSize: '1rem', opacity: '0.8' }}>No activities to display.</p>
@@ -672,6 +703,63 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+      )}
+      {activeTab === 'files' && (
+        <div
+          style={{
+            background: 'var(--card-background)',
+            borderRadius: '12px',
+            padding: '2rem',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+          }}
+        >
+          <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>Files</h3>
+          {files.length === 0 ? (
+            <p style={{ fontSize: '1rem', opacity: '0.8' }}>No files uploaded yet.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: '1.5rem' }}>
+              {files.map((file) => (
+                <div
+                  key={file._id}
+                  className="project-card"
+                  style={{ borderLeft: '4px solid var(--primary-color)' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <div
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: 'var(--secondary-color)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.2rem',
+                      }}
+                    >
+                      {file.uploadedBy[0]}
+                    </div>
+                    <div>
+                      <p style={{ margin: '0', fontWeight: '600' }}>{file.uploadedBy}</p>
+                      <p style={{ margin: '0', fontSize: '0.8rem', opacity: '0.8' }}>
+                        {new Date(file.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <p>{file.name}</p>
+                  <a
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
+                  >
+                    View File
+                  </a>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

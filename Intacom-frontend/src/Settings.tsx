@@ -50,8 +50,8 @@ const Settings: React.FC = () => {
   console.log('Rendering Settings page');
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: 600, marginBottom: '0.5rem' }}>Settings</h2>
-      <p style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '2rem' }}>
+      <h2 style={{ fontSize: '1.8rem', fontWeight: '600', marginBottom: '0.5rem' }}>Settings</h2>
+      <p style={{ fontSize: '1rem', opacity: '0.8', marginBottom: '2rem' }}>
         Manage your account settings here.
       </p>
       <div
@@ -63,7 +63,7 @@ const Settings: React.FC = () => {
           marginBottom: '2rem',
         }}
       >
-        <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>
+        <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>
           Change Password
         </h3>
         <form onSubmit={handleChangePassword}>

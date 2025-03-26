@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const Upload: React.FC = () => {
+interface Project {
+  _id: string;
+  name: string;
+}
+
+interface UploadProps {
+  projects: Project[] | undefined;
+}
+
+const Upload: React.FC<UploadProps> = ({ projects }) => {
   const [file, setFile] = useState<File | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string>('');
   const [uploadUrl, setUploadUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [user] = useState<{ username: string } | null>(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -17,6 +31,10 @@ const Upload: React.FC = () => {
     e.preventDefault();
     if (!file) {
       setErrorMessage('Please select a file to upload');
+      return;
+    }
+    if (!selectedProject) {
+      setErrorMessage('Please select a project');
       return;
     }
 
@@ -33,6 +51,10 @@ const Upload: React.FC = () => {
       setSuccessMessage('File uploaded successfully!');
       setErrorMessage('');
       setFile(null);
+      setSelectedProject('');
+
+      // Log the upload activity (mocked for now; in a real app, you'd send this to the backend)
+      console.log(`User ${user?.username} uploaded file ${file.name} to project ${selectedProject}`);
     } catch (error: any) {
       console.error('Upload error:', error.response?.data || error.message);
       setErrorMessage(error.response?.data?.error || 'An error occurred during upload');
@@ -47,6 +69,20 @@ const Upload: React.FC = () => {
         Upload files to share with your project team.
       </p>
       <form onSubmit={handleUpload}>
+        <div className="form-group">
+          <label htmlFor="projectSelect">Select Project</label>
+          <select
+            id="projectSelect"
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            required
+          >
+            <option value="">Select a project</option>
+            {projects && projects.map((project) => (
+              <option key={project._id} value={project._id}>{project.name}</option>
+            ))}
+          </select>
+        </div>
         <div className="form-group">
           <label htmlFor="fileUpload">Select File</label>
           <input id="fileUpload" type="file" onChange={handleFileChange} />

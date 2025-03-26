@@ -17,6 +17,11 @@ interface User {
   username: string;
   email?: string;
   profilePic?: string;
+  coverPhoto?: string;
+  bio?: string;
+  school?: string;
+  occupation?: string;
+  hobbies?: string[];
 }
 
 // Define Project type
@@ -169,12 +174,11 @@ const App: React.FC = () => {
           },
         });
         const profilePicUrl = response.data.url;
-        setProfilePic(profilePicUrl);
-
-        // Update user profile with new picture
         const updatedUser = { ...user, profilePic: profilePicUrl };
-        await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
-        setUser(updatedUser as User);
+        const responseUser = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
+        const newUserData = responseUser.data.data.user;
+        setUser(newUserData);
+        localStorage.setItem('user', JSON.stringify(newUserData));
       } catch (error: any) {
         console.error('Profile picture upload error:', error.response?.data || error.message);
         setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload');
@@ -456,10 +460,10 @@ const App: React.FC = () => {
               }
             />
             <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/upload" element={<Upload />} />
+            <Route path="/upload" element={<Upload projects={projects} />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/project/:id" element={<ProjectHome projects={projects} />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile" element={<Profile setUser={setUser} />} />
           </Routes>
         ) : (
           <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
