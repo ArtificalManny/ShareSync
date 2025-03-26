@@ -29,6 +29,9 @@ const Upload: React.FC<UploadProps> = ({ projects }) => {
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
     if (!file) {
       setErrorMessage('Please select a file to upload');
       return;
@@ -49,7 +52,6 @@ const Upload: React.FC<UploadProps> = ({ projects }) => {
       });
       setUploadUrl(response.data.url);
       setSuccessMessage('File uploaded successfully!');
-      setErrorMessage('');
       setFile(null);
       setSelectedProject('');
 
@@ -57,7 +59,7 @@ const Upload: React.FC<UploadProps> = ({ projects }) => {
       console.log(`User ${user?.username} uploaded file ${file.name} to project ${selectedProject}`);
     } catch (error: any) {
       console.error('Upload error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred during upload');
+      setErrorMessage(error.response?.data?.error || 'An error occurred during upload. Please ensure the backend server is running.');
     }
   };
 

@@ -100,7 +100,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
         }
       } catch (error: any) {
         console.error('Failed to fetch project:', error.response?.data || error.message);
-        setErrorMessage(error.response?.data?.error || 'Failed to load project. Please ensure the backend server is running and try again.');
+        setErrorMessage(error.response?.data?.error || 'Failed to load project. Please ensure the backend server is running and the project exists.');
       }
     };
 
@@ -253,7 +253,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
         imageUrl = response.data.url;
       } catch (error: any) {
         console.error('Image upload error:', error.response?.data || error.message);
-        setErrorMessage('Failed to upload image. Please try again.');
+        setErrorMessage(error.response?.data?.error || 'Failed to upload image. Please ensure the backend server is running.');
         return;
       }
     }

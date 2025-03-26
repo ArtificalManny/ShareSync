@@ -43,7 +43,7 @@ const Settings: React.FC = () => {
       setNewPassword('');
     } catch (error: any) {
       console.error('Change password error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred while changing the password');
+      setErrorMessage(error.response?.data?.error || 'An error occurred while changing the password. Please ensure the backend server is running.');
     }
   };
 

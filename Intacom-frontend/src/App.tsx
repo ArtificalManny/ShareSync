@@ -141,17 +141,18 @@ const App: React.FC = () => {
           const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
           const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
           setProjects(projectsData);
-        } catch (error) {
-          console.error('Failed to fetch projects:', error);
+        } catch (error: any) {
+          console.error('Failed to fetch projects:', error.response?.data || error.message);
           setProjects([]);
+          setErrorMessage(error.response?.data?.error || 'Failed to fetch projects. Please ensure the backend server is running.');
         }
       };
       const fetchNotifications = async () => {
         try {
           const response = await axios.get<NotificationsResponse>(`http://localhost:3000/notifications/${user._id}`);
           setNotifications(response.data.data || []);
-        } catch (error) {
-          console.error('Failed to fetch notifications:', error);
+        } catch (error: any) {
+          console.error('Failed to fetch notifications:', error.response?.data || error.message);
           setNotifications([]);
         }
       };
@@ -181,7 +182,7 @@ const App: React.FC = () => {
         localStorage.setItem('user', JSON.stringify(newUserData));
       } catch (error: any) {
         console.error('Profile picture upload error:', error.response?.data || error.message);
-        setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload');
+        setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload. Please ensure the backend server is running.');
       }
     }
   };
@@ -259,7 +260,7 @@ const App: React.FC = () => {
       setShowReset(true);
     } catch (error: any) {
       console.error('Recover password error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred during password recovery');
+      setErrorMessage(error.response?.data?.error || 'An error occurred during password recovery. Please check if the backend server is running.');
     }
   };
 
@@ -276,7 +277,7 @@ const App: React.FC = () => {
       setNewPassword('');
     } catch (error: any) {
       console.error('Reset password error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred during password reset');
+      setErrorMessage(error.response?.data?.error || 'An error occurred during password reset. Please check if the backend server is running.');
     }
   };
 

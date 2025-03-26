@@ -77,9 +77,10 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
             status: index % 2 === 0 ? 'current' : 'past',
           }));
           setProjects(updatedProjects);
-        } catch (error) {
-          console.error('Failed to fetch projects:', error);
+        } catch (error: any) {
+          console.error('Failed to fetch projects:', error.response?.data || error.message);
           setProjects([]);
+          setErrorMessage(error.response?.data?.error || 'Failed to fetch projects. Please ensure the backend server is running.');
         }
       };
 
@@ -110,7 +111,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
       setSuccessMessage('Profile updated successfully');
     } catch (error: any) {
       console.error('Profile update error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred during profile update');
+      setErrorMessage(error.response?.data?.error || 'An error occurred during profile update. Please ensure the backend server is running.');
     }
   };
 
@@ -136,7 +137,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         setSuccessMessage('Cover photo updated successfully');
       } catch (error: any) {
         console.error('Cover photo upload error:', error.response?.data || error.message);
-        setErrorMessage(error.response?.data?.error || 'An error occurred during cover photo upload');
+        setErrorMessage(error.response?.data?.error || 'An error occurred during cover photo upload. Please ensure the backend server is running.');
       }
     }
   };
@@ -163,7 +164,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         setSuccessMessage('Profile picture updated successfully');
       } catch (error: any) {
         console.error('Profile picture upload error:', error.response?.data || error.message);
-        setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload');
+        setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload. Please ensure the backend server is running.');
       }
     }
   };
@@ -238,10 +239,10 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
               {user.firstName ? user.firstName[0] : user.username[0]}
             </div>
           )}
-          <label htmlFor="profilePicUpload" style={{ display: 'block', marginTop: '0.5rem', cursor: 'pointer' }}>
+          <label htmlFor="profilePicUploadProfile" style={{ display: 'block', marginTop: '0.5rem', cursor: 'pointer' }}>
             <button type="button">Change Profile Picture</button>
             <input
-              id="profilePicUpload"
+              id="profilePicUploadProfile"
               type="file"
               accept="image/*"
               onChange={handleProfilePicUpload}

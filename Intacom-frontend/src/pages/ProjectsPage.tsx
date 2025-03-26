@@ -23,6 +23,7 @@ const ProjectsPage: React.FC = () => {
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -31,9 +32,10 @@ const ProjectsPage: React.FC = () => {
           const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
           const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
           setProjects(projectsData);
-        } catch (error) {
-          console.error('Failed to fetch projects:', error);
+        } catch (error: any) {
+          console.error('Failed to fetch projects:', error.response?.data || error.message);
           setProjects([]);
+          setErrorMessage(error.response?.data?.error || 'Failed to fetch projects. Please ensure the backend server is running.');
         }
       };
       fetchProjects();
@@ -47,6 +49,7 @@ const ProjectsPage: React.FC = () => {
       <p style={{ fontSize: '1rem', opacity: '0.8', marginBottom: '1.5rem' }}>
         View and manage all your projects here.
       </p>
+      {errorMessage && <div className="error-message">{errorMessage}</div>}
       {projects.length === 0 ? (
         <p style={{ fontSize: '1rem', opacity: '0.8' }}>
           No projects found. Create a project to get started!
