@@ -44,22 +44,18 @@ const ProjectsPage: React.FC = () => {
 
   console.log('Rendering ProjectsPage');
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: '600', marginBottom: '0.5rem' }}>Projects</h2>
-      <p style={{ fontSize: '1rem', opacity: '0.8', marginBottom: '1.5rem' }}>
-        View and manage all your projects here.
-      </p>
+    <div className="projects-container">
+      <h2>Projects</h2>
+      <p>View and manage all your projects here.</p>
       {errorMessage && <div className="error-message">{errorMessage}</div>}
       {projects.length === 0 ? (
-        <p style={{ fontSize: '1rem', opacity: '0.8' }}>
-          No projects found. Create a project to get started!
-        </p>
+        <p>No projects found. Create a project to get started!</p>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
+        <div className="project-grid">
           {projects.map((project) => (
             <div
               key={project._id}
-              className="project-card"
+              className="project-card glassmorphic"
               style={{
                 borderLeft: `4px solid ${project.color || '#3a3a50'}`,
               }}

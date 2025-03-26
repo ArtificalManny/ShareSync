@@ -1,7 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
 
 interface Project {
   _id: string;
@@ -13,15 +11,15 @@ interface Project {
 }
 
 interface HomeProps {
-  projects: Project[] | undefined;
+  projects: Project[];
   showCreateProject: boolean;
-  setShowCreateProject: (value: boolean) => void;
+  setShowCreateProject: (show: boolean) => void;
   projectName: string;
-  setProjectName: (value: string) => void;
+  setProjectName: (name: string) => void;
   projectDescription: string;
-  setProjectDescription: (value: string) => void;
+  setProjectDescription: (description: string) => void;
   projectColor: string;
-  setProjectColor: (value: string) => void;
+  setProjectColor: (color: string) => void;
   sharedUsers: { email: string; role: 'Admin' | 'Editor' | 'Viewer' }[];
   handleAddSharedUser: (email: string, role: 'Admin' | 'Editor' | 'Viewer') => void;
   handleRemoveSharedUser: (email: string) => void;
@@ -43,38 +41,21 @@ const Home: React.FC<HomeProps> = ({
   handleRemoveSharedUser,
   handleCreateProject,
 }) => {
-  const [shareEmail, setShareEmail] = React.useState('');
-  const [shareRole, setShareRole] = React.useState<'Admin' | 'Editor' | 'Viewer'>('Viewer');
+  const [sharedEmail, setSharedEmail] = React.useState('');
+  const [sharedRole, setSharedRole] = React.useState<'Admin' | 'Editor' | 'Viewer'>('Viewer');
 
-  console.log('Rendering Home page with projects:', projects);
-  const safeProjects = Array.isArray(projects) ? projects : [];
-
-  const handleAddShare = () => {
-    if (shareEmail) {
-      handleAddSharedUser(shareEmail, shareRole);
-      setShareEmail('');
-      setShareRole('Viewer');
-    }
-  };
-
+  console.log('Rendering Home page');
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: 600, marginBottom: '0.5rem' }}>Home</h2>
-      <p style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '1.5rem' }}>
-        Manage your projects and tasks here.
-      </p>
-      <button
-        onClick={() => setShowCreateProject(true)}
-        style={{ marginBottom: '2rem' }}
-      >
-        Create New Project
+    <div className="home-container">
+      <h2>Home</h2>
+      <p>Manage your projects and tasks here.</p>
+      <button className="neumorphic create-project-btn" onClick={() => setShowCreateProject(true)}>
+        Create New Project!
       </button>
       {showCreateProject && (
-        <div className="create-project-form">
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>
-            Create Project
-          </h3>
-          <form onSubmit={handleCreateProject}>
+        <div className="modal glassmorphic">
+          <h3>Create Project</h3>
+          <form onSubmit={handleCreateProject} className="create-project-form">
             <div className="form-group">
               <label htmlFor="projectName">Project Name</label>
               <input
@@ -93,8 +74,7 @@ const Home: React.FC<HomeProps> = ({
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
                 placeholder="Enter project description"
-                required
-                rows={4}
+                rows={3}
               />
             </div>
             <div className="form-group">
@@ -104,85 +84,83 @@ const Home: React.FC<HomeProps> = ({
                 type="color"
                 value={projectColor}
                 onChange={(e) => setProjectColor(e.target.value)}
-                required
               />
             </div>
-            <div className="form-group">
-              <label>Share With</label>
+            <div className="shared-users">
+              <h4>Share With</h4>
               <div className="share-section">
                 <input
                   type="email"
-                  value={shareEmail}
-                  onChange={(e) => setShareEmail(e.target.value)}
-                  placeholder="Enter email to share"
+                  value={sharedEmail}
+                  onChange={(e) => setSharedEmail(e.target.value)}
+                  placeholder="Enter email"
                 />
                 <select
-                  value={shareRole}
-                  onChange={(e) => setShareRole(e.target.value as 'Admin' | 'Editor' | 'Viewer')}
+                  value={sharedRole}
+                  onChange={(e) => setSharedRole(e.target.value as 'Admin' | 'Editor' | 'Viewer')}
                 >
                   <option value="Admin">Admin</option>
                   <option value="Editor">Editor</option>
                   <option value="Viewer">Viewer</option>
                 </select>
-                <button type="button" onClick={handleAddShare}>
+                <button
+                  type="button"
+                  className="neumorphic"
+                  onClick={() => {
+                    if (sharedEmail) {
+                      handleAddSharedUser(sharedEmail, sharedRole);
+                      setSharedEmail('');
+                    }
+                  }}
+                >
                   Add
                 </button>
               </div>
               {sharedUsers.length > 0 && (
-                <div className="shared-users">
-                  <h4>Shared With:</h4>
-                  <ul>
-                    {sharedUsers.map((sharedUser) => (
-                      <li key={sharedUser.email}>
-                        {sharedUser.email} ({sharedUser.role})
-                        <FontAwesomeIcon
-                          icon={faTrash}
-                          className="remove-user-icon"
-                          onClick={() => handleRemoveSharedUser(sharedUser.email)}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <ul className="shared-users-list">
+                  {sharedUsers.map((user) => (
+                    <li key={user.email}>
+                      {user.email} - {user.role}
+                      <span
+                        className="remove-user-icon"
+                        onClick={() => handleRemoveSharedUser(user.email)}
+                      >
+                        ✕
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
             <div className="form-actions">
-              <button type="submit">Create Project</button>
-              <button type="button" onClick={() => setShowCreateProject(false)}>
+              <button type="submit" className="neumorphic">Create</button>
+              <button type="button" className="neumorphic" onClick={() => setShowCreateProject(false)}>
                 Cancel
               </button>
             </div>
           </form>
         </div>
       )}
-      {safeProjects.length === 0 && !showCreateProject ? (
-        <p style={{ fontSize: '1rem', opacity: 0.8 }}>
-          No projects yet. Create a project to get started!
-        </p>
+      <h3>Your Projects</h3>
+      {projects.length === 0 ? (
+        <p>No projects found. Create a project to get started!</p>
       ) : (
-        !showCreateProject && (
-          <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>
-              Your Projects
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
-              {safeProjects.map((project) => (
-                <div
-                  key={project._id}
-                  className="project-card"
-                  style={{
-                    borderLeft: `4px solid ${project.color || '#3a3a50'}`,
-                  }}
-                >
-                  <Link to={`/project/${project._id}`} onClick={() => console.log(`Navigating to /project/${project._id}`)}>
-                    <h4>{project.name}</h4>
-                  </Link>
-                  <p>{project.description || 'No description'}</p>
-                </div>
-              ))}
+        <div className="project-grid">
+          {projects.map((project) => (
+            <div
+              key={project._id}
+              className="project-card glassmorphic"
+              style={{
+                borderLeft: `4px solid ${project.color || '#3a3a50'}`,
+              }}
+            >
+              <Link to={`/project/${project._id}`}>
+                <h4>{project.name}</h4>
+              </Link>
+              <p>{project.description || 'No description'}</p>
             </div>
-          </div>
-        )
+          ))}
+        </div>
       )}
     </div>
   );

@@ -316,42 +316,32 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
   };
 
   if (errorMessage) {
-    return <div style={{ padding: '2rem', textAlign: 'center', color: '#ff5555' }}>{errorMessage}</div>;
+    return <div className="error-message">{errorMessage}</div>;
   }
 
   if (!project) {
-    return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading project...</div>;
+    return <div className="loading">Loading project...</div>;
   }
 
   const filteredActivities = activities.filter((activity) => activityFilter === 'all' || activity.type === activityFilter);
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: 600, marginBottom: '0.5rem' }}>{project.name}</h2>
-      <p style={{ fontSize: '1rem', opacity: '0.8', marginBottom: '1.5rem' }}>
-        {project.description || 'No description'}
-      </p>
+    <div className="project-container">
+      <h2>{project.name}</h2>
+      <p>{project.description || 'No description'}</p>
       <div className="project-tabs">
-        <button onClick={() => setActiveTab('home')}>Home</button>
-        <button onClick={() => setActiveTab('upload')}>Upload</button>
-        <button onClick={() => setActiveTab('settings')}>Settings</button>
-        <button onClick={() => setActiveTab('activity')}>Activity Log</button>
-        <button onClick={() => setActiveTab('files')}>Files</button>
+        <button className="tab-button glassmorphic" onClick={() => setActiveTab('home')}>Home</button>
+        <button className="tab-button glassmorphic" onClick={() => setActiveTab('upload')}>Upload</button>
+        <button className="tab-button glassmorphic" onClick={() => setActiveTab('settings')}>Settings</button>
+        <button className="tab-button glassmorphic" onClick={() => setActiveTab('activity')}>Activity Log</button>
+        <button className="tab-button glassmorphic" onClick={() => setActiveTab('files')}>Files</button>
       </div>
       {activeTab === 'home' && (
         <div>
           {/* Task Management Section */}
-          <div
-            style={{
-              background: 'var(--card-background)',
-              borderRadius: '12px',
-              padding: '2rem',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-              marginBottom: '2rem',
-            }}
-          >
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>Tasks</h3>
-            <form onSubmit={handleAddTask} style={{ marginBottom: '2rem' }}>
+          <div className="section glassmorphic">
+            <h3>Tasks</h3>
+            <form onSubmit={handleAddTask}>
               <div className="form-group">
                 <label htmlFor="taskTitle">Task Title</label>
                 <input
@@ -386,22 +376,22 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                   {/* Add more users dynamically from project.sharedWith */}
                 </select>
               </div>
-              <button type="submit">Add Task</button>
+              <button type="submit" className="neumorphic">Add Task</button>
             </form>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
             {successMessage && (
-              <div style={{ color: '#4caf50', textAlign: 'center', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              <div className="success-message">
                 {successMessage}
               </div>
             )}
             {tasks.length === 0 ? (
-              <p style={{ fontSize: '1rem', opacity: '0.8' }}>No tasks yet. Add a task to get started!</p>
+              <p>No tasks yet. Add a task to get started!</p>
             ) : (
-              <div style={{ display: 'grid', gap: '1.5rem' }}>
+              <div className="task-grid">
                 {tasks.map((task) => (
                   <div
                     key={task._id}
-                    className="project-card"
+                    className="project-card glassmorphic"
                     style={{
                       borderLeft: `4px solid ${
                         task.status === 'To Do' ? '#ff5555' : task.status === 'In Progress' ? '#ffa500' : '#4caf50'
@@ -414,31 +404,23 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                     <select
                       value={task.status}
                       onChange={(e) => handleUpdateTaskStatus(task._id!, e.target.value as 'To Do' | 'In Progress' | 'Done')}
-                      style={{ marginTop: '0.5rem' }}
                     >
                       <option value="To Do">To Do</option>
                       <option value="In Progress">In Progress</option>
                       <option value="Done">Done</option>
                     </select>
                     {/* Subtasks Section */}
-                    <div style={{ marginTop: '1rem' }}>
-                      <h5 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '0.5rem' }}>Subtasks</h5>
+                    <div className="subtasks">
+                      <h5>Subtasks</h5>
                       {task.subtasks && task.subtasks.length > 0 ? (
-                        <ul style={{ listStyle: 'none', padding: '0' }}>
+                        <ul className="subtask-list">
                           {task.subtasks.map((subtask) => (
                             <li
                               key={subtask._id}
-                              style={{
-                                padding: '0.5rem 0',
-                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                              }}
                             >
                               <div>
                                 <strong>{subtask.title}</strong>
-                                <p style={{ margin: '0', fontSize: '0.9rem', opacity: '0.8' }}>{subtask.description}</p>
+                                <p>{subtask.description}</p>
                               </div>
                               <select
                                 value={subtask.status}
@@ -452,7 +434,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                           ))}
                         </ul>
                       ) : (
-                        <p style={{ fontSize: '0.9rem', opacity: '0.8' }}>No subtasks yet.</p>
+                        <p>No subtasks yet.</p>
                       )}
                       {/* Add Subtask Form */}
                       <form
@@ -463,7 +445,6 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                           handleAddSubtask(task._id!, subtaskTitle, subtaskDescription);
                           (e.target as HTMLFormElement).reset();
                         }}
-                        style={{ marginTop: '1rem' }}
                       >
                         <div className="form-group">
                           <label htmlFor={`subtaskTitle-${task._id}`}>Subtask Title</label>
@@ -485,7 +466,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                             rows={2}
                           />
                         </div>
-                        <button type="submit">Add Subtask</button>
+                        <button type="submit" className="neumorphic">Add Subtask</button>
                       </form>
                     </div>
                   </div>
@@ -495,17 +476,9 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
           </div>
 
           {/* Posts Section */}
-          <div
-            style={{
-              background: 'var(--card-background)',
-              borderRadius: '12px',
-              padding: '2rem',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-              marginBottom: '2rem',
-            }}
-          >
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>Posts</h3>
-            <form onSubmit={handleAddPost} style={{ marginBottom: '2rem' }}>
+          <div className="section glassmorphic">
+            <h3>Posts</h3>
+            <form onSubmit={handleAddPost}>
               <div className="form-group">
                 <label htmlFor="postContent">What's on your mind?</label>
                 <textarea
@@ -526,36 +499,27 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                   onChange={(e) => setNewPostImage(e.target.files ? e.target.files[0] : null)}
                 />
               </div>
-              <button type="submit">Post</button>
+              <button type="submit" className="neumorphic">Post</button>
             </form>
             {posts.length === 0 ? (
-              <p style={{ fontSize: '1rem', opacity: '0.8' }}>No posts yet. Share an update!</p>
+              <p>No posts yet. Share an update!</p>
             ) : (
-              <div style={{ display: 'grid', gap: '1.5rem' }}>
+              <div className="post-grid">
                 {posts.map((post) => (
                   <div
                     key={post._id}
-                    className="project-card"
+                    className="project-card glassmorphic"
                     style={{ borderLeft: '4px solid var(--primary-color)' }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <div className="post-header">
                       <div
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '50%',
-                          background: 'var(--secondary-color)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '1.2rem',
-                        }}
+                        className="post-author-pic"
                       >
                         {post.author[0]}
                       </div>
                       <div>
-                        <p style={{ margin: '0', fontWeight: '600' }}>{post.author}</p>
-                        <p style={{ margin: '0', fontSize: '0.8rem', opacity: '0.8' }}>
+                        <p>{post.author}</p>
+                        <p>
                           {new Date(post.createdAt).toLocaleString()}
                         </p>
                       </div>
@@ -565,12 +529,13 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                       <img
                         src={post.image}
                         alt="Post"
-                        style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '0.5rem' }}
+                        className="post-image"
                       />
                     )}
-                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                    <div className="post-actions">
                       <button
                         onClick={() => handleLikePost(post._id!)}
+                        className="neumorphic"
                         style={{
                           background: post.likes.includes(user?.username || '') ? 'var(--primary-color)' : 'var(--card-background)',
                           color: post.likes.includes(user?.username || '') ? '#fff' : 'var(--text-color)',
@@ -578,43 +543,27 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                       >
                         Like ({post.likes.length})
                       </button>
-                      <button style={{ background: 'var(--card-background)' }}>
+                      <button className="neumorphic">
                         Comment ({post.comments.length})
                       </button>
                     </div>
                     {/* Comments Section */}
-                    <div style={{ marginTop: '1rem' }}>
+                    <div className="comments">
                       {post.comments.length > 0 && (
-                        <ul style={{ listStyle: 'none', padding: '0' }}>
+                        <ul className="comment-list">
                           {post.comments.map((comment) => (
                             <li
                               key={comment._id}
-                              style={{
-                                padding: '0.5rem 0',
-                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                                display: 'flex',
-                                gap: '0.5rem',
-                                alignItems: 'center',
-                              }}
                             >
                               <div
-                                style={{
-                                  width: '30px',
-                                  height: '30px',
-                                  borderRadius: '50%',
-                                  background: 'var(--secondary-color)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: '1rem',
-                                }}
+                                className="comment-author-pic"
                               >
                                 {comment.author[0]}
                               </div>
                               <div>
-                                <p style={{ margin: '0', fontWeight: '600', fontSize: '0.9rem' }}>{comment.author}</p>
-                                <p style={{ margin: '0', fontSize: '0.9rem' }}>{comment.content}</p>
-                                <p style={{ margin: '0', fontSize: '0.8rem', opacity: '0.8' }}>
+                                <p>{comment.author}</p>
+                                <p>{comment.content}</p>
+                                <p>
                                   {new Date(comment.createdAt).toLocaleString()}
                                 </p>
                               </div>
@@ -629,7 +578,6 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                           handleAddComment(post._id!, commentContent);
                           (e.target as HTMLFormElement).reset();
                         }}
-                        style={{ marginTop: '1rem' }}
                       >
                         <div className="form-group">
                           <label htmlFor={`commentContent-${post._id}`}>Add a Comment</label>
@@ -641,7 +589,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                             required
                           />
                         </div>
-                        <button type="submit">Comment</button>
+                        <button type="submit" className="neumorphic">Comment</button>
                       </form>
                     </div>
                   </div>
@@ -654,50 +602,38 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       {activeTab === 'upload' && <Upload projects={projects} />}
       {activeTab === 'settings' && <Settings />}
       {activeTab === 'activity' && (
-        <div
-          style={{
-            background: 'var(--card-background)',
-            borderRadius: '12px',
-            padding: '2rem',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-          }}
-        >
-          <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>Activity Log</h3>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-            <button onClick={() => setActivityFilter('all')} style={{ background: activityFilter === 'all' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+        <div className="section glassmorphic">
+          <h3>Activity Log</h3>
+          <div className="activity-filters">
+            <button onClick={() => setActivityFilter('all')} className="neumorphic" style={{ background: activityFilter === 'all' ? 'var(--primary-color)' : 'var(--card-background)' }}>
               All
             </button>
-            <button onClick={() => setActivityFilter('post')} style={{ background: activityFilter === 'post' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button onClick={() => setActivityFilter('post')} className="neumorphic" style={{ background: activityFilter === 'post' ? 'var(--primary-color)' : 'var(--card-background)' }}>
               Posts
             </button>
-            <button onClick={() => setActivityFilter('comment')} style={{ background: activityFilter === 'comment' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button onClick={() => setActivityFilter('comment')} className="neumorphic" style={{ background: activityFilter === 'comment' ? 'var(--primary-color)' : 'var(--card-background)' }}>
               Comments
             </button>
-            <button onClick={() => setActivityFilter('like')} style={{ background: activityFilter === 'like' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button onClick={() => setActivityFilter('like')} className="neumorphic" style={{ background: activityFilter === 'like' ? 'var(--primary-color)' : 'var(--card-background)' }}>
               Likes
             </button>
-            <button onClick={() => setActivityFilter('task')} style={{ background: activityFilter === 'task' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button onClick={() => setActivityFilter('task')} className="neumorphic" style={{ background: activityFilter === 'task' ? 'var(--primary-color)' : 'var(--card-background)' }}>
               Tasks
             </button>
-            <button onClick={() => setActivityFilter('subtask')} style={{ background: activityFilter === 'subtask' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button onClick={() => setActivityFilter('subtask')} className="neumorphic" style={{ background: activityFilter === 'subtask' ? 'var(--primary-color)' : 'var(--card-background)' }}>
               Subtasks
             </button>
-            <button onClick={() => setActivityFilter('file')} style={{ background: activityFilter === 'file' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button onClick={() => setActivityFilter('file')} className="neumorphic" style={{ background: activityFilter === 'file' ? 'var(--primary-color)' : 'var(--card-background)' }}>
               Files
             </button>
           </div>
           {filteredActivities.length === 0 ? (
-            <p style={{ fontSize: '1rem', opacity: '0.8' }}>No activities to display.</p>
+            <p>No activities to display.</p>
           ) : (
-            <ul style={{ listStyle: 'none', padding: '0' }}>
+            <ul className="activity-list">
               {filteredActivities.map((activity) => (
                 <li
                   key={activity._id}
-                  style={{
-                    padding: '0.75rem 0',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                    fontSize: '0.9rem',
-                  }}
                 >
                   {activity.content} - {new Date(activity.createdAt).toLocaleString()}
                 </li>
@@ -707,43 +643,27 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
         </div>
       )}
       {activeTab === 'files' && (
-        <div
-          style={{
-            background: 'var(--card-background)',
-            borderRadius: '12px',
-            padding: '2rem',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-          }}
-        >
-          <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>Files</h3>
+        <div className="section glassmorphic">
+          <h3>Files</h3>
           {files.length === 0 ? (
-            <p style={{ fontSize: '1rem', opacity: '0.8' }}>No files uploaded yet.</p>
+            <p>No files uploaded yet.</p>
           ) : (
-            <div style={{ display: 'grid', gap: '1.5rem' }}>
+            <div className="file-grid">
               {files.map((file) => (
                 <div
                   key={file._id}
-                  className="project-card"
+                  className="project-card glassmorphic"
                   style={{ borderLeft: '4px solid var(--primary-color)' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <div className="file-header">
                     <div
-                      style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        background: 'var(--secondary-color)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '1.2rem',
-                      }}
+                      className="file-author-pic"
                     >
                       {file.uploadedBy[0]}
                     </div>
                     <div>
-                      <p style={{ margin: '0', fontWeight: '600' }}>{file.uploadedBy}</p>
-                      <p style={{ margin: '0', fontSize: '0.8rem', opacity: '0.8' }}>
+                      <p>{file.uploadedBy}</p>
+                      <p>
                         {new Date(file.createdAt).toLocaleString()}
                       </p>
                     </div>
@@ -753,7 +673,6 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                     href={file.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
                   >
                     View File
                   </a>

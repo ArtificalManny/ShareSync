@@ -65,12 +65,10 @@ const Upload: React.FC<UploadProps> = ({ projects }) => {
 
   console.log('Rendering Upload page');
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: '600', marginBottom: '0.5rem' }}>Upload File</h2>
-      <p style={{ fontSize: '1rem', opacity: '0.8', marginBottom: '1.5rem' }}>
-        Upload files to share with your project team.
-      </p>
-      <form onSubmit={handleUpload}>
+    <div className="upload-container">
+      <h2>Upload File</h2>
+      <p>Upload files to share with your project team.</p>
+      <form onSubmit={handleUpload} className="glassmorphic">
         <div className="form-group">
           <label htmlFor="projectSelect">Select Project</label>
           <select
@@ -89,22 +87,21 @@ const Upload: React.FC<UploadProps> = ({ projects }) => {
           <label htmlFor="fileUpload">Select File</label>
           <input id="fileUpload" type="file" onChange={handleFileChange} />
         </div>
-        <button type="submit">Upload</button>
+        <button type="submit" className="neumorphic">Upload</button>
       </form>
       {errorMessage && <div className="error-message">{errorMessage}</div>}
       {successMessage && (
-        <div style={{ color: '#4caf50', textAlign: 'center', fontSize: '0.9rem', marginTop: '1rem' }}>
+        <div className="success-message">
           {successMessage}
         </div>
       )}
       {uploadUrl && (
-        <div style={{ marginTop: '1.5rem' }}>
-          <p style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>File uploaded successfully!</p>
+        <div className="upload-result">
+          <p>File uploaded successfully!</p>
           <a
             href={uploadUrl}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
           >
             View File
           </a>

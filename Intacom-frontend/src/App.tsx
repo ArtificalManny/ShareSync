@@ -323,7 +323,7 @@ const App: React.FC = () => {
 
   return (
     <>
-      <header>
+      <header className="header-modern">
         <Link to="/">
           <img src="https://via.placeholder.com/40?text=Intacom" alt="Intacom Logo" />
         </Link>
@@ -339,7 +339,7 @@ const App: React.FC = () => {
                 <span className="notification-count">{notifications.length}</span>
               )}
               {showNotifications && (
-                <div className="notification-dropdown">
+                <div className="notification-dropdown glassmorphic">
                   <h4>Notifications</h4>
                   {notifications.length === 0 ? (
                     <p>No new notifications</p>
@@ -369,7 +369,7 @@ const App: React.FC = () => {
         )}
       </header>
       {user && (
-        <aside>
+        <aside className="sidebar-modern glassmorphic">
           <div className="profile-section">
             <Link to="/profile">
               <label htmlFor="profilePicUpload" className="profile-pic-label">
@@ -422,11 +422,9 @@ const App: React.FC = () => {
           {projects.map((project) => (
             <div
               key={project._id}
+              className="project-link glassmorphic"
               style={{
                 background: project.color || '#3a3a50',
-                padding: '0.5rem',
-                margin: '0.5rem 0',
-                borderRadius: '5px',
               }}
             >
               <Link to={`/project/${project._id}`}>
@@ -436,7 +434,7 @@ const App: React.FC = () => {
           ))}
         </aside>
       )}
-      <main className={user ? '' : 'full-screen'}>
+      <main className={user ? 'main-modern' : 'full-screen'}>
         {user ? (
           <Routes>
             <Route path="/" element={<div>Redirecting to login...</div>} />
@@ -467,7 +465,7 @@ const App: React.FC = () => {
             <Route path="/profile" element={<Profile setUser={setUser} />} />
           </Routes>
         ) : (
-          <form onSubmit={handleSubmit} style={{ maxWidth: '500px', width: '100%' }}>
+          <form onSubmit={handleSubmit} className="glassmorphic">
             <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>
               Intacom
             </h2>
@@ -492,11 +490,11 @@ const App: React.FC = () => {
                   placeholder="Password"
                   required
                 />
-                <button type="submit">Login</button>
-                <button type="button" onClick={() => setShowRecover(true)}>
+                <button type="submit" className="neumorphic">Login</button>
+                <button type="button" className="neumorphic" onClick={() => setShowRecover(true)}>
                   Forgot Password?
                 </button>
-                <button type="button" onClick={() => setIsLogin(!isLogin)}>
+                <button type="button" className="neumorphic" onClick={() => setIsLogin(!isLogin)}>
                   Switch to Register
                 </button>
               </>
@@ -606,11 +604,11 @@ const App: React.FC = () => {
                   onChange={(e) => setProfilePic(e.target.value)}
                   placeholder="Profile Picture URL (optional)"
                 />
-                <button type="submit">Register</button>
-                <button type="button" onClick={() => setShowRecover(true)}>
+                <button type="submit" className="neumorphic">Register</button>
+                <button type="button" className="neumorphic" onClick={() => setShowRecover(true)}>
                   Forgot Password?
                 </button>
-                <button type="button" onClick={() => setIsLogin(!isLogin)}>
+                <button type="button" className="neumorphic" onClick={() => setIsLogin(!isLogin)}>
                   Switch to Login
                 </button>
               </>
@@ -618,7 +616,7 @@ const App: React.FC = () => {
           </form>
         )}
         {showRecover && (
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
+          <div className="modal glassmorphic">
             <h3>Forgot Password</h3>
             <form onSubmit={handleRecoverPassword}>
               <label htmlFor="recoveryEmail">Email Address</label>
@@ -630,13 +628,13 @@ const App: React.FC = () => {
                 placeholder="Enter your email"
                 required
               />
-              <button type="submit">Recover Password</button>
-              <button type="button" onClick={() => setShowRecover(false)}>Cancel</button>
+              <button type="submit" className="neumorphic">Recover Password</button>
+              <button type="button" className="neumorphic" onClick={() => setShowRecover(false)}>Cancel</button>
             </form>
           </div>
         )}
         {showReset && (
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#2a2a3e', padding: '2rem', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.5)', zIndex: 1000 }}>
+          <div className="modal glassmorphic">
             <h3>Reset Password</h3>
             <form onSubmit={handleResetPassword}>
               <label htmlFor="recoveryToken">Recovery Token</label>
@@ -657,14 +655,14 @@ const App: React.FC = () => {
                 placeholder="Enter new password"
                 required
               />
-              <button type="submit">Reset Password</button>
-              <button type="button" onClick={() => setShowReset(false)}>Cancel</button>
+              <button type="submit" className="neumorphic">Reset Password</button>
+              <button type="button" className="neumorphic" onClick={() => setShowReset(false)}>Cancel</button>
             </form>
           </div>
         )}
       </main>
-      <footer>
-        <p style={{ color: '#b0b0ff' }}>© 2025 Intacom. All rights reserved.</p>
+      <footer className="footer-modern">
+        <p>© 2025 Intacom. All rights reserved.</p>
       </footer>
     </>
   );

@@ -186,21 +186,18 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
 
   console.log('Rendering Profile page');
   return (
-    <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
+    <div className="profile-container">
       {/* Cover Photo Section */}
       <div
+        className="cover-photo glassmorphic"
         style={{
-          position: 'relative',
-          height: '300px',
-          background: user.coverPhoto ? `url(${user.coverPhoto})` : 'var(--secondary-color)',
+          background: user.coverPhoto ? `url(${user.coverPhoto})` : 'linear-gradient(135deg, #36B37E, #0052CC)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          borderRadius: '12px 12px 0 0',
-          marginBottom: '4rem',
         }}
       >
-        <label htmlFor="coverPhotoUpload" style={{ position: 'absolute', bottom: '1rem', right: '1rem', cursor: 'pointer' }}>
-          <button type="button">Change Cover Photo</button>
+        <label htmlFor="coverPhotoUpload" className="cover-photo-label">
+          <button type="button" className="neumorphic">Change Cover Photo</button>
           <input
             id="coverPhotoUpload"
             type="file"
@@ -212,35 +209,23 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
       </div>
 
       {/* Profile Info Section */}
-      <div style={{ display: 'flex', gap: '2rem', marginTop: '-3rem', marginBottom: '2rem' }}>
-        <div style={{ flex: '0 0 200px', textAlign: 'center' }}>
+      <div className="profile-info">
+        <div className="profile-pic-container">
           {user.profilePic ? (
             <img
               src={user.profilePic}
               alt="Profile"
-              style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary-color)' }}
+              className="profile-pic-large"
             />
           ) : (
             <div
-              style={{
-                width: '150px',
-                height: '150px',
-                borderRadius: '50%',
-                background: 'var(--secondary-color)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '3rem',
-                color: 'var(--text-color)',
-                border: '3px solid var(--primary-color)',
-                margin: '0 auto',
-              }}
+              className="profile-pic-placeholder"
             >
               {user.firstName ? user.firstName[0] : user.username[0]}
             </div>
           )}
-          <label htmlFor="profilePicUploadProfile" style={{ display: 'block', marginTop: '0.5rem', cursor: 'pointer' }}>
-            <button type="button">Change Profile Picture</button>
+          <label htmlFor="profilePicUploadProfile" className="profile-pic-label">
+            <button type="button" className="neumorphic">Change Profile Picture</button>
             <input
               id="profilePicUploadProfile"
               type="file"
@@ -250,40 +235,26 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
             />
           </label>
         </div>
-        <div style={{ flex: 1 }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+        <div className="profile-details">
+          <h2>
             {user.firstName} {user.lastName}
           </h2>
-          <p style={{ margin: '0 0 0.5rem 0', opacity: '0.8' }}>@{user.username}</p>
-          <p style={{ margin: '0 0 0.5rem 0', opacity: '0.8' }}>{user.email}</p>
-          <p style={{ margin: '0', opacity: '0.8' }}>{user.bio || 'No bio available'}</p>
+          <p>@{user.username}</p>
+          <p>{user.email}</p>
+          <p>{user.bio || 'No bio available'}</p>
         </div>
       </div>
 
       {/* Tabs for Profile Sections */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-        <button style={{ padding: '0.5rem 1rem', background: 'var(--card-background)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-          About
-        </button>
-        <button style={{ padding: '0.5rem 1rem', background: 'var(--card-background)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-          Projects
-        </button>
-        <button style={{ padding: '0.5rem 1rem', background: 'var(--card-background)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-          Activity
-        </button>
+      <div className="profile-tabs">
+        <button className="tab-button glassmorphic">About</button>
+        <button className="tab-button glassmorphic">Projects</button>
+        <button className="tab-button glassmorphic">Activity</button>
       </div>
 
       {/* About Section */}
-      <div
-        style={{
-          background: 'var(--card-background)',
-          borderRadius: '12px',
-          padding: '2rem',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-          marginBottom: '2rem',
-        }}
-      >
-        <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>About</h3>
+      <div className="section glassmorphic">
+        <h3>About</h3>
         <form onSubmit={handleUpdateProfile}>
           <div className="form-group">
             <label htmlFor="firstName">First Name</label>
@@ -350,21 +321,21 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
           </div>
           <div className="form-group">
             <label>Hobbies</label>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <div className="hobby-input">
               <input
                 type="text"
                 value={newHobby}
                 onChange={(e) => setNewHobby(e.target.value)}
                 placeholder="Add a hobby"
               />
-              <button type="button" onClick={handleAddHobby}>Add</button>
+              <button type="button" className="neumorphic" onClick={handleAddHobby}>Add</button>
             </div>
             {hobbies.length > 0 && (
-              <ul style={{ listStyle: 'none', padding: '0' }}>
+              <ul className="hobby-list">
                 {hobbies.map((hobby) => (
-                  <li key={hobby} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                  <li key={hobby}>
                     {hobby}
-                    <button type="button" onClick={() => handleRemoveHobby(hobby)} style={{ background: '#ff5555' }}>
+                    <button type="button" className="neumorphic remove-hobby" onClick={() => handleRemoveHobby(hobby)}>
                       Remove
                     </button>
                   </li>
@@ -372,37 +343,29 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
               </ul>
             )}
           </div>
-          <button type="submit">Update Profile</button>
+          <button type="submit" className="neumorphic">Update Profile</button>
         </form>
         {errorMessage && <div className="error-message">{errorMessage}</div>}
         {successMessage && (
-          <div style={{ color: '#4caf50', textAlign: 'center', fontSize: '0.9rem', marginTop: '1rem' }}>
+          <div className="success-message">
             {successMessage}
           </div>
         )}
       </div>
 
       {/* Projects Section */}
-      <div
-        style={{
-          background: 'var(--card-background)',
-          borderRadius: '12px',
-          padding: '2rem',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-          marginBottom: '2rem',
-        }}
-      >
-        <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>Projects</h3>
+      <div className="section glassmorphic">
+        <h3>Projects</h3>
         {projects.length === 0 ? (
-          <p style={{ fontSize: '1rem', opacity: '0.8' }}>No projects yet.</p>
+          <p>No projects yet.</p>
         ) : (
           <>
-            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '0.5rem' }}>Current Projects</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '1rem' }}>
+            <h4>Current Projects</h4>
+            <div className="project-grid">
               {projects.filter((project) => project.status === 'current').map((project) => (
                 <div
                   key={project._id}
-                  className="project-card"
+                  className="project-card glassmorphic"
                   style={{
                     borderLeft: `4px solid ${project.color || '#3a3a50'}`,
                   }}
@@ -412,12 +375,12 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
                 </div>
               ))}
             </div>
-            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '0.5rem' }}>Past Projects</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
+            <h4>Past Projects</h4>
+            <div className="project-grid">
               {projects.filter((project) => project.status === 'past').map((project) => (
                 <div
                   key={project._id}
-                  className="project-card"
+                  className="project-card glassmorphic"
                   style={{
                     borderLeft: `4px solid ${project.color || '#3a3a50'}`,
                   }}
@@ -432,27 +395,15 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
       </div>
 
       {/* Recent Activity Section */}
-      <div
-        style={{
-          background: 'var(--card-background)',
-          borderRadius: '12px',
-          padding: '2rem',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-        }}
-      >
-        <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>Recent Activity</h3>
+      <div className="section glassmorphic">
+        <h3>Recent Activity</h3>
         {activities.length === 0 ? (
-          <p style={{ fontSize: '1rem', opacity: '0.8' }}>No recent activity.</p>
+          <p>No recent activity.</p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: '0' }}>
+          <ul className="activity-list">
             {activities.map((activity) => (
               <li
                 key={activity._id}
-                style={{
-                  padding: '0.75rem 0',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                  fontSize: '0.9rem',
-                }}
               >
                 {activity.content} - {new Date(activity.createdAt).toLocaleString()}
               </li>

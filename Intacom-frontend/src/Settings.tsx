@@ -49,23 +49,11 @@ const Settings: React.FC = () => {
 
   console.log('Rendering Settings page');
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: '600', marginBottom: '0.5rem' }}>Settings</h2>
-      <p style={{ fontSize: '1rem', opacity: '0.8', marginBottom: '2rem' }}>
-        Manage your account settings here.
-      </p>
-      <div
-        style={{
-          background: 'var(--card-background)',
-          borderRadius: '12px',
-          padding: '2rem',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-          marginBottom: '2rem',
-        }}
-      >
-        <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>
-          Change Password
-        </h3>
+    <div className="settings-container">
+      <h2>Settings</h2>
+      <p>Manage your account settings here.</p>
+      <div className="section glassmorphic">
+        <h3>Change Password</h3>
         <form onSubmit={handleChangePassword}>
           <div className="form-group">
             <label htmlFor="currentPassword">Current Password</label>
@@ -89,12 +77,12 @@ const Settings: React.FC = () => {
               required
             />
           </div>
-          <button type="submit">Change Password</button>
+          <button type="submit" className="neumorphic">Change Password</button>
         </form>
       </div>
       {errorMessage && <div className="error-message">{errorMessage}</div>}
       {successMessage && (
-        <div style={{ color: '#4caf50', textAlign: 'center', fontSize: '0.9rem', marginTop: '1rem' }}>
+        <div className="success-message">
           {successMessage}
         </div>
       )}
