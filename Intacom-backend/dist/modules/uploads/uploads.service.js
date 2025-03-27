@@ -10,7 +10,7 @@ exports.UploadsService = void 0;
 const common_1 = require("@nestjs/common");
 let UploadsService = class UploadsService {
     async uploadFile(file) {
-        return { url: `http://localhost:3000/uploads/${file.filename}` };
+        return `http://localhost:3000/uploads/${file.filename}`;
     }
 };
 UploadsService = __decorate([

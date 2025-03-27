@@ -19,18 +19,27 @@ let NotificationsController = class NotificationsController {
     constructor(notificationsService) {
         this.notificationsService = notificationsService;
     }
-    async findByUser(userId) {
-        const notifications = await this.notificationsService.findByUser(userId);
-        return { data: notifications };
+    async create(createNotificationDto) {
+        return this.notificationsService.create(createNotificationDto);
+    }
+    async findByUserId(userId) {
+        return this.notificationsService.findByUserId(userId);
     }
 };
+__decorate([
+    (0, common_1.Post)(),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(':userId'),
     __param(0, (0, common_1.Param)('userId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], NotificationsController.prototype, "findByUser", null);
+], NotificationsController.prototype, "findByUserId", null);
 NotificationsController = __decorate([
     (0, common_1.Controller)('notifications'),
     __metadata("design:paramtypes", [notifications_service_1.NotificationsService])

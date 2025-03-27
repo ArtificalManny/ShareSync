@@ -1,9 +1,11 @@
 import { Model } from 'mongoose';
-import { Project } from './schemas/project.schema';
+import { Project, ProjectDocument } from './schemas/project.schema';
 export declare class ProjectsService {
     private projectModel;
-    constructor(projectModel: Model<Project>);
+    constructor(projectModel: Model<ProjectDocument>);
+    create(createProjectDto: Partial<Project>): Promise<Project>;
+    findByUsername(username: string): Promise<Project[]>;
     findById(id: string): Promise<Project | null>;
-    findByAdmin(admin: string): Promise<Project[]>;
-    create(project: Partial<Project>): Promise<Project>;
+    update(id: string, updateProjectDto: Partial<Project>): Promise<Project | null>;
+    delete(id: string): Promise<void>;
 }

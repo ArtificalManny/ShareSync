@@ -9,15 +9,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationsModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
-const notifications_controller_1 = require("./notifications.controller");
+const notification_schema_1 = require("./schemas/notification.schema");
 const notifications_service_1 = require("./notifications.service");
-const notification_model_1 = require("./notification.model");
+const notifications_controller_1 = require("./notifications.controller");
 let NotificationsModule = class NotificationsModule {
 };
 NotificationsModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forFeature([{ name: 'Notification', schema: notification_model_1.NotificationSchema }]),
+            mongoose_1.MongooseModule.forFeature([{ name: notification_schema_1.Notification.name, schema: notification_schema_1.NotificationSchema }]),
         ],
         controllers: [notifications_controller_1.NotificationsController],
         providers: [notifications_service_1.NotificationsService],

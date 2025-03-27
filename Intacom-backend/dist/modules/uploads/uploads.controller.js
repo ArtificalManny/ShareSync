@@ -12,29 +12,41 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UploadsController = void 0;
+exports.ProjectsService = void 0;
 const common_1 = require("@nestjs/common");
-const platform_express_1 = require("@nestjs/platform-express");
-const uploads_service_1 = require("./uploads.service");
-let UploadsController = class UploadsController {
-    constructor(uploadsService) {
-        this.uploadsService = uploadsService;
+const mongoose_1 = require("@nestjs/mongoose");
+const mongoose_2 = require("mongoose");
+const project_schema_1 = require("./schemas/project.schema");
+let ProjectsService = class ProjectsService {
+    constructor(projectModel) {
+        this.projectModel = projectModel;
     }
-    async uploadFile(file) {
-        return this.uploadsService.uploadFile(file);
+    async create(createProjectDto) {
+        const newProject = new this.projectModel(createProjectDto);
+        return newProject.save();
+    }
+    async findByUsername(username) {
+        return this.projectModel.find({
+            $or: [
+                { admin: username },
+                { 'sharedWith.userId': username },
+            ],
+        }).exec();
+    }
+    async findById(id) {
+        return this.projectModel.findById(id).exec();
+    }
+    async update(id, updateProjectDto) {
+        return this.projectModel.findByIdAndUpdate(id, updateProjectDto, { new: true }).exec();
+    }
+    async delete(id) {
+        await this.projectModel.findByIdAndDelete(id).exec();
     }
 };
-__decorate([
-    (0, common_1.Post)(),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
-    __param(0, (0, common_1.UploadedFile)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], UploadsController.prototype, "uploadFile", null);
-UploadsController = __decorate([
-    (0, common_1.Controller)('uploads'),
-    __metadata("design:paramtypes", [uploads_service_1.UploadsService])
-], UploadsController);
-exports.UploadsController = UploadsController;
+ProjectsService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)(project_schema_1.Project.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model])
+], ProjectsService);
+exports.ProjectsService = ProjectsService;
 //# sourceMappingURL=uploads.controller.js.map

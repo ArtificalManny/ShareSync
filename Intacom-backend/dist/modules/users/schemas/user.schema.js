@@ -11,17 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserSchema = exports.User = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
-const mongoose_2 = require("mongoose");
-let User = class User extends mongoose_2.Document {
+let User = class User {
 };
-__decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", String)
-], User.prototype, "username", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", String)
-], User.prototype, "email", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
@@ -31,9 +22,25 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "lastName", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_1.Prop)({ required: true, unique: true }),
+    __metadata("design:type", String)
+], User.prototype, "username", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
 ], User.prototype, "password", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true, unique: true }),
+    __metadata("design:type", String)
+], User.prototype, "email", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], User.prototype, "gender", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", Object)
+], User.prototype, "birthday", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
@@ -55,11 +62,27 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "occupation", void 0);
 __decorate([
-    (0, mongoose_1.Prop)([String]),
+    (0, mongoose_1.Prop)({ type: [String], default: [] }),
     __metadata("design:type", Array)
 ], User.prototype, "hobbies", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({
+        type: {
+            emailNotifications: { type: Boolean, default: true },
+            postNotifications: { type: Boolean, default: true },
+            commentNotifications: { type: Boolean, default: true },
+            likeNotifications: { type: Boolean, default: true },
+            taskNotifications: { type: Boolean, default: true },
+            memberRequestNotifications: { type: Boolean, default: true },
+            theme: { type: String, default: 'dark' },
+            privacy: { type: String, default: 'public' },
+        },
+        default: {},
+    }),
+    __metadata("design:type", Object)
+], User.prototype, "settings", void 0);
 User = __decorate([
-    (0, mongoose_1.Schema)()
+    (0, mongoose_1.Schema)({ timestamps: true })
 ], User);
 exports.User = User;
 exports.UserSchema = mongoose_1.SchemaFactory.createForClass(User);

@@ -21,15 +21,26 @@ let ProjectsService = class ProjectsService {
     constructor(projectModel) {
         this.projectModel = projectModel;
     }
+    async create(createProjectDto) {
+        const newProject = new this.projectModel(createProjectDto);
+        return newProject.save();
+    }
+    async findByUsername(username) {
+        return this.projectModel.find({
+            $or: [
+                { admin: username },
+                { 'sharedWith.userId': username },
+            ],
+        }).exec();
+    }
     async findById(id) {
         return this.projectModel.findById(id).exec();
     }
-    async findByAdmin(admin) {
-        return this.projectModel.find({ admin }).exec();
+    async update(id, updateProjectDto) {
+        return this.projectModel.findByIdAndUpdate(id, updateProjectDto, { new: true }).exec();
     }
-    async create(project) {
-        const newProject = new this.projectModel(project);
-        return newProject.save();
+    async delete(id) {
+        await this.projectModel.findByIdAndDelete(id).exec();
     }
 };
 ProjectsService = __decorate([

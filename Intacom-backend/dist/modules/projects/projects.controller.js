@@ -19,20 +19,44 @@ let ProjectsController = class ProjectsController {
     constructor(projectsService) {
         this.projectsService = projectsService;
     }
+    async create(createProjectDto) {
+        const project = await this.projectsService.create(createProjectDto);
+        return { data: { project } };
+    }
+    async findByUsername(username) {
+        const projects = await this.projectsService.findByUsername(username);
+        return { data: projects };
+    }
     async findById(id) {
         const project = await this.projectsService.findById(id);
         if (!project)
             throw new Error('Project not found');
         return { data: { project } };
     }
-    async findByAdmin(admin) {
-        const projects = await this.projectsService.findByAdmin(admin);
-        return { data: projects };
+    async update(id, updateProjectDto) {
+        const updatedProject = await this.projectsService.update(id, updateProjectDto);
+        if (!updatedProject)
+            throw new Error('Project not found');
+        return updatedProject;
     }
-    async create(project) {
-        return this.projectsService.create(project);
+    async delete(id) {
+        await this.projectsService.delete(id);
     }
 };
+__decorate([
+    (0, common_1.Post)(),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ProjectsController.prototype, "create", null);
+__decorate([
+    (0, common_1.Get)(':username'),
+    __param(0, (0, common_1.Param)('username')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ProjectsController.prototype, "findByUsername", null);
 __decorate([
     (0, common_1.Get)('by-id/:id'),
     __param(0, (0, common_1.Param)('id')),
@@ -41,19 +65,20 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "findById", null);
 __decorate([
-    (0, common_1.Get)(':admin'),
-    __param(0, (0, common_1.Param)('admin')),
+    (0, common_1.Put)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ProjectsController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], ProjectsController.prototype, "findByAdmin", null);
-__decorate([
-    (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], ProjectsController.prototype, "create", null);
+], ProjectsController.prototype, "delete", null);
 ProjectsController = __decorate([
     (0, common_1.Controller)('projects'),
     __metadata("design:paramtypes", [projects_service_1.ProjectsService])

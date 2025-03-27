@@ -16,21 +16,23 @@ exports.NotificationsService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
+const notification_schema_1 = require("./schemas/notification.schema");
 let NotificationsService = class NotificationsService {
     constructor(notificationModel) {
         this.notificationModel = notificationModel;
     }
-    async create(userId, message) {
-        const newNotification = new this.notificationModel({ userId, message });
-        return await newNotification.save();
+    async create(notification) {
+        const newNotification = new this.notificationModel(notification);
+        console.log(`Sending email to user ${notification.userId}: ${notification.message}`);
+        return newNotification.save();
     }
-    async findByUser(userId) {
-        return await this.notificationModel.find({ userId }).sort({ createdAt: -1 }).exec();
+    async findByUserId(userId) {
+        return this.notificationModel.find({ userId }).sort({ createdAt: -1 }).exec();
     }
 };
 NotificationsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)('Notification')),
+    __param(0, (0, mongoose_1.InjectModel)(notification_schema_1.Notification.name)),
     __metadata("design:paramtypes", [mongoose_2.Model])
 ], NotificationsService);
 exports.NotificationsService = NotificationsService;

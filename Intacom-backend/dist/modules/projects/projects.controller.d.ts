@@ -3,13 +3,13 @@ import { Project } from './schemas/project.schema';
 export declare class ProjectsController {
     private readonly projectsService;
     constructor(projectsService: ProjectsService);
+    create(createProjectDto: Partial<Project>): Promise<{
+        project: Project;
+    }>;
+    findByUsername(username: string): Promise<Project[]>;
     findById(id: string): Promise<{
-        data: {
-            project: Project;
-        };
+        project: Project;
     }>;
-    findByAdmin(admin: string): Promise<{
-        data: Project[];
-    }>;
-    create(project: Partial<Project>): Promise<Project>;
+    update(id: string, updateProjectDto: Partial<Project>): Promise<Project>;
+    delete(id: string): Promise<void>;
 }

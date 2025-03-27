@@ -1,13 +1,18 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
+import { Notification } from './schemas/notification.schema';
 
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
+  @Post()
+  async create(@Body() createNotificationDto: Partial<Notification>): Promise<Notification> {
+    return this.notificationsService.create(createNotificationDto);
+  }
+
   @Get(':userId')
-  async findByUser(@Param('userId') userId: string) {
-    const notifications = await this.notificationsService.findByUser(userId);
-    return { data: notifications };
+  async findByUserId(@Param('userId') userId: string): Promise<Notification[]> {
+    return this.notificationsService.findByUserId(userId);
   }
 }

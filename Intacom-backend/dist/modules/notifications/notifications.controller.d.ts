@@ -1,8 +1,8 @@
 import { NotificationsService } from './notifications.service';
+import { Notification } from './schemas/notification.schema';
 export declare class NotificationsController {
     private readonly notificationsService;
     constructor(notificationsService: NotificationsService);
-    findByUser(userId: string): Promise<{
-        data: import("./notification.model").Notification[];
-    }>;
+    create(createNotificationDto: Partial<Notification>): Promise<Notification>;
+    findByUserId(userId: string): Promise<Notification[]>;
 }

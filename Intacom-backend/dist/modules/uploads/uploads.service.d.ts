@@ -1,6 +1,4 @@
 /// <reference types="multer" />
 export declare class UploadsService {
-    uploadFile(file: Express.Multer.File): Promise<{
-        url: string;
-    }>;
+    uploadFile(file: Express.Multer.File): Promise<string>;
 }

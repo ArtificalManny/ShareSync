@@ -1,14 +1,35 @@
-import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { UploadsService } from './uploads.service';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Project, ProjectDocument } from './schemas/project.schema';
 
-@Controller('uploads')
-export class UploadsController {
-  constructor(private readonly uploadsService: UploadsService) {}
+@Injectable()
+export class ProjectsService {
+  constructor(@InjectModel(Project.name) private projectModel: Model<ProjectDocument>) {}
 
-  @Post()
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
-    return this.uploadsService.uploadFile(file);
+  async create(createProjectDto: Partial<Project>): Promise<Project> {
+    const newProject = new this.projectModel(createProjectDto);
+    return newProject.save();
+  }
+
+  async findByUsername(username: string): Promise<Project[]> {
+    return this.projectModel.find({
+      $or: [
+        { admin: username },
+        { 'sharedWith.userId': username },
+      ],
+    }).exec();
+  }
+
+  async findById(id: string): Promise<Project | null> {
+    return this.projectModel.findById(id).exec();
+  }
+
+  async update(id: string, updateProjectDto: Partial<Project>): Promise<Project | null> {
+    return this.projectModel.findByIdAndUpdate(id, updateProjectDto, { new: true }).exec();
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.projectModel.findByIdAndDelete(id).exec();
   }
 }
