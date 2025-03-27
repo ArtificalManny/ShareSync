@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Put, Body, Param } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { UsersService } from '@modules/users/users.service';
 import { User } from './schemas/user.schema';
 
 @Controller('users')

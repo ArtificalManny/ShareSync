@@ -1,20 +1,15 @@
 import { ProjectsService } from './projects.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { Project } from './schemas/project.schema';
 export declare class ProjectsController {
     private readonly projectsService;
-    private readonly notificationsService;
-    constructor(projectsService: ProjectsService, notificationsService: NotificationsService);
-    create(projectData: any): Promise<{
+    constructor(projectsService: ProjectsService);
+    findById(id: string): Promise<{
         data: {
-            project: import("./project.model").Project;
+            project: Project;
         };
     }>;
     findByAdmin(admin: string): Promise<{
-        data: import("./project.model").Project[];
+        data: Project[];
     }>;
-    findById(id: string): Promise<{
-        data: {
-            project: import("./project.model").Project;
-        };
-    }>;
+    create(project: Partial<Project>): Promise<Project>;
 }

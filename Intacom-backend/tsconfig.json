@@ -10,19 +10,23 @@
     "target": "es2017",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    "baseUrl": "./src",
     "paths": {
-      "@models/*": ["src/models/*"],
-      "@modules/*": ["src/modules/*"]
+      "@models/*": ["models/*"],
+      "@modules/*": ["modules/*"]
     },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": false,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "traceResolution": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist"]
 }

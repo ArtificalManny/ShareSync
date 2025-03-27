@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
-import { Project } from './schemas/project.schema';
+import { Project } from '../modules/projects/schemas/project.schema';
 
 @Controller('projects')
 export class ProjectsController {

@@ -15,38 +15,31 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsController = void 0;
 const common_1 = require("@nestjs/common");
 const projects_service_1 = require("./projects.service");
-const notifications_service_1 = require("../notifications/notifications.service");
 let ProjectsController = class ProjectsController {
-    constructor(projectsService, notificationsService) {
+    constructor(projectsService) {
         this.projectsService = projectsService;
-        this.notificationsService = notificationsService;
     }
-    async create(projectData) {
-        const project = await this.projectsService.create(projectData);
-        await this.notificationsService.create(projectData.admin, `New project "${projectData.name}" created`);
-        if (projectData.sharedWith && projectData.sharedWith.length > 0) {
-            for (const sharedUser of projectData.sharedWith) {
-                await this.notificationsService.create(sharedUser.userId, `You have been added to the project "${projectData.name}" as ${sharedUser.role}`);
-            }
-        }
+    async findById(id) {
+        const project = await this.projectsService.findById(id);
+        if (!project)
+            throw new Error('Project not found');
         return { data: { project } };
     }
     async findByAdmin(admin) {
         const projects = await this.projectsService.findByAdmin(admin);
         return { data: projects };
     }
-    async findById(id) {
-        const project = await this.projectsService.findById(id);
-        return { data: { project } };
+    async create(project) {
+        return this.projectsService.create(project);
     }
 };
 __decorate([
-    (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    (0, common_1.Get)('by-id/:id'),
+    __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], ProjectsController.prototype, "create", null);
+], ProjectsController.prototype, "findById", null);
 __decorate([
     (0, common_1.Get)(':admin'),
     __param(0, (0, common_1.Param)('admin')),
@@ -55,16 +48,15 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "findByAdmin", null);
 __decorate([
-    (0, common_1.Get)('by-id/:id'),
-    __param(0, (0, common_1.Param)('id')),
+    (0, common_1.Post)(),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
-], ProjectsController.prototype, "findById", null);
+], ProjectsController.prototype, "create", null);
 ProjectsController = __decorate([
     (0, common_1.Controller)('projects'),
-    __metadata("design:paramtypes", [projects_service_1.ProjectsService,
-        notifications_service_1.NotificationsService])
+    __metadata("design:paramtypes", [projects_service_1.ProjectsService])
 ], ProjectsController);
 exports.ProjectsController = ProjectsController;
 //# sourceMappingURL=projects.controller.js.map

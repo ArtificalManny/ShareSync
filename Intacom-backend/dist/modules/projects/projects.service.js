@@ -16,24 +16,25 @@ exports.ProjectsService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
+const project_schema_1 = require("./schemas/project.schema");
 let ProjectsService = class ProjectsService {
     constructor(projectModel) {
         this.projectModel = projectModel;
     }
-    async create(projectData) {
-        const newProject = new this.projectModel(projectData);
-        return await newProject.save();
+    async findById(id) {
+        return this.projectModel.findById(id).exec();
     }
     async findByAdmin(admin) {
-        return await this.projectModel.find({ admin }).exec();
+        return this.projectModel.find({ admin }).exec();
     }
-    async findById(id) {
-        return await this.projectModel.findById(id).exec();
+    async create(project) {
+        const newProject = new this.projectModel(project);
+        return newProject.save();
     }
 };
 ProjectsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)('Project')),
+    __param(0, (0, mongoose_1.InjectModel)(project_schema_1.Project.name)),
     __metadata("design:paramtypes", [mongoose_2.Model])
 ], ProjectsService);
 exports.ProjectsService = ProjectsService;

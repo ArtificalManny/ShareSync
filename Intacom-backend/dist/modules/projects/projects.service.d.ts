@@ -1,9 +1,9 @@
 import { Model } from 'mongoose';
-import { Project } from './project.model';
+import { Project } from './schemas/project.schema';
 export declare class ProjectsService {
-    private readonly projectModel;
+    private projectModel;
     constructor(projectModel: Model<Project>);
-    create(projectData: any): Promise<Project>;
+    findById(id: string): Promise<Project | null>;
     findByAdmin(admin: string): Promise<Project[]>;
-    findById(id: string): Promise<Project>;
+    create(project: Partial<Project>): Promise<Project>;
 }

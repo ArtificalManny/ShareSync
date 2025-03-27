@@ -19,11 +19,10 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
-var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
-const users_service_1 = require("../users/users.service");
+const users_service_1 = require("./users.service");
 let AuthService = class AuthService {
     constructor(usersService) {
         this.usersService = usersService;
@@ -56,7 +55,7 @@ let AuthService = class AuthService {
 };
 AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [typeof (_a = typeof users_service_1.UsersService !== "undefined" && users_service_1.UsersService) === "function" ? _a : Object])
+    __metadata("design:paramtypes", [users_service_1.UsersService])
 ], AuthService);
 exports.AuthService = AuthService;
 //# sourceMappingURL=auth.service.js.map

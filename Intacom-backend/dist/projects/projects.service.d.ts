@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import { Project } from './schemas/project.schema';
+import { Project } from '../modules/projects/schemas/project.schema';
 export declare class ProjectsService {
     private projectModel;
     constructor(projectModel: Model<Project>);
