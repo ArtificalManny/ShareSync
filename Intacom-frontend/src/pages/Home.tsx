@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface Project {
   _id: string;
@@ -8,6 +8,12 @@ interface Project {
   admin?: string;
   color?: string;
   sharedWith?: { userId: string; role: 'Admin' | 'Editor' | 'Viewer' }[];
+}
+
+interface Activity {
+  _id: string;
+  message: string;
+  createdAt: string;
 }
 
 interface HomeProps {
@@ -43,10 +49,30 @@ const Home: React.FC<HomeProps> = ({
 }) => {
   const [sharedEmail, setSharedEmail] = useState('');
   const [sharedRole, setSharedRole] = useState<'Admin' | 'Editor' | 'Viewer'>('Viewer');
+  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+  const navigate = useNavigate();
 
   // Mocked metrics for dashboard; in a real app, fetch from backend
   const totalProjects = projects.length;
   const activeProjects = projects.filter((project) => project.admin === 'ArtificalManny').length; // Example filter
+  // Mocked social proof data (Social Proof - Influence)
+  const totalUsers = 1500; // Mocked number of users
+  const totalPlatformProjects = 3200; // Mocked number of projects
+
+  // Fetch recent activities (mocked for now; in a real app, fetch from backend)
+  useEffect(() => {
+    const mockActivities: Activity[] = [
+      { _id: '1', message: 'User John created Project Alpha', createdAt: new Date().toISOString() },
+      { _id: '2', message: 'User Sarah completed Task Design UI', createdAt: new Date().toISOString() },
+      { _id: '3', message: 'User Mike shared Project Beta', createdAt: new Date().toISOString() },
+    ];
+    setRecentActivities(mockActivities);
+  }, []);
+
+  // Mock function to invite a team member (in a real app, this would open a form or send an email)
+  const handleInviteTeamMember = () => {
+    alert('Invite Team Member functionality coming soon!');
+  };
 
   console.log('Rendering Home page');
   return (
@@ -65,6 +91,40 @@ const Home: React.FC<HomeProps> = ({
             <h4>Active Projects</h4>
             <p>{activeProjects}</p>
           </div>
+          <div className="metric">
+            <h4>Join the Community</h4>
+            <p>{totalUsers} users managing {totalPlatformProjects} projects</p>
+          </div>
+        </div>
+      </div>
+      {/* Recent Activity Feed */}
+      <div className="section glassmorphic">
+        <h3>Recent Activity</h3>
+        {recentActivities.length === 0 ? (
+          <p>No recent activity to display.</p>
+        ) : (
+          <ul className="activity-list">
+            {recentActivities.map((activity) => (
+              <li key={activity._id}>
+                {activity.message} - {new Date(activity.createdAt).toLocaleString()}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {/* Quick Actions Section */}
+      <div className="section glassmorphic quick-actions">
+        <h3>Quick Actions</h3>
+        <div className="action-buttons">
+          <button className="neumorphic" onClick={() => alert('Create Task functionality coming soon!')}>
+            Create Task
+          </button>
+          <button className="neumorphic" onClick={() => navigate('/projects')}>
+            View Tasks
+          </button>
+          <button className="neumorphic" onClick={handleInviteTeamMember}>
+            Invite Team Member
+          </button>
         </div>
       </div>
       {!showCreateProject && (
@@ -73,7 +133,7 @@ const Home: React.FC<HomeProps> = ({
         </button>
       )}
       {showCreateProject && (
-        <div className="create-project-panel-content glassmorphic">
+        <div className="section glassmorphic">
           <h3>Create Project</h3>
           <form onSubmit={handleCreateProject} className="create-project-form">
             <div className="form-group">
@@ -161,26 +221,30 @@ const Home: React.FC<HomeProps> = ({
           </form>
         </div>
       )}
-      <h3>Your Projects</h3>
-      {projects.length === 0 ? (
-        <p>No projects found. Create a project to get started!</p>
-      ) : (
-        <div className="project-grid">
-          {projects.map((project) => (
-            <div
-              key={project._id}
-              className="project-card glassmorphic"
-              style={{
-                borderLeft: `4px solid ${project.color || '#3a3a50'}`,
-              }}
-            >
-              <Link to={`/project/${project._id}`}>
-                <h4>{project.name}</h4>
-              </Link>
-              <p>{project.description || 'No description'}</p>
+      {!showCreateProject && (
+        <>
+          <h3>Your Projects</h3>
+          {projects.length === 0 ? (
+            <p>No projects found. Create a project to get started!</p>
+          ) : (
+            <div className="project-grid">
+              {projects.map((project) => (
+                <div
+                  key={project._id}
+                  className="project-card glassmorphic"
+                  style={{
+                    borderLeft: `4px solid ${project.color || '#3a3a50'}`,
+                  }}
+                >
+                  <Link to={`/project/${project._id}`}>
+                    <h4>{project.name}</h4>
+                  </Link>
+                  <p>{project.description || 'No description'}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Routes, Route, Link, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBell, faUserCircle, faPlusCircle, faHome, faFolder, faUpload, faCog, faSignOutAlt, faUser, faComment } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faUserCircle, faPlusCircle, faHome, faFolder, faUpload, faCog, faSignOutAlt, faUser, faSearch } from '@fortawesome/free-solid-svg-icons';
 import Home from './pages/Home';
 import ProjectsPage from './pages/ProjectsPage';
 import Upload from './Upload';
@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 interface User {
   _id?: string;
   firstName?: string;
+  lastName?: string;
   username: string;
   email?: string;
   profilePic?: string;
@@ -39,6 +40,18 @@ interface Notification {
   _id: string;
   message: string;
   createdAt: string;
+  type?: 'welcome' | 'project_invite' | 'task_assigned' | 'general';
+  projectId?: string;
+  action?: 'accept' | 'decline';
+  status?: 'pending' | 'accepted' | 'declined';
+}
+
+// Define Search Result type
+interface SearchResult {
+  type: 'user' | 'project' | 'task';
+  id: string;
+  name: string;
+  description?: string;
 }
 
 // Define Axios response types
@@ -162,9 +175,14 @@ const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const navigate = useNavigate();
+
+  // Mocked social proof data for the registration screen
+  const totalUsers = 1500; // Mocked number of users
+  const totalPlatformProjects = 3200; // Mocked number of projects
 
   // Save user to localStorage whenever it changes
   useEffect(() => {
@@ -185,7 +203,14 @@ const App: React.FC = () => {
         try {
           const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
           const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
-          setProjects(projectsData);
+          // Update the project ID to the correct 24-character ID
+          const updatedProjects = projectsData.map((project: Project) => {
+            if (project._id === '67e07192620ea86886a29a6') {
+              return { ...project, _id: '67e07192620ea86886a29a' };
+            }
+            return project;
+          });
+          setProjects(updatedProjects);
         } catch (error: any) {
           console.error('Failed to fetch projects:', error.response?.data || error.message);
           setProjects([]);
@@ -195,7 +220,35 @@ const App: React.FC = () => {
       const fetchNotifications = async () => {
         try {
           const response = await axios.get<NotificationsResponse>(`http://localhost:3000/notifications/${user._id}`);
-          setNotifications(response.data.data || []);
+          let notificationsData = response.data.data || [];
+          // Add a welcome notification for new users (Reciprocity - Influence)
+          const isNewUser = localStorage.getItem('isNewUser') === null;
+          if (isNewUser) {
+            notificationsData = [
+              ...notificationsData,
+              {
+                _id: 'welcome',
+                message: 'Welcome to Intacom! Start by creating a project.',
+                createdAt: new Date().toISOString(),
+                type: 'welcome',
+              },
+            ];
+            localStorage.setItem('isNewUser', 'false');
+          }
+          // Add a mock project invite notification
+          notificationsData = [
+            ...notificationsData,
+            {
+              _id: 'invite-1',
+              message: 'User JohnDoe invited you to Project Alpha',
+              createdAt: new Date().toISOString(),
+              type: 'project_invite',
+              projectId: 'mock-project-id',
+              action: 'accept',
+              status: 'pending',
+            },
+          ];
+          setNotifications(notificationsData);
         } catch (error: any) {
           console.error('Failed to fetch notifications:', error.response?.data || error.message);
           setNotifications([]);
@@ -233,6 +286,7 @@ const App: React.FC = () => {
           _id: `${notifications.length + 1}`,
           message: 'Profile picture updated successfully!',
           createdAt: new Date().toISOString(),
+          type: 'general',
         }]);
       } catch (error: any) {
         console.error('Profile picture upload error:', error.response?.data || error.message);
@@ -377,6 +431,7 @@ const App: React.FC = () => {
         _id: `${notifications.length + 1}`,
         message: `Project "${newProject.name}" created successfully!`,
         createdAt: new Date().toISOString(),
+        type: 'general',
       }]);
     } catch (error: any) {
       console.error('Create project error:', error.response?.data || error.message);
@@ -384,24 +439,52 @@ const App: React.FC = () => {
     }
   };
 
-  // Handle feedback submission
-  const handleFeedbackSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-    try {
-      // Mocked for now; in a real app, you'd send this to the backend
-      console.log('Feedback submitted:', feedbackMessage);
-      setFeedbackMessage('');
-      setShowFeedback(false);
-      setNotifications([...notifications, {
-        _id: `${notifications.length + 1}`,
-        message: 'Thank you for your feedback!',
-        createdAt: new Date().toISOString(),
-      }]);
-    } catch (error: any) {
-      console.error('Feedback submission error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred while submitting feedback.');
+  // Handle notification actions (e.g., accept/decline project invite)
+  const handleNotificationAction = (notificationId: string, action: 'accept' | 'decline') => {
+    setNotifications(
+      notifications.map((notification) =>
+        notification._id === notificationId
+          ? { ...notification, status: action === 'accept' ? 'accepted' : 'declined' }
+          : notification
+      )
+    );
+    if (action === 'accept' && notifications.find((n) => n._id === notificationId)?.projectId) {
+      navigate(`/project/${notifications.find((n) => n._id === notificationId)?.projectId}`);
     }
+  };
+
+  // Handle search functionality (mocked for now)
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+    // Mocked search results; in a real app, query the backend
+    const mockResults: SearchResult[] = [
+      { type: 'user', id: '1', name: 'JohnDoe', description: '@johndoe' },
+      { type: 'project', id: '2', name: 'Project Alpha', description: 'A collaborative project' },
+      { type: 'task', id: '3', name: 'Design UI', description: 'Task in Project Alpha' },
+    ].filter((result) =>
+      result.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (result.description && result.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+    setSearchResults(mockResults);
+    setShowSearchResults(true);
+  };
+
+  // Handle search result click
+  const handleSearchResultClick = (result: SearchResult) => {
+    if (result.type === 'user') {
+      navigate(`/user/${result.name}`);
+    } else if (result.type === 'project') {
+      navigate(`/project/${result.id}`);
+    } else if (result.type === 'task') {
+      navigate(`/project/${result.id}`); // Adjust based on task routing
+    }
+    setShowSearchResults(false);
+    setSearchQuery('');
   };
 
   const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
@@ -414,6 +497,37 @@ const App: React.FC = () => {
         <Link to="/">
           <img src="https://via.placeholder.com/40?text=Intacom" alt="Intacom Logo" />
         </Link>
+        {user && (
+          <div className="header-center">
+            <form onSubmit={handleSearch} className="search-form">
+              <div className="search-bar">
+                <FontAwesomeIcon icon={faSearch} className="search-icon" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search for projects, users, or tasks..."
+                  onFocus={() => setShowSearchResults(true)}
+                />
+              </div>
+              {showSearchResults && searchResults.length > 0 && (
+                <div className="search-results glassmorphic">
+                  <ul>
+                    {searchResults.map((result) => (
+                      <li
+                        key={result.id}
+                        onClick={() => handleSearchResultClick(result)}
+                      >
+                        <strong>{result.type.charAt(0).toUpperCase() + result.type.slice(1)}:</strong> {result.name}
+                        {result.description && <span> - {result.description}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </form>
+          </div>
+        )}
         {user && (
           <div className="top-right">
             <div className="notifications">
@@ -433,8 +547,32 @@ const App: React.FC = () => {
                   ) : (
                     <ul>
                       {notifications.map((notification) => (
-                        <li key={notification._id}>
-                          {notification.message} - {new Date(notification.createdAt).toLocaleString()}
+                        <li key={notification._id} className={notification.status === 'pending' ? 'pending' : ''}>
+                          <div className="notification-message">
+                            {notification.message} - {new Date(notification.createdAt).toLocaleString()}
+                          </div>
+                          {notification.type === 'project_invite' && notification.status === 'pending' && (
+                            <div className="notification-actions">
+                              <button
+                                className="neumorphic accept"
+                                onClick={() => handleNotificationAction(notification._id, 'accept')}
+                              >
+                                Accept
+                              </button>
+                              <button
+                                className="neumorphic decline"
+                                onClick={() => handleNotificationAction(notification._id, 'decline')}
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          )}
+                          {notification.status === 'accepted' && (
+                            <span className="notification-status accepted">Accepted</span>
+                          )}
+                          {notification.status === 'declined' && (
+                            <span className="notification-status declined">Declined</span>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -444,7 +582,6 @@ const App: React.FC = () => {
             </div>
             <div className="user-profile">
               <Link to="/profile">
-                <span>{user.firstName || user.username}</span>
                 {user.profilePic ? (
                   <img src={user.profilePic} alt="Profile" className="profile-pic" />
                 ) : (
@@ -474,7 +611,7 @@ const App: React.FC = () => {
                     style={{ display: 'none' }}
                   />
                 </label>
-                <h3>{user.firstName || user.username}</h3>
+                <h3>{user.firstName} {user.lastName}</h3>
               </Link>
             </div>
             <ul>
@@ -499,12 +636,6 @@ const App: React.FC = () => {
               <li>
                 <FontAwesomeIcon icon={faCog} className="menu-icon" />
                 <Link to="/settings">Settings</Link>
-              </li>
-              <li>
-                <FontAwesomeIcon icon={faComment} className="menu-icon" />
-                <a href="#" onClick={() => setShowFeedback(true)}>
-                  Feedback
-                </a>
               </li>
               <li>
                 <FontAwesomeIcon icon={faSignOutAlt} className="menu-icon" />
@@ -565,45 +696,6 @@ const App: React.FC = () => {
                 <Route path="/project/:id" element={<ProjectHome projects={projects} />} />
                 <Route path="/profile" element={<Profile setUser={setUser} />} />
               </Routes>
-              {showCreateProject && (
-                <div className={`create-project-panel ${showCreateProject ? 'open' : ''}`}>
-                  <Home
-                    projects={projects}
-                    showCreateProject={showCreateProject}
-                    setShowCreateProject={setShowCreateProject}
-                    projectName={projectName}
-                    setProjectName={setProjectName}
-                    projectDescription={projectDescription}
-                    setProjectDescription={setProjectDescription}
-                    projectColor={projectColor}
-                    setProjectColor={setProjectColor}
-                    sharedUsers={sharedUsers}
-                    handleAddSharedUser={handleAddSharedUser}
-                    handleRemoveSharedUser={handleRemoveSharedUser}
-                    handleCreateProject={handleCreateProject}
-                  />
-                </div>
-              )}
-              {showFeedback && (
-                <div className="modal glassmorphic">
-                  <h3>Provide Feedback</h3>
-                  <form onSubmit={handleFeedbackSubmit}>
-                    <div className="form-group">
-                      <label htmlFor="feedbackMessage">Your Feedback</label>
-                      <textarea
-                        id="feedbackMessage"
-                        value={feedbackMessage}
-                        onChange={(e) => setFeedbackMessage(e.target.value)}
-                        placeholder="Share your thoughts..."
-                        rows={4}
-                        required
-                      />
-                    </div>
-                    <button type="submit" className="neumorphic">Submit</button>
-                    <button type="button" className="neumorphic" onClick={() => setShowFeedback(false)}>Cancel</button>
-                  </form>
-                </div>
-              )}
             </>
           ) : (
             <form onSubmit={handleSubmit} className="glassmorphic">
@@ -642,6 +734,9 @@ const App: React.FC = () => {
               ) : (
                 <>
                   <div className="subtitle">Create an account</div>
+                  <div className="social-proof">
+                    Collaborate with {totalUsers} professionals on {totalPlatformProjects} projects
+                  </div>
                   <div className="name-container">
                     <div>
                       <label htmlFor="firstName">First Name</label>

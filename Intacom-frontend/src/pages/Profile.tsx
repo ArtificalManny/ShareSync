@@ -34,6 +34,14 @@ interface Activity {
   createdAt: string;
 }
 
+interface SuggestedUser {
+  username: string;
+  firstName: string;
+  lastName: string;
+  profilePic?: string;
+  sharedProjects: number;
+}
+
 interface ProfileProps {
   setUser: (user: User | null) => void;
 }
@@ -53,6 +61,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
   const [newHobby, setNewHobby] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -92,8 +101,19 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         ]);
       };
 
+      // Fetch suggested users (mocked for now; in a real app, fetch from backend based on shared projects or interests)
+      const fetchSuggestedUsers = async () => {
+        const mockSuggestedUsers: SuggestedUser[] = [
+          { username: 'john_doe', firstName: 'John', lastName: 'Doe', profilePic: '', sharedProjects: 2 },
+          { username: 'sarah_smith', firstName: 'Sarah', lastName: 'Smith', profilePic: '', sharedProjects: 1 },
+          { username: 'mike_jones', firstName: 'Mike', lastName: 'Jones', profilePic: '', sharedProjects: 3 },
+        ];
+        setSuggestedUsers(mockSuggestedUsers);
+      };
+
       fetchProjects();
       fetchActivities();
+      fetchSuggestedUsers();
     }
   }, [user]);
 
@@ -188,6 +208,11 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
 
   const handleRemoveHobby = (hobby: string) => {
     setHobbies(hobbies.filter((h) => h !== hobby));
+  };
+
+  // Mock function to connect with a suggested user
+  const handleConnect = (username: string) => {
+    alert(`Connect with ${username} functionality coming soon!`);
   };
 
   if (!user) {
@@ -359,6 +384,41 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         {successMessage && (
           <div className="success-message">
             {successMessage}
+          </div>
+        )}
+      </div>
+
+      {/* People You May Know Section */}
+      <div className="section glassmorphic">
+        <h3>People You May Know</h3>
+        {suggestedUsers.length === 0 ? (
+          <p>No suggestions at this time.</p>
+        ) : (
+          <div className="suggested-users-grid">
+            {suggestedUsers.map((suggestedUser) => (
+              <div key={suggestedUser.username} className="suggested-user-card glassmorphic">
+                <div className="suggested-user-pic">
+                  {suggestedUser.profilePic ? (
+                    <img src={suggestedUser.profilePic} alt="Profile" className="profile-pic" />
+                  ) : (
+                    <div className="profile-pic-placeholder">
+                      {suggestedUser.firstName[0]}
+                    </div>
+                  )}
+                </div>
+                <div className="suggested-user-info">
+                  <h4>{suggestedUser.firstName} {suggestedUser.lastName}</h4>
+                  <p>@{suggestedUser.username}</p>
+                  <p>{suggestedUser.sharedProjects} shared projects</p>
+                </div>
+                <button
+                  className="neumorphic"
+                  onClick={() => handleConnect(suggestedUser.username)}
+                >
+                  Connect
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>

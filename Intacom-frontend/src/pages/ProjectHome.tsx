@@ -62,6 +62,20 @@ interface File {
   createdAt: string;
 }
 
+interface TimelineEvent {
+  _id: string;
+  type: 'task' | 'post' | 'file' | 'comment';
+  content: string;
+  createdAt: string;
+}
+
+interface TeamMember {
+  userId: string;
+  role: 'Admin' | 'Editor' | 'Viewer';
+  username: string;
+  profilePic?: string;
+}
+
 interface ProjectHomeProps {
   projects: Project[] | undefined;
 }
@@ -78,8 +92,10 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
   const [newPostImage, setNewPostImage] = useState<File | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [files, setFiles] = useState<File[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [activityFilter, setActivityFilter] = useState<'all' | 'post' | 'comment' | 'like' | 'task' | 'subtask' | 'file'>('all');
-  const [activeTab, setActiveTab] = useState<'home' | 'upload' | 'settings' | 'activity' | 'files'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'upload' | 'settings' | 'activity' | 'files' | 'timeline' | 'team'>('home');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [user, setUser] = useState<{ username: string } | null>(() => {
@@ -95,13 +111,36 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
         const response = await axios.get(`http://localhost:3000/projects/by-id/${id}`);
         console.log('Fetch project response:', response.data);
         if (response.data && response.data.data && response.data.data.project) {
-          setProject(response.data.data.project);
+          const fetchedProject = response.data.data.project;
+          setProject(fetchedProject);
+
+          // Populate team members
+          const members: TeamMember[] = [];
+          if (fetchedProject.admin) {
+            members.push({
+              userId: fetchedProject.admin,
+              username: fetchedProject.admin,
+              role: 'Admin',
+              profilePic: 'https://via.placeholder.com/40', // Mocked; fetch from user profile in a real app
+            });
+          }
+          if (fetchedProject.sharedWith && fetchedProject.sharedWith.length > 0) {
+            fetchedProject.sharedWith.forEach((member: { userId: string; role: 'Admin' | 'Editor' | 'Viewer' }) => {
+              members.push({
+                userId: member.userId,
+                username: member.userId, // In a real app, fetch the username from the user profile
+                role: member.role,
+                profilePic: 'https://via.placeholder.com/40', // Mocked
+              });
+            });
+          }
+          setTeamMembers(members);
         } else {
           throw new Error('Invalid response structure');
         }
       } catch (error: any) {
         console.error('Failed to fetch project:', error.response?.data || error.message);
-        setErrorMessage(error.response?.data?.error || 'Failed to load project. Please ensure the project exists in the database.');
+        setErrorMessage(error.response?.data?.error || `Failed to load project with ID ${id}. Please ensure the project exists in the database.`);
       }
     };
 
@@ -164,6 +203,13 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       { _id: '1', type: 'post', content: 'ArtificalManny posted an update', createdAt: new Date().toISOString() },
       { _id: '2', type: 'task', content: 'ArtificalManny completed task "Design UI"', createdAt: new Date().toISOString() },
     ]);
+
+    // Fetch timeline events (mocked for now; in a real app, fetch from backend)
+    setTimelineEvents([
+      { _id: '1', type: 'task', content: 'Task "Design UI" created by ArtificalManny', createdAt: new Date().toISOString() },
+      { _id: '2', type: 'post', content: 'ArtificalManny posted an update', createdAt: new Date().toISOString() },
+      { _id: '3', type: 'file', content: 'ArtificalManny uploaded project-plan.pdf', createdAt: new Date().toISOString() },
+    ]);
   }, [id]);
 
   const handleAddTask = (e: React.FormEvent) => {
@@ -185,6 +231,10 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       ...activities,
       { _id: `${activities.length + 1}`, type: 'task', content: `${user?.username} created task "${newTaskTitle}"`, createdAt: new Date().toISOString() },
     ]);
+    setTimelineEvents([
+      ...timelineEvents,
+      { _id: `${timelineEvents.length + 1}`, type: 'task', content: `Task "${newTaskTitle}" created by ${user?.username}`, createdAt: new Date().toISOString() },
+    ]);
     setNewTaskTitle('');
     setNewTaskDescription('');
     setNewTaskAssignedTo([]);
@@ -197,6 +247,10 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
     setActivities([
       ...activities,
       { _id: `${activities.length + 1}`, type: 'task', content: `${user?.username} updated task status to "${newStatus}"`, createdAt: new Date().toISOString() },
+    ]);
+    setTimelineEvents([
+      ...timelineEvents,
+      { _id: `${timelineEvents.length + 1}`, type: 'task', content: `${user?.username} updated task status to "${newStatus}"`, createdAt: new Date().toISOString() },
     ]);
     if (newStatus === 'Done') {
       // Award a badge for completing a task
@@ -225,6 +279,10 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       ...activities,
       { _id: `${activities.length + 1}`, type: 'subtask', content: `${user?.username} added subtask "${subtaskTitle}"`, createdAt: new Date().toISOString() },
     ]);
+    setTimelineEvents([
+      ...timelineEvents,
+      { _id: `${timelineEvents.length + 1}`, type: 'task', content: `${user?.username} added subtask "${subtaskTitle}"`, createdAt: new Date().toISOString() },
+    ]);
   };
 
   const handleUpdateSubtaskStatus = (taskId: string, subtaskId: string, newStatus: 'To Do' | 'In Progress' | 'Done') => {
@@ -243,6 +301,10 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
     setActivities([
       ...activities,
       { _id: `${activities.length + 1}`, type: 'subtask', content: `${user?.username} updated subtask status to "${newStatus}"`, createdAt: new Date().toISOString() },
+    ]);
+    setTimelineEvents([
+      ...timelineEvents,
+      { _id: `${timelineEvents.length + 1}`, type: 'task', content: `${user?.username} updated subtask status to "${newStatus}"`, createdAt: new Date().toISOString() },
     ]);
   };
 
@@ -278,6 +340,10 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       ...activities,
       { _id: `${activities.length + 1}`, type: 'post', content: `${user?.username} posted an update`, createdAt: new Date().toISOString() },
     ]);
+    setTimelineEvents([
+      ...timelineEvents,
+      { _id: `${timelineEvents.length + 1}`, type: 'post', content: `${user?.username} posted an update`, createdAt: new Date().toISOString() },
+    ]);
     setNewPostContent('');
     setNewPostImage(null);
     setSuccessMessage('Post created successfully');
@@ -301,6 +367,10 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       ...activities,
       { _id: `${activities.length + 1}`, type: 'like', content: `${user?.username} liked a post`, createdAt: new Date().toISOString() },
     ]);
+    setTimelineEvents([
+      ...timelineEvents,
+      { _id: `${timelineEvents.length + 1}`, type: 'post', content: `${user?.username} liked a post`, createdAt: new Date().toISOString() },
+    ]);
   };
 
   const handleAddComment = (postId: string, commentContent: string) => {
@@ -320,6 +390,10 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
     setActivities([
       ...activities,
       { _id: `${activities.length + 1}`, type: 'comment', content: `${user?.username} commented on a post`, createdAt: new Date().toISOString() },
+    ]);
+    setTimelineEvents([
+      ...timelineEvents,
+      { _id: `${timelineEvents.length + 1}`, type: 'comment', content: `${user?.username} commented on a post`, createdAt: new Date().toISOString() },
     ]);
   };
 
@@ -368,6 +442,8 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
         <button className="tab-button glassmorphic" onClick={() => setActiveTab('settings')}>Settings</button>
         <button className="tab-button glassmorphic" onClick={() => setActiveTab('activity')}>Activity Log</button>
         <button className="tab-button glassmorphic" onClick={() => setActiveTab('files')}>Files</button>
+        <button className="tab-button glassmorphic" onClick={() => setActiveTab('timeline')}>Timeline</button>
+        <button className="tab-button glassmorphic" onClick={() => setActiveTab('team')}>Team Members</button>
       </div>
       {activeTab === 'home' && (
         <div>
@@ -505,10 +581,9 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
               </div>
             )}
           </div>
-
-          {/* Posts Section */}
+          {/* Social Feed Section */}
           <div className="section glassmorphic">
-            <h3>Posts</h3>
+            <h3>Project Feed</h3>
             <form onSubmit={handleAddPost}>
               <div className="form-group">
                 <label htmlFor="postContent">What's on your mind?</label>
@@ -533,56 +608,37 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
               <button type="submit" className="neumorphic">Post</button>
             </form>
             {posts.length === 0 ? (
-              <p>No posts yet. Share an update!</p>
+              <p>No posts yet. Share an update to get started!</p>
             ) : (
               <div className="post-grid">
                 {posts.map((post) => (
-                  <div
-                    key={post._id}
-                    className="project-card glassmorphic"
-                    style={{ borderLeft: '4px solid var(--primary-color)' }}
-                  >
+                  <div key={post._id} className="project-card glassmorphic">
                     <div className="post-header">
-                      <div className="post-author-pic">
-                        {post.author[0]}
-                      </div>
+                      <div className="post-author-pic">{post.author[0]}</div>
                       <div>
                         <p>{post.author}</p>
                         <p>{new Date(post.createdAt).toLocaleString()}</p>
                       </div>
                     </div>
                     <p>{post.content}</p>
-                    {post.image && (
-                      <img
-                        src={post.image}
-                        alt="Post"
-                        className="post-image"
-                      />
-                    )}
+                    {post.image && <img src={post.image} alt="Post" className="post-image" />}
                     <div className="post-actions">
                       <button
-                        onClick={() => handleLikePost(post._id!)}
                         className="neumorphic"
-                        style={{
-                          background: post.likes.includes(user?.username || '') ? 'var(--primary-color)' : 'var(--card-background)',
-                          color: post.likes.includes(user?.username || '') ? '#fff' : 'var(--text-color)',
-                        }}
+                        onClick={() => handleLikePost(post._id!)}
                       >
-                        Like ({post.likes.length})
-                      </button>
-                      <button className="neumorphic">
-                        Comment ({post.comments.length})
+                        {post.likes.includes(user?.username || '') ? 'Unlike' : 'Like'} ({post.likes.length})
                       </button>
                     </div>
-                    {/* Comments Section */}
                     <div className="comments">
-                      {post.comments.length > 0 && (
+                      <h5>Comments</h5>
+                      {post.comments.length === 0 ? (
+                        <p>No comments yet.</p>
+                      ) : (
                         <ul className="comment-list">
                           {post.comments.map((comment) => (
                             <li key={comment._id}>
-                              <div className="comment-author-pic">
-                                {comment.author[0]}
-                              </div>
+                              <div className="comment-author-pic">{comment.author[0]}</div>
                               <div>
                                 <p>{comment.author}</p>
                                 <p>{comment.content}</p>
@@ -620,31 +676,56 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
           </div>
         </div>
       )}
-      {activeTab === 'upload' && <Upload projects={projects} />}
-      {activeTab === 'settings' && <Settings />}
+      {activeTab === 'upload' && (
+        <Upload projects={projects} />
+      )}
+      {activeTab === 'settings' && (
+        <Settings />
+      )}
       {activeTab === 'activity' && (
         <div className="section glassmorphic">
           <h3>Activity Log</h3>
           <div className="activity-filters">
-            <button onClick={() => setActivityFilter('all')} className="neumorphic" style={{ background: activityFilter === 'all' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button
+              className="tab-button glassmorphic"
+              onClick={() => setActivityFilter('all')}
+            >
               All
             </button>
-            <button onClick={() => setActivityFilter('post')} className="neumorphic" style={{ background: activityFilter === 'post' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button
+              className="tab-button glassmorphic"
+              onClick={() => setActivityFilter('post')}
+            >
               Posts
             </button>
-            <button onClick={() => setActivityFilter('comment')} className="neumorphic" style={{ background: activityFilter === 'comment' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button
+              className="tab-button glassmorphic"
+              onClick={() => setActivityFilter('comment')}
+            >
               Comments
             </button>
-            <button onClick={() => setActivityFilter('like')} className="neumorphic" style={{ background: activityFilter === 'like' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button
+              className="tab-button glassmorphic"
+              onClick={() => setActivityFilter('like')}
+            >
               Likes
             </button>
-            <button onClick={() => setActivityFilter('task')} className="neumorphic" style={{ background: activityFilter === 'task' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button
+              className="tab-button glassmorphic"
+              onClick={() => setActivityFilter('task')}
+            >
               Tasks
             </button>
-            <button onClick={() => setActivityFilter('subtask')} className="neumorphic" style={{ background: activityFilter === 'subtask' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button
+              className="tab-button glassmorphic"
+              onClick={() => setActivityFilter('subtask')}
+            >
               Subtasks
             </button>
-            <button onClick={() => setActivityFilter('file')} className="neumorphic" style={{ background: activityFilter === 'file' ? 'var(--primary-color)' : 'var(--card-background)' }}>
+            <button
+              className="tab-button glassmorphic"
+              onClick={() => setActivityFilter('file')}
+            >
               Files
             </button>
           </div>
@@ -669,28 +750,67 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
           ) : (
             <div className="file-grid">
               {files.map((file) => (
-                <div
-                  key={file._id}
-                  className="project-card glassmorphic"
-                  style={{ borderLeft: '4px solid var(--primary-color)' }}
-                >
+                <div key={file._id} className="project-card glassmorphic">
                   <div className="file-header">
-                    <div className="file-author-pic">
-                      {file.uploadedBy[0]}
-                    </div>
+                    <div className="file-author-pic">{file.uploadedBy[0]}</div>
                     <div>
                       <p>{file.uploadedBy}</p>
                       <p>{new Date(file.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
                   <p>{file.name}</p>
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View File
-                  </a>
+                  <a href={file.url} target="_blank" rel="noopener noreferrer">Download</a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {activeTab === 'timeline' && (
+        <div className="section glassmorphic">
+          <h3>Project Timeline</h3>
+          {timelineEvents.length === 0 ? (
+            <p>No events in the timeline yet.</p>
+          ) : (
+            <div className="timeline">
+              {timelineEvents
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .map((event) => (
+                  <div key={event._id} className="timeline-event">
+                    <div className="timeline-icon">
+                      {event.type === 'task' && '📋'}
+                      {event.type === 'post' && '📝'}
+                      {event.type === 'file' && '📁'}
+                      {event.type === 'comment' && '💬'}
+                    </div>
+                    <div className="timeline-content">
+                      <p>{event.content}</p>
+                      <p className="timeline-date">{new Date(event.createdAt).toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+      {activeTab === 'team' && (
+        <div className="section glassmorphic">
+          <h3>Team Members ({teamMembers.length})</h3>
+          {teamMembers.length === 0 ? (
+            <p>No team members yet.</p>
+          ) : (
+            <div className="team-members-grid">
+              {teamMembers.map((member) => (
+                <div key={member.userId} className="team-member-card glassmorphic">
+                  {member.profilePic ? (
+                    <img src={member.profilePic} alt="Profile" className="team-member-pic" />
+                  ) : (
+                    <div className="team-member-pic-placeholder">
+                      {member.username[0]}
+                    </div>
+                  )}
+                  <p>{member.username}</p>
+                  <p className="team-member-role">{member.role}</p>
                 </div>
               ))}
             </div>
