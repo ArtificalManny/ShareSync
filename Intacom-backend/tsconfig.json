@@ -15,7 +15,7 @@
       "@models/*": ["models/*"],
       "@modules/*": ["modules/*"]
     },
-    "incremental": true,
+    "incremental": false,
     "skipLibCheck": true,
     "strictNullChecks": false,
     "noImplicitAny": false,
