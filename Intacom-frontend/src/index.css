@@ -1150,3 +1150,24 @@
   .search-results li:hover {
     background: rgba(255, 255, 255, 0.05);
   }
+  /* Member Requests */
+.member-requests-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .member-requests-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .member-requests-list li:last-child {
+    border-bottom: none;
+  }
+  
+  .member-requests-list p {
+    margin: 0;
+  }

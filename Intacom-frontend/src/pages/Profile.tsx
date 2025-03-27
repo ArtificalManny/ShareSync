@@ -29,17 +29,15 @@ interface Project {
 
 interface Activity {
   _id: string;
-  type: 'post' | 'comment' | 'like' | 'task';
+  type: 'post' | 'comment' | 'like' | 'task' | 'subtask' | 'file' | 'project_create' | 'profile_update';
   content: string;
   createdAt: string;
 }
 
-interface SuggestedUser {
+interface Connection {
+  _id: string;
   username: string;
-  firstName: string;
-  lastName: string;
   profilePic?: string;
-  sharedProjects: number;
 }
 
 interface ProfileProps {
@@ -61,7 +59,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
   const [newHobby, setNewHobby] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -80,7 +78,6 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         try {
           const response = await axios.get(`http://localhost:3000/projects/${user.username}`);
           const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
-          // Mock project status for now; in a real app, this would come from the backend
           const updatedProjects = projectsData.map((project: Project, index: number) => ({
             ...project,
             status: index % 2 === 0 ? 'current' : 'past',
@@ -93,27 +90,28 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         }
       };
 
-      // Fetch recent activity (mocked for now; in a real app, you'd have a backend endpoint)
+      // Fetch recent activity (mocked for now; will be updated later)
       const fetchActivities = async () => {
+        // In a real app, fetch from backend endpoint like GET /activities/user/:id
         setActivities([
-          { _id: '1', type: 'post', content: 'Posted an update in Rivas Miranda Estate', createdAt: new Date().toISOString() },
-          { _id: '2', type: 'task', content: 'Completed task "Design UI"', createdAt: new Date().toISOString() },
+          { _id: '1', type: 'project_create', content: 'Created project Rivas Miranda Estate', createdAt: new Date().toISOString() },
+          { _id: '2', type: 'profile_update', content: 'Updated profile information', createdAt: new Date().toISOString() },
         ]);
       };
 
-      // Fetch suggested users (mocked for now; in a real app, fetch from backend based on shared projects or interests)
-      const fetchSuggestedUsers = async () => {
-        const mockSuggestedUsers: SuggestedUser[] = [
-          { username: 'john_doe', firstName: 'John', lastName: 'Doe', profilePic: '', sharedProjects: 2 },
-          { username: 'sarah_smith', firstName: 'Sarah', lastName: 'Smith', profilePic: '', sharedProjects: 1 },
-          { username: 'mike_jones', firstName: 'Mike', lastName: 'Jones', profilePic: '', sharedProjects: 3 },
+      // Fetch connections (mocked for now)
+      const fetchConnections = async () => {
+        const mockConnections: Connection[] = [
+          { _id: '1', username: 'JohnDoe', profilePic: 'https://via.placeholder.com/40' },
+          { _id: '2', username: 'SarahSmith', profilePic: 'https://via.placeholder.com/40' },
+          { _id: '3', username: 'MikeJohnson', profilePic: 'https://via.placeholder.com/40' },
         ];
-        setSuggestedUsers(mockSuggestedUsers);
+        setConnections(mockConnections);
       };
 
       fetchProjects();
       fetchActivities();
-      fetchSuggestedUsers();
+      fetchConnections();
     }
   }, [user]);
 
@@ -131,6 +129,16 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
       setUser(newUserData);
       localStorage.setItem('user', JSON.stringify(newUserData));
       setSuccessMessage('Profile updated successfully');
+      // Add activity
+      setActivities([
+        ...activities,
+        {
+          _id: `${activities.length + 1}`,
+          type: 'profile_update',
+          content: 'Updated profile information',
+          createdAt: new Date().toISOString(),
+        },
+      ]);
     } catch (error: any) {
       console.error('Profile update error:', error.response?.data || error.message);
       setErrorMessage(error.response?.data?.error || 'An error occurred during profile update. Please ensure the backend server is running.');
@@ -161,6 +169,16 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         setUser(newUserData);
         localStorage.setItem('user', JSON.stringify(newUserData));
         setSuccessMessage('Cover photo updated successfully');
+        // Add activity
+        setActivities([
+          ...activities,
+          {
+            _id: `${activities.length + 1}`,
+            type: 'profile_update',
+            content: 'Updated cover photo',
+            createdAt: new Date().toISOString(),
+          },
+        ]);
       } catch (error: any) {
         console.error('Cover photo upload error:', error.response?.data || error.message);
         setErrorMessage(error.response?.data?.error || 'An error occurred during cover photo upload. Please ensure the backend server is running.');
@@ -192,6 +210,16 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         setUser(newUserData);
         localStorage.setItem('user', JSON.stringify(newUserData));
         setSuccessMessage('Profile picture updated successfully');
+        // Add activity
+        setActivities([
+          ...activities,
+          {
+            _id: `${activities.length + 1}`,
+            type: 'profile_update',
+            content: 'Updated profile picture',
+            createdAt: new Date().toISOString(),
+          },
+        ]);
       } catch (error: any) {
         console.error('Profile picture upload error:', error.response?.data || error.message);
         setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload. Please ensure the backend server is running.');
@@ -208,11 +236,6 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
 
   const handleRemoveHobby = (hobby: string) => {
     setHobbies(hobbies.filter((h) => h !== hobby));
-  };
-
-  // Mock function to connect with a suggested user
-  const handleConnect = (username: string) => {
-    alert(`Connect with ${username} functionality coming soon!`);
   };
 
   if (!user) {
@@ -285,6 +308,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         <button className="tab-button glassmorphic">About</button>
         <button className="tab-button glassmorphic">Projects</button>
         <button className="tab-button glassmorphic">Activity</button>
+        <button className="tab-button glassmorphic">Connections</button>
       </div>
 
       {/* About Section */}
@@ -388,41 +412,6 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         )}
       </div>
 
-      {/* People You May Know Section */}
-      <div className="section glassmorphic">
-        <h3>People You May Know</h3>
-        {suggestedUsers.length === 0 ? (
-          <p>No suggestions at this time.</p>
-        ) : (
-          <div className="suggested-users-grid">
-            {suggestedUsers.map((suggestedUser) => (
-              <div key={suggestedUser.username} className="suggested-user-card glassmorphic">
-                <div className="suggested-user-pic">
-                  {suggestedUser.profilePic ? (
-                    <img src={suggestedUser.profilePic} alt="Profile" className="profile-pic" />
-                  ) : (
-                    <div className="profile-pic-placeholder">
-                      {suggestedUser.firstName[0]}
-                    </div>
-                  )}
-                </div>
-                <div className="suggested-user-info">
-                  <h4>{suggestedUser.firstName} {suggestedUser.lastName}</h4>
-                  <p>@{suggestedUser.username}</p>
-                  <p>{suggestedUser.sharedProjects} shared projects</p>
-                </div>
-                <button
-                  className="neumorphic"
-                  onClick={() => handleConnect(suggestedUser.username)}
-                >
-                  Connect
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Projects Section */}
       <div className="section glassmorphic">
         <h3>Projects</h3>
@@ -477,6 +466,29 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
               </li>
             ))}
           </ul>
+        )}
+      </div>
+
+      {/* Connections Section */}
+      <div className="section glassmorphic">
+        <h3>Connections ({connections.length})</h3>
+        {connections.length === 0 ? (
+          <p>No connections yet. Start connecting with others!</p>
+        ) : (
+          <div className="connections-grid">
+            {connections.map((connection) => (
+              <div key={connection._id} className="connection-card glassmorphic">
+                {connection.profilePic ? (
+                  <img src={connection.profilePic} alt="Profile" className="connection-pic" />
+                ) : (
+                  <div className="connection-pic-placeholder">
+                    {connection.username[0]}
+                  </div>
+                )}
+                <p>{connection.username}</p>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

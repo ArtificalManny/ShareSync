@@ -11,6 +11,7 @@ interface Project {
   admin?: string;
   color?: string;
   sharedWith?: { userId: string; role: 'Admin' | 'Editor' | 'Viewer' }[];
+  memberRequests?: { userId: string; requestedBy: string; status: 'pending' | 'approved' | 'denied' }[];
 }
 
 interface Task {
@@ -32,6 +33,7 @@ interface Subtask {
 
 interface Post {
   _id?: string;
+  projectId: string;
   content: string;
   image?: string;
   author: string;
@@ -49,7 +51,7 @@ interface Comment {
 
 interface Activity {
   _id: string;
-  type: 'post' | 'comment' | 'like' | 'task' | 'subtask' | 'file';
+  type: 'post' | 'comment' | 'like' | 'task' | 'subtask' | 'file' | 'project_create' | 'member_request' | 'member_approved';
   content: string;
   createdAt: string;
 }
@@ -64,7 +66,7 @@ interface File {
 
 interface TimelineEvent {
   _id: string;
-  type: 'task' | 'post' | 'file' | 'comment';
+  type: 'task' | 'post' | 'file' | 'comment' | 'member_request' | 'member_approved';
   content: string;
   createdAt: string;
 }
@@ -74,6 +76,7 @@ interface TeamMember {
   role: 'Admin' | 'Editor' | 'Viewer';
   username: string;
   profilePic?: string;
+  email?: string;
 }
 
 interface ProjectHomeProps {
@@ -94,15 +97,18 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [activityFilter, setActivityFilter] = useState<'all' | 'post' | 'comment' | 'like' | 'task' | 'subtask' | 'file'>('all');
+  const [activityFilter, setActivityFilter] = useState<'all' | 'post' | 'comment' | 'like' | 'task' | 'subtask' | 'file' | 'member_request' | 'member_approved'>('all');
   const [activeTab, setActiveTab] = useState<'home' | 'upload' | 'settings' | 'activity' | 'files' | 'timeline' | 'team'>('home');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [user, setUser] = useState<{ username: string } | null>(() => {
+  const [user, setUser] = useState<{ username: string; _id: string; email?: string } | null>(() => {
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
-  const [badges, setBadges] = useState<string[]>([]); // Track user badges
+  const [badges, setBadges] = useState<string[]>([]);
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTimelineEvent, setEditingTimelineEvent] = useState<TimelineEvent | null>(null);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -114,25 +120,31 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
           const fetchedProject = response.data.data.project;
           setProject(fetchedProject);
 
-          // Populate team members
+          // Populate team members with email addresses
           const members: TeamMember[] = [];
           if (fetchedProject.admin) {
+            const adminResponse = await axios.get(`http://localhost:3000/users/by-username/${fetchedProject.admin}`);
+            const adminUser = adminResponse.data.data.user;
             members.push({
-              userId: fetchedProject.admin,
+              userId: adminUser._id,
               username: fetchedProject.admin,
               role: 'Admin',
-              profilePic: 'https://via.placeholder.com/40', // Mocked; fetch from user profile in a real app
+              profilePic: adminUser.profilePic || 'https://via.placeholder.com/40',
+              email: adminUser.email,
             });
           }
           if (fetchedProject.sharedWith && fetchedProject.sharedWith.length > 0) {
-            fetchedProject.sharedWith.forEach((member: { userId: string; role: 'Admin' | 'Editor' | 'Viewer' }) => {
+            for (const member of fetchedProject.sharedWith) {
+              const userResponse = await axios.get(`http://localhost:3000/users/by-username/${member.userId}`);
+              const memberUser = userResponse.data.data.user;
               members.push({
-                userId: member.userId,
-                username: member.userId, // In a real app, fetch the username from the user profile
+                userId: memberUser._id,
+                username: member.userId,
                 role: member.role,
-                profilePic: 'https://via.placeholder.com/40', // Mocked
+                profilePic: memberUser.profilePic || 'https://via.placeholder.com/40',
+                email: memberUser.email,
               });
-            });
+            }
           }
           setTeamMembers(members);
         } else {
@@ -144,9 +156,18 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       }
     };
 
+    const fetchPosts = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3000/posts/project/${id}`);
+        setPosts(response.data || []);
+      } catch (error: any) {
+        console.error('Failed to fetch posts:', error.response?.data || error.message);
+        setPosts([]);
+      }
+    };
+
     const fetchFiles = async () => {
       try {
-        // Mocked for now; in a real app, you'd have a backend endpoint like GET /files/project/:id
         setFiles([
           { _id: '1', url: 'https://via.placeholder.com/150', name: 'project-plan.pdf', uploadedBy: 'ArtificalManny', createdAt: new Date().toISOString() },
         ]);
@@ -156,10 +177,39 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       }
     };
 
-    fetchProject();
-    fetchFiles();
+    const fetchActivities = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3000/activities/project/${id}`);
+        setActivities(response.data || []);
+      } catch (error: any) {
+        console.error('Failed to fetch activities:', error.response?.data || error.message);
+        setActivities([]);
+      }
+    };
 
-    // Fetch tasks (mocked for now; in a real app, you'd have a backend endpoint)
+    const fetchTimelineEvents = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3000/activities/project/${id}`);
+        const events = response.data.map((activity: Activity) => ({
+          _id: activity._id,
+          type: activity.type,
+          content: activity.content,
+          createdAt: activity.createdAt,
+        }));
+        setTimelineEvents(events || []);
+      } catch (error: any) {
+        console.error('Failed to fetch timeline events:', error.response?.data || error.message);
+        setTimelineEvents([]);
+      }
+    };
+
+    fetchProject();
+    fetchPosts();
+    fetchFiles();
+    fetchActivities();
+    fetchTimelineEvents();
+
+    // Fetch tasks (mocked for now)
     setTasks([
       {
         _id: '1',
@@ -182,34 +232,6 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
         subtasks: [],
       },
     ]);
-
-    // Fetch posts (mocked for now; in a real app, you'd have a backend endpoint)
-    setPosts([
-      {
-        _id: '1',
-        content: 'Working on the project design!',
-        image: 'https://via.placeholder.com/300',
-        author: 'ArtificalManny',
-        createdAt: new Date().toISOString(),
-        likes: ['ArtificalManny'],
-        comments: [
-          { _id: '1-1', content: 'Looks great!', author: 'ArtificalManny', createdAt: new Date().toISOString() },
-        ],
-      },
-    ]);
-
-    // Fetch activities (mocked for now; in a real app, you'd have a backend endpoint)
-    setActivities([
-      { _id: '1', type: 'post', content: 'ArtificalManny posted an update', createdAt: new Date().toISOString() },
-      { _id: '2', type: 'task', content: 'ArtificalManny completed task "Design UI"', createdAt: new Date().toISOString() },
-    ]);
-
-    // Fetch timeline events (mocked for now; in a real app, fetch from backend)
-    setTimelineEvents([
-      { _id: '1', type: 'task', content: 'Task "Design UI" created by ArtificalManny', createdAt: new Date().toISOString() },
-      { _id: '2', type: 'post', content: 'ArtificalManny posted an update', createdAt: new Date().toISOString() },
-      { _id: '3', type: 'file', content: 'ArtificalManny uploaded project-plan.pdf', createdAt: new Date().toISOString() },
-    ]);
   }, [id]);
 
   const handleAddTask = (e: React.FormEvent) => {
@@ -226,20 +248,27 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       assignedTo: newTaskAssignedTo,
       subtasks: [],
     };
-    setTasks([...tasks, { ...newTask, _id: `${tasks.length + 1}` }]);
+    const taskId = `${tasks.length + 1}`;
+    setTasks([...tasks, { ...newTask, _id: taskId }]);
     setActivities([
       ...activities,
       { _id: `${activities.length + 1}`, type: 'task', content: `${user?.username} created task "${newTaskTitle}"`, createdAt: new Date().toISOString() },
     ]);
     setTimelineEvents([
       ...timelineEvents,
-      { _id: `${timelineEvents.length + 1}`, type: 'task', content: `Task "${newTaskTitle}" created by ${user?.username}`, createdAt: new Date().toISOString() },
+      { _id: `${timelineEvents.length + 1}`, type: 'task', content: `${user?.username} created task "${newTaskTitle}"`, createdAt: new Date().toISOString() },
     ]);
     setNewTaskTitle('');
     setNewTaskDescription('');
     setNewTaskAssignedTo([]);
     setSuccessMessage('Task added successfully');
     setErrorMessage('');
+    // Notify project members
+    notifyProjectMembers({
+      type: 'task',
+      content: `${user?.username} created task "${newTaskTitle}" in project "${project?.name}"`,
+      projectId: id!,
+    });
   };
 
   const handleUpdateTaskStatus = (taskId: string, newStatus: 'To Do' | 'In Progress' | 'Done') => {
@@ -253,12 +282,17 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       { _id: `${timelineEvents.length + 1}`, type: 'task', content: `${user?.username} updated task status to "${newStatus}"`, createdAt: new Date().toISOString() },
     ]);
     if (newStatus === 'Done') {
-      // Award a badge for completing a task
       if (!badges.includes('Task Master')) {
         setBadges([...badges, 'Task Master']);
         setSuccessMessage('🎉 Congratulations! You earned the "Task Master" badge for completing a task!');
       }
     }
+    // Notify project members
+    notifyProjectMembers({
+      type: 'task',
+      content: `${user?.username} updated task status to "${newStatus}" in project "${project?.name}"`,
+      projectId: id!,
+    });
   };
 
   const handleAddSubtask = (taskId: string, subtaskTitle: string, subtaskDescription: string) => {
@@ -283,6 +317,12 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       ...timelineEvents,
       { _id: `${timelineEvents.length + 1}`, type: 'task', content: `${user?.username} added subtask "${subtaskTitle}"`, createdAt: new Date().toISOString() },
     ]);
+    // Notify project members
+    notifyProjectMembers({
+      type: 'subtask',
+      content: `${user?.username} added subtask "${subtaskTitle}" in project "${project?.name}"`,
+      projectId: id!,
+    });
   };
 
   const handleUpdateSubtaskStatus = (taskId: string, subtaskId: string, newStatus: 'To Do' | 'In Progress' | 'Done') => {
@@ -306,6 +346,12 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       ...timelineEvents,
       { _id: `${timelineEvents.length + 1}`, type: 'task', content: `${user?.username} updated subtask status to "${newStatus}"`, createdAt: new Date().toISOString() },
     ]);
+    // Notify project members
+    notifyProjectMembers({
+      type: 'subtask',
+      content: `${user?.username} updated subtask status to "${newStatus}" in project "${project?.name}"`,
+      projectId: id!,
+    });
   };
 
   const handleAddPost = async (e: React.FormEvent) => {
@@ -328,6 +374,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       }
     }
     const newPost: Post = {
+      projectId: id!,
       content: newPostContent,
       image: imageUrl,
       author: user?.username || 'Unknown',
@@ -335,66 +382,309 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       likes: [],
       comments: [],
     };
-    setPosts([...posts, { ...newPost, _id: `${posts.length + 1}` }]);
-    setActivities([
-      ...activities,
-      { _id: `${activities.length + 1}`, type: 'post', content: `${user?.username} posted an update`, createdAt: new Date().toISOString() },
-    ]);
-    setTimelineEvents([
-      ...timelineEvents,
-      { _id: `${timelineEvents.length + 1}`, type: 'post', content: `${user?.username} posted an update`, createdAt: new Date().toISOString() },
-    ]);
-    setNewPostContent('');
-    setNewPostImage(null);
-    setSuccessMessage('Post created successfully');
-    setErrorMessage('');
+    try {
+      const response = await axios.post('http://localhost:3000/posts', newPost);
+      const createdPost = response.data;
+      setPosts([createdPost, ...posts]);
+      setActivities([
+        ...activities,
+        { _id: `${activities.length + 1}`, type: 'post', content: `${user?.username} posted an update`, createdAt: new Date().toISOString() },
+      ]);
+      setTimelineEvents([
+        ...timelineEvents,
+        { _id: `${timelineEvents.length + 1}`, type: 'post', content: `${user?.username} posted an update`, createdAt: new Date().toISOString() },
+      ]);
+      setNewPostContent('');
+      setNewPostImage(null);
+      setSuccessMessage('Post created successfully');
+      setErrorMessage('');
+      // Notify project members
+      notifyProjectMembers({
+        type: 'post',
+        content: `${user?.username} posted an update in project "${project?.name}"`,
+        projectId: id!,
+      });
+    } catch (error: any) {
+      console.error('Create post error:', error.response?.data || error.message);
+      setErrorMessage(error.response?.data?.error || 'Failed to create post. Please ensure the backend server is running.');
+    }
   };
 
-  const handleLikePost = (postId: string) => {
-    setPosts(
-      posts.map((post) =>
-        post._id === postId
-          ? {
-              ...post,
-              likes: post.likes.includes(user?.username || '')
-                ? post.likes.filter((username) => username !== user?.username)
-                : [...post.likes, user?.username || ''],
-            }
-          : post
-      )
-    );
-    setActivities([
-      ...activities,
-      { _id: `${activities.length + 1}`, type: 'like', content: `${user?.username} liked a post`, createdAt: new Date().toISOString() },
-    ]);
-    setTimelineEvents([
-      ...timelineEvents,
-      { _id: `${timelineEvents.length + 1}`, type: 'post', content: `${user?.username} liked a post`, createdAt: new Date().toISOString() },
-    ]);
+  const handleLikePost = async (postId: string) => {
+    const post = posts.find((p) => p._id === postId);
+    if (!post) return;
+    const updatedLikes = post.likes.includes(user?.username || '')
+      ? post.likes.filter((username) => username !== user?.username)
+      : [...post.likes, user?.username || ''];
+    try {
+      const response = await axios.put(`http://localhost:3000/posts/${postId}`, { likes: updatedLikes });
+      const updatedPost = response.data;
+      setPosts(posts.map((p) => (p._id === postId ? updatedPost : p)));
+      setActivities([
+        ...activities,
+        { _id: `${activities.length + 1}`, type: 'like', content: `${user?.username} liked a post`, createdAt: new Date().toISOString() },
+      ]);
+      setTimelineEvents([
+        ...timelineEvents,
+        { _id: `${timelineEvents.length + 1}`, type: 'post', content: `${user?.username} liked a post`, createdAt: new Date().toISOString() },
+      ]);
+      // Notify project members
+      notifyProjectMembers({
+        type: 'like',
+        content: `${user?.username} liked a post in project "${project?.name}"`,
+        projectId: id!,
+      });
+    } catch (error: any) {
+      console.error('Like post error:', error.response?.data || error.message);
+      setErrorMessage(error.response?.data?.error || 'Failed to like post.');
+    }
   };
 
-  const handleAddComment = (postId: string, commentContent: string) => {
-    setPosts(
-      posts.map((post) =>
-        post._id === postId
-          ? {
-              ...post,
-              comments: [
-                ...post.comments,
-                { _id: `${postId}-${post.comments.length + 1}`, content: commentContent, author: user?.username || 'Unknown', createdAt: new Date().toISOString() },
-              ],
-            }
-          : post
-      )
-    );
+  const handleAddComment = async (postId: string, commentContent: string) => {
+    const post = posts.find((p) => p._id === postId);
+    if (!post) return;
+    const newComment: Comment = {
+      content: commentContent,
+      author: user?.username || 'Unknown',
+      createdAt: new Date().toISOString(),
+    };
+    const updatedComments = [...post.comments, { ...newComment, _id: `${postId}-${post.comments.length + 1}` }];
+    try {
+      const response = await axios.put(`http://localhost:3000/posts/${postId}`, { comments: updatedComments });
+      const updatedPost = response.data;
+      setPosts(posts.map((p) => (p._id === postId ? updatedPost : p)));
+      setActivities([
+        ...activities,
+        { _id: `${activities.length + 1}`, type: 'comment', content: `${user?.username} commented on a post`, createdAt: new Date().toISOString() },
+      ]);
+      setTimelineEvents([
+        ...timelineEvents,
+        { _id: `${timelineEvents.length + 1}`, type: 'comment', content: `${user?.username} commented on a post`, createdAt: new Date().toISOString() },
+      ]);
+      // Notify project members
+      notifyProjectMembers({
+        type: 'comment',
+        content: `${user?.username} commented on a post in project "${project?.name}"`,
+        projectId: id!,
+      });
+    } catch (error: any) {
+      console.error('Add comment error:', error.response?.data || error.message);
+      setErrorMessage(error.response?.data?.error || 'Failed to add comment.');
+    }
+  };
+
+  // Admin Functions
+  const handleDeleteTask = async (taskId: string) => {
+    if (!isAdmin()) return;
+    setTasks(tasks.filter((task) => task._id !== taskId));
     setActivities([
       ...activities,
-      { _id: `${activities.length + 1}`, type: 'comment', content: `${user?.username} commented on a post`, createdAt: new Date().toISOString() },
+      { _id: `${activities.length + 1}`, type: 'task', content: `${user?.username} deleted a task`, createdAt: new Date().toISOString() },
     ]);
     setTimelineEvents([
       ...timelineEvents,
-      { _id: `${timelineEvents.length + 1}`, type: 'comment', content: `${user?.username} commented on a post`, createdAt: new Date().toISOString() },
+      { _id: `${timelineEvents.length + 1}`, type: 'task', content: `${user?.username} deleted a task`, createdAt: new Date().toISOString() },
     ]);
+    // Notify project members
+    notifyProjectMembers({
+      type: 'task',
+      content: `${user?.username} deleted a task in project "${project?.name}"`,
+      projectId: id!,
+    });
+  };
+
+  const handleEditTask = async (taskId: string, updatedTask: Partial<Task>) => {
+    if (!isAdmin()) return;
+    setTasks(tasks.map((task) => (task._id === taskId ? { ...task, ...updatedTask } : task)));
+    setEditingTask(null);
+    setActivities([
+      ...activities,
+      { _id: `${activities.length + 1}`, type: 'task', content: `${user?.username} edited a task`, createdAt: new Date().toISOString() },
+    ]);
+    setTimelineEvents([
+      ...timelineEvents,
+      { _id: `${timelineEvents.length + 1}`, type: 'task', content: `${user?.username} edited a task`, createdAt: new Date().toISOString() },
+    ]);
+    // Notify project members
+    notifyProjectMembers({
+      type: 'task',
+      content: `${user?.username} edited a task in project "${project?.name}"`,
+      projectId: id!,
+    });
+  };
+
+  const handleEditTimelineEvent = async (eventId: string, updatedContent: string) => {
+    if (!isAdmin()) return;
+    setTimelineEvents(timelineEvents.map((event) => (event._id === eventId ? { ...event, content: updatedContent } : event)));
+    setEditingTimelineEvent(null);
+    setActivities([
+      ...activities,
+      { _id: `${activities.length + 1}`, type: 'timeline', content: `${user?.username} edited a timeline event`, createdAt: new Date().toISOString() },
+    ]);
+    // Notify project members
+    notifyProjectMembers({
+      type: 'timeline',
+      content: `${user?.username} edited a timeline event in project "${project?.name}"`,
+      projectId: id!,
+    });
+  };
+
+  const handleMemberRequest = async (request: { userId: string; requestedBy: string }, action: 'approve' | 'deny') => {
+    if (!isAdmin()) return;
+    try {
+      const updatedProject = {
+        ...project,
+        memberRequests: project?.memberRequests?.map((req) =>
+          req.userId === request.userId && req.requestedBy === request.requestedBy
+            ? { ...req, status: action === 'approve' ? 'approved' : 'denied' }
+            : req
+        ),
+        sharedWith: action === 'approve'
+          ? [...(project?.sharedWith || []), { userId: request.userId, role: 'Viewer' }]
+          : project?.sharedWith,
+      };
+      const response = await axios.put(`http://localhost:3000/projects/${id}`, updatedProject);
+      setProject(response.data);
+      if (action === 'approve') {
+        const userResponse = await axios.get(`http://localhost:3000/users/by-username/${request.userId}`);
+        const newMember = userResponse.data.data.user;
+        setTeamMembers([
+          ...teamMembers,
+          {
+            userId: newMember._id,
+            username: request.userId,
+            role: 'Viewer',
+            profilePic: newMember.profilePic || 'https://via.placeholder.com/40',
+            email: newMember.email,
+          },
+        ]);
+      }
+      setActivities([
+        ...activities,
+        {
+          _id: `${activities.length + 1}`,
+          type: 'member_approved',
+          content: `${user?.username} ${action === 'approve' ? 'approved' : 'denied'} a member request from ${request.requestedBy} for ${request.userId}`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      setTimelineEvents([
+        ...timelineEvents,
+        {
+          _id: `${timelineEvents.length + 1}`,
+          type: 'member_approved',
+          content: `${user?.username} ${action === 'approve' ? 'approved' : 'denied'} a member request from ${request.requestedBy} for ${request.userId}`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      // Notify project members
+      notifyProjectMembers({
+        type: 'member_approved',
+        content: `${user?.username} ${action === 'approve' ? 'approved' : 'denied'} a member request from ${request.requestedBy} for ${request.userId} in project "${project?.name}"`,
+        projectId: id!,
+      });
+    } catch (error: any) {
+      console.error('Member request error:', error.response?.data || error.message);
+      setErrorMessage(error.response?.data?.error || 'Failed to process member request.');
+    }
+  };
+
+  const handleInviteMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMemberEmail) {
+      setErrorMessage('Please enter an email address.');
+      return;
+    }
+    try {
+      const response = await axios.get(`http://localhost:3000/users/by-email/${newMemberEmail}`);
+      const invitedUser = response.data.data.user;
+      if (!invitedUser) {
+        setErrorMessage('User not found.');
+        return;
+      }
+      const updatedProject = {
+        ...project,
+        memberRequests: [
+          ...(project?.memberRequests || []),
+          { userId: invitedUser.username, requestedBy: user?.username, status: 'pending' },
+        ],
+      };
+      const projectResponse = await axios.put(`http://localhost:3000/projects/${id}`, updatedProject);
+      setProject(projectResponse.data);
+      setActivities([
+        ...activities,
+        {
+          _id: `${activities.length + 1}`,
+          type: 'member_request',
+          content: `${user?.username} invited ${invitedUser.username} to the project`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      setTimelineEvents([
+        ...timelineEvents,
+        {
+          _id: `${timelineEvents.length + 1}`,
+          type: 'member_request',
+          content: `${user?.username} invited ${invitedUser.username} to the project`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      setNewMemberEmail('');
+      setSuccessMessage('Invitation sent successfully.');
+      // Notify project members
+      notifyProjectMembers({
+        type: 'member_request',
+        content: `${user?.username} invited ${invitedUser.username} to project "${project?.name}"`,
+        projectId: id!,
+      });
+      // Notify the invited user
+      await axios.post('http://localhost:3000/notifications', {
+        userId: invitedUser._id,
+        message: `${user?.username} invited you to project "${project?.name}"`,
+        type: 'project_invite',
+        projectId: id,
+        action: 'accept',
+        status: 'pending',
+      });
+    } catch (error: any) {
+      console.error('Invite member error:', error.response?.data || error.message);
+      setErrorMessage(error.response?.data?.error || 'Failed to invite member.');
+    }
+  };
+
+  // Helper Functions
+  const isAdmin = () => {
+    return project?.admin === user?.username || project?.sharedWith?.some((member) => member.userId === user?.username && member.role === 'Admin');
+  };
+
+  const notifyProjectMembers = async (activity: { type: string; content: string; projectId: string }) => {
+    try {
+      // Log activity
+      await axios.post('http://localhost:3000/activities', {
+        userId: user?._id,
+        type: activity.type,
+        content: activity.content,
+        projectId: activity.projectId,
+      });
+
+      // Send notifications to project members
+      const members = [project?.admin, ...(project?.sharedWith?.map((m) => m.userId) || [])].filter((m) => m !== user?.username);
+      for (const member of members) {
+        const memberUser = teamMembers.find((m) => m.username === member);
+        if (memberUser) {
+          await axios.post('http://localhost:3000/notifications', {
+            userId: memberUser.userId,
+            message: activity.content,
+            type: activity.type,
+            projectId: activity.projectId,
+          });
+          // Send email (mocked for now; implement with a service like SendGrid in production)
+          console.log(`Sending email to ${memberUser.email}: ${activity.content}`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Notification error:', error.response?.data || error.message);
+    }
   };
 
   // Calculate project progress
@@ -481,8 +771,9 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                   value={newTaskAssignedTo}
                   onChange={(e) => setNewTaskAssignedTo(Array.from(e.target.selectedOptions, (option) => option.value))}
                 >
-                  <option value="ArtificalManny">ArtificalManny</option>
-                  {/* Add more users dynamically from project.sharedWith */}
+                  {teamMembers.map((member) => (
+                    <option key={member.userId} value={member.username}>{member.username}</option>
+                  ))}
                 </select>
               </div>
               <button type="submit" className="neumorphic">Add Task</button>
@@ -507,75 +798,144 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                       }`,
                     }}
                   >
-                    <h4>{task.title}</h4>
-                    <p>{task.description}</p>
-                    <p>Assigned To: {task.assignedTo?.join(', ') || 'None'}</p>
-                    <select
-                      value={task.status}
-                      onChange={(e) => handleUpdateTaskStatus(task._id!, e.target.value as 'To Do' | 'In Progress' | 'Done')}
-                    >
-                      <option value="To Do">To Do</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Done">Done</option>
-                    </select>
-                    {/* Subtasks Section */}
-                    <div className="subtasks">
-                      <h5>Subtasks</h5>
-                      {task.subtasks && task.subtasks.length > 0 ? (
-                        <ul className="subtask-list">
-                          {task.subtasks.map((subtask) => (
-                            <li key={subtask._id}>
-                              <div>
-                                <strong>{subtask.title}</strong>
-                                <p>{subtask.description}</p>
-                              </div>
-                              <select
-                                value={subtask.status}
-                                onChange={(e) => handleUpdateSubtaskStatus(task._id!, subtask._id!, e.target.value as 'To Do' | 'In Progress' | 'Done')}
-                              >
-                                <option value="To Do">To Do</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Done">Done</option>
-                              </select>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>No subtasks yet.</p>
-                      )}
-                      {/* Add Subtask Form */}
+                    {editingTask && editingTask._id === task._id ? (
                       <form
                         onSubmit={(e) => {
                           e.preventDefault();
-                          const subtaskTitle = (e.target as any).subtaskTitle.value;
-                          const subtaskDescription = (e.target as any).subtaskDescription.value;
-                          handleAddSubtask(task._id!, subtaskTitle, subtaskDescription);
-                          (e.target as HTMLFormElement).reset();
+                          handleEditTask(task._id!, {
+                            title: editingTask.title,
+                            description: editingTask.description,
+                            assignedTo: editingTask.assignedTo,
+                          });
                         }}
                       >
                         <div className="form-group">
-                          <label htmlFor={`subtaskTitle-${task._id}`}>Subtask Title</label>
+                          <label htmlFor={`editTaskTitle-${task._id}`}>Task Title</label>
                           <input
-                            id={`subtaskTitle-${task._id}`}
-                            name="subtaskTitle"
+                            id={`editTaskTitle-${task._id}`}
                             type="text"
-                            placeholder="Enter subtask title"
+                            value={editingTask.title}
+                            onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
                             required
                           />
                         </div>
                         <div className="form-group">
-                          <label htmlFor={`subtaskDescription-${task._id}`}>Description</label>
+                          <label htmlFor={`editTaskDescription-${task._id}`}>Description</label>
                           <textarea
-                            id={`subtaskDescription-${task._id}`}
-                            name="subtaskDescription"
-                            placeholder="Enter subtask description"
+                            id={`editTaskDescription-${task._id}`}
+                            value={editingTask.description}
+                            onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
                             required
-                            rows={2}
+                            rows={3}
                           />
                         </div>
-                        <button type="submit" className="neumorphic">Add Subtask</button>
+                        <div className="form-group">
+                          <label htmlFor={`editTaskAssignedTo-${task._id}`}>Assign To</label>
+                          <select
+                            id={`editTaskAssignedTo-${task._id}`}
+                            multiple
+                            value={editingTask.assignedTo || []}
+                            onChange={(e) => setEditingTask({ ...editingTask, assignedTo: Array.from(e.target.selectedOptions, (option) => option.value) })}
+                          >
+                            {teamMembers.map((member) => (
+                              <option key={member.userId} value={member.username}>{member.username}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="form-actions">
+                          <button type="submit" className="neumorphic">Save</button>
+                          <button type="button" className="neumorphic" onClick={() => setEditingTask(null)}>Cancel</button>
+                        </div>
                       </form>
-                    </div>
+                    ) : (
+                      <>
+                        <h4>{task.title}</h4>
+                        <p>{task.description}</p>
+                        <p>Assigned To: {task.assignedTo?.join(', ') || 'None'}</p>
+                        <select
+                          value={task.status}
+                          onChange={(e) => handleUpdateTaskStatus(task._id!, e.target.value as 'To Do' | 'In Progress' | 'Done')}
+                        >
+                          <option value="To Do">To Do</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Done">Done</option>
+                        </select>
+                        {isAdmin() && (
+                          <div className="task-actions">
+                            <button
+                              className="neumorphic"
+                              onClick={() => setEditingTask(task)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="neumorphic"
+                              onClick={() => handleDeleteTask(task._id!)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                        {/* Subtasks Section */}
+                        <div className="subtasks">
+                          <h5>Subtasks</h5>
+                          {task.subtasks && task.subtasks.length > 0 ? (
+                            <ul className="subtask-list">
+                              {task.subtasks.map((subtask) => (
+                                <li key={subtask._id}>
+                                  <div>
+                                    <strong>{subtask.title}</strong>
+                                    <p>{subtask.description}</p>
+                                  </div>
+                                  <select
+                                    value={subtask.status}
+                                    onChange={(e) => handleUpdateSubtaskStatus(task._id!, subtask._id!, e.target.value as 'To Do' | 'In Progress' | 'Done')}
+                                  >
+                                    <option value="To Do">To Do</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Done">Done</option>
+                                  </select>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>No subtasks yet.</p>
+                          )}
+                          {/* Add Subtask Form */}
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              const subtaskTitle = (e.target as any).subtaskTitle.value;
+                              const subtaskDescription = (e.target as any).subtaskDescription.value;
+                              handleAddSubtask(task._id!, subtaskTitle, subtaskDescription);
+                              (e.target as HTMLFormElement).reset();
+                            }}
+                          >
+                            <div className="form-group">
+                              <label htmlFor={`subtaskTitle-${task._id}`}>Subtask Title</label>
+                              <input
+                                id={`subtaskTitle-${task._id}`}
+                                name="subtaskTitle"
+                                type="text"
+                                placeholder="Enter subtask title"
+                                required
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label htmlFor={`subtaskDescription-${task._id}`}>Description</label>
+                              <textarea
+                                id={`subtaskDescription-${task._id}`}
+                                name="subtaskDescription"
+                                placeholder="Enter subtask description"
+                                required
+                                rows={2}
+                              />
+                            </div>
+                            <button type="submit" className="neumorphic">Add Subtask</button>
+                          </form>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -728,6 +1088,18 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
             >
               Files
             </button>
+            <button
+              className="tab-button glassmorphic"
+              onClick={() => setActivityFilter('member_request')}
+            >
+              Member Requests
+            </button>
+            <button
+              className="tab-button glassmorphic"
+              onClick={() => setActivityFilter('member_approved')}
+            >
+              Member Approvals
+            </button>
           </div>
           {filteredActivities.length === 0 ? (
             <p>No activities to display.</p>
@@ -782,11 +1154,43 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                       {event.type === 'post' && '📝'}
                       {event.type === 'file' && '📁'}
                       {event.type === 'comment' && '💬'}
+                      {event.type === 'member_request' && '📩'}
+                      {event.type === 'member_approved' && '✅'}
                     </div>
-                    <div className="timeline-content">
-                      <p>{event.content}</p>
-                      <p className="timeline-date">{new Date(event.createdAt).toLocaleString()}</p>
-                    </div>
+                    {editingTimelineEvent && editingTimelineEvent._id === event._id ? (
+                      <div className="timeline-content">
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleEditTimelineEvent(event._id, editingTimelineEvent.content);
+                          }}
+                        >
+                          <input
+                            type="text"
+                            value={editingTimelineEvent.content}
+                            onChange={(e) => setEditingTimelineEvent({ ...editingTimelineEvent, content: e.target.value })}
+                            required
+                          />
+                          <div className="form-actions">
+                            <button type="submit" className="neumorphic">Save</button>
+                            <button type="button" className="neumorphic" onClick={() => setEditingTimelineEvent(null)}>Cancel</button>
+                          </div>
+                        </form>
+                      </div>
+                    ) : (
+                      <div className="timeline-content">
+                        <p>{event.content}</p>
+                        <p className="timeline-date">{new Date(event.createdAt).toLocaleString()}</p>
+                        {isAdmin() && (
+                          <button
+                            className="neumorphic"
+                            onClick={() => setEditingTimelineEvent(event)}
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
             </div>
@@ -796,6 +1200,19 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
       {activeTab === 'team' && (
         <div className="section glassmorphic">
           <h3>Team Members ({teamMembers.length})</h3>
+          <form onSubmit={handleInviteMember}>
+            <div className="form-group">
+              <label htmlFor="newMemberEmail">Invite New Member</label>
+              <input
+                id="newMemberEmail"
+                type="email"
+                value={newMemberEmail}
+                onChange={(e) => setNewMemberEmail(e.target.value)}
+                placeholder="Enter email address"
+              />
+            </div>
+            <button type="submit" className="neumorphic">Invite</button>
+          </form>
           {teamMembers.length === 0 ? (
             <p>No team members yet.</p>
           ) : (
@@ -813,6 +1230,34 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ projects }) => {
                   <p className="team-member-role">{member.role}</p>
                 </div>
               ))}
+            </div>
+          )}
+          {project.memberRequests && project.memberRequests.length > 0 && isAdmin() && (
+            <div className="section glassmorphic">
+              <h4>Member Requests</h4>
+              <ul className="member-requests-list">
+                {project.memberRequests
+                  .filter((req) => req.status === 'pending')
+                  .map((request, index) => (
+                    <li key={index}>
+                      <p>{request.requestedBy} invited {request.userId}</p>
+                      <div className="form-actions">
+                        <button
+                          className="neumorphic accept"
+                          onClick={() => handleMemberRequest(request, 'approve')}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="neumorphic decline"
+                          onClick={() => handleMemberRequest(request, 'deny')}
+                        >
+                          Deny
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
             </div>
           )}
         </div>
