@@ -2,17 +2,20 @@ import { AuthService } from './auth.service';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    register(userData: any): Promise<import("./user.model").User>;
-    login(loginData: {
+    login(body: {
         identifier: string;
         password: string;
-    }): Promise<import("./user.model").User>;
+    }): Promise<any>;
+    register(body: any): Promise<any>;
     recover(email: string): Promise<{
         message: string;
         token: string;
     }>;
-    reset(resetData: {
+    reset(body: {
         token: string;
         newPassword: string;
-    }): Promise<import("./user.model").User>;
+    }): Promise<{
+        message: string;
+        user: any;
+    }>;
 }

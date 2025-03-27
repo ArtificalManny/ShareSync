@@ -27,11 +27,14 @@ let ProjectsService = class ProjectsService {
     async findByAdmin(admin) {
         return await this.projectModel.find({ admin }).exec();
     }
+    async findById(id) {
+        return await this.projectModel.findById(id).exec();
+    }
 };
-exports.ProjectsService = ProjectsService;
-exports.ProjectsService = ProjectsService = __decorate([
+ProjectsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)('Project')),
     __metadata("design:paramtypes", [mongoose_2.Model])
 ], ProjectsService);
+exports.ProjectsService = ProjectsService;
 //# sourceMappingURL=projects.service.js.map

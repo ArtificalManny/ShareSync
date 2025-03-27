@@ -1,61 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { User } from './user.model';
-import * as bcrypt from 'bcrypt';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
+  constructor(private readonly usersService: UsersService) {}
 
-  async register(userData: any): Promise<User> {
-    const { password, ...rest } = userData;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new this.userModel({ ...rest, password: hashedPassword });
-    return await newUser.save();
+  async validateUser(identifier: string, password: string): Promise<any> {
+    const user = await this.usersService.findOne(identifier);
+    if (user && user.password === password) {
+      const { password, ...result } = user.toObject();
+      return result;
+    }
+    return null;
   }
 
-  async login(identifier: string, password: string): Promise<User> {
-    const user = await this.userModel.findOne({
-      $or: [{ email: identifier }, { username: identifier }],
-    });
-    if (!user) {
-      throw new Error('Invalid credentials');
-    }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new Error('Invalid credentials');
-    }
-    return user;
+  async login(user: any): Promise<any> {
+    return { data: { user } };
   }
 
-  async recover(email: string) {
-    const user = await this.userModel.findOne({ email });
-    if (!user) {
-      throw new Error('User not found');
-    }
-    const token = Math.random().toString(36).substring(2);
-    return { message: 'Recovery token generated', token };
+  async register(user: any): Promise<any> {
+    const newUser = await this.usersService.create(user);
+    return { user: newUser };
   }
 
-  async reset(token: string, newPassword: string) {
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    const user = await this.userModel.findOneAndUpdate(
-      { email: 'eamonrivas@gmail.com' }, // Simplified for demo; in production, use token to find user
-      { password: hashedPassword },
-      { new: true }
-    );
-    if (!user) {
-      throw new Error('User not found');
-    }
-    return { message: 'Password reset successful', user };
+  async recover(email: string): Promise<{ message: string; token: string }> {
+    // Mocked for now; in a real app, send an email with a token
+    return { message: 'Recovery email sent', token: 'mock-token' };
   }
 
-  async updateUser(id: string, userData: any): Promise<User> {
-    const user = await this.userModel.findByIdAndUpdate(id, userData, { new: true });
-    if (!user) {
-      throw new Error('User not found');
-    }
-    return user;
+  async reset(token: string, newPassword: string): Promise<{ message: string; user: any }> {
+    // Mocked for now; in a real app, validate token and update password
+    const user = await this.usersService.findOne('ArtificalManny');
+    if (!user) throw new Error('User not found');
+    const updatedUser = await this.usersService.update(user._id, { password: newPassword });
+    return { message: 'Password reset successfully', user: updatedUser };
   }
 }

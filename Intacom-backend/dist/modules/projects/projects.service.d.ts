@@ -5,4 +5,5 @@ export declare class ProjectsService {
     constructor(projectModel: Model<Project>);
     create(projectData: any): Promise<Project>;
     findByAdmin(admin: string): Promise<Project[]>;
+    findById(id: string): Promise<Project>;
 }

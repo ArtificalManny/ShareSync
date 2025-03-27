@@ -19,27 +19,22 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    async register(userData) {
-        return this.authService.register(userData);
+    async login(body) {
+        const user = await this.authService.validateUser(body.identifier, body.password);
+        if (!user)
+            throw new Error('Invalid credentials');
+        return this.authService.login(user);
     }
-    async login(loginData) {
-        return this.authService.login(loginData.identifier, loginData.password);
+    async register(body) {
+        return this.authService.register(body);
     }
     async recover(email) {
         return this.authService.recover(email);
     }
-    async reset(resetData) {
-        return this.authService.reset(resetData.token, resetData.newPassword);
+    async reset(body) {
+        return this.authService.reset(body.token, body.newPassword);
     }
 };
-exports.AuthController = AuthController;
-__decorate([
-    (0, common_1.Post)('register'),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], AuthController.prototype, "register", null);
 __decorate([
     (0, common_1.Post)('login'),
     __param(0, (0, common_1.Body)()),
@@ -47,6 +42,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, common_1.Post)('register'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "register", null);
 __decorate([
     (0, common_1.Get)('recover'),
     __param(0, (0, common_1.Query)('email')),
@@ -61,8 +63,9 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "reset", null);
-exports.AuthController = AuthController = __decorate([
+AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])
 ], AuthController);
+exports.AuthController = AuthController;
 //# sourceMappingURL=auth.controller.js.map

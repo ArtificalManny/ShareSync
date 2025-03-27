@@ -1,35 +1,29 @@
-import { Controller, Post, Body, Get, Query, Put, Param } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { Controller, Get, Post, Put, Body, Param } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { User } from './schemas/user.schema';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly usersService: UsersService) {}
 
-  @Post('register')
-  async register(@Body() userData: any) {
-    const user = await this.authService.register(userData);
-    return { data: { user } };
-  }
-
-  @Post('login')
-  async login(@Body() loginData: { identifier: string; password: string }) {
-    const user = await this.authService.login(loginData.identifier, loginData.password);
-    return { data: { user } };
-  }
-
-  @Get('recover')
-  async recover(@Query('email') email: string) {
-    return this.authService.recover(email);
-  }
-
-  @Put('reset')
-  async reset(@Body() resetData: { token: string; newPassword: string }) {
-    return this.authService.reset(resetData.token, resetData.newPassword);
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<User> {
+    const user = await this.usersService.findOne(id);
+    if (!user) throw new Error('User not found');
+    return user;
   }
 
   @Put(':id')
-  async updateUser(@Param('id') id: string, @Body() userData: any) {
-    const user = await this.authService.updateUser(id, userData);
-    return { data: { user } };
+  async update(@Param('id') id: string, @Body() updateData: Partial<User>): Promise<User> {
+    const updatedUser = await this.usersService.update(id, updateData);
+    if (!updatedUser) throw new Error('User not found');
+    return updatedUser;
+  }
+
+  @Get('by-username/:username')
+  async findByUsername(@Param('username') username: string): Promise<User> {
+    const user = await this.usersService.findOne(username);
+    if (!user) throw new Error('User not found');
+    return user;
   }
 }

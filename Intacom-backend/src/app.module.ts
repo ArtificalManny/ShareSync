@@ -7,7 +7,7 @@ import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost/intacom'),
+    MongooseModule.forRoot('mongodb://localhost:27017/intacom'),
     UsersModule,
     ProjectsModule,
     AuthModule,

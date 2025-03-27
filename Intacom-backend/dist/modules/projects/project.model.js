@@ -14,7 +14,6 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 let Project = class Project extends mongoose_2.Document {
 };
-exports.Project = Project;
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
@@ -31,8 +30,18 @@ __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], Project.prototype, "color", void 0);
-exports.Project = Project = __decorate([
+__decorate([
+    (0, mongoose_1.Prop)([
+        {
+            userId: { type: String, required: true },
+            role: { type: String, enum: ['Admin', 'Editor', 'Viewer'], required: true },
+        },
+    ]),
+    __metadata("design:type", Array)
+], Project.prototype, "sharedWith", void 0);
+Project = __decorate([
     (0, mongoose_1.Schema)()
 ], Project);
+exports.Project = Project;
 exports.ProjectSchema = mongoose_1.SchemaFactory.createForClass(Project);
 //# sourceMappingURL=project.model.js.map
