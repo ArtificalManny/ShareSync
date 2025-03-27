@@ -1,38 +1,17 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Module } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { UsersController } from './users.controller';
+import { MongooseModule } from '@nestjs/mongoose';
+import { User, UserSchema } from './schemas/user.schema';
 
-@Schema()
-export class User extends Document {
-  @Prop({ required: true })
-  firstName: string;
+@Module({
+  imports: [
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+  ],
+  controllers: [UsersController],
+  providers: [UsersService],
+  exports: [UsersService],
+})
+class UsersModule {}
 
-  @Prop({ required: true })
-  lastName: string;
-
-  @Prop({ required: true, unique: true })
-  username: string;
-
-  @Prop({ required: true })
-  password: string;
-
-  @Prop({ required: true, unique: true })
-  email: string;
-
-  @Prop({ required: true })
-  gender: string;
-
-  @Prop({
-    type: {
-      month: { type: String, required: true },
-      day: { type: String, required: true },
-      year: { type: String, required: true },
-    },
-    required: true,
-  })
-  birthday: { month: string; day: string; year: string };
-
-  @Prop()
-  profilePic: string;
-}
-
-export const UserSchema = SchemaFactory.createForClass(User);
+export { UsersModule };
