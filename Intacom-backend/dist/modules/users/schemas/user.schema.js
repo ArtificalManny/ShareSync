@@ -9,8 +9,26 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserSchema = exports.User = void 0;
+exports.UserSchema = exports.User = exports.BirthdaySchema = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
+let Birthday = class Birthday {
+};
+__decorate([
+    (0, mongoose_1.Prop)({ required: false }),
+    __metadata("design:type", String)
+], Birthday.prototype, "month", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: false }),
+    __metadata("design:type", String)
+], Birthday.prototype, "day", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: false }),
+    __metadata("design:type", String)
+], Birthday.prototype, "year", void 0);
+Birthday = __decorate([
+    (0, mongoose_1.Schema)()
+], Birthday);
+exports.BirthdaySchema = mongoose_1.SchemaFactory.createForClass(Birthday);
 let User = class User {
 };
 exports.User = User;
@@ -39,8 +57,8 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "gender", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
-    __metadata("design:type", Object)
+    (0, mongoose_1.Prop)({ type: exports.BirthdaySchema, required: false }),
+    __metadata("design:type", Birthday)
 ], User.prototype, "birthday", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),

@@ -3,6 +3,21 @@ import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
+// Define a nested schema for the birthday field
+@Schema()
+class Birthday {
+  @Prop({ required: false })
+  month: string;
+
+  @Prop({ required: false })
+  day: string;
+
+  @Prop({ required: false })
+  year: string;
+}
+
+export const BirthdaySchema = SchemaFactory.createForClass(Birthday);
+
 @Schema({ timestamps: true })
 export class User {
   @Prop()
@@ -23,8 +38,8 @@ export class User {
   @Prop()
   gender?: string;
 
-  @Prop()
-  birthday?: { month: string; day: string; year: string };
+  @Prop({ type: BirthdaySchema, required: false }) // Define birthday as a nested schema
+  birthday?: Birthday;
 
   @Prop()
   profilePic?: string;
