@@ -42,7 +42,7 @@ export class AuthService {
   }
 
   async reset(token: string, newPassword: string) {
-    const user = await this.usersService.findByEmail('test@example.com');
+    const user: UserDocument | null = await this.usersService.findByEmail('test@example.com');
     if (!user) {
       throw new Error('User not found');
     }
