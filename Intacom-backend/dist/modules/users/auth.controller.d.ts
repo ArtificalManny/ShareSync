@@ -5,7 +5,9 @@ export declare class AuthController {
     login(body: {
         identifier: string;
         password: string;
-    }): Promise<any>;
+    }): Promise<{
+        user: any;
+    }>;
     register(body: any): Promise<any>;
     recover(email: string): Promise<{
         message: string;
@@ -16,6 +18,6 @@ export declare class AuthController {
         newPassword: string;
     }): Promise<{
         message: string;
-        user: any;
+        user: import("./schemas/user.schema").User;
     }>;
 }

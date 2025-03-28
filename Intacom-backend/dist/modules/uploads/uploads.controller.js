@@ -12,41 +12,43 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProjectsService = void 0;
+exports.UploadsController = void 0;
 const common_1 = require("@nestjs/common");
-const mongoose_1 = require("@nestjs/mongoose");
-const mongoose_2 = require("mongoose");
-const project_schema_1 = require("./schemas/project.schema");
-let ProjectsService = class ProjectsService {
-    constructor(projectModel) {
-        this.projectModel = projectModel;
+const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
+const path_1 = require("path");
+const uploads_service_1 = require("./uploads.service");
+let UploadsController = class UploadsController {
+    constructor(uploadsService) {
+        this.uploadsService = uploadsService;
     }
-    async create(createProjectDto) {
-        const newProject = new this.projectModel(createProjectDto);
-        return newProject.save();
-    }
-    async findByUsername(username) {
-        return this.projectModel.find({
-            $or: [
-                { admin: username },
-                { 'sharedWith.userId': username },
-            ],
-        }).exec();
-    }
-    async findById(id) {
-        return this.projectModel.findById(id).exec();
-    }
-    async update(id, updateProjectDto) {
-        return this.projectModel.findByIdAndUpdate(id, updateProjectDto, { new: true }).exec();
-    }
-    async delete(id) {
-        await this.projectModel.findByIdAndDelete(id).exec();
+    async uploadFile(file) {
+        const url = await this.uploadsService.uploadFile(file);
+        return { url };
     }
 };
-ProjectsService = __decorate([
-    (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)(project_schema_1.Project.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model])
-], ProjectsService);
-exports.ProjectsService = ProjectsService;
+__decorate([
+    (0, common_1.Post)(),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
+        storage: (0, multer_1.diskStorage)({
+            destination: './uploads',
+            filename: (req, file, cb) => {
+                const randomName = Array(32)
+                    .fill(null)
+                    .map(() => Math.round(Math.random() * 16).toString(16))
+                    .join('');
+                return cb(null, `${randomName}${(0, path_1.extname)(file.originalname)}`);
+            },
+        }),
+    })),
+    __param(0, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UploadsController.prototype, "uploadFile", null);
+UploadsController = __decorate([
+    (0, common_1.Controller)('uploads'),
+    __metadata("design:paramtypes", [uploads_service_1.UploadsService])
+], UploadsController);
+exports.UploadsController = UploadsController;
 //# sourceMappingURL=uploads.controller.js.map

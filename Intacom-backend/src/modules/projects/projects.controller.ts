@@ -7,19 +7,19 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Post()
-  async create(@Body() createProjectDto: Partial<Project>): Promise<{ project: Project }> {
+  async create(@Body() createProjectDto: Partial<Project>): Promise<{ data: { project: Project } }> {
     const project = await this.projectsService.create(createProjectDto);
     return { data: { project } };
   }
 
   @Get(':username')
-  async findByUsername(@Param('username') username: string): Promise<Project[]> {
+  async findByUsername(@Param('username') username: string): Promise<{ data: Project[] }> {
     const projects = await this.projectsService.findByUsername(username);
     return { data: projects };
   }
 
   @Get('by-id/:id')
-  async findById(@Param('id') id: string): Promise<{ project: Project }> {
+  async findById(@Param('id') id: string): Promise<{ data: { project: Project } }> {
     const project = await this.projectsService.findById(id);
     if (!project) throw new Error('Project not found');
     return { data: { project } };

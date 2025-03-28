@@ -1,35 +1,30 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Project, ProjectDocument } from './schemas/project.schema';
+import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { UploadsService } from './uploads.service';
 
-@Injectable()
-export class ProjectsService {
-  constructor(@InjectModel(Project.name) private projectModel: Model<ProjectDocument>) {}
+@Controller('uploads')
+export class UploadsController {
+  constructor(private readonly uploadsService: UploadsService) {}
 
-  async create(createProjectDto: Partial<Project>): Promise<Project> {
-    const newProject = new this.projectModel(createProjectDto);
-    return newProject.save();
-  }
-
-  async findByUsername(username: string): Promise<Project[]> {
-    return this.projectModel.find({
-      $or: [
-        { admin: username },
-        { 'sharedWith.userId': username },
-      ],
-    }).exec();
-  }
-
-  async findById(id: string): Promise<Project | null> {
-    return this.projectModel.findById(id).exec();
-  }
-
-  async update(id: string, updateProjectDto: Partial<Project>): Promise<Project | null> {
-    return this.projectModel.findByIdAndUpdate(id, updateProjectDto, { new: true }).exec();
-  }
-
-  async delete(id: string): Promise<void> {
-    await this.projectModel.findByIdAndDelete(id).exec();
+  @Post()
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          return cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  async uploadFile(@UploadedFile() file: Express.Multer.File): Promise<{ url: string }> {
+    const url = await this.uploadsService.uploadFile(file);
+    return { url };
   }
 }

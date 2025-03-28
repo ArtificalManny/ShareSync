@@ -193,7 +193,7 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  // Fetch projects and notifications when user logs in, but only navigate to /home on initial login
+  // Fetch projects and notifications when user logs in
   useEffect(() => {
     if (user && window.location.pathname === '/') {
       navigate('/home');
@@ -203,14 +203,7 @@ const App: React.FC = () => {
         try {
           const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
           const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
-          // Update the project ID to the correct 24-character ID
-          const updatedProjects = projectsData.map((project: Project) => {
-            if (project._id === '67e07192620ea86886a29a6') {
-              return { ...project, _id: '67e07192620ea86886a29a' };
-            }
-            return project;
-          });
-          setProjects(updatedProjects);
+          setProjects(projectsData);
         } catch (error: any) {
           console.error('Failed to fetch projects:', error.response?.data || error.message);
           setProjects([]);
@@ -235,19 +228,6 @@ const App: React.FC = () => {
             ];
             localStorage.setItem('isNewUser', 'false');
           }
-          // Add a mock project invite notification
-          notificationsData = [
-            ...notificationsData,
-            {
-              _id: 'invite-1',
-              message: 'User JohnDoe invited you to Project Alpha',
-              createdAt: new Date().toISOString(),
-              type: 'project_invite',
-              projectId: 'mock-project-id',
-              action: 'accept',
-              status: 'pending',
-            },
-          ];
           setNotifications(notificationsData);
         } catch (error: any) {
           console.error('Failed to fetch notifications:', error.response?.data || error.message);
@@ -404,22 +384,17 @@ const App: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      console.log('Creating project with payload:', {
+      const payload = {
         name: projectName,
         description: projectDescription,
         admin: user?.username,
-        color: projectColor,
+        color: projectColor || '#3a3a50',
         sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
-      });
-      const response = await axios.post<ProjectResponse>(`http://localhost:3000/projects`, {
-        name: projectName,
-        description: projectDescription,
-        admin: user?.username,
-        color: projectColor,
-        sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
-      });
+      };
+      console.log('Creating project with payload:', payload);
+      const response = await axios.post<ProjectResponse>('http://localhost:3000/projects', payload);
       console.log('Create project response:', response.data);
-      const newProject = response.data.project;
+      const newProject = response.data.data.project;
       setProjects([...projects, newProject]);
       setShowCreateProject(false);
       setProjectName('');
@@ -617,7 +592,7 @@ const App: React.FC = () => {
             <ul>
               <li>
                 <FontAwesomeIcon icon={faPlusCircle} className="menu-icon" />
-                <a href="#" onClick={() => setShowCreateProject(true)}>
+                <a href="#" onClick={(e) => { e.preventDefault(); setShowCreateProject(true); }}>
                   Create Project
                 </a>
               </li>

@@ -1,16 +1,18 @@
-import { UsersService } from '@modules/users/users.service';
+import { UsersService } from './users.service';
+import { User } from './schemas/user.schema';
 export declare class AuthService {
     private readonly usersService;
     constructor(usersService: UsersService);
     validateUser(identifier: string, password: string): Promise<any>;
-    login(user: any): Promise<any>;
-    register(user: any): Promise<any>;
+    login(user: any): Promise<{
+        user: any;
+    }>;
     recover(email: string): Promise<{
         message: string;
         token: string;
     }>;
     reset(token: string, newPassword: string): Promise<{
         message: string;
-        user: any;
+        user: User;
     }>;
 }

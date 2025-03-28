@@ -23,14 +23,20 @@
 /// <reference types="mongoose/types/virtuals" />
 /// <reference types="mongoose/types/inferschematype" />
 import { Document } from 'mongoose';
-export declare class Project extends Document {
+export type ProjectDocument = Project & Document;
+export declare class Project {
     name: string;
-    description: string;
-    admin: string;
-    color: string;
-    sharedWith: {
+    description?: string;
+    admin?: string;
+    color?: string;
+    sharedWith?: {
         userId: string;
         role: 'Admin' | 'Editor' | 'Viewer';
+    }[];
+    memberRequests?: {
+        userId: string;
+        requestedBy: string;
+        status: 'pending' | 'approved' | 'denied';
     }[];
 }
 export declare const ProjectSchema: import("mongoose").Schema<Project, import("mongoose").Model<Project, any, any, any, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Project>;

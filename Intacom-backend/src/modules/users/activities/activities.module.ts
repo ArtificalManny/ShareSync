@@ -9,7 +9,7 @@ import { ActivitiesController } from './activities.controller';
     MongooseModule.forFeature([{ name: Activity.name, schema: ActivitySchema }]),
   ],
   controllers: [ActivitiesController],
-  providers: [ActivityService],
+  providers: [ActivitiesService],
   exports: [ActivitiesService],
 })
 export class ActivitiesModule {}

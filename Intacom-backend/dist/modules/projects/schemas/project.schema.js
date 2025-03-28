@@ -11,8 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectSchema = exports.Project = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
-const mongoose_2 = require("mongoose");
-let Project = class Project extends mongoose_2.Document {
+let Project = class Project {
 };
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
@@ -31,11 +30,15 @@ __decorate([
     __metadata("design:type", String)
 ], Project.prototype, "color", void 0);
 __decorate([
-    (0, mongoose_1.Prop)([{ userId: String, role: String }]),
+    (0, mongoose_1.Prop)({ type: [{ userId: String, role: String }], default: [] }),
     __metadata("design:type", Array)
 ], Project.prototype, "sharedWith", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [{ userId: String, requestedBy: String, status: String }], default: [] }),
+    __metadata("design:type", Array)
+], Project.prototype, "memberRequests", void 0);
 Project = __decorate([
-    (0, mongoose_1.Schema)()
+    (0, mongoose_1.Schema)({ timestamps: true })
 ], Project);
 exports.Project = Project;
 exports.ProjectSchema = mongoose_1.SchemaFactory.createForClass(Project);

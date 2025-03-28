@@ -15,7 +15,6 @@ const auth_module_1 = require("./modules/users/auth.module");
 const uploads_module_1 = require("./modules/uploads/uploads.module");
 const activities_module_1 = require("./modules/activities/activities.module");
 const posts_module_1 = require("./modules/posts/posts.module");
-const notifications_module_1 = require("./modules/notifications/notifications.module");
 const serve_static_1 = require("@nestjs/serve-static");
 const path_1 = require("path");
 let AppModule = class AppModule {
@@ -34,7 +33,6 @@ AppModule = __decorate([
             uploads_module_1.UploadsModule,
             activities_module_1.ActivitiesModule,
             posts_module_1.PostsModule,
-            notifications_module_1.NotificationsModule,
         ],
     })
 ], AppModule);

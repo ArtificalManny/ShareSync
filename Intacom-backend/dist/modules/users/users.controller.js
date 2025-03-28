@@ -19,32 +19,50 @@ let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
     }
-    async findOne(id) {
-        const user = await this.usersService.findOne(id);
-        if (!user)
-            throw new Error('User not found');
-        return user;
-    }
-    async update(id, updateData) {
-        const updatedUser = await this.usersService.update(id, updateData);
-        if (!updatedUser)
-            throw new Error('User not found');
-        return updatedUser;
+    async create(createUserDto) {
+        const user = await this.usersService.create(createUserDto);
+        return { data: { user } };
     }
     async findByUsername(username) {
-        const user = await this.usersService.findOne(username);
+        const user = await this.usersService.findByUsername(username);
         if (!user)
             throw new Error('User not found');
-        return user;
+        return { data: { user } };
+    }
+    async findByEmail(email) {
+        const user = await this.usersService.findByEmail(email);
+        if (!user)
+            throw new Error('User not found');
+        return { data: { user } };
+    }
+    async update(id, updateUserDto) {
+        const updatedUser = await this.usersService.update(id, updateUserDto);
+        if (!updatedUser)
+            throw new Error('User not found');
+        return { data: { user: updatedUser } };
     }
 };
 __decorate([
-    (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    (0, common_1.Post)(),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "create", null);
+__decorate([
+    (0, common_1.Get)('by-username/:username'),
+    __param(0, (0, common_1.Param)('username')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], UsersController.prototype, "findOne", null);
+], UsersController.prototype, "findByUsername", null);
+__decorate([
+    (0, common_1.Get)('by-email/:email'),
+    __param(0, (0, common_1.Param)('email')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "findByEmail", null);
 __decorate([
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -53,13 +71,6 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "update", null);
-__decorate([
-    (0, common_1.Get)('by-username/:username'),
-    __param(0, (0, common_1.Param)('username')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], UsersController.prototype, "findByUsername", null);
 UsersController = __decorate([
     (0, common_1.Controller)('users'),
     __metadata("design:paramtypes", [users_service_1.UsersService])

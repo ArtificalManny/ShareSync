@@ -6,7 +6,6 @@ import { AuthModule } from './modules/users/auth.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { PostsModule } from './modules/posts/posts.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
@@ -23,7 +22,6 @@ import { join } from 'path';
     UploadsModule,
     ActivitiesModule,
     PostsModule,
-    NotificationsModule,
   ],
 })
 export class AppModule {}

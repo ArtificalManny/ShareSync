@@ -20,7 +20,7 @@ ActivitiesModule = __decorate([
             mongoose_1.MongooseModule.forFeature([{ name: activity_schema_1.Activity.name, schema: activity_schema_1.ActivitySchema }]),
         ],
         controllers: [activities_controller_1.ActivitiesController],
-        providers: [ActivityService],
+        providers: [activities_service_1.ActivitiesService],
         exports: [activities_service_1.ActivitiesService],
     })
 ], ActivitiesModule);

@@ -90,13 +90,15 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         }
       };
 
-      // Fetch recent activity (mocked for now; will be updated later)
+      // Fetch recent activity
       const fetchActivities = async () => {
-        // In a real app, fetch from backend endpoint like GET /activities/user/:id
-        setActivities([
-          { _id: '1', type: 'project_create', content: 'Created project Rivas Miranda Estate', createdAt: new Date().toISOString() },
-          { _id: '2', type: 'profile_update', content: 'Updated profile information', createdAt: new Date().toISOString() },
-        ]);
+        try {
+          const response = await axios.get(`http://localhost:3000/activities/user/${user?._id}`);
+          setActivities(response.data || []);
+        } catch (error: any) {
+          console.error('Failed to fetch activities:', error.response?.data || error.message);
+          setActivities([]);
+        }
       };
 
       // Fetch connections (mocked for now)
