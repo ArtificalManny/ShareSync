@@ -21,15 +21,23 @@ let UsersService = class UsersService {
     constructor(userModel) {
         this.userModel = userModel;
     }
-    async findOne(identifier) {
-        return this.userModel.findOne({ $or: [{ email: identifier }, { username: identifier }] }).exec();
-    }
-    async create(user) {
-        const newUser = new this.userModel(user);
+    async create(createUserDto) {
+        const newUser = new this.userModel(createUserDto);
         return newUser.save();
     }
-    async update(id, updateData) {
-        return this.userModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+    async findByUsername(username) {
+        return this.userModel.findOne({ username }).exec();
+    }
+    async findByEmail(email) {
+        return this.userModel.findOne({ email }).exec();
+    }
+    async findByIdentifier(identifier) {
+        return this.userModel.findOne({
+            $or: [{ email: identifier }, { username: identifier }],
+        }).exec();
+    }
+    async update(id, updateUserDto) {
+        return this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true }).exec();
     }
 };
 UsersService = __decorate([

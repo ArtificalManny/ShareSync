@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Body, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -8,7 +8,9 @@ export class AuthController {
   @Post('login')
   async login(@Body() body: { identifier: string; password: string }) {
     const user = await this.authService.validateUser(body.identifier, body.password);
-    if (!user) throw new Error('Invalid credentials');
+    if (!user) {
+      throw new Error('Invalid credentials');
+    }
     return this.authService.login(user);
   }
 
@@ -22,7 +24,7 @@ export class AuthController {
     return this.authService.recover(email);
   }
 
-  @Put('reset')
+  @Post('reset')
   async reset(@Body() body: { token: string; newPassword: string }) {
     return this.authService.reset(body.token, body.newPassword);
   }

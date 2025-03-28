@@ -22,6 +22,13 @@ export class AuthService {
     };
   }
 
+  async register(userDto: Partial<User>): Promise<any> {
+    const hashedPassword = await bcrypt.hash(userDto.password, 10);
+    const newUser = await this.usersService.create({ ...userDto, password: hashedPassword });
+    const { password, ...result } = newUser;
+    return { user: result };
+  }
+
   async recover(email: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {

@@ -64,6 +64,12 @@ let AuthService = class AuthService {
             user,
         };
     }
+    async register(userDto) {
+        const hashedPassword = await bcrypt.hash(userDto.password, 10);
+        const newUser = await this.usersService.create(Object.assign(Object.assign({}, userDto), { password: hashedPassword }));
+        const { password } = newUser, result = __rest(newUser, ["password"]);
+        return { user: result };
+    }
     async recover(email) {
         const user = await this.usersService.findByEmail(email);
         if (!user) {

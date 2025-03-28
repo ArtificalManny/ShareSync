@@ -21,8 +21,9 @@ let AuthController = class AuthController {
     }
     async login(body) {
         const user = await this.authService.validateUser(body.identifier, body.password);
-        if (!user)
+        if (!user) {
             throw new Error('Invalid credentials');
+        }
         return this.authService.login(user);
     }
     async register(body) {
@@ -57,7 +58,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "recover", null);
 __decorate([
-    (0, common_1.Put)('reset'),
+    (0, common_1.Post)('reset'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),

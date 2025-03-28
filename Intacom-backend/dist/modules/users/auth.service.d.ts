@@ -7,6 +7,7 @@ export declare class AuthService {
     login(user: any): Promise<{
         user: any;
     }>;
+    register(userDto: Partial<User>): Promise<any>;
     recover(email: string): Promise<{
         message: string;
         token: string;
