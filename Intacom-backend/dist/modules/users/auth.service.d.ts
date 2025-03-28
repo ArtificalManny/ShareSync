@@ -1,5 +1,5 @@
 import { UsersService } from './users.service';
-import { User } from './schemas/user.schema';
+import { User, UserDocument } from './schemas/user.schema';
 export declare class AuthService {
     private readonly usersService;
     constructor(usersService: UsersService);
@@ -14,6 +14,6 @@ export declare class AuthService {
     }>;
     reset(token: string, newPassword: string): Promise<{
         message: string;
-        user: User;
+        user: UserDocument;
     }>;
 }

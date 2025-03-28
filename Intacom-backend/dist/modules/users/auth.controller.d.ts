@@ -18,6 +18,6 @@ export declare class AuthController {
         newPassword: string;
     }): Promise<{
         message: string;
-        user: import("./schemas/user.schema").User;
+        user: import("./schemas/user.schema").UserDocument;
     }>;
 }

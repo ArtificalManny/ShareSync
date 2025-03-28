@@ -7,26 +7,26 @@ import { User, UserDocument } from './schemas/user.schema';
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
-  async create(createUserDto: Partial<User>): Promise<User> {
+  async create(createUserDto: Partial<User>): Promise<UserDocument> {
     const newUser = new this.userModel(createUserDto);
     return newUser.save();
   }
 
-  async findByUsername(username: string): Promise<User | null> {
+  async findByUsername(username: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ username }).exec();
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ email }).exec();
   }
 
-  async findByIdentifier(identifier: string): Promise<User | null> {
+  async findByIdentifier(identifier: string): Promise<UserDocument | null> {
     return this.userModel.findOne({
       $or: [{ email: identifier }, { username: identifier }],
     }).exec();
   }
 
-  async update(id: string, updateUserDto: Partial<User>): Promise<User | null> {
+  async update(id: string, updateUserDto: Partial<User>): Promise<UserDocument | null> {
     return this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true }).exec();
   }
 }
