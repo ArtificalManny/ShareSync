@@ -43,10 +43,10 @@ let ProjectsService = class ProjectsService {
         await this.projectModel.findByIdAndDelete(id).exec();
     }
 };
-ProjectsService = __decorate([
+exports.ProjectsService = ProjectsService;
+exports.ProjectsService = ProjectsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(project_schema_1.Project.name)),
     __metadata("design:paramtypes", [mongoose_2.Model])
 ], ProjectsService);
-exports.ProjectsService = ProjectsService;
 //# sourceMappingURL=projects.service.js.map

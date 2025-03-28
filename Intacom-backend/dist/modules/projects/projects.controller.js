@@ -43,6 +43,7 @@ let ProjectsController = class ProjectsController {
         await this.projectsService.delete(id);
     }
 };
+exports.ProjectsController = ProjectsController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
@@ -79,9 +80,8 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "delete", null);
-ProjectsController = __decorate([
+exports.ProjectsController = ProjectsController = __decorate([
     (0, common_1.Controller)('projects'),
     __metadata("design:paramtypes", [projects_service_1.ProjectsService])
 ], ProjectsController);
-exports.ProjectsController = ProjectsController;
 //# sourceMappingURL=projects.controller.js.map

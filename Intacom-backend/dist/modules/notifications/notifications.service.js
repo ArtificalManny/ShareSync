@@ -30,10 +30,10 @@ let NotificationsService = class NotificationsService {
         return this.notificationModel.find({ userId }).sort({ createdAt: -1 }).exec();
     }
 };
-NotificationsService = __decorate([
+exports.NotificationsService = NotificationsService;
+exports.NotificationsService = NotificationsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(notification_schema_1.Notification.name)),
     __metadata("design:paramtypes", [mongoose_2.Model])
 ], NotificationsService);
-exports.NotificationsService = NotificationsService;
 //# sourceMappingURL=notifications.service.js.map

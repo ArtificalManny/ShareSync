@@ -27,6 +27,7 @@ let UploadsController = class UploadsController {
         return { url };
     }
 };
+exports.UploadsController = UploadsController;
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
@@ -46,9 +47,8 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UploadsController.prototype, "uploadFile", null);
-UploadsController = __decorate([
+exports.UploadsController = UploadsController = __decorate([
     (0, common_1.Controller)('uploads'),
     __metadata("design:paramtypes", [uploads_service_1.UploadsService])
 ], UploadsController);
-exports.UploadsController = UploadsController;
 //# sourceMappingURL=uploads.controller.js.map

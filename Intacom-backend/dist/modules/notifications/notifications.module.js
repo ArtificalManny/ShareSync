@@ -14,7 +14,8 @@ const notifications_service_1 = require("./notifications.service");
 const notifications_controller_1 = require("./notifications.controller");
 let NotificationsModule = class NotificationsModule {
 };
-NotificationsModule = __decorate([
+exports.NotificationsModule = NotificationsModule;
+exports.NotificationsModule = NotificationsModule = __decorate([
     (0, common_1.Module)({
         imports: [
             mongoose_1.MongooseModule.forFeature([{ name: notification_schema_1.Notification.name, schema: notification_schema_1.NotificationSchema }]),
@@ -24,5 +25,4 @@ NotificationsModule = __decorate([
         exports: [notifications_service_1.NotificationsService],
     })
 ], NotificationsModule);
-exports.NotificationsModule = NotificationsModule;
 //# sourceMappingURL=notifications.module.js.map

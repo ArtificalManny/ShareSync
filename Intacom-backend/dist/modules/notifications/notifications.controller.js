@@ -26,6 +26,7 @@ let NotificationsController = class NotificationsController {
         return this.notificationsService.findByUserId(userId);
     }
 };
+exports.NotificationsController = NotificationsController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
@@ -40,9 +41,8 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "findByUserId", null);
-NotificationsController = __decorate([
+exports.NotificationsController = NotificationsController = __decorate([
     (0, common_1.Controller)('notifications'),
     __metadata("design:paramtypes", [notifications_service_1.NotificationsService])
 ], NotificationsController);
-exports.NotificationsController = NotificationsController;
 //# sourceMappingURL=notifications.controller.js.map

@@ -13,6 +13,7 @@ exports.ProjectSchema = exports.Project = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 let Project = class Project {
 };
+exports.Project = Project;
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
@@ -37,9 +38,8 @@ __decorate([
     (0, mongoose_1.Prop)({ type: [{ userId: String, requestedBy: String, status: String }], default: [] }),
     __metadata("design:type", Array)
 ], Project.prototype, "memberRequests", void 0);
-Project = __decorate([
+exports.Project = Project = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Project);
-exports.Project = Project;
 exports.ProjectSchema = mongoose_1.SchemaFactory.createForClass(Project);
 //# sourceMappingURL=project.schema.js.map

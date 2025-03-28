@@ -33,6 +33,7 @@ let ProjectsController = class ProjectsController {
         return this.projectsService.create(project);
     }
 };
+exports.ProjectsController = ProjectsController;
 __decorate([
     (0, common_1.Get)('by-id/:id'),
     __param(0, (0, common_1.Param)('id')),
@@ -54,9 +55,8 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "create", null);
-ProjectsController = __decorate([
+exports.ProjectsController = ProjectsController = __decorate([
     (0, common_1.Controller)('projects'),
     __metadata("design:paramtypes", [projects_service_1.ProjectsService])
 ], ProjectsController);
-exports.ProjectsController = ProjectsController;
 //# sourceMappingURL=projects.controller.js.map

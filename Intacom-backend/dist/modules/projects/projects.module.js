@@ -14,7 +14,8 @@ const mongoose_1 = require("@nestjs/mongoose");
 const project_schema_1 = require("./schemas/project.schema");
 let ProjectsModule = class ProjectsModule {
 };
-ProjectsModule = __decorate([
+exports.ProjectsModule = ProjectsModule;
+exports.ProjectsModule = ProjectsModule = __decorate([
     (0, common_1.Module)({
         imports: [
             mongoose_1.MongooseModule.forFeature([{ name: project_schema_1.Project.name, schema: project_schema_1.ProjectSchema }]),
@@ -23,5 +24,4 @@ ProjectsModule = __decorate([
         providers: [projects_service_1.ProjectsService],
     })
 ], ProjectsModule);
-exports.ProjectsModule = ProjectsModule;
 //# sourceMappingURL=projects.module.js.map

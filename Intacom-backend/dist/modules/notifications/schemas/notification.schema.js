@@ -13,6 +13,7 @@ exports.NotificationSchema = exports.Notification = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 let Notification = class Notification {
 };
+exports.Notification = Notification;
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
@@ -41,9 +42,8 @@ __decorate([
     (0, mongoose_1.Prop)({ default: Date.now }),
     __metadata("design:type", Date)
 ], Notification.prototype, "createdAt", void 0);
-Notification = __decorate([
+exports.Notification = Notification = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Notification);
-exports.Notification = Notification;
 exports.NotificationSchema = mongoose_1.SchemaFactory.createForClass(Notification);
 //# sourceMappingURL=notification.schema.js.map

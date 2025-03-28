@@ -13,8 +13,8 @@ let UploadsService = class UploadsService {
         return `http://localhost:3000/uploads/${file.filename}`;
     }
 };
-UploadsService = __decorate([
+exports.UploadsService = UploadsService;
+exports.UploadsService = UploadsService = __decorate([
     (0, common_1.Injectable)()
 ], UploadsService);
-exports.UploadsService = UploadsService;
 //# sourceMappingURL=uploads.service.js.map

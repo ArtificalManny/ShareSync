@@ -13,6 +13,7 @@ exports.UserSchema = exports.User = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 let User = class User {
 };
+exports.User = User;
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
@@ -81,9 +82,8 @@ __decorate([
     }),
     __metadata("design:type", Object)
 ], User.prototype, "settings", void 0);
-User = __decorate([
+exports.User = User = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], User);
-exports.User = User;
 exports.UserSchema = mongoose_1.SchemaFactory.createForClass(User);
 //# sourceMappingURL=user.schema.js.map

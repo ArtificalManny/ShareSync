@@ -13,6 +13,7 @@ exports.PostSchema = exports.Post = exports.CommentSchema = exports.Comment = vo
 const mongoose_1 = require("@nestjs/mongoose");
 let Comment = class Comment {
 };
+exports.Comment = Comment;
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
@@ -25,13 +26,13 @@ __decorate([
     (0, mongoose_1.Prop)({ default: Date.now }),
     __metadata("design:type", Date)
 ], Comment.prototype, "createdAt", void 0);
-Comment = __decorate([
+exports.Comment = Comment = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Comment);
-exports.Comment = Comment;
 exports.CommentSchema = mongoose_1.SchemaFactory.createForClass(Comment);
 let Post = class Post {
 };
+exports.Post = Post;
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
@@ -60,9 +61,8 @@ __decorate([
     (0, mongoose_1.Prop)({ default: Date.now }),
     __metadata("design:type", Date)
 ], Post.prototype, "createdAt", void 0);
-Post = __decorate([
+exports.Post = Post = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Post);
-exports.Post = Post;
 exports.PostSchema = mongoose_1.SchemaFactory.createForClass(Post);
 //# sourceMappingURL=post.schema.js.map
