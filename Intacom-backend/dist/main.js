@@ -5,8 +5,8 @@ const app_module_1 = require("./app.module");
 async function bootstrap() {
     try {
         const app = await core_1.NestFactory.create(app_module_1.AppModule);
-        await app.listen(3005);
-        console.log('Server running on port 3005');
+        await app.listen(3007);
+        console.log('Server running on port 3007');
     }
     catch (error) {
         console.error('Error starting the server:', error);

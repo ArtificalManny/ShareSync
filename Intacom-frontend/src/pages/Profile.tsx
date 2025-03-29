@@ -76,7 +76,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
       // Fetch projects
       const fetchProjects = async () => {
         try {
-          const response = await axios.get(`http://localhost:3000/projects/${user.username}`);
+          const response = await axios.get(`http://localhost:3004/projects/${user.username}`); // Changed port to 3004
           const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
           const updatedProjects = projectsData.map((project: Project, index: number) => ({
             ...project,
@@ -93,7 +93,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
       // Fetch recent activity
       const fetchActivities = async () => {
         try {
-          const response = await axios.get(`http://localhost:3000/activities/user/${user?._id}`);
+          const response = await axios.get(`http://localhost:3004/activities/user/${user?._id}`); // Changed port to 3004
           setActivities(response.data || []);
         } catch (error: any) {
           console.error('Failed to fetch activities:', error.response?.data || error.message);
@@ -124,7 +124,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
     try {
       const updatedUser = { ...user, firstName, lastName, email, bio, school, occupation, hobbies };
       console.log('Updating profile with payload:', updatedUser);
-      const response = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
+      const response = await axios.put(`http://localhost:3004/users/${user?._id}`, updatedUser); // Changed port to 3004
       console.log('Update profile response:', response.data);
       const newUserData = response.data.data.user;
       setLocalUser(newUserData);
@@ -155,7 +155,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
 
       try {
         console.log('Uploading cover photo...');
-        const response = await axios.post<{ url: string }>('http://localhost:3000/uploads', formData, {
+        const response = await axios.post<{ url: string }>('http://localhost:3004/uploads', formData, { // Changed port to 3004
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -164,7 +164,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         const coverPhotoUrl = response.data.url;
         const updatedUser = { ...user, coverPhoto: coverPhotoUrl };
         console.log('Updating user with new cover photo:', updatedUser);
-        const responseUser = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
+        const responseUser = await axios.put(`http://localhost:3004/users/${user?._id}`, updatedUser); // Changed port to 3004
         console.log('Update user response:', responseUser.data);
         const newUserData = responseUser.data.data.user;
         setLocalUser(newUserData);
@@ -196,7 +196,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
 
       try {
         console.log('Uploading profile picture...');
-        const response = await axios.post<{ url: string }>('http://localhost:3000/uploads', formData, {
+        const response = await axios.post<{ url: string }>('http://localhost:3004/uploads', formData, { // Changed port to 3004
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -205,7 +205,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         const profilePicUrl = response.data.url;
         const updatedUser = { ...user, profilePic: profilePicUrl };
         console.log('Updating user with new profile picture:', updatedUser);
-        const responseUser = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
+        const responseUser = await axios.put(`http://localhost:3004/users/${user?._id}`, updatedUser); // Changed port to 3004
         console.log('Update user response:', responseUser.data);
         const newUserData = responseUser.data.data.user;
         setLocalUser(newUserData);
