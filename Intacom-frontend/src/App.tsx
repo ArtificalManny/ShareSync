@@ -4,7 +4,7 @@ import axios from 'axios';
 import './App.css';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
-import Project from './pages/Project';
+import Project from './pages/Project'; // Fixed import path
 
 interface User {
   _id?: string;

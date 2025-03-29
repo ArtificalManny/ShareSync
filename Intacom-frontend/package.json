@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
+    "start": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -12,11 +13,10 @@
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
-    "@types/react-router-dom": "^5.3.3",
     "axios": "^1.6.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.3.0",
+    "react-router-dom": "^6.22.3",
     "socket.io-client": "^4.7.5",
     "uuid": "^9.0.1"
   },
@@ -30,6 +30,6 @@
     "http-server": "^14.1.1",
     "typescript": "^5.4.5",
     "vite": "^5.2.11",
-    "vite-plugin-svgr": "^4.2.0"
+  "vite-plugin-svgr": "^4.2.0"
   }
 }
