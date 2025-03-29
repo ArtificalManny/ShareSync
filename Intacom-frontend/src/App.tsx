@@ -111,172 +111,134 @@ const App: React.FC = () => {
     }
   };
 
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      // Check cache for projects
+      const cachedProjects = localStorage.getItem(`projects_${user.username}`);
+      const cachedProjectsTimestamp = localStorage.getItem(`projects_${user.username}_timestamp`);
+      const cachedNotifications = localStorage.getItem(`notifications_${user._id}`);
+      const cachedNotificationsTimestamp = localStorage.getItem(`notifications_${user._id}_timestamp`);
+      const now = Date.now();
+
+      let projectsData: Project[] = [];
+      let notificationsData: Notification[] = [];
+
+      // Use cached data if available and not expired
+      if (cachedProjects && cachedProjectsTimestamp && (now - parseInt(cachedProjectsTimestamp)) < CACHE_DURATION) {
+        projectsData = JSON.parse(cachedProjects);
+        setProjects(projectsData);
+      }
+
+      if (cachedNotifications && cachedNotificationsTimestamp && (now - parseInt(cachedNotificationsTimestamp)) < CACHE_DURATION) {
+        notificationsData = JSON.parse(cachedNotifications);
+        setNotifications(notificationsData);
+      }
+
+      // Fetch fresh data if cache is expired or not available
+      const fetchProjects = !cachedProjects || (now - parseInt(cachedProjectsTimestamp || '0')) >= CACHE_DURATION;
+      const fetchNotifications = !cachedNotifications || (now - parseInt(cachedNotificationsTimestamp || '0')) >= CACHE_DURATION;
+
+      if (fetchProjects || fetchNotifications) {
+        const promises: Promise<any>[] = [];
+        if (fetchProjects) {
+          promises.push(retry(() => axios.get<ProjectsResponse>(`${import.meta.env.VITE_API_URL}/projects/${user.username}`)));
+        } else {
+          promises.push(Promise.resolve(null));
+        }
+
+        if (fetchNotifications) {
+          promises.push(retry(() => axios.get<NotificationsResponse>(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`)));
+        } else {
+          promises.push(Promise.resolve(null));
+        }
+
+        const [projectsResponse, notificationsResponse] = await Promise.all(promises);
+
+        if (projectsResponse) {
+          projectsData = projectsResponse.data.data || (Array.isArray(projectsResponse.data) ? projectsResponse.data : []);
+          setProjects(projectsData);
+          localStorage.setItem(`projects_${user.username}`, JSON.stringify(projectsData));
+          localStorage.setItem(`projects_${user.username}_timestamp`, now.toString());
+        }
+
+        if (notificationsResponse) {
+          notificationsData = notificationsResponse.data.data || [];
+          const isNewUser = localStorage.getItem('isNewUser') === null;
+          if (isNewUser) {
+            notificationsData = [
+              ...notificationsData,
+              {
+                _id: 'welcome',
+                message: 'Welcome to Intacom! Start by creating a project.',
+                createdAt: new Date().toISOString(),
+                type: 'welcome',
+              },
+            ];
+            localStorage.setItem('isNewUser', 'false');
+          }
+          setNotifications(notificationsData);
+          localStorage.setItem(`notifications_${user._id}`, JSON.stringify(notificationsData));
+          localStorage.setItem(`notifications_${user._id}_timestamp`, now.toString());
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch data:', error.response?.data || error.message);
+      setProjects([]);
+      setNotifications([]);
+      setErrorMessage(error.response?.data?.error || 'Failed to fetch data. Please ensure the backend server is running.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
-      
-     const fetchData = async () => {
-  setIsLoading(true);
-  try {
-    const [projectsResponse, notificationsResponse] = await Promise.all([
-      retry(() => axios.get<ProjectsResponse>(`${import.meta.env.VITE_API_URL}/projects/${user.username}`)),
-      retry(() => axios.get<NotificationsResponse>(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`)),
-    ]);
-    // ... (rest of the fetchData function remains the same)
-  } catch (error: any) {
-    console.error('Failed to fetch data:', error.response?.data || error.message);
-    setProjects([]);
-    setNotifications([]);
-    setErrorMessage(error.response?.data?.error || 'Failed to fetch data. Please ensure the backend server is running.');
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  if (e.target.files && e.target.files[0]) {
-    const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      console.log('Uploading profile picture...');
-      const response = await retry(() => axios.post<{ url: string }>(`${import.meta.env.VITE_API_URL}/uploads`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }));
-      console.log('Upload response:', response.data);
-      const profilePicUrl = response.data.url;
-      const updatedUser = { ...user, profilePic: profilePicUrl };
-      console.log('Updating user with new profile picture:', updatedUser);
-      const responseUser = await retry(() => axios.put(`${import.meta.env.VITE_API_URL}/users/${user?._id}`, updatedUser));
-      console.log('Update user response:', responseUser.data);
-      const newUserData = responseUser.data.data.user;
-      setUser(newUserData);
-      localStorage.setItem('user', JSON.stringify(newUserData));
-      setNotifications([...notifications, {
-        _id: `${notifications.length + 1}`,
-        message: 'Profile picture updated successfully!',
-        createdAt: new Date().toISOString(),
-        type: 'general',
-      }]);
-    } catch (error: any) {
-      console.error('Profile picture upload error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload. Please ensure the backend server is running.');
-    }
-  }
-};
-
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setErrorMessage('');
-  try {
-    const url = isLogin ? '/auth/login' : '/auth/register';
-    const payload = isLogin
-      ? { identifier, password }
-      : {
-          firstName,
-          lastName,
-          username,
-          password,
-          email,
-          gender,
-          birthday,
-          profilePic,
-        };
-    if (isLogin) {
-      const response = await retry(() => axios.post<LoginResponse>(`${import.meta.env.VITE_API_URL}${url}`, payload));
-      let userData: User;
-      if (response.data && 'data' in response.data && response.data.data && response.data.data.user) {
-        userData = response.data.data.user;
-      } else if (response.data && 'username' in response.data) {
-        userData = response.data as User;
-      } else {
-        console.error('Login response does not contain user data:', response.data);
-        setErrorMessage('Login failed: Invalid response from server');
-        return;
-      }
-      setUser(userData);
+      fetchData();
     } else {
-      const response = await retry(() => axios.post<RegisterResponse>(`${import.meta.env.VITE_API_URL}${url}`, payload));
-      if (response.data && response.data.user) {
-        setUser(response.data.user);
-        setShowCreateProject(true);
-      } else {
-        console.error('Register response does not contain user data:', response.data);
-        setErrorMessage('Registration failed: Invalid response from server');
+      localStorage.removeItem('user');
+      setProjects([]);
+      setNotifications([]);
+    }
+  }, [user]);
+
+  const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        console.log('Uploading profile picture...');
+        const response = await retry(() => axios.post<{ url: string }>(`${import.meta.env.VITE_API_URL}/uploads`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }));
+        console.log('Upload response:', response.data);
+        const profilePicUrl = response.data.url;
+        const updatedUser = { ...user, profilePic: profilePicUrl };
+        console.log('Updating user with new profile picture:', updatedUser);
+        const responseUser = await retry(() => axios.put(`${import.meta.env.VITE_API_URL}/users/${user?._id}`, updatedUser));
+        console.log('Update user response:', responseUser.data);
+        const newUserData = responseUser.data.data.user;
+        setUser(newUserData);
+        localStorage.setItem('user', JSON.stringify(newUserData));
+        setNotifications([...notifications, {
+          _id: `${notifications.length + 1}`,
+          message: 'Profile picture updated successfully!',
+          createdAt: new Date().toISOString(),
+          type: 'general',
+        }]);
+      } catch (error: any) {
+        console.error('Profile picture upload error:', error.response?.data || error.message);
+        setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload. Please ensure the backend server is running.');
       }
     }
-  } catch (error: any) {
-    console.error('Form submission error:', error.response?.data || error.message);
-    setErrorMessage(error.response?.data?.error || 'An error occurred during login/registration. Please check if the backend server is running.');
-  }
-};
-
-const handleRecoverPassword = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setErrorMessage('');
-  try {
-    const response = await retry(() => axios.get<RecoverResponse>(`${import.meta.env.VITE_API_URL}/auth/recover`, { params: { email: recoveryEmail } }));
-    alert(response.data.message + ' (Token: ' + response.data.token + '). Enter the token below.');
-    setShowRecover(false);
-    setShowReset(true);
-  } catch (error: any) {
-    console.error('Recover password error:', error.response?.data || error.message);
-    setErrorMessage(error.response?.data?.error || 'An error occurred during password recovery. Please check if the backend server is running.');
-  }
-};
-
-const handleResetPassword = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setErrorMessage('');
-  try {
-    const response = await retry(() => axios.put<ResetResponse>(`${import.meta.env.VITE_API_URL}/auth/reset`, { token: recoveryToken, newPassword }));
-    alert(response.data.message);
-    setShowReset(false);
-    setRecoveryEmail('');
-    setRecoveryToken('');
-    setNewPassword('');
-  } catch (error: any) {
-    console.error('Reset password error:', error.response?.data || error.message);
-    setErrorMessage(error.response?.data?.error || 'An error occurred during password reset. Please check if the backend server is running.');
-  }
-};
-
-const handleCreateProject = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setErrorMessage('');
-  try {
-    const payload = {
-      name: projectName,
-      description: projectDescription,
-      admin: user?.username,
-      color: projectColor || '#3a3a50',
-      sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
-    };
-    console.log('Creating project with payload:', payload);
-    const response = await retry(() => axios.post<ProjectResponse>(`${import.meta.env.VITE_API_URL}/projects`, payload));
-    console.log('Create project response:', response.data);
-    const newProject = response.data.data.project;
-    setProjects([...projects, newProject]);
-    setShowCreateProject(false);
-    setProjectName('');
-    setProjectDescription('');
-    setProjectColor('');
-    setSharedUsers([]);
-    navigate(`/project/${newProject._id}`);
-    setNotifications([...notifications, {
-      _id: `${notifications.length + 1}`,
-      message: `Project "${newProject.name}" created successfully!`,
-      createdAt: new Date().toISOString(),
-      type: 'general',
-    }]);
-  } catch (error: any) {
-    console.error('Create project error:', error.response?.data || error.message);
-    setErrorMessage(error.response?.data?.error || 'An error occurred during project creation. Please check if the backend server is running.');
-  }
-};
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -296,7 +258,7 @@ const handleCreateProject = async (e: React.FormEvent) => {
             profilePic,
           };
       if (isLogin) {
-        const response = await retry(() => axios.post<LoginResponse>(`http://localhost:3006${url}`, payload));
+        const response = await retry(() => axios.post<LoginResponse>(`${import.meta.env.VITE_API_URL}${url}`, payload));
         let userData: User;
         if (response.data && 'data' in response.data && response.data.data && response.data.data.user) {
           userData = response.data.data.user;
@@ -309,7 +271,7 @@ const handleCreateProject = async (e: React.FormEvent) => {
         }
         setUser(userData);
       } else {
-        const response = await retry(() => axios.post<RegisterResponse>(`http://localhost:3006${url}`, payload));
+        const response = await retry(() => axios.post<RegisterResponse>(`${import.meta.env.VITE_API_URL}${url}`, payload));
         if (response.data && response.data.user) {
           setUser(response.data.user);
           setShowCreateProject(true);
@@ -328,7 +290,7 @@ const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      const response = await retry(() => axios.get<RecoverResponse>(`http://localhost:3006/auth/recover`, { params: { email: recoveryEmail } }));
+      const response = await retry(() => axios.get<RecoverResponse>(`${import.meta.env.VITE_API_URL}/auth/recover`, { params: { email: recoveryEmail } }));
       alert(response.data.message + ' (Token: ' + response.data.token + '). Enter the token below.');
       setShowRecover(false);
       setShowReset(true);
@@ -342,7 +304,7 @@ const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      const response = await retry(() => axios.put<ResetResponse>(`http://localhost:3006/auth/reset`, { token: recoveryToken, newPassword }));
+      const response = await retry(() => axios.put<ResetResponse>(`${import.meta.env.VITE_API_URL}/auth/reset`, { token: recoveryToken, newPassword }));
       alert(response.data.message);
       setShowReset(false);
       setRecoveryEmail('');
@@ -374,7 +336,7 @@ const handleCreateProject = async (e: React.FormEvent) => {
         sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
       };
       console.log('Creating project with payload:', payload);
-      const response = await retry(() => axios.post<ProjectResponse>('http://localhost:3006/projects', payload));
+      const response = await retry(() => axios.post<ProjectResponse>(`${import.meta.env.VITE_API_URL}/projects`, payload));
       console.log('Create project response:', response.data);
       const newProject = response.data.data.project;
       setProjects([...projects, newProject]);

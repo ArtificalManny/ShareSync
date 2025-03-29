@@ -62,7 +62,99 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true); // Added loading state
+  const [isLoading, setIsLoading] = useState(true);
+
+  const retry = async <T,>(fn: () => Promise<T>, retries: number = 3, delay: number = 1000): Promise<T> => {
+    try {
+      return await fn();
+    } catch (error) {
+      if (retries === 0) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return retry(fn, retries - 1, delay);
+    }
+  };
+
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const cachedProjects = localStorage.getItem(`projects_${user.username}`);
+      const cachedProjectsTimestamp = localStorage.getItem(`projects_${user.username}_timestamp`);
+      const cachedActivities = localStorage.getItem(`activities_${user._id}`);
+      const cachedActivitiesTimestamp = localStorage.getItem(`activities_${user._id}_timestamp`);
+      const now = Date.now();
+
+      let projectsData: Project[] = [];
+      let activitiesData: Activity[] = [];
+
+      if (cachedProjects && cachedProjectsTimestamp && (now - parseInt(cachedProjectsTimestamp)) < CACHE_DURATION) {
+        projectsData = JSON.parse(cachedProjects);
+        setProjects(projectsData.map((project: Project, index: number) => ({
+          ...project,
+          status: index % 2 === 0 ? 'current' : 'past',
+        })));
+      }
+
+      if (cachedActivities && cachedActivitiesTimestamp && (now - parseInt(cachedActivitiesTimestamp)) < CACHE_DURATION) {
+        activitiesData = JSON.parse(cachedActivities);
+        setActivities(activitiesData);
+      }
+
+      const fetchProjects = !cachedProjects || (now - parseInt(cachedProjectsTimestamp || '0')) >= CACHE_DURATION;
+      const fetchActivities = !cachedActivities || (now - parseInt(cachedActivitiesTimestamp || '0')) >= CACHE_DURATION;
+
+      if (fetchProjects || fetchActivities) {
+        const promises: Promise<any>[] = [];
+        if (fetchProjects) {
+          promises.push(retry(() => axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`)));
+        } else {
+          promises.push(Promise.resolve(null));
+        }
+
+        if (fetchActivities) {
+          promises.push(retry(() => axios.get(`${import.meta.env.VITE_API_URL}/activities/user/${user?._id}`)));
+        } else {
+          promises.push(Promise.resolve(null));
+        }
+
+        const [projectsResponse, activitiesResponse] = await Promise.all(promises);
+
+        if (projectsResponse) {
+          projectsData = projectsResponse.data.data || (Array.isArray(projectsResponse.data) ? projectsResponse.data : []);
+          const updatedProjects = projectsData.map((project: Project, index: number) => ({
+            ...project,
+            status: index % 2 === 0 ? 'current' : 'past',
+          }));
+          setProjects(updatedProjects);
+          localStorage.setItem(`projects_${user.username}`, JSON.stringify(projectsData));
+          localStorage.setItem(`projects_${user.username}_timestamp`, now.toString());
+        }
+
+        if (activitiesResponse) {
+          activitiesData = activitiesResponse.data || [];
+          setActivities(activitiesData);
+          localStorage.setItem(`activities_${user._id}`, JSON.stringify(activitiesData));
+          localStorage.setItem(`activities_${user._id}_timestamp`, now.toString());
+        }
+      }
+
+      const mockConnections: Connection[] = [
+        { _id: '1', username: 'JohnDoe', profilePic: 'https://via.placeholder.com/40' },
+        { _id: '2', username: 'SarahSmith', profilePic: 'https://via.placeholder.com/40' },
+        { _id: '3', username: 'MikeJohnson', profilePic: 'https://via.placeholder.com/40' },
+      ];
+      setConnections(mockConnections);
+    } catch (error: any) {
+      console.error('Failed to fetch data:', error.response?.data || error.message);
+      setProjects([]);
+      setActivities([]);
+      setConnections([]);
+      setErrorMessage(error.response?.data?.error || 'Failed to fetch data. Please ensure the backend server is running.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -73,44 +165,6 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
       setSchool(user.school || '');
       setOccupation(user.occupation || '');
       setHobbies(user.hobbies || []);
-
-      const fetchData = async () => {
-        setIsLoading(true);
-        try {
-          // Parallelize API calls using Promise.all
-          const [projectsResponse, activitiesResponse] = await Promise.all([
-            axios.get(`http://localhost:3006/projects/${user.username}`),
-            axios.get(`http://localhost:3006/activities/user/${user?._id}`),
-          ]);
-
-          // Process projects
-          const projectsData = projectsResponse.data.data || (Array.isArray(projectsResponse.data) ? projectsResponse.data : []);
-          const updatedProjects = projectsData.map((project: Project, index: number) => ({
-            ...project,
-            status: index % 2 === 0 ? 'current' : 'past',
-          }));
-          setProjects(updatedProjects);
-
-          // Process activities
-          setActivities(activitiesResponse.data || []);
-
-          // Fetch connections (mocked for now)
-          const mockConnections: Connection[] = [
-            { _id: '1', username: 'JohnDoe', profilePic: 'https://via.placeholder.com/40' },
-            { _id: '2', username: 'SarahSmith', profilePic: 'https://via.placeholder.com/40' },
-            { _id: '3', username: 'MikeJohnson', profilePic: 'https://via.placeholder.com/40' },
-          ];
-          setConnections(mockConnections);
-        } catch (error: any) {
-          console.error('Failed to fetch data:', error.response?.data || error.message);
-          setProjects([]);
-          setActivities([]);
-          setConnections([]);
-          setErrorMessage(error.response?.data?.error || 'Failed to fetch data. Please ensure the backend server is running.');
-        } finally {
-          setIsLoading(false);
-        }
-      };
 
       fetchData();
     }
@@ -123,14 +177,13 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
     try {
       const updatedUser = { ...user, firstName, lastName, email, bio, school, occupation, hobbies };
       console.log('Updating profile with payload:', updatedUser);
-      const response = await axios.put(`http://localhost:3006/users/${user?._id}`, updatedUser);
+      const response = await retry(() => axios.put(`${import.meta.env.VITE_API_URL}/users/${user?._id}`, updatedUser));
       console.log('Update profile response:', response.data);
       const newUserData = response.data.data.user;
       setLocalUser(newUserData);
       setUser(newUserData);
       localStorage.setItem('user', JSON.stringify(newUserData));
       setSuccessMessage('Profile updated successfully');
-      // Add activity
       setActivities([
         ...activities,
         {
@@ -154,23 +207,22 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
 
       try {
         console.log('Uploading cover photo...');
-        const response = await axios.post<{ url: string }>('http://localhost:3006/uploads', formData, {
+        const response = await retry(() => axios.post<{ url: string }>(`${import.meta.env.VITE_API_URL}/uploads`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-        });
+        }));
         console.log('Upload cover photo response:', response.data);
         const coverPhotoUrl = response.data.url;
         const updatedUser = { ...user, coverPhoto: coverPhotoUrl };
         console.log('Updating user with new cover photo:', updatedUser);
-        const responseUser = await axios.put(`http://localhost:3006/users/${user?._id}`, updatedUser);
+        const responseUser = await retry(() => axios.put(`${import.meta.env.VITE_API_URL}/users/${user?._id}`, updatedUser));
         console.log('Update user response:', responseUser.data);
         const newUserData = responseUser.data.data.user;
         setLocalUser(newUserData);
         setUser(newUserData);
         localStorage.setItem('user', JSON.stringify(newUserData));
         setSuccessMessage('Cover photo updated successfully');
-        // Add activity
         setActivities([
           ...activities,
           {
@@ -195,23 +247,22 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
 
       try {
         console.log('Uploading profile picture...');
-        const response = await axios.post<{ url: string }>('http://localhost:3006/uploads', formData, {
+        const response = await retry(() => axios.post<{ url: string }>(`${import.meta.env.VITE_API_URL}/uploads`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-        });
+        }));
         console.log('Upload profile picture response:', response.data);
         const profilePicUrl = response.data.url;
         const updatedUser = { ...user, profilePic: profilePicUrl };
         console.log('Updating user with new profile picture:', updatedUser);
-        const responseUser = await axios.put(`http://localhost:3006/users/${user?._id}`, updatedUser);
+        const responseUser = await retry(() => axios.put(`${import.meta.env.VITE_API_URL}/users/${user?._id}`, updatedUser));
         console.log('Update user response:', responseUser.data);
         const newUserData = responseUser.data.data.user;
         setLocalUser(newUserData);
         setUser(newUserData);
         localStorage.setItem('user', JSON.stringify(newUserData));
         setSuccessMessage('Profile picture updated successfully');
-        // Add activity
         setActivities([
           ...activities,
           {
