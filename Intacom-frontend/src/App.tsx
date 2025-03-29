@@ -1,22 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useNavigate, Routes, Route, Link, useParams } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBell, faUserCircle, faPlusCircle, faHome, faFolder, faUpload, faCog, faSignOutAlt, faUser, faSearch } from '@fortawesome/free-solid-svg-icons';
+import './App.css';
 import Home from './pages/Home';
-import ProjectsPage from './pages/ProjectsPage';
-import Upload from './Upload';
-import Settings from './Settings';
-import ProjectHome from './pages/ProjectHome';
 import Profile from './pages/Profile';
+import Project from './pages/Project';
 
-// Define User type
 interface User {
   _id?: string;
   firstName?: string;
   lastName?: string;
   username: string;
   email?: string;
+  gender?: string;
+  birthday?: { month: string; day: string; year: string };
   profilePic?: string;
   coverPhoto?: string;
   bio?: string;
@@ -25,7 +22,6 @@ interface User {
   hobbies?: string[];
 }
 
-// Define Project type
 interface Project {
   _id: string;
   name: string;
@@ -33,120 +29,57 @@ interface Project {
   admin?: string;
   color?: string;
   sharedWith?: { userId: string; role: 'Admin' | 'Editor' | 'Viewer' }[];
+  status?: 'current' | 'past';
 }
 
-// Define Notification type
 interface Notification {
   _id: string;
   message: string;
   createdAt: string;
-  type?: 'welcome' | 'project_invite' | 'task_assigned' | 'general';
-  projectId?: string;
-  action?: 'accept' | 'decline';
-  status?: 'pending' | 'accepted' | 'declined';
-}
-
-// Define Search Result type
-interface SearchResult {
-  type: 'user' | 'project' | 'task';
-  id: string;
-  name: string;
-  description?: string;
-}
-
-// Define Axios response types
-interface RegisterResponse {
-  data: {
-    user: User;
-    message: string;
-  };
-}
-
-interface LoginResponse {
-  data?: {
-    user: User;
-  };
-  _id?: string;
-  firstName?: string;
-  username?: string;
-  email?: string;
-  profilePic?: string;
-}
-
-interface RecoverResponse {
-  data: {
-    message: string;
-    token: string;
-  };
-}
-
-interface ResetResponse {
-  data: {
-    message: string;
-    user: User;
-  };
-}
-
-interface ProjectResponse {
-  data: {
-    project: Project;
-  };
+  type: 'welcome' | 'general';
 }
 
 interface ProjectsResponse {
-  data?: Project[];
-  [key: number]: Project;
-  length?: number;
+  data: Project[];
 }
 
 interface NotificationsResponse {
   data: Notification[];
 }
 
-interface UserResponse {
-  data: {
-    user: User;
-  };
+interface LoginResponse {
+  data?: { user: User };
+  username?: string;
 }
 
-// Public Profile Component
-const PublicProfile: React.FC = () => {
-  const { username } = useParams<{ username: string }>();
-  const [publicUser, setPublicUser] = useState<User | null>(null);
+interface RegisterResponse {
+  user: User;
+}
 
-  useEffect(() => {
-    const fetchPublicUser = async () => {
-      try {
-        const response = await axios.get<UserResponse>(`http://localhost:3000/users/by-username/${username}`);
-        setPublicUser(response.data.data.user);
-      } catch (error: any) {
-        console.error('Failed to fetch public user:', error.response?.data || error.message);
-      }
-    };
-    fetchPublicUser();
-  }, [username]);
+interface RecoverResponse {
+  message: string;
+  token: string;
+}
 
-  if (!publicUser) {
-    return <div className="loading">Loading public profile...</div>;
-  }
+interface ResetResponse {
+  message: string;
+  user: User;
+}
 
-  return (
-    <div className="public-profile">
-      <div className="profile-section">
-        {publicUser.profilePic ? (
-          <img src={publicUser.profilePic} alt="Profile" className="profile-pic" />
-        ) : (
-          <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
-        )}
-        <h3>{publicUser.firstName || publicUser.username}</h3>
-        <p>@{publicUser.username}</p>
-        <p>{publicUser.bio || 'No bio available'}</p>
-      </div>
-    </div>
-  );
-};
+interface ProjectResponse {
+  data: { project: Project };
+}
 
 const App: React.FC = () => {
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // Added loading state
+  const [isLogin, setIsLogin] = useState(true);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -156,65 +89,35 @@ const App: React.FC = () => {
   const [gender, setGender] = useState('');
   const [birthday, setBirthday] = useState({ month: '', day: '', year: '' });
   const [profilePic, setProfilePic] = useState('');
-  const [isLogin, setIsLogin] = useState(true);
-  const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
   const [showRecover, setShowRecover] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryToken, setRecoveryToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [projects, setProjects] = useState<Project[]>([]);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [projectColor, setProjectColor] = useState('');
   const [sharedUsers, setSharedUsers] = useState<{ email: string; role: 'Admin' | 'Editor' | 'Viewer' }[]>([]);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
   const navigate = useNavigate();
 
-  // Mocked social proof data for the registration screen
-  const totalUsers = 1500; // Mocked number of users
-  const totalPlatformProjects = 3200; // Mocked number of projects
-
-  // Save user to localStorage whenever it changes
   useEffect(() => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('user');
-    }
-  }, [user]);
+      const fetchData = async () => {
+        setIsLoading(true);
+        try {
+          const [projectsResponse, notificationsResponse] = await Promise.all([
+            axios.get<ProjectsResponse>(`http://localhost:3006/projects/${user.username}`),
+            axios.get<NotificationsResponse>(`http://localhost:3006/notifications/${user._id}`),
+          ]);
 
-  // Fetch projects and notifications when user logs in
-  useEffect(() => {
-    if (user && window.location.pathname === '/') {
-      navigate('/home');
-    }
-    if (user) {
-      const fetchProjects = async () => {
-        try {
-          const response = await axios.get<ProjectsResponse>(`http://localhost:3000/projects/${user.username}`);
-          const projectsData = response.data.data || (Array.isArray(response.data) ? response.data : []);
+          // Process projects
+          const projectsData = projectsResponse.data.data || (Array.isArray(projectsResponse.data) ? projectsResponse.data : []);
           setProjects(projectsData);
-        } catch (error: any) {
-          console.error('Failed to fetch projects:', error.response?.data || error.message);
-          setProjects([]);
-          setErrorMessage(error.response?.data?.error || 'Failed to fetch projects. Please ensure the backend server is running.');
-        }
-      };
-      const fetchNotifications = async () => {
-        try {
-          const response = await axios.get<NotificationsResponse>(`http://localhost:3000/notifications/${user._id}`);
-          let notificationsData = response.data.data || [];
-          // Add a welcome notification for new users (Reciprocity - Influence)
+
+          // Process notifications
+          let notificationsData = notificationsResponse.data.data || [];
           const isNewUser = localStorage.getItem('isNewUser') === null;
           if (isNewUser) {
             notificationsData = [
@@ -230,16 +133,23 @@ const App: React.FC = () => {
           }
           setNotifications(notificationsData);
         } catch (error: any) {
-          console.error('Failed to fetch notifications:', error.response?.data || error.message);
+          console.error('Failed to fetch data:', error.response?.data || error.message);
+          setProjects([]);
           setNotifications([]);
+          setErrorMessage(error.response?.data?.error || 'Failed to fetch data. Please ensure the backend server is running.');
+        } finally {
+          setIsLoading(false);
         }
       };
-      fetchProjects();
-      fetchNotifications();
-    }
-  }, [user, navigate]);
 
-  // Handle profile picture upload
+      fetchData();
+    } else {
+      localStorage.removeItem('user');
+      setProjects([]);
+      setNotifications([]);
+    }
+  }, [user]);
+
   const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -248,7 +158,7 @@ const App: React.FC = () => {
 
       try {
         console.log('Uploading profile picture...');
-        const response = await axios.post<{ url: string }>('http://localhost:3000/uploads', formData, {
+        const response = await axios.post<{ url: string }>('http://localhost:3006/uploads', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -257,7 +167,7 @@ const App: React.FC = () => {
         const profilePicUrl = response.data.url;
         const updatedUser = { ...user, profilePic: profilePicUrl };
         console.log('Updating user with new profile picture:', updatedUser);
-        const responseUser = await axios.put(`http://localhost:3000/users/${user?._id}`, updatedUser);
+        const responseUser = await axios.put(`http://localhost:3006/users/${user?._id}`, updatedUser);
         console.log('Update user response:', responseUser.data);
         const newUserData = responseUser.data.data.user;
         setUser(newUserData);
@@ -275,7 +185,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Handle form submission for login and registration
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -294,7 +203,7 @@ const App: React.FC = () => {
             profilePic,
           };
       if (isLogin) {
-        const response = await axios.post<LoginResponse>(`http://localhost:3000${url}`, payload);
+        const response = await axios.post<LoginResponse>(`http://localhost:3006${url}`, payload);
         let userData: User;
         if (response.data && 'data' in response.data && response.data.data && response.data.data.user) {
           userData = response.data.data.user;
@@ -307,7 +216,7 @@ const App: React.FC = () => {
         }
         setUser(userData);
       } else {
-        const response = await axios.post<RegisterResponse>(`http://localhost:3000${url}`, payload);
+        const response = await axios.post<RegisterResponse>(`http://localhost:3006${url}`, payload);
         if (response.data && response.data.user) {
           setUser(response.data.user);
           setShowCreateProject(true);
@@ -322,27 +231,11 @@ const App: React.FC = () => {
     }
   };
 
-  // Handle logout
-  const handleLogout = () => {
-    setUser(null);
-    setIdentifier('');
-    setPassword('');
-    setFirstName('');
-    setLastName('');
-    setUsername('');
-    setEmail('');
-    setGender('');
-    setBirthday({ month: '', day: '', year: '' });
-    setProfilePic('');
-    navigate('/');
-  };
-
-  // Handle password recovery
   const handleRecoverPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      const response = await axios.get<RecoverResponse>(`http://localhost:3000/auth/recover`, { params: { email: recoveryEmail } });
+      const response = await axios.get<RecoverResponse>(`http://localhost:3006/auth/recover`, { params: { email: recoveryEmail } });
       alert(response.data.message + ' (Token: ' + response.data.token + '). Enter the token below.');
       setShowRecover(false);
       setShowReset(true);
@@ -352,12 +245,11 @@ const App: React.FC = () => {
     }
   };
 
-  // Handle password reset
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      const response = await axios.put<ResetResponse>(`http://localhost:3000/auth/reset`, { token: recoveryToken, newPassword });
+      const response = await axios.put<ResetResponse>(`http://localhost:3006/auth/reset`, { token: recoveryToken, newPassword });
       alert(response.data.message);
       setShowReset(false);
       setRecoveryEmail('');
@@ -369,17 +261,14 @@ const App: React.FC = () => {
     }
   };
 
-  // Handle adding a user to share the project with
   const handleAddSharedUser = (email: string, role: 'Admin' | 'Editor' | 'Viewer') => {
     setSharedUsers([...sharedUsers, { email, role }]);
   };
 
-  // Handle removing a shared user
   const handleRemoveSharedUser = (email: string) => {
     setSharedUsers(sharedUsers.filter((user) => user.email !== email));
   };
 
-  // Handle project creation
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -392,7 +281,7 @@ const App: React.FC = () => {
         sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
       };
       console.log('Creating project with payload:', payload);
-      const response = await axios.post<ProjectResponse>('http://localhost:3000/projects', payload);
+      const response = await axios.post<ProjectResponse>('http://localhost:3006/projects', payload);
       console.log('Create project response:', response.data);
       const newProject = response.data.data.project;
       setProjects([...projects, newProject]);
@@ -414,306 +303,200 @@ const App: React.FC = () => {
     }
   };
 
-  // Handle notification actions (e.g., accept/decline project invite)
-  const handleNotificationAction = (notificationId: string, action: 'accept' | 'decline') => {
-    setNotifications(
-      notifications.map((notification) =>
-        notification._id === notificationId
-          ? { ...notification, status: action === 'accept' ? 'accepted' : 'declined' }
-          : notification
-      )
-    );
-    if (action === 'accept' && notifications.find((n) => n._id === notificationId)?.projectId) {
-      navigate(`/project/${notifications.find((n) => n._id === notificationId)?.projectId}`);
-    }
+  const handleLogout = () => {
+    setUser(null);
+    navigate('/');
   };
-
-  // Handle search functionality (mocked for now)
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      setShowSearchResults(false);
-      return;
-    }
-    // Mocked search results; in a real app, query the backend
-    const mockResults: SearchResult[] = [
-      { type: 'user', id: '1', name: 'JohnDoe', description: '@johndoe' },
-      { type: 'project', id: '2', name: 'Project Alpha', description: 'A collaborative project' },
-      { type: 'task', id: '3', name: 'Design UI', description: 'Task in Project Alpha' },
-    ].filter((result) =>
-      result.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (result.description && result.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-    setSearchResults(mockResults);
-    setShowSearchResults(true);
-  };
-
-  // Handle search result click
-  const handleSearchResultClick = (result: SearchResult) => {
-    if (result.type === 'user') {
-      navigate(`/user/${result.name}`);
-    } else if (result.type === 'project') {
-      navigate(`/project/${result.id}`);
-    } else if (result.type === 'task') {
-      navigate(`/project/${result.id}`); // Adjust based on task routing
-    }
-    setShowSearchResults(false);
-    setSearchQuery('');
-  };
-
-  const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
-  const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
-  const years = Array.from({ length: 100 }, (_, i) => (new Date().getFullYear() - i).toString());
 
   return (
-    <>
-      <header className="header-modern">
-        <Link to="/">
-          <img src="https://via.placeholder.com/40?text=Intacom" alt="Intacom Logo" />
-        </Link>
+    <div className="app-container">
+      <header className="header glassmorphic">
+        <div className="logo">Intacom</div>
+        <nav className="nav">
+          {user ? (
+            <>
+              <button className="neumorphic" onClick={() => navigate('/home')}>
+                Home
+              </button>
+              <button className="neumorphic" onClick={() => navigate('/profile')}>
+                Profile
+              </button>
+              <button className="neumorphic" onClick={() => setShowCreateProject(true)}>
+                Create Project
+              </button>
+              <button className="neumorphic" onClick={handleLogout}>
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="neumorphic" onClick={() => setIsLogin(true)}>
+                Login
+              </button>
+              <button className="neumorphic" onClick={() => setIsLogin(false)}>
+                Register
+              </button>
+            </>
+          )}
+        </nav>
         {user && (
-          <div className="header-center">
-            <form onSubmit={handleSearch} className="search-form">
-              <div className="search-bar">
-                <FontAwesomeIcon icon={faSearch} className="search-icon" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for projects, users, or tasks..."
-                  onFocus={() => setShowSearchResults(true)}
-                />
+          <div className="profile-pic">
+            {user.profilePic ? (
+              <img src={user.profilePic} alt="Profile" className="profile-pic-small" />
+            ) : (
+              <div className="profile-pic-placeholder">
+                {user.firstName ? user.firstName[0] : user.username[0]}
               </div>
-              {showSearchResults && searchResults.length > 0 && (
-                <div className="search-results glassmorphic">
-                  <ul>
-                    {searchResults.map((result) => (
-                      <li
-                        key={result.id}
-                        onClick={() => handleSearchResultClick(result)}
-                      >
-                        <strong>{result.type.charAt(0).toUpperCase() + result.type.slice(1)}:</strong> {result.name}
-                        {result.description && <span> - {result.description}</span>}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </form>
-          </div>
-        )}
-        {user && (
-          <div className="top-right">
-            <div className="notifications">
-              <FontAwesomeIcon
-                icon={faBell}
-                className="bell"
-                onClick={() => setShowNotifications(!showNotifications)}
+            )}
+            <label htmlFor="profilePicUpload">
+              <input
+                id="profilePicUpload"
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePicUpload}
+                style={{ display: 'none' }}
               />
-              {notifications.length > 0 && (
-                <span className="notification-count">{notifications.length}</span>
-              )}
-              {showNotifications && (
-                <div className="notification-dropdown glassmorphic">
-                  <h4>Notifications</h4>
-                  {notifications.length === 0 ? (
-                    <p>No new notifications</p>
-                  ) : (
-                    <ul>
-                      {notifications.map((notification) => (
-                        <li key={notification._id} className={notification.status === 'pending' ? 'pending' : ''}>
-                          <div className="notification-message">
-                            {notification.message} - {new Date(notification.createdAt).toLocaleString()}
-                          </div>
-                          {notification.type === 'project_invite' && notification.status === 'pending' && (
-                            <div className="notification-actions">
-                              <button
-                                className="neumorphic accept"
-                                onClick={() => handleNotificationAction(notification._id, 'accept')}
-                              >
-                                Accept
-                              </button>
-                              <button
-                                className="neumorphic decline"
-                                onClick={() => handleNotificationAction(notification._id, 'decline')}
-                              >
-                                Decline
-                              </button>
-                            </div>
-                          )}
-                          {notification.status === 'accepted' && (
-                            <span className="notification-status accepted">Accepted</span>
-                          )}
-                          {notification.status === 'declined' && (
-                            <span className="notification-status declined">Declined</span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="user-profile">
-              <Link to="/profile">
-                {user.profilePic ? (
-                  <img src={user.profilePic} alt="Profile" className="profile-pic" />
-                ) : (
-                  <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
-                )}
-              </Link>
-            </div>
+              <button type="button" className="neumorphic">Change</button>
+            </label>
           </div>
         )}
       </header>
-      <div className="app-container">
-        {user ? (
-          <aside className="sidebar-modern glassmorphic">
-            <div className="profile-section">
-              <Link to="/profile">
-                <label htmlFor="profilePicUpload" className="profile-pic-label">
-                  {user.profilePic ? (
-                    <img src={user.profilePic} alt="Profile" className="profile-pic" />
-                  ) : (
-                    <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
-                  )}
-                  <input
-                    id="profilePicUpload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleProfilePicUpload}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-                <h3>{user.firstName} {user.lastName}</h3>
-              </Link>
-            </div>
-            <ul>
-              <li>
-                <FontAwesomeIcon icon={faPlusCircle} className="menu-icon" />
-                <a href="#" onClick={(e) => { e.preventDefault(); setShowCreateProject(true); }}>
-                  Create Project
-                </a>
-              </li>
-              <li>
-                <FontAwesomeIcon icon={faHome} className="menu-icon" />
-                <Link to="/home">Home</Link>
-              </li>
-              <li>
-                <FontAwesomeIcon icon={faFolder} className="menu-icon" />
-                <Link to="/projects">Projects</Link>
-              </li>
-              <li>
-                <FontAwesomeIcon icon={faUpload} className="menu-icon" />
-                <Link to="/upload">Upload</Link>
-              </li>
-              <li>
-                <FontAwesomeIcon icon={faCog} className="menu-icon" />
-                <Link to="/settings">Settings</Link>
-              </li>
-              <li>
-                <FontAwesomeIcon icon={faSignOutAlt} className="menu-icon" />
-                <a href="#" onClick={handleLogout}>
-                  Logout
-                </a>
-              </li>
-            </ul>
-            {projects.map((project) => (
-              <div
-                key={project._id}
-                className="project-link glassmorphic"
-                style={{
-                  background: project.color || '#3a3a50',
-                }}
-              >
-                <Link to={`/project/${project._id}`}>
-                  {project.name}
-                </Link>
-              </div>
-            ))}
-          </aside>
-        ) : (
-          <aside className="sidebar-modern glassmorphic">
-            <Routes>
-              <Route path="/user/:username" element={<PublicProfile />} />
-            </Routes>
-          </aside>
-        )}
-        <main className={user ? 'main-modern' : 'full-screen'}>
-          {user ? (
-            <>
-              <Routes>
-                <Route path="/" element={<div>Redirecting to login...</div>} />
-                <Route
-                  path="/home"
-                  element={
-                    <Home
-                      projects={projects}
-                      showCreateProject={showCreateProject}
-                      setShowCreateProject={setShowCreateProject}
-                      projectName={projectName}
-                      setProjectName={setProjectName}
-                      projectDescription={projectDescription}
-                      setProjectDescription={setProjectDescription}
-                      projectColor={projectColor}
-                      setProjectColor={setProjectColor}
-                      sharedUsers={sharedUsers}
-                      handleAddSharedUser={handleAddSharedUser}
-                      handleRemoveSharedUser={handleRemoveSharedUser}
-                      handleCreateProject={handleCreateProject}
-                    />
-                  }
-                />
-                <Route path="/projects" element={<ProjectsPage />} />
-                <Route path="/upload" element={<Upload projects={projects} />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/project/:id" element={<ProjectHome projects={projects} />} />
-                <Route path="/profile" element={<Profile setUser={setUser} />} />
-              </Routes>
-            </>
+      {user && (
+        <aside className="sidebar glassmorphic">
+          <h3>Projects</h3>
+          {isLoading ? (
+            <p style={{ color: '#00d4ff' }}>Loading projects...</p>
+          ) : projects.length === 0 ? (
+            <p>No projects yet. Create a project to get started!</p>
           ) : (
-            <form onSubmit={handleSubmit} className="glassmorphic">
-              <h2 style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: 'bold', fontSize: '2.5rem', color: '#6A5ACD', textAlign: 'center', marginBottom: '0.5rem' }}>
-                Intacom
-              </h2>
-              {errorMessage && <div className="error-message">{errorMessage}</div>}
-              {isLogin ? (
-                <>
-                  <label htmlFor="identifier">Email or Username</label>
+            <ul className="project-list">
+              {projects.map((project) => (
+                <li
+                  key={project._id}
+                  className="project-item"
+                  onClick={() => navigate(`/project/${project._id}`)}
+                >
+                  <span
+                    className="project-color"
+                    style={{ backgroundColor: project.color || '#3a3a50' }}
+                  ></span>
+                  {project.name}
+                </li>
+              ))}
+            </ul>
+          )}
+          <button className="neumorphic" onClick={() => setShowCreateProject(true)}>
+            Create Project
+          </button>
+          <h3>Notifications ({notifications.length})</h3>
+          {isLoading ? (
+            <p style={{ color: '#00d4ff' }}>Loading notifications...</p>
+          ) : notifications.length === 0 ? (
+            <p>No notifications yet.</p>
+          ) : (
+            <ul className="notification-list">
+              {notifications.map((notification) => (
+                <li key={notification._id} className="notification-item">
+                  {notification.message} - {new Date(notification.createdAt).toLocaleString()}
+                </li>
+              ))}
+            </ul>
+          )}
+        </aside>
+      )}
+      <main className="main-content">
+        {user ? (
+          <Routes>
+            <Route path="/home" element={
+              <Home
+                projects={projects}
+                showCreateProject={showCreateProject}
+                setShowCreateProject={setShowCreateProject}
+                projectName={projectName}
+                setProjectName={setProjectName}
+                projectDescription={projectDescription}
+                setProjectDescription={setProjectDescription}
+                projectColor={projectColor}
+                setProjectColor={setProjectColor}
+                sharedUsers={sharedUsers}
+                handleAddSharedUser={handleAddSharedUser}
+                handleRemoveSharedUser={handleRemoveSharedUser}
+                handleCreateProject={handleCreateProject}
+              />
+            } />
+            <Route path="/profile" element={<Profile setUser={setUser} />} />
+            <Route path="/project/:id" element={<Project projects={projects} />} />
+            <Route path="*" element={<Home
+              projects={projects}
+              showCreateProject={showCreateProject}
+              setShowCreateProject={setShowCreateProject}
+              projectName={projectName}
+              setProjectName={setProjectName}
+              projectDescription={projectDescription}
+              setProjectDescription={setProjectDescription}
+              projectColor={projectColor}
+              setProjectColor={setProjectColor}
+              sharedUsers={sharedUsers}
+              handleAddSharedUser={handleAddSharedUser}
+              handleRemoveSharedUser={handleRemoveSharedUser}
+              handleCreateProject={handleCreateProject}
+            />} />
+          </Routes>
+        ) : (
+          <div className="auth-container glassmorphic">
+            <h2>{isLogin ? 'Login' : 'Register'}</h2>
+            {showRecover ? (
+              <form onSubmit={handleRecoverPassword}>
+                <div className="form-group">
+                  <label htmlFor="recoveryEmail">Email</label>
                   <input
-                    id="identifier"
+                    id="recoveryEmail"
+                    type="email"
+                    value={recoveryEmail}
+                    onChange={(e) => setRecoveryEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+                <button type="submit" className="neumorphic">Recover Password</button>
+                <button type="button" className="neumorphic" onClick={() => setShowRecover(false)}>
+                  Cancel
+                </button>
+              </form>
+            ) : showReset ? (
+              <form onSubmit={handleResetPassword}>
+                <div className="form-group">
+                  <label htmlFor="recoveryToken">Recovery Token</label>
+                  <input
+                    id="recoveryToken"
                     type="text"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="Email or Username"
+                    value={recoveryToken}
+                    onChange={(e) => setRecoveryToken(e.target.value)}
+                    placeholder="Enter the recovery token"
                     required
                   />
-                  <label htmlFor="password">Password</label>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="newPassword">New Password</label>
                   <input
-                    id="password"
+                    id="newPassword"
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter your new password"
                     required
                   />
-                  <button type="submit" className="neumorphic">Login</button>
-                  <button type="button" className="neumorphic" onClick={() => setShowRecover(true)}>
-                    Forgot Password?
-                  </button>
-                  <button type="button" className="neumorphic" onClick={() => setIsLogin(!isLogin)}>
-                    Switch to Register
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="subtitle">Create an account</div>
-                  <div className="social-proof">
-                    Collaborate with {totalUsers} professionals on {totalPlatformProjects} projects
-                  </div>
-                  <div className="name-container">
-                    <div>
+                </div>
+                <button type="submit" className="neumorphic">Reset Password</button>
+                <button type="button" className="neumorphic" onClick={() => setShowReset(false)}>
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                {!isLogin && (
+                  <>
+                    <div className="form-group">
                       <label htmlFor="firstName">First Name</label>
                       <input
                         id="firstName"
@@ -724,7 +507,7 @@ const App: React.FC = () => {
                         required
                       />
                     </div>
-                    <div>
+                    <div className="form-group">
                       <label htmlFor="lastName">Last Name</label>
                       <input
                         id="lastName"
@@ -735,16 +518,33 @@ const App: React.FC = () => {
                         required
                       />
                     </div>
-                  </div>
-                  <label htmlFor="username">Username</label>
+                  </>
+                )}
+                <div className="form-group">
+                  <label htmlFor="username">{isLogin ? 'Username or Email' : 'Username'}</label>
                   <input
                     id="username"
                     type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Username"
+                    value={isLogin ? identifier : username}
+                    onChange={(e) => isLogin ? setIdentifier(e.target.value) : setUsername(e.target.value)}
+                    placeholder={isLogin ? 'Username or Email' : 'Username'}
                     required
                   />
+                </div>
+                {!isLogin && (
+                  <div className="form-group">
+                    <label htmlFor="email">Email</label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Email"
+                      required
+                    />
+                  </div>
+                )}
+                <div className="form-group">
                   <label htmlFor="password">Password</label>
                   <input
                     id="password"
@@ -754,130 +554,70 @@ const App: React.FC = () => {
                     placeholder="Password"
                     required
                   />
-                  <label htmlFor="email">Email Address</label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email Address"
-                    required
-                  />
-                  <label htmlFor="gender">Gender</label>
-                  <select
-                    id="gender"
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    required
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                  <label>Birthday</label>
-                  <div className="birthday-container">
-                    <select
-                      value={birthday.month}
-                      onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
-                      required
-                    >
-                      <option value="">Month</option>
-                      {months.map((month) => (
-                        <option key={month} value={month}>{month}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={birthday.day}
-                      onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
-                      required
-                    >
-                      <option value="">Day</option>
-                      {days.map((day) => (
-                        <option key={day} value={day}>{day}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={birthday.year}
-                      onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
-                      required
-                    >
-                      <option value="">Year</option>
-                      {years.map((year) => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <label htmlFor="profilePic">Profile Picture URL (optional)</label>
-                  <input
-                    id="profilePic"
-                    type="text"
-                    value={profilePic}
-                    onChange={(e) => setProfilePic(e.target.value)}
-                    placeholder="Profile Picture URL (optional)"
-                  />
-                  <button type="submit" className="neumorphic">Register</button>
+                </div>
+                {!isLogin && (
+                  <>
+                    <div className="form-group">
+                      <label htmlFor="gender">Gender</label>
+                      <select
+                        id="gender"
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Birthday</label>
+                      <div className="birthday-input">
+                        <input
+                          type="text"
+                          placeholder="MM"
+                          value={birthday.month}
+                          onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
+                          maxLength={2}
+                        />
+                        <input
+                          type="text"
+                          placeholder="DD"
+                          value={birthday.day}
+                          onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
+                          maxLength={2}
+                        />
+                        <input
+                          type="text"
+                          placeholder="YYYY"
+                          value={birthday.year}
+                          onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
+                          maxLength={4}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+                <button type="submit" className="neumorphic">{isLogin ? 'Login' : 'Register'}</button>
+                {isLogin && (
                   <button type="button" className="neumorphic" onClick={() => setShowRecover(true)}>
                     Forgot Password?
                   </button>
-                  <button type="button" className="neumorphic" onClick={() => setIsLogin(!isLogin)}>
-                    Switch to Login
-                  </button>
-                </>
-              )}
-            </form>
-          )}
-          {showRecover && (
-            <div className="modal glassmorphic">
-              <h3>Forgot Password</h3>
-              <form onSubmit={handleRecoverPassword}>
-                <label htmlFor="recoveryEmail">Email Address</label>
-                <input
-                  id="recoveryEmail"
-                  type="email"
-                  value={recoveryEmail}
-                  onChange={(e) => setRecoveryEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  required
-                />
-                <button type="submit" className="neumorphic">Recover Password</button>
-                <button type="button" className="neumorphic" onClick={() => setShowRecover(false)}>Cancel</button>
+                )}
               </form>
-            </div>
-          )}
-          {showReset && (
-            <div className="modal glassmorphic">
-              <h3>Reset Password</h3>
-              <form onSubmit={handleResetPassword}>
-                <label htmlFor="recoveryToken">Recovery Token</label>
-                <input
-                  id="recoveryToken"
-                  type="text"
-                  value={recoveryToken}
-                  onChange={(e) => setRecoveryToken(e.target.value)}
-                  placeholder="Enter recovery token"
-                  required
-                />
-                <label htmlFor="newPassword">New Password</label>
-                <input
-                  id="newPassword"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  required
-                />
-                <button type="submit" className="neumorphic">Reset Password</button>
-                <button type="button" className="neumorphic" onClick={() => setShowReset(false)}>Cancel</button>
-              </form>
-            </div>
-          )}
-        </main>
-      </div>
-      <footer className="footer-modern">
-        <p>© 2025 Intacom. All rights reserved.</p>
-      </footer>
-    </>
+            )}
+            {errorMessage && <div className="error-message">{errorMessage}</div>}
+          </div>
+        )}
+      </main>
+    </div>
   );
 };
 
-export default App;
+const AppWrapper: React.FC = () => (
+  <Router>
+    <App />
+  </Router>
+);
+
+export default AppWrapper;

@@ -1,11 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
-    await app.listen(3007); // Changed from 3006 to 3007
-    console.log('Server running on port 3007');
+    const port = process.env.PORT || 3006;
+    await app.listen(port);
+    console.log(`Server running on port ${port}`);
   } catch (error) {
     console.error('Error starting the server:', error);
     process.exit(1);
