@@ -20,13 +20,11 @@ export class AuthController {
 
   @Get('recover')
   async recover(@Query('email') email: string) {
-    const result = await this.authService.recoverPassword(email);
-    return result;
+    return await this.authService.recoverPassword(email);
   }
 
   @Post('reset')
   async reset(@Body() body: { token: string; newPassword: string }) {
-    const result = await this.authService.resetPassword(body.token, body.newPassword);
-    return result;
+    return await this.authService.resetPassword(body.token, body.newPassword);
   }
 }

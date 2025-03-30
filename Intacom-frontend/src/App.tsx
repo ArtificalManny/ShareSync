@@ -261,7 +261,7 @@ const App: React.FC = () => {
             profilePic,
           };
       if (isLogin) {
-        const response = await retry(() => axios.post<LoginResponse>(`${import.meta.env 7a5a4e3d3a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a3e3a5a4e3d3a0a0a0a3e3a5a4e3d3a0a0a0a3e3a5a4e3d3a0a0a0a3e3a5a4e3d3a0a0a0a3e3a5a4e3d.import.meta.env.VITE_API_URL}${url}`, payload));
+        const response = await retry(() => axios.post<LoginResponse>(`${import.meta.env.VITE_API_URL}${url}`, payload));
         let userData: User;
         if (response.data && 'data' in response.data && response.data.data && response.data.data.user) {
           userData = response.data.data.user;
