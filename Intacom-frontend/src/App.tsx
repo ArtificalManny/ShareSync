@@ -4,7 +4,7 @@ import axios from 'axios';
 import './App.css';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
-import Project from './pages/Project'; // Removed .tsx extension
+import ProjectHome from './pages/ProjectHome'; // Updated to import ProjectHome
 
 interface User {
   _id?: string;
@@ -480,7 +480,7 @@ const App: React.FC = () => {
               />
             } />
             <Route path="/profile" element={<Profile setUser={setUser} />} />
-            <Route path="/project/:id" element={<Project projects={projects} />} />
+            <Route path="/project/:id" element={<ProjectHome projects={projects} />} /> {/* Updated to use ProjectHome */}
             <Route path="*" element={<Home
               projects={projects}
               showCreateProject={showCreateProject}
