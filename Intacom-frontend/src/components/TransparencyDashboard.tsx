@@ -21,7 +21,7 @@ const TransparencyDashboard: React.FC<TransparencyDashboardProps> = ({ projects 
 
   return (
     <div className="transparency-dashboard glassmorphic">
-      <h3>Project Transparency Overview</h3>
+      <h3>Project Overview</h3>
       <div className="dashboarda">
         <div className="dashboard-card glassmorphic">
           <h4>Total Tasks</h4>

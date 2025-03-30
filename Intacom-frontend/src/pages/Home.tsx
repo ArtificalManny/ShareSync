@@ -48,28 +48,34 @@ const Home: React.FC<HomeProps> = ({
   return (
     <div className="home-container">
       <h2>Dashboard</h2>
-      <TransparencyDashboard projects={projects} />
-      <div className="dashboarda">
-        <div className="dashboard-card glassmorphic">
-          <h4>Total Projects</h4>
-          <p>{projects.length}</p>
-        </div>
-        <div className="dashboard-card glassmorphic">
-          <h4>Current Projects</h4>
-          <p>{projects.filter((p) => p.status === 'current').length}</p>
-        </div>
-        <div className="dashboard-card glassmorphic">
-          <h4>Past Projects</h4>
-          <p>{projects.filter((p) => p.status === 'past').length}</p>
+      <div className="dashboard-section">
+        <TransparencyDashboard projects={projects} />
+      </div>
+      <div className="dashboard-section">
+        <div className="dashboarda">
+          <div className="dashboard-card glassmorphic">
+            <h4>Total Projects</h4>
+            <p>{projects.length}</p>
+          </div>
+          <div className="dashboard-card glassmorphic">
+            <h4>Current Projects</h4>
+            <p>{projects.filter((p) => p.status === 'current').length}</p>
+          </div>
+          <div className="dashboard-card glassmorphic">
+            <h4>Past Projects</h4>
+            <p>{projects.filter((p) => p.status === 'past').length}</p>
+          </div>
         </div>
       </div>
-      <div className="quick-actions">
-        <button className="neumorphic" onClick={() => setShowCreateProject(true)}>
-          Create Project
-        </button>
+      <div className="dashboard-section">
+        <div className="quick-actions">
+          <button className="neumorphic" onClick={() => setShowCreateProject(true)}>
+            Create Project
+          </button>
+        </div>
       </div>
       {showCreateProject && (
-        <div className="modal glassmorphic">
+        <div className="create-project-form glassmorphic">
           <h3>Create a New Project</h3>
           <form onSubmit={handleCreateProject}>
             <div className="form-group">

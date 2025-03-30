@@ -406,7 +406,7 @@ const App: React.FC = () => {
 
   return (
     <div className="app-container">
-      <BackgroundSlideshow />
+      {!user && <BackgroundSlideshow />}
       <header className="header glassmorphic">
         <div className="logo">Intacom</div>
         <nav className="nav">
@@ -501,7 +501,7 @@ const App: React.FC = () => {
           )}
         </aside>
       )}
-      <main className="main-content">
+      <main className={`main-content ${user ? '' : 'no-sidebar'}`}>
         {user ? (
           <Routes>
             <Route path="/home" element={
