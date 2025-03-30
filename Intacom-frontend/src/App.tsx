@@ -4,7 +4,7 @@ import axios from 'axios';
 import './App.css';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
-import Project from './pages/Project'; // Fixed import path
+import Project from './pages/Project.tsx'; // Explicitly added .tsx extension
 
 interface User {
   _id?: string;
