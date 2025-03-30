@@ -4,7 +4,7 @@ import axios from 'axios';
 import './App.css';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
-import ProjectHome from './pages/ProjectHome'; // Updated to import ProjectHome
+import Project from './pages/Project'; // Correct import for Project.tsx
 
 interface User {
   _id?: string;
@@ -130,11 +130,13 @@ const App: React.FC = () => {
       if (cachedProjects && cachedProjectsTimestamp && (now - parseInt(cachedProjectsTimestamp)) < CACHE_DURATION) {
         projectsData = JSON.parse(cachedProjects);
         setProjects(projectsData);
+        console.log('Loaded projects from cache:', projectsData);
       }
 
       if (cachedNotifications && cachedNotificationsTimestamp && (now - parseInt(cachedNotificationsTimestamp)) < CACHE_DURATION) {
         notificationsData = JSON.parse(cachedNotifications);
         setNotifications(notificationsData);
+        console.log('Loaded notifications from cache:', notificationsData);
       }
 
       // Fetch fresh data if cache is expired or not available
@@ -162,6 +164,7 @@ const App: React.FC = () => {
           setProjects(projectsData);
           localStorage.setItem(`projects_${user.username}`, JSON.stringify(projectsData));
           localStorage.setItem(`projects_${user.username}_timestamp`, now.toString());
+          console.log('Fetched projects from API:', projectsData);
         }
 
         if (notificationsResponse) {
@@ -182,6 +185,7 @@ const App: React.FC = () => {
           setNotifications(notificationsData);
           localStorage.setItem(`notifications_${user._id}`, JSON.stringify(notificationsData));
           localStorage.setItem(`notifications_${user._id}_timestamp`, now.toString());
+          console.log('Fetched notifications from API:', notificationsData);
         }
       }
     } catch (error: any) {
@@ -195,6 +199,7 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log('App useEffect triggered. User:', user);
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
       fetchData();
@@ -363,6 +368,8 @@ const App: React.FC = () => {
     navigate('/');
   };
 
+  console.log('Rendering App component. User:', user, 'Projects:', projects, 'Notifications:', notifications);
+
   return (
     <div className="app-container">
       <header className="header glassmorphic">
@@ -480,7 +487,7 @@ const App: React.FC = () => {
               />
             } />
             <Route path="/profile" element={<Profile setUser={setUser} />} />
-            <Route path="/project/:id" element={<ProjectHome projects={projects} />} /> {/* Updated to use ProjectHome */}
+            <Route path="/project/:id" element={<Project projects={projects} />} />
             <Route path="*" element={<Home
               projects={projects}
               showCreateProject={showCreateProject}

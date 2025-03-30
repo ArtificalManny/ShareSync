@@ -1,4 +1,5 @@
 import React from 'react';
+import { useParams } from 'react-router-dom';
 
 interface Project {
   _id: string;
@@ -15,11 +16,11 @@ interface ProjectProps {
 }
 
 const Project: React.FC<ProjectProps> = ({ projects }) => {
-  const projectId = window.location.pathname.split('/project/')[1];
-  const project = projects.find((p) => p._id === projectId);
+  const { id } = useParams<{ id: string }>(); // Get the project ID from the URL
+  const project = projects.find((p) => p._id === id);
 
   if (!project) {
-    return <div style={{ padding: '2rem', textAlign: 'center' }}>Project not found.</div>;
+    return <div style={{ padding: '2rem', textAlign: 'center', color: '#f5f5f5' }}>Project not found.</div>;
   }
 
   return (
