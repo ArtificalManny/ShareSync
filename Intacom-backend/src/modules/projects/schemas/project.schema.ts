@@ -3,25 +3,25 @@ import { Document } from 'mongoose';
 
 export type ProjectDocument = Project & Document;
 
-@Schema({ timestamps: true })
+@Schema()
 export class Project {
   @Prop({ required: true })
   name: string;
 
   @Prop()
-  description?: string;
+  description: string;
+
+  @Prop({ required: true })
+  admin: string;
 
   @Prop()
-  admin?: string;
-
-  @Prop()
-  color?: string;
+  color: string;
 
   @Prop({ type: [{ userId: String, role: String }], default: [] })
-  sharedWith?: { userId: string; role: 'Admin' | 'Editor' | 'Viewer' }[];
+  sharedWith: { userId: string; role: 'Admin' | 'Editor' | 'Viewer' }[];
 
-  @Prop({ type: [{ userId: String, requestedBy: String, status: String }], default: [] })
-  memberRequests?: { userId: string; requestedBy: string; status: 'pending' | 'approved' | 'denied' }[];
+  @Prop({ default: 'current' })
+  status: 'current' | 'past';
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

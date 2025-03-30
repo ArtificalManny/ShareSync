@@ -21,6 +21,7 @@ interface User {
   school?: string;
   occupation?: string;
   hobbies?: string[];
+  backgroundImage?: string;
 }
 
 interface Project {
@@ -117,10 +118,10 @@ const App: React.FC = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const cachedProjects = localStorage.getItem(`projects_${user.username}`);
-      const cachedProjectsTimestamp = localStorage.getItem(`projects_${user.username}_timestamp`);
-      const cachedNotifications = localStorage.getItem(`notifications_${user._id}`);
-      const cachedNotificationsTimestamp = localStorage.getItem(`notifications_${user._id}_timestamp`);
+      const cachedProjects = localStorage.getItem(`projects_${user?.username}`);
+      const cachedProjectsTimestamp = localStorage.getItem(`projects_${user?.username}_timestamp`);
+      const cachedNotifications = localStorage.getItem(`notifications_${user?._id}`);
+      const cachedNotificationsTimestamp = localStorage.getItem(`notifications_${user?._id}_timestamp`);
       const now = Date.now();
 
       let projectsData: Project[] = [];
@@ -144,13 +145,13 @@ const App: React.FC = () => {
       if (fetchProjects || fetchNotifications) {
         const promises: Promise<any>[] = [];
         if (fetchProjects) {
-          promises.push(retry(() => axios.get<ProjectsResponse>(`${import.meta.env.VITE_API_URL}/projects/${user.username}`)));
+          promises.push(retry(() => axios.get<ProjectsResponse>(`${import.meta.env.VITE_API_URL}/projects/${user?.username}`)));
         } else {
           promises.push(Promise.resolve(null));
         }
 
         if (fetchNotifications) {
-          promises.push(retry(() => axios.get<NotificationsResponse>(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`)));
+          promises.push(retry(() => axios.get<NotificationsResponse>(`${import.meta.env.VITE_API_URL}/notifications/${user?._id}`)));
         } else {
           promises.push(Promise.resolve(null));
         }
@@ -160,8 +161,8 @@ const App: React.FC = () => {
         if (projectsResponse) {
           projectsData = projectsResponse.data.data || (Array.isArray(projectsResponse.data) ? projectsResponse.data : []);
           setProjects(projectsData);
-          localStorage.setItem(`projects_${user.username}`, JSON.stringify(projectsData));
-          localStorage.setItem(`projects_${user.username}_timestamp`, now.toString());
+          localStorage.setItem(`projects_${user?.username}`, JSON.stringify(projectsData));
+          localStorage.setItem(`projects_${user?.username}_timestamp`, now.toString());
           console.log('Fetched projects from API:', projectsData);
         }
 
@@ -181,8 +182,8 @@ const App: React.FC = () => {
             localStorage.setItem('isNewUser', 'false');
           }
           setNotifications(notificationsData);
-          localStorage.setItem(`notifications_${user._id}`, JSON.stringify(notificationsData));
-          localStorage.setItem(`notifications_${user._id}_timestamp`, now.toString());
+          localStorage.setItem(`notifications_${user?._id}`, JSON.stringify(notificationsData));
+          localStorage.setItem(`notifications_${user?._id}_timestamp`, now.toString());
           console.log('Fetched notifications from API:', notificationsData);
         }
       }
@@ -205,6 +206,26 @@ const App: React.FC = () => {
       localStorage.removeItem('user');
       setProjects([]);
       setNotifications([]);
+      setErrorMessage('');
+      setIdentifier('');
+      setPassword('');
+      setFirstName('');
+      setLastName('');
+      setUsername('');
+      setEmail('');
+      setGender('');
+      setBirthday({ month: '', day: '', year: '' });
+      setProfilePic('');
+      setShowRecover(false);
+      setShowReset(false);
+      setRecoveryEmail('');
+      setRecoveryToken('');
+      setNewPassword('');
+      setShowCreateProject(false);
+      setProjectName('');
+      setProjectDescription('');
+      setProjectColor('');
+      setSharedUsers([]);
     }
   }, [user]);
 
@@ -365,6 +386,7 @@ const App: React.FC = () => {
         admin: user?.username,
         color: projectColor || '#3a3a50',
         sharedWith: sharedUsers.map((u) => ({ userId: u.email, role: u.role })),
+        status: 'current' as 'current' | 'past',
       };
       console.log('Creating project with payload:', payload);
       const response = await retry(() => axios.post<ProjectResponse>(`${import.meta.env.VITE_API_URL}/projects`, payload));
@@ -399,6 +421,30 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     setUser(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('isNewUser');
+    setProjects([]);
+    setNotifications([]);
+    setErrorMessage('');
+    setIdentifier('');
+    setPassword('');
+    setFirstName('');
+    setLastName('');
+    setUsername('');
+    setEmail('');
+    setGender('');
+    setBirthday({ month: '', day: '', year: '' });
+    setProfilePic('');
+    setShowRecover(false);
+    setShowReset(false);
+    setRecoveryEmail('');
+    setRecoveryToken('');
+    setNewPassword('');
+    setShowCreateProject(false);
+    setProjectName('');
+    setProjectDescription('');
+    setProjectColor('');
+    setSharedUsers([]);
     navigate('/');
   };
 

@@ -3,28 +3,13 @@ import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
-// Define a nested schema for the birthday field
 @Schema()
-class Birthday {
-  @Prop({ required: false })
-  month: string;
-
-  @Prop({ required: false })
-  day: string;
-
-  @Prop({ required: false })
-  year: string;
-}
-
-export const BirthdaySchema = SchemaFactory.createForClass(Birthday);
-
-@Schema({ timestamps: true })
 export class User {
-  @Prop()
-  firstName?: string;
+  @Prop({ required: true })
+  firstName: string;
 
-  @Prop()
-  lastName?: string;
+  @Prop({ required: true })
+  lastName: string;
 
   @Prop({ required: true, unique: true })
   username: string;
@@ -36,52 +21,31 @@ export class User {
   email: string;
 
   @Prop()
-  gender?: string;
-
-  @Prop({ type: BirthdaySchema, required: false }) // Define birthday as a nested schema
-  birthday?: Birthday;
+  gender: string;
 
   @Prop()
-  profilePic?: string;
+  birthday: { month: string; day: string; year: string };
 
   @Prop()
-  coverPhoto?: string;
+  profilePic: string;
 
   @Prop()
-  bio?: string;
+  coverPhoto: string;
 
   @Prop()
-  school?: string;
+  bio: string;
 
   @Prop()
-  occupation?: string;
+  school: string;
 
-  @Prop({ type: [String], default: [] })
-  hobbies?: string[];
+  @Prop()
+  occupation: string;
 
-  @Prop({
-    type: {
-      emailNotifications: { type: Boolean, default: true },
-      postNotifications: { type: Boolean, default: true },
-      commentNotifications: { type: Boolean, default: true },
-      likeNotifications: { type: Boolean, default: true },
-      taskNotifications: { type: Boolean, default: true },
-      memberRequestNotifications: { type: Boolean, default: true },
-      theme: { type: String, default: 'dark' },
-      privacy: { type: String, default: 'public' },
-    },
-    default: {},
-  })
-  settings?: {
-    emailNotifications: boolean;
-    postNotifications: boolean;
-    commentNotifications: boolean;
-    likeNotifications: boolean;
-    taskNotifications: boolean;
-    memberRequestNotifications: boolean;
-    theme: string;
-    privacy: string;
-  };
+  @Prop([String])
+  hobbies: string[];
+
+  @Prop()
+  backgroundImage: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

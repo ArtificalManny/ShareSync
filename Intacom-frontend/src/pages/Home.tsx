@@ -47,7 +47,7 @@ const Home: React.FC<HomeProps> = ({
 
   return (
     <div className="home-container">
-      <h2>Dashboard</h2>
+      <h2>Home</h2>
       <div className="dashboard-section">
         <TransparencyDashboard projects={projects} />
       </div>

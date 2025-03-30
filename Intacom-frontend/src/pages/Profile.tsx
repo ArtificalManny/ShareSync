@@ -13,6 +13,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
   const [occupation, setOccupation] = useState('');
   const [hobbies, setHobbies] = useState<string[]>([]);
   const [newHobby, setNewHobby] = useState('');
+  const [backgroundImage, setBackgroundImage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,15 +30,19 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
 
         const user = JSON.parse(savedUser);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${user.username}`);
-        const fetchedUser = response.data.data.user;
+        const fetchedUser = response.data.data?.user;
+        if (!fetchedUser) {
+          throw new Error('User data not found in response');
+        }
         setUserData(fetchedUser);
         setBio(fetchedUser.bio || '');
         setSchool(fetchedUser.school || '');
         setOccupation(fetchedUser.occupation || '');
         setHobbies(fetchedUser.hobbies || []);
+        setBackgroundImage(fetchedUser.backgroundImage || '');
       } catch (error: any) {
         console.error('Error fetching user data:', error.response?.data || error.message);
-        setErrorMessage('Failed to load profile data. Please try again later.');
+        setErrorMessage('Failed to load profile data. Please try again later or log in again.');
       } finally {
         setIsLoading(false);
       }
@@ -56,6 +61,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
         school,
         occupation,
         hobbies,
+        backgroundImage,
       };
       const response = await axios.put(`${import.meta.env.VITE_API_URL}/users/${userData?._id}`, updatedUser);
       const newUserData = response.data.data.user;
@@ -123,6 +129,29 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
     }
   };
 
+  const handleBackgroundImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const response = await axios.post<{ url: string }>(`${import.meta.env.VITE_API_URL}/uploads`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        const updatedUser = { ...userData, backgroundImage: response.data.url };
+        const responseUser = await axios.put(`${import.meta.env.VITE_API_URL}/users/${userData?._id}`, updatedUser);
+        const newUserData = responseUser.data.data.user;
+        setUser(newUserData);
+        setUserData(newUserData);
+        setBackgroundImage(response.data.url);
+        localStorage.setItem('user', JSON.stringify(newUserData));
+      } catch (error: any) {
+        console.error('Error uploading background image:', error.response?.data || error.message);
+        setErrorMessage('Failed to upload background image. Please try again later.');
+      }
+    }
+  };
+
   if (isLoading) {
     return <div style={{ padding: '2rem', textAlign: 'center', color: '#f5f5f5' }}>Loading profile...</div>;
   }
@@ -132,7 +161,7 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
   }
 
   return (
-    <div className="profile-container">
+    <div className="profile-container" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
       <div className="cover-photo">
         {userData.coverPhoto ? (
           <img src={userData.coverPhoto} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -238,6 +267,15 @@ const Profile: React.FC<ProfileProps> = ({ setUser }) => {
                 ))}
               </ul>
             )}
+          </div>
+          <div className="form-group">
+            <label htmlFor="backgroundImage">Change Background Image</label>
+            <input
+              id="backgroundImage"
+              type="file"
+              accept="image/*"
+              onChange={handleBackgroundImageUpload}
+            />
           </div>
           <button type="submit" className="neumorphic">Update Profile</button>
         </form>
