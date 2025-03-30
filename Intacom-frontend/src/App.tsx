@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './App.css';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
-import Project from './pages/Project'; // Correct import for Project.tsx
+import Project from './pages/Project';
+import BackgroundSlideshow from './components/BackgroundSlideshow';
 
 interface User {
   _id?: string;
@@ -101,7 +102,7 @@ const App: React.FC = () => {
   const [sharedUsers, setSharedUsers] = useState<{ email: string; role: 'Admin' | 'Editor' | 'Viewer' }[]>([]);
   const navigate = useNavigate();
 
-  const retry = async <T,>(fn: () => Promise<T>, retries: number = 3, delay: number = 1000): Promise<T> => {
+  const retry = async <T,>(fn: () => Promise<T>, retries: number = 5, delay: number = 2000): Promise<T> => {
     try {
       return await fn();
     } catch (error) {
@@ -116,7 +117,6 @@ const App: React.FC = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Check cache for projects
       const cachedProjects = localStorage.getItem(`projects_${user.username}`);
       const cachedProjectsTimestamp = localStorage.getItem(`projects_${user.username}_timestamp`);
       const cachedNotifications = localStorage.getItem(`notifications_${user._id}`);
@@ -126,7 +126,6 @@ const App: React.FC = () => {
       let projectsData: Project[] = [];
       let notificationsData: Notification[] = [];
 
-      // Use cached data if available and not expired
       if (cachedProjects && cachedProjectsTimestamp && (now - parseInt(cachedProjectsTimestamp)) < CACHE_DURATION) {
         projectsData = JSON.parse(cachedProjects);
         setProjects(projectsData);
@@ -139,7 +138,6 @@ const App: React.FC = () => {
         console.log('Loaded notifications from cache:', notificationsData);
       }
 
-      // Fetch fresh data if cache is expired or not available
       const fetchProjects = !cachedProjects || (now - parseInt(cachedProjectsTimestamp || '0')) >= CACHE_DURATION;
       const fetchNotifications = !cachedNotifications || (now - parseInt(cachedNotificationsTimestamp || '0')) >= CACHE_DURATION;
 
@@ -192,7 +190,7 @@ const App: React.FC = () => {
       console.error('Failed to fetch data:', error.response?.data || error.message);
       setProjects([]);
       setNotifications([]);
-      setErrorMessage(error.response?.data?.error || 'Failed to fetch data. Please ensure the backend server is running.');
+      setErrorMessage('Unable to load your data. Please try again later or contact support.');
     } finally {
       setIsLoading(false);
     }
@@ -240,7 +238,7 @@ const App: React.FC = () => {
         }]);
       } catch (error: any) {
         console.error('Profile picture upload error:', error.response?.data || error.message);
-        setErrorMessage(error.response?.data?.error || 'An error occurred during profile picture upload. Please ensure the backend server is running.');
+        setErrorMessage('Failed to upload profile picture. Please try again later.');
       }
     }
   };
@@ -263,7 +261,7 @@ const App: React.FC = () => {
             profilePic,
           };
       if (isLogin) {
-        const response = await retry(() => axios.post<LoginResponse>(`${import.meta.env.VITE_API_URL}${url}`, payload));
+        const response = await retry(() => axios.post<LoginResponse>(`${import.meta.env 7a5a4e3d3a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a3e3a5a4e3d3a0a0a0a3e3a5a4e3d3a0a0a0a3e3a5a4e3d3a0a0a0a3e3a5a4e3d3a0a0a0a3e3a5a4e3d.import.meta.env.VITE_API_URL}${url}`, payload));
         let userData: User;
         if (response.data && 'data' in response.data && response.data.data && response.data.data.user) {
           userData = response.data.data.user;
@@ -271,7 +269,7 @@ const App: React.FC = () => {
           userData = response.data as User;
         } else {
           console.error('Login response does not contain user data:', response.data);
-          setErrorMessage('Login failed: Invalid response from server');
+          setErrorMessage('Login failed: Invalid response from server. Please try again.');
           return;
         }
         setUser(userData);
@@ -282,12 +280,24 @@ const App: React.FC = () => {
           setShowCreateProject(true);
         } else {
           console.error('Register response does not contain user data:', response.data);
-          setErrorMessage('Registration failed: Invalid response from server');
+          setErrorMessage('Registration failed: Invalid response from server. Please try again.');
         }
       }
     } catch (error: any) {
       console.error('Form submission error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred during login/registration. Please check if the backend server is running.');
+      if (error.response) {
+        if (error.response.status === 401) {
+          setErrorMessage('Invalid username or password. Please try again.');
+        } else if (error.response.status === 400) {
+          setErrorMessage(error.response.data?.error || 'Invalid input. Please check your details and try again.');
+        } else {
+          setErrorMessage('Unable to connect to the server. Please try again later or contact support.');
+        }
+      } else if (error.request) {
+        setErrorMessage('Unable to reach the server. Please check your internet connection and try again.');
+      } else {
+        setErrorMessage('An unexpected error occurred. Please try again later.');
+      }
     }
   };
 
@@ -301,7 +311,15 @@ const App: React.FC = () => {
       setShowReset(true);
     } catch (error: any) {
       console.error('Recover password error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred during password recovery. Please check if the backend server is running.');
+      if (error.response) {
+        if (error.response.status === 404) {
+          setErrorMessage('No account found with that email. Please check the email and try again.');
+        } else {
+          setErrorMessage('Unable to process your request. Please try again later.');
+        }
+      } else {
+        setErrorMessage('Unable to reach the server. Please check your internet connection and try again.');
+      }
     }
   };
 
@@ -317,7 +335,15 @@ const App: React.FC = () => {
       setNewPassword('');
     } catch (error: any) {
       console.error('Reset password error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred during password reset. Please check if the backend server is running.');
+      if (error.response) {
+        if (error.response.status === 404) {
+          setErrorMessage('Invalid token. Please request a new password reset link.');
+        } else {
+          setErrorMessage('Unable to reset your password. Please try again later.');
+        }
+      } else {
+        setErrorMessage('Unable to reach the server. Please check your internet connection and try again.');
+      }
     }
   };
 
@@ -359,7 +385,15 @@ const App: React.FC = () => {
       }]);
     } catch (error: any) {
       console.error('Create project error:', error.response?.data || error.message);
-      setErrorMessage(error.response?.data?.error || 'An error occurred during project creation. Please check if the backend server is running.');
+      if (error.response) {
+        if (error.response.status === 400) {
+          setErrorMessage(error.response.data?.error || 'Invalid project details. Please check your input and try again.');
+        } else {
+          setErrorMessage('Unable to create the project. Please try again later.');
+        }
+      } else {
+        setErrorMessage('Unable to reach the server. Please check your internet connection and try again.');
+      }
     }
   };
 
@@ -372,6 +406,7 @@ const App: React.FC = () => {
 
   return (
     <div className="app-container">
+      <BackgroundSlideshow />
       <header className="header glassmorphic">
         <div className="logo">Intacom</div>
         <nav className="nav">
@@ -672,14 +707,18 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
+      {errorMessage && (
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#ff4d4f' }}>
+          {errorMessage}
+        </div>
+      )}
+      {!user && !errorMessage && (
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#f5f5f5' }}>
+          Welcome to Intacom! Please log in or register to continue.
+        </div>
+      )}
     </div>
   );
 };
 
-const AppWrapper: React.FC = () => (
-  <Router>
-    <App />
-  </Router>
-);
-
-export default AppWrapper;
+export default App;
