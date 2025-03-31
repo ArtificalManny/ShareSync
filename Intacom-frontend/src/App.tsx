@@ -5,6 +5,8 @@ import './App.css';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
 import Project from './pages/Project';
+import VerifyEmail from './pages/VerifyEmail';
+import ResetPassword from './pages/ResetPassword';
 import BackgroundSlideshow from './components/BackgroundSlideshow';
 
 interface User {
@@ -56,6 +58,7 @@ interface LoginResponse {
 
 interface RegisterResponse {
   user: User;
+  message: string;
 }
 
 interface RecoverResponse {
@@ -297,8 +300,11 @@ const App: React.FC = () => {
       } else {
         const response = await retry(() => axios.post<RegisterResponse>(`${import.meta.env.VITE_API_URL}${url}`, payload));
         if (response.data && response.data.user) {
-          setUser(response.data.user);
-          setShowCreateProject(true);
+          setErrorMessage(response.data.message);
+          setTimeout(() => {
+            setErrorMessage('');
+            setIsLogin(true);
+          }, 5000); // Show message for 5 seconds before switching to login
         } else {
           console.error('Register response does not contain user data:', response.data);
           setErrorMessage('Registration failed: Invalid response from server. Please try again.');
@@ -310,7 +316,7 @@ const App: React.FC = () => {
         if (error.response.status === 401) {
           setErrorMessage('Invalid username or password. Please try again.');
         } else if (error.response.status === 400) {
-          setErrorMessage(error.response.data?.error || 'Invalid input. Please check your details and try again.');
+          setErrorMessage(error.response.data?.message || 'Invalid input. Please check your details and try again.');
         } else {
           setErrorMessage('Unable to connect to the server. Please try again later or contact support.');
         }
@@ -327,7 +333,7 @@ const App: React.FC = () => {
     setErrorMessage('');
     try {
       const response = await retry(() => axios.get<RecoverResponse>(`${import.meta.env.VITE_API_URL}/auth/recover`, { params: { email: recoveryEmail } }));
-      alert(response.data.message + ' (Token: ' + response.data.token + '). Enter the token below.');
+      setErrorMessage(response.data.message);
       setShowRecover(false);
       setShowReset(true);
     } catch (error: any) {
@@ -349,11 +355,13 @@ const App: React.FC = () => {
     setErrorMessage('');
     try {
       const response = await retry(() => axios.put<ResetResponse>(`${import.meta.env.VITE_API_URL}/auth/reset`, { token: recoveryToken, newPassword }));
-      alert(response.data.message);
-      setShowReset(false);
-      setRecoveryEmail('');
-      setRecoveryToken('');
-      setNewPassword('');
+      setErrorMessage(response.data.message);
+      setTimeout(() => {
+        setShowReset(false);
+        setRecoveryEmail('');
+        setRecoveryToken('');
+        setNewPassword('');
+      }, 3000); // Redirect after 3 seconds
     } catch (error: any) {
       console.error('Reset password error:', error.response?.data || error.message);
       if (error.response) {
@@ -548,10 +556,31 @@ const App: React.FC = () => {
         </aside>
       )}
       <main className={`main-content ${user ? '' : 'no-sidebar'}`}>
-        {user ? (
-          <Routes>
-            <Route path="/home" element={
-              <Home
+        <Routes>
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          {user ? (
+            <>
+              <Route path="/home" element={
+                <Home
+                  projects={projects}
+                  showCreateProject={showCreateProject}
+                  setShowCreateProject={setShowCreateProject}
+                  projectName={projectName}
+                  setProjectName={setProjectName}
+                  projectDescription={projectDescription}
+                  setProjectDescription={setProjectDescription}
+                  projectColor={projectColor}
+                  setProjectColor={setProjectColor}
+                  sharedUsers={sharedUsers}
+                  handleAddSharedUser={handleAddSharedUser}
+                  handleRemoveSharedUser={handleRemoveSharedUser}
+                  handleCreateProject={handleCreateProject}
+                />
+              } />
+              <Route path="/profile" element={<Profile setUser={setUser} />} />
+              <Route path="/project/:id" element={<Project projects={projects} />} />
+              <Route path="*" element={<Home
                 projects={projects}
                 showCreateProject={showCreateProject}
                 setShowCreateProject={setShowCreateProject}
@@ -565,196 +594,181 @@ const App: React.FC = () => {
                 handleAddSharedUser={handleAddSharedUser}
                 handleRemoveSharedUser={handleRemoveSharedUser}
                 handleCreateProject={handleCreateProject}
-              />
-            } />
-            <Route path="/profile" element={<Profile setUser={setUser} />} />
-            <Route path="/project/:id" element={<Project projects={projects} />} />
-            <Route path="*" element={<Home
-              projects={projects}
-              showCreateProject={showCreateProject}
-              setShowCreateProject={setShowCreateProject}
-              projectName={projectName}
-              setProjectName={setProjectName}
-              projectDescription={projectDescription}
-              setProjectDescription={setProjectDescription}
-              projectColor={projectColor}
-              setProjectColor={setProjectColor}
-              sharedUsers={sharedUsers}
-              handleAddSharedUser={handleAddSharedUser}
-              handleRemoveSharedUser={handleRemoveSharedUser}
-              handleCreateProject={handleCreateProject}
-            />} />
-          </Routes>
-        ) : (
-          <div className="auth-container glassmorphic">
-            <h2>{isLogin ? 'Login' : 'Register'}</h2>
-            {showRecover ? (
-              <form onSubmit={handleRecoverPassword}>
-                <div className="form-group">
-                  <label htmlFor="recoveryEmail">Email</label>
-                  <input
-                    id="recoveryEmail"
-                    type="email"
-                    value={recoveryEmail}
-                    onChange={(e) => setRecoveryEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    required
-                  />
-                </div>
-                <button type="submit" className="neumorphic">Recover Password</button>
-                <button type="button" className="neumorphic" onClick={() => setShowRecover(false)}>
-                  Cancel
-                </button>
-              </form>
-            ) : showReset ? (
-              <form onSubmit={handleResetPassword}>
-                <div className="form-group">
-                  <label htmlFor="recoveryToken">Recovery Token</label>
-                  <input
-                    id="recoveryToken"
-                    type="text"
-                    value={recoveryToken}
-                    onChange={(e) => setRecoveryToken(e.target.value)}
-                    placeholder="Enter the recovery token"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="newPassword">New Password</label>
-                  <input
-                    id="newPassword"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter your new password"
-                    required
-                  />
-                </div>
-                <button type="submit" className="neumorphic">Reset Password</button>
-                <button type="button" className="neumorphic" onClick={() => setShowReset(false)}>
-                  Cancel
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleSubmit}>
-                {!isLogin && (
-                  <>
+              />} />
+            </>
+          ) : (
+            <Route path="*" element={
+              <div className="auth-container glassmorphic">
+                <h2>{isLogin ? 'Login' : 'Register'}</h2>
+                {showRecover ? (
+                  <form onSubmit={handleRecoverPassword}>
                     <div className="form-group">
-                      <label htmlFor="firstName">First Name</label>
+                      <label htmlFor="recoveryEmail">Email</label>
                       <input
-                        id="firstName"
+                        id="recoveryEmail"
+                        type="email"
+                        value={recoveryEmail}
+                        onChange={(e) => setRecoveryEmail(e.target.value)}
+                        placeholder="Enter your email"
+                        required
+                      />
+                    </div>
+                    <button type="submit" className="neumorphic">Recover Password</button>
+                    <button type="button" className="neumorphic" onClick={() => setShowRecover(false)}>
+                      Cancel
+                    </button>
+                  </form>
+                ) : showReset ? (
+                  <form onSubmit={handleResetPassword}>
+                    <div className="form-group">
+                      <label htmlFor="recoveryToken">Recovery Token</label>
+                      <input
+                        id="recoveryToken"
                         type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="First Name"
+                        value={recoveryToken}
+                        onChange={(e) => setRecoveryToken(e.target.value)}
+                        placeholder="Enter the recovery token"
                         required
                       />
                     </div>
                     <div className="form-group">
-                      <label htmlFor="lastName">Last Name</label>
+                      <label htmlFor="newPassword">New Password</label>
                       <input
-                        id="lastName"
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Last Name"
+                        id="newPassword"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter your new password"
                         required
                       />
                     </div>
-                  </>
-                )}
-                <div className="form-group">
-                  <label htmlFor="username">{isLogin ? 'Username or Email' : 'Username'}</label>
-                  <input
-                    id="username"
-                    type="text"
-                    value={isLogin ? identifier : username}
-                    onChange={(e) => isLogin ? setIdentifier(e.target.value) : setUsername(e.target.value)}
-                    placeholder={isLogin ? 'Username or Email' : 'Username'}
-                    required
-                  />
-                </div>
-                {!isLogin && (
-                  <div className="form-group">
-                    <label htmlFor="email">Email</label>
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email"
-                      required
-                    />
-                  </div>
-                )}
-                <div className="form-group">
-                  <label htmlFor="password">Password</label>
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    required
-                  />
-                </div>
-                {!isLogin && (
-                  <>
+                    <button type="submit" className="neumorphic">Reset Password</button>
+                    <button type="button" className="neumorphic" onClick={() => setShowReset(false)}>
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleSubmit}>
+                    {!isLogin && (
+                      <>
+                        <div className="form-group">
+                          <label htmlFor="firstName">First Name</label>
+                          <input
+                            id="firstName"
+                            type="text"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            placeholder="First Name"
+                            required
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label htmlFor="lastName">Last Name</label>
+                          <input
+                            id="lastName"
+                            type="text"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            placeholder="Last Name"
+                            required
+                          />
+                        </div>
+                      </>
+                    )}
                     <div className="form-group">
-                      <label htmlFor="gender">Gender</label>
-                      <select
-                        id="gender"
-                        value={gender}
-                        onChange={(e) => setGender(e.target.value)}
-                      >
-                        <option value="">Select Gender</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
-                      </select>
+                      <label htmlFor="username">{isLogin ? 'Username or Email' : 'Username'}</label>
+                      <input
+                        id="username"
+                        type="text"
+                        value={isLogin ? identifier : username}
+                        onChange={(e) => isLogin ? setIdentifier(e.target.value) : setUsername(e.target.value)}
+                        placeholder={isLogin ? 'Username or Email' : 'Username'}
+                        required
+                      />
                     </div>
-                    <div className="form-group">
-                      <label>Birthday</label>
-                      <div className="birthday-input">
+                    {!isLogin && (
+                      <div className="form-group">
+                        <label htmlFor="email">Email</label>
                         <input
-                          type="text"
-                          placeholder="MM"
-                          value={birthday.month}
-                          onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
-                          maxLength={2}
-                        />
-                        <input
-                          type="text"
-                          placeholder="DD"
-                          value={birthday.day}
-                          onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
-                          maxLength={2}
-                        />
-                        <input
-                          type="text"
-                          placeholder="YYYY"
-                          value={birthday.year}
-                          onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
-                          maxLength={4}
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Email"
+                          required
                         />
                       </div>
+                    )}
+                    <div className="form-group">
+                      <label htmlFor="password">Password</label>
+                      <input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Password"
+                        required
+                      />
                     </div>
-                  </>
+                    {!isLogin && (
+                      <>
+                        <div className="form-group">
+                          <label htmlFor="gender">Gender</label>
+                          <select
+                            id="gender"
+                            value={gender}
+                            onChange={(e) => setGender(e.target.value)}
+                          >
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label>Birthday</label>
+                          <div className="birthday-input">
+                            <input
+                              type="text"
+                              placeholder="MM"
+                              value={birthday.month}
+                              onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
+                              maxLength={2}
+                            />
+                            <input
+                              type="text"
+                              placeholder="DD"
+                              value={birthday.day}
+                              onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
+                              maxLength={2}
+                            />
+                            <input
+                              type="text"
+                              placeholder="YYYY"
+                              value={birthday.year}
+                              onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
+                              maxLength={4}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    <button type="submit" className="neumorphic">{isLogin ? 'Login' : 'Register'}</button>
+                    {isLogin && (
+                      <button type="button" className="neumorphic" onClick={() => setShowRecover(true)}>
+                        Forgot Password?
+                      </button>
+                    )}
+                  </form>
                 )}
-                <button type="submit" className="neumorphic">{isLogin ? 'Login' : 'Register'}</button>
-                {isLogin && (
-                  <button type="button" className="neumorphic" onClick={() => setShowRecover(true)}>
-                    Forgot Password?
-                  </button>
-                )}
-              </form>
-            )}
-            {errorMessage && <div className="error-message">{errorMessage}</div>}
-          </div>
-        )}
+                {errorMessage && <div className={errorMessage.includes('successful') ? 'success-message' : 'error-message'}>{errorMessage}</div>}
+              </div>
+            } />
+          )}
+        </Routes>
       </main>
-      {errorMessage && (
-        <div style={{ padding: '2rem', textAlign: 'center', color: '#ff4d4f' }}>
+      {errorMessage && !user && (
+        <div style={{ padding: '2rem', textAlign: 'center', color: errorMessage.includes('successful') ? '#48bb78' : '#ff4d4f' }}>
           {errorMessage}
         </div>
       )}

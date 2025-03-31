@@ -46,6 +46,18 @@ export class User {
 
   @Prop()
   backgroundImage: string;
+
+  @Prop({ default: false })
+  isVerified: boolean;
+
+  @Prop()
+  verificationToken: string;
+
+  @Prop()
+  resetToken: string;
+
+  @Prop()
+  resetTokenExpiry: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
