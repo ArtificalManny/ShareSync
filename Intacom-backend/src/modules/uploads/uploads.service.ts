@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
 
 @Injectable()
 export class UploadsService {
-  async uploadFile(file: Express.Multer.File): Promise<string> {
-    // In a real app, you might upload to a cloud service like AWS S3
-    // For now, return the local file path
-    return `http://localhost:3000/uploads/${file.filename}`;
+  async uploadFile(file: Express.Multer.File): Promise<{ url: string }> {
+    const fileName = `${Date.now()}-${file.originalname}`;
+    const filePath = join(__dirname, '..', '..', 'uploads', fileName);
+    await writeFile(filePath, file.buffer);
+    const url = `/uploads/${fileName}`;
+    return { url };
   }
 }
