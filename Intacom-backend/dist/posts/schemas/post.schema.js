@@ -9,27 +9,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PostSchema = exports.Post = exports.CommentSchema = exports.Comment = void 0;
+exports.PostSchema = exports.Post = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
-let Comment = class Comment {
-};
-exports.Comment = Comment;
-__decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", String)
-], Comment.prototype, "content", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", String)
-], Comment.prototype, "author", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ default: Date.now }),
-    __metadata("design:type", Date)
-], Comment.prototype, "createdAt", void 0);
-exports.Comment = Comment = __decorate([
-    (0, mongoose_1.Schema)({ timestamps: true })
-], Comment);
-exports.CommentSchema = mongoose_1.SchemaFactory.createForClass(Comment);
 let Post = class Post {
 };
 exports.Post = Post;
@@ -40,27 +21,27 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
-], Post.prototype, "content", void 0);
-__decorate([
-    (0, mongoose_1.Prop)(),
-    __metadata("design:type", String)
-], Post.prototype, "image", void 0);
+], Post.prototype, "userId", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
-], Post.prototype, "author", void 0);
+], Post.prototype, "content", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: [String], default: [] }),
+    (0, mongoose_1.Prop)([String]),
     __metadata("design:type", Array)
+], Post.prototype, "images", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: 0 }),
+    __metadata("design:type", Number)
 ], Post.prototype, "likes", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: [exports.CommentSchema], default: [] }),
+    (0, mongoose_1.Prop)([String]),
     __metadata("design:type", Array)
-], Post.prototype, "comments", void 0);
+], Post.prototype, "likedBy", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ default: Date.now }),
-    __metadata("design:type", Date)
-], Post.prototype, "createdAt", void 0);
+    (0, mongoose_1.Prop)({ default: 0 }),
+    __metadata("design:type", Number)
+], Post.prototype, "comments", void 0);
 exports.Post = Post = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Post);

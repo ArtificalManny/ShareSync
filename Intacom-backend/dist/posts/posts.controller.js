@@ -19,21 +19,21 @@ let PostsController = class PostsController {
     constructor(postsService) {
         this.postsService = postsService;
     }
-    async create(projectId, userId, content, images) {
+    async create(createPostDto) {
         try {
-            return await this.postsService.create(projectId, userId, content, images);
+            return await this.postsService.create(createPostDto);
         }
         catch (error) {
             console.error('Error in create post:', error);
             throw error;
         }
     }
-    async findByProject(projectId) {
+    async findByProjectId(projectId) {
         try {
-            return await this.postsService.findByProject(projectId);
+            return await this.postsService.findByProjectId(projectId);
         }
         catch (error) {
-            console.error('Error in findByProject:', error);
+            console.error('Error in findByProjectId:', error);
             throw error;
         }
     }
@@ -68,12 +68,9 @@ let PostsController = class PostsController {
 exports.PostsController = PostsController;
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)('projectId')),
-    __param(1, (0, common_1.Body)('userId')),
-    __param(2, (0, common_1.Body)('content')),
-    __param(3, (0, common_1.Body)('images')),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, Array]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], PostsController.prototype, "create", null);
 __decorate([
@@ -82,7 +79,7 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], PostsController.prototype, "findByProject", null);
+], PostsController.prototype, "findByProjectId", null);
 __decorate([
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id')),

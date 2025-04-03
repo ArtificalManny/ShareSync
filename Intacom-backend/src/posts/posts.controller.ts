@@ -1,19 +1,15 @@
 import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { PostsService } from './posts.service';
+import { Post } from '../posts/types/post.interface';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
-  async create(
-    @Body('projectId') projectId: string,
-    @Body('userId') userId: string,
-    @Body('content') content: string,
-    @Body('images') images: string[],
-  ) {
+  async create(@Body() createPostDto: { projectId: string; userId: string; content: string; images: string[] }) {
     try {
-      return await this.postsService.create(projectId, userId, content, images);
+      return await this.postsService.create(createPostDto);
     } catch (error) {
       console.error('Error in create post:', error);
       throw error;
@@ -21,11 +17,11 @@ export class PostsController {
   }
 
   @Get('project/:projectId')
-  async findByProject(@Param('projectId') projectId: string) {
+  async findByProjectId(@Param('projectId') projectId: string) {
     try {
-      return await this.postsService.findByProject(projectId);
+      return await this.postsService.findByProjectId(projectId);
     } catch (error) {
-      console.error('Error in findByProject:', error);
+      console.error('Error in findByProjectId:', error);
       throw error;
     }
   }
