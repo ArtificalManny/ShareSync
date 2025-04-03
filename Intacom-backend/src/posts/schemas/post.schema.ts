@@ -4,27 +4,41 @@ import { Document } from 'mongoose';
 export type PostDocument = Post & Document;
 
 @Schema({ timestamps: true })
+export class Comment {
+  @Prop({ required: true })
+  content: string;
+
+  @Prop({ required: true })
+  author: string;
+
+  @Prop({ default: Date.now })
+  createdAt: Date;
+}
+
+export const CommentSchema = SchemaFactory.createForClass(Comment);
+
+@Schema({ timestamps: true })
 export class Post {
   @Prop({ required: true })
   projectId: string;
 
   @Prop({ required: true })
-  userId: string;
-
-  @Prop({ required: true })
   content: string;
 
-  @Prop([String])
-  images: string[];
+  @Prop()
+  image?: string;
 
-  @Prop({ default: 0 })
-  likes: number;
+  @Prop({ required: true })
+  author: string;
 
-  @Prop([String])
-  likedBy: string[]; // Users who liked the post
+  @Prop({ type: [String], default: [] })
+  likes: string[];
 
-  @Prop({ default: 0 })
-  comments: number;
+  @Prop({ type: [CommentSchema], default: [] })
+  comments: Comment[];
+
+  @Prop({ default: Date.now })
+  createdAt: Date;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

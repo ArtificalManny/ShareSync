@@ -1,6 +1,6 @@
 import { Model } from 'mongoose';
 import { Post, PostDocument } from './schemas/post.schema';
-import { ProjectDocument } from '../projects/schemas/project.schema';
+import { ProjectDocument } from '../modules/projects/schemas/project.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PointsService } from '../points/points.service';
 export declare class PostsService {

@@ -8,5 +8,7 @@ export declare class PointsService {
     addPoints(userId: string, points: number, action: string): Promise<import("mongoose").Document<unknown, {}, PointDocument> & Point & import("mongoose").Document<any, any, any> & {
         _id: import("mongoose").Types.ObjectId;
     }>;
-    getLeaderboard(): Promise<any>;
+    getLeaderboard(): Promise<(import("mongoose").Document<unknown, {}, import("../users/schemas/user.schema").UserDocument> & import("../users/schemas/user.schema").User & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    })[]>;
 }
