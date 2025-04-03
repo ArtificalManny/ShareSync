@@ -8,15 +8,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UploadsService = void 0;
 const common_1 = require("@nestjs/common");
-const promises_1 = require("fs/promises");
-const path_1 = require("path");
 let UploadsService = class UploadsService {
     async uploadFile(file) {
-        const fileName = `${Date.now()}-${file.originalname}`;
-        const filePath = (0, path_1.join)(__dirname, '..', '..', 'uploads', fileName);
-        await (0, promises_1.writeFile)(filePath, file.buffer);
-        const url = `/uploads/${fileName}`;
-        return { url };
+        const mockUrl = `http://localhost:3006/uploads/${file.originalname}`;
+        return { url: mockUrl };
     }
 };
 exports.UploadsService = UploadsService;
