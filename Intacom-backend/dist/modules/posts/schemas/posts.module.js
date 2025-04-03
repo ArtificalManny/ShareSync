@@ -12,6 +12,8 @@ const mongoose_1 = require("@nestjs/mongoose");
 const posts_controller_1 = require("./posts.controller");
 const posts_service_1 = require("./posts.service");
 const post_schema_1 = require("./schemas/post.schema");
+const notifications_service_1 = require("../notifications/notifications.service");
+const points_service_1 = require("../points/points.service");
 let PostsModule = class PostsModule {
 };
 exports.PostsModule = PostsModule;
@@ -21,7 +23,7 @@ exports.PostsModule = PostsModule = __decorate([
             mongoose_1.MongooseModule.forFeature([{ name: post_schema_1.Post.name, schema: post_schema_1.PostSchema }]),
         ],
         controllers: [posts_controller_1.PostsController],
-        providers: [posts_service_1.PostsService],
+        providers: [posts_service_1.PostsService, notifications_service_1.NotificationsService, points_service_1.PointsService],
     })
 ], PostsModule);
 //# sourceMappingURL=posts.module.js.map

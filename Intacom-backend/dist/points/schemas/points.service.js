@@ -25,20 +25,32 @@ let PointsService = class PointsService {
         this.usersService = usersService;
     }
     async addPoints(userId, points, action) {
-        const point = new this.pointModel({
-            userId,
-            points,
-            action,
-        });
-        await point.save();
-        const user = await this.usersService.findById(userId);
-        user.points += points;
-        await user.save();
-        return point;
+        try {
+            const point = new this.pointModel({
+                userId,
+                points,
+                action,
+            });
+            await point.save();
+            const user = await this.usersService.findById(userId);
+            user.points += points;
+            await user.save();
+            return point;
+        }
+        catch (error) {
+            console.error('Error in addPoints:', error);
+            throw error;
+        }
     }
     async getLeaderboard() {
-        const users = await this.usersService.findAll();
-        return users.sort((a, b) => b.points - a.points).slice(0, 10);
+        try {
+            const users = await this.usersService.findAll();
+            return users.sort((a, b) => b.points - a.points).slice(0, 10);
+        }
+        catch (error) {
+            console.error('Error in getLeaderboard:', error);
+            throw error;
+        }
     }
 };
 exports.PointsService = PointsService;

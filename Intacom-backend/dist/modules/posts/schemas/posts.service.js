@@ -18,11 +18,13 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const post_schema_1 = require("./schemas/post.schema");
+const project_schema_1 = require("../projects/schemas/project.schema");
 const notifications_service_1 = require("../notifications/notifications.service");
 const points_service_1 = require("../points/points.service");
 let PostsService = class PostsService {
-    constructor(postModel, notificationsService, pointsService) {
+    constructor(postModel, projectModel, notificationsService, pointsService) {
         this.postModel = postModel;
+        this.projectModel = projectModel;
         this.notificationsService = notificationsService;
         this.pointsService = pointsService;
     }
@@ -36,6 +38,9 @@ let PostsService = class PostsService {
             });
             const savedPost = await post.save();
             const project = await this.projectModel.findById(projectId).exec();
+            if (!project) {
+                throw new common_1.NotFoundException('Project not found');
+            }
             for (const collaborator of project.sharedWith) {
                 await this.notificationsService.create(collaborator.userId, 'new_post', `A new post was added to ${project.name}!`, savedPost._id.toString());
             }
@@ -109,6 +114,8 @@ exports.PostsService = PostsService;
 exports.PostsService = PostsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(post_schema_1.Post.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model, typeof (_a = typeof notifications_service_1.NotificationsService !== "undefined" && notifications_service_1.NotificationsService) === "function" ? _a : Object, typeof (_b = typeof points_service_1.PointsService !== "undefined" && points_service_1.PointsService) === "function" ? _b : Object])
+    __param(1, (0, mongoose_1.InjectModel)(project_schema_1.Project.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model, typeof (_a = typeof notifications_service_1.NotificationsService !== "undefined" && notifications_service_1.NotificationsService) === "function" ? _a : Object, typeof (_b = typeof points_service_1.PointsService !== "undefined" && points_service_1.PointsService) === "function" ? _b : Object])
 ], PostsService);
 //# sourceMappingURL=posts.service.js.map

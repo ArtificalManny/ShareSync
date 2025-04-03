@@ -9,10 +9,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 async function bootstrap() {
     try {
         console.log('Connecting to MongoDB...');
-        await mongoose_1.default.connect(process.env.MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
+        await mongoose_1.default.connect(process.env.MONGODB_URI);
         console.log('MongoDB connected successfully');
     }
     catch (error) {

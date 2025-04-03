@@ -1,10 +1,10 @@
 import { PostsService } from './posts.service';
-import { Post as PostModel } from './schemas/post.schema';
 export declare class PostsController {
     private readonly postsService;
     constructor(postsService: PostsService);
-    create(createPostDto: Partial<PostModel>): Promise<PostModel>;
-    findByProjectId(projectId: string): Promise<PostModel[]>;
-    update(id: string, updatePostDto: Partial<PostModel>): Promise<PostModel>;
+    create(projectId: string, userId: string, content: string, images: string[]): Promise<import("./schemas/post.schema").Post>;
+    findByProject(projectId: string): Promise<any>;
+    update(id: string, updates: Partial<Post>): Promise<import("./schemas/post.schema").Post>;
     delete(id: string): Promise<void>;
+    likePost(id: string, userId: string): Promise<any>;
 }
