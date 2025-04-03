@@ -10,10 +10,18 @@ export declare class ProjectsService {
     create(name: string, description: string, admin: string, color: string, sharedWith: {
         userId: string;
         role: string;
-    }[]): Promise<any>;
-    findByUsername(username: string): Promise<any[]>;
-    findById(id: string): Promise<any>;
-    update(id: string, updates: Partial<Project>): Promise<any>;
+    }[]): Promise<import("mongoose").Document<unknown, {}, ProjectDocument> & Project & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    findByUsername(username: string): Promise<(import("mongoose").Document<unknown, {}, ProjectDocument> & Project & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    })[]>;
+    findById(id: string): Promise<import("mongoose").Document<unknown, {}, ProjectDocument> & Project & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    update(id: string, updates: Partial<Project>): Promise<import("mongoose").Document<unknown, {}, ProjectDocument> & Project & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
     remove(id: string): Promise<{
         message: string;
     }>;

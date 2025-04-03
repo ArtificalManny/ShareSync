@@ -1,5 +1,5 @@
 import { ProjectsService } from './projects.service';
-import { Project } from './schemas/project.schema';
+import { Project } from '../../projects/schemas/project.schema';
 export declare class ProjectsController {
     private readonly projectsService;
     constructor(projectsService: ProjectsService);
