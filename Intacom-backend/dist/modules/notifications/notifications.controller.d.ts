@@ -1,8 +1,11 @@
 import { NotificationsService } from './notifications.service';
-import { Notification } from './schemas/notification.schema';
 export declare class NotificationsController {
     private readonly notificationsService;
     constructor(notificationsService: NotificationsService);
-    create(createNotificationDto: Partial<Notification>): Promise<Notification>;
-    findByUserId(userId: string): Promise<Notification[]>;
+    findByUser(userId: string): Promise<(import("mongoose").Document<unknown, {}, import("./schemas/notification.schema").NotificationDocument> & import("./schemas/notification.schema").Notification & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    })[]>;
+    markAsRead(id: string): Promise<import("mongoose").Document<unknown, {}, import("./schemas/notification.schema").NotificationDocument> & import("./schemas/notification.schema").Notification & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
 }

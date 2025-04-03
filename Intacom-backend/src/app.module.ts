@@ -8,7 +8,10 @@ import { AuthModule } from './auth/auth.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { PostsModule } from './posts/posts.module';
-import { EmailService } from './email/email.service';
+import { NotificationsModule } from './notifications/notifications.module';
+import { PointsModule } from './points/points.module';
+import { FeedbackModule } from './feedback/feedback.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -23,8 +26,10 @@ import { EmailService } from './email/email.service';
     UploadsModule,
     ActivitiesModule,
     PostsModule,
+    NotificationsModule,
+    PointsModule,
+    FeedbackModule,
+    TasksModule,
   ],
-  providers: [EmailService],
-  exports: [EmailService],
 })
 export class AppModule {}

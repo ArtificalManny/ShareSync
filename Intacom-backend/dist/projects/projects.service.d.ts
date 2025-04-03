@@ -1,9 +1,23 @@
 import { Model } from 'mongoose';
-import { Project } from '../modules/projects/schemas/project.schema';
+import { Project, ProjectDocument } from './schemas/project.schema';
+import { NotificationsService } from '../notifications/notifications.service';
+import { PointsService } from '../points/points.service';
 export declare class ProjectsService {
     private projectModel;
-    constructor(projectModel: Model<Project>);
-    findById(id: string): Promise<Project | null>;
-    findByAdmin(admin: string): Promise<Project[]>;
-    create(project: Partial<Project>): Promise<Project>;
+    private notificationsService;
+    private pointsService;
+    constructor(projectModel: Model<ProjectDocument>, notificationsService: NotificationsService, pointsService: PointsService);
+    create(name: string, description: string, admin: string, color: string, sharedWith: {
+        userId: string;
+        role: string;
+    }[]): Promise<any>;
+    findByUsername(username: string): Promise<any[]>;
+    findById(id: string): Promise<any>;
+    update(id: string, updates: Partial<Project>): Promise<any>;
+    delete(id: string): Promise<{
+        message: string;
+    }>;
+    likeProject(id: string, userId: string): Promise<{
+        message: string;
+    }>;
 }

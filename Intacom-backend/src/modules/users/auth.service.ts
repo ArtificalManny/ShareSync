@@ -1,158 +1,179 @@
-import { Injectable, UnauthorizedException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from '../users/user.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
-import { EmailService } from '../email/email.service';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { v4 as uuid } from 'uuid';
+import * as nodemailer from 'nodemailer';
+import { NotificationsService } from '../notifications/notifications.service';
+import { PointsService } from '../points/points.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private emailService: EmailService,
+    private notificationsService: NotificationsService,
+    private pointsService: PointsService,
   ) {}
 
-  async login(identifier: string, password: string): Promise<User> {
+  async login(loginDto: LoginDto) {
     try {
-      const user = await this.userModel.findOne({
-        $or: [{ email: identifier }, { username: identifier }],
-      });
+      const { identifier, password } = loginDto;
 
-      if (!user) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
+      const user = await this.userModel
+        .findOne({
+          $or: [{ email: identifier }, { username: identifier }],
+        })
+        .exec();
 
-      if (!user.isVerified) {
-        throw new UnauthorizedException('Please verify your email before logging in.');
-      }
-
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-
-      return user;
-    } catch (error) {
-      console.error('Error in login:', error);
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to process login request');
-    }
-  }
-
-  async register(userData: Partial<User>): Promise<User> {
-    try {
-      const { password, ...rest } = userData;
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const verificationToken = uuidv4();
-      const newUser = new this.userModel({
-        ...rest,
-        password: hashedPassword,
-        verificationToken,
-        isVerified: false,
-      });
-      const savedUser = await newUser.save();
-
-      // Send confirmation email
-      const confirmationLink = `http://localhost:8080/verify-email?token=${verificationToken}`;
-      const html = `
-        <h2>Welcome to Intacom!</h2>
-        <p>Please verify your email by clicking the link below:</p>
-        <a href="${confirmationLink}">Verify Email</a>
-        <p>If you did not register for Intacom, please ignore this email.</p>
-      `;
-      await this.emailService.sendMail(savedUser.email, 'Verify Your Email - Intacom', html);
-
-      return savedUser;
-    } catch (error) {
-      console.error('Error in register:', error);
-      throw new InternalServerErrorException('Failed to process registration request');
-    }
-  }
-
-  async verifyEmail(token: string): Promise<User> {
-    try {
-      const user = await this.userModel.findOne({ verificationToken: token });
-      if (!user) {
-        throw new NotFoundException('Invalid verification token');
-      }
-      user.isVerified = true;
-      user.verificationToken = undefined;
-      await user.save();
-      return user;
-    } catch (error) {
-      console.error('Error in verifyEmail:', error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to verify email');
-    }
-  }
-
-  async recoverPassword(email: string): Promise<{ message: string; token: string }> {
-    try {
-      const user = await this.userModel.findOne({ email });
       if (!user) {
         throw new NotFoundException('User not found');
       }
 
-      const resetToken = uuidv4();
-      user.resetToken = resetToken;
-      user.resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour expiry
-      await user.save();
-
-      // Send password reset email
-      const resetLink = `http://localhost:8080/reset-password?token=${resetToken}`;
-      const html = `
-        <h2>Password Reset Request</h2>
-        <p>You requested to reset your password. Click the link below to set a new password:</p>
-        <a href="${resetLink}">Reset Password</a>
-        <p>This link will expire in 1 hour. If you did not request a password reset, please ignore this email.</p>
-      `;
-      await this.emailService.sendMail(email, 'Password Reset - Intacom', html);
-
-      return { message: 'Password reset email sent', token: resetToken };
-    } catch (error) {
-      console.error('Error in recoverPassword:', error);
-      if (error instanceof NotFoundException) {
-        throw error;
+      if (!user.isVerified) {
+        throw new UnauthorizedException('Please verify your email');
       }
-      throw new InternalServerErrorException('Failed to process password recovery request');
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      // Award points for logging in
+      await this.pointsService.addPoints(user._id.toString(), 2, 'login');
+
+      return { data: { user } };
+    } catch (error) {
+      console.error('Error in login:', error);
+      throw error;
     }
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<{ message: string; user: User }> {
+  async register(registerDto: RegisterDto) {
     try {
-      const user = await this.userModel.findOne({
-        resetToken: token,
-        resetTokenExpiry: { $gt: new Date() },
-      });
-      if (!user) {
-        throw new NotFoundException('Invalid or expired reset token');
+      const { firstName, lastName, username, email, password, gender, birthday } = registerDto;
+
+      const existingUser = await this.userModel
+        .findOne({
+          $or: [{ email }, { username }],
+        })
+        .exec();
+
+      if (existingUser) {
+        throw new BadRequestException('User already exists');
       }
 
-      user.password = await bcrypt.hash(newPassword, 10);
-      user.resetToken = undefined;
-      user.resetTokenExpiry = undefined;
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const verificationToken = uuid();
+
+      const user = new this.userModel({
+        firstName,
+        lastName,
+        username,
+        email,
+        password: hashedPassword,
+        gender,
+        birthday,
+        verificationToken,
+        isVerified: false,
+      });
+
       await user.save();
 
-      // Send confirmation email
-      const html = `
-        <h2>Password Reset Successful</h2>
-        <p>Your password has been successfully reset. You can now log in with your new password.</p>
-        <p>If you did not initiate this change, please contact support immediately.</p>
-      `;
-      await this.emailService.sendMail(user.email, 'Password Reset Confirmation - Intacom', html);
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: Number(process.env.EMAIL_PORT),
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
 
-      return { message: 'Password reset successfully', user };
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Verify your email',
+        html: `
+          <h1>Welcome to Intacom!</h1>
+          <p>Please verify your email by clicking the link below:</p>
+          <a href="${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}">Verify Email</a>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      // Award points for registering
+      await this.pointsService.addPoints(user._id.toString(), 5, 'register');
+
+      return { message: 'Registration successful. Please check your email to verify your account.' };
+    } catch (error) {
+      console.error('Error in register:', error);
+      throw error;
+    }
+  }
+
+  async recover(email: string) {
+    try {
+      const user = await this.userModel.findOne({ email }).exec();
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const resetToken = uuid();
+      user.resetToken = resetToken;
+      await user.save();
+
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: Number(process.env.EMAIL_PORT),
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Reset your password',
+        html: `
+          <h1>Password Reset</h1>
+          <p>Click the link below to reset your password:</p>
+          <a href="${process.env.FRONTEND_URL}/reset-password?token=${resetToken}">Reset Password</a>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      return { message: 'Password reset email sent.' };
+    } catch (error) {
+      console.error('Error in recover:', error);
+      throw error;
+    }
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    try {
+      const { token, password } = resetPasswordDto;
+
+      const user = await this.userModel.findOne({ resetToken: token }).exec();
+
+      if (!user) {
+        throw new BadRequestException('Invalid or expired token');
+      }
+
+      user.password = await bcrypt.hash(password, 10);
+      user.resetToken = undefined;
+      await user.save();
+
+      return { message: 'Password reset successfully' };
     } catch (error) {
       console.error('Error in resetPassword:', error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to process password reset request');
+      throw error;
     }
   }
 }

@@ -19,28 +19,40 @@ let NotificationsController = class NotificationsController {
     constructor(notificationsService) {
         this.notificationsService = notificationsService;
     }
-    async create(createNotificationDto) {
-        return this.notificationsService.create(createNotificationDto);
+    async findByUser(userId) {
+        try {
+            return await this.notificationsService.findByUser(userId);
+        }
+        catch (error) {
+            console.error('Error in findByUser:', error);
+            throw error;
+        }
     }
-    async findByUserId(userId) {
-        return this.notificationsService.findByUserId(userId);
+    async markAsRead(id) {
+        try {
+            return await this.notificationsService.markAsRead(id);
+        }
+        catch (error) {
+            console.error('Error in markAsRead:', error);
+            throw error;
+        }
     }
 };
 exports.NotificationsController = NotificationsController;
-__decorate([
-    (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], NotificationsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(':userId'),
     __param(0, (0, common_1.Param)('userId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], NotificationsController.prototype, "findByUserId", null);
+], NotificationsController.prototype, "findByUser", null);
+__decorate([
+    (0, common_1.Put)('mark-as-read/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "markAsRead", null);
 exports.NotificationsController = NotificationsController = __decorate([
     (0, common_1.Controller)('notifications'),
     __metadata("design:paramtypes", [notifications_service_1.NotificationsService])

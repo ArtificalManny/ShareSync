@@ -1,18 +1,27 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Param, Put } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
-import { Notification } from './schemas/notification.schema';
 
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  @Post()
-  async create(@Body() createNotificationDto: Partial<Notification>): Promise<Notification> {
-    return this.notificationsService.create(createNotificationDto);
+  @Get(':userId')
+  async findByUser(@Param('userId') userId: string) {
+    try {
+      return await this.notificationsService.findByUser(userId);
+    } catch (error) {
+      console.error('Error in findByUser:', error);
+      throw error;
+    }
   }
 
-  @Get(':userId')
-  async findByUserId(@Param('userId') userId: string): Promise<Notification[]> {
-    return this.notificationsService.findByUserId(userId);
+  @Put('mark-as-read/:id')
+  async markAsRead(@Param('id') id: string) {
+    try {
+      return await this.notificationsService.markAsRead(id);
+    } catch (error) {
+      console.error('Error in markAsRead:', error);
+      throw error;
+    }
   }
 }

@@ -1,36 +1,50 @@
-import { Controller, Post, Body, Get, Query, Put } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { User } from '../users/user.schema';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() body: { identifier: string; password: string }) {
-    const user = await this.authService.login(body.identifier, body.password);
-    return { data: { user } };
+  async login(@Body() loginDto: LoginDto) {
+    try {
+      return await this.authService.login(loginDto);
+    } catch (error) {
+      console.error('Error in login:', error);
+      throw error;
+    }
   }
 
   @Post('register')
-  async register(@Body() body: Partial<User>) {
-    const user = await this.authService.register(body);
-    return { user, message: 'Registration successful. Please check your email to verify your account.' };
-  }
-
-  @Get('verify-email')
-  async verifyEmail(@Query('token') token: string) {
-    const user = await this.authService.verifyEmail(token);
-    return { message: 'Email verified successfully', user };
+  async register(@Body() registerDto: RegisterDto) {
+    try {
+      return await this.authService.register(registerDto);
+    } catch (error) {
+      console.error('Error in register:', error);
+      throw error;
+    }
   }
 
   @Get('recover')
   async recover(@Query('email') email: string) {
-    return await this.authService.recoverPassword(email);
+    try {
+      return await this.authService.recover(email);
+    } catch (error) {
+      console.error('Error in recover:', error);
+      throw error;
+    }
   }
 
-  @Put('reset')
-  async reset(@Body() body: { token: string; newPassword: string }) {
-    return await this.authService.resetPassword(body.token, body.newPassword);
+  @Post('reset')
+  async reset(@Body() resetPasswordDto: ResetPasswordDto) {
+    try {
+      return await this.authService.resetPassword(resetPasswordDto);
+    } catch (error) {
+      console.error('Error in reset:', error);
+      throw error;
+    }
   }
 }

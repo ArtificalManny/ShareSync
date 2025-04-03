@@ -21,27 +21,19 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
-], Notification.prototype, "message", void 0);
-__decorate([
-    (0, mongoose_1.Prop)(),
-    __metadata("design:type", String)
 ], Notification.prototype, "type", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
-], Notification.prototype, "projectId", void 0);
+], Notification.prototype, "message", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: false }),
+    __metadata("design:type", Boolean)
+], Notification.prototype, "isRead", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
-], Notification.prototype, "action", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ default: 'pending' }),
-    __metadata("design:type", String)
-], Notification.prototype, "status", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ default: Date.now }),
-    __metadata("design:type", Date)
-], Notification.prototype, "createdAt", void 0);
+], Notification.prototype, "relatedId", void 0);
 exports.Notification = Notification = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Notification);

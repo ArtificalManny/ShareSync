@@ -9,35 +9,17 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserSchema = exports.User = exports.BirthdaySchema = void 0;
+exports.UserSchema = exports.User = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
-let Birthday = class Birthday {
-};
-__decorate([
-    (0, mongoose_1.Prop)({ required: false }),
-    __metadata("design:type", String)
-], Birthday.prototype, "month", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ required: false }),
-    __metadata("design:type", String)
-], Birthday.prototype, "day", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ required: false }),
-    __metadata("design:type", String)
-], Birthday.prototype, "year", void 0);
-Birthday = __decorate([
-    (0, mongoose_1.Schema)()
-], Birthday);
-exports.BirthdaySchema = mongoose_1.SchemaFactory.createForClass(Birthday);
 let User = class User {
 };
 exports.User = User;
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
 ], User.prototype, "firstName", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
 ], User.prototype, "lastName", void 0);
 __decorate([
@@ -45,61 +27,69 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "username", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", String)
-], User.prototype, "password", void 0);
-__decorate([
     (0, mongoose_1.Prop)({ required: true, unique: true }),
     __metadata("design:type", String)
 ], User.prototype, "email", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], User.prototype, "password", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], User.prototype, "gender", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: exports.BirthdaySchema, required: false }),
-    __metadata("design:type", Birthday)
+    (0, mongoose_1.Prop)({ type: Object }),
+    __metadata("design:type", Object)
 ], User.prototype, "birthday", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
-], User.prototype, "profilePic", void 0);
+], User.prototype, "verificationToken", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: false }),
+    __metadata("design:type", Boolean)
+], User.prototype, "isVerified", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
-], User.prototype, "coverPhoto", void 0);
+], User.prototype, "resetToken", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], User.prototype, "bio", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
-    __metadata("design:type", String)
-], User.prototype, "school", void 0);
-__decorate([
-    (0, mongoose_1.Prop)(),
-    __metadata("design:type", String)
-], User.prototype, "occupation", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ type: [String], default: [] }),
+    (0, mongoose_1.Prop)([String]),
     __metadata("design:type", Array)
 ], User.prototype, "hobbies", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({
-        type: {
-            emailNotifications: { type: Boolean, default: true },
-            postNotifications: { type: Boolean, default: true },
-            commentNotifications: { type: Boolean, default: true },
-            likeNotifications: { type: Boolean, default: true },
-            taskNotifications: { type: Boolean, default: true },
-            memberRequestNotifications: { type: Boolean, default: true },
-            theme: { type: String, default: 'dark' },
-            privacy: { type: String, default: 'public' },
-        },
-        default: {},
-    }),
-    __metadata("design:type", Object)
-], User.prototype, "settings", void 0);
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], User.prototype, "skills", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], User.prototype, "experience", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], User.prototype, "endorsements", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], User.prototype, "following", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], User.prototype, "followers", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: 0 }),
+    __metadata("design:type", Number)
+], User.prototype, "points", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], User.prototype, "badges", void 0);
 exports.User = User = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], User);

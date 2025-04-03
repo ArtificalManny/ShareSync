@@ -9,21 +9,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
-const users_module_1 = require("./modules/users/users.module");
-const projects_module_1 = require("./modules/projects/projects.module");
-const auth_module_1 = require("./modules/users/auth.module");
-const uploads_module_1 = require("./modules/uploads/uploads.module");
-const activities_module_1 = require("./modules/activities/activities.module");
-const posts_module_1 = require("./modules/posts/posts.module");
 const serve_static_1 = require("@nestjs/serve-static");
 const path_1 = require("path");
+const users_module_1 = require("./users/users.module");
+const projects_module_1 = require("./projects/projects.module");
+const auth_module_1 = require("./auth/auth.module");
+const uploads_module_1 = require("./uploads/uploads.module");
+const activities_module_1 = require("./activities/activities.module");
+const posts_module_1 = require("./posts/posts.module");
+const notifications_module_1 = require("./notifications/notifications.module");
+const points_module_1 = require("./points/points.module");
+const feedback_module_1 = require("./feedback/feedback.module");
+const tasks_module_1 = require("./tasks/tasks.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forRoot('mongodb://localhost:27017/intacom'),
+            mongoose_1.MongooseModule.forRoot(process.env.MONGODB_URI),
             serve_static_1.ServeStaticModule.forRoot({
                 rootPath: (0, path_1.join)(__dirname, '..', 'uploads'),
                 serveRoot: '/uploads',
@@ -34,6 +38,10 @@ exports.AppModule = AppModule = __decorate([
             uploads_module_1.UploadsModule,
             activities_module_1.ActivitiesModule,
             posts_module_1.PostsModule,
+            notifications_module_1.NotificationsModule,
+            points_module_1.PointsModule,
+            feedback_module_1.FeedbackModule,
+            tasks_module_1.TasksModule,
         ],
     })
 ], AppModule);

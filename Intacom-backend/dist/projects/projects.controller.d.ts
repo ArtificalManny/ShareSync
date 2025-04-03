@@ -1,15 +1,14 @@
 import { ProjectsService } from './projects.service';
-import { Project } from '../modules/projects/schemas/project.schema';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 export declare class ProjectsController {
     private readonly projectsService;
     constructor(projectsService: ProjectsService);
-    findById(id: string): Promise<{
-        data: {
-            project: Project;
-        };
+    create(createProjectDto: CreateProjectDto): Promise<any>;
+    findByUsername(username: string): Promise<{
+        data: any;
     }>;
-    findByAdmin(admin: string): Promise<{
-        data: Project[];
-    }>;
-    create(project: Partial<Project>): Promise<Project>;
+    findOne(id: string): any;
+    update(id: string, updateProjectDto: UpdateProjectDto): Promise<any>;
+    remove(id: string): any;
 }

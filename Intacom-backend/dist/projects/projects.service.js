@@ -11,31 +11,121 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
-const project_schema_1 = require("../modules/projects/schemas/project.schema");
+const project_schema_1 = require("./schemas/project.schema");
+const notifications_service_1 = require("../notifications/notifications.service");
+const points_service_1 = require("../points/points.service");
 let ProjectsService = class ProjectsService {
-    constructor(projectModel) {
+    constructor(projectModel, notificationsService, pointsService) {
         this.projectModel = projectModel;
+        this.notificationsService = notificationsService;
+        this.pointsService = pointsService;
+    }
+    async create(name, description, admin, color, sharedWith) {
+        try {
+            const project = new this.projectModel({
+                name,
+                description,
+                admin,
+                color,
+                sharedWith,
+            });
+            const savedProject = await project.save();
+            for (const collaborator of sharedWith) {
+                await this.notificationsService.create(collaborator.userId, 'project_invite', `You've been invited to collaborate on ${name}!`, savedProject._id.toString());
+            }
+            await this.pointsService.addPoints(admin, 10, 'create_project');
+            return savedProject;
+        }
+        catch (error) {
+            console.error('Error in create project:', error);
+            throw new common_1.BadRequestException('Failed to create project');
+        }
+    }
+    async findByUsername(username) {
+        try {
+            return await this.projectModel
+                .find({
+                $or: [
+                    { admin: username },
+                    { 'sharedWith.userId': username },
+                ],
+            })
+                .exec();
+        }
+        catch (error) {
+            console.error('Error in findByUsername:', error);
+            throw error;
+        }
     }
     async findById(id) {
-        return this.projectModel.findById(id).exec();
+        try {
+            const project = await this.projectModel.findById(id).exec();
+            if (!project) {
+                throw new common_1.NotFoundException('Project not found');
+            }
+            return project;
+        }
+        catch (error) {
+            console.error('Error in findById:', error);
+            throw error;
+        }
     }
-    async findByAdmin(admin) {
-        return this.projectModel.find({ admin }).exec();
+    async update(id, updates) {
+        try {
+            const updatedProject = await this.projectModel
+                .findByIdAndUpdate(id, updates, { new: true })
+                .exec();
+            if (!updatedProject) {
+                throw new common_1.NotFoundException('Project not found');
+            }
+            for (const collaborator of updatedProject.sharedWith) {
+                await this.notificationsService.create(collaborator.userId, 'project_update', `Project ${updatedProject.name} has been updated!`, updatedProject._id.toString());
+            }
+            return updatedProject;
+        }
+        catch (error) {
+            console.error('Error in update project:', error);
+            throw error;
+        }
     }
-    async create(project) {
-        const newProject = new this.projectModel(project);
-        return newProject.save();
+    async delete(id) {
+        try {
+            const project = await this.projectModel.findByIdAndDelete(id).exec();
+            if (!project) {
+                throw new common_1.NotFoundException('Project not found');
+            }
+            return { message: 'Project deleted successfully' };
+        }
+        catch (error) {
+            console.error('Error in delete project:', error);
+            throw error;
+        }
+    }
+    async likeProject(id, userId) {
+        try {
+            const project = await this.findById(id);
+            project.likes += 1;
+            await project.save();
+            await this.notificationsService.create(project.admin, 'project_like', `Your project ${project.name} received a like!`, project._id.toString());
+            await this.pointsService.addPoints(userId, 1, 'like_project');
+            return { message: 'Project liked successfully' };
+        }
+        catch (error) {
+            console.error('Error in likeProject:', error);
+            throw error;
+        }
     }
 };
 exports.ProjectsService = ProjectsService;
 exports.ProjectsService = ProjectsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(project_schema_1.Project.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model])
+    __metadata("design:paramtypes", [mongoose_2.Model, typeof (_a = typeof notifications_service_1.NotificationsService !== "undefined" && notifications_service_1.NotificationsService) === "function" ? _a : Object, typeof (_b = typeof points_service_1.PointsService !== "undefined" && points_service_1.PointsService) === "function" ? _b : Object])
 ], ProjectsService);
 //# sourceMappingURL=projects.service.js.map

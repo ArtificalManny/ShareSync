@@ -1,35 +1,49 @@
-import { Controller, Get, Post, Put, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { User } from './schemas/user.schema';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  async create(@Body() createUserDto: Partial<User>): Promise<{ data: { user: User } }> {
-    const user = await this.usersService.create(createUserDto);
-    return { data: { user } };
+  async create(@Body() createUserDto: CreateUserDto) {
+    try {
+      return this.usersService.create(createUserDto);
+    } catch (error) {
+      console.error('Error in create user:', error);
+      throw error;
+    }
   }
 
   @Get('by-username/:username')
-  async findByUsername(@Param('username') username: string): Promise<{ data: { user: User } }> {
-    const user = await this.usersService.findByUsername(username);
-    if (!user) throw new Error('User not found');
-    return { data: { user } };
+  async findByUsername(@Param('username') username: string) {
+    try {
+      return this.usersService.findByUsername(username);
+    } catch (error) {
+      console.error('Error in findByUsername:', error);
+      throw error;
+    }
   }
 
   @Get('by-email/:email')
-  async findByEmail(@Param('email') email: string): Promise<{ data: { user: User } }> {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) throw new Error('User not found');
-    return { data: { user } };
+  async findByEmail(@Param('email') email: string) {
+    try {
+      return this.usersService.findByEmail(email);
+    } catch (error) {
+      console.error('Error in findByEmail:', error);
+      throw error;
+    }
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: Partial<User>): Promise<{ data: { user: User } }> {
-    const updatedUser = await this.usersService.update(id, updateUserDto);
-    if (!updatedUser) throw new Error('User not found');
-    return { data: { user: updatedUser } };
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    try {
+      return this.usersService.update(id, updateUserDto);
+    } catch (error) {
+      console.error('Error in update user:', error);
+      throw error;
+    }
   }
 }

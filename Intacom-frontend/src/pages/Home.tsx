@@ -1,5 +1,5 @@
 import React from 'react';
-import TransparencyDashboard from '../components/TransparencyDashboard';
+import TransparencyDashboard from '../components/Dashboard';
 
 interface Project {
   _id: string;

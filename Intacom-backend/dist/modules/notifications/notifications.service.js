@@ -21,13 +21,20 @@ let NotificationsService = class NotificationsService {
     constructor(notificationModel) {
         this.notificationModel = notificationModel;
     }
-    async create(notification) {
-        const newNotification = new this.notificationModel(notification);
-        console.log(`Sending email to user ${notification.userId}: ${notification.message}`);
-        return newNotification.save();
+    async create(userId, type, message, relatedId) {
+        const notification = new this.notificationModel({
+            userId,
+            type,
+            message,
+            relatedId,
+        });
+        return notification.save();
     }
-    async findByUserId(userId) {
+    async findByUser(userId) {
         return this.notificationModel.find({ userId }).sort({ createdAt: -1 }).exec();
+    }
+    async markAsRead(id) {
+        return this.notificationModel.findByIdAndUpdate(id, { isRead: true }, { new: true }).exec();
     }
 };
 exports.NotificationsService = NotificationsService;

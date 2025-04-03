@@ -6,25 +6,19 @@ export type NotificationDocument = Notification & Document;
 @Schema({ timestamps: true })
 export class Notification {
   @Prop({ required: true })
-  userId: string;
+  userId: string; // The user receiving the notification
 
   @Prop({ required: true })
-  message: string;
+  type: string; // e.g., "like", "comment", "project_update"
+
+  @Prop({ required: true })
+  message: string; // e.g., "Your project has a new comment!"
+
+  @Prop({ default: false })
+  isRead: boolean; // Whether the user has read the notification
 
   @Prop()
-  type?: string;
-
-  @Prop()
-  projectId?: string;
-
-  @Prop()
-  action?: 'accept' | 'decline';
-
-  @Prop({ default: 'pending' })
-  status?: 'pending' | 'accepted' | 'declined';
-
-  @Prop({ default: Date.now })
-  createdAt: Date;
+  relatedId: string; // ID of the related post, project, or comment
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);

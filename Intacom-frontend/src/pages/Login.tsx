@@ -1,50 +1,106 @@
-// src/pages/Login.tsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+import styled from '@emotion/styled';
+import { theme } from '../styles/theme';
+import { motion } from 'framer-motion';
 
-const Login: React.FC = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+const Container = styled(motion.div)`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+`;
+
+const Form = styled.form`
+  background: ${theme.colors.white};
+  padding: ${theme.spacing.lg};
+  border-radius: ${theme.borderRadius.medium};
+  box-shadow: ${theme.shadows.medium};
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+`;
+
+const Title = styled.h2`
+  font-size: ${theme.typography.h2.fontSize};
+  font-weight: ${theme.typography.h2.fontWeight};
+  margin-bottom: ${theme.spacing.md};
+  color: ${theme.colors.primary};
+`;
+
+const Input = styled.input`
+  width: 100%;
+  margin-bottom: ${theme.spacing.md};
+`;
+
+const Button = styled.button`
+  width: 100%;
+  margin-top: ${theme.spacing.sm};
+`;
+
+const Link = styled.a`
+  display: block;
+  margin-top: ${theme.spacing.sm};
+  color: ${theme.colors.textLight};
+  font-size: ${theme.typography.caption.fontSize};
+`;
+
+const Error = styled.p`
+  color: ${theme.colors.error};
+  font-size: ${theme.typography.caption.fontSize};
+  margin-top: ${theme.spacing.sm};
+`;
+
+const Login = () => {
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Replace with your actual API call
-    const res = await fetch('http://localhost:3000/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      await login(data.token);
-      navigate('/'); // Redirect after successful login
-    } else {
-      console.error('Login failed');
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
+        identifier,
+        password,
+      });
+      localStorage.setItem('user', JSON.stringify(response.data.data.user));
+      navigate('/dashboard');
+    } catch (err) {
+      setError('Unable to reach the server. Please check your internet connection and try again.');
     }
   };
 
   return (
-    <div>
-      <h2>Login / Sign Up</h2>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Email:
-          <input value={email} onChange={e => setEmail(e.target.value)} />
-        </label>
-        <label>
-          Password:
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
-        </label>
-        <button type="submit">Login</button>
-      </form>
-    </div>
+    <Container
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Form onSubmit={handleSubmit}>
+        <Title>Login</Title>
+        <Input
+          type="text"
+          placeholder="Username or Email"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          required
+        />
+        <Input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <Button type="submit">Login</Button>
+        <Link href="/register">Don't have an account? Register</Link>
+        <Link href="/recover">Forgot Password?</Link>
+        {error && <Error>{error}</Error>}
+      </Form>
+    </Container>
   );
 };
 

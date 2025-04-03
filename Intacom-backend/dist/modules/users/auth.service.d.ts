@@ -1,19 +1,29 @@
-import { UsersService } from './users.service';
-import { User, UserDocument } from './schemas/user.schema';
+import { Model } from 'mongoose';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { PointsService } from '../points/points.service';
 export declare class AuthService {
-    private readonly usersService;
-    constructor(usersService: UsersService);
-    validateUser(identifier: string, password: string): Promise<any>;
-    login(user: any): Promise<{
-        user: any;
+    private userModel;
+    private notificationsService;
+    private pointsService;
+    constructor(userModel: Model<UserDocument>, notificationsService: NotificationsService, pointsService: PointsService);
+    login(loginDto: LoginDto): Promise<{
+        data: {
+            user: import("mongoose").Document<unknown, {}, UserDocument> & User & import("mongoose").Document<any, any, any> & {
+                _id: import("mongoose").Types.ObjectId;
+            };
+        };
     }>;
-    register(userDto: Partial<User>): Promise<any>;
+    register(registerDto: RegisterDto): Promise<{
+        message: string;
+    }>;
     recover(email: string): Promise<{
         message: string;
-        token: string;
     }>;
-    reset(token: string, newPassword: string): Promise<{
+    resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{
         message: string;
-        user: UserDocument;
     }>;
 }

@@ -7,14 +7,21 @@ import { Notification, NotificationDocument } from './schemas/notification.schem
 export class NotificationsService {
   constructor(@InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>) {}
 
-  async create(notification: Partial<Notification>): Promise<Notification> {
-    const newNotification = new this.notificationModel(notification);
-    // Mock email sending
-    console.log(`Sending email to user ${notification.userId}: ${notification.message}`);
-    return newNotification.save();
+  async create(userId: string, type: string, message: string, relatedId?: string) {
+    const notification = new this.notificationModel({
+      userId,
+      type,
+      message,
+      relatedId,
+    });
+    return notification.save();
   }
 
-  async findByUserId(userId: string): Promise<Notification[]> {
+  async findByUser(userId: string) {
     return this.notificationModel.find({ userId }).sort({ createdAt: -1 }).exec();
+  }
+
+  async markAsRead(id: string) {
+    return this.notificationModel.findByIdAndUpdate(id, { isRead: true }, { new: true }).exec();
   }
 }
