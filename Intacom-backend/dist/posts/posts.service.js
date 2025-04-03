@@ -12,121 +12,112 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProjectsService = void 0;
+exports.PostsService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
-const project_schema_1 = require("./schemas/project.schema");
+const post_schema_1 = require("./schemas/post.schema");
+const project_schema_1 = require("../projects/schemas/project.schema");
 const notifications_service_1 = require("../notifications/notifications.service");
 const points_service_1 = require("../points/points.service");
-let ProjectsService = class ProjectsService {
-    constructor(projectModel, notificationsService, pointsService) {
+let PostsService = class PostsService {
+    constructor(postModel, projectModel, notificationsService, pointsService) {
+        this.postModel = postModel;
         this.projectModel = projectModel;
         this.notificationsService = notificationsService;
         this.pointsService = pointsService;
     }
-    async create(name, description, admin, color, sharedWith) {
+    async create(createPostDto) {
         try {
-            const project = new this.projectModel({
-                name,
-                description,
-                admin,
-                color,
-                sharedWith,
+            const { projectId, userId, content, images } = createPostDto;
+            const post = new this.postModel({
+                projectId,
+                userId,
+                content,
+                images,
             });
-            const savedProject = await project.save();
-            for (const collaborator of sharedWith) {
-                await this.notificationsService.create(collaborator.userId, 'project_invite', `You've been invited to collaborate on ${name}!`, savedProject._id.toString());
-            }
-            await this.pointsService.addPoints(admin, 10, 'create_project');
-            return savedProject;
-        }
-        catch (error) {
-            console.error('Error in create project:', error);
-            throw new common_1.BadRequestException('Failed to create project');
-        }
-    }
-    async findByUsername(username) {
-        try {
-            return await this.projectModel
-                .find({
-                $or: [
-                    { admin: username },
-                    { 'sharedWith.userId': username },
-                ],
-            })
-                .exec();
-        }
-        catch (error) {
-            console.error('Error in findByUsername:', error);
-            throw error;
-        }
-    }
-    async findById(id) {
-        try {
-            const project = await this.projectModel.findById(id).exec();
+            const savedPost = await post.save();
+            const project = await this.projectModel.findById(projectId).exec();
             if (!project) {
                 throw new common_1.NotFoundException('Project not found');
             }
-            return project;
+            for (const collaborator of project.sharedWith) {
+                await this.notificationsService.create(collaborator.userId, 'new_post', `A new post was added to ${project.name}!`, savedPost._id.toString());
+            }
+            await this.pointsService.addPoints(userId, 5, 'create_post');
+            return savedPost;
         }
         catch (error) {
-            console.error('Error in findById:', error);
+            console.error('Error in create post:', error);
+            throw new common_1.BadRequestException('Failed to create post');
+        }
+    }
+    async findByProjectId(projectId) {
+        try {
+            return await this.postModel.find({ projectId }).sort({ createdAt: -1 }).exec();
+        }
+        catch (error) {
+            console.error('Error in findByProjectId:', error);
             throw error;
         }
     }
     async update(id, updates) {
         try {
-            const updatedProject = await this.projectModel
+            const updatedPost = await this.postModel
                 .findByIdAndUpdate(id, updates, { new: true })
                 .exec();
-            if (!updatedProject) {
-                throw new common_1.NotFoundException('Project not found');
+            if (!updatedPost) {
+                throw new common_1.NotFoundException('Post not found');
             }
-            for (const collaborator of updatedProject.sharedWith) {
-                await this.notificationsService.create(collaborator.userId, 'project_update', `Project ${updatedProject.name} has been updated!`, updatedProject._id.toString());
-            }
-            return updatedProject;
+            return updatedPost;
         }
         catch (error) {
-            console.error('Error in update project:', error);
+            console.error('Error in update post:', error);
             throw error;
         }
     }
-    async remove(id) {
+    async delete(id) {
         try {
-            const project = await this.projectModel.findByIdAndDelete(id).exec();
-            if (!project) {
-                throw new common_1.NotFoundException('Project not found');
+            const post = await this.postModel.findByIdAndDelete(id).exec();
+            if (!post) {
+                throw new common_1.NotFoundException('Post not found');
             }
-            return { message: 'Project deleted successfully' };
+            return { message: 'Post deleted successfully' };
         }
         catch (error) {
-            console.error('Error in delete project:', error);
+            console.error('Error in delete post:', error);
             throw error;
         }
     }
-    async likeProject(id, userId) {
+    async likePost(id, userId) {
         try {
-            const project = await this.findById(id);
-            project.likes += 1;
-            await project.save();
-            await this.notificationsService.create(project.admin, 'project_like', `Your project ${project.name} received a like!`, project._id.toString());
-            await this.pointsService.addPoints(userId, 1, 'like_project');
-            return { message: 'Project liked successfully' };
+            const post = await this.postModel.findById(id).exec();
+            if (!post) {
+                throw new common_1.NotFoundException('Post not found');
+            }
+            if (!post.likedBy.includes(userId)) {
+                post.likes += 1;
+                post.likedBy.push(userId);
+                await post.save();
+                await this.notificationsService.create(post.userId, 'post_like', `Your post received a like!`, post._id.toString());
+                await this.pointsService.addPoints(userId, 1, 'like_post');
+            }
+            return { message: 'Post liked successfully' };
         }
         catch (error) {
-            console.error('Error in likeProject:', error);
+            console.error('Error in likePost:', error);
             throw error;
         }
     }
 };
-exports.ProjectsService = ProjectsService;
-exports.ProjectsService = ProjectsService = __decorate([
+exports.PostsService = PostsService;
+exports.PostsService = PostsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)(project_schema_1.Project.name)),
+    __param(0, (0, mongoose_1.InjectModel)(post_schema_1.Post.name)),
+    __param(1, (0, mongoose_1.InjectModel)(project_schema_1.Project.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model,
         notifications_service_1.NotificationsService,
         points_service_1.PointsService])
-], ProjectsService);
+], PostsService);
 //# sourceMappingURL=posts.service.js.map

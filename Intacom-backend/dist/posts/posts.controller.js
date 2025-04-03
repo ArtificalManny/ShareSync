@@ -11,96 +11,75 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProjectsController = void 0;
+exports.PostsController = void 0;
 const common_1 = require("@nestjs/common");
-const projects_service_1 = require("./projects.service");
-let ProjectsController = class ProjectsController {
-    constructor(projectsService) {
-        this.projectsService = projectsService;
+const posts_service_1 = require("./posts.service");
+let PostsController = class PostsController {
+    constructor(postsService) {
+        this.postsService = postsService;
     }
-    async create(name, description, admin, color, sharedWith) {
+    async create(createPostDto) {
         try {
-            return await this.projectsService.create(name, description, admin, color, sharedWith);
+            return await this.postsService.create(createPostDto);
         }
         catch (error) {
-            console.error('Error in create project:', error);
+            console.error('Error in create post:', error);
             throw error;
         }
     }
-    async findByUsername(username) {
+    async findByProjectId(projectId) {
         try {
-            return await this.projectsService.findByUsername(username);
+            return await this.postsService.findByProjectId(projectId);
         }
         catch (error) {
-            console.error('Error in findByUsername:', error);
-            throw error;
-        }
-    }
-    async findById(id) {
-        try {
-            return await this.projectsService.findById(id);
-        }
-        catch (error) {
-            console.error('Error in findById:', error);
+            console.error('Error in findByProjectId:', error);
             throw error;
         }
     }
     async update(id, updates) {
         try {
-            return await this.projectsService.update(id, updates);
+            return await this.postsService.update(id, updates);
         }
         catch (error) {
-            console.error('Error in update project:', error);
+            console.error('Error in update post:', error);
             throw error;
         }
     }
-    async remove(id) {
+    async delete(id) {
         try {
-            return await this.projectsService.remove(id);
+            return await this.postsService.delete(id);
         }
         catch (error) {
-            console.error('Error in remove project:', error);
+            console.error('Error in delete post:', error);
             throw error;
         }
     }
-    async likeProject(id, userId) {
+    async likePost(id, userId) {
         try {
-            return await this.projectsService.likeProject(id, userId);
+            return await this.postsService.likePost(id, userId);
         }
         catch (error) {
-            console.error('Error in likeProject:', error);
+            console.error('Error in likePost:', error);
             throw error;
         }
     }
 };
-exports.ProjectsController = ProjectsController;
+exports.PostsController = PostsController;
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)('name')),
-    __param(1, (0, common_1.Body)('description')),
-    __param(2, (0, common_1.Body)('admin')),
-    __param(3, (0, common_1.Body)('color')),
-    __param(4, (0, common_1.Body)('sharedWith')),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String, Array]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
-], ProjectsController.prototype, "create", null);
+], PostsController.prototype, "create", null);
 __decorate([
-    (0, common_1.Get)(':username'),
-    __param(0, (0, common_1.Param)('username')),
+    (0, common_1.Get)('project/:projectId'),
+    __param(0, (0, common_1.Param)('projectId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], ProjectsController.prototype, "findByUsername", null);
-__decorate([
-    (0, common_1.Get)('by-id/:id'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], ProjectsController.prototype, "findById", null);
+], PostsController.prototype, "findByProjectId", null);
 __decorate([
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -108,14 +87,14 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
-], ProjectsController.prototype, "update", null);
+], PostsController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], ProjectsController.prototype, "remove", null);
+], PostsController.prototype, "delete", null);
 __decorate([
     (0, common_1.Post)('like/:id'),
     __param(0, (0, common_1.Param)('id')),
@@ -123,9 +102,9 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
-], ProjectsController.prototype, "likeProject", null);
-exports.ProjectsController = ProjectsController = __decorate([
-    (0, common_1.Controller)('projects'),
-    __metadata("design:paramtypes", [typeof (_a = typeof projects_service_1.ProjectsService !== "undefined" && projects_service_1.ProjectsService) === "function" ? _a : Object])
-], ProjectsController);
+], PostsController.prototype, "likePost", null);
+exports.PostsController = PostsController = __decorate([
+    (0, common_1.Controller)('posts'),
+    __metadata("design:paramtypes", [posts_service_1.PostsService])
+], PostsController);
 //# sourceMappingURL=posts.controller.js.map

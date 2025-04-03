@@ -1,73 +1,58 @@
 import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
-import { ProjectsService } from './projects.service';
-import { Project } from './schemas/project.schema';
+import { PostsService } from './posts.service';
+import { Post as PostInterface } from '../posts/types/post.interface';
+import { Project } from '../projects/schemas/project.schema';
 
-@Controller('projects')
-export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+@Controller('posts')
+export class PostsController {
+  constructor(private readonly postsService: PostsService) {}
 
   @Post()
-  async create(
-    @Body('name') name: string,
-    @Body('description') description: string,
-    @Body('admin') admin: string,
-    @Body('color') color: string,
-    @Body('sharedWith') sharedWith: { userId: string; role: string }[],
-  ) {
+  async create(@Body() createPostDto: { projectId: string; userId: string; content: string; images: string[] }) {
     try {
-      return await this.projectsService.create(name, description, admin, color, sharedWith);
+      return await this.postsService.create(createPostDto);
     } catch (error) {
-      console.error('Error in create project:', error);
+      console.error('Error in create post:', error);
       throw error;
     }
   }
 
-  @Get(':username')
-  async findByUsername(@Param('username') username: string) {
+  @Get('project/:projectId')
+  async findByProjectId(@Param('projectId') projectId: string) {
     try {
-      return await this.projectsService.findByUsername(username);
+      return await this.postsService.findByProjectId(projectId);
     } catch (error) {
-      console.error('Error in findByUsername:', error);
-      throw error;
-    }
-  }
-
-  @Get('by-id/:id')
-  async findById(@Param('id') id: string) {
-    try {
-      return await this.projectsService.findById(id);
-    } catch (error) {
-      console.error('Error in findById:', error);
+      console.error('Error in findByProjectId:', error);
       throw error;
     }
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() updates: Partial<Project>) {
+  async update(@Param('id') id: string, @Body() updates: Partial<PostInterface>) {
     try {
-      return await this.projectsService.update(id, updates);
+      return await this.postsService.update(id, updates);
     } catch (error) {
-      console.error('Error in update project:', error);
+      console.error('Error in update post:', error);
       throw error;
     }
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
+  async delete(@Param('id') id: string) {
     try {
-      return await this.projectsService.remove(id);
+      return await this.postsService.delete(id);
     } catch (error) {
-      console.error('Error in remove project:', error);
+      console.error('Error in delete post:', error);
       throw error;
     }
   }
 
   @Post('like/:id')
-  async likeProject(@Param('id') id: string, @Body('userId') userId: string) {
+  async likePost(@Param('id') id: string, @Body('userId') userId: string) {
     try {
-      return await this.projectsService.likeProject(id, userId);
+      return await this.postsService.likePost(id, userId);
     } catch (error) {
-      console.error('Error in likeProject:', error);
+      console.error('Error in likePost:', error);
       throw error;
     }
   }

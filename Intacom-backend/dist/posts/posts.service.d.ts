@@ -1,23 +1,32 @@
 import { Model } from 'mongoose';
-import { Project, ProjectDocument } from './schemas/project.schema';
+import { Post, PostDocument } from './schemas/post.schema';
+import { ProjectDocument } from '../projects/schemas/project.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PointsService } from '../points/points.service';
-export declare class ProjectsService {
+export declare class PostsService {
+    private postModel;
     private projectModel;
     private notificationsService;
     private pointsService;
-    constructor(projectModel: Model<ProjectDocument>, notificationsService: NotificationsService, pointsService: PointsService);
-    create(name: string, description: string, admin: string, color: string, sharedWith: {
+    constructor(postModel: Model<PostDocument>, projectModel: Model<ProjectDocument>, notificationsService: NotificationsService, pointsService: PointsService);
+    create(createPostDto: {
+        projectId: string;
         userId: string;
-        role: string;
-    }[]): Promise<any>;
-    findByUsername(username: string): Promise<any[]>;
-    findById(id: string): Promise<any>;
-    update(id: string, updates: Partial<Project>): Promise<any>;
-    remove(id: string): Promise<{
+        content: string;
+        images: string[];
+    }): Promise<import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    findByProjectId(projectId: string): Promise<(import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    })[]>;
+    update(id: string, updates: Partial<Post>): Promise<import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    delete(id: string): Promise<{
         message: string;
     }>;
-    likeProject(id: string, userId: string): Promise<{
+    likePost(id: string, userId: string): Promise<{
         message: string;
     }>;
 }
