@@ -1,25 +1,15 @@
-import { PostsService } from './posts.service';
-export declare class PostsController {
-    private readonly postsService;
-    constructor(postsService: PostsService);
-    create(createPostDto: {
-        projectId: string;
+import { ProjectsService } from './projects.service';
+import { Project } from './schemas/project.schema';
+export declare class ProjectsController {
+    private readonly projectsService;
+    constructor(projectsService: ProjectsService);
+    create(name: string, description: string, admin: string, color: string, sharedWith: {
         userId: string;
-        content: string;
-        images: string[];
-    }): Promise<import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
-    }>;
-    findByProjectId(projectId: string): Promise<(import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
-    })[]>;
-    update(id: string, updates: Partial<Post>): Promise<import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
-    }>;
-    delete(id: string): Promise<{
-        message: string;
-    }>;
-    likePost(id: string, userId: string): Promise<{
-        message: string;
-    }>;
+        role: string;
+    }[]): Promise<any>;
+    findByUsername(username: string): Promise<any>;
+    findById(id: string): Promise<any>;
+    update(id: string, updates: Partial<Project>): Promise<any>;
+    remove(id: string): Promise<any>;
+    likeProject(id: string, userId: string): Promise<any>;
 }
