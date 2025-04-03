@@ -1,14 +1,18 @@
 import { ProjectsService } from './projects.service';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
 export declare class ProjectsController {
     private readonly projectsService;
     constructor(projectsService: ProjectsService);
-    create(createProjectDto: CreateProjectDto): Promise<any>;
-    findByUsername(username: string): Promise<{
-        data: any;
+    create(name: string, description: string, admin: string, color: string, sharedWith: {
+        userId: string;
+        role: string;
+    }[]): Promise<any>;
+    findByUsername(username: string): Promise<any[]>;
+    findById(id: string): Promise<any>;
+    update(id: string, updates: Partial<Project>): Promise<any>;
+    remove(id: string): Promise<{
+        message: string;
     }>;
-    findOne(id: string): any;
-    update(id: string, updateProjectDto: UpdateProjectDto): Promise<any>;
-    remove(id: string): any;
+    likeProject(id: string, userId: string): Promise<{
+        message: string;
+    }>;
 }

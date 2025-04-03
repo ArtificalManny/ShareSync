@@ -14,7 +14,7 @@ export declare class ProjectsService {
     findByUsername(username: string): Promise<any[]>;
     findById(id: string): Promise<any>;
     update(id: string, updates: Partial<Project>): Promise<any>;
-    delete(id: string): Promise<{
+    remove(id: string): Promise<{
         message: string;
     }>;
     likeProject(id: string, userId: string): Promise<{

@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AuthController } from './auth.controller';
-import { UsersModule } from './users.module'; // Use relative path
+import { AuthService } from './auth.service';
+import { User, UserSchema } from '../users/schemas/user.schema';
+import { UsersService } from '../users/users.service';
 
 @Module({
-  imports: [UsersModule],
+  imports: [
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+  ],
   controllers: [AuthController],
-  providers: [AuthService],
-  exports: [AuthService],
+  providers: [AuthService, UsersService],
 })
 export class AuthModule {}

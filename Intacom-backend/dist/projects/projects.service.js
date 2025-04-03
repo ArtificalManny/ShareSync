@@ -94,7 +94,7 @@ let ProjectsService = class ProjectsService {
             throw error;
         }
     }
-    async delete(id) {
+    async remove(id) {
         try {
             const project = await this.projectModel.findByIdAndDelete(id).exec();
             if (!project) {

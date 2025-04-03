@@ -11,41 +11,80 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsController = void 0;
 const common_1 = require("@nestjs/common");
 const projects_service_1 = require("./projects.service");
-const create_project_dto_1 = require("./dto/create-project.dto");
-const update_project_dto_1 = require("./dto/update-project.dto");
 let ProjectsController = class ProjectsController {
     constructor(projectsService) {
         this.projectsService = projectsService;
     }
-    create(createProjectDto) {
-        return this.projectsService.create(createProjectDto);
+    async create(name, description, admin, color, sharedWith) {
+        try {
+            return await this.projectsService.create(name, description, admin, color, sharedWith);
+        }
+        catch (error) {
+            console.error('Error in create project:', error);
+            throw error;
+        }
     }
     async findByUsername(username) {
-        const projects = await this.projectsService.findByUsername(username).select('name description admin color sharedWith -_id');
-        return { data: projects };
+        try {
+            return await this.projectsService.findByUsername(username);
+        }
+        catch (error) {
+            console.error('Error in findByUsername:', error);
+            throw error;
+        }
     }
-    findOne(id) {
-        return this.projectsService.findOne(id);
+    async findById(id) {
+        try {
+            return await this.projectsService.findById(id);
+        }
+        catch (error) {
+            console.error('Error in findById:', error);
+            throw error;
+        }
     }
-    update(id, updateProjectDto) {
-        return this.projectsService.update(id, updateProjectDto);
+    async update(id, updates) {
+        try {
+            return await this.projectsService.update(id, updates);
+        }
+        catch (error) {
+            console.error('Error in update project:', error);
+            throw error;
+        }
     }
-    remove(id) {
-        return this.projectsService.remove(id);
+    async remove(id) {
+        try {
+            return await this.projectsService.remove(id);
+        }
+        catch (error) {
+            console.error('Error in remove project:', error);
+            throw error;
+        }
+    }
+    async likeProject(id, userId) {
+        try {
+            return await this.projectsService.likeProject(id, userId);
+        }
+        catch (error) {
+            console.error('Error in likeProject:', error);
+            throw error;
+        }
     }
 };
 exports.ProjectsController = ProjectsController;
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, common_1.Body)('name')),
+    __param(1, (0, common_1.Body)('description')),
+    __param(2, (0, common_1.Body)('admin')),
+    __param(3, (0, common_1.Body)('color')),
+    __param(4, (0, common_1.Body)('sharedWith')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_a = typeof create_project_dto_1.CreateProjectDto !== "undefined" && create_project_dto_1.CreateProjectDto) === "function" ? _a : Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, String, String, String, Array]),
+    __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(':username'),
@@ -59,23 +98,31 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "findOne", null);
+    __metadata("design:returntype", Promise)
+], ProjectsController.prototype, "findById", null);
 __decorate([
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, typeof (_b = typeof update_project_dto_1.UpdateProjectDto !== "undefined" && update_project_dto_1.UpdateProjectDto) === "function" ? _b : Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)('like/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], ProjectsController.prototype, "likeProject", null);
 exports.ProjectsController = ProjectsController = __decorate([
     (0, common_1.Controller)('projects'),
     __metadata("design:paramtypes", [projects_service_1.ProjectsService])

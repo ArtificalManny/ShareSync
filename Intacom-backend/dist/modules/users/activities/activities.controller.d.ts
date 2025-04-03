@@ -1,9 +1,14 @@
 import { ActivitiesService } from './activities.service';
-import { Activity } from './schemas/activity.schema';
 export declare class ActivitiesController {
     private readonly activitiesService;
     constructor(activitiesService: ActivitiesService);
-    create(createActivityDto: Partial<Activity>): Promise<Activity>;
-    findByUserId(userId: string): Promise<Activity[]>;
-    findByProjectId(projectId: string): Promise<Activity[]>;
+    create(userId: string, projectId: string, action: string): Promise<import("mongoose").Document<unknown, {}, import("./schemas/activity.schema").ActivityDocument> & import("./schemas/activity.schema").Activity & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    findByUser(userId: string): Promise<(import("mongoose").Document<unknown, {}, import("./schemas/activity.schema").ActivityDocument> & import("./schemas/activity.schema").Activity & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    })[]>;
+    findByProject(projectId: string): Promise<(import("mongoose").Document<unknown, {}, import("./schemas/activity.schema").ActivityDocument> & import("./schemas/activity.schema").Activity & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    })[]>;
 }

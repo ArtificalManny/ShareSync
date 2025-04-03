@@ -21,15 +21,37 @@ let ActivitiesService = class ActivitiesService {
     constructor(activityModel) {
         this.activityModel = activityModel;
     }
-    async create(activity) {
-        const newActivity = new this.activityModel(activity);
-        return newActivity.save();
+    async create(userId, projectId, action) {
+        try {
+            const activity = new this.activityModel({
+                userId,
+                projectId,
+                action,
+            });
+            return await activity.save();
+        }
+        catch (error) {
+            console.error('Error in create activity:', error);
+            throw error;
+        }
     }
-    async findByUserId(userId) {
-        return this.activityModel.find({ userId }).sort({ createdAt: -1 }).exec();
+    async findByUser(userId) {
+        try {
+            return await this.activityModel.find({ userId }).sort({ createdAt: -1 }).exec();
+        }
+        catch (error) {
+            console.error('Error in findByUser:', error);
+            throw error;
+        }
     }
-    async findByProjectId(projectId) {
-        return this.activityModel.find({ projectId }).sort({ createdAt: -1 }).exec();
+    async findByProject(projectId) {
+        try {
+            return await this.activityModel.find({ projectId }).sort({ createdAt: -1 }).exec();
+        }
+        catch (error) {
+            console.error('Error in findByProject:', error);
+            throw error;
+        }
     }
 };
 exports.ActivitiesService = ActivitiesService;

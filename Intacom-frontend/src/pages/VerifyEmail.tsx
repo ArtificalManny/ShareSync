@@ -1,38 +1,74 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import styled from '@emotion/styled';
+import { theme } from '../styles/theme';
+import { motion } from 'framer-motion';
 import axios from 'axios';
 
-const VerifyEmail: React.FC = () => {
-  const [message, setMessage] = useState('');
+const Container = styled(motion.div)`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+`;
+
+const Message = styled.div`
+  background: ${theme.colors.white};
+  padding: ${theme.spacing.lg};
+  border-radius: ${theme.borderRadius.medium};
+  box-shadow: ${theme.shadows.medium};
+  text-align: center;
+`;
+
+const Title = styled.h2`
+  font-size: ${theme.typography.h2.fontSize};
+  font-weight: ${theme.typography.h2.fontWeight};
+  margin-bottom: ${theme.spacing.md};
+  color: ${theme.colors.primary};
+`;
+
+const Link = styled.a`
+  color: ${theme.colors.primary};
+  font-size: ${theme.typography.body.fontSize};
+  cursor: pointer;
+`;
+
+const VerifyEmail = () => {
+  const [message, setMessage] = useState('Verifying your email...');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const verifyEmail = async () => {
-      const token = searchParams.get('token');
-      if (!token) {
-        setMessage('Invalid verification link');
-        return;
-      }
+    const token = searchParams.get('token');
+    if (token) {
+      verifyEmail(token);
+    } else {
+      setMessage('Invalid verification link.');
+    }
+  }, [searchParams]);
 
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/verify-email?token=${token}`);
-        setMessage(response.data.message);
-        setTimeout(() => navigate('/'), 3000); // Redirect to login after 3 seconds
-      } catch (error: any) {
-        setMessage(error.response?.data?.message || 'Failed to verify email. Please try again.');
-      }
-    };
-
-    verifyEmail();
-  }, [searchParams, navigate]);
+  const verifyEmail = async (token: string) => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/verify-email?token=${token}`);
+      setMessage(response.data.message);
+    } catch (error) {
+      setMessage('Failed to verify email. Please try again.');
+    }
+  };
 
   return (
-    <div style={{ padding: '2rem', textAlign: 'center', color: '#f5f5f5' }}>
-      <h2>Email Verification</h2>
-      <p>{message}</p>
-      {message.includes('successfully') && <p>You will be redirected to the login page shortly...</p>}
-    </div>
+    <Container
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Message>
+        <Title>Email Verification</Title>
+        <p>{message}</p>
+        <Link onClick={() => navigate('/login')}>Go to Login</Link>
+      </Message>
+    </Container>
   );
 };
 

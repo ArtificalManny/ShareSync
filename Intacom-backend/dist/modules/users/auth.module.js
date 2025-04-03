@@ -8,18 +8,21 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthModule = void 0;
 const common_1 = require("@nestjs/common");
-const auth_service_1 = require("./auth.service");
+const mongoose_1 = require("@nestjs/mongoose");
 const auth_controller_1 = require("./auth.controller");
-const users_module_1 = require("./users.module");
+const auth_service_1 = require("./auth.service");
+const user_schema_1 = require("../users/schemas/user.schema");
+const users_service_1 = require("../users/users.service");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
 exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
-        imports: [users_module_1.UsersModule],
+        imports: [
+            mongoose_1.MongooseModule.forFeature([{ name: user_schema_1.User.name, schema: user_schema_1.UserSchema }]),
+        ],
         controllers: [auth_controller_1.AuthController],
-        providers: [auth_service_1.AuthService],
-        exports: [auth_service_1.AuthService],
+        providers: [auth_service_1.AuthService, users_service_1.UsersService],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

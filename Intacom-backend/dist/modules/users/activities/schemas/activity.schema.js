@@ -21,19 +21,11 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
-], Activity.prototype, "type", void 0);
+], Activity.prototype, "projectId", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
-], Activity.prototype, "content", void 0);
-__decorate([
-    (0, mongoose_1.Prop)(),
-    __metadata("design:type", String)
-], Activity.prototype, "projectId", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ default: Date.now }),
-    __metadata("design:type", Date)
-], Activity.prototype, "createdAt", void 0);
+], Activity.prototype, "action", void 0);
 exports.Activity = Activity = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Activity);

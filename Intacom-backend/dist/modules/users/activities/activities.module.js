@@ -9,9 +9,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ActivitiesModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
-const activity_schema_1 = require("./schemas/activity.schema");
-const activities_service_1 = require("./activities.service");
 const activities_controller_1 = require("./activities.controller");
+const activities_service_1 = require("./activities.service");
+const activity_schema_1 = require("./schemas/activity.schema");
 let ActivitiesModule = class ActivitiesModule {
 };
 exports.ActivitiesModule = ActivitiesModule;
@@ -22,7 +22,6 @@ exports.ActivitiesModule = ActivitiesModule = __decorate([
         ],
         controllers: [activities_controller_1.ActivitiesController],
         providers: [activities_service_1.ActivitiesService],
-        exports: [activities_service_1.ActivitiesService],
     })
 ], ActivitiesModule);
 //# sourceMappingURL=activities.module.js.map

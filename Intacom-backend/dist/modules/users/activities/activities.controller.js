@@ -19,22 +19,42 @@ let ActivitiesController = class ActivitiesController {
     constructor(activitiesService) {
         this.activitiesService = activitiesService;
     }
-    async create(createActivityDto) {
-        return this.activitiesService.create(createActivityDto);
+    async create(userId, projectId, action) {
+        try {
+            return await this.activitiesService.create(userId, projectId, action);
+        }
+        catch (error) {
+            console.error('Error in create activity:', error);
+            throw error;
+        }
     }
-    async findByUserId(userId) {
-        return this.activitiesService.findByUserId(userId);
+    async findByUser(userId) {
+        try {
+            return await this.activitiesService.findByUser(userId);
+        }
+        catch (error) {
+            console.error('Error in findByUser:', error);
+            throw error;
+        }
     }
-    async findByProjectId(projectId) {
-        return this.activitiesService.findByProjectId(projectId);
+    async findByProject(projectId) {
+        try {
+            return await this.activitiesService.findByProject(projectId);
+        }
+        catch (error) {
+            console.error('Error in findByProject:', error);
+            throw error;
+        }
     }
 };
 exports.ActivitiesController = ActivitiesController;
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, common_1.Body)('userId')),
+    __param(1, (0, common_1.Body)('projectId')),
+    __param(2, (0, common_1.Body)('action')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], ActivitiesController.prototype, "create", null);
 __decorate([
@@ -43,14 +63,14 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], ActivitiesController.prototype, "findByUserId", null);
+], ActivitiesController.prototype, "findByUser", null);
 __decorate([
     (0, common_1.Get)('project/:projectId'),
     __param(0, (0, common_1.Param)('projectId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], ActivitiesController.prototype, "findByProjectId", null);
+], ActivitiesController.prototype, "findByProject", null);
 exports.ActivitiesController = ActivitiesController = __decorate([
     (0, common_1.Controller)('activities'),
     __metadata("design:paramtypes", [activities_service_1.ActivitiesService])
