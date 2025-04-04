@@ -14,6 +14,6 @@ import { UsersModule } from '../users/users.module';
   ],
   controllers: [PointsController],
   providers: [PointsService],
-  exports: [PointsService],
+  exports: [PointsService], // Export PointsService
 })
 export class PointsModule {}
