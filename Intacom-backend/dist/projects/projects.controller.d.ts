@@ -6,8 +6,11 @@ export declare class ProjectsController {
     create(name: string, description: string, admin: string, color: string, sharedWith: {
         userId: string;
         role: string;
-    }[]): Promise<import("mongoose").Document<unknown, {}, import("./schemas/project.schema").ProjectDocument> & Project & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
+    }[]): Promise<{
+        message: string;
+        data: import("mongoose").Document<unknown, {}, import("./schemas/project.schema").ProjectDocument> & Project & import("mongoose").Document<any, any, any> & {
+            _id: import("mongoose").Types.ObjectId;
+        };
     }>;
     findByUsername(username: string): Promise<(import("mongoose").Document<unknown, {}, import("./schemas/project.schema").ProjectDocument> & Project & import("mongoose").Document<any, any, any> & {
         _id: import("mongoose").Types.ObjectId;

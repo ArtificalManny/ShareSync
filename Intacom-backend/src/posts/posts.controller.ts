@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { Post as PostInterface } from '../posts/types/post.interface';
-import { Project } from '../projects/schemas/project.schema';
 
 @Controller('posts')
 export class PostsController {
@@ -20,7 +19,8 @@ export class PostsController {
   @Get('project/:projectId')
   async findByProjectId(@Param('projectId') projectId: string) {
     try {
-      return await this.postsService.findByProjectId(projectId);
+      const posts = await this.postsService.findByProjectId(projectId);
+      return { data: posts };
     } catch (error) {
       console.error('Error in findByProjectId:', error);
       throw error;

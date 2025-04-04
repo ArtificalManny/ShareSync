@@ -30,7 +30,8 @@ let PostsController = class PostsController {
     }
     async findByProjectId(projectId) {
         try {
-            return await this.postsService.findByProjectId(projectId);
+            const posts = await this.postsService.findByProjectId(projectId);
+            return { data: posts };
         }
         catch (error) {
             console.error('Error in findByProjectId:', error);

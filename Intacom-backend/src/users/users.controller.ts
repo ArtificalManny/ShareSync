@@ -1,48 +1,51 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from './schemas/user.schema';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  async create(@Body() createUserDto: CreateUserDto) {
-    try {
-      return this.usersService.create(createUserDto);
-    } catch (error) {
-      console.error('Error in create user:', error);
-      throw error;
-    }
-  }
-
   @Get('by-username/:username')
   async findByUsername(@Param('username') username: string) {
     try {
-      return this.usersService.findByUsername(username);
+      const user = await this.usersService.findByUsername(username);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      return { data: user };
     } catch (error) {
       console.error('Error in findByUsername:', error);
       throw error;
     }
   }
 
-  @Get('by-email/:email')
-  async findByEmail(@Param('email') email: string) {
+  @Get('by-id/:id')
+  async findById(@Param('id') id: string) {
     try {
-      return this.usersService.findByEmail(email);
+      return await this.usersService.findById(id);
     } catch (error) {
-      console.error('Error in findByEmail:', error);
+      console.error('Error in findById:', error);
+      throw error;
+    }
+  }
+
+  @Get()
+  async findAll() {
+    try {
+      return await this.usersService.findAll();
+    } catch (error) {
+      console.error('Error in findAll:', error);
       throw error;
     }
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  async update(@Param('id') id: string, @Body() updates: Partial<User>) {
     try {
-      return this.usersService.update(id, updateUserDto);
+      return await this.usersService.update(id, updates);
     } catch (error) {
-      console.error('Error in update user:', error);
+      console.error('Error in update:', error);
       throw error;
     }
   }

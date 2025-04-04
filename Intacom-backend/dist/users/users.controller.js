@@ -15,57 +15,52 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
 const users_service_1 = require("./users.service");
-const create_user_dto_1 = require("./dto/create-user.dto");
-const update_user_dto_1 = require("./dto/update-user.dto");
 let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
     }
-    async create(createUserDto) {
-        try {
-            return this.usersService.create(createUserDto);
-        }
-        catch (error) {
-            console.error('Error in create user:', error);
-            throw error;
-        }
-    }
     async findByUsername(username) {
         try {
-            return this.usersService.findByUsername(username);
+            const user = await this.usersService.findByUsername(username);
+            if (!user) {
+                throw new Error('User not found');
+            }
+            return { data: user };
         }
         catch (error) {
             console.error('Error in findByUsername:', error);
             throw error;
         }
     }
-    async findByEmail(email) {
+    async findById(id) {
         try {
-            return this.usersService.findByEmail(email);
+            return await this.usersService.findById(id);
         }
         catch (error) {
-            console.error('Error in findByEmail:', error);
+            console.error('Error in findById:', error);
             throw error;
         }
     }
-    async update(id, updateUserDto) {
+    async findAll() {
         try {
-            return this.usersService.update(id, updateUserDto);
+            return await this.usersService.findAll();
         }
         catch (error) {
-            console.error('Error in update user:', error);
+            console.error('Error in findAll:', error);
+            throw error;
+        }
+    }
+    async update(id, updates) {
+        try {
+            return await this.usersService.update(id, updates);
+        }
+        catch (error) {
+            console.error('Error in update:', error);
             throw error;
         }
     }
 };
 exports.UsersController = UsersController;
-__decorate([
-    (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_user_dto_1.CreateUserDto]),
-    __metadata("design:returntype", Promise)
-], UsersController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)('by-username/:username'),
     __param(0, (0, common_1.Param)('username')),
@@ -74,18 +69,24 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "findByUsername", null);
 __decorate([
-    (0, common_1.Get)('by-email/:email'),
-    __param(0, (0, common_1.Param)('email')),
+    (0, common_1.Get)('by-id/:id'),
+    __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], UsersController.prototype, "findByEmail", null);
+], UsersController.prototype, "findById", null);
+__decorate([
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_user_dto_1.UpdateUserDto]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "update", null);
 exports.UsersController = UsersController = __decorate([

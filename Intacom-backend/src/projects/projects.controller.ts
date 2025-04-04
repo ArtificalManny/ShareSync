@@ -15,7 +15,8 @@ export class ProjectsController {
     @Body('sharedWith') sharedWith: { userId: string; role: string }[],
   ) {
     try {
-      return await this.projectsService.create(name, description, admin, color, sharedWith);
+      const project = await this.projectsService.create(name, description, admin, color, sharedWith);
+      return { message: 'Project created successfully', data: project };
     } catch (error) {
       console.error('Error in create project:', error);
       throw error;
