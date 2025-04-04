@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Put, Param, Body } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './schemas/user.schema';
 
@@ -10,9 +10,6 @@ export class UsersController {
   async findByUsername(@Param('username') username: string) {
     try {
       const user = await this.usersService.findByUsername(username);
-      if (!user) {
-        throw new Error('User not found');
-      }
       return { data: user };
     } catch (error) {
       console.error('Error in findByUsername:', error);

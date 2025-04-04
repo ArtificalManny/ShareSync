@@ -2,15 +2,19 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Profile.css';
 
-function Profile() {
-  const [user, setUser] = useState(null);
+function Profile({ user }) {
+  const [profileUser, setProfileUser] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchUser = async () => {
+      if (!user) {
+        setError('Please log in to view your profile.');
+        return;
+      }
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/ArtificalManny`);
-        setUser(response.data.data);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${user.username}`);
+        setProfileUser(response.data.data);
         setError(null);
       } catch (error) {
         console.error('Error fetching user:', error);
@@ -18,7 +22,7 @@ function Profile() {
       }
     };
     fetchUser();
-  }, []);
+  }, [user]);
 
   if (error) {
     return (
@@ -30,7 +34,7 @@ function Profile() {
     );
   }
 
-  if (!user) {
+  if (!profileUser) {
     return <div className="profile">Loading...</div>;
   }
 
@@ -39,16 +43,16 @@ function Profile() {
       <h1>Profile</h1>
       <div className="profile-details">
         <img
-          src={user.profilePic || 'https://via.placeholder.com/150'}
+          src={profileUser.profilePic || 'https://via.placeholder.com/150'}
           alt="Profile"
           style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover' }}
         />
-        <h2>{user.username}</h2>
-        <p>Email: {user.email}</p>
-        <p>Name: {user.firstName} {user.lastName}</p>
-        <p>Gender: {user.gender}</p>
-        <p>Birthday: {user.birthday.month}/{user.birthday.day}/{user.birthday.year}</p>
-        <p>Points: {user.points || 0}</p>
+        <h2>{profileUser.username}</h2>
+        <p>Email: {profileUser.email}</p>
+        <p>Name: {profileUser.firstName} {profileUser.lastName}</p>
+        <p>Gender: {profileUser.gender}</p>
+        <p>Birthday: {profileUser.birthday.month}/{profileUser.birthday.day}/{profileUser.birthday.year}</p>
+        <p>Points: {profileUser.points || 0}</p>
       </div>
     </div>
   );

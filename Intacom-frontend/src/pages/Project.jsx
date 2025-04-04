@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import './Project.css';
 
-function Project() {
+function Project({ user }) {
   const { id } = useParams();
   const [project, setProject] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -26,7 +26,7 @@ function Project() {
     const fetchPosts = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/posts/project/${id}`);
-        setPosts(response.data.data);
+        setPosts(response.data.data || []);
       } catch (error) {
         console.error('Error fetching posts:', error);
       }
@@ -35,7 +35,7 @@ function Project() {
     const fetchTasks = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/tasks/project/${id}`);
-        setTasks(response.data.data);
+        setTasks(response.data.data || []);
       } catch (error) {
         console.error('Error fetching tasks:', error);
       }
@@ -44,7 +44,7 @@ function Project() {
     const fetchFeedback = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/feedback/project/${id}`);
-        setFeedback(response.data.data);
+        setFeedback(response.data.data || []);
       } catch (error) {
         console.error('Error fetching feedback:', error);
       }
@@ -57,10 +57,14 @@ function Project() {
   }, [id]);
 
   const handleCreatePost = async () => {
+    if (!user) {
+      alert('Please log in to create a post');
+      return;
+    }
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/posts`, {
         projectId: id,
-        userId: 'ArtificalManny', // Replace with actual user ID
+        userId: user._id,
         content: newPost.content,
         images: newPost.images,
       });
@@ -68,10 +72,15 @@ function Project() {
       setNewPost({ content: '', images: [] });
     } catch (error) {
       console.error('Error creating post:', error);
+      alert('Failed to create post. Please try again.');
     }
   };
 
   const handleCreateTask = async () => {
+    if (!user) {
+      alert('Please log in to create a task');
+      return;
+    }
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/tasks`, {
         projectId: id,
@@ -85,14 +94,19 @@ function Project() {
       setNewTask({ name: '', description: '', assignee: '', dueDate: '', status: 'todo' });
     } catch (error) {
       console.error('Error creating task:', error);
+      alert('Failed to create task. Please try again.');
     }
   };
 
   const handleSubmitFeedback = async () => {
+    if (!user) {
+      alert('Please log in to submit feedback');
+      return;
+    }
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/feedback`, {
         projectId: id,
-        userId: 'ArtificalManny', // Replace with actual user ID
+        userId: user._id,
         rating: newFeedback.rating,
         message: newFeedback.message,
       });
@@ -100,6 +114,7 @@ function Project() {
       setNewFeedback({ rating: 0, message: '' });
     } catch (error) {
       console.error('Error submitting feedback:', error);
+      alert('Failed to submit feedback. Please try again.');
     }
   };
 
@@ -124,13 +139,17 @@ function Project() {
           />
           <button onClick={handleCreatePost}>Post</button>
         </div>
-        {posts.map((post) => (
-          <div key={post._id} className="post">
-            <p>{post.content}</p>
-            <p>Likes: {post.likes}</p>
-            <p>Comments: {post.comments}</p>
-          </div>
-        ))}
+        {posts.length === 0 ? (
+          <p>No posts yet.</p>
+        ) : (
+          posts.map((post) => (
+            <div key={post._id} className="post">
+              <p>{post.content}</p>
+              <p>Likes: {post.likes}</p>
+              <p>Comments: {post.comments}</p>
+            </div>
+          ))
+        )}
       </div>
 
       <div className="project-section">
@@ -168,15 +187,19 @@ function Project() {
           </select>
           <button onClick={handleCreateTask}>Add Task</button>
         </div>
-        {tasks.map((task) => (
-          <div key={task._id} className="task">
-            <h3>{task.name}</h3>
-            <p>{task.description}</p>
-            <p>Assignee: {task.assignee}</p>
-            <p>Due Date: {task.dueDate}</p>
-            <p>Status: {task.status}</p>
-          </div>
-        ))}
+        {tasks.length === 0 ? (
+          <p>No tasks yet.</p>
+        ) : (
+          tasks.map((task) => (
+            <div key={task._id} className="task">
+              <h3>{task.name}</h3>
+              <p>{task.description}</p>
+              <p>Assignee: {task.assignee}</p>
+              <p>Due Date: {task.dueDate}</p>
+              <p>Status: {task.status}</p>
+            </div>
+          ))
+        )}
       </div>
 
       <div className="project-section">
@@ -197,12 +220,16 @@ function Project() {
           />
           <button onClick={handleSubmitFeedback}>Submit Feedback</button>
         </div>
-        {feedback.map((fb) => (
-          <div key={fb._id} className="feedback">
-            <p>Rating: {fb.rating}</p>
-            <p>{fb.message}</p>
-          </div>
-        ))}
+        {feedback.length === 0 ? (
+          <p>No feedback yet.</p>
+        ) : (
+          feedback.map((fb) => (
+            <div key={fb._id} className="feedback">
+              <p>Rating: {fb.rating}</p>
+              <p>{fb.message}</p>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

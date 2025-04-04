@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Home.css';
 
-function Home() {
+function Home({ user }) {
   const [projects, setProjects] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
@@ -12,8 +12,9 @@ function Home() {
 
   useEffect(() => {
     const fetchProjects = async () => {
+      if (!user) return;
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/ArtificalManny`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
         setProjects(response.data);
       } catch (error) {
         console.error('Error fetching projects:', error);
@@ -21,8 +22,9 @@ function Home() {
     };
 
     const fetchNotifications = async () => {
+      if (!user) return;
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/ArtificalManny`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
         setNotifications(response.data);
       } catch (error) {
         console.error('Error fetching notifications:', error);
@@ -31,14 +33,19 @@ function Home() {
 
     fetchProjects();
     fetchNotifications();
-  }, []);
+  }, [user]);
 
   const handleCreateProject = async () => {
+    if (!user) {
+      alert('Please log in to create a project');
+      navigate('/login');
+      return;
+    }
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
         name: newProject.name,
         description: newProject.description,
-        admin: 'ArtificalManny', // Replace with actual user ID
+        admin: user._id,
         color: newProject.color,
         sharedWith: newProject.sharedWith,
       });
@@ -48,6 +55,7 @@ function Home() {
       navigate(`/project/${response.data.data._id}`);
     } catch (error) {
       console.error('Error creating project:', error);
+      alert('Failed to create project. Please try again.');
     }
   };
 
@@ -64,15 +72,45 @@ function Home() {
         ))}
         <button onClick={() => setShowCreateProjectModal(true)}>Create Project</button>
         <h2>Notifications ({notifications.length})</h2>
-        {notifications.map((notification) => (
-          <div key={notification._id} className="notification">
-            {notification.message} - {new Date(notification.createdAt).toLocaleString()}
-          </div>
-        ))}
+        {notifications.length === 0 ? (
+          <p>No notifications yet.</p>
+        ) : (
+          notifications.map((notification) => (
+            <div key={notification._id} className="notification">
+              {notification.message} - {new Date(notification.createdAt).toLocaleString()}
+            </div>
+          ))
+        )}
       </div>
       <div className="main-content">
-        <h1>Welcome to Intacom</h1>
-        <p>Start by creating a project.</p>
+        <h1>Home</h1>
+        <div className="overview">
+          <div className="overview-item">
+            <h2>Project Overview</h2>
+            <div className="overview-stats">
+              <div>
+                <h3>Total Projects</h3>
+                <p>{projects.length}</p>
+              </div>
+              <div>
+                <h3>Current Projects</h3>
+                <p>{projects.filter((p) => p.status === 'current').length}</p>
+              </div>
+              <div>
+                <h3>Past Projects</h3>
+                <p>{projects.filter((p) => p.status === 'past').length}</p>
+              </div>
+            </div>
+          </div>
+          <div className="overview-item">
+            <h2>Tasks Completed</h2>
+            <p>14</p>
+          </div>
+          <div className="overview-item">
+            <h2>Team Activity</h2>
+            <p>0 updates</p>
+          </div>
+        </div>
       </div>
 
       {showCreateProjectModal && (

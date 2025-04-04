@@ -25,13 +25,19 @@ function App() {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/ArtificalManny`);
         setUser(response.data.data);
       } catch (error) {
-        console.error('Error fetching user:', error);
+        console.error('Error fetching user in App:', error);
+        setUser(null);
       }
     };
     fetchUser();
   }, []);
 
   const handleCreateProject = async () => {
+    if (!user) {
+      alert('Please log in to create a project');
+      navigate('/login');
+      return;
+    }
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
         name: newProject.name,
@@ -46,6 +52,7 @@ function App() {
       navigate(`/project/${response.data.data._id}`);
     } catch (error) {
       console.error('Error creating project:', error);
+      alert('Failed to create project. Please try again.');
     }
   };
 
@@ -102,11 +109,11 @@ function App() {
       )}
 
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/project/:id" element={<Project />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/" element={<Home user={user} />} />
+        <Route path="/projects" element={<Projects user={user} />} />
+        <Route path="/project/:id" element={<Project user={user} />} />
+        <Route path="/profile" element={<Profile user={user} />} />
+        <Route path="/notifications" element={<Notifications user={user} />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/login" element={<Login setUser={setUser} />} />
         <Route path="/register" element={<Register />} />

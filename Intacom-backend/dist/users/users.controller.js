@@ -22,9 +22,6 @@ let UsersController = class UsersController {
     async findByUsername(username) {
         try {
             const user = await this.usersService.findByUsername(username);
-            if (!user) {
-                throw new Error('User not found');
-            }
             return { data: user };
         }
         catch (error) {
