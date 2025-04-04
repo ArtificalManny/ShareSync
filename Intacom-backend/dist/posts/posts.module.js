@@ -18,6 +18,8 @@ const points_service_1 = require("../points/points.service");
 const notification_schema_1 = require("../notifications/schemas/notification.schema");
 const point_schema_1 = require("../points/schemas/point.schema");
 const user_schema_1 = require("../users/schemas/user.schema");
+const users_module_1 = require("../users/users.module");
+const points_module_1 = require("../points/points.module");
 let PostsModule = class PostsModule {
 };
 exports.PostsModule = PostsModule;
@@ -31,6 +33,8 @@ exports.PostsModule = PostsModule = __decorate([
                 { name: point_schema_1.Point.name, schema: point_schema_1.PointSchema },
                 { name: user_schema_1.User.name, schema: user_schema_1.UserSchema },
             ]),
+            users_module_1.UsersModule,
+            points_module_1.PointsModule,
         ],
         controllers: [posts_controller_1.PostsController],
         providers: [posts_service_1.PostsService, notifications_service_1.NotificationsService, points_service_1.PointsService],

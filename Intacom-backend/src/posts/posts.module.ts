@@ -9,6 +9,8 @@ import { PointsService } from '../points/points.service';
 import { Notification, NotificationSchema } from '../notifications/schemas/notification.schema';
 import { Point, PointSchema } from '../points/schemas/point.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
+import { UsersModule } from '../users/users.module'; // Import UsersModule
+import { PointsModule } from '../points/points.module'; // Import PointsModule
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { User, UserSchema } from '../users/schemas/user.schema';
       { name: Point.name, schema: PointSchema },
       { name: User.name, schema: UserSchema },
     ]),
+    UsersModule, // Add UsersModule to imports
+    PointsModule, // Add PointsModule to imports
   ],
   controllers: [PostsController],
   providers: [PostsService, NotificationsService, PointsService],
