@@ -7,7 +7,6 @@ export declare class Task {
     assignee: string;
     dueDate: string;
     status: string;
-    dependencies: string[];
 }
 export declare const TaskSchema: import("mongoose").Schema<Task, import("mongoose").Model<Task, any, any, any, Document<unknown, any, Task> & Task & {
     _id: import("mongoose").Types.ObjectId;

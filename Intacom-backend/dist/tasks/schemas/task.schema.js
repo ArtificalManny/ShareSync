@@ -38,10 +38,6 @@ __decorate([
     (0, mongoose_1.Prop)({ default: 'todo' }),
     __metadata("design:type", String)
 ], Task.prototype, "status", void 0);
-__decorate([
-    (0, mongoose_1.Prop)([String]),
-    __metadata("design:type", Array)
-], Task.prototype, "dependencies", void 0);
 exports.Task = Task = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Task);

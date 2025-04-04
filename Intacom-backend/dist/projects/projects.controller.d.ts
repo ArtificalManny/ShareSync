@@ -8,19 +8,11 @@ export declare class ProjectsController {
         role: string;
     }[]): Promise<{
         message: string;
-        data: import("mongoose").Document<unknown, {}, import("./schemas/project.schema").ProjectDocument> & Project & import("mongoose").Document<any, any, any> & {
-            _id: import("mongoose").Types.ObjectId;
-        };
+        data: Project;
     }>;
-    findByUsername(username: string): Promise<(import("mongoose").Document<unknown, {}, import("./schemas/project.schema").ProjectDocument> & Project & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
-    })[]>;
-    findById(id: string): Promise<import("mongoose").Document<unknown, {}, import("./schemas/project.schema").ProjectDocument> & Project & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
-    }>;
-    update(id: string, updates: Partial<Project>): Promise<import("mongoose").Document<unknown, {}, import("./schemas/project.schema").ProjectDocument> & Project & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
-    }>;
+    findByUsername(username: string): Promise<Project[]>;
+    findById(id: string): Promise<import("./schemas/project.schema").ProjectDocument>;
+    update(id: string, updates: Partial<Project>): Promise<Project>;
     remove(id: string): Promise<{
         message: string;
     }>;

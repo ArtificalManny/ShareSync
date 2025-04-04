@@ -22,9 +22,6 @@ export class Task {
 
   @Prop({ default: 'todo' })
   status: string;
-
-  @Prop([String])
-  dependencies: string[];
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);

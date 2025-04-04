@@ -26,13 +26,17 @@ function App() {
         const parsedUser = JSON.parse(storedUser);
         try {
           const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${parsedUser.username}`);
-          setUser(response.data.data);
+          const fetchedUser = response.data.data;
+          setUser(fetchedUser);
+          localStorage.setItem('user', JSON.stringify(fetchedUser));
         } catch (error) {
           console.error('Error fetching user in App:', error);
           localStorage.removeItem('user');
           setUser(null);
           navigate('/login');
         }
+      } else {
+        navigate('/login');
       }
     };
     fetchUser();

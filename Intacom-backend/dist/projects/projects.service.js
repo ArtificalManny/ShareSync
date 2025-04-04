@@ -50,10 +50,7 @@ let ProjectsService = class ProjectsService {
         try {
             return await this.projectModel
                 .find({
-                $or: [
-                    { admin: username },
-                    { 'sharedWith.userId': username },
-                ],
+                $or: [{ admin: username }, { 'sharedWith.userId': username }],
             })
                 .exec();
         }
@@ -109,7 +106,7 @@ let ProjectsService = class ProjectsService {
     async likeProject(id, userId) {
         try {
             const project = await this.findById(id);
-            project.likes += 1;
+            project.likes = (project.likes || 0) + 1;
             await project.save();
             await this.notificationsService.create(project.admin, 'project_like', `Your project ${project.name} received a like!`, project._id.toString());
             await this.pointsService.addPoints(userId, 1, 'like_project');

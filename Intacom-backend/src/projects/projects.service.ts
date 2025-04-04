@@ -13,7 +13,13 @@ export class ProjectsService {
     private pointsService: PointsService,
   ) {}
 
-  async create(name: string, description: string, admin: string, color: string, sharedWith: { userId: string; role: string }[]) {
+  async create(
+    name: string,
+    description: string,
+    admin: string,
+    color: string,
+    sharedWith: { userId: string; role: string }[],
+  ): Promise<Project> {
     try {
       const project = new this.projectModel({
         name,
@@ -44,14 +50,11 @@ export class ProjectsService {
     }
   }
 
-  async findByUsername(username: string) {
+  async findByUsername(username: string): Promise<Project[]> {
     try {
       return await this.projectModel
         .find({
-          $or: [
-            { admin: username },
-            { 'sharedWith.userId': username },
-          ],
+          $or: [{ admin: username }, { 'sharedWith.userId': username }],
         })
         .exec();
     } catch (error) {
@@ -60,7 +63,7 @@ export class ProjectsService {
     }
   }
 
-  async findById(id: string) {
+  async findById(id: string): Promise<ProjectDocument> {
     try {
       const project = await this.projectModel.findById(id).exec();
       if (!project) {
@@ -73,7 +76,7 @@ export class ProjectsService {
     }
   }
 
-  async update(id: string, updates: Partial<Project>) {
+  async update(id: string, updates: Partial<Project>): Promise<Project> {
     try {
       const updatedProject = await this.projectModel
         .findByIdAndUpdate(id, updates, { new: true })
@@ -99,7 +102,7 @@ export class ProjectsService {
     }
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<{ message: string }> {
     try {
       const project = await this.projectModel.findByIdAndDelete(id).exec();
       if (!project) {
@@ -112,10 +115,10 @@ export class ProjectsService {
     }
   }
 
-  async likeProject(id: string, userId: string) {
+  async likeProject(id: string, userId: string): Promise<{ message: string }> {
     try {
-      const project = await this.findById(id);
-      project.likes += 1;
+      const project: ProjectDocument = await this.findById(id);
+      project.likes = (project.likes || 0) + 1;
       await project.save();
 
       // Notify the project admin
