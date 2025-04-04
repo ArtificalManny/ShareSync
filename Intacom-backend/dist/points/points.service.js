@@ -32,7 +32,10 @@ let PointsService = class PointsService {
             });
             await point.save();
             const user = await this.usersService.findById(userId);
-            user.points += points;
+            if (!user) {
+                throw new common_1.NotFoundException('User not found');
+            }
+            user.points = (user.points || 0) + points;
             await user.save();
             return point;
         }
@@ -44,7 +47,7 @@ let PointsService = class PointsService {
     async getLeaderboard() {
         try {
             const users = await this.usersService.findAll();
-            return users.sort((a, b) => b.points - a.points).slice(0, 10);
+            return users.sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 10);
         }
         catch (error) {
             console.error('Error in getLeaderboard:', error);

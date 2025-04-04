@@ -21,16 +21,22 @@ function App() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/ArtificalManny`);
-        setUser(response.data.data);
-      } catch (error) {
-        console.error('Error fetching user in App:', error);
-        setUser(null);
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        try {
+          const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${parsedUser.username}`);
+          setUser(response.data.data);
+        } catch (error) {
+          console.error('Error fetching user in App:', error);
+          localStorage.removeItem('user');
+          setUser(null);
+          navigate('/login');
+        }
       }
     };
     fetchUser();
-  }, []);
+  }, [navigate]);
 
   const handleCreateProject = async () => {
     if (!user) {
@@ -57,6 +63,7 @@ function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('user');
     setUser(null);
     navigate('/login');
   };
