@@ -13,6 +13,8 @@ const auth_controller_1 = require("./auth.controller");
 const auth_service_1 = require("./auth.service");
 const user_schema_1 = require("../users/schemas/user.schema");
 const users_service_1 = require("../users/users.service");
+const notifications_module_1 = require("../notifications/notifications.module");
+const points_module_1 = require("../points/points.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -20,6 +22,8 @@ exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
         imports: [
             mongoose_1.MongooseModule.forFeature([{ name: user_schema_1.User.name, schema: user_schema_1.UserSchema }]),
+            notifications_module_1.NotificationsModule,
+            points_module_1.PointsModule,
         ],
         controllers: [auth_controller_1.AuthController],
         providers: [auth_service_1.AuthService, users_service_1.UsersService],
