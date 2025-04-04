@@ -3,14 +3,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { PointsService } from './points.service';
 import { PointsController } from './points.controller';
 import { Point, PointSchema } from './schemas/point.schema';
-import { UsersModule } from '../users/users.module'; // Import UsersModule
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Point.name, schema: PointSchema },
     ]),
-    UsersModule, // Import UsersModule to provide UsersService
+    UsersModule,
   ],
   controllers: [PointsController],
   providers: [PointsService],

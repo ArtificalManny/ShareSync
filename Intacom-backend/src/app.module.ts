@@ -15,7 +15,18 @@ import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI), // Ensure URI is provided here
+    MongooseModule.forRootAsync({
+      useFactory: () => {
+        console.log('MONGODB_URI in AppModule:', process.env.MONGODB_URI);
+        if (!process.env.MONGODB_URI) {
+          throw new Error('MONGODB_URI is not defined in the environment variables');
+        }
+        return {
+          uri: process.env.MONGODB_URI,
+          serverSelectionTimeoutMS: 60000, // 60 seconds timeout
+        };
+      },
+    }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',

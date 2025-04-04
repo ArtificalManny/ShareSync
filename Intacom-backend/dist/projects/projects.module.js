@@ -9,8 +9,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
-const projects_controller_1 = require("../modules/projects/projects.controller");
-const projects_service_1 = require("../modules/projects/projects.service");
+const projects_controller_1 = require("./projects.controller");
+const projects_service_1 = require("./projects.service");
 const project_schema_1 = require("./schemas/project.schema");
 let ProjectsModule = class ProjectsModule {
 };

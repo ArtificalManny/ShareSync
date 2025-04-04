@@ -27,7 +27,18 @@ exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forRoot(process.env.MONGODB_URI),
+            mongoose_1.MongooseModule.forRootAsync({
+                useFactory: () => {
+                    console.log('MONGODB_URI in AppModule:', process.env.MONGODB_URI);
+                    if (!process.env.MONGODB_URI) {
+                        throw new Error('MONGODB_URI is not defined in the environment variables');
+                    }
+                    return {
+                        uri: process.env.MONGODB_URI,
+                        serverSelectionTimeoutMS: 60000,
+                    };
+                },
+            }),
             serve_static_1.ServeStaticModule.forRoot({
                 rootPath: (0, path_1.join)(__dirname, '..', 'uploads'),
                 serveRoot: '/uploads',

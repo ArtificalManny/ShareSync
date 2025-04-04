@@ -44,9 +44,14 @@ const path = __importStar(require("path"));
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 async function bootstrap() {
     try {
-        console.log('MONGODB_URI:', process.env.MONGODB_URI);
+        console.log('MONGODB_URI in main.ts:', process.env.MONGODB_URI);
+        if (!process.env.MONGODB_URI) {
+            throw new Error('MONGODB_URI is not defined in the environment variables');
+        }
         console.log('Connecting to MongoDB...');
-        await mongoose_1.default.connect(process.env.MONGODB_URI);
+        await mongoose_1.default.connect(process.env.MONGODB_URI, {
+            serverSelectionTimeoutMS: 60000,
+        });
         console.log('MongoDB connected successfully');
     }
     catch (error) {
