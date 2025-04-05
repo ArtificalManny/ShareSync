@@ -56,6 +56,7 @@ function Project({ user }: ProjectProps) {
   const [newPost, setNewPost] = useState({ content: '', images: [] as string[] });
   const [newTask, setNewTask] = useState({ name: '', description: '', assignee: '', dueDate: '', status: 'todo' });
   const [newFeedback, setNewFeedback] = useState({ rating: 0, message: '' });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -64,8 +65,16 @@ function Project({ user }: ProjectProps) {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/by-id/${id}`);
         console.log('Project fetch response:', response.data);
         setProject(response.data);
+        setError(null);
       } catch (error: any) {
         console.error('Error fetching project:', error.response?.data || error.message);
+        if (error.response?.status === 404) {
+          setError('Project not found.');
+        } else if (error.response?.status === 500) {
+          setError('Server error. Please try again later.');
+        } else {
+          setError('Failed to load project data. Please try again.');
+        }
       }
     };
 
@@ -179,8 +188,17 @@ function Project({ user }: ProjectProps) {
     }
   };
 
+  if (error) {
+    return (
+      <div className="project">
+        <h1 style={{ color: theme.colors.primary }}>Project</h1>
+        <p className="error" style={{ color: theme.colors.error }}>{error}</p>
+      </div>
+    );
+  }
+
   if (!project) {
-    return <div>Loading...</div>;
+    return <div className="project">Loading...</div>;
   }
 
   return (

@@ -7,4 +7,8 @@ export default defineConfig({
   define: {
     'process.env': {},
   },
+  server: {
+    port: 54693, // Ensure the port matches what you're using
+    open: true, // Automatically open the browser
+  },
 });

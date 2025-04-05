@@ -40,7 +40,13 @@ function Profile({ user }: ProfileProps) {
         alert('Profile loaded successfully!');
       } catch (error: any) {
         console.error('Error fetching user:', error.response?.data || error.message);
-        setError('Failed to load profile data. Please try again later or log in again.');
+        if (error.response?.status === 404) {
+          setError('User not found. Please check your account or log in again.');
+        } else if (error.response?.status === 500) {
+          setError('Server error. Please try again later.');
+        } else {
+          setError('Failed to load profile data. Please try again later or log in again.');
+        }
       }
     };
     fetchUser();
