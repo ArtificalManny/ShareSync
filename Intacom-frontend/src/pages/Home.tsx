@@ -38,46 +38,62 @@ function Home({ user }: HomeProps) {
   });
   const [projectsError, setProjectsError] = useState<string | null>(null);
   const [notificationsError, setNotificationsError] = useState<string | null>(null);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProjects = async () => {
       if (!user) return;
       try {
+        setLoadingProjects(true);
         console.log('Fetching projects for username:', user.username);
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`, {
+          timeout: 10000, // 10-second timeout
+        });
         console.log('Projects fetch response:', response.data);
         setProjects(response.data);
         setProjectsError(null);
       } catch (error: any) {
         console.error('Error fetching projects:', error.response?.data || error.message);
-        if (error.response?.status === 404) {
+        if (error.code === 'ECONNABORTED') {
+          setProjectsError('Request timed out. Please try again.');
+        } else if (error.response?.status === 404) {
           setProjectsError('No projects found.');
         } else if (error.response?.status === 500) {
           setProjectsError('Server error. Please try again later.');
         } else {
           setProjectsError('Failed to load projects. Please try again.');
         }
+      } finally {
+        setLoadingProjects(false);
       }
     };
 
     const fetchNotifications = async () => {
       if (!user) return;
       try {
+        setLoadingNotifications(true);
         console.log('Fetching notifications for user ID:', user._id);
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`, {
+          timeout: 10000, // 10-second timeout
+        });
         console.log('Notifications fetch response:', response.data);
         setNotifications(response.data);
         setNotificationsError(null);
       } catch (error: any) {
         console.error('Error fetching notifications:', error.response?.data || error.message);
-        if (error.response?.status === 404) {
+        if (error.code === 'ECONNABORTED') {
+          setNotificationsError('Request timed out. Please try again.');
+        } else if (error.response?.status === 404) {
           setNotificationsError('No notifications found.');
         } else if (error.response?.status === 500) {
           setNotificationsError('Server error. Please try again later.');
         } else {
           setNotificationsError('Failed to load notifications. Please try again.');
         }
+      } finally {
+        setLoadingNotifications(false);
       }
     };
 
@@ -99,6 +115,8 @@ function Home({ user }: HomeProps) {
         admin: user._id,
         color: newProject.color,
         sharedWith: newProject.sharedWith,
+      }, {
+        timeout: 10000, // 10-second timeout
       });
       console.log('Project creation response:', response.data);
       setShowCreateProjectModal(false);
@@ -115,7 +133,9 @@ function Home({ user }: HomeProps) {
     <div className="home">
       <div className="sidebar">
         <h2 style={{ color: theme.colors.primary }}>Projects</h2>
-        {projectsError ? (
+        {loadingProjects ? (
+          <p>Loading projects...</p>
+        ) : projectsError ? (
           <p className="error" style={{ color: theme.colors.error }}>{projectsError}</p>
         ) : projects.length === 0 ? (
           <p>No projects yet! Create a project to get started!</p>
@@ -135,7 +155,9 @@ function Home({ user }: HomeProps) {
           Create Project
         </button>
         <h2 style={{ color: theme.colors.primary }}>Notifications ({notifications.length})</h2>
-        {notificationsError ? (
+        {loadingNotifications ? (
+          <p>Loading notifications...</p>
+        ) : notificationsError ? (
           <p className="error" style={{ color: theme.colors.error }}>{notificationsError}</p>
         ) : notifications.length === 0 ? (
           <p>No notifications yet.</p>

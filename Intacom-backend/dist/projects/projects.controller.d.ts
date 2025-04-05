@@ -11,12 +11,8 @@ export declare class ProjectsController {
         data: Project;
     }>;
     findByUsername(username: string): Promise<Project[]>;
-    findById(id: string): Promise<import("./schemas/project.schema").ProjectDocument>;
+    findById(id: string): Promise<Project>;
     update(id: string, updates: Partial<Project>): Promise<Project>;
-    remove(id: string): Promise<{
-        message: string;
-    }>;
-    likeProject(id: string, userId: string): Promise<{
-        message: string;
-    }>;
+    remove(id: string): Promise<any>;
+    likeProject(id: string, userId: string): Promise<any>;
 }

@@ -24,33 +24,46 @@ interface ProfileProps {
 function Profile({ user }: ProfileProps) {
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
       if (!user) {
         setError('Please log in to view your profile.');
+        setLoading(false);
         return;
       }
       try {
+        setLoading(true);
         console.log('Fetching profile for username:', user.username);
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${user.username}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${user.username}`, {
+          timeout: 10000, // 10-second timeout
+        });
         console.log('Profile fetch response:', response.data);
         setProfileUser(response.data.data);
         setError(null);
         alert('Profile loaded successfully!');
       } catch (error: any) {
         console.error('Error fetching user:', error.response?.data || error.message);
-        if (error.response?.status === 404) {
+        if (error.code === 'ECONNABORTED') {
+          setError('Request timed out. Please try again.');
+        } else if (error.response?.status === 404) {
           setError('User not found. Please check your account or log in again.');
         } else if (error.response?.status === 500) {
           setError('Server error. Please try again later.');
         } else {
           setError('Failed to load profile data. Please try again later or log in again.');
         }
+      } finally {
+        setLoading(false);
       }
     };
     fetchUser();
   }, [user]);
+
+  if (loading) {
+    return <div className="profile">Loading profile...</div>;
+  }
 
   if (error) {
     return (
@@ -63,7 +76,7 @@ function Profile({ user }: ProfileProps) {
   }
 
   if (!profileUser) {
-    return <div className="profile">Loading...</div>;
+    return <div className="profile">No profile data available.</div>;
   }
 
   return (

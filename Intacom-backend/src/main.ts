@@ -22,6 +22,10 @@ async function bootstrap() {
         }
         await mongoose.connect(process.env.MONGODB_URI, {
           serverSelectionTimeoutMS: 5000,
+          maxPoolSize: 10, // Optimize connection pool for better performance
+          minPoolSize: 2,
+          connectTimeoutMS: 10000,
+          socketTimeoutMS: 45000,
         });
         console.log('MongoDB connection successful');
         break;
@@ -45,6 +49,7 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule);
+  app.enableCors(); // Enable CORS for frontend requests
   await app.listen(3000);
 }
 

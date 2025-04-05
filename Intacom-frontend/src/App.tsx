@@ -37,6 +37,7 @@ interface Project {
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [newProject, setNewProject] = useState<Project>({
     name: '',
@@ -50,6 +51,7 @@ function App() {
 
   useEffect(() => {
     const fetchUser = async () => {
+      setLoadingUser(true);
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const parsedUser: User = JSON.parse(storedUser);
@@ -69,6 +71,7 @@ function App() {
       } else {
         navigate('/login');
       }
+      setLoadingUser(false);
     };
     fetchUser();
   }, [navigate]);
@@ -111,6 +114,10 @@ function App() {
     setUser(null);
     navigate('/login');
   };
+
+  if (loadingUser) {
+    return <div>Loading user data...</div>;
+  }
 
   return (
     <div className="App">

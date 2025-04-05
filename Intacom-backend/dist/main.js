@@ -50,6 +50,10 @@ async function bootstrap() {
                 }
                 await mongoose.connect(process.env.MONGODB_URI, {
                     serverSelectionTimeoutMS: 5000,
+                    maxPoolSize: 10,
+                    minPoolSize: 2,
+                    connectTimeoutMS: 10000,
+                    socketTimeoutMS: 45000,
                 });
                 console.log('MongoDB connection successful');
                 break;
@@ -74,6 +78,7 @@ async function bootstrap() {
         process.exit(1);
     }
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    app.enableCors();
     await app.listen(3000);
 }
 bootstrap();
