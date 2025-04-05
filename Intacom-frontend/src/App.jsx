@@ -60,6 +60,8 @@ function App() {
       setShowCreateProjectModal(false);
       setNewProject({ name: '', description: '', color: '#000000', sharedWith: [] });
       navigate(`/project/${response.data.data._id}`);
+      // Provide a dopamine hit with a success notification
+      alert('Project created successfully!');
     } catch (error) {
       console.error('Error creating project:', error);
       alert('Failed to create project. Please try again.');

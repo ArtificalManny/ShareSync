@@ -3,10 +3,10 @@ import { Feedback, FeedbackDocument } from './schemas/feedback.schema';
 export declare class FeedbackService {
     private feedbackModel;
     constructor(feedbackModel: Model<FeedbackDocument>);
-    create(userId: string, projectId: string, message: string, rating: number): Promise<import("mongoose").Document<unknown, {}, FeedbackDocument> & Feedback & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
+    create(projectId: string, userId: string, rating: number, message: string): Promise<Feedback>;
+    findByProject(projectId: string): Promise<Feedback[]>;
+    findByProjectId(projectId: string): Promise<Feedback[]>;
+    delete(id: string): Promise<{
+        message: string;
     }>;
-    findByProject(projectId: string): Promise<(import("mongoose").Document<unknown, {}, FeedbackDocument> & Feedback & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
-    })[]>;
 }

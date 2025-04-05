@@ -70,6 +70,8 @@ function Project({ user }) {
       });
       setPosts([...posts, response.data]);
       setNewPost({ content: '', images: [] });
+      // Provide a dopamine hit with a success notification
+      alert('Post created successfully!');
     } catch (error) {
       console.error('Error creating post:', error);
       alert('Failed to create post. Please try again.');
@@ -92,6 +94,8 @@ function Project({ user }) {
       });
       setTasks([...tasks, response.data.data]);
       setNewTask({ name: '', description: '', assignee: '', dueDate: '', status: 'todo' });
+      // Provide a dopamine hit with a success notification
+      alert('Task created successfully!');
     } catch (error) {
       console.error('Error creating task:', error);
       alert('Failed to create task. Please try again.');
@@ -112,6 +116,8 @@ function Project({ user }) {
       });
       setFeedback([...feedback, response.data.data]);
       setNewFeedback({ rating: 0, message: '' });
+      // Provide a dopamine hit with a success notification
+      alert('Feedback submitted successfully!');
     } catch (error) {
       console.error('Error submitting feedback:', error);
       alert('Failed to submit feedback. Please try again.');

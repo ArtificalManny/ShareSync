@@ -20,6 +20,8 @@ function Login({ setUser }) {
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       navigate('/');
+      // Provide a dopamine hit with a success notification
+      alert('Logged in successfully! Welcome back!');
     } catch (error) {
       console.error('Error logging in:', error);
       setError(error.response?.data?.message || 'Invalid username or password. Please try again.');

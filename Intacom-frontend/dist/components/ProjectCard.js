@@ -1,0 +1,5 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+const ProjectCard = ({ project, onShare, onAddAnnouncement, onAddTask }) => {
+    return (_jsxs("div", { className: "p-4 bg-white rounded shadow mb-4", children: [_jsx("h3", { className: "text-lg font-bold", children: project.name }), _jsx("p", { className: "text-gray-700", children: project.description }), _jsxs("p", { className: "text-gray-500", children: ["Admin: ", project.admin] }), _jsxs("p", { className: "text-gray-500", children: ["Shared With: ", project.sharedWith.join(', ') || 'None'] }), onShare && _jsx("button", { onClick: onShare, className: "mt-2 py-1 px-3 bg-green-500 text-white rounded hover:bg-green-600", children: "Share" }), onAddAnnouncement && _jsx("button", { onClick: onAddAnnouncement, className: "mt-2 py-1 px-3 bg-blue-500 text-white rounded hover:bg-blue-600 ml-2", children: "Add Announcement" }), onAddTask && _jsx("button", { onClick: onAddTask, className: "mt-2 py-1 px-3 bg-purple-500 text-white rounded hover:bg-purple-600 ml-2", children: "Add Task" })] }));
+};
+export default ProjectCard;

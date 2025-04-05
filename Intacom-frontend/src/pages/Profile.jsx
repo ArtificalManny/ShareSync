@@ -16,6 +16,8 @@ function Profile({ user }) {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${user.username}`);
         setProfileUser(response.data.data);
         setError(null);
+        // Provide a dopamine hit with a success notification
+        alert('Profile loaded successfully!');
       } catch (error) {
         console.error('Error fetching user:', error);
         setError('Failed to load profile data. Please try again later or log in again.');

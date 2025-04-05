@@ -21,17 +21,51 @@ let FeedbackService = class FeedbackService {
     constructor(feedbackModel) {
         this.feedbackModel = feedbackModel;
     }
-    async create(userId, projectId, message, rating) {
-        const feedback = new this.feedbackModel({
-            userId,
-            projectId,
-            message,
-            rating,
-        });
-        return feedback.save();
+    async create(projectId, userId, rating, message) {
+        try {
+            const feedback = new this.feedbackModel({
+                projectId,
+                userId,
+                rating,
+                message,
+            });
+            return await feedback.save();
+        }
+        catch (error) {
+            console.error('Error in create feedback:', error);
+            throw error;
+        }
     }
     async findByProject(projectId) {
-        return this.feedbackModel.find({ projectId }).exec();
+        try {
+            return await this.feedbackModel.find({ projectId }).exec();
+        }
+        catch (error) {
+            console.error('Error in findByProject:', error);
+            throw error;
+        }
+    }
+    async findByProjectId(projectId) {
+        try {
+            return await this.feedbackModel.find({ projectId }).exec();
+        }
+        catch (error) {
+            console.error('Error in findByProjectId:', error);
+            throw error;
+        }
+    }
+    async delete(id) {
+        try {
+            const result = await this.feedbackModel.findByIdAndDelete(id).exec();
+            if (!result) {
+                throw new common_1.NotFoundException('Feedback not found');
+            }
+            return { message: 'Feedback deleted successfully' };
+        }
+        catch (error) {
+            console.error('Error in delete feedback:', error);
+            throw error;
+        }
     }
 };
 exports.FeedbackService = FeedbackService;
