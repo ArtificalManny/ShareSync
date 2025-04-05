@@ -1,70 +1,20 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import styled from '@emotion/styled';
-import { theme } from '../styles/theme';
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { theme } from '../styles/theme';
+import './ResetPassword.css';
 
-const Container = styled(motion.div)`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-`;
-
-const Form = styled.form`
-  background: ${theme.colors.white};
-  padding: ${theme.spacing.lg};
-  border-radius: ${theme.borderRadius.medium};
-  box-shadow: ${theme.shadows.medium};
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-`;
-
-const Title = styled.h2`
-  font-size: ${theme.typography.h2.fontSize};
-  font-weight: ${theme.typography.h2.fontWeight};
-  margin-bottom: ${theme.spacing.md};
-  color: ${theme.colors.primary};
-`;
-
-const Input = styled.input`
-  width: 100%;
-  margin-bottom: ${theme.spacing.md};
-`;
-
-const Button = styled.button`
-  width: 100%;
-  margin-top: ${theme.spacing.sm};
-`;
-
-const Error = styled.p`
-  color: ${theme.colors.error};
-  font-size: ${theme.typography.caption.fontSize};
-  margin-top: ${theme.spacing.sm};
-`;
-
-const ResetPassword = () => {
+function ResetPassword() {
+  const [searchParams] = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const token = searchParams.get('token');
-    if (!token) {
-      setError('Invalid reset link.');
-    }
-  }, [searchParams]);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError('Passwords do not match');
       return;
     }
     try {
@@ -74,45 +24,39 @@ const ResetPassword = () => {
         password,
       });
       setMessage(response.data.message);
-      setTimeout(() => navigate('/login'), 2000);
-    } catch (err) {
-      setError('Failed to reset password. Please try again.');
+      setError('');
+      alert('Password reset successfully!');
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      setError(error.response?.data?.message || 'Failed to reset password. Please try again.');
+      setMessage('');
     }
   };
 
   return (
-    <Container
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Form onSubmit={handleSubmit}>
-        <Title>Reset Password</Title>
-        {message ? (
-          <p>{message}</p>
-        ) : (
-          <>
-            <Input
-              type="password"
-              placeholder="New Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <Input
-              type="password"
-              placeholder="Confirm Password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-            <Button type="submit">Reset Password</Button>
-            {error && <Error>{error}</Error>}
-          </>
-        )}
-      </Form>
-    </Container>
+    <div className="reset-password">
+      <h1 style={{ color: theme.colors.primary }}>Reset Password</h1>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="password"
+          placeholder="New Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+        <button type="submit" style={{ backgroundColor: theme.colors.accent, color: theme.colors.text }}>
+          Reset Password
+        </button>
+      </form>
+      {message && <p style={{ color: theme.colors.success }}>{message}</p>}
+      {error && <p className="error" style={{ color: theme.colors.error }}>{error}</p>}
+    </div>
   );
-};
+}
 
 export default ResetPassword;

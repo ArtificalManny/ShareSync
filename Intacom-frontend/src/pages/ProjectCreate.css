@@ -1,0 +1,33 @@
+.project-create {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  .project-create form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .project-create input,
+  .project-create textarea {
+    padding: 0.5rem;
+    border: none;
+    border-radius: 4px;
+    background: #1a1a2e;
+    color: #e0e0e0;
+  }
+  
+  .project-create button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .project-create .error {
+    color: #ff4444;
+    margin: 1rem 0;
+  }

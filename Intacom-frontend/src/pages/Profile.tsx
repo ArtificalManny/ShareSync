@@ -1,161 +1,83 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import styled from '@emotion/styled';
-import { theme } from '../styles/theme';
-import { motion } from 'framer-motion';
 import axios from 'axios';
+import { theme } from '../styles/theme';
+import './Profile.css';
 
-const Container = styled.div`
-  padding: ${theme.spacing.lg};
-  max-width: 800px;
-  margin: 0 auto;
-`;
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  birthday: { month: string; day: string; year: string };
+  points: number;
+  profilePic?: string;
+  followers?: string[];
+  following?: string[];
+}
 
-const Header = styled.header`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: ${theme.spacing.lg};
-`;
+interface ProfileProps {
+  user: User | null;
+}
 
-const Title = styled.h1`
-  font-size: ${theme.typography.h1.fontSize};
-  font-weight: ${theme.typography.h1.fontWeight};
-  color: ${theme.colors.primary};
-`;
-
-const Button = styled.button`
-  background: ${theme.colors.secondary};
-`;
-
-const Section = styled.div`
-  background: ${theme.colors.white};
-  padding: ${theme.spacing.md};
-  border-radius: ${theme.borderRadius.medium};
-  box-shadow: ${theme.shadows.small};
-  margin-bottom: ${theme.spacing.md};
-`;
-
-const Bio = styled.p`
-  font-size: ${theme.typography.body.fontSize};
-  margin-bottom: ${theme.spacing.sm};
-`;
-
-const List = styled.ul`
-  list-style: none;
-  padding: 0;
-`;
-
-const ListItem = styled.li`
-  font-size: ${theme.typography.body.fontSize};
-  margin-bottom: ${theme.spacing.sm};
-`;
-
-const Profile = () => {
-  const { username } = useParams();
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [isFollowing, setIsFollowing] = useState(false);
+function Profile({ user }: ProfileProps) {
+  const [profileUser, setProfileUser] = useState<User | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchUser = async () => {
+      if (!user) {
+        setError('Please log in to view your profile.');
+        return;
+      }
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${user.username}`);
+        setProfileUser(response.data.data);
+        setError(null);
+        alert('Profile loaded successfully!');
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        setError('Failed to load profile data. Please try again later or log in again.');
+      }
+    };
     fetchUser();
-  }, [username]);
+  }, [user]);
 
-  const fetchUser = async () => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${username}`);
-      setUser(response.data.data);
-      const currentUser = JSON.parse(localStorage.getItem('user'));
-      setIsFollowing(response.data.data.followers.includes(currentUser._id));
-    } catch (error) {
-      console.error('Error fetching user:', error);
-    }
-  };
+  if (error) {
+    return (
+      <div className="profile">
+        <h1 style={{ color: theme.colors.primary }}>Profile</h1>
+        <p className="error" style={{ color: theme.colors.error }}>{error}</p>
+        <button onClick={() => window.location.reload()}>Retry</button>
+      </div>
+    );
+  }
 
-  const handleFollow = async () => {
-    try {
-      const currentUser = JSON.parse(localStorage.getItem('user'));
-      await axios.post(`${import.meta.env.VITE_API_URL}/users/follow`, {
-        userId: currentUser._id,
-        followId: user._id,
-      });
-      setIsFollowing(true);
-      fetchUser();
-    } catch (error) {
-      console.error('Error following user:', error);
-    }
-  };
-
-  const handleUnfollow = async () => {
-    try {
-      const currentUser = JSON.parse(localStorage.getItem('user'));
-      await axios.post(`${import.meta.env.VITE_API_URL}/users/unfollow`, {
-        userId: currentUser._id,
-        unfollowId: user._id,
-      });
-      setIsFollowing(false);
-      fetchUser();
-    } catch (error) {
-      console.error('Error unfollowing user:', error);
-    }
-  };
+  if (!profileUser) {
+    return <div className="profile">Loading...</div>;
+  }
 
   return (
-    <Container>
-      <Header>
-        <Title>{user?.username}'s Profile</Title>
-        {user && user._id === JSON.parse(localStorage.getItem('user'))._id ? (
-          <Button onClick={() => navigate(`/profile/${username}/edit`)}>Edit Profile</Button>
-        ) : (
-          <Button onClick={isFollowing ? handleUnfollow : handleFollow}>
-            {isFollowing ? 'Unfollow' : 'Follow'}
-          </Button>
-        )}
-      </Header>
-      <Section>
-        <h2>Bio</h2>
-        <Bio>{user?.bio || 'No bio available'}</Bio>
-      </Section>
-      <Section>
-        <h2>Hobbies</h2>
-        <List>
-          {user?.hobbies?.map((hobby: string, index: number) => (
-            <ListItem key={index}>{hobby}</ListItem>
-          ))}
-        </List>
-      </Section>
-      <Section>
-        <h2>Skills</h2>
-        <List>
-          {user?.skills?.map((skill: string, index: number) => (
-            <ListItem key={index}>{skill}</ListItem>
-          ))}
-        </List>
-      </Section>
-      <Section>
-        <h2>Experience</h2>
-        <List>
-          {user?.experience?.map((exp: string, index: number) => (
-            <ListItem key={index}>{exp}</ListItem>
-          ))}
-        </List>
-      </Section>
-      <Section>
-        <h2>Endorsements</h2>
-        <List>
-          {user?.endorsements?.map((endorsement: string, index: number) => (
-            <ListItem key={index}>{endorsement}</ListItem>
-          ))}
-        </List>
-      </Section>
-      <Section>
-        <h2>Stats</h2>
-        <p><strong>Points:</strong> {user?.points}</p>
-        <p><strong>Followers:</strong> {user?.followers?.length}</p>
-        <p><strong>Following:</strong> {user?.following?.length}</p>
-      </Section>
-    </Container>
+    <div className="profile">
+      <h1 style={{ color: theme.colors.primary }}>Profile</h1>
+      <div className="profile-details">
+        <img
+          src={profileUser.profilePic || 'https://via.placeholder.com/150'}
+          alt="Profile"
+          style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover' }}
+        />
+        <h2 style={{ color: theme.colors.secondary }}>{profileUser.username}</h2>
+        <p><strong>Email:</strong> {profileUser.email}</p>
+        <p><strong>Name:</strong> {profileUser.firstName} {profileUser.lastName}</p>
+        <p><strong>Gender:</strong> {profileUser.gender}</p>
+        <p><strong>Birthday:</strong> {profileUser.birthday.month}/{profileUser.birthday.day}/{profileUser.birthday.year}</p>
+        <p><strong>Points:</strong> {profileUser.points || 0}</p>
+        <p><strong>Followers:</strong> {profileUser.followers?.length || 0}</p>
+        <p><strong>Following:</strong> {profileUser.following?.length || 0}</p>
+      </div>
+    </div>
   );
-};
+}
 
 export default Profile;

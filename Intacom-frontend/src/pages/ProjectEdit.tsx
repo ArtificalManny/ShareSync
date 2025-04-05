@@ -1,125 +1,102 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import styled from '@emotion/styled';
-import { theme } from '../styles/theme';
-import { motion } from 'framer-motion';
 import axios from 'axios';
+import { theme } from '../styles/theme';
+import './ProjectEdit.css';
 
-const Container = styled(motion.div)`
-  padding: ${theme.spacing.lg};
-  max-width: 800px;
-  margin: 0 auto;
-`;
+interface Project {
+  _id: string;
+  name: string;
+  description: string;
+  color: string;
+  sharedWith: { userId: string; role: string }[];
+}
 
-const Form = styled.form`
-  background: ${theme.colors.white};
-  padding: ${theme.spacing.lg};
-  border-radius: ${theme.borderRadius.medium};
-  box-shadow: ${theme.shadows.medium};
-`;
-
-const Title = styled.h2`
-  font-size: ${theme.typography.h2.fontSize};
-  font-weight: ${theme.typography.h2.fontWeight};
-  margin-bottom: ${theme.spacing.md};
-  color: ${theme.colors.primary};
-`;
-
-const Input = styled.input`
-  width: 100%;
-  margin-bottom: ${theme.spacing.md};
-`;
-
-const Textarea = styled.textarea`
-  width: 100%;
-  margin-bottom: ${theme.spacing.md};
-  padding: ${theme.spacing.sm};
-  border: 1px solid ${theme.colors.textLight};
-  border-radius: ${theme.borderRadius.small};
-`;
-
-const Button = styled.button`
-  width: 100%;
-  margin-top: ${theme.spacing.sm};
-`;
-
-const Error = styled.p`
-  color: ${theme.colors.error};
-  font-size: ${theme.typography.caption.fontSize};
-  margin-top: ${theme.spacing.sm};
-`;
-
-const ProjectEdit = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [color, setColor] = useState('');
-  const [sharedWith, setSharedWith] = useState([]);
+function ProjectEdit() {
+  const { id } = useParams<{ id: string }>();
+  const [formData, setFormData] = useState<Project>({
+    _id: '',
+    name: '',
+    description: '',
+    color: theme.colors.primary,
+    sharedWith: [],
+  });
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const fetchProject = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/by-id/${id}`);
+        setFormData(response.data);
+      } catch (error: any) {
+        console.error('Error fetching project:', error);
+        setError('Failed to load project data.');
+      }
+    };
     fetchProject();
   }, [id]);
 
-  const fetchProject = async () => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/by-id/${id}`);
-      const project = response.data;
-      setName(project.name);
-      setDescription(project.description);
-      setColor(project.color);
-      setSharedWith(project.sharedWith);
-    } catch (error) {
-      console.error('Error fetching project:', error);
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleShareWithChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setFormData({
+      ...formData,
+      sharedWith: email ? [{ userId: email, role: 'viewer' }] : [],
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/projects/${id}`, {
-        name,
-        description,
-        color,
-        sharedWith,
-      });
+      await axios.put(`${import.meta.env.VITE_API_URL}/projects/${id}`, formData);
       navigate(`/project/${id}`);
-    } catch (err) {
-      setError('Failed to update project. Please try again.');
+      alert('Project updated successfully!');
+    } catch (error: any) {
+      console.error('Error updating project:', error);
+      setError(error.response?.data?.message || 'Failed to update project. Please try again.');
     }
   };
 
   return (
-    <Container
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Form onSubmit={handleSubmit}>
-        <Title>Edit Project</Title>
-        <Input
+    <div className="project-edit">
+      <h1 style={{ color: theme.colors.primary }}>Edit Project</h1>
+      <form onSubmit={handleSubmit}>
+        <input
           type="text"
+          name="name"
           placeholder="Project Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
+          value={formData.name}
+          onChange={handleChange}
         />
-        <Textarea
+        <textarea
+          name="description"
           placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={formData.description}
+          onChange={handleChange}
         />
-        <Input
+        <input
           type="color"
-          value={color}
-          onChange={(e) => setColor(e.target.value)}
+          name="color"
+          value={formData.color}
+          onChange={handleChange}
         />
-        <Button type="submit">Update Project</Button>
-        {error && <Error>{error}</Error>}
-      </Form>
-    </Container>
+        <input
+          type="text"
+          placeholder="Share with (email)"
+          onChange={handleShareWithChange}
+        />
+        <button type="submit" style={{ backgroundColor: theme.colors.accent, color: theme.colors.text }}>
+          Update
+        </button>
+      </form>
+      {error && <p className="error" style={{ color: theme.colors.error }}>{error}</p>}
+    </div>
   );
-};
+}
 
 export default ProjectEdit;

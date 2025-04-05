@@ -1,100 +1,60 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import styled from '@emotion/styled';
-import { theme } from '../styles/theme';
-import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { theme } from '../styles/theme';
+import './Projects.css';
 
-const Container = styled.div`
-  padding: ${theme.spacing.lg};
-  max-width: 1200px;
-  margin: 0 auto;
-`;
+interface User {
+  _id: string;
+  username: string;
+}
 
-const Header = styled.header`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: ${theme.spacing.lg};
-`;
+interface Project {
+  _id: string;
+  name: string;
+  description: string;
+  admin: string;
+  status: string;
+  color: string;
+}
 
-const Title = styled.h1`
-  font-size: ${theme.typography.h1.fontSize};
-  font-weight: ${theme.typography.h1.fontWeight};
-  color: ${theme.colors.primary};
-`;
+interface ProjectsProps {
+  user: User | null;
+}
 
-const Button = styled.button`
-  background: ${theme.colors.secondary};
-`;
-
-const ProjectList = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: ${theme.spacing.md};
-`;
-
-const ProjectCard = styled(motion.div)`
-  background: ${theme.colors.white};
-  padding: ${theme.spacing.md};
-  border-radius: ${theme.borderRadius.medium};
-  box-shadow: ${theme.shadows.small};
-  cursor: pointer;
-`;
-
-const ProjectTitle = styled.h3`
-  font-size: ${theme.typography.h3.fontSize};
-  font-weight: ${theme.typography.h3.fontWeight};
-  margin-bottom: ${theme.spacing.sm};
-`;
-
-const ProjectDetail = styled.p`
-  font-size: ${theme.typography.caption.fontSize};
-  color: ${theme.colors.textLight};
-`;
-
-const Projects = () => {
-  const [projects, setProjects] = useState([]);
-  const navigate = useNavigate();
+function Projects({ user }: ProjectsProps) {
+  const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
+    const fetchProjects = async () => {
+      if (!user) return;
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
+        setProjects(response.data);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      }
+    };
     fetchProjects();
-  }, []);
-
-  const fetchProjects = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user'));
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
-      setProjects(response.data);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-    }
-  };
+  }, [user]);
 
   return (
-    <Container>
-      <Header>
-        <Title>My Projects</Title>
-        <Button onClick={() => navigate('/project/create')}>Create Project</Button>
-      </Header>
-      <ProjectList>
-        {projects.map((project: any, index: number) => (
-          <ProjectCard
-            key={project._id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            onClick={() => navigate(`/project/${project._id}`)}
-          >
-            <ProjectTitle>{project.name}</ProjectTitle>
-            <ProjectDetail>{project.description}</ProjectDetail>
-            <ProjectDetail><strong>Status:</strong> {project.status}</ProjectDetail>
-            <ProjectDetail><strong>Likes:</strong> {project.likes}</ProjectDetail>
-          </ProjectCard>
+    <div className="projects">
+      <h1 style={{ color: theme.colors.primary }}>Projects</h1>
+      <div className="project-list">
+        {projects.map((project) => (
+          <Link key={project._id} to={`/project/${project._id}`} className="project-card">
+            <div className="project-card-content" style={{ backgroundColor: project.color }}>
+              <h2>{project.name}</h2>
+              <p>{project.description}</p>
+              <p>Admin: {project.admin}</p>
+              <p>Status: {project.status}</p>
+            </div>
+          </Link>
         ))}
-      </ProjectList>
-    </Container>
+      </div>
+    </div>
   );
-};
+}
 
 export default Projects;

@@ -1,186 +1,124 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import styled from '@emotion/styled';
-import { theme } from '../styles/theme';
-import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { theme } from '../styles/theme';
+import './Register.css';
 
-const Container = styled(motion.div)`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-`;
-
-const Form = styled.form`
-  background: ${theme.colors.white};
-  padding: ${theme.spacing.lg};
-  border-radius: ${theme.borderRadius.medium};
-  box-shadow: ${theme.shadows.medium};
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-`;
-
-const Title = styled.h2`
-  font-size: ${theme.typography.h2.fontSize};
-  font-weight: ${theme.typography.h2.fontWeight};
-  margin-bottom: ${theme.spacing.md};
-  color: ${theme.colors.primary};
-`;
-
-const Input = styled.input`
-  width: 100%;
-  margin-bottom: ${theme.spacing.md};
-`;
-
-const Select = styled.select`
-  width: 100%;
-  margin-bottom: ${theme.spacing.md};
-  padding: ${theme.spacing.sm};
-  border: 1px solid ${theme.colors.textLight};
-  border-radius: ${theme.borderRadius.small};
-`;
-
-const Button = styled.button`
-  width: 100%;
-  margin-top: ${theme.spacing.sm};
-`;
-
-const Link = styled.a`
-  display: block;
-  margin-top: ${theme.spacing.sm};
-  color: ${theme.colors.textLight};
-  font-size: ${theme.typography.caption.fontSize};
-`;
-
-const Error = styled.p`
-  color: ${theme.colors.error};
-  font-size: ${theme.typography.caption.fontSize};
-  margin-top: ${theme.spacing.sm};
-`;
-
-const Register = () => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [gender, setGender] = useState('');
-  const [birthday, setBirthday] = useState({ month: '', day: '', year: '' });
+function Register() {
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    gender: '',
+    birthday: { month: '', day: '', year: '' },
+  });
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name.includes('birthday')) {
+      const [_, field] = name.split('.');
+      setFormData({
+        ...formData,
+        birthday: { ...formData.birthday, [field]: value },
+      });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, {
-        firstName,
-        lastName,
-        username,
-        email,
-        password,
-        gender,
-        birthday,
-      });
+      await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, formData);
       navigate('/login');
-    } catch (err) {
-      setError('Unable to register. Please try again.');
+      alert('Registration successful! Please log in.');
+    } catch (error: any) {
+      console.error('Error registering:', error);
+      setError(error.response?.data?.message || 'Registration failed. Please try again.');
     }
   };
 
   return (
-    <Container
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Form onSubmit={handleSubmit}>
-        <Title>Register</Title>
-        <Input
+    <div className="register">
+      <h1 style={{ color: theme.colors.primary }}>Register</h1>
+      <form onSubmit={handleSubmit}>
+        <input
           type="text"
-          placeholder="First Name"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          required
-        />
-        <Input
-          type="text"
-          placeholder="Last Name"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          required
-        />
-        <Input
-          type="text"
+          name="username"
           placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
+          value={formData.username}
+          onChange={handleChange}
         />
-        <Input
+        <input
           type="email"
+          name="email"
           placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+          value={formData.email}
+          onChange={handleChange}
         />
-        <Input
+        <input
           type="password"
+          name="password"
           placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
+          value={formData.password}
+          onChange={handleChange}
         />
-        <Select
-          value={gender}
-          onChange={(e) => setGender(e.target.value)}
-          required
-        >
-          <option value="">Select Gender</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-          <option value="other">Other</option>
-        </Select>
-        <div style={{ display: 'flex', gap: theme.spacing.sm, marginBottom: theme.spacing.md }}>
-          <Select
-            value={birthday.month}
-            onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
-            required
-          >
-            <option value="">Month</option>
-            {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map((month) => (
-              <option key={month} value={month}>{month}</option>
-            ))}
-          </Select>
-          <Select
-            value={birthday.day}
-            onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
-            required
-          >
-            <option value="">Day</option>
-            {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map((day) => (
-              <option key={day} value={day}>{day}</option>
-            ))}
-          </Select>
-          <Select
-            value={birthday.year}
-            onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
-            required
-          >
-            <option value="">Year</option>
-            {Array.from({ length: 100 }, (_, i) => String(new Date().getFullYear() - i)).map((year) => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </Select>
-        </div>
-        <Button type="submit">Register</Button>
-        <Link href="/login">Already have an account? Login</Link>
-        {error && <Error>{error}</Error>}
-      </Form>
-    </Container>
+        <input
+          type="text"
+          name="firstName"
+          placeholder="First Name"
+          value={formData.firstName}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="lastName"
+          placeholder="Last Name"
+          value={formData.lastName}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="gender"
+          placeholder="Gender"
+          value={formData.gender}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="birthday.month"
+          placeholder="Birth Month"
+          value={formData.birthday.month}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="birthday.day"
+          placeholder="Birth Day"
+          value={formData.birthday.day}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="birthday.year"
+          placeholder="Birth Year"
+          value={formData.birthday.year}
+          onChange={handleChange}
+        />
+        <button type="submit" style={{ backgroundColor: theme.colors.accent, color: theme.colors.text }}>
+          Register
+        </button>
+      </form>
+      {error && <p className="error" style={{ color: theme.colors.error }}>{error}</p>}
+      <p>
+        Already have an account? <Link to="/login">Login</Link>
+      </p>
+    </div>
   );
-};
+}
 
 export default Register;

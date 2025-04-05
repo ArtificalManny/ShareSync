@@ -1,0 +1,11 @@
+.verify-email {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  .verify-email .error {
+    color: #ff4444;
+    margin: 1rem 0;
+  }

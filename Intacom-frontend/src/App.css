@@ -12,6 +12,17 @@
   align-items: center;
   padding: 1rem;
   background-color: #16213e;
+  position: fixed; /* Make navbar persistent */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000; /* Ensure navbar stays on top */
+}
+
+.content {
+  margin-top: 60px; /* Add margin to prevent content from being covered by the navbar */
+  flex: 1;
+  padding: 1rem;
 }
 
 .navbar-brand {
@@ -64,6 +75,7 @@
 
 .modal-content h2 {
   margin-bottom: 1rem;
+  color: #00ff00; /* Vibrant color for headings */
 }
 
 .modal-content input,
