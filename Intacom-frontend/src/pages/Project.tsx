@@ -60,37 +60,45 @@ function Project({ user }: ProjectProps) {
   useEffect(() => {
     const fetchProject = async () => {
       try {
+        console.log('Fetching project with ID:', id);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/by-id/${id}`);
+        console.log('Project fetch response:', response.data);
         setProject(response.data);
-      } catch (error) {
-        console.error('Error fetching project:', error);
+      } catch (error: any) {
+        console.error('Error fetching project:', error.response?.data || error.message);
       }
     };
 
     const fetchPosts = async () => {
       try {
+        console.log('Fetching posts for project ID:', id);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/posts/project/${id}`);
+        console.log('Posts fetch response:', response.data);
         setPosts(response.data.data || []);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
+      } catch (error: any) {
+        console.error('Error fetching posts:', error.response?.data || error.message);
       }
     };
 
     const fetchTasks = async () => {
       try {
+        console.log('Fetching tasks for project ID:', id);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/tasks/project/${id}`);
+        console.log('Tasks fetch response:', response.data);
         setTasks(response.data.data || []);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
+      } catch (error: any) {
+        console.error('Error fetching tasks:', error.response?.data || error.message);
       }
     };
 
     const fetchFeedback = async () => {
       try {
+        console.log('Fetching feedback for project ID:', id);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/feedback/project/${id}`);
+        console.log('Feedback fetch response:', response.data);
         setFeedback(response.data.data || []);
-      } catch (error) {
-        console.error('Error fetching feedback:', error);
+      } catch (error: any) {
+        console.error('Error fetching feedback:', error.response?.data || error.message);
       }
     };
 
@@ -106,17 +114,19 @@ function Project({ user }: ProjectProps) {
       return;
     }
     try {
+      console.log('Creating post with data:', { projectId: id, userId: user._id, content: newPost.content });
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/posts`, {
         projectId: id,
         userId: user._id,
         content: newPost.content,
         images: newPost.images,
       });
+      console.log('Post creation response:', response.data);
       setPosts([...posts, response.data]);
       setNewPost({ content: '', images: [] });
       alert('Post created successfully!');
-    } catch (error) {
-      console.error('Error creating post:', error);
+    } catch (error: any) {
+      console.error('Error creating post:', error.response?.data || error.message);
       alert('Failed to create post. Please try again.');
     }
   };
@@ -127,6 +137,7 @@ function Project({ user }: ProjectProps) {
       return;
     }
     try {
+      console.log('Creating task with data:', { projectId: id, ...newTask });
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/tasks`, {
         projectId: id,
         name: newTask.name,
@@ -135,11 +146,12 @@ function Project({ user }: ProjectProps) {
         dueDate: newTask.dueDate,
         status: newTask.status,
       });
+      console.log('Task creation response:', response.data);
       setTasks([...tasks, response.data.data]);
       setNewTask({ name: '', description: '', assignee: '', dueDate: '', status: 'todo' });
       alert('Task created successfully!');
-    } catch (error) {
-      console.error('Error creating task:', error);
+    } catch (error: any) {
+      console.error('Error creating task:', error.response?.data || error.message);
       alert('Failed to create task. Please try again.');
     }
   };
@@ -150,17 +162,19 @@ function Project({ user }: ProjectProps) {
       return;
     }
     try {
+      console.log('Submitting feedback with data:', { projectId: id, userId: user._id, ...newFeedback });
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/feedback`, {
         projectId: id,
         userId: user._id,
         rating: newFeedback.rating,
         message: newFeedback.message,
       });
+      console.log('Feedback submission response:', response.data);
       setFeedback([...feedback, response.data.data]);
       setNewFeedback({ rating: 0, message: '' });
       alert('Feedback submitted successfully!');
-    } catch (error) {
-      console.error('Error submitting feedback:', error);
+    } catch (error: any) {
+      console.error('Error submitting feedback:', error.response?.data || error.message);
       alert('Failed to submit feedback. Please try again.');
     }
   };

@@ -42,7 +42,7 @@ function App() {
     name: '',
     description: '',
     admin: '',
-    color: '#000000',
+    color: '#00C4B4',
     sharedWith: [],
   });
   const navigate = useNavigate();
@@ -51,14 +51,16 @@ function App() {
     const fetchUser = async () => {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
+        const parsedUser: User = JSON.parse(storedUser);
         try {
+          console.log('Fetching user with username:', parsedUser.username);
           const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${parsedUser.username}`);
+          console.log('User fetch response:', response.data);
           const fetchedUser = response.data.data;
           setUser(fetchedUser);
           localStorage.setItem('user', JSON.stringify(fetchedUser));
-        } catch (error) {
-          console.error('Error fetching user in App:', error);
+        } catch (error: any) {
+          console.error('Error fetching user in App:', error.response?.data || error.message);
           localStorage.removeItem('user');
           setUser(null);
           navigate('/login');
@@ -77,6 +79,7 @@ function App() {
       return;
     }
     try {
+      console.log('Creating project with data:', { ...newProject, admin: user._id });
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
         name: newProject.name,
         description: newProject.description,
@@ -84,14 +87,13 @@ function App() {
         color: newProject.color,
         sharedWith: newProject.sharedWith,
       });
-      console.log('Project created:', response.data);
+      console.log('Project creation response:', response.data);
       setShowCreateProjectModal(false);
-      setNewProject({ name: '', description: '', admin: '', color: '#000000', sharedWith: [] });
+      setNewProject({ name: '', description: '', admin: '', color: '#00C4B4', sharedWith: [] });
       navigate(`/project/${response.data.data._id}`);
-      // Provide a dopamine hit with a success notification
       alert('Project created successfully!');
-    } catch (error) {
-      console.error('Error creating project:', error);
+    } catch (error: any) {
+      console.error('Error creating project:', error.response?.data || error.message);
       alert('Failed to create project. Please try again.');
     }
   };
@@ -117,7 +119,7 @@ function App() {
             <img
               src={user.profilePic || 'https://via.placeholder.com/40'}
               alt="Profile"
-              style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+              className="profile-pic"
             />
           </div>
         )}

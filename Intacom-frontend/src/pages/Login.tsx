@@ -7,6 +7,15 @@ import './Login.css';
 interface User {
   _id: string;
   username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  birthday: { month: string; day: string; year: string };
+  points: number;
+  profilePic?: string;
+  followers?: string[];
+  following?: string[];
 }
 
 interface LoginProps {
@@ -22,17 +31,19 @@ function Login({ setUser }: LoginProps) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log('Logging in with identifier:', identifier);
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
         identifier,
         password,
       });
+      console.log('Login response:', response.data);
       const user = response.data.data.user;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       navigate('/');
       alert('Logged in successfully! Welcome back!');
     } catch (error: any) {
-      console.error('Error logging in:', error);
+      console.error('Error logging in:', error.response?.data || error.message);
       setError(error.response?.data?.message || 'Invalid username or password. Please try again.');
     }
   };

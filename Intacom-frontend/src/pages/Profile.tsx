@@ -32,12 +32,14 @@ function Profile({ user }: ProfileProps) {
         return;
       }
       try {
+        console.log('Fetching profile for username:', user.username);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${user.username}`);
+        console.log('Profile fetch response:', response.data);
         setProfileUser(response.data.data);
         setError(null);
         alert('Profile loaded successfully!');
-      } catch (error) {
-        console.error('Error fetching user:', error);
+      } catch (error: any) {
+        console.error('Error fetching user:', error.response?.data || error.message);
         setError('Failed to load profile data. Please try again later or log in again.');
       }
     };
