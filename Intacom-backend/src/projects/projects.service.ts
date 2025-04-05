@@ -13,7 +13,7 @@ export class ProjectsService {
     try {
       const newProject = new this.projectModel(projectData);
       const savedProject = await newProject.save();
-      return savedProject.toObject(); // Convert to plain object
+      return savedProject.toObject();
     } catch (error) {
       console.error('Error in create:', error);
       throw error;
@@ -72,6 +72,24 @@ export class ProjectsService {
       }
     } catch (error) {
       console.error('Error in delete:', error);
+      throw error;
+    }
+  }
+
+  async likeProject(id: string, userId: string): Promise<Project> {
+    try {
+      const project = await this.projectModel
+        .findById(id)
+        .exec();
+      if (!project) {
+        throw new NotFoundException('Project not found');
+      }
+      // Increment likes (assuming likes is a number field in the schema)
+      project.likes = (project.likes || 0) + 1;
+      const updatedProject = await project.save();
+      return updatedProject.toObject();
+    } catch (error) {
+      console.error('Error in likeProject:', error);
       throw error;
     }
   }

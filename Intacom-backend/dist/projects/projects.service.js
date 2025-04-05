@@ -88,6 +88,23 @@ let ProjectsService = class ProjectsService {
             throw error;
         }
     }
+    async likeProject(id, userId) {
+        try {
+            const project = await this.projectModel
+                .findById(id)
+                .exec();
+            if (!project) {
+                throw new common_1.NotFoundException('Project not found');
+            }
+            project.likes = (project.likes || 0) + 1;
+            const updatedProject = await project.save();
+            return updatedProject.toObject();
+        }
+        catch (error) {
+            console.error('Error in likeProject:', error);
+            throw error;
+        }
+    }
 };
 exports.ProjectsService = ProjectsService;
 exports.ProjectsService = ProjectsService = __decorate([

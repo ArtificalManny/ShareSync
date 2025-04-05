@@ -8,4 +8,5 @@ export declare class ProjectsService {
     findByUsername(username: string): Promise<Project[]>;
     update(id: string, updates: Partial<Project>): Promise<Project>;
     delete(id: string): Promise<void>;
+    likeProject(id: string, userId: string): Promise<Project>;
 }

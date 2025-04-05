@@ -7,5 +7,5 @@ export declare class UsersService {
     findById(id: string): Promise<User>;
     findAll(): Promise<User[]>;
     update(id: string, updates: Partial<User>): Promise<User>;
-    create(userData: Partial<User>): Promise<User>;
+    create(userData: Partial<User>): Promise<Omit<User, 'password'>>;
 }

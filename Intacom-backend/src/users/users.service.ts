@@ -12,8 +12,8 @@ export class UsersService {
     try {
       const user = await this.userModel
         .findOne({ username })
-        .select('-password') // Exclude password for security and performance
-        .lean() // Convert to plain JavaScript object for faster response
+        .select('-password')
+        .lean()
         .exec();
       if (!user) {
         throw new NotFoundException(`User with username ${username} not found`);
@@ -72,7 +72,7 @@ export class UsersService {
     }
   }
 
-  async create(userData: Partial<User>): Promise<User> {
+  async create(userData: Partial<User>): Promise<Omit<User, 'password'>> {
     try {
       const hashedPassword = await bcrypt.hash(userData.password || '', 10);
       const newUser = new this.userModel({
