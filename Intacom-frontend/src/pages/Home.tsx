@@ -36,7 +36,8 @@ function Home({ user }: HomeProps) {
     color: theme.colors.primary,
     sharedWith: [] as { userId: string; role: string }[],
   });
-  const [error, setError] = useState<string | null>(null);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,15 +48,15 @@ function Home({ user }: HomeProps) {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
         console.log('Projects fetch response:', response.data);
         setProjects(response.data);
-        setError(null);
+        setProjectsError(null);
       } catch (error: any) {
         console.error('Error fetching projects:', error.response?.data || error.message);
         if (error.response?.status === 404) {
-          setError('No projects found.');
+          setProjectsError('No projects found.');
         } else if (error.response?.status === 500) {
-          setError('Server error. Please try again later.');
+          setProjectsError('Server error. Please try again later.');
         } else {
-          setError('Failed to load projects. Please try again.');
+          setProjectsError('Failed to load projects. Please try again.');
         }
       }
     };
@@ -67,8 +68,16 @@ function Home({ user }: HomeProps) {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
         console.log('Notifications fetch response:', response.data);
         setNotifications(response.data);
+        setNotificationsError(null);
       } catch (error: any) {
         console.error('Error fetching notifications:', error.response?.data || error.message);
+        if (error.response?.status === 404) {
+          setNotificationsError('No notifications found.');
+        } else if (error.response?.status === 500) {
+          setNotificationsError('Server error. Please try again later.');
+        } else {
+          setNotificationsError('Failed to load notifications. Please try again.');
+        }
       }
     };
 
@@ -106,8 +115,8 @@ function Home({ user }: HomeProps) {
     <div className="home">
       <div className="sidebar">
         <h2 style={{ color: theme.colors.primary }}>Projects</h2>
-        {error ? (
-          <p className="error" style={{ color: theme.colors.error }}>{error}</p>
+        {projectsError ? (
+          <p className="error" style={{ color: theme.colors.error }}>{projectsError}</p>
         ) : projects.length === 0 ? (
           <p>No projects yet! Create a project to get started!</p>
         ) : (
@@ -126,7 +135,9 @@ function Home({ user }: HomeProps) {
           Create Project
         </button>
         <h2 style={{ color: theme.colors.primary }}>Notifications ({notifications.length})</h2>
-        {notifications.length === 0 ? (
+        {notificationsError ? (
+          <p className="error" style={{ color: theme.colors.error }}>{notificationsError}</p>
+        ) : notifications.length === 0 ? (
           <p>No notifications yet.</p>
         ) : (
           notifications.map((notification) => (
