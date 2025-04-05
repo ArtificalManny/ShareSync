@@ -36,26 +36,39 @@ function Home({ user }: HomeProps) {
     color: theme.colors.primary,
     sharedWith: [] as { userId: string; role: string }[],
   });
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProjects = async () => {
       if (!user) return;
       try {
+        console.log('Fetching projects for username:', user.username);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
+        console.log('Projects fetch response:', response.data);
         setProjects(response.data);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
+        setError(null);
+      } catch (error: any) {
+        console.error('Error fetching projects:', error.response?.data || error.message);
+        if (error.response?.status === 404) {
+          setError('No projects found.');
+        } else if (error.response?.status === 500) {
+          setError('Server error. Please try again later.');
+        } else {
+          setError('Failed to load projects. Please try again.');
+        }
       }
     };
 
     const fetchNotifications = async () => {
       if (!user) return;
       try {
+        console.log('Fetching notifications for user ID:', user._id);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
+        console.log('Notifications fetch response:', response.data);
         setNotifications(response.data);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
+      } catch (error: any) {
+        console.error('Error fetching notifications:', error.response?.data || error.message);
       }
     };
 
@@ -70,6 +83,7 @@ function Home({ user }: HomeProps) {
       return;
     }
     try {
+      console.log('Creating project with data:', { ...newProject, admin: user._id });
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
         name: newProject.name,
         description: newProject.description,
@@ -77,13 +91,13 @@ function Home({ user }: HomeProps) {
         color: newProject.color,
         sharedWith: newProject.sharedWith,
       });
-      console.log('Project created:', response.data);
+      console.log('Project creation response:', response.data);
       setShowCreateProjectModal(false);
       setNewProject({ name: '', description: '', color: theme.colors.primary, sharedWith: [] });
       navigate(`/project/${response.data.data._id}`);
       alert('Project created successfully!');
-    } catch (error) {
-      console.error('Error creating project:', error);
+    } catch (error: any) {
+      console.error('Error creating project:', error.response?.data || error.message);
       alert('Failed to create project. Please try again.');
     }
   };
@@ -92,13 +106,19 @@ function Home({ user }: HomeProps) {
     <div className="home">
       <div className="sidebar">
         <h2 style={{ color: theme.colors.primary }}>Projects</h2>
-        {projects.map((project) => (
-          <Link key={project._id} to={`/project/${project._id}`} className="project-link">
-            <div className="project-item" style={{ backgroundColor: project.color }}>
-              {project.name}
-            </div>
-          </Link>
-        ))}
+        {error ? (
+          <p className="error" style={{ color: theme.colors.error }}>{error}</p>
+        ) : projects.length === 0 ? (
+          <p>No projects yet! Create a project to get started!</p>
+        ) : (
+          projects.map((project) => (
+            <Link key={project._id} to={`/project/${project._id}`} className="project-link">
+              <div className="project-item" style={{ backgroundColor: project.color }}>
+                {project.name}
+              </div>
+            </Link>
+          ))
+        )}
         <button
           onClick={() => setShowCreateProjectModal(true)}
           style={{ backgroundColor: theme.colors.secondary, color: theme.colors.text }}
@@ -138,7 +158,7 @@ function Home({ user }: HomeProps) {
           </div>
           <div className="overview-item">
             <h2 style={{ color: theme.colors.accent }}>Tasks Completed</h2>
-            <p>14</p>
+            <p>0</p>
           </div>
           <div className="overview-item">
             <h2 style={{ color: theme.colors.accent }}>Team Activity</h2>

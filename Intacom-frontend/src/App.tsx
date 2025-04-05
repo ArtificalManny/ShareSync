@@ -45,6 +45,7 @@ function App() {
     color: '#00C4B4',
     sharedWith: [],
   });
+  const [createProjectError, setCreateProjectError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -79,6 +80,7 @@ function App() {
       return;
     }
     try {
+      setCreateProjectError(null);
       console.log('Creating project with data:', { ...newProject, admin: user._id });
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
         name: newProject.name,
@@ -94,7 +96,13 @@ function App() {
       alert('Project created successfully!');
     } catch (error: any) {
       console.error('Error creating project:', error.response?.data || error.message);
-      alert('Failed to create project. Please try again.');
+      if (error.response?.status === 400) {
+        setCreateProjectError('Invalid project data. Please check your inputs.');
+      } else if (error.response?.status === 500) {
+        setCreateProjectError('Server error. Please try again later.');
+      } else {
+        setCreateProjectError('Failed to create project. Please try again.');
+      }
     }
   };
 
@@ -130,6 +138,9 @@ function App() {
           <div className="modal">
             <div className="modal-content">
               <h2>Create a New Project</h2>
+              {createProjectError && (
+                <p className="error" style={{ color: '#FF4444' }}>{createProjectError}</p>
+              )}
               <input
                 type="text"
                 placeholder="Project Name"
