@@ -1,40 +1,41 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { theme } from '../styles/theme';
 import './Leaderboard.css';
 
-interface Leader {
-  _id: string;
+interface User {
   username: string;
   points: number;
 }
 
 function Leaderboard() {
-  const [leaders, setLeaders] = useState<Leader[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    const fetchLeaders = async () => {
+    const fetchLeaderboard = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/points/leaderboard`);
-        setLeaders(response.data);
-      } catch (error) {
-        console.error('Error fetching leaderboard:', error);
+        setUsers(response.data);
+      } catch (error: any) {
+        console.error('Error fetching leaderboard:', error.response?.data || error.message);
       }
     };
-    fetchLeaders();
+    fetchLeaderboard();
   }, []);
 
   return (
     <div className="leaderboard">
-      <h1 style={{ color: theme.colors.primary }}>Leaderboard</h1>
-      {leaders.length === 0 ? (
-        <p>No leaders yet.</p>
+      <h1>Leaderboard</h1>
+      {users.length === 0 ? (
+        <p>No users on the leaderboard yet.</p>
       ) : (
-        leaders.map((leader, index) => (
-          <div key={leader._id} className="leader">
-            <p><strong>#{index + 1}</strong> {leader.username} - {leader.points} points</p>
-          </div>
-        ))
+        <ul>
+          {users.map((user, index) => (
+            <li key={user.username} className={index < 3 ? `top-${index + 1}` : ''}>
+              <span>{index + 1}. {user.username}</span>
+              <span>{user.points} points</span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

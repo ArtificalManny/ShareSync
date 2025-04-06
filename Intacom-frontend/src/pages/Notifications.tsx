@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { theme } from '../styles/theme';
 import './Notifications.css';
 
 interface User {
   _id: string;
-  username: string;
 }
 
 interface Notification {
   _id: string;
   message: string;
   createdAt: string;
+  read: boolean;
 }
 
 interface NotificationsProps {
@@ -25,25 +24,42 @@ function Notifications({ user }: NotificationsProps) {
     const fetchNotifications = async () => {
       if (!user) return;
       try {
+        console.log('Fetching notifications for user ID:', user._id);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
+        console.log('Notifications fetch response:', response.data);
         setNotifications(response.data);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
+      } catch (error: any) {
+        console.error('Error fetching notifications:', error.response?.data || error.message);
       }
     };
     fetchNotifications();
   }, [user]);
 
+  const markAsRead = async (id: string) => {
+    try {
+      await axios.put(`${import.meta.env.VITE_API_URL}/notifications/mark-as-read/${id}`);
+      setNotifications(notifications.map((notification) =>
+        notification._id === id ? { ...notification, read: true } : notification
+      ));
+    } catch (error: any) {
+      console.error('Error marking notification as read:', error.response?.data || error.message);
+    }
+  };
+
   return (
     <div className="notifications">
-      <h1 style={{ color: theme.colors.primary }}>Notifications</h1>
+      <h1>Notifications</h1>
       {notifications.length === 0 ? (
         <p>No notifications yet.</p>
       ) : (
         notifications.map((notification) => (
-          <div key={notification._id} className="notification">
+          <div
+            key={notification._id}
+            className={`notification ${notification.read ? 'read' : 'unread'}`}
+            onClick={() => !notification.read && markAsRead(notification._id)}
+          >
             <p>{notification.message}</p>
-            <p>{new Date(notification.createdAt).toLocaleString()}</p>
+            <span>{new Date(notification.createdAt).toLocaleString()}</span>
           </div>
         ))
       )}
