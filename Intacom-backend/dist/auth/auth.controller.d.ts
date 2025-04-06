@@ -1,24 +1,25 @@
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    login(loginDto: LoginDto): Promise<{
-        data: {
-            user: import("mongoose").Document<unknown, {}, import("../users/schemas/user.schema").UserDocument> & import("../users/schemas/user.schema").User & import("mongoose").Document<any, any, any> & {
-                _id: import("mongoose").Types.ObjectId;
-            };
-        };
+    login(loginDto: {
+        identifier: string;
+        password: string;
+    }): Promise<{
+        data: any;
     }>;
-    register(registerDto: RegisterDto): Promise<{
+    register(userData: any): Promise<{
         message: string;
+        data: Omit<import("../users/schemas/user.schema").User, "password">;
     }>;
     recover(email: string): Promise<{
         message: string;
+        resetToken: string;
     }>;
-    reset(resetPasswordDto: ResetPasswordDto): Promise<{
+    resetPassword(resetDto: {
+        token: string;
+        newPassword: string;
+    }): Promise<{
         message: string;
     }>;
 }

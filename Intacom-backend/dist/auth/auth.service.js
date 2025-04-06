@@ -41,163 +41,82 @@ var __importStar = (this && this.__importStar) || (function () {
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
-const mongoose_1 = require("@nestjs/mongoose");
-const mongoose_2 = require("mongoose");
-const user_schema_1 = require("../users/schemas/user.schema");
+const users_service_1 = require("../users/users.service");
 const bcrypt = __importStar(require("bcrypt"));
-const uuid_1 = require("uuid");
-const nodemailer = __importStar(require("nodemailer"));
-const notifications_service_1 = require("../notifications/notifications.service");
-const points_service_1 = require("../points/points.service");
+const crypto = __importStar(require("crypto"));
 let AuthService = class AuthService {
-    constructor(userModel, notificationsService, pointsService) {
-        this.userModel = userModel;
-        this.notificationsService = notificationsService;
-        this.pointsService = pointsService;
+    constructor(usersService) {
+        this.usersService = usersService;
     }
-    async login(loginDto) {
-        try {
-            const { identifier, password } = loginDto;
-            const user = await this.userModel
-                .findOne({
-                $or: [{ email: identifier }, { username: identifier }],
-            })
-                .exec();
-            if (!user) {
-                throw new common_1.NotFoundException('User not found');
-            }
-            if (!user.isVerified) {
-                throw new common_1.UnauthorizedException('Please verify your email');
-            }
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (!isMatch) {
-                throw new common_1.UnauthorizedException('Invalid credentials');
-            }
-            await this.pointsService.addPoints(user._id.toString(), 2, 'login');
-            return { data: { user } };
+    async validateUser(identifier, password) {
+        const user = await this.usersService.findByUsername(identifier) || await this.usersService.findByUsername(identifier);
+        if (user && await bcrypt.compare(password, user.password)) {
+            const { password } = user, result = __rest(user, ["password"]);
+            return result;
         }
-        catch (error) {
-            console.error('Error in login:', error);
-            throw error;
-        }
+        return null;
     }
-    async register(registerDto) {
-        try {
-            const { firstName, lastName, username, email, password, gender, birthday } = registerDto;
-            const existingUser = await this.userModel
-                .findOne({
-                $or: [{ email }, { username }],
-            })
-                .exec();
-            if (existingUser) {
-                throw new common_1.BadRequestException('User already exists');
-            }
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const verificationToken = (0, uuid_1.v4)();
-            const user = new this.userModel({
-                firstName,
-                lastName,
-                username,
-                email,
-                password: hashedPassword,
-                gender,
-                birthday,
-                verificationToken,
-                isVerified: false,
-            });
-            await user.save();
-            const transporter = nodemailer.createTransport({
-                host: process.env.EMAIL_HOST,
-                port: Number(process.env.EMAIL_PORT),
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS,
-                },
-            });
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: 'Verify your email',
-                html: `
-          <h1>Welcome to Intacom!</h1>
-          <p>Please verify your email by clicking the link below:</p>
-          <a href="${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}">Verify Email</a>
-        `,
-            };
-            await transporter.sendMail(mailOptions);
-            await this.pointsService.addPoints(user._id.toString(), 5, 'register');
-            return { message: 'Registration successful. Please check your email to verify your account.' };
-        }
-        catch (error) {
-            console.error('Error in register:', error);
-            throw error;
-        }
+    async login(user) {
+        return {
+            data: user,
+        };
     }
-    async recover(email) {
-        try {
-            const user = await this.userModel.findOne({ email }).exec();
-            if (!user) {
-                throw new common_1.NotFoundException('User not found');
-            }
-            const resetToken = (0, uuid_1.v4)();
-            user.resetToken = resetToken;
-            await user.save();
-            const transporter = nodemailer.createTransport({
-                host: process.env.EMAIL_HOST,
-                port: Number(process.env.EMAIL_PORT),
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS,
-                },
-            });
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: 'Reset your password',
-                html: `
-          <h1>Password Reset</h1>
-          <p>Click the link below to reset your password:</p>
-          <a href="${process.env.FRONTEND_URL}/reset-password?token=${resetToken}">Reset Password</a>
-        `,
-            };
-            await transporter.sendMail(mailOptions);
-            return { message: 'Password reset email sent.' };
+    async register(userData) {
+        const existingUser = await this.usersService.findByUsername(userData.username) || await this.usersService.findByUsername(userData.email);
+        if (existingUser) {
+            throw new common_1.NotFoundException('Username or email already exists');
         }
-        catch (error) {
-            console.error('Error in recover:', error);
-            throw error;
-        }
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const newUser = await this.usersService.create(Object.assign(Object.assign({}, userData), { verificationToken, isVerified: false }));
+        return {
+            message: 'User registered successfully. Please verify your email.',
+            data: newUser,
+        };
     }
-    async resetPassword(resetPasswordDto) {
-        try {
-            const { token, password } = resetPasswordDto;
-            const user = await this.userModel.findOne({ resetToken: token }).exec();
-            if (!user) {
-                throw new common_1.BadRequestException('Invalid or expired token');
-            }
-            user.password = await bcrypt.hash(password, 10);
-            user.resetToken = undefined;
-            await user.save();
-            return { message: 'Password reset successfully' };
+    async generateResetToken(email) {
+        const user = await this.usersService.findByUsername(email);
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
         }
-        catch (error) {
-            console.error('Error in resetPassword:', error);
-            throw error;
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiry = Date.now() + 3600000;
+        await this.usersService.update(user._id, {
+            resetToken,
+            resetTokenExpiry,
+        });
+        return { resetToken };
+    }
+    async resetPassword(token, newPassword) {
+        const user = await this.usersService.findAll().then(users => users.find(u => u.resetToken === token));
+        if (!user || user.resetTokenExpiry < Date.now()) {
+            throw new common_1.NotFoundException('Invalid or expired reset token');
         }
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await this.usersService.update(user._id, {
+            password: hashedPassword,
+            resetToken: null,
+            resetTokenExpiry: null,
+        });
+        return { message: 'Password reset successfully' };
     }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model,
-        notifications_service_1.NotificationsService,
-        points_service_1.PointsService])
+    __metadata("design:paramtypes", [users_service_1.UsersService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

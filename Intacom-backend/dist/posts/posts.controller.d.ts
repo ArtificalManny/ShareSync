@@ -8,16 +8,22 @@ export declare class PostsController {
         userId: string;
         content: string;
         images: string[];
-    }): Promise<import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
+    }): Promise<import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<unknown, any, any> & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
     }>;
     findByProjectId(projectId: string): Promise<{
-        data: (import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<any, any, any> & {
-            _id: import("mongoose").Types.ObjectId;
+        data: (import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<unknown, any, any> & Required<{
+            _id: unknown;
+        }> & {
+            __v: number;
         })[];
     }>;
-    update(id: string, updates: Partial<PostInterface>): Promise<import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
+    update(id: string, updates: Partial<PostInterface>): Promise<import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<unknown, any, any> & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
     }>;
     delete(id: string): Promise<{
         message: string;

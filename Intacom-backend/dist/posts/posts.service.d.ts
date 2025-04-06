@@ -14,14 +14,20 @@ export declare class PostsService {
         userId: string;
         content: string;
         images: string[];
-    }): Promise<import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
+    }): Promise<import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<unknown, any, any> & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
     }>;
-    findByProjectId(projectId: string): Promise<(import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
+    findByProjectId(projectId: string): Promise<(import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<unknown, any, any> & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
     })[]>;
-    update(id: string, updates: Partial<Post>): Promise<import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<any, any, any> & {
-        _id: import("mongoose").Types.ObjectId;
+    update(id: string, updates: Partial<Post>): Promise<import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<unknown, any, any> & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
     }>;
     delete(id: string): Promise<{
         message: string;

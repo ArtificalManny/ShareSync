@@ -8,6 +8,10 @@ export declare class Feedback {
 }
 export declare const FeedbackSchema: import("mongoose").Schema<Feedback, import("mongoose").Model<Feedback, any, any, any, Document<unknown, any, Feedback> & Feedback & {
     _id: import("mongoose").Types.ObjectId;
+} & {
+    __v: number;
 }, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Feedback, Document<unknown, {}, import("mongoose").FlatRecord<Feedback>> & import("mongoose").FlatRecord<Feedback> & {
     _id: import("mongoose").Types.ObjectId;
+} & {
+    __v: number;
 }>;

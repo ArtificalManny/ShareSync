@@ -15,48 +15,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
-const login_dto_1 = require("./dto/login.dto");
-const register_dto_1 = require("./dto/register.dto");
-const reset_password_dto_1 = require("./dto/reset-password.dto");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
     async login(loginDto) {
-        try {
-            return await this.authService.login(loginDto);
+        const user = await this.authService.validateUser(loginDto.identifier, loginDto.password);
+        if (!user) {
+            throw new Error('Invalid credentials');
         }
-        catch (error) {
-            console.error('Error in login:', error);
-            throw error;
-        }
+        return this.authService.login(user);
     }
-    async register(registerDto) {
-        try {
-            return await this.authService.register(registerDto);
-        }
-        catch (error) {
-            console.error('Error in register:', error);
-            throw error;
-        }
+    async register(userData) {
+        return this.authService.register(userData);
     }
     async recover(email) {
-        try {
-            return await this.authService.recover(email);
-        }
-        catch (error) {
-            console.error('Error in recover:', error);
-            throw error;
-        }
+        const { resetToken } = await this.authService.generateResetToken(email);
+        return { message: 'Reset token generated', resetToken };
     }
-    async reset(resetPasswordDto) {
-        try {
-            return await this.authService.resetPassword(resetPasswordDto);
-        }
-        catch (error) {
-            console.error('Error in reset:', error);
-            throw error;
-        }
+    async resetPassword(resetDto) {
+        return this.authService.resetPassword(resetDto.token, resetDto.newPassword);
     }
 };
 exports.AuthController = AuthController;
@@ -64,14 +42,14 @@ __decorate([
     (0, common_1.Post)('login'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [login_dto_1.LoginDto]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, common_1.Post)('register'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [register_dto_1.RegisterDto]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
@@ -82,12 +60,12 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "recover", null);
 __decorate([
-    (0, common_1.Post)('reset'),
+    (0, common_1.Post)('reset-password'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [reset_password_dto_1.ResetPasswordDto]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
-], AuthController.prototype, "reset", null);
+], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])
