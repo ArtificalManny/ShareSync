@@ -1,56 +1,40 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import * as mongoose from 'mongoose';
-import * as dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
-// Load environment variables from .env file
-dotenv.config();
+async function connectWithRetry() {
+  let retries = 5;
+  while (retries > 0) {
+    try {
+      console.log('MONGODB_URI in main.ts:', process.env.MONGODB_URI);
+      console.log('Connecting to MongoDB...');
+      await mongoose.connect(process.env.MONGODB_URI!);
+      console.log('MongoDB connection successful');
+      break;
+    } catch (err) {
+      console.error(`MongoDB connection attempt ${6 - retries} failed:`, err);
+      retries -= 1;
+      if (retries === 0) {
+        throw err;
+      }
+      console.log('Retrying in 5 seconds...');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  }
+}
 
 async function bootstrap() {
-  console.log('MONGODB_URI in main.ts:', process.env.MONGODB_URI);
-  console.log('Connecting to MongoDB...');
-
-  // Set Mongoose debug mode to true for detailed logging
+  // Enable Mongoose debug logging
   mongoose.set('debug', true);
 
-  // Retry connection on failure
-  const connectWithRetry = async (retries = 5, delay = 5000) => {
-    for (let i = 0; i < retries; i++) {
-      try {
-        if (!process.env.MONGODB_URI) {
-          throw new Error('MONGODB_URI is not defined in environment variables');
-        }
-        await mongoose.connect(process.env.MONGODB_URI, {
-          serverSelectionTimeoutMS: 5000,
-          maxPoolSize: 10, // Optimize connection pool for better performance
-          minPoolSize: 2,
-          connectTimeoutMS: 10000,
-          socketTimeoutMS: 45000,
-        });
-        console.log('MongoDB connection successful');
-        break;
-      } catch (err) {
-        console.error(`MongoDB connection attempt ${i + 1} failed:`, err);
-        if (i < retries - 1) {
-          console.log(`Retrying in ${delay / 1000} seconds...`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        } else {
-          throw err;
-        }
-      }
-    }
-  };
-
-  try {
-    await connectWithRetry();
-  } catch (err) {
-    console.error('Failed to connect to MongoDB after retries:', err);
-    process.exit(1);
-  }
+  // Connect to MongoDB with retry logic
+  await connectWithRetry();
 
   const app = await NestFactory.create(AppModule);
-  app.enableCors(); // Enable CORS for frontend requests
   await app.listen(3000);
 }
 
-bootstrap();
+bootstrap().catch(err => {
+  console.error('Failed to start the application:', err);
+  process.exit(1);
+});
