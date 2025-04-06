@@ -53,10 +53,10 @@ function Login({ setUser }: LoginProps) {
       </form>
       {error && <p className="error">{error}</p>}
       <p>
-        <Link to="/recover">Forgot Password?</Link>
+        <Link to="/recover" onClick={() => console.log('Navigating to /recover')}>Forgot Password?</Link>
       </p>
       <p>
-        Don't have an account? <Link to="/register">Register</Link>
+        Don't have an account? <Link to="/register" onClick={() => console.log('Navigating to /register')}>Register</Link>
       </p>
     </div>
   );
