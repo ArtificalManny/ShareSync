@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
@@ -40,6 +40,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [loginPrompt, setLoginPrompt] = useState(false);
   const [newProject, setNewProject] = useState<Project>({
     name: '',
     description: '',
@@ -49,6 +50,7 @@ function App() {
   });
   const [createProjectError, setCreateProjectError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -67,24 +69,31 @@ function App() {
           console.error('Error fetching user in App:', error.response?.data || error.message);
           localStorage.removeItem('user');
           setUser(null);
-          navigate('/login');
+          // Only redirect to login if not on a public route
+          if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
+            navigate('/login');
+          }
         }
       } else {
-        navigate('/login');
+        setUser(null);
+        // Only redirect to login if not on a public route
+        if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
+          navigate('/login');
+        }
       }
       setLoadingUser(false);
     };
     fetchUser();
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   const handleCreateProject = async () => {
     if (!user) {
-      alert('Please log in to create a project');
-      navigate('/login');
+      setLoginPrompt(true);
       return;
     }
     try {
       setCreateProjectError(null);
+      setLoginPrompt(false);
       console.log('Creating project with data:', { ...newProject, admin: user._id });
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
         name: newProject.name,
@@ -146,38 +155,47 @@ function App() {
           <div className="modal">
             <div className="modal-content">
               <h2>Create a New Project</h2>
+              {loginPrompt && (
+                <p className="error" style={{ color: '#FF4444' }}>
+                  Please log in to create a project. <Link to="/login" onClick={() => setShowCreateProjectModal(false)}>Login</Link>
+                </p>
+              )}
               {createProjectError && (
                 <p className="error" style={{ color: '#FF4444' }}>{createProjectError}</p>
               )}
-              <input
-                type="text"
-                placeholder="Project Name"
-                value={newProject.name}
-                onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-              />
-              <textarea
-                placeholder="Description"
-                value={newProject.description}
-                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-              />
-              <input
-                type="color"
-                value={newProject.color}
-                onChange={(e) => setNewProject({ ...newProject, color: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="Share with (email)"
-                onChange={(e) => {
-                  const email = e.target.value;
-                  setNewProject({
-                    ...newProject,
-                    sharedWith: email ? [{ userId: email, role: 'viewer' }] : [],
-                  });
-                }}
-              />
-              <button onClick={handleCreateProject}>Create</button>
-              <button onClick={() => setShowCreateProjectModal(false)}>Cancel</button>
+              {!loginPrompt && (
+                <>
+                  <input
+                    type="text"
+                    placeholder="Project Name"
+                    value={newProject.name}
+                    onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                  />
+                  <textarea
+                    placeholder="Description"
+                    value={newProject.description}
+                    onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                  />
+                  <input
+                    type="color"
+                    value={newProject.color}
+                    onChange={(e) => setNewProject({ ...newProject, color: e.target.value })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Share with (email)"
+                    onChange={(e) => {
+                      const email = e.target.value;
+                      setNewProject({
+                        ...newProject,
+                        sharedWith: email ? [{ userId: email, role: 'viewer' }] : [],
+                      });
+                    }}
+                  />
+                  <button onClick={handleCreateProject}>Create</button>
+                </>
+              )}
+              <button onClick={() => { setShowCreateProjectModal(false); setLoginPrompt(false); }}>Cancel</button>
             </div>
           </div>
         )}
