@@ -16,50 +16,26 @@ exports.PointsService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
-const point_schema_1 = require("./schemas/point.schema");
-const users_service_1 = require("../users/users.service");
 let PointsService = class PointsService {
-    constructor(pointModel, usersService) {
-        this.pointModel = pointModel;
-        this.usersService = usersService;
+    constructor(userModel) {
+        this.userModel = userModel;
     }
-    async addPoints(userId, points, action) {
-        try {
-            const point = new this.pointModel({
-                userId,
-                points,
-                action,
-            });
-            await point.save();
-            const user = await this.usersService.findById(userId);
-            if (!user) {
-                throw new common_1.NotFoundException('User not found');
-            }
-            user.points = (user.points || 0) + points;
-            await user.save();
-            return point;
+    async addPoints(userId, points) {
+        const user = await this.userModel.findById(userId).exec();
+        if (!user) {
+            throw new Error('User not found');
         }
-        catch (error) {
-            console.error('Error in addPoints:', error);
-            throw error;
-        }
+        user.points += points;
+        return user.save();
     }
     async getLeaderboard() {
-        try {
-            const users = await this.usersService.findAll();
-            return users.sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 10);
-        }
-        catch (error) {
-            console.error('Error in getLeaderboard:', error);
-            throw error;
-        }
+        return this.userModel.find().sort({ points: -1 }).limit(10).exec();
     }
 };
 exports.PointsService = PointsService;
 exports.PointsService = PointsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)(point_schema_1.Point.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model,
-        users_service_1.UsersService])
+    __param(0, (0, mongoose_1.InjectModel)('User')),
+    __metadata("design:paramtypes", [mongoose_2.Model])
 ], PointsService);
 //# sourceMappingURL=points.service.js.map

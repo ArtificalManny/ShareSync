@@ -1,11 +1,12 @@
 import { Model } from 'mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { User } from './schemas/user.schema';
 export declare class UsersService {
-    private userModel;
-    constructor(userModel: Model<UserDocument>);
-    findByUsername(username: string): Promise<User>;
-    findById(id: string): Promise<User>;
+    private readonly userModel;
+    constructor(userModel: Model<User>);
+    create(userData: Partial<User>): Promise<User>;
     findAll(): Promise<User[]>;
-    update(id: string, updates: Partial<User>): Promise<User>;
-    create(userData: Partial<User>): Promise<Omit<User, 'password'>>;
+    findById(id: string): Promise<User>;
+    findByUsername(username: string): Promise<User | null>;
+    findByEmail(email: string): Promise<User | null>;
+    update(id: string, updateData: Partial<User>): Promise<User>;
 }

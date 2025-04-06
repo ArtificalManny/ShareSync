@@ -10,7 +10,7 @@ export declare class AuthController {
     }>;
     register(userData: any): Promise<{
         message: string;
-        data: Omit<import("../users/schemas/user.schema").User, "password">;
+        data: import("../users/schemas/user.schema").User;
     }>;
     recover(email: string): Promise<{
         message: string;

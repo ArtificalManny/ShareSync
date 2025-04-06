@@ -63,9 +63,9 @@ let AuthService = class AuthService {
         this.usersService = usersService;
     }
     async validateUser(identifier, password) {
-        const user = await this.usersService.findByUsername(identifier) || await this.usersService.findByUsername(identifier);
+        const user = await this.usersService.findByUsername(identifier) || await this.usersService.findByEmail(identifier);
         if (user && await bcrypt.compare(password, user.password)) {
-            const { password } = user, result = __rest(user, ["password"]);
+            const _a = user.toObject(), { password } = _a, result = __rest(_a, ["password"]);
             return result;
         }
         return null;
@@ -76,7 +76,7 @@ let AuthService = class AuthService {
         };
     }
     async register(userData) {
-        const existingUser = await this.usersService.findByUsername(userData.username) || await this.usersService.findByUsername(userData.email);
+        const existingUser = await this.usersService.findByUsername(userData.username) || await this.usersService.findByEmail(userData.email);
         if (existingUser) {
             throw new common_1.NotFoundException('Username or email already exists');
         }
@@ -88,7 +88,7 @@ let AuthService = class AuthService {
         };
     }
     async generateResetToken(email) {
-        const user = await this.usersService.findByUsername(email);
+        const user = await this.usersService.findByEmail(email);
         if (!user) {
             throw new common_1.NotFoundException('User not found');
         }

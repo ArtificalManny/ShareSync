@@ -1,4 +1,5 @@
 import { UsersService } from '../users/users.service';
+import { User } from '../users/schemas/user.schema';
 export declare class AuthService {
     private usersService;
     constructor(usersService: UsersService);
@@ -8,7 +9,7 @@ export declare class AuthService {
     }>;
     register(userData: any): Promise<{
         message: string;
-        data: Omit<import("../users/schemas/user.schema").User, "password">;
+        data: User;
     }>;
     generateResetToken(email: string): Promise<{
         resetToken: string;
