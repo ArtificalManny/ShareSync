@@ -1,6 +1,26 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const { UserSchema } = require('./src/users/schemas/user.schema');
+
+// Define the User schema manually (since we're not importing from src)
+const UserSchema = new mongoose.Schema({
+  firstName: String,
+  lastName: String,
+  username: String,
+  email: String,
+  password: String,
+  gender: String,
+  birthday: { month: String, day: String, year: String },
+  points: { type: Number, default: 0 },
+  profilePic: String,
+  followers: [String],
+  following: [String],
+  verificationToken: String,
+  isVerified: { type: Boolean, default: false },
+  resetToken: String,
+  resetTokenExpiry: Date,
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
 
 const User = mongoose.model('User', UserSchema);
 
@@ -21,7 +41,7 @@ async function resetPassword() {
     }
 
     // Hash the new password
-    const newPassword = 'S7mR0!%uMZ<$[w%@';
+    const newPassword = 'S7mR0!%uMZ<$[w%@'; // Use the original password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update the user's password

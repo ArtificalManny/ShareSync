@@ -1,32 +1,59 @@
 .login {
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 2rem;
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #1a1a2e;
+    color: #e0e0e0;
+  }
+  
+  .login h1 {
+    margin-bottom: 4rem; /* Increased margin to lower the logo */
+    font-size: 2.5rem;
+    background: linear-gradient(90deg, #00ff00, #00ffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
   
   .login form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    width: 300px;
   }
   
   .login input {
+    margin-bottom: 1rem;
     padding: 0.5rem;
     border: none;
     border-radius: 4px;
-    background: #1a1a2e;
+    background: #16213e;
     color: #e0e0e0;
   }
   
   .login button {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem;
     border: none;
     border-radius: 4px;
+    background: #ffffff;
+    color: #1a1a2e;
     cursor: pointer;
+  }
+  
+  .login button:hover {
+    background: #e0e0e0;
   }
   
   .login .error {
     color: #ff4444;
-    margin: 1rem 0;
+    margin-top: 1rem;
+  }
+  
+  .login a {
+    color: #00ff00;
+    text-decoration: none;
+  }
+  
+  .login a:hover {
+    text-decoration: underline;
   }
