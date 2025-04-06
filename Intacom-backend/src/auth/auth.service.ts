@@ -2,15 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { User } from '../users/schemas/user.schema';
 
 @Injectable()
 export class AuthService {
   constructor(private usersService: UsersService) {}
 
   async validateUser(identifier: string, password: string): Promise<any> {
-    const user = await this.usersService.findByUsername(identifier) || await this.usersService.findByUsername(identifier);
+    const user = await this.usersService.findByUsername(identifier) || await this.usersService.findByEmail(identifier);
     if (user && await bcrypt.compare(password, user.password)) {
-      const { password, ...result } = user;
+      const { password, ...result } = user.toObject();
       return result;
     }
     return null;
@@ -23,7 +24,7 @@ export class AuthService {
   }
 
   async register(userData: any) {
-    const existingUser = await this.usersService.findByUsername(userData.username) || await this.usersService.findByUsername(userData.email);
+    const existingUser = await this.usersService.findByUsername(userData.username) || await this.usersService.findByEmail(userData.email);
     if (existingUser) {
       throw new NotFoundException('Username or email already exists');
     }
@@ -42,7 +43,7 @@ export class AuthService {
   }
 
   async generateResetToken(email: string) {
-    const user = await this.usersService.findByUsername(email);
+    const user = await this.usersService.findByEmail(email);
     if (!user) {
       throw new NotFoundException('User not found');
     }

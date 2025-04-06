@@ -53,6 +53,7 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
+    console.log('Current location:', location.pathname);
     const fetchUser = async () => {
       setLoadingUser(true);
       const storedUser = localStorage.getItem('user');
@@ -69,14 +70,12 @@ function App() {
           console.error('Error fetching user in App:', error.response?.data || error.message);
           localStorage.removeItem('user');
           setUser(null);
-          // Only redirect to login if not on a public route
           if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
             navigate('/login');
           }
         }
       } else {
         setUser(null);
-        // Only redirect to login if not on a public route
         if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
           navigate('/login');
         }
