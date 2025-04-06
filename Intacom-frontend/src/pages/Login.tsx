@@ -1,25 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { theme } from '../styles/theme';
 import './Login.css';
 
-interface User {
-  _id: string;
-  username: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  gender: string;
-  birthday: { month: string; day: string; year: string };
-  points: number;
-  profilePic?: string;
-  followers?: string[];
-  following?: string[];
-}
-
 interface LoginProps {
-  setUser: (user: User) => void;
+  setUser: (user: any) => void;
 }
 
 function Login({ setUser }: LoginProps) {
@@ -31,17 +16,17 @@ function Login({ setUser }: LoginProps) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log('Logging in with identifier:', identifier);
+      console.log('Logging in with:', { identifier, password });
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
         identifier,
         password,
       });
       console.log('Login response:', response.data);
-      const user = response.data.data.user;
+      const user = response.data.data;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       navigate('/');
-      alert('Logged in successfully! Welcome back!');
+      alert('Login successful!');
     } catch (error: any) {
       console.error('Error logging in:', error.response?.data || error.message);
       setError(error.response?.data?.message || 'Invalid username or password. Please try again.');
@@ -50,7 +35,7 @@ function Login({ setUser }: LoginProps) {
 
   return (
     <div className="login">
-      <h1 style={{ color: theme.colors.primary }}>Login</h1>
+      <h1>INTACOM</h1>
       <form onSubmit={handleLogin}>
         <input
           type="text"
@@ -64,12 +49,12 @@ function Login({ setUser }: LoginProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button type="submit" style={{ backgroundColor: theme.colors.accent, color: theme.colors.text }}>
-          Login
-        </button>
+        <button type="submit">Login</button>
       </form>
-      {error && <p className="error" style={{ color: theme.colors.error }}>{error}</p>}
-      <Link to="/recover">Forgot Password?</Link>
+      {error && <p className="error">{error}</p>}
+      <p>
+        <Link to="/recover">Forgot Password?</Link>
+      </p>
       <p>
         Don't have an account? <Link to="/register">Register</Link>
       </p>

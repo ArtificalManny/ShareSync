@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import ResetPassword from './pages/ResetPassword';
+import Recover from './pages/Recover';
 import './App.css';
 
 interface User {
@@ -192,6 +193,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/recover" element={<Recover />} />
         </Routes>
       </div>
     </div>

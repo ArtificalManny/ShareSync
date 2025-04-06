@@ -31,9 +31,11 @@ function Register() {
         gender,
         birthday,
       });
+      console.log('Registration response:', response.data);
       alert(response.data.message);
       navigate('/login');
     } catch (error: any) {
+      console.error('Error registering:', error.response?.data || error.message);
       setError(error.response?.data?.message || 'Registration failed');
     }
   };

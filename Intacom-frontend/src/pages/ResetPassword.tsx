@@ -23,9 +23,11 @@ function ResetPassword() {
         token,
         newPassword: password,
       });
+      console.log('Reset password response:', response.data);
       setSuccess(response.data.message);
       setError('');
     } catch (error: any) {
+      console.error('Error resetting password:', error.response?.data || error.message);
       setError(error.response?.data?.message || 'Failed to reset password');
       setSuccess('');
     }
