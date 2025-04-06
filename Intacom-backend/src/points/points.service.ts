@@ -7,7 +7,8 @@ import { User } from '../users/schemas/user.schema';
 export class PointsService {
   constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
 
-  async addPoints(userId: string, points: number): Promise<User> {
+  async addPoints(userId: string, points: number, reason?: string): Promise<User> {
+    console.log(`Adding ${points} points to user ${userId} for reason: ${reason || 'no reason specified'}`);
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new Error('User not found');

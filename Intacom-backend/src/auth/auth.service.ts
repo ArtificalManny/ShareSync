@@ -51,7 +51,7 @@ export class AuthService {
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenExpiry = Date.now() + 3600000; // 1 hour expiry
 
-    await this.usersService.update(user._id, {
+    await this.usersService.update(user._id.toString(), {
       resetToken,
       resetTokenExpiry,
     });
@@ -66,7 +66,7 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.usersService.update(user._id, {
+    await this.usersService.update(user._id.toString(), {
       password: hashedPassword,
       resetToken: null,
       resetTokenExpiry: null,
