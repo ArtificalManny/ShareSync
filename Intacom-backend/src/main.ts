@@ -1,14 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import mongoose from 'mongoose';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 async function connectWithRetry() {
   let retries = 5;
   while (retries > 0) {
     try {
       console.log('MONGODB_URI in main.ts:', process.env.MONGODB_URI);
+      if (!process.env.MONGODB_URI) {
+        throw new Error('MONGODB_URI is not defined in the environment variables');
+      }
       console.log('Connecting to MongoDB...');
-      await mongoose.connect(process.env.MONGODB_URI!);
+      await mongoose.connect(process.env.MONGODB_URI);
       console.log('MongoDB connection successful');
       break;
     } catch (err) {
