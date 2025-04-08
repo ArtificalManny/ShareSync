@@ -63,33 +63,49 @@ let AuthService = class AuthService {
         this.usersService = usersService;
     }
     async validateUser(identifier, password) {
+        console.log('Validating user with identifier:', identifier);
         const user = await this.usersService.findByUsername(identifier) || await this.usersService.findByEmail(identifier);
-        if (user && await bcrypt.compare(password, user.password)) {
+        if (!user) {
+            console.log('User not found for identifier:', identifier);
+            return null;
+        }
+        console.log('User found:', user.email, 'with hashed password:', user.password);
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        console.log('Password match result:', passwordMatch);
+        if (passwordMatch) {
             const _a = user.toObject(), { password } = _a, result = __rest(_a, ["password"]);
+            console.log('User validated successfully:', result.email);
             return result;
         }
+        console.log('Password does not match for user:', user.email);
         return null;
     }
     async login(user) {
+        console.log('Login successful for user:', user.email);
         return {
             data: user,
         };
     }
     async register(userData) {
+        console.log('Registering user with data:', userData);
         const existingUser = await this.usersService.findByUsername(userData.username) || await this.usersService.findByEmail(userData.email);
         if (existingUser) {
+            console.log('User already exists:', existingUser.email);
             throw new common_1.NotFoundException('Username or email already exists');
         }
         const verificationToken = crypto.randomBytes(32).toString('hex');
         const newUser = await this.usersService.create(Object.assign(Object.assign({}, userData), { verificationToken, isVerified: false }));
+        console.log('User registered successfully:', newUser.email);
         return {
             message: 'User registered successfully. Please verify your email.',
             data: newUser,
         };
     }
     async generateResetToken(email) {
+        console.log('Generating reset token for email:', email);
         const user = await this.usersService.findByEmail(email);
         if (!user) {
+            console.log('User not found for email:', email);
             throw new common_1.NotFoundException('User not found');
         }
         const resetToken = crypto.randomBytes(32).toString('hex');
@@ -98,11 +114,14 @@ let AuthService = class AuthService {
             resetToken,
             resetTokenExpiry,
         });
+        console.log('Reset token generated for user:', user.email, 'Token:', resetToken);
         return { resetToken };
     }
     async resetPassword(token, newPassword) {
+        console.log('Resetting password with token:', token);
         const user = await this.usersService.findAll().then(users => users.find(u => u.resetToken === token));
         if (!user || user.resetTokenExpiry < Date.now()) {
+            console.log('Invalid or expired reset token for token:', token);
             throw new common_1.NotFoundException('Invalid or expired reset token');
         }
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -111,6 +130,7 @@ let AuthService = class AuthService {
             resetToken: null,
             resetTokenExpiry: null,
         });
+        console.log('Password reset successfully for user:', user.email);
         return { message: 'Password reset successfully' };
     }
 };
