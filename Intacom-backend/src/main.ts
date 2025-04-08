@@ -10,10 +10,19 @@ async function connectWithRetry() {
   let retries = 5;
   while (retries > 0) {
     try {
-      console.log('MONGODB_URI in main.ts:', process.env.MONGODB_URI);
+      console.log('Environment variables loaded:');
+      console.log('MONGODB_URI:', process.env.MONGODB_URI);
+      console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
+      console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
+      console.log('EMAIL_USER:', process.env.EMAIL_USER);
+      console.log('EMAIL_PASS:', process.env.EMAIL_PASS);
+      console.log('S3_BUCKET:', process.env.S3_BUCKET);
+      console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
+
       if (!process.env.MONGODB_URI) {
         throw new Error('MONGODB_URI is not defined in the environment variables');
       }
+
       console.log('Connecting to MongoDB...');
       await mongoose.connect(process.env.MONGODB_URI);
       console.log('MongoDB connection successful');
