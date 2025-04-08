@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import './Register.css';
 
 function Register() {
@@ -12,7 +12,7 @@ function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [gender, setGender] = useState('');
   const [birthday, setBirthday] = useState({ month: '', day: '', year: '' });
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -31,87 +31,93 @@ function Register() {
         gender,
         birthday,
       });
-      console.log('Registration response:', response.data);
-      alert(response.data.message);
+      console.log('Register response:', response.data);
+      alert('User registered successfully. Please verify your email.');
       navigate('/login');
-    } catch (error: any) {
-      console.error('Error registering:', error.response?.data || error.message);
-      setError(error.response?.data?.message || 'Registration failed');
+    } catch (err: any) {
+      console.error('Register error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'An error occurred during registration');
     }
   };
 
   return (
-    <div className="register">
-      <h1>Register</h1>
+    <div className="register-container">
+      <h2>Register</h2>
       <form onSubmit={handleRegister}>
         <input
           type="text"
           placeholder="First Name"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
+          required
         />
         <input
           type="text"
           placeholder="Last Name"
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
+          required
         />
         <input
           type="text"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          required
         />
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
         <input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
         <input
           type="password"
           placeholder="Confirm Password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
+          required
         />
-        <select value={gender} onChange={(e) => setGender(e.target.value)}>
+        <select value={gender} onChange={(e) => setGender(e.target.value)} required>
           <option value="">Select Gender</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-          <option value="other">Other</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
         </select>
         <div className="birthday">
           <input
             type="text"
-            placeholder="Month"
+            placeholder="MM"
             value={birthday.month}
             onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
+            required
           />
           <input
             type="text"
-            placeholder="Day"
+            placeholder="DD"
             value={birthday.day}
             onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
+            required
           />
           <input
             type="text"
-            placeholder="Year"
+            placeholder="YYYY"
             value={birthday.year}
             onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
+            required
           />
         </div>
         <button type="submit">Register</button>
       </form>
-      {error && <p className="error">{error}</p>}
-      <p>
-        Already have an account? <Link to="/login">Login</Link>
-      </p>
+      {error && <p className="error" style={{ color: '#FF4444' }}>{error}</p>}
     </div>
   );
 }

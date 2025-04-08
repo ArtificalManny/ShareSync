@@ -71,12 +71,14 @@ function App() {
           localStorage.removeItem('user');
           setUser(null);
           if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
+            console.log('Redirecting to /login from:', location.pathname);
             navigate('/login');
           }
         }
       } else {
         setUser(null);
         if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
+          console.log('Redirecting to /login from:', location.pathname);
           navigate('/login');
         }
       }
@@ -119,6 +121,7 @@ function App() {
   };
 
   const handleLogout = () => {
+    console.log('Logging out user:', user?.email);
     localStorage.removeItem('user');
     setUser(null);
     navigate('/login');

@@ -1,46 +1,41 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './Recover.css';
 
 function Recover() {
   const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/recover`, {
-        params: { email },
-      });
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/forgot-password`, { email });
       console.log('Recover response:', response.data);
-      setSuccess('A reset link has been generated. Check your email for the link. (For testing, the token is: ' + response.data.resetToken + ')');
-      setError('');
-    } catch (error: any) {
-      console.error('Error recovering password:', error.response?.data || error.message);
-      setError(error.response?.data?.message || 'Failed to send reset link');
-      setSuccess('');
+      setMessage('A reset link has been sent to your email.');
+      setError(null);
+    } catch (err: any) {
+      console.error('Recover error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'An error occurred while sending the reset link');
+      setMessage(null);
     }
   };
 
   return (
-    <div className="recover">
-      <h1>Recover Password</h1>
+    <div className="recover-container">
+      <h2>Forgot Password</h2>
       <form onSubmit={handleRecover}>
         <input
           type="email"
-          placeholder="Email"
+          placeholder="Enter your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
         <button type="submit">Send Reset Link</button>
       </form>
-      {error && <p className="error">{error}</p>}
-      {success && <p className="success">{success}</p>}
-      <p>
-        <Link to="/login">Back to Login</Link>
-      </p>
+      {message && <p className="success" style={{ color: '#00C4B4' }}>{message}</p>}
+      {error && <p className="error" style={{ color: '#FF4444' }}>{error}</p>}
     </div>
   );
 }

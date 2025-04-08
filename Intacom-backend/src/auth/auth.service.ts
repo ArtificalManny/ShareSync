@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -13,7 +13,7 @@ export class AuthService {
     const user = await this.usersService.findByUsername(identifier) || await this.usersService.findByEmail(identifier);
     if (!user) {
       console.log('User not found for identifier:', identifier);
-      return null;
+      throw new NotFoundException('User not found. Please register.');
     }
     console.log('User found:', user.email, 'with hashed password:', user.password);
     const passwordMatch = await bcrypt.compare(password, user.password);
@@ -24,7 +24,7 @@ export class AuthService {
       return result;
     }
     console.log('Password does not match for user:', user.email);
-    return null;
+    throw new UnauthorizedException('Incorrect password. Please try again.');
   }
 
   async login(user: any) {

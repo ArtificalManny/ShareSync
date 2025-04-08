@@ -20,21 +20,40 @@ let AuthController = class AuthController {
         this.authService = authService;
     }
     async login(loginDto) {
-        const user = await this.authService.validateUser(loginDto.identifier, loginDto.password);
-        if (!user) {
-            throw new Error('Invalid credentials');
+        try {
+            const user = await this.authService.validateUser(loginDto.identifier, loginDto.password);
+            if (!user) {
+                throw new common_1.HttpException('Invalid credentials', 401);
+            }
+            return this.authService.login(user);
         }
-        return this.authService.login(user);
+        catch (error) {
+            throw new common_1.HttpException(error.message, error.status || 401);
+        }
     }
-    async register(userData) {
-        return this.authService.register(userData);
+    async register(registerDto) {
+        try {
+            return await this.authService.register(registerDto);
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.message, error.status || 400);
+        }
     }
-    async recover(email) {
-        const { resetToken } = await this.authService.generateResetToken(email);
-        return { message: 'Reset token generated', resetToken };
+    async forgotPassword(email) {
+        try {
+            return await this.authService.generateResetToken(email);
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.message, error.status || 400);
+        }
     }
-    async resetPassword(resetDto) {
-        return this.authService.resetPassword(resetDto.token, resetDto.newPassword);
+    async resetPassword(token, newPassword) {
+        try {
+            return await this.authService.resetPassword(token, newPassword);
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.message, error.status || 400);
+        }
     }
 };
 exports.AuthController = AuthController;
@@ -53,17 +72,18 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
-    (0, common_1.Get)('recover'),
-    __param(0, (0, common_1.Query)('email')),
+    (0, common_1.Post)('forgot-password'),
+    __param(0, (0, common_1.Body)('email')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], AuthController.prototype, "recover", null);
+], AuthController.prototype, "forgotPassword", null);
 __decorate([
     (0, common_1.Post)('reset-password'),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, common_1.Body)('token')),
+    __param(1, (0, common_1.Body)('newPassword')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([

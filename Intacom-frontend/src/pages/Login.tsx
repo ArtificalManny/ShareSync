@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
 
 interface LoginProps {
@@ -10,7 +10,7 @@ interface LoginProps {
 function Login({ setUser }: LoginProps) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -22,41 +22,47 @@ function Login({ setUser }: LoginProps) {
         password,
       });
       console.log('Login response:', response.data);
-      const user = response.data.data;
-      setUser(user);
-      localStorage.setItem('user', JSON.stringify(user));
-      navigate('/');
+      setUser(response.data.data);
+      localStorage.setItem('user', JSON.stringify(response.data.data));
       alert('Login successful!');
-    } catch (error: any) {
-      console.error('Error logging in:', error.response?.data || error.message);
-      setError(error.response?.data?.message || 'Invalid username or password. Please try again.');
+      navigate('/');
+    } catch (err: any) {
+      console.error('Login error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'An error occurred during login');
     }
   };
 
   return (
-    <div className="login">
-      <h1>INTACOM</h1>
+    <div className="login-container">
+      <h2>Login</h2>
       <form onSubmit={handleLogin}>
         <input
           type="text"
-          placeholder="Username or Email"
+          placeholder="Email or Username"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
+          required
         />
         <input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
         <button type="submit">Login</button>
       </form>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" style={{ color: '#FF4444' }}>{error}</p>}
       <p>
-        <Link to="/recover" onClick={() => console.log('Navigating to /recover')}>Forgot Password?</Link>
+        <Link to="/recover" onClick={() => console.log('Navigating to /recover')}>
+          Forgot Password?
+        </Link>
       </p>
       <p>
-        Don't have an account? <Link to="/register" onClick={() => console.log('Navigating to /register')}>Register</Link>
+        Don't have an account?{' '}
+        <Link to="/register" onClick={() => console.log('Navigating to /register')}>
+          Register
+        </Link>
       </p>
     </div>
   );

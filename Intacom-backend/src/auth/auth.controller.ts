@@ -1,34 +1,47 @@
-import { Controller, Post, Body, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, HttpException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private authService: AuthService) {}
 
   @Post('login')
   async login(@Body() loginDto: { identifier: string; password: string }) {
-    const user = await this.authService.validateUser(loginDto.identifier, loginDto.password);
-    if (!user) {
-      throw new Error('Invalid credentials');
+    try {
+      const user = await this.authService.validateUser(loginDto.identifier, loginDto.password);
+      if (!user) {
+        throw new HttpException('Invalid credentials', 401);
+      }
+      return this.authService.login(user);
+    } catch (error) {
+      throw new HttpException(error.message, error.status || 401);
     }
-    return this.authService.login(user);
   }
 
   @Post('register')
-  async register(@Body() userData: any) {
-    return this.authService.register(userData);
+  async register(@Body() registerDto: any) {
+    try {
+      return await this.authService.register(registerDto);
+    } catch (error) {
+      throw new HttpException(error.message, error.status || 400);
+    }
   }
 
-  @Get('recover')
-  async recover(@Query('email') email: string) {
-    const { resetToken } = await this.authService.generateResetToken(email);
-    // In a production environment, you would send an email with the reset link
-    // For testing, we'll return the token directly
-    return { message: 'Reset token generated', resetToken };
+  @Post('forgot-password')
+  async forgotPassword(@Body('email') email: string) {
+    try {
+      return await this.authService.generateResetToken(email);
+    } catch (error) {
+      throw new HttpException(error.message, error.status || 400);
+    }
   }
 
   @Post('reset-password')
-  async resetPassword(@Body() resetDto: { token: string; newPassword: string }) {
-    return this.authService.resetPassword(resetDto.token, resetDto.newPassword);
+  async resetPassword(@Body('token') token: string, @Body('newPassword') newPassword: string) {
+    try {
+      return await this.authService.resetPassword(token, newPassword);
+    } catch (error) {
+      throw new HttpException(error.message, error.status || 400);
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { AuthService } from './auth.service';
 export declare class AuthController {
-    private readonly authService;
+    private authService;
     constructor(authService: AuthService);
     login(loginDto: {
         identifier: string;
@@ -8,18 +8,14 @@ export declare class AuthController {
     }): Promise<{
         data: any;
     }>;
-    register(userData: any): Promise<{
+    register(registerDto: any): Promise<{
         message: string;
         data: import("../users/schemas/user.schema").User;
     }>;
-    recover(email: string): Promise<{
-        message: string;
+    forgotPassword(email: string): Promise<{
         resetToken: string;
     }>;
-    resetPassword(resetDto: {
-        token: string;
-        newPassword: string;
-    }): Promise<{
+    resetPassword(token: string, newPassword: string): Promise<{
         message: string;
     }>;
 }
