@@ -35,7 +35,7 @@ function Register() {
       });
       console.log('Register response:', response.data);
       alert('User registered successfully. Please verify your email.');
-      navigate('/login');
+      navigate('/login', { replace: true });
     } catch (err: any) {
       console.error('Register error:', err.response?.data || err.message);
       setError(err.response?.data?.message || 'An error occurred during registration');

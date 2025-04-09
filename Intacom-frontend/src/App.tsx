@@ -28,27 +28,9 @@ interface User {
   following?: string[];
 }
 
-interface Project {
-  name: string;
-  description: string;
-  admin: string;
-  color: string;
-  sharedWith: { userId: string; role: string }[];
-}
-
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
-  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
-  const [loginPrompt, setLoginPrompt] = useState(false);
-  const [newProject, setNewProject] = useState<Project>({
-    name: '',
-    description: '',
-    admin: '',
-    color: '#00C4B4',
-    sharedWith: [],
-  });
-  const [createProjectError, setCreateProjectError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -70,7 +52,6 @@ function App() {
           console.error('Error fetching user in App:', error.response?.data || error.message);
           localStorage.removeItem('user');
           setUser(null);
-          // Only redirect to /login if not on an auth-related page
           if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
             console.log('Redirecting to /login from:', location.pathname);
             navigate('/login', { replace: true });
@@ -78,7 +59,6 @@ function App() {
         }
       } else {
         setUser(null);
-        // Only redirect to /login if not on an auth-related page
         if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
           console.log('Redirecting to /login from:', location.pathname);
           navigate('/login', { replace: true });
@@ -87,40 +67,7 @@ function App() {
       setLoadingUser(false);
     };
     fetchUser();
-  }, [navigate]); // Remove location.pathname from dependencies to prevent redirect loop
-
-  const handleCreateProject = async () => {
-    if (!user) {
-      setLoginPrompt(true);
-      return;
-    }
-    try {
-      setCreateProjectError(null);
-      setLoginPrompt(false);
-      console.log('Creating project with data:', { ...newProject, admin: user._id });
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
-        name: newProject.name,
-        description: newProject.description,
-        admin: user._id,
-        color: newProject.color,
-        sharedWith: newProject.sharedWith,
-      });
-      console.log('Project creation response:', response.data);
-      setShowCreateProjectModal(false);
-      setNewProject({ name: '', description: '', admin: '', color: '#00C4B4', sharedWith: [] });
-      navigate(`/project/${response.data.data._id}`);
-      alert('Project created successfully!');
-    } catch (error: any) {
-      console.error('Error creating project:', error.response?.data || error.message);
-      if (error.response?.status === 400) {
-        setCreateProjectError('Invalid project data. Please check your inputs.');
-      } else if (error.response?.status === 500) {
-        setCreateProjectError('Server error. Please try again later.');
-      } else {
-        setCreateProjectError('Failed to create project. Please try again.');
-      }
-    }
-  };
+  }, [navigate]); // Only depend on navigate to avoid redirect loops
 
   const handleLogout = () => {
     console.log('Logging out user:', user?.email);
@@ -140,7 +87,6 @@ function App() {
         <div className="navbar-links">
           <Link to="/">Home</Link>
           <Link to="/profile">Profile</Link>
-          <button onClick={() => setShowCreateProjectModal(true)}>Create Project</button>
           <button onClick={handleLogout}>Logout</button>
         </div>
         {user && (
@@ -155,55 +101,6 @@ function App() {
       </nav>
 
       <div className="content">
-        {showCreateProjectModal && (
-          <div className="modal">
-            <div className="modal-content">
-              <h2>Create a New Project</h2>
-              {loginPrompt && (
-                <p className="error" style={{ color: '#FF4444' }}>
-                  Please log in to create a project. <Link to="/login" onClick={() => setShowCreateProjectModal(false)}>Login</Link>
-                </p>
-              )}
-              {createProjectError && (
-                <p className="error" style={{ color: '#FF4444' }}>{createProjectError}</p>
-              )}
-              {!loginPrompt && (
-                <>
-                  <input
-                    type="text"
-                    placeholder="Project Name"
-                    value={newProject.name}
-                    onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                  />
-                  <textarea
-                    placeholder="Description"
-                    value={newProject.description}
-                    onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                  />
-                  <input
-                    type="color"
-                    value={newProject.color}
-                    onChange={(e) => setNewProject({ ...newProject, color: e.target.value })}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Share with (email)"
-                    onChange={(e) => {
-                      const email = e.target.value;
-                      setNewProject({
-                        ...newProject,
-                        sharedWith: email ? [{ userId: email, role: 'viewer' }] : [],
-                      });
-                    }}
-                  />
-                  <button onClick={handleCreateProject}>Create</button>
-                </>
-              )}
-              <button onClick={() => { setShowCreateProjectModal(false); setLoginPrompt(false); }}>Cancel</button>
-            </div>
-          </div>
-        )}
-
         <Routes>
           <Route path="/" element={<Home user={user} />} />
           <Route path="/projects" element={<Projects user={user} />} />
