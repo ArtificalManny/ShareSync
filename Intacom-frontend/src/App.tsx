@@ -35,48 +35,49 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
-    console.log('Current location:', location.pathname);
+    console.log('App.tsx: Current location:', location.pathname);
     const fetchUser = async () => {
       setLoadingUser(true);
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const parsedUser: User = JSON.parse(storedUser);
         try {
-          console.log('Fetching user with username:', parsedUser.username);
+          console.log('App.tsx: Fetching user with username:', parsedUser.username);
           const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${parsedUser.username}`);
-          console.log('User fetch response:', response.data);
+          console.log('App.tsx: User fetch response:', response.data);
           const fetchedUser = response.data.data;
           setUser(fetchedUser);
           localStorage.setItem('user', JSON.stringify(fetchedUser));
         } catch (error: any) {
-          console.error('Error fetching user in App:', error.response?.data || error.message);
+          console.error('App.tsx: Error fetching user:', error.response?.data || error.message);
           localStorage.removeItem('user');
           setUser(null);
           if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
-            console.log('Redirecting to /login from:', location.pathname);
+            console.log('App.tsx: Redirecting to /login from:', location.pathname);
             navigate('/login', { replace: true });
           }
         }
       } else {
         setUser(null);
         if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
-          console.log('Redirecting to /login from:', location.pathname);
+          console.log('App.tsx: Redirecting to /login from:', location.pathname);
           navigate('/login', { replace: true });
         }
       }
       setLoadingUser(false);
     };
     fetchUser();
-  }, [navigate]); // Only depend on navigate to avoid redirect loops
+  }, [navigate]);
 
   const handleLogout = () => {
-    console.log('Logging out user:', user?.email);
+    console.log('App.tsx: Logging out user:', user?.email);
     localStorage.removeItem('user');
     setUser(null);
     navigate('/login', { replace: true });
   };
 
   if (loadingUser) {
+    console.log('App.tsx: Loading user data...');
     return <div>Loading user data...</div>;
   }
 
