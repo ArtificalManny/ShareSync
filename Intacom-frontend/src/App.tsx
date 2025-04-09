@@ -70,7 +70,7 @@ function App() {
           console.error('Error fetching user in App:', error.response?.data || error.message);
           localStorage.removeItem('user');
           setUser(null);
-          // Only redirect to /login if not already on an auth-related page
+          // Only redirect to /login if not on an auth-related page
           if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
             console.log('Redirecting to /login from:', location.pathname);
             navigate('/login', { replace: true });
@@ -78,7 +78,7 @@ function App() {
         }
       } else {
         setUser(null);
-        // Only redirect to /login if not already on an auth-related page
+        // Only redirect to /login if not on an auth-related page
         if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
           console.log('Redirecting to /login from:', location.pathname);
           navigate('/login', { replace: true });
@@ -87,7 +87,7 @@ function App() {
       setLoadingUser(false);
     };
     fetchUser();
-  }, [navigate, location.pathname]);
+  }, [navigate]); // Remove location.pathname from dependencies to prevent redirect loop
 
   const handleCreateProject = async () => {
     if (!user) {
