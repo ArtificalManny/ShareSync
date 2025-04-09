@@ -13,6 +13,8 @@ function Register() {
   const [gender, setGender] = useState('');
   const [birthday, setBirthday] = useState({ month: '', day: '', year: '' });
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -38,6 +40,14 @@ function Register() {
       console.error('Register error:', err.response?.data || err.message);
       setError(err.response?.data?.message || 'An error occurred during registration');
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   return (
@@ -72,20 +82,52 @@ function Register() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{ paddingRight: '30px' }}
+          />
+          <span
+            onClick={togglePasswordVisibility}
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              cursor: 'pointer',
+              fontSize: '18px',
+            }}
+          >
+            {showPassword ? '👁️' : '👁️‍🗨️'}
+          </span>
+        </div>
+        <div style={{ position: 'relative' }}>
+          <input
+            type={showConfirmPassword ? 'text' : 'password'}
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            style={{ paddingRight: '30px' }}
+          />
+          <span
+            onClick={toggleConfirmPasswordVisibility}
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              cursor: 'pointer',
+              fontSize: '18px',
+            }}
+          >
+            {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+          </span>
+        </div>
         <select value={gender} onChange={(e) => setGender(e.target.value)} required>
           <option value="">Select Gender</option>
           <option value="Male">Male</option>

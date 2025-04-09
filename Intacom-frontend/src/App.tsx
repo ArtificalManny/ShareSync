@@ -70,16 +70,18 @@ function App() {
           console.error('Error fetching user in App:', error.response?.data || error.message);
           localStorage.removeItem('user');
           setUser(null);
+          // Only redirect to /login if not already on an auth-related page
           if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
             console.log('Redirecting to /login from:', location.pathname);
-            navigate('/login');
+            navigate('/login', { replace: true });
           }
         }
       } else {
         setUser(null);
+        // Only redirect to /login if not already on an auth-related page
         if (!['/login', '/register', '/recover', '/reset-password', '/verify-email'].includes(location.pathname)) {
           console.log('Redirecting to /login from:', location.pathname);
-          navigate('/login');
+          navigate('/login', { replace: true });
         }
       }
       setLoadingUser(false);
@@ -124,7 +126,7 @@ function App() {
     console.log('Logging out user:', user?.email);
     localStorage.removeItem('user');
     setUser(null);
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   if (loadingUser) {

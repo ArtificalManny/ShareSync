@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import './Login.css';
 
 interface LoginProps {
@@ -11,7 +11,7 @@ function Login({ setUser }: LoginProps) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,16 +25,15 @@ function Login({ setUser }: LoginProps) {
       setUser(response.data.data);
       localStorage.setItem('user', JSON.stringify(response.data.data));
       alert('Login successful!');
-      navigate('/');
+      window.location.href = '/'; // Use window.location.href to force a full page reload
     } catch (err: any) {
       console.error('Login error:', err.response?.data || err.message);
       setError(err.response?.data?.message || 'An error occurred during login');
     }
   };
 
-  const handleNavigate = (path: string) => {
-    console.log(`Navigating to ${path}`);
-    navigate(path);
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -48,26 +47,42 @@ function Login({ setUser }: LoginProps) {
           onChange={(e) => setIdentifier(e.target.value)}
           required
         />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{ paddingRight: '30px' }}
+          />
+          <span
+            onClick={togglePasswordVisibility}
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              cursor: 'pointer',
+              fontSize: '18px',
+            }}
+          >
+            {showPassword ? '👁️' : '👁️‍🗨️'}
+          </span>
+        </div>
         <button type="submit">Login</button>
       </form>
       {error && <p className="error" style={{ color: '#FF4444' }}>{error}</p>}
       <p>
-        <span style={{ color: '#00C4B4', cursor: 'pointer' }} onClick={() => handleNavigate('/recover')}>
+        <Link to="/recover" onClick={() => console.log('Navigating to /recover')}>
           Forgot Password?
-        </span>
+        </Link>
       </p>
       <p>
         Don't have an account?{' '}
-        <span style={{ color: '#00C4B4', cursor: 'pointer' }} onClick={() => handleNavigate('/register')}>
+        <Link to="/register" onClick={() => console.log('Navigating to /register')}>
           Register
-        </span>
+        </Link>
       </p>
     </div>
   );
