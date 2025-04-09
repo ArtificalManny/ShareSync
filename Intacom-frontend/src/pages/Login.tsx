@@ -16,24 +16,28 @@ function Login({ setUser }: LoginProps) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log('Logging in with:', { identifier, password });
+      console.log('Login.tsx: Logging in with:', { identifier, password });
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
         identifier,
         password,
       });
-      console.log('Login response:', response.data);
+      console.log('Login.tsx: Login response:', response.data);
       setUser(response.data.data);
       localStorage.setItem('user', JSON.stringify(response.data.data));
       alert('Login successful!');
       window.location.href = '/'; // Use window.location.href to force a full page reload
     } catch (err: any) {
-      console.error('Login error:', err.response?.data || err.message);
+      console.error('Login.tsx: Login error:', err.response?.data || err.message);
       setError(err.response?.data?.message || 'An error occurred during login');
     }
   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handleNavigation = (path: string) => {
+    console.log(`Login.tsx: Navigating to ${path}`);
   };
 
   return (
@@ -74,13 +78,13 @@ function Login({ setUser }: LoginProps) {
       </form>
       {error && <p className="error" style={{ color: '#FF4444' }}>{error}</p>}
       <p>
-        <Link to="/recover" onClick={() => console.log('Navigating to /recover')}>
+        <Link to="/recover" onClick={() => handleNavigation('/recover')}>
           Forgot Password?
         </Link>
       </p>
       <p>
         Don't have an account?{' '}
-        <Link to="/register" onClick={() => console.log('Navigating to /register')}>
+        <Link to="/register" onClick={() => handleNavigation('/register')}>
           Register
         </Link>
       </p>
