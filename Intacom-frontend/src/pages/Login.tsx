@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
 
 interface LoginProps {
@@ -32,6 +32,11 @@ function Login({ setUser }: LoginProps) {
     }
   };
 
+  const handleNavigate = (path: string) => {
+    console.log(`Navigating to ${path}`);
+    navigate(path);
+  };
+
   return (
     <div className="login-container">
       <h2>Login</h2>
@@ -54,15 +59,15 @@ function Login({ setUser }: LoginProps) {
       </form>
       {error && <p className="error" style={{ color: '#FF4444' }}>{error}</p>}
       <p>
-        <Link to="/recover" onClick={() => console.log('Navigating to /recover')}>
+        <span style={{ color: '#00C4B4', cursor: 'pointer' }} onClick={() => handleNavigate('/recover')}>
           Forgot Password?
-        </Link>
+        </span>
       </p>
       <p>
         Don't have an account?{' '}
-        <Link to="/register" onClick={() => console.log('Navigating to /register')}>
+        <span style={{ color: '#00C4B4', cursor: 'pointer' }} onClick={() => handleNavigate('/register')}>
           Register
-        </Link>
+        </span>
       </p>
     </div>
   );
