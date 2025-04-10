@@ -47,6 +47,8 @@ function App() {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/recover" element={<Recover />} />
+          {/* Catch-all route for unmatched paths */}
+          <Route path="*" element={<div>404 - Page Not Found</div>} />
         </Routes>
       </div>
     </div>

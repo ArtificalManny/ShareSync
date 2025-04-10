@@ -20,17 +20,8 @@ let PointsService = class PointsService {
     constructor(userModel) {
         this.userModel = userModel;
     }
-    async addPoints(userId, points, reason) {
-        console.log(`Adding ${points} points to user ${userId} for reason: ${reason || 'no reason specified'}`);
-        const user = await this.userModel.findById(userId).exec();
-        if (!user) {
-            throw new Error('User not found');
-        }
-        user.points += points;
-        return user.save();
-    }
-    async getLeaderboard() {
-        return this.userModel.find().sort({ points: -1 }).limit(10).exec();
+    async addPoints(userId, points) {
+        await this.userModel.updateOne({ _id: userId }, { $inc: { points } });
     }
 };
 exports.PointsService = PointsService;

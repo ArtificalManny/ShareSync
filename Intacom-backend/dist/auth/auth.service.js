@@ -64,12 +64,18 @@ let AuthService = class AuthService {
     }
     async validateUser(identifier, password) {
         console.log('Validating user with identifier:', identifier);
-        const user = await this.usersService.findByUsername(identifier) || await this.usersService.findByEmail(identifier);
+        console.log('Attempting to find user by username:', identifier);
+        let user = await this.usersService.findByUsername(identifier);
+        if (!user) {
+            console.log('User not found by username, attempting to find by email:', identifier);
+            user = await this.usersService.findByEmail(identifier);
+        }
         if (!user) {
             console.log('User not found for identifier:', identifier);
             throw new common_1.NotFoundException('User not found. Please register.');
         }
         console.log('User found:', user.email, 'with hashed password:', user.password);
+        console.log('Comparing password:', password, 'with stored hash:', user.password);
         const passwordMatch = await bcrypt.compare(password, user.password);
         console.log('Password match result:', passwordMatch);
         if (passwordMatch) {

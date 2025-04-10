@@ -7,17 +7,8 @@ import { User } from '../users/schemas/user.schema';
 export class PointsService {
   constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
 
-  async addPoints(userId: string, points: number, reason?: string): Promise<User> {
-    console.log(`Adding ${points} points to user ${userId} for reason: ${reason || 'no reason specified'}`);
-    const user = await this.userModel.findById(userId).exec();
-    if (!user) {
-      throw new Error('User not found');
-    }
-    user.points += points;
-    return user.save();
-  }
-
-  async getLeaderboard(): Promise<User[]> {
-    return this.userModel.find().sort({ points: -1 }).limit(10).exec();
+  // Example method
+  async addPoints(userId: string, points: number): Promise<void> {
+    await this.userModel.updateOne({ _id: userId }, { $inc: { points } });
   }
 }
