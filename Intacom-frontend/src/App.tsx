@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
 import Project from './pages/Project';
@@ -13,6 +13,16 @@ import Recover from './pages/Recover';
 import './App.css';
 
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  console.log('App.tsx: Current location:', location.pathname);
+
+  const handleLogout = () => {
+    console.log('App.tsx: Logging out');
+    navigate('/login', { replace: true });
+  };
+
   return (
     <div className="App">
       <nav className="navbar fixed-top">
@@ -20,7 +30,7 @@ function App() {
         <div className="navbar-links">
           <Link to="/">Home</Link>
           <Link to="/profile">Profile</Link>
-          <Link to="/login">Login</Link>
+          <button onClick={handleLogout}>Logout</button>
         </div>
       </nav>
 
