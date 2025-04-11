@@ -17,6 +17,19 @@ function App() {
   const location = useLocation();
 
   console.log('App.tsx: Current location:', location.pathname);
+  console.log('App.tsx: Routes defined:', [
+    '/',
+    '/projects',
+    '/project/:id',
+    '/profile',
+    '/notifications',
+    '/leaderboard',
+    '/login',
+    '/register',
+    '/verify-email',
+    '/reset-password',
+    '/recover',
+  ]);
 
   const handleLogout = () => {
     console.log('App.tsx: Logging out');
