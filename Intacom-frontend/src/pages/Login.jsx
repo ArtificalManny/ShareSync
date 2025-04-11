@@ -58,26 +58,15 @@ function Login({ setUser }) {
           onChange={(e) => setIdentifier(e.target.value)}
           required
         />
-        <div style={{ position: 'relative' }}>
+        <div className="password-container">
           <input
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ paddingRight: '30px' }}
           />
-          <span
-            onClick={togglePasswordVisibility}
-            style={{
-              position: 'absolute',
-              right: '10px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              cursor: 'pointer',
-              fontSize: '18px',
-            }}
-          >
+          <span onClick={togglePasswordVisibility} className="password-toggle">
             {showPassword ? '👁️' : '👁️‍🗨️'}
           </span>
         </div>

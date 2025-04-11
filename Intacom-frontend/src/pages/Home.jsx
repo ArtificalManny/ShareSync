@@ -61,7 +61,7 @@ function Home({ user }) {
   return (
     <div className="home-container">
       <div className="sidebar">
-        <button className="create-project-button" onClick={() => handleCreateProject(new FormDataEvent())}>
+        <button className="create-project-button" onClick={handleCreateProject}>
           Create Project
         </button>
         <h3>Notifications ({activity.length})</h3>

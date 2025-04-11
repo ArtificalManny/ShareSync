@@ -76,6 +76,10 @@ function App() {
   return (
     <div className="App">
       <nav className="navbar fixed-top">
+        {/* Move INTACOM logo to the top left. */}
+        <div className="navbar-brand">
+          INTACOM
+        </div>
         <div className="navbar-links">
           <Link
             to="/"
@@ -115,10 +119,6 @@ function App() {
           <button onClick={handleLogout} className="logout-button">
             Logout
           </button>
-        </div>
-        {/* Move INTACOM logo to the top right. */}
-        <div className="navbar-brand">
-          INTACOM
         </div>
       </nav>
 

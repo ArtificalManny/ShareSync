@@ -1,10 +1,12 @@
 /* From "The Art of Color" and "Why Fonts Matter": Use a cohesive color scheme and readable typography. */
 .App {
   font-family: 'Roboto', sans-serif; /* From "Thinking with Type": Choose a clean, modern font for readability. */
-  background-color: #f5f7fa; /* Light background for contrast (from "The Graphic Design Bible"). */
+  /* From "The Graphic Design Bible": Use a vibrant gradient for visual appeal. */
+  background: linear-gradient(135deg, #1a2a44 0%, #2c3e50 100%);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  color: #fff;
 }
 
 /* From "Design of Everyday Things": Ensure elements are discoverable and provide feedback. */
@@ -17,10 +19,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #1a2a44;
+  background: linear-gradient(90deg, #1a2a44 0%, #00c4b4 100%);
   padding: 10px 20px;
   /* From "Refactoring UI": Ensure responsive design with flexible layouts. */
   flex-wrap: wrap;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 /* From "Webs of Influence" by Nathalie Nahai: Use visual cues to guide user behavior. */
@@ -36,11 +39,29 @@
   color: #fff;
   text-decoration: none;
   font-size: 16px;
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, transform 0.3s ease;
+  /* From "Hooked": Add subtle animations for a dopamine hit. */
+  position: relative;
 }
 
 .navbar-links a:hover {
-  color: #00c4b4 !important; /* Highlight on hover for feedback (dopamine hit). */
+  color: #00c4b4 !important;
+  transform: translateY(-2px);
+}
+
+.navbar-links a::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background-color: #00c4b4;
+  transition: width 0.3s ease;
+}
+
+.navbar-links a:hover::after {
+  width: 100%;
 }
 
 .navbar-links .active-link {
@@ -57,17 +78,24 @@
   padding: 5px 10px;
   cursor: pointer;
   font-size: 16px;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 .navbar-links button.logout-button:hover {
   background-color: #009a8a;
+  transform: translateY(-2px);
 }
 
 .navbar-brand {
   color: #00c4b4;
   font-size: 24px;
   font-weight: bold;
+  /* From "The Graphic Design Bible": Add a subtle animation for branding. */
+  transition: transform 0.3s ease;
+}
+
+.navbar-brand:hover {
+  transform: scale(1.05);
 }
 
 /* Ensure content is responsive and doesn’t reframe on window minimization. */
@@ -95,7 +123,7 @@
   }
 
   .navbar-brand {
-    align-self: flex-end;
+    align-self: flex-start;
   }
 
   .content {

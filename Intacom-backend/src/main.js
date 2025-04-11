@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
 // From "The Effortless Experience": Ensure seamless integration between frontend and backend.
 dotenv.config();
@@ -45,14 +46,26 @@ async function bootstrap() {
   // From "The Customer Service Revolution": Ensure a frictionless experience by resolving cross-origin issues.
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:54693',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
+  });
+
+  // Debug CORS configuration.
+  app.use((req, res, next) => {
+    console.log('Request received:', req.method, req.url);
+    console.log('CORS Headers:', {
+      'Access-Control-Allow-Origin': res.get('Access-Control-Allow-Origin'),
+      'Access-Control-Allow-Methods': res.get('Access-Control-Allow-Methods'),
+      'Access-Control-Allow-Headers': res.get('Access-Control-Allow-Headers'),
+    });
+    next();
   });
 
   await connectWithRetry();
 
   await app.listen(3000);
+  console.log('Backend server running on http://localhost:3000');
 }
 
 bootstrap().catch((err) => {
