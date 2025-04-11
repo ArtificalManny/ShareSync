@@ -11,11 +11,11 @@ function Recover() {
     e.preventDefault();
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/forgot-password`, { email });
-      console.log('Recover response:', response.data);
+      console.log('Recover.tsx: Recover response:', response.data);
       setMessage('A reset link has been sent to your email.');
       setError(null);
     } catch (err: any) {
-      console.error('Recover error:', err.response?.data || err.message);
+      console.error('Recover.tsx: Recover error:', err.response?.data || err.message);
       setError(err.response?.data?.message || 'An error occurred while sending the reset link');
       setMessage(null);
     }

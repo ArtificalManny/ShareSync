@@ -23,6 +23,13 @@ let PointsService = class PointsService {
     async addPoints(userId, points) {
         await this.userModel.updateOne({ _id: userId }, { $inc: { points } });
     }
+    async getLeaderboard() {
+        return this.userModel
+            .find()
+            .sort({ points: -1 })
+            .limit(10)
+            .exec();
+    }
 };
 exports.PointsService = PointsService;
 exports.PointsService = PointsService = __decorate([

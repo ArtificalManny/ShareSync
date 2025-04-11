@@ -1,60 +1,50 @@
-.recover {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    background-color: #1a1a2e;
-    color: #e0e0e0;
-  }
-  
-  .recover h1 {
-    margin-bottom: 2rem;
-  }
-  
-  .recover form {
-    display: flex;
-    flex-direction: column;
-    width: 300px;
-  }
-  
-  .recover input {
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-    border: none;
-    border-radius: 4px;
-    background: #16213e;
-    color: #e0e0e0;
-  }
-  
-  .recover button {
-    padding: 0.5rem;
-    border: none;
-    border-radius: 4px;
-    background: #00ff00;
-    color: #1a1a2e;
-    cursor: pointer;
-  }
-  
-  .recover button:hover {
-    background: #00cc00;
-  }
-  
-  .recover .error {
-    color: #ff4444;
-    margin-top: 1rem;
-  }
-  
-  .recover .success {
-    color: #00ff00;
-    margin-top: 1rem;
-  }
-  
-  .recover a {
-    color: #00ff00;
-    text-decoration: none;
-  }
-  
-  .recover a:hover {
-    text-decoration: underline;
-  }
+.recover-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #1a2a44;
+  color: #fff;
+}
+
+.recover-container h2 {
+  color: #00c4b4;
+  margin-bottom: 20px;
+}
+
+.recover-container form {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+}
+
+.recover-container input {
+  margin-bottom: 15px;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.recover-container button {
+  padding: 10px;
+  background-color: #00c4b4;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.recover-container button:hover {
+  background-color: #009a8a;
+}
+
+.success {
+  margin-top: 15px;
+}
+
+.error {
+  margin-top: 15px;
+}

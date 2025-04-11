@@ -17,13 +17,7 @@ let PointsController = class PointsController {
         this.pointsService = pointsService;
     }
     async getLeaderboard() {
-        try {
-            return await this.pointsService.getLeaderboard();
-        }
-        catch (error) {
-            console.error('Error in getLeaderboard:', error);
-            throw error;
-        }
+        return await this.pointsService.getLeaderboard();
     }
 };
 exports.PointsController = PointsController;
