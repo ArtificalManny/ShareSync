@@ -20,8 +20,11 @@ let PointsService = class PointsService {
     constructor(userModel) {
         this.userModel = userModel;
     }
-    async addPoints(userId, points) {
+    async addPoints(userId, points, reason) {
         await this.userModel.updateOne({ _id: userId }, { $inc: { points } });
+        if (reason) {
+            console.log(`Added ${points} points to user ${userId} for reason: ${reason}`);
+        }
     }
     async getLeaderboard() {
         return this.userModel

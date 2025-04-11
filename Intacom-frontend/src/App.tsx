@@ -30,6 +30,9 @@ function App() {
         <div className="navbar-links">
           <Link to="/">Home</Link>
           <Link to="/profile">Profile</Link>
+          <Link to="/login">Login</Link>
+          <Link to="/register">Register</Link>
+          <Link to="/recover">Recover</Link>
           <button onClick={handleLogout}>Logout</button>
         </div>
       </nav>
@@ -55,6 +58,7 @@ function App() {
 }
 
 export default function AppWrapper() {
+  console.log('AppWrapper: Rendering Router');
   return (
     <Router>
       <App />

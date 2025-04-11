@@ -7,11 +7,13 @@ import { User } from '../users/schemas/user.schema';
 export class PointsService {
   constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
 
-  async addPoints(userId: string, points: number): Promise<void> {
+  async addPoints(userId: string, points: number, reason?: string): Promise<void> {
     await this.userModel.updateOne({ _id: userId }, { $inc: { points } });
+    if (reason) {
+      console.log(`Added ${points} points to user ${userId} for reason: ${reason}`);
+    }
   }
 
-  // Add getLeaderboard method
   async getLeaderboard(): Promise<User[]> {
     return this.userModel
       .find()
