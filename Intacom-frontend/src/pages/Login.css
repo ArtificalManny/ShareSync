@@ -1,59 +1,62 @@
-.login {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    background-color: #1a1a2e;
-    color: #e0e0e0;
-  }
-  
-  .login h1 {
-    margin-bottom: 4rem; /* Increased margin to lower the logo */
-    font-size: 2.5rem;
-    background: linear-gradient(90deg, #00ff00, #00ffff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  
-  .login form {
-    display: flex;
-    flex-direction: column;
-    width: 300px;
-  }
-  
-  .login input {
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-    border: none;
-    border-radius: 4px;
-    background: #16213e;
-    color: #e0e0e0;
-  }
-  
-  .login button {
-    padding: 0.5rem;
-    border: none;
-    border-radius: 4px;
-    background: #ffffff;
-    color: #1a1a2e;
-    cursor: pointer;
-  }
-  
-  .login button:hover {
-    background: #e0e0e0;
-  }
-  
-  .login .error {
-    color: #ff4444;
-    margin-top: 1rem;
-  }
-  
-  .login a {
-    color: #00ff00;
-    text-decoration: none;
-  }
-  
-  .login a:hover {
-    text-decoration: underline;
-  }
+/* From "Best Interface Is No Interface" and "Design of Everyday Things": Keep the interface simple and intuitive. */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #1a2a44;
+  color: #fff;
+  padding: 20px;
+}
+
+/* From "Articulating Design Decisions": Ensure elements are visually distinct and purposeful. */
+.login-container h2 {
+  color: #00c4b4;
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.login-container form {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+}
+
+/* From "100 Things Every Designer Needs to Know About People": Use spacing and alignment to reduce cognitive load. */
+.login-container input {
+  margin-bottom: 15px;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.login-container button {
+  padding: 10px;
+  background-color: #00c4b4;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.login-container button:hover {
+  background-color: #009a8a;
+}
+
+.error {
+  margin-top: 15px;
+}
+
+/* From "Webs of Influence" by Nathalie Nahai: Use color to influence user behavior. */
+.login-container a {
+  color: #00c4b4;
+  transition: color 0.3s ease;
+}
+
+.login-container a:hover {
+  color: #009a8a;
+}

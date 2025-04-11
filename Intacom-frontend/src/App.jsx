@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
 import Project from './pages/Project';
@@ -11,133 +9,158 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import ResetPassword from './pages/ResetPassword';
+import Recover from './pages/Recover';
 import './App.css';
 
+// Design principles from "Don't Make Me Think" and "Designing Interfaces":
+// - Navigation should be intuitive, with clear labels and immediate feedback.
+// - Use visual hierarchy (from "Thinking with Type" and "The Graphic Design Bible") to make navigation elements stand out.
+// - Apply "Hooked" and Freud's Id/Ego/Superego: Provide a dopamine hit by making navigation rewarding (e.g., subtle animations or notifications).
 function App() {
-  const [user, setUser] = useState(null);
-  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
-  const [newProject, setNewProject] = useState({ name: '', description: '', color: '#000000', sharedWith: [] });
   const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        try {
-          const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${parsedUser.username}`);
-          const fetchedUser = response.data.data;
-          setUser(fetchedUser);
-          localStorage.setItem('user', JSON.stringify(fetchedUser));
-        } catch (error) {
-          console.error('Error fetching user in App:', error);
-          localStorage.removeItem('user');
-          setUser(null);
-          navigate('/login');
-        }
-      } else {
-        navigate('/login');
-      }
-    };
-    fetchUser();
-  }, [navigate]);
-
-  const handleCreateProject = async () => {
-    if (!user) {
-      alert('Please log in to create a project');
-      navigate('/login');
-      return;
-    }
-    try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
-        name: newProject.name,
-        description: newProject.description,
-        admin: user._id,
-        color: newProject.color,
-        sharedWith: newProject.sharedWith,
-      });
-      console.log('Project created:', response.data);
-      setShowCreateProjectModal(false);
-      setNewProject({ name: '', description: '', color: '#000000', sharedWith: [] });
-      navigate(`/project/${response.data.data._id}`);
-      // Provide a dopamine hit with a success notification
-      alert('Project created successfully!');
-    } catch (error) {
-      console.error('Error creating project:', error);
-      alert('Failed to create project. Please try again.');
-    }
-  };
+  console.log('App.jsx: Current location:', location.pathname);
+  console.log('App.jsx: Routes defined:', [
+    '/',
+    '/projects',
+    '/project/:id',
+    '/profile',
+    '/notifications',
+    '/leaderboard',
+    '/login',
+    '/register',
+    '/verify-email',
+    '/reset-password',
+    '/recover',
+  ]);
 
   const handleLogout = () => {
+    console.log('App.jsx: Logging out');
     localStorage.removeItem('user');
-    setUser(null);
-    navigate('/login');
+    navigate('/login', { replace: true });
+  };
+
+  // From "The Effortless Experience" and "Delivering Happiness":
+  // - Make navigation effortless by providing clear, predictable paths.
+  // - Enhance user delight with subtle animations (dopamine hit).
+  const handleNavigation = (path) => {
+    console.log(`App.jsx: Navigating to ${path}`);
+    navigate(path);
+    // Simulate a dopamine hit with a subtle notification or animation (from "Hooked").
+    alert(`Navigating to ${path} - Great choice!`); // Placeholder for a more engaging UI effect.
   };
 
   return (
     <div className="App">
-      <nav className="navbar">
-        <div className="navbar-brand">INTACOM</div>
-        <div className="navbar-links">
-          <Link to="/">Home</Link>
-          <Link to="/profile">Profile</Link>
-          <button onClick={() => setShowCreateProjectModal(true)}>Create Project</button>
-          <button onClick={handleLogout}>Logout</button>
+      <nav className="navbar fixed-top" style={{ backgroundColor: '#1a2a44', padding: '10px 20px' }}>
+        <div className="navbar-brand" style={{ color: '#00c4b4', fontSize: '24px', fontWeight: 'bold' }}>
+          INTACOM
         </div>
-        {user && (
-          <div className="profile-circle">
-            <img
-              src={user.profilePic || 'https://via.placeholder.com/40'}
-              alt="Profile"
-              style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
-            />
-          </div>
-        )}
+        <div className="navbar-links" style={{ display: 'flex', gap: '15px' }}>
+          {/* From "Refactoring UI": Use clear, contrasting colors for links to make them stand out. */}
+          <Link
+            to="/"
+            onClick={() => handleNavigation('/')}
+            style={{
+              color: location.pathname === '/' ? '#00c4b4' : '#fff',
+              textDecoration: 'none',
+              fontSize: '16px',
+              transition: 'color 0.3s ease',
+            }}
+          >
+            Home
+          </Link>
+          <Link
+            to="/profile"
+            onClick={() => handleNavigation('/profile')}
+            style={{
+              color: location.pathname === '/profile' ? '#00c4b4' : '#fff',
+              textDecoration: 'none',
+              fontSize: '16px',
+              transition: 'color 0.3s ease',
+            }}
+          >
+            Profile
+          </Link>
+          <Link
+            to="/projects"
+            onClick={() => handleNavigation('/projects')}
+            style={{
+              color: location.pathname === '/projects' ? '#00c4b4' : '#fff',
+              textDecoration: 'none',
+              fontSize: '16px',
+              transition: 'color 0.3s ease',
+            }}
+          >
+            Projects
+          </Link>
+          <Link
+            to="/notifications"
+            onClick={() => handleNavigation('/notifications')}
+            style={{
+              color: location.pathname === '/notifications' ? '#00c4b4' : '#fff',
+              textDecoration: 'none',
+              fontSize: '16px',
+              transition: 'color 0.3s ease',
+            }}
+          >
+            Notifications
+          </Link>
+          <Link
+            to="/leaderboard"
+            onClick={() => handleNavigation('/leaderboard')}
+            style={{
+              color: location.pathname === '/leaderboard' ? '#00c4b4' : '#fff',
+              textDecoration: 'none',
+              fontSize: '16px',
+              transition: 'color 0.3s ease',
+            }}
+          >
+            Leaderboard
+          </Link>
+          <button
+            onClick={handleLogout}
+            style={{
+              backgroundColor: '#00c4b4',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '5px',
+              padding: '5px 10px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              transition: 'background-color 0.3s ease',
+            }}
+            onMouseOver={(e) => (e.target.style.backgroundColor = '#009a8a')}
+            onMouseOut={(e) => (e.target.style.backgroundColor = '#00c4b4')}
+          >
+            Logout
+          </button>
+        </div>
       </nav>
 
-      {showCreateProjectModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h2>Create a New Project</h2>
-            <input
-              type="text"
-              placeholder="Project Name"
-              value={newProject.name}
-              onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-            />
-            <textarea
-              placeholder="Description"
-              value={newProject.description}
-              onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-            />
-            <input
-              type="color"
-              value={newProject.color}
-              onChange={(e) => setNewProject({ ...newProject, color: e.target.value })}
-            />
-            <button onClick={handleCreateProject}>Create</button>
-            <button onClick={() => setShowCreateProjectModal(false)}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      <Routes>
-        <Route path="/" element={<Home user={user} />} />
-        <Route path="/projects" element={<Projects user={user} />} />
-        <Route path="/project/:id" element={<Project user={user} />} />
-        <Route path="/profile" element={<Profile user={user} />} />
-        <Route path="/notifications" element={<Notifications user={user} />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/login" element={<Login setUser={setUser} />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-      </Routes>
+      <div className="content" style={{ paddingTop: '60px' }}>
+        <Routes>
+          <Route path="/" element={<Home user={null} />} />
+          <Route path="/projects" element={<Projects user={null} />} />
+          <Route path="/project/:id" element={<Project user={null} />} />
+          <Route path="/profile" element={<Profile user={null} />} />
+          <Route path="/notifications" element={<Notifications user={null} />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/login" element={<Login setUser={() => {}} />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/recover" element={<Recover />} />
+          <Route path="*" element={<div>404 - Page Not Found</div>} />
+        </Routes>
+      </div>
     </div>
   );
 }
 
 export default function AppWrapper() {
+  console.log('AppWrapper: Rendering Router');
   return (
     <Router>
       <App />
