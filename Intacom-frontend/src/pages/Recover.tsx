@@ -5,21 +5,20 @@ import './Recover.css';
 // From "The Customer Service Revolution" and "The Apple Experience":
 // - Make the forgot password process seamless and delightful with clear feedback.
 // - Apply "Hooked" and Freud's Id/Ego/Superego: Provide a dopamine hit on successful request.
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'; // Fallback to default if VITE_API_URL is undefined.
+const API_URL = '/auth'; // Use proxy path instead of full URL.
 
 function Recover() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  console.log('Recover.tsx: VITE_API_URL:', import.meta.env.VITE_API_URL);
   console.log('Recover.tsx: API_URL:', API_URL);
 
   const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       console.log('Recover.tsx: Sending forgot password request for email:', email);
-      const response = await axios.post(`${API_URL}/auth/forgot-password`, { email });
+      const response = await axios.post(`${API_URL}/forgot-password`, { email });
       console.log('Recover.tsx: Forgot password response:', response.data);
       setMessage(response.data.message || 'A reset link has been sent to your email.');
       setError(null);

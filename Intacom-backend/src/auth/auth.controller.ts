@@ -9,10 +9,10 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
-    console.log('AuthController: Login request received:', loginDto);
+    console.log('AuthController: Login request received:', JSON.stringify(loginDto, null, 2));
     try {
       const user = await this.authService.login(loginDto);
-      console.log('AuthController: Login successful:', user);
+      console.log('AuthController: Login successful:', JSON.stringify(user, null, 2));
       return {
         status: 'success',
         message: 'Login successful',
@@ -29,10 +29,10 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
-    console.log('AuthController: Register request received:', registerDto);
+    console.log('AuthController: Register request received:', JSON.stringify(registerDto, null, 2));
     try {
       const user = await this.authService.register(registerDto);
-      console.log('AuthController: Register successful:', user);
+      console.log('AuthController: Register successful:', JSON.stringify(user, null, 2));
       return {
         status: 'success',
         message: 'User registered successfully. Please verify your email.',
@@ -49,7 +49,7 @@ export class AuthController {
 
   @Post('forgot-password')
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
-    console.log('AuthController: Forgot password request received:', forgotPasswordDto);
+    console.log('AuthController: Forgot password request received:', JSON.stringify(forgotPasswordDto, null, 2));
     try {
       await this.authService.forgotPassword(forgotPasswordDto.email);
       console.log('AuthController: Forgot password email sent');
@@ -68,7 +68,7 @@ export class AuthController {
 
   @Post('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
-    console.log('AuthController: Reset password request received:', resetPasswordDto);
+    console.log('AuthController: Reset password request received:', JSON.stringify(resetPasswordDto, null, 2));
     try {
       await this.authService.resetPassword(
         resetPasswordDto.token,
