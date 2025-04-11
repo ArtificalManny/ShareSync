@@ -1,30 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
-// Load environment variables from .env file
+// From "The Effortless Experience": Ensure seamless integration between frontend and backend.
 dotenv.config();
 
 async function connectWithRetry() {
   let retries = 5;
   while (retries > 0) {
     try {
-      console.log('Environment variables loaded:');
-      console.log('MONGODB_URI:', process.env.MONGODB_URI);
-      console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
-      console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
-      console.log('EMAIL_USER:', process.env.EMAIL_USER);
-      console.log('EMAIL_PASS:', process.env.EMAIL_PASS);
-      console.log('S3_BUCKET:', process.env.S3_BUCKET);
-      console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
-
-      if (!process.env.MONGODB_URI) {
-        throw new Error('MONGODB_URI is not defined in the environment variables');
-      }
-
       console.log('Connecting to MongoDB...');
-      await mongoose.connect(process.env.MONGODB_URI);
+      await mongoose.connect(process.env.MONGODB_URI!, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      } as mongoose.ConnectOptions);
       console.log('MongoDB connection successful');
       break;
     } catch (err) {
@@ -34,23 +24,60 @@ async function connectWithRetry() {
         throw err;
       }
       console.log('Retrying in 5 seconds...');
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
 }
 
 async function bootstrap() {
-  // Enable Mongoose debug logging
-  mongoose.set('debug', true);
-
-  // Connect to MongoDB with retry logic
-  await connectWithRetry();
+  // Load environment variables for debugging.
+  console.log('Environment variables loaded:');
+  console.log('MONGODB_URI:', process.env.MONGODB_URI);
+  console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
+  console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
+  console.log('EMAIL_USER:', process.env.EMAIL_USER);
+  console.log('EMAIL_PASS:', process.env.EMAIL_PASS);
+  console.log('S3_BUCKET:', process.env.S3_BUCKET);
+  console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
 
   const app = await NestFactory.create(AppModule);
+
+  // Enable CORS to allow requests from the frontend origin.
+  // From "The Customer Service Revolution": Ensure a frictionless experience by resolving cross-origin issues.
+  app.enableCors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:54693',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+    credentials: true,
+  });
+
+  // Debug CORS configuration by logging all incoming requests and their headers.
+  app.use((req: any, res: any, next: () => void) => {
+    console.log('Request received:', req.method, req.url);
+    res.set('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:54693');
+    res.set('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    console.log('CORS Headers Set:', {
+      'Access-Control-Allow-Origin': res.get('Access-Control-Allow-Origin'),
+      'Access-Control-Allow-Methods': res.get('Access-Control-Allow-Methods'),
+      'Access-Control-Allow-Headers': res.get('Access-Control-Allow-Headers'),
+      'Access-Control-Allow-Credentials': res.get('Access-Control-Allow-Credentials'),
+    });
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+    next();
+  });
+
+  await connectWithRetry();
+
   await app.listen(3000);
+  console.log('Backend server running on http://localhost:3000');
 }
 
-bootstrap().catch(err => {
+bootstrap().catch((err) => {
   console.error('Failed to start the application:', err);
   process.exit(1);
 });

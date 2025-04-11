@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import { PointsModule } from './points/points.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -11,9 +12,10 @@ import { PointsModule } from './points/points.module';
         uri: process.env.MONGODB_URI,
       }),
     }),
-    UsersModule,
     AuthModule,
+    UsersModule,
     PointsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

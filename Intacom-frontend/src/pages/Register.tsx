@@ -3,6 +3,11 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './Register.css';
 
+// From "The Customer Service Revolution" and "The Apple Experience":
+// - Make the registration process seamless and delightful with clear feedback.
+// - Apply "Hooked" and Freud's Id/Ego/Superego: Provide a dopamine hit on successful registration.
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'; // Fallback to default if VITE_API_URL is undefined.
+
 function Register() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -17,6 +22,9 @@ function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
+  console.log('Register.tsx: VITE_API_URL:', import.meta.env.VITE_API_URL);
+  console.log('Register.tsx: API_URL:', API_URL);
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
@@ -24,7 +32,8 @@ function Register() {
       return;
     }
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, {
+      console.log('Register.tsx: Registering user with email:', email);
+      const response = await axios.post(`${API_URL}/auth/register`, {
         firstName,
         lastName,
         username,
@@ -34,7 +43,8 @@ function Register() {
         birthday,
       });
       console.log('Register.tsx: Register response:', response.data);
-      alert('User registered successfully. Please verify your email.');
+      // From "Hooked" and Freud's Id: Provide a dopamine hit on successful registration.
+      alert('User registered successfully! Welcome to INTACOM!'); // Placeholder for a more engaging UI effect.
       navigate('/login', { replace: true });
     } catch (err: any) {
       console.error('Register.tsx: Register error:', err.response?.data || err.message);
@@ -82,49 +92,27 @@ function Register() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <div style={{ position: 'relative' }}>
+        <div className="password-container">
           <input
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ paddingRight: '30px' }}
           />
-          <span
-            onClick={togglePasswordVisibility}
-            style={{
-              position: 'absolute',
-              right: '10px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              cursor: 'pointer',
-              fontSize: '18px',
-            }}
-          >
+          <span onClick={togglePasswordVisibility} className="password-toggle">
             {showPassword ? '👁️' : '👁️‍🗨️'}
           </span>
         </div>
-        <div style={{ position: 'relative' }}>
+        <div className="password-container">
           <input
             type={showConfirmPassword ? 'text' : 'password'}
             placeholder="Confirm Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
-            style={{ paddingRight: '30px' }}
           />
-          <span
-            onClick={toggleConfirmPasswordVisibility}
-            style={{
-              position: 'absolute',
-              right: '10px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              cursor: 'pointer',
-              fontSize: '18px',
-            }}
-          >
+          <span onClick={toggleConfirmPasswordVisibility} className="password-toggle">
             {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
           </span>
         </div>
@@ -159,7 +147,7 @@ function Register() {
         </div>
         <button type="submit">Register</button>
       </form>
-      {error && <p className="error" style={{ color: '#FF4444' }}>{error}</p>}
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

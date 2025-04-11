@@ -1,31 +1,37 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
 
-interface LoginProps {
-  setUser: (user: any) => void;
-}
+// From "The Customer Service Revolution" and "The Apple Experience":
+// - Make the login process seamless and delightful with clear feedback.
+// - Apply "Hooked" and Freud's Id/Ego/Superego: Provide a dopamine hit on successful login.
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'; // Fallback to default if VITE_API_URL is undefined.
 
-function Login({ setUser }: LoginProps) {
+function Login({ setUser }) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+
+  console.log('Login.tsx: VITE_API_URL:', import.meta.env.VITE_API_URL);
+  console.log('Login.tsx: API_URL:', API_URL);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       console.log('Login.tsx: Logging in with:', { identifier, password });
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
+      const response = await axios.post(`${API_URL}/auth/login`, {
         identifier,
         password,
       });
       console.log('Login.tsx: Login response:', response.data);
       setUser(response.data.data);
       localStorage.setItem('user', JSON.stringify(response.data.data));
-      alert('Login successful!');
-      window.location.href = '/'; // Use window.location.href to force a full page reload
+      // From "Hooked" and Freud's Id: Provide a dopamine hit on successful login.
+      alert('Login successful! Welcome back!'); // Placeholder for a more engaging UI effect.
+      navigate('/'); // Redirect to home page.
     } catch (err: any) {
       console.error('Login.tsx: Login error:', err.response?.data || err.message);
       setError(err.response?.data?.message || 'An error occurred during login');
@@ -38,6 +44,7 @@ function Login({ setUser }: LoginProps) {
 
   const handleNavigation = (path: string) => {
     console.log(`Login.tsx: Navigating to ${path}`);
+    navigate(path);
   };
 
   return (
@@ -51,32 +58,21 @@ function Login({ setUser }: LoginProps) {
           onChange={(e) => setIdentifier(e.target.value)}
           required
         />
-        <div style={{ position: 'relative' }}>
+        <div className="password-container">
           <input
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ paddingRight: '30px' }}
           />
-          <span
-            onClick={togglePasswordVisibility}
-            style={{
-              position: 'absolute',
-              right: '10px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              cursor: 'pointer',
-              fontSize: '18px',
-            }}
-          >
+          <span onClick={togglePasswordVisibility} className="password-toggle">
             {showPassword ? '👁️' : '👁️‍🗨️'}
           </span>
         </div>
         <button type="submit">Login</button>
       </form>
-      {error && <p className="error" style={{ color: '#FF4444' }}>{error}</p>}
+      {error && <p className="error">{error}</p>}
       <p>
         <Link to="/recover" onClick={() => handleNavigation('/recover')}>
           Forgot Password?
