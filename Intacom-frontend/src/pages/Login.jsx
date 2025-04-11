@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
 
 // From "The Customer Service Revolution" and "The Apple Experience":
@@ -13,6 +13,7 @@ function Login({ setUser }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   console.log('Login.jsx: VITE_API_URL:', import.meta.env.VITE_API_URL);
   console.log('Login.jsx: API_URL:', API_URL);
@@ -30,7 +31,7 @@ function Login({ setUser }) {
       localStorage.setItem('user', JSON.stringify(response.data.data));
       // From "Hooked" and Freud's Id: Provide a dopamine hit on successful login.
       alert('Login successful! Welcome back!'); // Placeholder for a more engaging UI effect.
-      window.location.href = '/'; // Use window.location.href to force a full page reload.
+      navigate('/'); // Redirect to home page.
     } catch (err) {
       console.error('Login.jsx: Login error:', err.response?.data || err.message);
       setError(err.response?.data?.message || 'An error occurred during login');
@@ -43,11 +44,12 @@ function Login({ setUser }) {
 
   const handleNavigation = (path) => {
     console.log(`Login.jsx: Navigating to ${path}`);
+    navigate(path);
   };
 
   return (
     <div className="login-container">
-      <h2 style={{ color: '#00c4b4', marginBottom: '20px' }}>Login</h2>
+      <h2>Login</h2>
       <form onSubmit={handleLogin}>
         <input
           type="text"
@@ -55,32 +57,15 @@ function Login({ setUser }) {
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
           required
-          style={{
-            marginBottom: '15px',
-            padding: '10px',
-            border: 'none',
-            borderRadius: '5px',
-            fontSize: '16px',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
         />
-        <div style={{ position: 'relative', marginBottom: '15px' }}>
+        <div style={{ position: 'relative' }}>
           <input
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{
-              padding: '10px',
-              paddingRight: '30px',
-              border: 'none',
-              borderRadius: '5px',
-              fontSize: '16px',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}
+            style={{ paddingRight: '30px' }}
           />
           <span
             onClick={togglePasswordVisibility}
@@ -96,46 +81,17 @@ function Login({ setUser }) {
             {showPassword ? '👁️' : '👁️‍🗨️'}
           </span>
         </div>
-        <button
-          type="submit"
-          style={{
-            padding: '10px',
-            backgroundColor: '#00c4b4',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '5px',
-            fontSize: '16px',
-            cursor: 'pointer',
-            width: '100%',
-            transition: 'background-color 0.3s ease',
-          }}
-          onMouseOver={(e) => (e.target.style.backgroundColor = '#009a8a')}
-          onMouseOut={(e) => (e.target.style.backgroundColor = '#00c4b4')}
-        >
-          Login
-        </button>
+        <button type="submit">Login</button>
       </form>
-      {error && (
-        <p className="error" style={{ color: '#FF4444', marginTop: '15px' }}>
-          {error}
-        </p>
-      )}
-      <p style={{ marginTop: '15px', color: '#fff' }}>
-        <Link
-          to="/recover"
-          onClick={() => handleNavigation('/recover')}
-          style={{ color: '#00c4b4', textDecoration: 'none' }}
-        >
+      {error && <p className="error">{error}</p>}
+      <p>
+        <Link to="/recover" onClick={() => handleNavigation('/recover')}>
           Forgot Password?
         </Link>
       </p>
-      <p style={{ color: '#fff' }}>
+      <p>
         Don't have an account?{' '}
-        <Link
-          to="/register"
-          onClick={() => handleNavigation('/register')}
-          style={{ color: '#00c4b4', textDecoration: 'none' }}
-        >
+        <Link to="/register" onClick={() => handleNavigation('/register')}>
           Register
         </Link>
       </p>

@@ -1,129 +1,83 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Home.css';
 
+// From "Escaping Build Trap": Focus on user outcomes by providing actionable insights.
+// From "Articulating Design Decisions": Use a grid layout for clarity and structure.
+// From "Hooked" and Freud's Id/Ego/Superego: Provide dopamine hits through interactive elements.
 function Home({ user }) {
-  const [projects, setProjects] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
-  const [newProject, setNewProject] = useState({ name: '', description: '', color: '#000000', sharedWith: [] });
-  const navigate = useNavigate();
+  const [projects, setProjects] = useState({ total: 0, current: 0, past: 0 });
+  const [tasks, setTasks] = useState(0);
+  const [activity, setActivity] = useState([]);
+  const [newProject, setNewProject] = useState({
+    name: '',
+    description: '',
+    color: '#00C4B4',
+    sharedWith: [],
+  });
+  const [error, setError] = useState(null);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      if (!user) return;
+    // Fetch project overview, tasks, and team activity.
+    const fetchData = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
-        setProjects(response.data);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
+        // Placeholder data for now; replace with actual API calls.
+        setProjects({ total: 0, current: 0, past: 0 });
+        setTasks(14); // Placeholder.
+        setActivity([]); // Placeholder.
+      } catch (err) {
+        console.error('Home.jsx: Error fetching data:', err);
+        setError('Failed to load data.');
       }
     };
+    fetchData();
+  }, []);
 
-    const fetchNotifications = async () => {
-      if (!user) return;
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
-        setNotifications(response.data);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-      }
-    };
-
-    fetchProjects();
-    fetchNotifications();
-  }, [user]);
-
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (e) => {
+    e.preventDefault();
     if (!user) {
-      alert('Please log in to create a project');
-      navigate('/login');
+      alert('Please log in to create a project.');
       return;
     }
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
-        name: newProject.name,
-        description: newProject.description,
+      const response = await axios.post(`${API_URL}/projects`, {
+        ...newProject,
         admin: user._id,
-        color: newProject.color,
-        sharedWith: newProject.sharedWith,
       });
-      console.log('Project created:', response.data);
-      setShowCreateProjectModal(false);
-      setNewProject({ name: '', description: '', color: '#000000', sharedWith: [] });
-      navigate(`/project/${response.data.data._id}`);
-      // Provide a dopamine hit with a success notification
-      alert('Project created successfully!');
-    } catch (error) {
-      console.error('Error creating project:', error);
-      alert('Failed to create project. Please try again.');
+      console.log('Home.jsx: Project creation response:', response.data);
+      // From "Hooked" and Freud's Id: Provide a dopamine hit on successful project creation.
+      alert('Project created successfully! Great work!'); // Placeholder for a more engaging UI effect.
+      setNewProject({ name: '', description: '', color: '#00C4B4', sharedWith: [] });
+      // Refresh project overview.
+      setProjects({ ...projects, total: projects.total + 1, current: projects.current + 1 });
+    } catch (err) {
+      console.error('Home.jsx: Error creating project:', err.response?.data || err.message);
+      setError('Failed to create project.');
     }
   };
 
   return (
-    <div className="home">
+    <div className="home-container">
       <div className="sidebar">
-        <h2>Projects</h2>
-        {projects.map((project) => (
-          <Link key={project._id} to={`/project/${project._id}`} className="project-link">
-            <div className="project-item" style={{ backgroundColor: project.color }}>
-              {project.name}
-            </div>
-          </Link>
-        ))}
-        <button onClick={() => setShowCreateProjectModal(true)}>Create Project</button>
-        <h2>Notifications ({notifications.length})</h2>
-        {notifications.length === 0 ? (
-          <p>No notifications yet.</p>
-        ) : (
-          notifications.map((notification) => (
-            <div key={notification._id} className="notification">
-              {notification.message} - {new Date(notification.createdAt).toLocaleString()}
-            </div>
-          ))
-        )}
+        <button className="create-project-button" onClick={() => handleCreateProject(new FormDataEvent())}>
+          Create Project
+        </button>
+        <h3>Notifications ({activity.length})</h3>
+        <p>{activity.length === 0 ? 'No notifications yet.' : 'Recent activity...'}</p>
       </div>
       <div className="main-content">
-        <h1>Home</h1>
-        <div className="overview">
-          <div className="overview-item">
-            <h2>Project Overview</h2>
-            <div className="overview-stats">
-              <div>
-                <h3>Total Projects</h3>
-                <p>{projects.length}</p>
-              </div>
-              <div>
-                <h3>Current Projects</h3>
-                <p>{projects.filter((p) => p.status === 'current').length}</p>
-              </div>
-              <div>
-                <h3>Past Projects</h3>
-                <p>{projects.filter((p) => p.status === 'past').length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="overview-item">
-            <h2>Tasks Completed</h2>
-            <p>14</p>
-          </div>
-          <div className="overview-item">
-            <h2>Team Activity</h2>
-            <p>0 updates</p>
-          </div>
-        </div>
-      </div>
-
-      {showCreateProjectModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h2>Create a New Project</h2>
+        <div className="create-project-section">
+          <h2>Create a New Project</h2>
+          {error && <p className="error">{error}</p>}
+          <form onSubmit={handleCreateProject} className="project-form">
             <input
               type="text"
               placeholder="Project Name"
               value={newProject.name}
               onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+              required
             />
             <textarea
               placeholder="Description"
@@ -135,11 +89,53 @@ function Home({ user }) {
               value={newProject.color}
               onChange={(e) => setNewProject({ ...newProject, color: e.target.value })}
             />
-            <button onClick={handleCreateProject}>Create</button>
-            <button onClick={() => setShowCreateProjectModal(false)}>Cancel</button>
+            <input
+              type="text"
+              placeholder="Share with (email)"
+              onChange={(e) => {
+                const email = e.target.value;
+                setNewProject({
+                  ...newProject,
+                  sharedWith: email ? [{ userId: email, role: 'viewer' }] : [],
+                });
+              }}
+            />
+            <button type="submit">Create Project</button>
+          </form>
+        </div>
+        <div className="overview-section">
+          <h2>Project Overview</h2>
+          <div className="overview-stats">
+            <div className="stat-card">
+              <h3>Total Projects</h3>
+              <p>{projects.total}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Current Projects</h3>
+              <p>{projects.current}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Past Projects</h3>
+              <p>{projects.past}</p>
+            </div>
           </div>
         </div>
-      )}
+        <div className="tasks-section">
+          <h2>Tasks Completed</h2>
+          <p>{tasks}</p>
+        </div>
+        <div className="activity-section">
+          <h2>Team Activity</h2>
+          <p>{activity.length === 0 ? 'No recent updates.' : 'Recent updates...'}</p>
+          {activity.length > 0 && (
+            <ul className="activity-feed">
+              {activity.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,8 +3,11 @@
   font-family: 'Roboto', sans-serif; /* From "Thinking with Type": Choose a clean, modern font for readability. */
   background-color: #f5f7fa; /* Light background for contrast (from "The Graphic Design Bible"). */
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
+/* From "Design of Everyday Things": Ensure elements are discoverable and provide feedback. */
 .navbar.fixed-top {
   position: fixed;
   top: 0;
@@ -14,20 +17,88 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-/* From "Design of Everyday Things": Ensure elements are discoverable and provide feedback. */
-.navbar-links a:hover,
-.navbar-links button:hover {
-  color: #00c4b4 !important; /* Highlight on hover for feedback (dopamine hit). */
-}
-
-.content {
-  padding: 20px;
+  background-color: #1a2a44;
+  padding: 10px 20px;
+  /* From "Refactoring UI": Ensure responsive design with flexible layouts. */
+  flex-wrap: wrap;
 }
 
 /* From "Webs of Influence" by Nathalie Nahai: Use visual cues to guide user behavior. */
-.active-link {
+.navbar-links {
+  display: flex;
+  gap: 15px;
+  /* Responsive design: Stack links on smaller screens. */
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.navbar-links a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.navbar-links a:hover {
+  color: #00c4b4 !important; /* Highlight on hover for feedback (dopamine hit). */
+}
+
+.navbar-links .active-link {
+  color: #00c4b4;
   font-weight: bold;
   border-bottom: 2px solid #00c4b4;
+}
+
+.navbar-links button.logout-button {
+  background-color: #00c4b4;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.navbar-links button.logout-button:hover {
+  background-color: #009a8a;
+}
+
+.navbar-brand {
+  color: #00c4b4;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Ensure content is responsive and doesn’t reframe on window minimization. */
+.content {
+  padding: 80px 20px 20px 20px; /* Adjusted for fixed navbar. */
+  flex: 1;
+  /* From "100 Things Every Designer Needs to Know About People": Reduce cognitive load with proper spacing. */
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Responsive design for smaller screens. */
+@media (max-width: 768px) {
+  .navbar.fixed-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .navbar-links {
+    margin-top: 10px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .navbar-brand {
+    align-self: flex-end;
+  }
+
+  .content {
+    padding: 120px 10px 10px 10px; /* Adjust padding for smaller screens. */
+  }
 }
