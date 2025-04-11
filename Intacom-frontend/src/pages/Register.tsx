@@ -25,11 +25,62 @@ function Register() {
   console.log('Register.tsx: VITE_API_URL:', import.meta.env.VITE_API_URL);
   console.log('Register.tsx: API_URL:', API_URL);
 
+  // Function to calculate the number of days in a given month and year.
+  const getDaysInMonth = (month: string, year: string): number => {
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+    if (isNaN(monthNum) || isNaN(yearNum)) return 31; // Default to 31 if inputs are invalid.
+    return new Date(yearNum, monthNum, 0).getDate();
+  };
+
+  const handleDayChange = (day: string) => {
+    const monthNum = parseInt(birthday.month, 10);
+    const yearNum = parseInt(birthday.year, 10);
+    const dayNum = parseInt(day, 10);
+
+    if (isNaN(dayNum)) {
+      setBirthday({ ...birthday, day });
+      return;
+    }
+
+    const daysInMonth = getDaysInMonth(birthday.month, birthday.year);
+    if (dayNum < 1 || dayNum > daysInMonth) {
+      setError(`Day must be between 1 and ${daysInMonth} for the selected month.`);
+    } else {
+      setError(null);
+      setBirthday({ ...birthday, day });
+    }
+  };
+
+  const handleMonthChange = (month: string) => {
+    const monthNum = parseInt(month, 10);
+    if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+      setError('Month must be between 1 and 12.');
+    } else {
+      setError(null);
+      setBirthday({ ...birthday, month, day: '' }); // Reset day when month changes.
+    }
+  };
+
+  const handleYearChange = (year: string) => {
+    const yearNum = parseInt(year, 10);
+    const currentYear = new Date().getFullYear();
+    if (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear) {
+      setError(`Year must be between 1900 and ${currentYear}.`);
+    } else {
+      setError(null);
+      setBirthday({ ...birthday, year, day: '' }); // Reset day when year changes.
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
+    }
+    if (error) {
+      return; // Prevent submission if there are birthday validation errors.
     }
     try {
       console.log('Register.tsx: Registering user with email:', email);
@@ -127,22 +178,29 @@ function Register() {
             type="text"
             placeholder="MM"
             value={birthday.month}
-            onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
+            onChange={(e) => handleMonthChange(e.target.value)}
             required
+            maxLength={2}
+            pattern="\d*"
           />
           <input
             type="text"
             placeholder="DD"
             value={birthday.day}
-            onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
+            onChange={(e) => handleDayChange(e.target.value)}
             required
+            maxLength={2}
+            pattern="\d*"
+            disabled={!birthday.month || !birthday.year}
           />
           <input
             type="text"
             placeholder="YYYY"
             value={birthday.year}
-            onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
+            onChange={(e) => handleYearChange(e.target.value)}
             required
+            maxLength={4}
+            pattern="\d*"
           />
         </div>
         <button type="submit">Register</button>

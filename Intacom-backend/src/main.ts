@@ -46,28 +46,16 @@ async function bootstrap() {
   // From "The Customer Service Revolution": Ensure a frictionless experience by resolving cross-origin issues.
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:54693',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
-  // Debug CORS configuration by logging all incoming requests and their headers.
+  // Debug incoming requests to confirm CORS is applied.
   app.use((req: any, res: any, next: () => void) => {
-    console.log('Request received:', req.method, req.url);
-    res.set('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:54693');
-    res.set('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
-    res.set('Access-Control-Allow-Credentials', 'true');
-    console.log('CORS Headers Set:', {
-      'Access-Control-Allow-Origin': res.get('Access-Control-Allow-Origin'),
-      'Access-Control-Allow-Methods': res.get('Access-Control-Allow-Methods'),
-      'Access-Control-Allow-Headers': res.get('Access-Control-Allow-Headers'),
-      'Access-Control-Allow-Credentials': res.get('Access-Control-Allow-Credentials'),
-    });
-    if (req.method === 'OPTIONS') {
-      res.status(200).end();
-      return;
-    }
+    console.log('Request received:', req.method, req.url, 'Origin:', req.headers.origin);
     next();
   });
 

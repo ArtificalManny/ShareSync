@@ -44,6 +44,25 @@ export class AuthService {
     const { firstName, lastName, username, email, password, gender, birthday } = registerDto;
     console.log('AuthService: Registering user with email:', email);
 
+    // Validate birthday.
+    const { month, day, year } = birthday;
+    const monthNum = parseInt(month, 10);
+    const dayNum = parseInt(day, 10);
+    const yearNum = parseInt(year, 10);
+
+    if (monthNum < 1 || monthNum > 12) {
+      throw new HttpException('Invalid month. Must be between 1 and 12.', HttpStatus.BAD_REQUEST);
+    }
+
+    const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+    if (dayNum < 1 || dayNum > daysInMonth) {
+      throw new HttpException(`Invalid day. Must be between 1 and ${daysInMonth} for the selected month.`, HttpStatus.BAD_REQUEST);
+    }
+
+    if (yearNum < 1900 || yearNum > new Date().getFullYear()) {
+      throw new HttpException('Invalid year. Must be between 1900 and the current year.', HttpStatus.BAD_REQUEST);
+    }
+
     // Check if username or email already exists.
     const existingUser = await this.userModel.findOne({ $or: [{ username }, { email }] }).exec();
     if (existingUser) {
