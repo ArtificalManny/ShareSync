@@ -45,14 +45,7 @@ async function bootstrap() {
   // Enable CORS using NestJS's built-in method.
   // From "The Customer Service Revolution": Ensure a frictionless experience by resolving cross-origin issues.
   app.enableCors({
-    origin: (origin: string, callback: (err: Error | null, allow?: boolean) => void) => {
-      const allowedOrigins = [process.env.FRONTEND_URL || 'http://localhost:54693'];
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: process.env.FRONTEND_URL || 'http://localhost:54693',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type,Accept,Authorization',
     credentials: true,

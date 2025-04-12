@@ -1,9 +1,10 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
-async function generateHash() {
-  const password = 'S7mR0!%uMZ<$[w%@';
-  const hashedPassword = await bcrypt.hash(password, 10);
-  console.log('Hashed Password:', hashedPassword);
-}
-
-generateHash();
+const password = 'S7mR0!%uMZ<$[w%@';
+bcrypt.hash(password, 10, (err, hash) => {
+  if (err) {
+    console.error('Error hashing password:', err);
+    return;
+  }
+  console.log('Hashed password:', hash);
+});
