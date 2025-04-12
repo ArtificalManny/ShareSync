@@ -12,8 +12,16 @@ export default defineConfig({
         secure: false,
         logLevel: 'debug', // Enable debug logging for proxy requests.
         rewrite: (path) => {
-          console.log('Proxy rewriting path:', path);
+          console.log('Vite Proxy: Rewriting path:', path);
           return path;
+        },
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            console.log('Vite Proxy: Proxying request:', req.method, req.url);
+          });
+          proxy.on('error', (err) => {
+            console.error('Vite Proxy: Proxy error:', err);
+          });
         },
       },
     },

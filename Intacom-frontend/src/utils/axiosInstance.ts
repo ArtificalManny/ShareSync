@@ -1,16 +1,26 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: '/auth', // Use the proxy path.
+  baseURL: '/auth', // Same-origin path.
 });
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    console.log('Axios request URL:', config.url);
-    console.log('Axios full URL:', `${config.baseURL}${config.url}`);
+    console.log('Axios: Making request to:', `${config.baseURL}${config.url}`);
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => {
+    console.error('Axios: Request error:', error);
+    return Promise.reject(error);
+  },
+);
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('Axios: Response error:', error.message);
+    return Promise.reject(error);
+  },
 );
 
 export default axiosInstance;

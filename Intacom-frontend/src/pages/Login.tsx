@@ -28,11 +28,13 @@ function Login({ setUser }) {
       alert('Login successful! Welcome back!'); // Placeholder for a more engaging UI effect.
       navigate('/'); // Redirect to home page.
     } catch (err: any) {
-      console.error('Login.tsx: Login error:', err.response?.data || err.message);
+      console.error('Login.tsx: Login error:', err.message, err.response?.data);
       if (err.response?.data?.message) {
         setError(err.response.data.message);
-      } else if (err.response?.status === 0) {
-        setError('Unable to connect to the server. Please check your network connection.');
+      } else if (err.message.includes('Network Error')) {
+        setError('Unable to connect to the server. Please check your network connection or try again later.');
+      } else if (err.message.includes('CORS')) {
+        setError('A CORS error occurred. Please contact support or try again later.');
       } else {
         setError('An unexpected error occurred during login. Please try again.');
       }

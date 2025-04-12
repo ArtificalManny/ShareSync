@@ -2,7 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import * as cors from 'cors';
+import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 // From "The Effortless Experience": Ensure seamless integration between frontend and backend.
 dotenv.config();
@@ -41,21 +42,15 @@ async function bootstrap() {
   console.log('S3_BUCKET:', process.env.S3_BUCKET);
   console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Use the cors middleware directly with minimal configuration.
-  // From "The Customer Service Revolution": Ensure a frictionless experience by resolving cross-origin issues.
-  app.use(
-    cors({
-      origin: 'http://localhost:54693',
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      allowedHeaders: 'Content-Type,Accept,Authorization',
-      credentials: true,
-      optionsSuccessStatus: 204,
-    }),
-  );
+  // Serve static files from the frontend dist folder.
+  app.useStaticAssets(join(__dirname, '..', '..', 'Intacom-frontend', 'dist'), {
+    index: 'index.html',
+    prefix: '/',
+  });
 
-  // Add logging for all incoming requests to debug CORS.
+  // Add logging for all incoming requests.
   app.use((req: any, res: any, next: () => void) => {
     console.log('Request received:', req.method, req.url, 'from origin:', req.headers.origin);
     console.log('Response headers:', res.getHeaders());
