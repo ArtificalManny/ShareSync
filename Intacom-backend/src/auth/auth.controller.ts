@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpException, HttpStatus, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 
@@ -6,6 +6,11 @@ import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dt
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get('test')
+  async test() {
+    return { message: 'Test endpoint reached' };
+  }
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {

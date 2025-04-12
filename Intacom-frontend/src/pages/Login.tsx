@@ -33,7 +33,14 @@ function Login({ setUser }) {
       navigate('/'); // Redirect to home page.
     } catch (err: any) {
       console.error('Login.tsx: Login error:', err.response?.data || err.message);
-      setError(err.response?.data?.message || 'An error occurred during login');
+      // Display the backend's error message if available, otherwise a generic message.
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 0) {
+        setError('Unable to connect to the server. Please check your network connection.');
+      } else {
+        setError('An unexpected error occurred during login. Please try again.');
+      }
     }
   };
 

@@ -132,7 +132,7 @@ function Register() {
           type="text"
           placeholder="Username"
           value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          onChange={(e) => setFirstName(e.target.value)}
           required
         />
         <input

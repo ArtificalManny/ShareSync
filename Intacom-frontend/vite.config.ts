@@ -10,7 +10,7 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
-        logLevel: 'debug', // Add debug logging to confirm proxy is working.
+        logLevel: 'debug', // Enable debug logging for proxy requests.
       },
     },
   },
