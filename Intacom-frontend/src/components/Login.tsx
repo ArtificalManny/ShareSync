@@ -1,72 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
 import axios from 'axios';
+import { useNavigate, Link } from 'react-router-dom';
 import './Login.css';
-import { useAppDispatch } from '../hooks';
-import { login } from '../store/slices/authSlice';
+
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+}
 
 interface LoginProps {
-  setUser: (user: { _id: string; username: string; email: string } | null) => void;
+  setUser: (user: User | null) => void;
 }
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function Login({ setUser }: LoginProps) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [isMounted, setIsMounted] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
 
-  useEffect(() => {
-    return () => {
-      setIsMounted(false);
-    };
-  }, []);
+  console.log('Login.jsx: VITE_API_URL:', import.meta.env.VITE_API_URL);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log('Login.tsx: Logging in with:', { identifier, password });
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/login`, {
+      const response = await axios.post(`${API_URL}/auth/login`, {
         identifier,
         password,
-      }, {
-        timeout: 5000, // Add a timeout to prevent hanging
       });
-      console.log('Login.tsx: Login response:', response.data);
       const user = response.data.data;
-      if (isMounted) {
-        setUser(user);
-        localStorage.setItem('user', JSON.stringify(user));
-        dispatch(login(user));
-        alert('Login successful! Welcome back!');
-        navigate('/');
-      }
+      setUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
+      navigate('/');
     } catch (err: any) {
-      console.error('Login.tsx: Login error:', err.message, err.response?.data);
-      if (isMounted) {
-        if (err.response?.data?.message) {
-          setError(err.response.data.message);
-        } else if (err.message.includes('Network Error')) {
-          setError('Unable to connect to the server. Please ensure the backend is running on port 3001.');
-        } else if (err.message.includes('CORS')) {
-          setError('A CORS error occurred. Please contact support or try again later.');
-        } else {
-          setError('An unexpected error occurred during login. Please try again.');
-        }
-      }
-    }
-  };
-
-  const togglePasswordVisibility = () => {
-    if (isMounted) {
-      setShowPassword(!showPassword);
+      console.error('Login.jsx: Login error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'An error occurred during login');
     }
   };
 
   const handleNavigation = (path: string) => {
-    console.log(`Login.tsx: Navigating to ${path}`);
+    console.log(`Login.jsx: Navigating to ${path}`);
     navigate(path);
   };
 
@@ -81,18 +56,13 @@ function Login({ setUser }: LoginProps) {
           onChange={(e) => setIdentifier(e.target.value)}
           required
         />
-        <div className="password-container">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <span onClick={togglePasswordVisibility} className="password-toggle">
-            {showPassword ? '👁️' : '👁️‍🗨️'}
-          </span>
-        </div>
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
         <button type="submit">Login</button>
       </form>
       {error && <p className="error">{error}</p>}

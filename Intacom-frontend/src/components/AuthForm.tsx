@@ -1,72 +1,81 @@
-import React, { FormEvent, useState } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 
-export const AuthForm: React.FC = () => {
-  const [username, setUsername] = useState('');
+interface AuthFormProps {
+  mode: 'login' | 'register';
+}
+
+const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [profilePic, setProfilePic] = useState<string | undefined>(undefined);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
   const { login, register } = useAuth();
 
-  const handleLogin = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await login(username, password);
+      const endpoint = mode === 'login' ? 'login' : 'register';
+      const payload =
+        mode === 'login'
+          ? { identifier: email, password }
+          : { firstName, lastName, email, password };
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/${endpoint}`, payload);
+      const user = response.data.data;
+      if (mode === 'login') {
+        login(user);
+        navigate('/');
+      } else {
+        register(user);
+        navigate('/login');
+      }
     } catch (err: any) {
-      console.error('Login error:', err.message);
-      alert('Login failed: ' + err.message);
-    }
-  };
-
-  const handleRegister = async (e: FormEvent) => {
-    e.preventDefault();
-    try {
-      await register(username, password, profilePic);
-    } catch (err: any) {
-      console.error('Registration error:', err.message);
-      alert('Registration failed: ' + err.message);
+      setError(err.response?.data?.message || 'An error occurred');
     }
   };
 
   return (
-    <div id="login" style={{ display: 'block' }}>
-      <form onSubmit={handleLogin}>
-        <input
-          type="text"
-          id="username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Username"
-        />
-        <input
-          type="password"
-          id="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-        />
-        <button type="submit" className="button-primary">Login</button>
-      </form>
-      <form onSubmit={handleRegister}>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Username"
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-        />
-        <input
-          type="url"
-          value={profilePic || ''}
-          onChange={(e) => setProfilePic(e.target.value || undefined)}
-          placeholder="Profile Picture URL (optional)"
-        />
-        <button type="submit" className="button-primary">Register</button>
-      </form>
-    </div>
+    <form onSubmit={handleSubmit}>
+      {mode === 'register' && (
+        <>
+          <input
+            type="text"
+            placeholder="First Name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Last Name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            required
+          />
+        </>
+      )}
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
+      <button type="submit">{mode === 'login' ? 'Login' : 'Register'}</button>
+      {error && <p>{error}</p>}
+    </form>
   );
 };
+
+export default AuthForm;

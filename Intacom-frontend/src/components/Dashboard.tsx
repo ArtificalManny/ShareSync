@@ -3,6 +3,7 @@ import { styled } from '@mui/material/styles';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { theme } from '../styles/theme'; // Import theme
 
 // Define theme type
 interface Theme {

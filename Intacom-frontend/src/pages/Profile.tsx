@@ -5,11 +5,7 @@ import { useNavigate } from 'react-router-dom';
 interface User {
   _id: string;
   username: string;
-  firstName: string;
-  lastName: string;
   email: string;
-  followers: string[];
-  following: string[];
 }
 
 interface ProfileProps {
@@ -38,11 +34,8 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
 
   return (
     <div>
-      <h1>{profile.firstName} {profile.lastName}</h1>
-      <p>Username: {profile.username}</p>
+      <h1>{profile.username}</h1>
       <p>Email: {profile.email}</p>
-      <p>Followers: {profile.followers.length}</p>
-      <p>Following: {profile.following.length}</p>
       <button onClick={() => navigate('/profile/edit')}>Edit Profile</button>
     </div>
   );

@@ -7,12 +7,12 @@ export default defineConfig({
     port: 54693,
     proxy: {
       '/auth': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
         logLevel: 'debug',
       },
     },
   },
-  envDir: './',
+  envDir: './', // Ensure .env file is loaded from the root
 });

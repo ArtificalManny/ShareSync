@@ -24,7 +24,15 @@ interface Feedback {
   content: string;
 }
 
-const Project: React.FC = () => {
+interface User {
+  _id: string;
+}
+
+interface ProjectProps {
+  user: User | null;
+}
+
+const Project: React.FC<ProjectProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
@@ -77,10 +85,15 @@ const Project: React.FC = () => {
 
   const handlePostSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      alert('Please log in to post.');
+      return;
+    }
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/posts`, {
         content: newPost,
         projectId: id,
+        userId: user._id,
       });
       setPosts([response.data.data, ...posts]);
       setNewPost('');
@@ -91,11 +104,16 @@ const Project: React.FC = () => {
 
   const handleTaskSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      alert('Please log in to add tasks.');
+      return;
+    }
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/tasks`, {
         title: newTask.title,
         description: newTask.description,
         projectId: id,
+        assignedTo: user._id,
       });
       setTasks([response.data.data, ...tasks]);
       setNewTask({ title: '', description: '' });
@@ -106,10 +124,15 @@ const Project: React.FC = () => {
 
   const handleFeedbackSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      alert('Please log in to provide feedback.');
+      return;
+    }
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/feedback`, {
         content: newFeedback,
         projectId: id,
+        userId: user._id,
       });
       setFeedbacks([response.data.data, ...feedbacks]);
       setNewFeedback('');

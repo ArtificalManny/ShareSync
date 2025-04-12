@@ -45,6 +45,7 @@ const ProjectEdit: React.FC = () => {
         description,
       });
       navigate(`/project/${id}`);
+      console.log('Project updated by user:', userData.username);
     } catch (error) {
       console.error('Error updating project:', error);
     }
