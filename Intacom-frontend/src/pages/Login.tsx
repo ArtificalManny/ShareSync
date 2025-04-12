@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosInstance'; // Import the custom instance.
 import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
 
 // From "The Customer Service Revolution" and "The Apple Experience":
 // - Make the login process seamless and delightful with clear feedback.
 // - Apply "Hooked" and Freud's Id/Ego/Superego: Provide a dopamine hit on successful login.
-const API_URL = '/auth'; // Use proxy path.
-
 function Login({ setUser }) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -15,13 +13,11 @@ function Login({ setUser }) {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  console.log('Login.tsx: API_URL:', API_URL);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       console.log('Login.tsx: Logging in with:', { identifier, password });
-      const response = await axios.post(`${API_URL}/login`, {
+      const response = await axiosInstance.post('/login', {
         identifier,
         password,
       });
@@ -33,7 +29,6 @@ function Login({ setUser }) {
       navigate('/'); // Redirect to home page.
     } catch (err: any) {
       console.error('Login.tsx: Login error:', err.response?.data || err.message);
-      // Display the backend's error message if available, otherwise a generic message.
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else if (err.response?.status === 0) {

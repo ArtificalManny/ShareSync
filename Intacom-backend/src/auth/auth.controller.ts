@@ -78,6 +78,7 @@ export class AuthController {
       await this.authService.resetPassword(
         resetPasswordDto.token,
         resetPasswordDto.newPassword,
+        resetPasswordDto.email, // Pass the email to ensure user-specific reset.
       );
       console.log('AuthController: Password reset successful');
       return {

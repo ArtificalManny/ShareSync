@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
+import * as nodemailer from 'nodemailer';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 
 // From "The Effortless Experience": Ensure user actions (e.g., login, register) are seamless.
@@ -106,23 +107,53 @@ export class AuthService {
     await user.save();
     console.log('AuthService: Reset token generated and saved for user:', user.email);
 
-    // In a real application, you would send an email with the reset link.
-    // For now, we'll log the reset link for testing.
-    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:54693'}/reset-password?token=${token}`;
-    console.log('AuthService: Password reset link (for testing):', resetLink);
+    // Send email with reset link using Nodemailer.
+    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:54693'}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: parseInt(process.env.EMAIL_PORT || '587'),
+      secure: false, // Use TLS.
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: `"Intacom Support" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Password Reset Request',
+      html: `
+        <p>Hello ${user.firstName},</p>
+        <p>We received a request to reset your password for your Intacom account.</p>
+        <p>Please click the link below to reset your password:</p>
+        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p>This link will expire in 1 hour. If you did not request a password reset, please ignore this email.</p>
+        <p>Best regards,<br>The Intacom Team</p>
+      `,
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log('AuthService: Password reset email sent to:', email);
+    } catch (error) {
+      console.error('AuthService: Error sending password reset email:', error);
+      throw new HttpException('Failed to send password reset email.', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<void> {
-    console.log('AuthService: Resetting password with token:', token);
+  async resetPassword(token: string, newPassword: string, email: string): Promise<void> {
+    console.log('AuthService: Resetting password with token:', token, 'for email:', email);
     const user = await this.userModel
       .findOne({
+        email,
         resetPasswordToken: token,
         resetPasswordExpires: { $gt: Date.now() },
       })
       .exec();
 
     if (!user) {
-      console.log('AuthService: Invalid or expired reset token');
+      console.log('AuthService: Invalid or expired reset token for email:', email);
       throw new HttpException('Invalid or expired reset token.', HttpStatus.BAD_REQUEST);
     }
 

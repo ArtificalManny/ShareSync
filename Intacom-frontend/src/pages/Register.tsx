@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosInstance'; // Import the custom instance.
 import { useNavigate } from 'react-router-dom';
 import './Register.css';
 
 // From "The Customer Service Revolution" and "The Apple Experience":
 // - Make the registration process seamless and delightful with clear feedback.
 // - Apply "Hooked" and Freud's Id/Ego/Superego: Provide a dopamine hit on successful registration.
-const API_URL = '/auth'; // Use proxy path.
-
 function Register() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -21,8 +19,6 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
-
-  console.log('Register.tsx: API_URL:', API_URL);
 
   // Function to calculate the number of days in a given month and year.
   const getDaysInMonth = (month: string, year: string): number => {
@@ -83,7 +79,7 @@ function Register() {
     }
     try {
       console.log('Register.tsx: Registering user with email:', email);
-      const response = await axios.post(`${API_URL}/register`, {
+      const response = await axiosInstance.post('/register', {
         firstName,
         lastName,
         username,
@@ -98,7 +94,13 @@ function Register() {
       navigate('/login', { replace: true });
     } catch (err: any) {
       console.error('Register.tsx: Register error:', err.response?.data || err.message);
-      setError(err.response?.data?.message || 'An error occurred during registration');
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 0) {
+        setError('Unable to connect to the server. Please check your network connection.');
+      } else {
+        setError('An unexpected error occurred during registration. Please try again.');
+      }
     }
   };
 
@@ -132,7 +134,7 @@ function Register() {
           type="text"
           placeholder="Username"
           value={username}
-          onChange={(e) => setFirstName(e.target.value)}
+          onChange={(e) => setUsername(e.target.value)}
           required
         />
         <input
