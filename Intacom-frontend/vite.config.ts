@@ -11,6 +11,10 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         logLevel: 'debug', // Enable debug logging for proxy requests.
+        rewrite: (path) => {
+          console.log('Proxy rewriting path:', path);
+          return path;
+        },
       },
     },
   },

@@ -33,8 +33,14 @@ function Register() {
     const yearNum = parseInt(birthday.year, 10);
     const dayNum = parseInt(day, 10);
 
-    if (isNaN(dayNum)) {
+    if (day === '') {
       setBirthday({ ...birthday, day });
+      setError(null);
+      return;
+    }
+
+    if (isNaN(dayNum)) {
+      setError('Day must be a number.');
       return;
     }
 
@@ -49,7 +55,19 @@ function Register() {
 
   const handleMonthChange = (month: string) => {
     const monthNum = parseInt(month, 10);
-    if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+
+    if (month === '') {
+      setBirthday({ ...birthday, month, day: '' });
+      setError(null);
+      return;
+    }
+
+    if (isNaN(monthNum)) {
+      setError('Month must be a number.');
+      return;
+    }
+
+    if (monthNum < 1 || monthNum > 12) {
       setError('Month must be between 1 and 12.');
     } else {
       setError(null);
@@ -60,7 +78,19 @@ function Register() {
   const handleYearChange = (year: string) => {
     const yearNum = parseInt(year, 10);
     const currentYear = new Date().getFullYear();
-    if (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear) {
+
+    if (year === '') {
+      setBirthday({ ...birthday, year, day: '' });
+      setError(null);
+      return;
+    }
+
+    if (isNaN(yearNum)) {
+      setError('Year must be a number.');
+      return;
+    }
+
+    if (yearNum < 1900 || yearNum > currentYear) {
       setError(`Year must be between 1900 and ${currentYear}.`);
     } else {
       setError(null);
@@ -192,7 +222,7 @@ function Register() {
             required
             maxLength={2}
             pattern="\d*"
-            disabled={!birthday.month || !birthday.year}
+            disabled={!birthday.month || !birthday.year || !!error} // Disable if month or year is empty or there's an error.
           />
           <input
             type="text"

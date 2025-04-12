@@ -134,11 +134,11 @@ export class AuthService {
     };
 
     try {
-      await transporter.sendMail(mailOptions);
-      console.log('AuthService: Password reset email sent to:', email);
+      const info = await transporter.sendMail(mailOptions);
+      console.log('AuthService: Password reset email sent to:', email, 'Message ID:', info.messageId);
     } catch (error) {
       console.error('AuthService: Error sending password reset email:', error);
-      throw new HttpException('Failed to send password reset email.', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException('Failed to send password reset email. Please try again later.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
