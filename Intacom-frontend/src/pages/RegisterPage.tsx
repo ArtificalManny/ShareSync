@@ -1,16 +1,8 @@
 import React from 'react';
-import { AuthForm } from '../components/AuthForm';
-import { useAuth } from '../hooks/useAuth';
+import Register from './Register';
 
 const RegisterPage: React.FC = () => {
-  const { register } = useAuth();
-
-  return (
-    <div>
-      <h1>Register</h1>
-      <AuthForm />
-    </div>
-  );
+  return <Register />;
 };
 
 export default RegisterPage;

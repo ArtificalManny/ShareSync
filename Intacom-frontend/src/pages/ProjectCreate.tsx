@@ -1,90 +1,57 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { theme } from '../styles/theme';
-import './ProjectCreate.css';
 
-interface Project {
-  name: string;
-  description: string;
-  color: string;
-  sharedWith: { userId: string; role: string }[];
+interface User {
+  _id: string;
 }
 
-function ProjectCreate() {
-  const [formData, setFormData] = useState<Project>({
-    name: '',
-    description: '',
-    color: theme.colors.primary,
-    sharedWith: [],
-  });
-  const [error, setError] = useState('');
+interface ProjectCreateProps {
+  user: User | null;
+}
+
+const ProjectCreate: React.FC<ProjectCreateProps> = ({ user }) => {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleShareWithChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const email = e.target.value;
-    setFormData({
-      ...formData,
-      sharedWith: email ? [{ userId: email, role: 'viewer' }] : [],
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
-        ...formData,
-        admin: user._id,
+        name,
+        description,
+        owner: user._id,
       });
       navigate(`/project/${response.data.data._id}`);
-      alert('Project created successfully!');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating project:', error);
-      setError(error.response?.data?.message || 'Failed to create project. Please try again.');
     }
   };
 
   return (
-    <div className="project-create">
-      <h1 style={{ color: theme.colors.primary }}>Create Project</h1>
+    <div>
+      <h1>Create New Project</h1>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
-          name="name"
           placeholder="Project Name"
-          value={formData.name}
-          onChange={handleChange}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
         />
         <textarea
-          name="description"
-          placeholder="Description"
-          value={formData.description}
-          onChange={handleChange}
+          placeholder="Project Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
         />
-        <input
-          type="color"
-          name="color"
-          value={formData.color}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          placeholder="Share with (email)"
-          onChange={handleShareWithChange}
-        />
-        <button type="submit" style={{ backgroundColor: theme.colors.accent, color: theme.colors.text }}>
-          Create
-        </button>
+        <button type="submit">Create Project</button>
       </form>
-      {error && <p className="error" style={{ color: theme.colors.error }}>{error}</p>}
     </div>
   );
-}
+};
 
 export default ProjectCreate;

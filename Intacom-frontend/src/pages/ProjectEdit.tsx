@@ -1,102 +1,83 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, FormEvent } from 'react';
 import axios from 'axios';
+import { useParams, useNavigate } from 'react-router-dom';
 import { theme } from '../styles/theme';
-import './ProjectEdit.css';
 
 interface Project {
   _id: string;
   name: string;
   description: string;
-  color: string;
-  sharedWith: { userId: string; role: string }[];
 }
 
-function ProjectEdit() {
+interface User {
+  _id: string;
+  username: string;
+}
+
+const ProjectEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [formData, setFormData] = useState<Project>({
-    _id: '',
-    name: '',
-    description: '',
-    color: theme.colors.primary,
-    sharedWith: [],
-  });
-  const [error, setError] = useState('');
   const navigate = useNavigate();
+  const [project, setProject] = useState<Project | null>(null);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
 
-  useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/by-id/${id}`);
-        setFormData(response.data);
-      } catch (error: any) {
-        console.error('Error fetching project:', error);
-        setError('Failed to load project data.');
-      }
-    };
-    fetchProject();
-  }, [id]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleShareWithChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const email = e.target.value;
-    setFormData({
-      ...formData,
-      sharedWith: email ? [{ userId: email, role: 'viewer' }] : [],
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const fetchProject = async () => {
+    if (!id) return;
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/projects/${id}`, formData);
-      navigate(`/project/${id}`);
-      alert('Project updated successfully!');
-    } catch (error: any) {
-      console.error('Error updating project:', error);
-      setError(error.response?.data?.message || 'Failed to update project. Please try again.');
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/by-id/${id}`);
+      const projectData: Project = response.data.data;
+      setProject(projectData);
+      setName(projectData.name);
+      setDescription(projectData.description);
+    } catch (error) {
+      console.error('Error fetching project:', error);
     }
   };
 
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) throw new Error('User not logged in');
+      const user = JSON.parse(storedUser) as User;
+      await axios.put(`${import.meta.env.VITE_API_URL}/projects/${id}`, {
+        name,
+        description,
+      });
+      navigate(`/project/${id}`);
+    } catch (error) {
+      console.error('Error updating project:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProject();
+  }, [id]);
+
+  if (!project) return <div>Loading...</div>;
+
   return (
-    <div className="project-edit">
-      <h1 style={{ color: theme.colors.primary }}>Edit Project</h1>
+    <div>
+      <h1>Edit Project</h1>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
-          name="name"
           placeholder="Project Name"
-          value={formData.name}
-          onChange={handleChange}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
         />
         <textarea
-          name="description"
-          placeholder="Description"
-          value={formData.description}
-          onChange={handleChange}
+          placeholder="Project Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
         />
-        <input
-          type="color"
-          name="color"
-          value={formData.color}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          placeholder="Share with (email)"
-          onChange={handleShareWithChange}
-        />
-        <button type="submit" style={{ backgroundColor: theme.colors.accent, color: theme.colors.text }}>
-          Update
-        </button>
+        <button type="submit">Save Changes</button>
       </form>
-      {error && <p className="error" style={{ color: theme.colors.error }}>{error}</p>}
     </div>
   );
-}
+};
 
 export default ProjectEdit;

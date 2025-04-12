@@ -1,82 +1,192 @@
-import React from 'react';
-import { Route, Routes } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import Header from './components/Header';
+import Login from './components/Login';
 import Home from './pages/Home';
-import ProjectsPage from './pages/ProjectsPage';
-import Upload from './Upload';
-import Settings from './Settings';
-import ProjectHome from './pages/ProjectHome';
 import Profile from './pages/Profile';
+import Projects from './pages/Projects';
+import Notifications from './pages/Notifications';
+import Leaderboard from './pages/Leaderboard';
+import Project from './pages/Project';
+import ProjectCreate from './pages/ProjectCreate';
+import ProjectEdit from './pages/ProjectEdit';
+import Register from './pages/Register';
+import Recover from './pages/Recover';
+import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail';
+import Upload from './pages/Upload';
 
-interface Project {
+interface User {
   _id: string;
-  name: string;
-  description?: string;
-  admin?: string;
-  color?: string;
-  sharedWith?: { userId: string; role: 'Admin' | 'Editor' | 'Viewer' }[];
+  username: string;
+  email: string;
 }
 
-interface RoutesProps {
-  projects: Project[] | undefined;
-  showCreateProject: boolean;
-  setShowCreateProject: (value: boolean) => void;
-  projectName: string;
-  setProjectName: (value: string) => void;
-  projectDescription: string;
-  setProjectDescription: (value: string) => void;
-  projectColor: string;
-  setProjectColor: (value: string) => void;
-  sharedUsers: { email: string; role: 'Admin' | 'Editor' | 'Viewer' }[];
-  handleAddSharedUser: (email: string, role: 'Admin' | 'Editor' | 'Viewer') => void;
-  handleRemoveSharedUser: (email: string) => void;
-  handleCreateProject: (e: React.FormEvent) => void;
-}
+const AppRoutes: React.FC = () => {
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
-const AppRoutes: React.FC<RoutesProps> = ({
-  projects,
-  showCreateProject,
-  setShowCreateProject,
-  projectName,
-  setProjectName,
-  projectDescription,
-  setProjectDescription,
-  projectColor,
-  setProjectColor,
-  sharedUsers,
-  handleAddSharedUser,
-  handleRemoveSharedUser,
-  handleCreateProject,
-}) => {
-  console.log('Rendering AppRoutes with projects:', projects);
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (!user) return;
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
+        setProjects(response.data.data);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      }
+    };
+
+    fetchProjects();
+  }, [user]);
+
   return (
-    <Routes>
-      <Route path="/" element={<div>Redirecting to login...</div>} />
-      <Route
-        path="/home"
-        element={
-          <Home
-            projects={projects}
-            showCreateProject={showCreateProject}
-            setShowCreateProject={setShowCreateProject}
-            projectName={projectName}
-            setProjectName={setProjectName}
-            projectDescription={projectDescription}
-            setProjectDescription={setProjectDescription}
-            projectColor={projectColor}
-            setProjectColor={setProjectColor}
-            sharedUsers={sharedUsers}
-            handleAddSharedUser={handleAddSharedUser}
-            handleRemoveSharedUser={handleRemoveSharedUser}
-            handleCreateProject={handleCreateProject}
-          />
-        }
-      />
-      <Route path="/projects" element={<ProjectsPage />} />
-      <Route path="/upload" element={<Upload />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/project/:id" element={<ProjectHome projects={projects} />} />
-      <Route path="/profile" element={<Profile />} />
-    </Routes>
+    <Router>
+      <Header />
+      <Routes>
+        <Route
+          path="/login"
+          element={<Login setUser={setUser} />}
+        />
+        <Route
+          path="/register"
+          element={<Register />}
+        />
+        <Route
+          path="/recover"
+          element={<Recover />}
+        />
+        <Route
+          path="/reset-password"
+          element={<ResetPassword />}
+        />
+        <Route
+          path="/verify-email"
+          element={<VerifyEmail />}
+        />
+        <Route
+          path="/"
+          element={
+            user ? (
+              <Home user={user} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            user ? (
+              <Profile user={user} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/profile/edit"
+          element={
+            user ? (
+              <ProfileEdit />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/projects"
+          element={
+            user ? (
+              <Projects user={user} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/project/create"
+          element={
+            user ? (
+              <ProjectCreate user={user} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/project/:id"
+          element={
+            user ? (
+              <Project />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/project/:id/edit"
+          element={
+            user ? (
+              <ProjectEdit />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            user ? (
+              <Notifications user={user} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            user ? (
+              <Leaderboard />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/upload"
+          element={
+            user ? (
+              <Upload user={user} projects={projects} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/logout"
+          element={
+            user ? (
+              <div>
+                <h1>Logout</h1>
+                <button onClick={() => {
+                  localStorage.removeItem('user');
+                  setUser(null);
+                  navigate('/login');
+                }}>Logout</button>
+              </div>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+      </Routes>
+    </Router>
   );
 };
 

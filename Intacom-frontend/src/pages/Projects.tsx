@@ -1,60 +1,52 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { theme } from '../styles/theme';
-import './Projects.css';
-
-interface User {
-  _id: string;
-  username: string;
-}
 
 interface Project {
   _id: string;
   name: string;
   description: string;
-  admin: string;
-  status: string;
-  color: string;
+}
+
+interface User {
+  username: string;
 }
 
 interface ProjectsProps {
   user: User | null;
 }
 
-function Projects({ user }: ProjectsProps) {
+const Projects: React.FC<ProjectsProps> = ({ user }) => {
   const [projects, setProjects] = useState<Project[]>([]);
+  const navigate = useNavigate();
+
+  const fetchProjects = async () => {
+    if (!user) return;
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
+      setProjects(response.data.data);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      if (!user) return;
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
-        setProjects(response.data);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-      }
-    };
     fetchProjects();
   }, [user]);
 
   return (
-    <div className="projects">
-      <h1 style={{ color: theme.colors.primary }}>Projects</h1>
-      <div className="project-list">
-        {projects.map((project) => (
-          <Link key={project._id} to={`/project/${project._id}`} className="project-card">
-            <div className="project-card-content" style={{ backgroundColor: project.color }}>
-              <h2>{project.name}</h2>
-              <p>{project.description}</p>
-              <p>Admin: {project.admin}</p>
-              <p>Status: {project.status}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
+    <div>
+      <h1>Your Projects</h1>
+      <button onClick={() => navigate('/project/create')}>Create New Project</button>
+      {projects.map((project) => (
+        <div key={project._id} onClick={() => navigate(`/project/${project._id}`)}>
+          <h3>{project.name}</h3>
+          <p>{project.description}</p>
+        </div>
+      ))}
     </div>
   );
-}
+};
 
 export default Projects;

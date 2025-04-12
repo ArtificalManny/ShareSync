@@ -1,68 +1,46 @@
-// src/components/Header.tsx
 import React from 'react';
-import { Link } from 'react-router-dom';
-import './Header.css';
-import IconButton from '@mui/material/IconButton';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { styled } from '@mui/material/styles';
+import { theme } from '../styles/theme';
 
-interface HeaderProps {
-  toggleDarkMode?: () => void;
-}
+const HeaderContainer = styled('header')(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: theme.spacing.medium,
+  backgroundColor: theme.colors.secondary,
+  color: theme.colors.text,
+}));
 
-const Header: React.FC<HeaderProps> = ({ toggleDarkMode }) => {
+const Logo = styled('h1')({
+  margin: 0,
+});
+
+const Nav = styled('nav')({
+  display: 'flex',
+  gap: '20px',
+});
+
+const NavLink = styled('a')({
+  color: 'inherit',
+  textDecoration: 'none',
+  '&:hover': {
+    textDecoration: 'underline',
+  },
+});
+
+const Header: React.FC = () => {
   return (
-    <header className="user-bar">
-      {/* Left Section: Logo */}
-      <div className="left-section">
-        <Link to="/" className="logo">
-          <img src="/logo.png" alt="Intacom Logo" className="logo-img" />
-          <span>Intacom</span>
-        </Link>
-      </div>
-
-      {/* Middle Section: Search */}
-      <div className="middle-section">
-        <div className="search-container">
-          <input type="text" placeholder="Search..." />
-          <select>
-            <option value="projects">Projects</option>
-            <option value="teams">Teams</option>
-            <option value="documents">Documents</option>
-          </select>
-          <button type="button">Search</button>
-        </div>
-      </div>
-
-      {/* Right Section: Icons and Profile */}
-      <div className="right-section">
-        {/* Notification Bell */}
-        <div className="notification-bell">
-          <i className="icon fas fa-bell"></i>
-          <div className="notification-dropdown">
-            <p>No new notifications</p>
-            {/* Populate with dynamic notifications */}
-          </div>
-        </div>
-
-        {/* Settings Icon */}
-        <div className="settings-icon">
-          <a href="/settings">
-            <i className="icon fas fa-cog"></i>
-          </a>
-        </div>
-
-        {/* Dark Mode Toggle */}
-        <IconButton onClick={toggleDarkMode} color="inherit">
-          <Brightness4Icon />
-        </IconButton>
-
-        {/* Profile Picture */}
-        <div className="profile-pic">
-          <img src="/profile.jpg" alt="Profile" className="profile-img" />
-        </div>
-      </div>
-    </header>
+    <HeaderContainer>
+      <Logo>INTACOM</Logo>
+      <Nav>
+        <NavLink href="/">Home</NavLink>
+        <NavLink href="/profile">Profile</NavLink>
+        <NavLink href="/projects">Projects</NavLink>
+        <NavLink href="/notifications">Notifications</NavLink>
+        <NavLink href="/leaderboard">Leaderboard</NavLink>
+        <NavLink href="/logout">Logout</NavLink>
+      </Nav>
+    </HeaderContainer>
   );
 };
 

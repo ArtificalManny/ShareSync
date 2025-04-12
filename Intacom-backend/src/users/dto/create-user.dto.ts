@@ -1,34 +1,22 @@
-import { IsNotEmpty, IsString, IsEmail } from 'class-validator';
-
 export class CreateUserDto {
-  @IsString()
-  @IsNotEmpty()
   firstName: string;
-
-  @IsString()
-  @IsNotEmpty()
   lastName: string;
-
-  @IsString()
-  @IsNotEmpty()
   username: string;
-
-  @IsEmail()
-  @IsNotEmpty()
   email: string;
-
-  @IsString()
-  @IsNotEmpty()
   password: string;
-
-  @IsString()
-  @IsNotEmpty()
-  gender: string;
-
-  @IsNotEmpty()
-  birthday: {
+  gender?: string;
+  birthday?: {
     month: string;
     day: string;
     year: string;
   };
+  points?: number;
+  isVerified?: boolean;
+  badges?: string[];
+  endorsements?: string[];
+  experience?: string[];
+  followers?: string[];
+  following?: string[];
+  hobbies?: string[];
+  skills?: string[];
 }

@@ -1,16 +1,11 @@
 import React from 'react';
-import { AuthForm } from '../components/AuthForm';
+import Login from '../components/Login';
 import { useAuth } from '../hooks/useAuth';
 
 const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { setUser } = useAuth();
 
-  return (
-    <div>
-      <h1>Login</h1>
-      <AuthForm />
-    </div>
-  );
+  return <Login setUser={setUser} />;
 };
 
 export default LoginPage;

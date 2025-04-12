@@ -6,7 +6,7 @@ export declare class UsersController {
     findByUsername(username: string): Promise<{
         data: User;
     }>;
-    findById(id: string): Promise<User>;
+    findById(id: string): Promise<any>;
     findAll(): Promise<User[]>;
     update(id: string, updates: Partial<User>): Promise<User>;
 }

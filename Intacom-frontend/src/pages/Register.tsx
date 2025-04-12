@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import axiosInstance from '../utils/axiosInstance'; // Import the custom instance.
-import { useNavigate } from 'react-router-dom';
+import { useState, FormEvent } from 'react';
+import axios from 'axios';
+import { useNavigate, Link } from 'react-router-dom';
 import './Register.css';
 
-// From "The Customer Service Revolution" and "The Apple Experience":
-// - Make the registration process seamless and delightful with clear feedback.
-// - Apply "Hooked" and Freud's Id/Ego/Superego: Provide a dopamine hit on successful registration.
+const API_URL = '/auth';
+
 function Register() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -20,11 +19,12 @@ function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
-  // Function to calculate the number of days in a given month and year.
+  console.log('Register.tsx: API_URL:', API_URL);
+
   const getDaysInMonth = (month: string, year: string): number => {
     const monthNum = parseInt(month, 10);
     const yearNum = parseInt(year, 10);
-    if (isNaN(monthNum) || isNaN(yearNum)) return 31; // Default to 31 if inputs are invalid.
+    if (isNaN(monthNum) || isNaN(yearNum)) return 31;
     return new Date(yearNum, monthNum, 0).getDate();
   };
 
@@ -71,7 +71,7 @@ function Register() {
       setError('Month must be between 1 and 12.');
     } else {
       setError(null);
-      setBirthday({ ...birthday, month, day: '' }); // Reset day when month changes.
+      setBirthday({ ...birthday, month, day: '' });
     }
   };
 
@@ -94,22 +94,22 @@ function Register() {
       setError(`Year must be between 1900 and ${currentYear}.`);
     } else {
       setError(null);
-      setBirthday({ ...birthday, year, day: '' }); // Reset day when year changes.
+      setBirthday({ ...birthday, year, day: '' });
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
     if (error) {
-      return; // Prevent submission if there are birthday validation errors.
+      return;
     }
     try {
       console.log('Register.tsx: Registering user with email:', email);
-      const response = await axiosInstance.post('/register', {
+      const response = await axios.post(`${API_URL}/register`, {
         firstName,
         lastName,
         username,
@@ -119,8 +119,7 @@ function Register() {
         birthday,
       });
       console.log('Register.tsx: Register response:', response.data);
-      // From "Hooked" and Freud's Id: Provide a dopamine hit on successful registration.
-      alert('User registered successfully! Welcome to INTACOM!'); // Placeholder for a more engaging UI effect.
+      alert('User registered successfully! Welcome to INTACOM!');
       navigate('/login', { replace: true });
     } catch (err: any) {
       console.error('Register.tsx: Register error:', err.response?.data || err.message);
@@ -222,7 +221,7 @@ function Register() {
             required
             maxLength={2}
             pattern="\d*"
-            disabled={!birthday.month || !birthday.year || !!error} // Disable if month or year is empty or there's an error.
+            disabled={!birthday.month || !birthday.year || !!error}
           />
           <input
             type="text"

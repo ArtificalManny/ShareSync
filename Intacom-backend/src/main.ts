@@ -5,7 +5,6 @@ import mongoose from 'mongoose';
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
 
-// From "The Effortless Experience": Ensure seamless integration between frontend and backend.
 dotenv.config();
 
 async function connectWithRetry() {
@@ -13,10 +12,7 @@ async function connectWithRetry() {
   while (retries > 0) {
     try {
       console.log('Connecting to MongoDB...');
-      await mongoose.connect(process.env.MONGODB_URI!, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      } as mongoose.ConnectOptions);
+      await mongoose.connect(process.env.MONGODB_URI!, {});
       console.log('MongoDB connection successful');
       break;
     } catch (err) {
@@ -32,7 +28,6 @@ async function connectWithRetry() {
 }
 
 async function bootstrap() {
-  // Load environment variables for debugging.
   console.log('Environment variables loaded:');
   console.log('MONGODB_URI:', process.env.MONGODB_URI);
   console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
@@ -44,27 +39,44 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Serve static files from the frontend dist folder.
   app.useStaticAssets(join(__dirname, '..', '..', 'Intacom-frontend', 'dist'), {
     index: 'index.html',
     prefix: '/',
   });
 
-  // Add logging for all incoming requests to debug the request flow.
   app.use((req: any, res: any, next: () => void) => {
     console.log('Backend: Request received:', req.method, req.url, 'from origin:', req.headers.origin);
     console.log('Backend: Response headers:', res.getHeaders());
     next();
   });
 
-  // Ensure API routes are prefixed correctly.
   app.setGlobalPrefix('auth');
 
   await connectWithRetry();
 
-  await app.listen(3000);
-  console.log('Backend server running on http://localhost:3000');
-  console.log('Serving frontend from:', join(__dirname, '..', '..', 'Intacom-frontend', 'dist'));
+  const port = process.env.PORT || 3000;
+  let currentPort = port;
+  let serverStarted = false;
+
+  while (!serverStarted && currentPort < 3100) {
+    try {
+      await app.listen(currentPort);
+      console.log(`Backend server running on http://localhost:${currentPort}`);
+      console.log('Serving frontend from:', join(__dirname, '..', '..', 'Intacom-frontend', 'dist'));
+      serverStarted = true;
+    } catch (error: any) {
+      if (error.code === 'EADDRINUSE') {
+        console.log(`Port ${currentPort} is in use, trying ${currentPort + 1}...`);
+        currentPort++;
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  if (!serverStarted) {
+    throw new Error('Could not find an available port between 3000 and 3100');
+  }
 }
 
 bootstrap().catch((err) => {

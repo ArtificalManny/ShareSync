@@ -47,10 +47,7 @@ async function connectWithRetry() {
     while (retries > 0) {
         try {
             console.log('Connecting to MongoDB...');
-            await mongoose_1.default.connect(process.env.MONGODB_URI, {
-                useNewUrlParser: true,
-                useUnifiedTopology: true,
-            });
+            await mongoose_1.default.connect(process.env.MONGODB_URI, {});
             console.log('MongoDB connection successful');
             break;
         }
@@ -86,9 +83,29 @@ async function bootstrap() {
     });
     app.setGlobalPrefix('auth');
     await connectWithRetry();
-    await app.listen(3000);
-    console.log('Backend server running on http://localhost:3000');
-    console.log('Serving frontend from:', (0, path_1.join)(__dirname, '..', '..', 'Intacom-frontend', 'dist'));
+    const port = process.env.PORT || 3000;
+    let currentPort = port;
+    let serverStarted = false;
+    while (!serverStarted && currentPort < 3100) {
+        try {
+            await app.listen(currentPort);
+            console.log(`Backend server running on http://localhost:${currentPort}`);
+            console.log('Serving frontend from:', (0, path_1.join)(__dirname, '..', '..', 'Intacom-frontend', 'dist'));
+            serverStarted = true;
+        }
+        catch (error) {
+            if (error.code === 'EADDRINUSE') {
+                console.log(`Port ${currentPort} is in use, trying ${currentPort + 1}...`);
+                currentPort++;
+            }
+            else {
+                throw error;
+            }
+        }
+    }
+    if (!serverStarted) {
+        throw new Error('Could not find an available port between 3000 and 3100');
+    }
 }
 bootstrap().catch((err) => {
     console.error('Failed to start the application:', err);

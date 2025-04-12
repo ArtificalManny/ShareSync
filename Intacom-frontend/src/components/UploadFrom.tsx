@@ -2,30 +2,30 @@ import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { uploadFile } from '../services/api';
 
-const UploadForm: React.FC = () => {
+interface UploadFormProps {
+  onUpload: (url: string) => void;
+}
+
+const UploadForm: React.FC<UploadFormProps> = ({ onUpload }) => {
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    const formData = new FormData();
-    formData.append('file', file);
     try {
-      const response = await uploadFile(formData);
-      console.log('File uploaded:', response.data);
-      alert(`File uploaded successfully: ${response.data}`);
+      const file = acceptedFiles[0];
+      const { url } = await uploadFile(file);
+      onUpload(url);
     } catch (error) {
-      console.error('Upload error:', error);
-      alert('File upload failed');
+      console.error('Error uploading file:', error);
     }
-  }, []);
+  }, [onUpload]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
   return (
-    <div {...getRootProps()} className="p-6 border-2 border-dashed border-gray-300 rounded text-center cursor-pointer hover:border-blue-500">
+    <div {...getRootProps()}>
       <input {...getInputProps()} />
       {isDragActive ? (
-        <p>Drop the file here...</p>
+        <p>Drop the files here ...</p>
       ) : (
-        <p>Drag 'n' drop a file here, or click to select a file</p>
+        <p>Drag 'n' drop some files here, or click to select files</p>
       )}
     </div>
   );

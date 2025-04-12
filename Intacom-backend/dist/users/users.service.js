@@ -16,42 +16,79 @@ exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
+const user_schema_1 = require("./schemas/user.schema");
 let UsersService = class UsersService {
     constructor(userModel) {
         this.userModel = userModel;
     }
-    async create(userData) {
-        const newUser = new this.userModel(userData);
-        return newUser.save();
+    async create(createUserDto) {
+        const createdUser = new this.userModel(createUserDto);
+        return createdUser.save();
     }
     async findAll() {
         return this.userModel.find().exec();
     }
-    async findById(id) {
+    async findOne(id) {
         const user = await this.userModel.findById(id).exec();
         if (!user) {
-            throw new common_1.NotFoundException('User not found');
+            throw new common_1.HttpException('User not found', common_1.HttpStatus.NOT_FOUND);
         }
         return user;
     }
     async findByUsername(username) {
-        return this.userModel.findOne({ username }).exec();
+        const user = await this.userModel.findOne({ username }).exec();
+        if (!user) {
+            throw new common_1.HttpException('User not found', common_1.HttpStatus.NOT_FOUND);
+        }
+        return user;
     }
     async findByEmail(email) {
-        return this.userModel.findOne({ email }).exec();
+        const user = await this.userModel.findOne({ email }).exec();
+        if (!user) {
+            throw new common_1.HttpException('User not found', common_1.HttpStatus.NOT_FOUND);
+        }
+        return user;
     }
-    async update(id, updateData) {
-        const updatedUser = await this.userModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+    async update(id, updateUserDto) {
+        const updatedUser = await this.userModel
+            .findByIdAndUpdate(id, updateUserDto, { new: true })
+            .exec();
         if (!updatedUser) {
-            throw new common_1.NotFoundException('User not found');
+            throw new common_1.HttpException('User not found', common_1.HttpStatus.NOT_FOUND);
         }
         return updatedUser;
+    }
+    async remove(id) {
+        const result = await this.userModel.deleteOne({ _id: id }).exec();
+        if (result.deletedCount === 0) {
+            throw new common_1.HttpException('User not found', common_1.HttpStatus.NOT_FOUND);
+        }
+    }
+    async follow(userId, followId) {
+        const user = await this.findOne(userId);
+        const followUser = await this.findOne(followId);
+        if (!user.following.includes(followId)) {
+            user.following.push(followId);
+            followUser.followers.push(userId);
+            await user.save();
+            await followUser.save();
+        }
+        return user;
+    }
+    async unfollow(userId, unfollowId) {
+        const user = await this.findOne(userId);
+        const unfollowUser = await this.findOne(unfollowId);
+        user.following = user.following.filter((id) => id !== unfollowId);
+        unfollowUser.followers = unfollowUser.followers.filter((id) => id !== userId);
+        await user.save();
+        await unfollowUser.save();
+        return user;
     }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)('User')),
+    __param(0, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
     __metadata("design:paramtypes", [mongoose_2.Model])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

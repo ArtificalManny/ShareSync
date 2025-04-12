@@ -1,23 +1,22 @@
-// src/app.gateway.ts
-import {
-  WebSocketGateway,
-  SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
-} from '@nestjs/websockets';
-import { Socket } from 'socket.io';
+import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
 
-@WebSocketGateway({
-  cors: {
-    origin: '*',
-  },
-})
+// From "The Effortless Experience": Enable real-time project collaboration.
+@WebSocketGateway({ cors: true })
 export class AppGateway {
+  @WebSocketServer() server: Server;
+
   @SubscribeMessage('joinProject')
-  handleJoinProject(
-    @MessageBody() data: { projectId: string },
-    @ConnectedSocket() client: Socket
-  ) {
-    client.join(`project_${data.projectId}`);
+  handleJoinProject(client: Socket, data: { projectId: string }): void {
+    console.log(`Client ${client.id} joined project ${data.projectId}`);
+    client.join(data.projectId);
+    this.server.to(data.projectId).emit('userJoined', { userId: client.id });
+  }
+
+  @SubscribeMessage('leaveProject')
+  handleLeaveProject(client: Socket, data: { projectId: string }): void {
+    console.log(`Client ${client.id} left project ${data.projectId}`);
+    client.leave(data.projectId);
+    this.server.to(data.projectId).emit('userLeft', { userId: client.id });
   }
 }

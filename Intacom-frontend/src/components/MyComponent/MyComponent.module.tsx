@@ -1,12 +1,8 @@
 import React from 'react';
 import styles from './MyComponent.module.css';
 
-const MyComponent: React.FC = () => (
-  <div className={styles.myClass}>
-    {/* Your component content goes here */}
-    <h2>Welcome to MyComponent</h2>
-    <p>This is styled by MyComponent.module.css</p>
-  </div>
-);
+const MyComponent: React.FC = () => {
+  return <div className={styles.container}>My Component</div>;
+};
 
 export default MyComponent;

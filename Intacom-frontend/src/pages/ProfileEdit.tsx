@@ -1,131 +1,135 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import styled from '@emotion/styled';
-import { theme } from '../styles/theme';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, FormEvent } from 'react';
 import axios from 'axios';
+import { useParams, useNavigate } from 'react-router-dom';
+import { theme } from '../styles/theme';
 
-const Container = styled(motion.div)`
-  padding: ${theme.spacing.lg};
-  max-width: 800px;
-  margin: 0 auto;
-`;
+interface User {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  gender: string;
+  birthday: {
+    month: string;
+    day: string;
+    year: string;
+  };
+}
 
-const Form = styled.form`
-  background: ${theme.colors.white};
-  padding: ${theme.spacing.lg};
-  border-radius: ${theme.borderRadius.medium};
-  box-shadow: ${theme.shadows.medium};
-`;
-
-const Title = styled.h2`
-  font-size: ${theme.typography.h2.fontSize};
-  font-weight: ${theme.typography.h2.fontWeight};
-  margin-bottom: ${theme.spacing.md};
-  color: ${theme.colors.primary};
-`;
-
-const Input = styled.input`
-  width: 100%;
-  margin-bottom: ${theme.spacing.md};
-`;
-
-const Textarea = styled.textarea`
-  width: 100%;
-  margin-bottom: ${theme.spacing.md};
-  padding: ${theme.spacing.sm};
-  border: 1px solid ${theme.colors.textLight};
-  border-radius: ${theme.borderRadius.small};
-`;
-
-const Button = styled.button`
-  width: 100%;
-  margin-top: ${theme.spacing.sm};
-`;
-
-const Error = styled.p`
-  color: ${theme.colors.error};
-  font-size: ${theme.typography.caption.fontSize};
-  margin-top: ${theme.spacing.sm};
-`;
-
-const ProfileEdit = () => {
-  const { username } = useParams();
+const ProfileEdit: React.FC = () => {
+  const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
-  const [bio, setBio] = useState('');
-  const [hobbies, setHobbies] = useState('');
-  const [skills, setSkills] = useState('');
-  const [experience, setExperience] = useState('');
-  const [error, setError] = useState('');
+  const [profile, setProfile] = useState<User | null>(null);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [gender, setGender] = useState('');
+  const [birthday, setBirthday] = useState({ month: '', day: '', year: '' });
 
-  useEffect(() => {
-    fetchUser();
-  }, [username]);
-
-  const fetchUser = async () => {
+  const fetchProfile = async () => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${username}`);
-      const user = response.data.data;
-      setBio(user.bio || '');
-      setHobbies(user.hobbies?.join(', ') || '');
-      setSkills(user.skills?.join(', ') || '');
-      setExperience(user.experience?.join(', ') || '');
+      const userData: User = response.data.data;
+      setProfile(userData);
+      setFirstName(userData.firstName);
+      setLastName(userData.lastName);
+      setEmail(userData.email);
+      setGender(userData.gender);
+      setBirthday(userData.birthday);
     } catch (error) {
-      console.error('Error fetching user:', error);
+      console.error('Error fetching profile:', error);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) throw new Error('User not logged in');
+      const user = JSON.parse(storedUser) as User;
       await axios.put(`${import.meta.env.VITE_API_URL}/users/${user._id}`, {
-        bio,
-        hobbies: hobbies.split(',').map((hobby: string) => hobby.trim()),
-        skills: skills.split(',').map((skill: string) => skill.trim()),
-        experience: experience.split(',').map((exp: string) => exp.trim()),
+        firstName,
+        lastName,
+        email,
+        gender,
+        birthday,
       });
-      navigate(`/profile/${username}`);
-    } catch (err) {
-      setError('Failed to update profile. Please try again.');
+      navigate(`/profile/${user.username}`);
+    } catch (error) {
+      console.error('Error updating profile:', error);
     }
   };
 
+  useEffect(() => {
+    fetchProfile();
+  }, [username]);
+
+  if (!profile) return <div>Loading...</div>;
+
   return (
-    <Container
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Form onSubmit={handleSubmit}>
-        <Title>Edit Profile</Title>
-        <Textarea
-          placeholder="Bio"
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-        />
-        <Input
+    <div>
+      <h1>Edit Profile</h1>
+      <form onSubmit={handleSubmit}>
+        <input
           type="text"
-          placeholder="Hobbies (comma-separated)"
-          value={hobbies}
-          onChange={(e) => setHobbies(e.target.value)}
+          placeholder="First Name"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          required
         />
-        <Input
+        <input
           type="text"
-          placeholder="Skills (comma-separated)"
-          value={skills}
-          onChange={(e) => setSkills(e.target.value)}
+          placeholder="Last Name"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          required
         />
-        <Input
-          type="text"
-          placeholder="Experience (comma-separated)"
-          value={experience}
-          onChange={(e) => setExperience(e.target.value)}
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
         />
-        <Button type="submit">Update Profile</Button>
-        {error && <Error>{error}</Error>}
-      </Form>
-    </Container>
+        <select value={gender} onChange={(e) => setGender(e.target.value)} required>
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+        <div>
+          <input
+            type="text"
+            placeholder="MM"
+            value={birthday.month}
+            onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
+            required
+            maxLength={2}
+            pattern="\d*"
+          />
+          <input
+            type="text"
+            placeholder="DD"
+            value={birthday.day}
+            onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
+            required
+            maxLength={2}
+            pattern="\d*"
+          />
+          <input
+            type="text"
+            placeholder="YYYY"
+            value={birthday.year}
+            onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
+            required
+            maxLength={4}
+            pattern="\d*"
+          />
+        </div>
+        <button type="submit">Save Changes</button>
+      </form>
+    </div>
   );
 };
 

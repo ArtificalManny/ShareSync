@@ -1,70 +1,62 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './Notifications.css';
-
-interface User {
-  _id: string;
-}
 
 interface Notification {
   _id: string;
   message: string;
-  createdAt: string;
   read: boolean;
+}
+
+interface User {
+  _id: string;
 }
 
 interface NotificationsProps {
   user: User | null;
 }
 
-function Notifications({ user }: NotificationsProps) {
+const Notifications: React.FC<NotificationsProps> = ({ user }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!user) return;
-      try {
-        console.log('Fetching notifications for user ID:', user._id);
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
-        console.log('Notifications fetch response:', response.data);
-        setNotifications(response.data);
-      } catch (error: any) {
-        console.error('Error fetching notifications:', error.response?.data || error.message);
-      }
-    };
-    fetchNotifications();
-  }, [user]);
+  const fetchNotifications = async () => {
+    if (!user) return;
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
+      setNotifications(response.data.data);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
 
   const markAsRead = async (id: string) => {
     try {
       await axios.put(`${import.meta.env.VITE_API_URL}/notifications/mark-as-read/${id}`);
-      setNotifications(notifications.map((notification) =>
-        notification._id === id ? { ...notification, read: true } : notification
+      setNotifications(notifications.map((notif) =>
+        notif._id === id ? { ...notif, read: true } : notif
       ));
-    } catch (error: any) {
-      console.error('Error marking notification as read:', error.response?.data || error.message);
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
     }
   };
 
+  useEffect(() => {
+    fetchNotifications();
+  }, [user]);
+
   return (
-    <div className="notifications">
+    <div>
       <h1>Notifications</h1>
-      {notifications.length === 0 ? (
-        <p>No notifications yet.</p>
-      ) : (
-        notifications.map((notification) => (
-          <div
-            key={notification._id}
-            className={`notification ${notification.read ? 'read' : 'unread'}`}
-            onClick={() => !notification.read && markAsRead(notification._id)}
-          >
-            <p>{notification.message}</p>
-            <span>{new Date(notification.createdAt).toLocaleString()}</span>
-          </div>
-        ))
-      )}
+      {notifications.map((notification) => (
+        <div key={notification._id}>
+          <p>{notification.message}</p>
+          <p>{notification.read ? 'Read' : 'Unread'}</p>
+          {!notification.read && (
+            <button onClick={() => markAsRead(notification._id)}>Mark as Read</button>
+          )}
+        </div>
+      ))}
     </div>
   );
-}
+};
 
 export default Notifications;

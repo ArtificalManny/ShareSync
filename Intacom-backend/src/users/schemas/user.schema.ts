@@ -1,8 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
+export type UserDocument = User & Document;
+
 @Schema({ timestamps: true })
-export class User extends Document {
+export class User {
   @Prop({ required: true })
   firstName: string;
 
@@ -22,37 +24,44 @@ export class User extends Document {
   gender: string;
 
   @Prop({ type: Object })
-  birthday: { month: string; day: string; year: string };
+  birthday: {
+    month: string;
+    day: string;
+    year: string;
+  };
 
   @Prop({ default: 0 })
   points: number;
 
-  @Prop()
-  profilePic: string;
-
-  @Prop({ type: [String], default: [] })
-  followers: string[];
-
-  @Prop({ type: [String], default: [] })
-  following: string[];
-
-  @Prop()
-  verificationToken: string;
-
   @Prop({ default: false })
   isVerified: boolean;
 
-  @Prop()
-  resetToken: string;
+  @Prop({ default: [] })
+  badges: string[];
+
+  @Prop({ default: [] })
+  endorsements: string[];
+
+  @Prop({ default: [] })
+  experience: string[];
+
+  @Prop({ default: [] })
+  followers: string[];
+
+  @Prop({ default: [] })
+  following: string[];
+
+  @Prop({ default: [] })
+  hobbies: string[];
+
+  @Prop({ default: [] })
+  skills: string[];
 
   @Prop()
-  resetTokenExpiry: number;
+  resetPasswordToken?: string;
 
   @Prop()
-  createdAt: Date;
-
-  @Prop()
-  updatedAt: Date;
+  resetPasswordExpires?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
