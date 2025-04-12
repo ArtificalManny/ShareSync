@@ -31,6 +31,8 @@ function Login({ setUser }: LoginProps) {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/login`, {
         identifier,
         password,
+      }, {
+        timeout: 5000, // Add a timeout to prevent hanging
       });
       console.log('Login.tsx: Login response:', response.data);
       const user = response.data.data;
@@ -47,7 +49,7 @@ function Login({ setUser }: LoginProps) {
         if (err.response?.data?.message) {
           setError(err.response.data.message);
         } else if (err.message.includes('Network Error')) {
-          setError('Unable to connect to the server. Please check your network connection.');
+          setError('Unable to connect to the server. Please ensure the backend is running on port 3001.');
         } else if (err.message.includes('CORS')) {
           setError('A CORS error occurred. Please contact support or try again later.');
         } else {

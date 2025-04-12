@@ -2,7 +2,6 @@ import { Controller, Post, Body, HttpException, HttpStatus, Get } from '@nestjs/
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 
-// From "The Customer Service Revolution": Provide clear feedback for user actions.
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
