@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import * as cors from 'cors';
 
 // From "The Effortless Experience": Ensure seamless integration between frontend and backend.
 dotenv.config();
@@ -42,16 +43,17 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS using NestJS's built-in method.
+  // Use the cors middleware directly.
   // From "The Customer Service Revolution": Ensure a frictionless experience by resolving cross-origin issues.
-  app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:54693',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type,Accept,Authorization',
-    credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-  });
+  app.use(
+    cors({
+      origin: process.env.FRONTEND_URL || 'http://localhost:54693',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      allowedHeaders: 'Content-Type,Accept,Authorization',
+      credentials: true,
+      optionsSuccessStatus: 204,
+    }),
+  );
 
   // Add logging for all incoming requests to debug CORS.
   app.use((req: any, res: any, next: () => void) => {

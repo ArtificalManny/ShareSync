@@ -5,7 +5,7 @@ import './Recover.css';
 // From "The Customer Service Revolution" and "The Apple Experience":
 // - Make the forgot password process seamless and delightful with clear feedback.
 // - Apply "Hooked" and Freud's Id/Ego/Superego: Provide a dopamine hit on successful request.
-const API_URL = '/auth'; // Use proxy path instead of full URL.
+const API_URL = '/auth'; // Use proxy path.
 
 function Recover() {
   const [email, setEmail] = useState('');

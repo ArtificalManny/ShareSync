@@ -6,7 +6,7 @@ import './ResetPassword.css';
 // From "The Customer Service Revolution" and "The Apple Experience":
 // - Make the password reset process seamless and delightful with clear feedback.
 // - Apply "Hooked" and Freud's Id/Ego/Superego: Provide a dopamine hit on successful reset.
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'; // Fallback to default if VITE_API_URL is undefined.
+const API_URL = '/auth'; // Use proxy path.
 
 function ResetPassword() {
   const [newPassword, setNewPassword] = useState('');
@@ -20,7 +20,6 @@ function ResetPassword() {
 
   const token = searchParams.get('token');
 
-  console.log('ResetPassword.tsx: VITE_API_URL:', import.meta.env.VITE_API_URL);
   console.log('ResetPassword.tsx: API_URL:', API_URL);
   console.log('ResetPassword.tsx: Token from URL:', token);
 
@@ -36,7 +35,7 @@ function ResetPassword() {
     }
     try {
       console.log('ResetPassword.tsx: Resetting password with token:', token);
-      const response = await axios.post(`${API_URL}/auth/reset-password`, {
+      const response = await axios.post(`${API_URL}/reset-password`, {
         token,
         newPassword,
       });
