@@ -9,26 +9,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
-const auth_module_1 = require("./auth/auth.module");
 const users_module_1 = require("./users/users.module");
-const points_module_1 = require("./points/points.module");
+const auth_module_1 = require("./auth/auth.module");
 const notifications_module_1 = require("./notifications/notifications.module");
+const points_module_1 = require("./points/points.module");
+const app_gateway_1 = require("./app.gateway");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forRootAsync({
-                useFactory: () => ({
-                    uri: process.env.MONGODB_URI,
-                }),
-            }),
-            auth_module_1.AuthModule,
+            mongoose_1.MongooseModule.forRoot('mongodb://localhost:27017/intacom'),
             users_module_1.UsersModule,
-            points_module_1.PointsModule,
+            auth_module_1.AuthModule,
             notifications_module_1.NotificationsModule,
+            points_module_1.PointsModule,
         ],
+        providers: [app_gateway_1.AppGateway],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

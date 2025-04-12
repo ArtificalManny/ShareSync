@@ -83,7 +83,7 @@ async function bootstrap() {
     });
     app.setGlobalPrefix('auth');
     await connectWithRetry();
-    const port = process.env.PORT || 3000;
+    let port = parseInt(process.env.PORT || '3000', 10);
     let currentPort = port;
     let serverStarted = false;
     while (!serverStarted && currentPort < 3100) {

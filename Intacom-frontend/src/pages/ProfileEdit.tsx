@@ -1,136 +1,82 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { theme } from '../styles/theme';
+
+interface Project {
+  _id: string;
+  name: string;
+  description: string;
+}
 
 interface User {
   _id: string;
-  firstName: string;
-  lastName: string;
   username: string;
-  email: string;
-  gender: string;
-  birthday: {
-    month: string;
-    day: string;
-    year: string;
-  };
 }
 
-const ProfileEdit: React.FC = () => {
-  const { username } = useParams<{ username: string }>();
+const ProjectEdit: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<User | null>(null);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [gender, setGender] = useState('');
-  const [birthday, setBirthday] = useState({ month: '', day: '', year: '' });
+  const [project, setProject] = useState<Project | null>(null);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
 
-  const fetchProfile = async () => {
+  const fetchProject = async () => {
+    if (!id) return;
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${username}`);
-      const userData: User = response.data.data;
-      setProfile(userData);
-      setFirstName(userData.firstName);
-      setLastName(userData.lastName);
-      setEmail(userData.email);
-      setGender(userData.gender);
-      setBirthday(userData.birthday);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/by-id/${id}`);
+      const projectData: Project = response.data.data;
+      setProject(projectData);
+      setName(projectData.name);
+      setDescription(projectData.description);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error fetching project:', error);
     }
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!id) return;
     try {
       const storedUser = localStorage.getItem('user');
       if (!storedUser) throw new Error('User not logged in');
-      const user = JSON.parse(storedUser) as User;
-      await axios.put(`${import.meta.env.VITE_API_URL}/users/${user._id}`, {
-        firstName,
-        lastName,
-        email,
-        gender,
-        birthday,
+      const userData = JSON.parse(storedUser) as User;
+      await axios.put(`${import.meta.env.VITE_API_URL}/projects/${id}`, {
+        name,
+        description,
       });
-      navigate(`/profile/${user.username}`);
+      navigate(`/project/${id}`);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('Error updating project:', error);
     }
   };
 
   useEffect(() => {
-    fetchProfile();
-  }, [username]);
+    fetchProject();
+  }, [id]);
 
-  if (!profile) return <div>Loading...</div>;
+  if (!project) return <div>Loading...</div>;
 
   return (
     <div>
-      <h1>Edit Profile</h1>
+      <h1>Edit Project</h1>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
-          placeholder="First Name"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
+          placeholder="Project Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           required
         />
-        <input
-          type="text"
-          placeholder="Last Name"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
+        <textarea
+          placeholder="Project Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
           required
         />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <select value={gender} onChange={(e) => setGender(e.target.value)} required>
-          <option value="">Select Gender</option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Other">Other</option>
-        </select>
-        <div>
-          <input
-            type="text"
-            placeholder="MM"
-            value={birthday.month}
-            onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
-            required
-            maxLength={2}
-            pattern="\d*"
-          />
-          <input
-            type="text"
-            placeholder="DD"
-            value={birthday.day}
-            onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
-            required
-            maxLength={2}
-            pattern="\d*"
-          />
-          <input
-            type="text"
-            placeholder="YYYY"
-            value={birthday.year}
-            onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
-            required
-            maxLength={4}
-            pattern="\d*"
-          />
-        </div>
         <button type="submit">Save Changes</button>
       </form>
     </div>
   );
 };
 
-export default ProfileEdit;
+export default ProjectEdit;

@@ -1,7 +1,6 @@
 import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { theme } from '../styles/theme';
 
 interface User {
   _id: string;

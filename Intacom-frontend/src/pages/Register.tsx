@@ -29,8 +29,6 @@ function Register() {
   };
 
   const handleDayChange = (day: string) => {
-    const monthNum = parseInt(birthday.month, 10);
-    const yearNum = parseInt(birthday.year, 10);
     const dayNum = parseInt(day, 10);
 
     if (day === '') {
@@ -236,6 +234,9 @@ function Register() {
         <button type="submit">Register</button>
       </form>
       {error && <p className="error">{error}</p>}
+      <p>
+        Already have an account? <Link to="/login">Login</Link>
+      </p>
     </div>
   );
 }

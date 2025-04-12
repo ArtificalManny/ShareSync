@@ -1,21 +1,19 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { PointsModule } from './points/points.module';
+import { AuthModule } from './auth/auth.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PointsModule } from './points/points.module';
+import { AppGateway } from './app.gateway';
 
 @Module({
   imports: [
-    MongooseModule.forRootAsync({
-      useFactory: () => ({
-        uri: process.env.MONGODB_URI,
-      }),
-    }),
-    AuthModule,
+    MongooseModule.forRoot('mongodb://localhost:27017/intacom'),
     UsersModule,
-    PointsModule,
+    AuthModule,
     NotificationsModule,
+    PointsModule,
   ],
+  providers: [AppGateway],
 })
 export class AppModule {}

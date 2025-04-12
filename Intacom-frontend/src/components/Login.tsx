@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import './Login.css';
-import { useAppSelector, useAppDispatch } from '../hooks';
+import { useAppDispatch } from '../hooks';
 import { login } from '../store/slices/authSlice';
 
 interface LoginProps {
@@ -17,7 +17,6 @@ function Login({ setUser }: LoginProps) {
   const [isMounted, setIsMounted] = useState(true);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const authState = useAppSelector((state) => state.auth);
 
   useEffect(() => {
     return () => {

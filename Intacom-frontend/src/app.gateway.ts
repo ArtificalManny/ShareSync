@@ -1,10 +1,22 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
-// From "The Effortless Experience": Enable real-time project collaboration.
 @WebSocketGateway({ cors: true })
 export class AppGateway {
-  @WebSocketServer() server: Server;
+  @WebSocketServer()
+  server!: Server;
+
+  afterInit(server: Server) {
+    console.log('WebSocket server initialized');
+  }
+
+  handleConnection(client: Socket) {
+    console.log(`Client connected: ${client.id}`);
+  }
+
+  handleDisconnect(client: Socket) {
+    console.log(`Client disconnected: ${client.id}`);
+  }
 
   @SubscribeMessage('joinProject')
   handleJoinProject(client: Socket, data: { projectId: string }): void {

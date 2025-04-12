@@ -1,7 +1,6 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { theme } from '../styles/theme';
 
 interface Project {
   _id: string;
@@ -132,6 +131,7 @@ const Project: React.FC = () => {
     <div>
       <h1>{project.name}</h1>
       <p>{project.description}</p>
+      <button onClick={() => navigate(`/project/${id}/edit`)}>Edit Project</button>
 
       <h2>Posts</h2>
       <form onSubmit={handlePostSubmit}>

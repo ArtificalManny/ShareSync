@@ -212,6 +212,7 @@ const ProjectHome: React.FC<ProjectHomeProps> = ({ user }) => {
     <div>
       <h1>{project.name}</h1>
       <p>{project.description}</p>
+      <button onClick={() => navigate(`/project/${id}/edit`)}>Edit Project</button>
 
       <h2>Posts</h2>
       <form onSubmit={handlePostSubmit}>

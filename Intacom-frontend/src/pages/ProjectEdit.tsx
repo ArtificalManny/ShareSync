@@ -1,7 +1,6 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { theme } from '../styles/theme';
 
 interface Project {
   _id: string;
@@ -40,7 +39,7 @@ const ProjectEdit: React.FC = () => {
     try {
       const storedUser = localStorage.getItem('user');
       if (!storedUser) throw new Error('User not logged in');
-      const user = JSON.parse(storedUser) as User;
+      const userData = JSON.parse(storedUser) as User;
       await axios.put(`${import.meta.env.VITE_API_URL}/projects/${id}`, {
         name,
         description,

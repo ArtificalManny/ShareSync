@@ -19,7 +19,6 @@ interface UploadProps {
 const Upload: React.FC<UploadProps> = ({ user, projects }) => {
   const handleUpload = (url: string) => {
     console.log('File uploaded:', url);
-    // Handle the uploaded file URL (e.g., associate it with a project)
   };
 
   if (!user) {

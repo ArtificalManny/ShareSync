@@ -2,7 +2,21 @@ import React from 'react';
 import { styled } from '@mui/material/styles';
 import { theme } from '../styles/theme';
 
-const HeaderContainer = styled('header')(({ theme }) => ({
+interface Theme {
+  colors: {
+    primary: string;
+    secondary: string;
+    background: string;
+    text: string;
+  };
+  spacing: {
+    small: string;
+    medium: string;
+    large: string;
+  };
+}
+
+const HeaderContainer = styled('header')(({ theme }: { theme: Theme }) => ({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
@@ -30,7 +44,7 @@ const NavLink = styled('a')({
 
 const Header: React.FC = () => {
   return (
-    <HeaderContainer>
+    <HeaderContainer theme={theme}>
       <Logo>INTACOM</Logo>
       <Nav>
         <NavLink href="/">Home</NavLink>

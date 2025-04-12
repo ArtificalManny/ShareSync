@@ -11,20 +11,8 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         logLevel: 'debug',
-        rewrite: (path) => {
-          console.log('Vite Proxy: Rewriting path:', path);
-          return path;
-        },
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq, req) => {
-            console.log('Vite Proxy: Proxying request:', req.method, req.url);
-          });
-          proxy.on('error', (err) => {
-            console.error('Vite Proxy: Proxy error:', err);
-          });
-        },
       },
     },
   },
-  envDir: './', // Ensure .env file is loaded from the root.
+  envDir: './',
 });

@@ -9,16 +9,16 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto): Promise<UserDocument> {
     const createdUser = new this.userModel(createUserDto);
     return createdUser.save();
   }
 
-  async findAll(): Promise<User[]> {
+  async findAll(): Promise<UserDocument[]> {
     return this.userModel.find().exec();
   }
 
-  async findOne(id: string): Promise<User> {
+  async findOne(id: string): Promise<UserDocument> {
     const user = await this.userModel.findById(id).exec();
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -26,7 +26,7 @@ export class UsersService {
     return user;
   }
 
-  async findByUsername(username: string): Promise<User> {
+  async findByUsername(username: string): Promise<UserDocument> {
     const user = await this.userModel.findOne({ username }).exec();
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -34,7 +34,7 @@ export class UsersService {
     return user;
   }
 
-  async findByEmail(email: string): Promise<User> {
+  async findByEmail(email: string): Promise<UserDocument> {
     const user = await this.userModel.findOne({ email }).exec();
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -42,7 +42,7 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<UserDocument> {
     const updatedUser = await this.userModel
       .findByIdAndUpdate(id, updateUserDto, { new: true })
       .exec();
@@ -59,7 +59,7 @@ export class UsersService {
     }
   }
 
-  async follow(userId: string, followId: string): Promise<User> {
+  async follow(userId: string, followId: string): Promise<UserDocument> {
     const user = await this.findOne(userId);
     const followUser = await this.findOne(followId);
 
@@ -73,7 +73,7 @@ export class UsersService {
     return user;
   }
 
-  async unfollow(userId: string, unfollowId: string): Promise<User> {
+  async unfollow(userId: string, unfollowId: string): Promise<UserDocument> {
     const user = await this.findOne(userId);
     const unfollowUser = await this.findOne(unfollowId);
 

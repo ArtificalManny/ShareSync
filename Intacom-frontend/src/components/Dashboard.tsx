@@ -2,11 +2,24 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import { styled } from '@mui/material/styles';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import axios from 'axios';
-import { theme } from '../styles/theme';
 import { useNavigate } from 'react-router-dom';
 
-// Styled components using the theme
-const Sidebar = styled('div')(({ theme }) => ({
+// Define theme type
+interface Theme {
+  colors: {
+    primary: string;
+    secondary: string;
+    background: string;
+    text: string;
+  };
+  spacing: {
+    small: string;
+    medium: string;
+    large: string;
+  };
+}
+
+const Sidebar = styled('div')(({ theme }: { theme: Theme }) => ({
   width: '250px',
   backgroundColor: theme.colors.secondary,
   color: theme.colors.text,
@@ -16,9 +29,9 @@ const Sidebar = styled('div')(({ theme }) => ({
   overflowY: 'auto',
 }));
 
-const SidebarItem = styled('div')(({ theme }) => ({
+const SidebarItem = styled('div')(({ theme }: { theme: Theme }) => ({
   padding: theme.spacing.small,
-  margin: theme.spacing.small + ' 0',
+  margin: `${theme.spacing.small} 0`,
   cursor: 'pointer',
   '&:hover': {
     backgroundColor: theme.colors.primary,
@@ -26,26 +39,26 @@ const SidebarItem = styled('div')(({ theme }) => ({
   },
 }));
 
-const MainContent = styled('div')(({ theme }) => ({
+const MainContent = styled('div')(({ theme }: { theme: Theme }) => ({
   marginLeft: '250px',
   padding: theme.spacing.medium,
   backgroundColor: theme.colors.background,
   minHeight: '100vh',
 }));
 
-const PostContainer = styled('div')(({ theme }) => ({
+const PostContainer = styled('div')(({ theme }: { theme: Theme }) => ({
   backgroundColor: theme.colors.secondary,
   padding: theme.spacing.medium,
   marginBottom: theme.spacing.medium,
   borderRadius: '8px',
 }));
 
-const PostContent = styled('p')(({ theme }) => ({
+const PostContent = styled('p')(({ theme }: { theme: Theme }) => ({
   color: theme.colors.text,
   marginBottom: theme.spacing.small,
 }));
 
-const ActionButton = styled('button')(({ theme }) => ({
+const ActionButton = styled('button')(({ theme }: { theme: Theme }) => ({
   backgroundColor: theme.colors.primary,
   color: theme.colors.text,
   border: 'none',
@@ -58,7 +71,6 @@ const ActionButton = styled('button')(({ theme }) => ({
   },
 }));
 
-// Define interfaces for Post and User
 interface Post {
   _id: string;
   content: string;
@@ -71,7 +83,6 @@ interface User {
   username: string;
 }
 
-// Define props for Dashboard component
 interface DashboardProps {
   user: User | null;
 }
@@ -133,15 +144,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
   return (
     <div>
-      <Sidebar>
-        <SidebarItem onClick={() => navigate('/')}>Home</SidebarItem>
-        <SidebarItem onClick={() => navigate(`/profile/${user?.username || ''}`)}>Profile</SidebarItem>
-        <SidebarItem onClick={() => navigate('/projects')}>Projects</SidebarItem>
-        <SidebarItem onClick={() => navigate('/notifications')}>Notifications</SidebarItem>
-        <SidebarItem onClick={() => navigate('/leaderboard')}>Leaderboard</SidebarItem>
-        <SidebarItem onClick={() => navigate('/logout')}>Logout</SidebarItem>
+      <Sidebar theme={theme}>
+        <SidebarItem theme={theme} onClick={() => navigate('/')}>Home</SidebarItem>
+        <SidebarItem theme={theme} onClick={() => navigate(`/profile/${user?.username || ''}`)}>Profile</SidebarItem>
+        <SidebarItem theme={theme} onClick={() => navigate('/projects')}>Projects</SidebarItem>
+        <SidebarItem theme={theme} onClick={() => navigate('/notifications')}>Notifications</SidebarItem>
+        <SidebarItem theme={theme} onClick={() => navigate('/leaderboard')}>Leaderboard</SidebarItem>
+        <SidebarItem theme={theme} onClick={() => navigate('/logout')}>Logout</SidebarItem>
       </Sidebar>
-      <MainContent>
+      <MainContent theme={theme}>
         <form onSubmit={handlePostSubmit}>
           <textarea
             value={newPost}
@@ -157,12 +168,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           loader={<h4>Loading...</h4>}
         >
           {posts.map((post) => (
-            <PostContainer key={post._id}>
-              <PostContent>{post.content}</PostContent>
-              <ActionButton onClick={() => handleLike(post._id)}>
+            <PostContainer theme={theme} key={post._id}>
+              <PostContent theme={theme}>{post.content}</PostContent>
+              <ActionButton theme={theme} onClick={() => handleLike(post._id)}>
                 Like ({post.likes})
               </ActionButton>
-              <ActionButton>Comment ({post.comments})</ActionButton>
+              <ActionButton theme={theme}>Comment ({post.comments})</ActionButton>
             </PostContainer>
           ))}
         </InfiniteScroll>

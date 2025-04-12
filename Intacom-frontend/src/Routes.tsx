@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import Header from './components/Header';
 import Login from './components/Login';
 import Home from './pages/Home';
@@ -15,6 +15,13 @@ import Recover from './pages/Recover';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import Upload from './pages/Upload';
+import axios from 'axios';
+
+interface Project {
+  _id: string;
+  name: string;
+  description: string;
+}
 
 interface User {
   _id: string;
@@ -92,7 +99,7 @@ const AppRoutes: React.FC = () => {
           path="/profile/edit"
           element={
             user ? (
-              <ProfileEdit />
+              <ProjectEdit />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -172,14 +179,7 @@ const AppRoutes: React.FC = () => {
           path="/logout"
           element={
             user ? (
-              <div>
-                <h1>Logout</h1>
-                <button onClick={() => {
-                  localStorage.removeItem('user');
-                  setUser(null);
-                  navigate('/login');
-                }}>Logout</button>
-              </div>
+              <Logout setUser={setUser} />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -187,6 +187,29 @@ const AppRoutes: React.FC = () => {
         />
       </Routes>
     </Router>
+  );
+};
+
+interface LogoutProps {
+  setUser: (user: { _id: string; username: string; email: string } | null) => void;
+}
+
+const Logout: React.FC<LogoutProps> = ({ setUser }) => {
+  const navigate = useNavigate();
+
+  return (
+    <div>
+      <h1>Logout</h1>
+      <button
+        onClick={() => {
+          localStorage.removeItem('user');
+          setUser(null);
+          navigate('/login');
+        }}
+      >
+        Logout
+      </button>
+    </div>
   );
 };
 
