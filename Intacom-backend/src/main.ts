@@ -43,11 +43,11 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // Use the cors middleware directly.
+  // Use the cors middleware directly with minimal configuration.
   // From "The Customer Service Revolution": Ensure a frictionless experience by resolving cross-origin issues.
   app.use(
     cors({
-      origin: process.env.FRONTEND_URL || 'http://localhost:54693',
+      origin: 'http://localhost:54693',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       allowedHeaders: 'Content-Type,Accept,Authorization',
       credentials: true,
