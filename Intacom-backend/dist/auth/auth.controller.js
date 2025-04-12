@@ -15,75 +15,111 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
+const auth_dto_1 = require("./dto/auth.dto");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
+    async test() {
+        console.log('AuthController: Test endpoint accessed');
+        return { message: 'Test endpoint reached' };
+    }
     async login(loginDto) {
+        console.log('AuthController: Login request received:', JSON.stringify(loginDto, null, 2));
         try {
-            const user = await this.authService.validateUser(loginDto.identifier, loginDto.password);
-            if (!user) {
-                throw new common_1.HttpException('Invalid credentials', 401);
-            }
-            return this.authService.login(user);
+            const user = await this.authService.login(loginDto);
+            console.log('AuthController: Login successful:', JSON.stringify(user, null, 2));
+            return {
+                status: 'success',
+                message: 'Login successful',
+                data: user,
+            };
         }
         catch (error) {
-            throw new common_1.HttpException(error.message, error.status || 401);
+            console.error('AuthController: Login error:', error.message);
+            throw new common_1.HttpException(error.message || 'An error occurred during login', common_1.HttpStatus.BAD_REQUEST);
         }
     }
     async register(registerDto) {
+        console.log('AuthController: Register request received:', JSON.stringify(registerDto, null, 2));
         try {
-            return await this.authService.register(registerDto);
+            const user = await this.authService.register(registerDto);
+            console.log('AuthController: Register successful:', JSON.stringify(user, null, 2));
+            return {
+                status: 'success',
+                message: 'User registered successfully. Please verify your email.',
+                data: user,
+            };
         }
         catch (error) {
-            throw new common_1.HttpException(error.message, error.status || 400);
+            console.error('AuthController: Register error:', error.message);
+            throw new common_1.HttpException(error.message || 'An error occurred during registration', common_1.HttpStatus.BAD_REQUEST);
         }
     }
-    async forgotPassword(email) {
+    async forgotPassword(forgotPasswordDto) {
+        console.log('AuthController: Forgot password request received:', JSON.stringify(forgotPasswordDto, null, 2));
         try {
-            return await this.authService.generateResetToken(email);
+            await this.authService.forgotPassword(forgotPasswordDto.email);
+            console.log('AuthController: Forgot password email sent');
+            return {
+                status: 'success',
+                message: 'A reset link has been sent to your email.',
+            };
         }
         catch (error) {
-            throw new common_1.HttpException(error.message, error.status || 400);
+            console.error('AuthController: Forgot password error:', error.message);
+            throw new common_1.HttpException(error.message || 'An error occurred while sending the reset link', common_1.HttpStatus.BAD_REQUEST);
         }
     }
-    async resetPassword(token, newPassword) {
+    async resetPassword(resetPasswordDto) {
+        console.log('AuthController: Reset password request received:', JSON.stringify(resetPasswordDto, null, 2));
         try {
-            return await this.authService.resetPassword(token, newPassword);
+            await this.authService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword, resetPasswordDto.email);
+            console.log('AuthController: Password reset successful');
+            return {
+                status: 'success',
+                message: 'Password reset successful. Please log in with your new password.',
+            };
         }
         catch (error) {
-            throw new common_1.HttpException(error.message, error.status || 400);
+            console.error('AuthController: Reset password error:', error.message);
+            throw new common_1.HttpException(error.message || 'An error occurred while resetting the password', common_1.HttpStatus.BAD_REQUEST);
         }
     }
 };
 exports.AuthController = AuthController;
 __decorate([
+    (0, common_1.Get)('test'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "test", null);
+__decorate([
     (0, common_1.Post)('login'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [auth_dto_1.LoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, common_1.Post)('register'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [auth_dto_1.RegisterDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
     (0, common_1.Post)('forgot-password'),
-    __param(0, (0, common_1.Body)('email')),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [auth_dto_1.ForgotPasswordDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "forgotPassword", null);
 __decorate([
     (0, common_1.Post)('reset-password'),
-    __param(0, (0, common_1.Body)('token')),
-    __param(1, (0, common_1.Body)('newPassword')),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [auth_dto_1.ResetPasswordDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([

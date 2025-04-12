@@ -9,6 +9,7 @@ export class AuthController {
 
   @Get('test')
   async test() {
+    console.log('AuthController: Test endpoint accessed');
     return { message: 'Test endpoint reached' };
   }
 
@@ -78,7 +79,7 @@ export class AuthController {
       await this.authService.resetPassword(
         resetPasswordDto.token,
         resetPasswordDto.newPassword,
-        resetPasswordDto.email, // Pass the email to ensure user-specific reset.
+        resetPasswordDto.email,
       );
       console.log('AuthController: Password reset successful');
       return {

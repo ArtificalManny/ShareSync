@@ -38,26 +38,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@nestjs/core");
 const app_module_1 = require("./app.module");
-const mongoose_1 = __importDefault(require("mongoose"));
 const dotenv = __importStar(require("dotenv"));
+const mongoose_1 = __importDefault(require("mongoose"));
+const path_1 = require("path");
 dotenv.config();
 async function connectWithRetry() {
     let retries = 5;
     while (retries > 0) {
         try {
-            console.log('Environment variables loaded:');
-            console.log('MONGODB_URI:', process.env.MONGODB_URI);
-            console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
-            console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
-            console.log('EMAIL_USER:', process.env.EMAIL_USER);
-            console.log('EMAIL_PASS:', process.env.EMAIL_PASS);
-            console.log('S3_BUCKET:', process.env.S3_BUCKET);
-            console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
-            if (!process.env.MONGODB_URI) {
-                throw new Error('MONGODB_URI is not defined in the environment variables');
-            }
             console.log('Connecting to MongoDB...');
-            await mongoose_1.default.connect(process.env.MONGODB_URI);
+            await mongoose_1.default.connect(process.env.MONGODB_URI, {
+                useNewUrlParser: true,
+                useUnifiedTopology: true,
+            });
             console.log('MongoDB connection successful');
             break;
         }
@@ -68,17 +61,36 @@ async function connectWithRetry() {
                 throw err;
             }
             console.log('Retrying in 5 seconds...');
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise((resolve) => setTimeout(resolve, 5000));
         }
     }
 }
 async function bootstrap() {
-    mongoose_1.default.set('debug', true);
-    await connectWithRetry();
+    console.log('Environment variables loaded:');
+    console.log('MONGODB_URI:', process.env.MONGODB_URI);
+    console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
+    console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
+    console.log('EMAIL_USER:', process.env.EMAIL_USER);
+    console.log('EMAIL_PASS:', process.env.EMAIL_PASS);
+    console.log('S3_BUCKET:', process.env.S3_BUCKET);
+    console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    app.useStaticAssets((0, path_1.join)(__dirname, '..', '..', 'Intacom-frontend', 'dist'), {
+        index: 'index.html',
+        prefix: '/',
+    });
+    app.use((req, res, next) => {
+        console.log('Backend: Request received:', req.method, req.url, 'from origin:', req.headers.origin);
+        console.log('Backend: Response headers:', res.getHeaders());
+        next();
+    });
+    app.setGlobalPrefix('auth');
+    await connectWithRetry();
     await app.listen(3000);
+    console.log('Backend server running on http://localhost:3000');
+    console.log('Serving frontend from:', (0, path_1.join)(__dirname, '..', '..', 'Intacom-frontend', 'dist'));
 }
-bootstrap().catch(err => {
+bootstrap().catch((err) => {
     console.error('Failed to start the application:', err);
     process.exit(1);
 });

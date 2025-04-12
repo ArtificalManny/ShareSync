@@ -50,17 +50,21 @@ async function bootstrap() {
     prefix: '/',
   });
 
-  // Add logging for all incoming requests.
+  // Add logging for all incoming requests to debug the request flow.
   app.use((req: any, res: any, next: () => void) => {
-    console.log('Request received:', req.method, req.url, 'from origin:', req.headers.origin);
-    console.log('Response headers:', res.getHeaders());
+    console.log('Backend: Request received:', req.method, req.url, 'from origin:', req.headers.origin);
+    console.log('Backend: Response headers:', res.getHeaders());
     next();
   });
+
+  // Ensure API routes are prefixed correctly.
+  app.setGlobalPrefix('auth');
 
   await connectWithRetry();
 
   await app.listen(3000);
   console.log('Backend server running on http://localhost:3000');
+  console.log('Serving frontend from:', join(__dirname, '..', '..', 'Intacom-frontend', 'dist'));
 }
 
 bootstrap().catch((err) => {

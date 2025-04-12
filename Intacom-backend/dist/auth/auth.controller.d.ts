@@ -1,21 +1,27 @@
 import { AuthService } from './auth.service';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 export declare class AuthController {
-    private authService;
+    private readonly authService;
     constructor(authService: AuthService);
-    login(loginDto: {
-        identifier: string;
-        password: string;
-    }): Promise<{
-        data: any;
+    test(): Promise<{
+        message: string;
     }>;
-    register(registerDto: any): Promise<{
+    login(loginDto: LoginDto): Promise<{
+        status: string;
         message: string;
         data: import("../users/schemas/user.schema").User;
     }>;
-    forgotPassword(email: string): Promise<{
-        resetToken: string;
+    register(registerDto: RegisterDto): Promise<{
+        status: string;
+        message: string;
+        data: import("../users/schemas/user.schema").User;
     }>;
-    resetPassword(token: string, newPassword: string): Promise<{
+    forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{
+        status: string;
+        message: string;
+    }>;
+    resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{
+        status: string;
         message: string;
     }>;
 }

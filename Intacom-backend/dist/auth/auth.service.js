@@ -41,108 +41,150 @@ var __importStar = (this && this.__importStar) || (function () {
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
-const users_service_1 = require("../users/users.service");
-const bcrypt = __importStar(require("bcrypt"));
+const mongoose_1 = require("@nestjs/mongoose");
+const mongoose_2 = require("mongoose");
+const user_schema_1 = require("../users/schemas/user.schema");
+const bcrypt = __importStar(require("bcryptjs"));
 const crypto = __importStar(require("crypto"));
+const nodemailer = __importStar(require("nodemailer"));
 let AuthService = class AuthService {
-    constructor(usersService) {
-        this.usersService = usersService;
+    constructor(userModel) {
+        this.userModel = userModel;
     }
-    async validateUser(identifier, password) {
-        console.log('Validating user with identifier:', identifier);
-        console.log('Attempting to find user by username:', identifier);
-        let user = await this.usersService.findByUsername(identifier);
+    async login(loginDto) {
+        const { identifier, password } = loginDto;
+        console.log('AuthService: Validating user with identifier:', identifier);
+        let user = await this.userModel.findOne({ username: identifier }).exec();
         if (!user) {
-            console.log('User not found by username, attempting to find by email:', identifier);
-            user = await this.usersService.findByEmail(identifier);
+            console.log('AuthService: User not found by username, attempting to find by email:', identifier);
+            user = await this.userModel.findOne({ email: identifier }).exec();
         }
         if (!user) {
-            console.log('User not found for identifier:', identifier);
-            throw new common_1.NotFoundException('User not found. Please register.');
+            console.log('AuthService: User not found');
+            throw new common_1.HttpException('Invalid username or password.', common_1.HttpStatus.BAD_REQUEST);
         }
-        console.log('User found:', user.email, 'with hashed password:', user.password);
-        console.log('Comparing password:', password, 'with stored hash:', user.password);
-        const passwordMatch = await bcrypt.compare(password, user.password);
-        console.log('Password match result:', passwordMatch);
-        if (passwordMatch) {
-            const _a = user.toObject(), { password } = _a, result = __rest(_a, ["password"]);
-            console.log('User validated successfully:', result.email);
-            return result;
+        console.log('AuthService: User found:', user.email, 'with hashed password:', user.password);
+        const isMatch = await bcrypt.compare(password, user.password);
+        console.log('AuthService: Password match result:', isMatch);
+        if (!isMatch) {
+            console.log('AuthService: Password does not match');
+            throw new common_1.HttpException('Invalid username or password.', common_1.HttpStatus.BAD_REQUEST);
         }
-        console.log('Password does not match for user:', user.email);
-        throw new common_1.UnauthorizedException('Incorrect password. Please try again.');
+        console.log('AuthService: User validated successfully:', user.email);
+        return user;
     }
-    async login(user) {
-        console.log('Login successful for user:', user.email);
-        return {
-            data: user,
-        };
-    }
-    async register(userData) {
-        console.log('Registering user with data:', userData);
-        const existingUser = await this.usersService.findByUsername(userData.username) || await this.usersService.findByEmail(userData.email);
+    async register(registerDto) {
+        const { firstName, lastName, username, email, password, gender, birthday } = registerDto;
+        console.log('AuthService: Registering user with email:', email);
+        const { month, day, year } = birthday;
+        const monthNum = parseInt(month, 10);
+        const dayNum = parseInt(day, 10);
+        const yearNum = parseInt(year, 10);
+        if (monthNum < 1 || monthNum > 12) {
+            throw new common_1.HttpException('Invalid month. Must be between 1 and 12.', common_1.HttpStatus.BAD_REQUEST);
+        }
+        const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+        if (dayNum < 1 || dayNum > daysInMonth) {
+            throw new common_1.HttpException(`Invalid day. Must be between 1 and ${daysInMonth} for the selected month.`, common_1.HttpStatus.BAD_REQUEST);
+        }
+        if (yearNum < 1900 || yearNum > new Date().getFullYear()) {
+            throw new common_1.HttpException('Invalid year. Must be between 1900 and the current year.', common_1.HttpStatus.BAD_REQUEST);
+        }
+        const existingUser = await this.userModel.findOne({ $or: [{ username }, { email }] }).exec();
         if (existingUser) {
-            console.log('User already exists:', existingUser.email);
-            throw new common_1.NotFoundException('Username or email already exists');
+            console.log('AuthService: User already exists with username or email:', existingUser.username, existingUser.email);
+            throw new common_1.HttpException('Username or email already exists.', common_1.HttpStatus.BAD_REQUEST);
         }
-        const verificationToken = crypto.randomBytes(32).toString('hex');
-        const newUser = await this.usersService.create(Object.assign(Object.assign({}, userData), { verificationToken, isVerified: false }));
-        console.log('User registered successfully:', newUser.email);
-        return {
-            message: 'User registered successfully. Please verify your email.',
-            data: newUser,
-        };
-    }
-    async generateResetToken(email) {
-        console.log('Generating reset token for email:', email);
-        const user = await this.usersService.findByEmail(email);
-        if (!user) {
-            console.log('User not found for email:', email);
-            throw new common_1.NotFoundException('User not found');
-        }
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetTokenExpiry = Date.now() + 3600000;
-        await this.usersService.update(user._id.toString(), {
-            resetToken,
-            resetTokenExpiry,
-        });
-        console.log('Reset token generated for user:', user.email, 'Token:', resetToken);
-        return { resetToken };
-    }
-    async resetPassword(token, newPassword) {
-        console.log('Resetting password with token:', token);
-        const user = await this.usersService.findAll().then(users => users.find(u => u.resetToken === token));
-        if (!user || user.resetTokenExpiry < Date.now()) {
-            console.log('Invalid or expired reset token for token:', token);
-            throw new common_1.NotFoundException('Invalid or expired reset token');
-        }
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await this.usersService.update(user._id.toString(), {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        console.log('AuthService: Password hashed successfully');
+        const user = new this.userModel({
+            firstName,
+            lastName,
+            username,
+            email,
             password: hashedPassword,
-            resetToken: null,
-            resetTokenExpiry: null,
+            gender,
+            birthday,
+            points: 0,
         });
-        console.log('Password reset successfully for user:', user.email);
-        return { message: 'Password reset successfully' };
+        await user.save();
+        console.log('AuthService: User registered successfully:', user.email);
+        return user;
+    }
+    async forgotPassword(email) {
+        console.log('AuthService: Processing forgot password for email:', email);
+        const user = await this.userModel.findOne({ email }).exec();
+        if (!user) {
+            console.log('AuthService: User not found for email:', email);
+            throw new common_1.HttpException('User not found.', common_1.HttpStatus.NOT_FOUND);
+        }
+        const token = crypto.randomBytes(32).toString('hex');
+        user.resetPasswordToken = token;
+        user.resetPasswordExpires = new Date(Date.now() + 3600000);
+        await user.save();
+        console.log('AuthService: Reset token generated and saved for user:', user.email);
+        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:54693'}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+        const transporter = nodemailer.createTransport({
+            host: process.env.EMAIL_HOST,
+            port: parseInt(process.env.EMAIL_PORT || '587'),
+            secure: false,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+        });
+        const mailOptions = {
+            from: `"Intacom Support" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: 'Password Reset Request',
+            html: `
+        <p>Hello ${user.firstName},</p>
+        <p>We received a request to reset your password for your Intacom account.</p>
+        <p>Please click the link below to reset your password:</p>
+        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p>This link will expire in 1 hour. If you did not request a password reset, please ignore this email.</p>
+        <p>Best regards,<br>The Intacom Team</p>
+      `,
+        };
+        try {
+            const info = await transporter.sendMail(mailOptions);
+            console.log('AuthService: Password reset email sent to:', email, 'Message ID:', info.messageId);
+        }
+        catch (error) {
+            console.error('AuthService: Error sending password reset email:', error);
+            throw new common_1.HttpException('Failed to send password reset email. Please try again later.', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async resetPassword(token, newPassword, email) {
+        console.log('AuthService: Resetting password with token:', token, 'for email:', email);
+        const user = await this.userModel
+            .findOne({
+            email,
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() },
+        })
+            .exec();
+        if (!user) {
+            console.log('AuthService: Invalid or expired reset token for email:', email);
+            throw new common_1.HttpException('Invalid or expired reset token.', common_1.HttpStatus.BAD_REQUEST);
+        }
+        user.password = await bcrypt.hash(newPassword, 10);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+        console.log('AuthService: Password reset successful for user:', user.email);
     }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [users_service_1.UsersService])
+    __param(0, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

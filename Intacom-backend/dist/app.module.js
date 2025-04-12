@@ -9,9 +9,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
-const users_module_1 = require("./users/users.module");
 const auth_module_1 = require("./auth/auth.module");
+const users_module_1 = require("./users/users.module");
 const points_module_1 = require("./points/points.module");
+const notifications_module_1 = require("./notifications/notifications.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -23,9 +24,10 @@ exports.AppModule = AppModule = __decorate([
                     uri: process.env.MONGODB_URI,
                 }),
             }),
-            users_module_1.UsersModule,
             auth_module_1.AuthModule,
+            users_module_1.UsersModule,
             points_module_1.PointsModule,
+            notifications_module_1.NotificationsModule,
         ],
     })
 ], AppModule);
