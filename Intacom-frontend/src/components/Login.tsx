@@ -20,6 +20,7 @@ function Login({ setUser }: LoginProps) {
 
   useEffect(() => {
     console.log('Login.tsx: Component mounted');
+    console.log('Login.tsx: VITE_API_URL:', import.meta.env.VITE_API_URL);
     return () => {
       console.log('Login.tsx: Component unmounted');
       setIsMounted(false);
@@ -30,11 +31,12 @@ function Login({ setUser }: LoginProps) {
     e.preventDefault();
     console.log('Login.tsx: handleLogin called with:', { identifier, password });
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/login`, {
         identifier,
         password,
       }, {
         timeout: 5000, // Add a timeout to prevent hanging
+        withCredentials: true, // Include credentials for CORS
       });
       console.log('Login.tsx: Login response:', response.data);
       const user = response.data.data;

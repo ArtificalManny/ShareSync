@@ -21,90 +21,33 @@ function Register() {
 
   console.log('Register.tsx: API_URL:', API_URL);
 
-  const getDaysInMonth = (month: string, year: string): number => {
-    const monthNum = parseInt(month, 10);
-    const yearNum = parseInt(year, 10);
-    if (isNaN(monthNum) || isNaN(yearNum)) return 31;
-    return new Date(yearNum, monthNum, 0).getDate();
-  };
-
-  const handleDayChange = (day: string) => {
-    const dayNum = parseInt(day, 10);
-
-    if (day === '') {
-      setBirthday({ ...birthday, day });
-      setError(null);
-      return;
-    }
-
-    if (isNaN(dayNum)) {
-      setError('Day must be a number.');
-      return;
-    }
-
-    const daysInMonth = getDaysInMonth(birthday.month, birthday.year);
-    if (dayNum < 1 || dayNum > daysInMonth) {
-      setError(`Day must be between 1 and ${daysInMonth} for the selected month.`);
-    } else {
-      setError(null);
-      setBirthday({ ...birthday, day });
-    }
-  };
-
-  const handleMonthChange = (month: string) => {
-    const monthNum = parseInt(month, 10);
-
-    if (month === '') {
-      setBirthday({ ...birthday, month, day: '' });
-      setError(null);
-      return;
-    }
-
-    if (isNaN(monthNum)) {
-      setError('Month must be a number.');
-      return;
-    }
-
-    if (monthNum < 1 || monthNum > 12) {
-      setError('Month must be between 1 and 12.');
-    } else {
-      setError(null);
-      setBirthday({ ...birthday, month, day: '' });
-    }
-  };
-
-  const handleYearChange = (year: string) => {
-    const yearNum = parseInt(year, 10);
-    const currentYear = new Date().getFullYear();
-
-    if (year === '') {
-      setBirthday({ ...birthday, year, day: '' });
-      setError(null);
-      return;
-    }
-
-    if (isNaN(yearNum)) {
-      setError('Year must be a number.');
-      return;
-    }
-
-    if (yearNum < 1900 || yearNum > currentYear) {
-      setError(`Year must be between 1900 and ${currentYear}.`);
-    } else {
-      setError(null);
-      setBirthday({ ...birthday, year, day: '' });
-    }
-  };
-
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-    if (error) {
+
+    // Validate birthday on submission
+    const monthNum = parseInt(birthday.month, 10);
+    const dayNum = parseInt(birthday.day, 10);
+    const yearNum = parseInt(birthday.year, 10);
+    const currentYear = new Date().getFullYear();
+
+    if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+      setError('Month must be between 1 and 12.');
       return;
     }
+    const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+    if (isNaN(dayNum) || dayNum < 1 || dayNum > daysInMonth) {
+      setError(`Day must be between 1 and ${daysInMonth} for the selected month.`);
+      return;
+    }
+    if (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear) {
+      setError(`Year must be between 1900 and ${currentYear}.`);
+      return;
+    }
+
     try {
       console.log('Register.tsx: Registering user with email:', email);
       const response = await axios.post(`${API_URL}/register`, {
@@ -123,7 +66,7 @@ function Register() {
       console.error('Register.tsx: Register error:', err.response?.data || err.message);
       if (err.response?.data?.message) {
         setError(err.response.data.message);
-      } else if (err.response?.status === 0) {
+      } else if (err.message.includes('Network Error')) {
         setError('Unable to connect to the server. Please check your network connection.');
       } else {
         setError('An unexpected error occurred during registration. Please try again.');
@@ -206,7 +149,7 @@ function Register() {
             type="text"
             placeholder="MM"
             value={birthday.month}
-            onChange={(e) => handleMonthChange(e.target.value)}
+            onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
             required
             maxLength={2}
             pattern="\d*"
@@ -215,17 +158,16 @@ function Register() {
             type="text"
             placeholder="DD"
             value={birthday.day}
-            onChange={(e) => handleDayChange(e.target.value)}
+            onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
             required
             maxLength={2}
             pattern="\d*"
-            disabled={!birthday.month || !birthday.year || !!error}
           />
           <input
             type="text"
             placeholder="YYYY"
             value={birthday.year}
-            onChange={(e) => handleYearChange(e.target.value)}
+            onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
             required
             maxLength={4}
             pattern="\d*"

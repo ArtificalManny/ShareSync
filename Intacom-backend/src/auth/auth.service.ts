@@ -1,118 +1,55 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { User, UserDocument } from '../users/schemas/user.schema';
-import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
+import { UsersService } from '../users/users.service';
+import * as bcrypt from 'bcrypt';
 import * as nodemailer from 'nodemailer';
-import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
+import { v4 as uuidv4 } from 'uuid';
+import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { UserDocument } from '../users/schemas/user.schema';
 
-// From "The Effortless Experience": Ensure user actions (e.g., login, register) are seamless.
 @Injectable()
 export class AuthService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(private readonly usersService: UsersService) {}
 
-  async login(loginDto: LoginDto): Promise<User> {
-    const { identifier, password } = loginDto;
-    console.log('AuthService: Validating user with identifier:', identifier);
-
-    // Try to find the user by username or email.
-    let user = await this.userModel.findOne({ username: identifier }).exec();
+  async login(loginDto: LoginDto): Promise<UserDocument> {
+    console.log('AuthService: Login attempt with identifier:', loginDto.identifier);
+    const user = await this.usersService.findByEmail(loginDto.identifier) || await this.usersService.findByUsername(loginDto.identifier);
     if (!user) {
-      console.log('AuthService: User not found by username, attempting to find by email:', identifier);
-      user = await this.userModel.findOne({ email: identifier }).exec();
+      console.log('AuthService: User not found for identifier:', loginDto.identifier);
+      throw new HttpException('Invalid username or password', HttpStatus.BAD_REQUEST);
     }
 
-    if (!user) {
-      console.log('AuthService: User not found');
-      throw new HttpException('Invalid username or password.', HttpStatus.BAD_REQUEST);
+    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    if (!isPasswordValid) {
+      console.log('AuthService: Invalid password for user:', user.email);
+      throw new HttpException('Invalid username or password', HttpStatus.BAD_REQUEST);
     }
 
-    console.log('AuthService: User found:', user.email, 'with hashed password:', user.password);
-    const isMatch = await bcrypt.compare(password, user.password);
-    console.log('AuthService: Password match result:', isMatch);
-
-    if (!isMatch) {
-      console.log('AuthService: Password does not match');
-      throw new HttpException('Invalid username or password.', HttpStatus.BAD_REQUEST);
-    }
-
-    console.log('AuthService: User validated successfully:', user.email);
     return user;
   }
 
-  async register(registerDto: RegisterDto): Promise<User> {
-    const { firstName, lastName, username, email, password, gender, birthday } = registerDto;
-    console.log('AuthService: Registering user with email:', email);
-
-    // Validate birthday.
-    const { month, day, year } = birthday;
-    const monthNum = parseInt(month, 10);
-    const dayNum = parseInt(day, 10);
-    const yearNum = parseInt(year, 10);
-
-    if (monthNum < 1 || monthNum > 12) {
-      throw new HttpException('Invalid month. Must be between 1 and 12.', HttpStatus.BAD_REQUEST);
-    }
-
-    const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
-    if (dayNum < 1 || dayNum > daysInMonth) {
-      throw new HttpException(`Invalid day. Must be between 1 and ${daysInMonth} for the selected month.`, HttpStatus.BAD_REQUEST);
-    }
-
-    if (yearNum < 1900 || yearNum > new Date().getFullYear()) {
-      throw new HttpException('Invalid year. Must be between 1900 and the current year.', HttpStatus.BAD_REQUEST);
-    }
-
-    // Check if username or email already exists.
-    const existingUser = await this.userModel.findOne({ $or: [{ username }, { email }] }).exec();
+  async register(registerDto: RegisterDto): Promise<UserDocument> {
+    console.log('AuthService: Register attempt with email:', registerDto.email);
+    const existingUser = await this.usersService.findByEmail(registerDto.email);
     if (existingUser) {
-      console.log('AuthService: User already exists with username or email:', existingUser.username, existingUser.email);
-      throw new HttpException('Username or email already exists.', HttpStatus.BAD_REQUEST);
+      console.log('AuthService: User already exists with email:', registerDto.email);
+      throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
     }
 
-    // Hash the password.
-    const hashedPassword = await bcrypt.hash(password, 10);
-    console.log('AuthService: Password hashed successfully');
-
-    // Create the new user.
-    const user = new this.userModel({
-      firstName,
-      lastName,
-      username,
-      email,
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const user = await this.usersService.create({
+      ...registerDto,
       password: hashedPassword,
-      gender,
-      birthday,
-      points: 0,
+      verificationToken: uuidv4(),
     });
 
-    await user.save();
-    console.log('AuthService: User registered successfully:', user.email);
+    await this.sendVerificationEmail(user.email, user.verificationToken!);
     return user;
   }
 
-  async forgotPassword(email: string): Promise<void> {
-    console.log('AuthService: Processing forgot password for email:', email);
-    const user = await this.userModel.findOne({ email }).exec();
-    if (!user) {
-      console.log('AuthService: User not found for email:', email);
-      throw new HttpException('User not found.', HttpStatus.NOT_FOUND);
-    }
-
-    // Generate a reset token.
-    const token = crypto.randomBytes(32).toString('hex');
-    user.resetPasswordToken = token;
-    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour expiry.
-    await user.save();
-    console.log('AuthService: Reset token generated and saved for user:', user.email);
-
-    // Send email with reset link using Nodemailer.
-    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:54693'}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+  async sendVerificationEmail(email: string, token: string) {
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT || '587'),
-      secure: false, // Use TLS.
+      port: parseInt(process.env.EMAIL_PORT!, 10),
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -120,48 +57,68 @@ export class AuthService {
     });
 
     const mailOptions = {
-      from: `"Intacom Support" <${process.env.EMAIL_USER}>`,
+      from: process.env.EMAIL_USER,
       to: email,
-      subject: 'Password Reset Request',
-      html: `
-        <p>Hello ${user.firstName},</p>
-        <p>We received a request to reset your password for your Intacom account.</p>
-        <p>Please click the link below to reset your password:</p>
-        <p><a href="${resetLink}">${resetLink}</a></p>
-        <p>This link will expire in 1 hour. If you did not request a password reset, please ignore this email.</p>
-        <p>Best regards,<br>The Intacom Team</p>
-      `,
+      subject: 'Verify your email for INTACOM',
+      text: `Please verify your email by clicking the following link: ${process.env.FRONTEND_URL}/verify-email?token=${token}`,
     };
 
-    try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log('AuthService: Password reset email sent to:', email, 'Message ID:', info.messageId);
-    } catch (error) {
-      console.error('AuthService: Error sending password reset email:', error);
-      throw new HttpException('Failed to send password reset email. Please try again later.', HttpStatus.INTERNAL_SERVER_ERROR);
+    await transporter.sendMail(mailOptions);
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
+
+    const resetToken = uuidv4();
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+    await user.save();
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: parseInt(process.env.EMAIL_PORT!, 10),
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Password Reset for INTACOM',
+      text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
+        Please click on the following link, or paste this into your browser to complete the process within one hour of receiving it:\n\n
+        ${process.env.FRONTEND_URL}/reset-password?token=${resetToken}\n\n
+        If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+    };
+
+    await transporter.sendMail(mailOptions);
   }
 
   async resetPassword(token: string, newPassword: string, email: string): Promise<void> {
-    console.log('AuthService: Resetting password with token:', token, 'for email:', email);
-    const user = await this.userModel
-      .findOne({
-        email,
-        resetPasswordToken: token,
-        resetPasswordExpires: { $gt: Date.now() },
-      })
-      .exec();
-
-    if (!user) {
-      console.log('AuthService: Invalid or expired reset token for email:', email);
-      throw new HttpException('Invalid or expired reset token.', HttpStatus.BAD_REQUEST);
+    const user = await this.usersService.findByEmail(email);
+    if (!user || user.resetPasswordToken !== token || (user.resetPasswordExpires && user.resetPasswordExpires < new Date())) {
+      throw new HttpException('Password reset token is invalid or has expired', HttpStatus.BAD_REQUEST);
     }
 
-    // Hash the new password.
     user.password = await bcrypt.hash(newPassword, 10);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
-    console.log('AuthService: Password reset successful for user:', user.email);
+  }
+
+  async verifyEmail(token: string): Promise<void> {
+    const user = await this.usersService.findAll().then(users => users.find(u => u.verificationToken === token));
+    if (!user) {
+      throw new HttpException('Verification token is invalid', HttpStatus.BAD_REQUEST);
+    }
+
+    user.verified = true;
+    user.verificationToken = undefined;
+    await user.save();
   }
 }

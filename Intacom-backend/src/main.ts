@@ -39,6 +39,14 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Enable CORS
+  app.enableCors({
+    origin: 'http://localhost:54693',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+  });
+
   app.useStaticAssets(join(__dirname, '..', '..', 'Intacom-frontend', 'dist'), {
     index: 'index.html',
     prefix: '/',

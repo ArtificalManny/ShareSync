@@ -36,6 +36,12 @@ async function bootstrap() {
     console.log('S3_BUCKET:', process.env.S3_BUCKET);
     console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    app.enableCors({
+        origin: 'http://localhost:54693',
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+        credentials: true,
+        allowedHeaders: 'Content-Type, Accept, Authorization',
+    });
     app.useStaticAssets((0, path_1.join)(__dirname, '..', '..', 'Intacom-frontend', 'dist'), {
         index: 'index.html',
         prefix: '/',
