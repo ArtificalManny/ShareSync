@@ -44,6 +44,6 @@ export class PostsController {
     if (!userId) {
       throw new HttpException('userId is required', HttpStatus.BAD_REQUEST);
     }
-    return await this.postsService.likePost(id, userId);
+    return await this.postsService.like(id, userId);
   }
 }
