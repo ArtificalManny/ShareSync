@@ -44,7 +44,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
       setProfile(response.data.data);
     } catch (err: any) {
       console.error('Profile.tsx: Error fetching profile:', err.message, err.response?.data);
-      setError('Failed to load profile data. Please try again later.');
+      setError('Failed to load profile data. Please ensure the backend is running and try again.');
     }
   };
 
@@ -74,7 +74,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
   if (error) {
     return (
       <div style={styles.container}>
-        <h1>Profile - ShareSync</h1>
+        <h1>👤 Profile - ShareSync</h1>
         <p style={styles.error}>{error}</p>
         <button onClick={handleRetry} style={styles.retryButton}>Retry</button>
       </div>
@@ -85,7 +85,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
 
   return (
     <div style={styles.container}>
-      <h1>Profile - ShareSync</h1>
+      <h1>👤 Profile - ShareSync</h1>
       <div style={styles.coverPhoto}>
         {profile.coverPhoto ? (
           <img src={profile.coverPhoto} alt="Cover" style={styles.coverImage} />
@@ -112,7 +112,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
       </div>
       <div style={styles.sections}>
         <div style={styles.section}>
-          <h3>Skills</h3>
+          <h3>🛠️ Skills</h3>
           {profile.skills && profile.skills.length > 0 ? (
             <ul style={styles.list}>
               {profile.skills.map((skill, index) => (
@@ -124,7 +124,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
           )}
         </div>
         <div style={styles.section}>
-          <h3>Experience</h3>
+          <h3>💼 Experience</h3>
           {profile.experience && profile.experience.length > 0 ? (
             <ul style={styles.list}>
               {profile.experience.map((exp, index) => (
@@ -138,7 +138,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
           )}
         </div>
         <div style={styles.section}>
-          <h3>Activity Feed</h3>
+          <h3>📈 Activity Feed</h3>
           {activities.length > 0 ? (
             <ul style={styles.activityList}>
               {activities.map((activity) => (

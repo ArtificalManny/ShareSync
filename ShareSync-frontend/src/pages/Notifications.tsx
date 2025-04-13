@@ -58,7 +58,7 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
       setNotifications(response.data.data || []);
     } catch (err: any) {
       console.error('Notifications.tsx: Error fetching notifications:', err.message);
-      setError('Failed to load notifications. Please try again later.');
+      setError('Failed to load notifications. Please ensure the backend is running and try again.');
     }
   };
 
@@ -82,7 +82,7 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
   if (error) {
     return (
       <div style={styles.container}>
-        <h1>Notifications - ShareSync</h1>
+        <h1>🔔 Notifications - ShareSync</h1>
         <p style={styles.error}>{error}</p>
       </div>
     );
@@ -90,7 +90,7 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
 
   return (
     <div style={styles.container}>
-      <h1>Notifications - ShareSync</h1>
+      <h1>🔔 Notifications - ShareSync</h1>
       {notifications.length > 0 ? (
         <ul style={styles.notificationList}>
           {notifications.map((notification) => (

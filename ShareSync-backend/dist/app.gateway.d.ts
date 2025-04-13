@@ -14,6 +14,7 @@ export declare class AppGateway {
         userId: string;
     }): void;
     emitProjectCreated(project: any): void;
+    emitPostCreated(post: any): void;
     emitNotificationCreated(notification: any): void;
     emitTaskCompleted(task: any): void;
 }

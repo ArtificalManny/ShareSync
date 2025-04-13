@@ -44,8 +44,23 @@ let PostsService = class PostsService {
     async findByProject(projectId) {
         return this.postModel.find({ projectId }).exec();
     }
-    async like(postId, userId) {
-        const post = await this.postModel.findById(postId).exec();
+    async update(id, updates) {
+        const updatedPost = await this.postModel
+            .findByIdAndUpdate(id, updates, { new: true })
+            .exec();
+        if (!updatedPost) {
+            throw new common_1.HttpException('Post not found', common_1.HttpStatus.NOT_FOUND);
+        }
+        return updatedPost;
+    }
+    async delete(id) {
+        const result = await this.postModel.findByIdAndDelete(id).exec();
+        if (!result) {
+            throw new common_1.HttpException('Post not found', common_1.HttpStatus.NOT_FOUND);
+        }
+    }
+    async like(id, userId) {
+        const post = await this.postModel.findById(id).exec();
         if (!post) {
             throw new common_1.HttpException('Post not found', common_1.HttpStatus.NOT_FOUND);
         }

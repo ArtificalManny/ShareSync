@@ -15,55 +15,39 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PostsController = void 0;
 const common_1 = require("@nestjs/common");
 const posts_service_1 = require("./posts.service");
+const app_gateway_1 = require("../app.gateway");
 let PostsController = class PostsController {
-    constructor(postsService) {
+    constructor(postsService, appGateway) {
         this.postsService = postsService;
+        this.appGateway = appGateway;
     }
-    async create(createPostDto) {
-        try {
-            return await this.postsService.create(createPostDto);
-        }
-        catch (error) {
-            console.error('Error in create post:', error);
-            throw error;
-        }
+    async create(post) {
+        const createdPost = await this.postsService.create(post);
+        this.appGateway.emitPostCreated(createdPost);
+        return {
+            status: 'success',
+            message: 'Post created successfully',
+            data: createdPost,
+        };
     }
     async findByProjectId(projectId) {
-        try {
-            const posts = await this.postsService.findByProjectId(projectId);
-            return { data: posts };
-        }
-        catch (error) {
-            console.error('Error in findByProjectId:', error);
-            throw error;
-        }
+        const posts = await this.postsService.findByProject(projectId);
+        return {
+            status: 'success',
+            data: posts,
+        };
     }
     async update(id, updates) {
-        try {
-            return await this.postsService.update(id, updates);
-        }
-        catch (error) {
-            console.error('Error in update post:', error);
-            throw error;
-        }
+        return await this.postsService.update(id, updates);
     }
     async delete(id) {
-        try {
-            return await this.postsService.delete(id);
-        }
-        catch (error) {
-            console.error('Error in delete post:', error);
-            throw error;
-        }
+        return await this.postsService.delete(id);
     }
-    async likePost(id, userId) {
-        try {
-            return await this.postsService.likePost(id, userId);
+    async like(id, userId) {
+        if (!userId) {
+            throw new common_1.HttpException('userId is required', common_1.HttpStatus.BAD_REQUEST);
         }
-        catch (error) {
-            console.error('Error in likePost:', error);
-            throw error;
-        }
+        return await this.postsService.likePost(id, userId);
     }
 };
 exports.PostsController = PostsController;
@@ -75,7 +59,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PostsController.prototype, "create", null);
 __decorate([
-    (0, common_1.Get)('project/:projectId'),
+    (0, common_1.Get)(':projectId'),
     __param(0, (0, common_1.Param)('projectId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -103,9 +87,10 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
-], PostsController.prototype, "likePost", null);
+], PostsController.prototype, "like", null);
 exports.PostsController = PostsController = __decorate([
     (0, common_1.Controller)('posts'),
-    __metadata("design:paramtypes", [posts_service_1.PostsService])
+    __metadata("design:paramtypes", [posts_service_1.PostsService,
+        app_gateway_1.AppGateway])
 ], PostsController);
 //# sourceMappingURL=posts.controller.js.map

@@ -39,6 +39,9 @@ let AppGateway = class AppGateway {
     emitProjectCreated(project) {
         this.server.emit('projectCreated', project);
     }
+    emitPostCreated(post) {
+        this.server.emit('postCreated', post);
+    }
     emitNotificationCreated(notification) {
         this.server.to(notification.userId).emit('notificationCreated', notification);
     }

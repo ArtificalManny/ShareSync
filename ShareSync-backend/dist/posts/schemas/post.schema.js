@@ -17,33 +17,25 @@ exports.Post = Post;
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
+], Post.prototype, "content", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
 ], Post.prototype, "projectId", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
 ], Post.prototype, "userId", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", String)
-], Post.prototype, "content", void 0);
-__decorate([
-    (0, mongoose_1.Prop)([String]),
+    (0, mongoose_1.Prop)({ type: [String], default: [] }),
     __metadata("design:type", Array)
-], Post.prototype, "images", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ default: 0 }),
-    __metadata("design:type", Number)
 ], Post.prototype, "likes", void 0);
 __decorate([
-    (0, mongoose_1.Prop)([String]),
-    __metadata("design:type", Array)
-], Post.prototype, "likedBy", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ default: 0 }),
-    __metadata("design:type", Number)
-], Post.prototype, "comments", void 0);
+    (0, mongoose_1.Prop)({ default: Date.now }),
+    __metadata("design:type", Date)
+], Post.prototype, "createdAt", void 0);
 exports.Post = Post = __decorate([
-    (0, mongoose_1.Schema)({ timestamps: true })
+    (0, mongoose_1.Schema)()
 ], Post);
 exports.PostSchema = mongoose_1.SchemaFactory.createForClass(Post);
 //# sourceMappingURL=post.schema.js.map

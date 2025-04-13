@@ -1,18 +1,25 @@
 import { PostsService } from './posts.service';
-import { Post as PostInterface } from './types/post.interface';
+import { AppGateway } from '../app.gateway';
 export declare class PostsController {
     private readonly postsService;
-    constructor(postsService: PostsService);
-    create(createPostDto: {
+    private readonly appGateway;
+    constructor(postsService: PostsService, appGateway: AppGateway);
+    create(post: {
+        content: string;
         projectId: string;
         userId: string;
-        content: string;
-        images: string[];
-    }): Promise<import("./schemas/post.schema").PostDocument>;
-    findByProjectId(projectId: string): Promise<{
-        data: any;
+    }): Promise<{
+        status: string;
+        message: string;
+        data: import("./schemas/post.schema").PostDocument;
     }>;
-    update(id: string, updates: Partial<PostInterface>): Promise<any>;
-    delete(id: string): Promise<any>;
-    likePost(id: string, userId: string): Promise<any>;
+    findByProjectId(projectId: string): Promise<{
+        status: string;
+        data: import("./schemas/post.schema").PostDocument[];
+    }>;
+    update(id: string, updates: Partial<{
+        content: string;
+    }>): Promise<import("./schemas/post.schema").PostDocument>;
+    delete(id: string): Promise<void>;
+    like(id: string, userId: string): Promise<any>;
 }

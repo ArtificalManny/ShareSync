@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import { PostDocument } from './schemas/post.schema';
+import { Post, PostDocument } from './schemas/post.schema';
 import { ProjectDocument } from '../projects/schemas/project.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 export declare class PostsService {
@@ -13,5 +13,7 @@ export declare class PostsService {
         userId: string;
     }): Promise<PostDocument>;
     findByProject(projectId: string): Promise<PostDocument[]>;
-    like(postId: string, userId: string): Promise<PostDocument>;
+    update(id: string, updates: Partial<Post>): Promise<PostDocument>;
+    delete(id: string): Promise<void>;
+    like(id: string, userId: string): Promise<PostDocument>;
 }

@@ -19,7 +19,7 @@ const Leaderboard: React.FC = () => {
       setLeaderboard(response.data.data || []);
     } catch (err: any) {
       console.error('Leaderboard.tsx: Error fetching leaderboard:', err.message);
-      setError('Failed to load leaderboard. Please try again later.');
+      setError('Failed to load leaderboard. Please ensure the backend is running and try again.');
     }
   };
 
@@ -30,7 +30,7 @@ const Leaderboard: React.FC = () => {
   if (error) {
     return (
       <div style={styles.container}>
-        <h1>Leaderboard - ShareSync</h1>
+        <h1>🏆 Leaderboard - ShareSync</h1>
         <p style={styles.error}>{error}</p>
       </div>
     );
@@ -38,7 +38,7 @@ const Leaderboard: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      <h1>Leaderboard - ShareSync</h1>
+      <h1>🏆 Leaderboard - ShareSync</h1>
       {leaderboard.length > 0 ? (
         <table style={styles.table}>
           <thead>

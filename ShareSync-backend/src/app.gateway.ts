@@ -42,6 +42,10 @@ export class AppGateway {
     this.server.emit('projectCreated', project);
   }
 
+  emitPostCreated(post: any) {
+    this.server.emit('postCreated', post);
+  }
+
   emitNotificationCreated(notification: any) {
     this.server.to(notification.userId).emit('notificationCreated', notification);
   }

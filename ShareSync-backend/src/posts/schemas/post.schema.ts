@@ -3,28 +3,22 @@ import { Document } from 'mongoose';
 
 export type PostDocument = Post & Document;
 
-@Schema({ timestamps: true })
+@Schema()
 export class Post {
+  @Prop({ required: true })
+  content: string;
+
   @Prop({ required: true })
   projectId: string;
 
   @Prop({ required: true })
   userId: string;
 
-  @Prop({ required: true })
-  content: string;
+  @Prop({ type: [String], default: [] })
+  likes: string[];
 
-  @Prop([String])
-  images: string[];
-
-  @Prop({ default: 0 })
-  likes: number;
-
-  @Prop([String])
-  likedBy: string[];
-
-  @Prop({ default: 0 })
-  comments: number;
+  @Prop({ default: Date.now })
+  createdAt: Date;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

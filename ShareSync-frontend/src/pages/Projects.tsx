@@ -37,7 +37,7 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
       setProjects(response.data.data || []);
     } catch (err: any) {
       console.error('Projects.tsx: Error fetching projects:', err.message);
-      setError('Failed to load projects. Please try again later.');
+      setError('Failed to load projects. Please ensure the backend is running and try again.');
     }
   };
 
@@ -52,7 +52,7 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
   if (error) {
     return (
       <div style={styles.container}>
-        <h1>Projects - ShareSync</h1>
+        <h1>📂 Projects - ShareSync</h1>
         <p style={styles.error}>{error}</p>
       </div>
     );
@@ -60,7 +60,7 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
 
   return (
     <div style={styles.container}>
-      <h1>Projects - ShareSync</h1>
+      <h1>📂 Projects - ShareSync</h1>
       {projects.length > 0 ? (
         <ul style={styles.projectList}>
           {projects.map((project) => (

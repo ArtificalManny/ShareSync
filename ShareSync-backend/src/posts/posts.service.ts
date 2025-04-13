@@ -37,8 +37,25 @@ export class PostsService {
     return this.postModel.find({ projectId }).exec();
   }
 
-  async like(postId: string, userId: string): Promise<PostDocument> {
-    const post = await this.postModel.findById(postId).exec();
+  async update(id: string, updates: Partial<Post>): Promise<PostDocument> {
+    const updatedPost = await this.postModel
+      .findByIdAndUpdate(id, updates, { new: true })
+      .exec();
+    if (!updatedPost) {
+      throw new HttpException('Post not found', HttpStatus.NOT_FOUND);
+    }
+    return updatedPost;
+  }
+
+  async delete(id: string): Promise<void> {
+    const result = await this.postModel.findByIdAndDelete(id).exec();
+    if (!result) {
+      throw new HttpException('Post not found', HttpStatus.NOT_FOUND);
+    }
+  }
+
+  async like(id: string, userId: string): Promise<PostDocument> {
+    const post = await this.postModel.findById(id).exec();
     if (!post) {
       throw new HttpException('Post not found', HttpStatus.NOT_FOUND);
     }

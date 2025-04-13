@@ -37,7 +37,7 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [newProject, setNewProject] = useState({ name: '', description: '', creatorEmail: '' });
+  const [newProject, setNewProject] = useState({ name: '', description: '', creatorEmail: '', sharedWith: '' });
   const [error, setError] = useState<string | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
 
@@ -131,6 +131,7 @@ const Home: React.FC<HomeProps> = ({ user }) => {
         name: newProject.name,
         description: newProject.description,
         creatorEmail: user.email,
+        sharedWith: newProject.sharedWith ? [newProject.sharedWith] : [],
       };
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, projectData, {
         withCredentials: true,
@@ -140,11 +141,12 @@ const Home: React.FC<HomeProps> = ({ user }) => {
       if (socket) {
         socket.emit('createProject', createdProject);
       }
-      setNewProject({ name: '', description: '', creatorEmail: '' });
+      setNewProject({ name: '', description: '', creatorEmail: '', sharedWith: '' });
       setError(null);
+      fetchProjects(); // Refresh project list
     } catch (err: any) {
       console.error('Home.tsx: Error creating project:', err.message, err.response?.data);
-      setError('Failed to create project. Please try again.');
+      setError('Failed to create project. Please ensure the backend is running and try again.');
     }
   };
 
@@ -160,11 +162,11 @@ const Home: React.FC<HomeProps> = ({ user }) => {
 
   return (
     <div style={styles.container}>
-      <h1>Home - ShareSync</h1>
+      <h1>🏠 Home - ShareSync</h1>
       <button onClick={() => fetchProjects()} style={styles.createProjectButton}>Create Project</button>
       <div style={styles.sections}>
         <div style={styles.section}>
-          <h2>Notifications ({notifications.length})</h2>
+          <h2>🔔 Notifications ({notifications.length})</h2>
           {notifications.length > 0 ? (
             notifications.map((notif) => (
               <div key={notif._id} style={styles.notification}>
@@ -177,7 +179,7 @@ const Home: React.FC<HomeProps> = ({ user }) => {
           )}
         </div>
         <div style={styles.section}>
-          <h2>Create a New Project</h2>
+          <h2>📝 Create a New Project</h2>
           <form onSubmit={handleCreateProject} style={styles.form}>
             <input
               type="text"
@@ -201,12 +203,19 @@ const Home: React.FC<HomeProps> = ({ user }) => {
               readOnly
               style={styles.input}
             />
+            <input
+              type="email"
+              placeholder="Share with (email)"
+              value={newProject.sharedWith}
+              onChange={(e) => setNewProject({ ...newProject, sharedWith: e.target.value })}
+              style={styles.input}
+            />
             <button type="submit" style={styles.submitButton}>Create Project</button>
             {error && <p style={styles.error}>{error}</p>}
           </form>
         </div>
         <div style={styles.section}>
-          <h2>Project Overview</h2>
+          <h2>📊 Project Overview</h2>
           {projects.length > 0 ? (
             projects.map((project) => (
               <div key={project._id} style={styles.projectCard}>
@@ -221,24 +230,24 @@ const Home: React.FC<HomeProps> = ({ user }) => {
           )}
         </div>
         <div style={styles.section}>
-          <h2>Tasks Completed</h2>
+          <h2>✅ Tasks Completed</h2>
           <p style={styles.stat}>{tasks.filter(task => task.status === 'completed').length}</p>
         </div>
         <div style={styles.section}>
-          <h2>Total Projects</h2>
+          <h2>📚 Total Projects</h2>
           <p style={styles.stat}>{projects.length}</p>
         </div>
         <div style={styles.section}>
-          <h2>Current Projects</h2>
+          <h2>🔄 Current Projects</h2>
           <p style={styles.stat}>{projects.filter(p => new Date(p.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}</p>
         </div>
         <div style={styles.section}>
-          <h2>Past Projects</h2>
+          <h2>📜 Past Projects</h2>
           <p style={styles.stat}>{projects.filter(p => new Date(p.createdAt) <= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}</p>
         </div>
       </div>
       <div style={styles.section}>
-        <h2>Team Activity</h2>
+        <h2>👥 Team Activity</h2>
         <p>No recent updates.</p>
       </div>
     </div>
