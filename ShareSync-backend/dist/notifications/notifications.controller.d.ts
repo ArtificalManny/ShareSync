@@ -6,15 +6,11 @@ export declare class NotificationsController {
     constructor(notificationsService: NotificationsService, appGateway: AppGateway);
     findByUserId(userId: string): Promise<{
         status: string;
-        data: any;
+        data: import("./schemas/notification.schema").NotificationDocument[];
     }>;
     markAsRead(id: string): Promise<{
         status: string;
         message: string;
-        data: import("mongoose").Document<unknown, {}, import("./schemas/notification.schema").NotificationDocument> & import("./schemas/notification.schema").Notification & import("mongoose").Document<unknown, any, any> & Required<{
-            _id: unknown;
-        }> & {
-            __v: number;
-        };
+        data: import("./schemas/notification.schema").NotificationDocument;
     }>;
 }

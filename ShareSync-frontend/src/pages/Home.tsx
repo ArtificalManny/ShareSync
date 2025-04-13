@@ -160,6 +160,7 @@ const Home: React.FC<HomeProps> = ({ user }) => {
 
   return (
     <div style={styles.container}>
+      <h1>Home - ShareSync</h1>
       <button onClick={() => fetchProjects()} style={styles.createProjectButton}>Create Project</button>
       <div style={styles.sections}>
         <div style={styles.section}>

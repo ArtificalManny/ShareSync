@@ -1,50 +1,50 @@
 .recover-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  background-color: #1a2a44;
-  color: #fff;
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 20px;
+  background-color: #1A3C34;
+  border-radius: 8px;
+  color: #FFFFFF;
+  text-align: center;
 }
 
 .recover-container h2 {
-  color: #00c4b4;
   margin-bottom: 20px;
 }
 
 .recover-container form {
   display: flex;
   flex-direction: column;
-  width: 300px;
+  gap: 15px;
 }
 
 .recover-container input {
-  margin-bottom: 15px;
   padding: 10px;
-  border: none;
-  border-radius: 5px;
+  border: 1px solid #B0BEC5;
+  border-radius: 4px;
   font-size: 16px;
 }
 
 .recover-container button {
-  padding: 10px;
-  background-color: #00c4b4;
-  color: #fff;
+  background-color: #00C4B4;
+  color: #FFFFFF;
   border: none;
-  border-radius: 5px;
-  font-size: 16px;
+  padding: 10px;
+  border-radius: 4px;
   cursor: pointer;
+  font-size: 16px;
 }
 
 .recover-container button:hover {
-  background-color: #009a8a;
+  background-color: #009688;
 }
 
-.success {
-  margin-top: 15px;
+.recover-container .message {
+  color: #00C4B4;
+  margin-top: 10px;
 }
 
-.error {
-  margin-top: 15px;
+.recover-container .error {
+  color: #EF5350;
+  margin-top: 10px;
 }

@@ -1,80 +1,59 @@
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import Header from './components/Header';
 import Home from './pages/Home';
-import Projects from './pages/Projects';
-import Project from './pages/Project';
 import Profile from './pages/Profile';
+import Projects from './pages/Projects';
 import Notifications from './pages/Notifications';
 import Leaderboard from './pages/Leaderboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
-import ResetPassword from './pages/ResetPassword';
 import Recover from './pages/Recover';
-import './App.css';
+import ResetPassword from './pages/ResetPassword';
 
-function App() {
-  const navigate = useNavigate();
-  const location = useLocation();
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+}
 
-  console.log('App.tsx: Current location:', location.pathname);
-  console.log('App.tsx: Routes defined:', [
-    '/',
-    '/projects',
-    '/project/:id',
-    '/profile',
-    '/notifications',
-    '/leaderboard',
-    '/login',
-    '/register',
-    '/verify-email',
-    '/reset-password',
-    '/recover',
-  ]);
+const App: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   const handleLogout = () => {
-    console.log('App.tsx: Logging out');
-    navigate('/login', { replace: true });
+    setUser(null);
+    localStorage.removeItem('user');
   };
 
   return (
-    <div className="App">
-      <nav className="navbar fixed-top">
-        <div className="navbar-brand">INTACOM</div>
-        <div className="navbar-links">
-          <Link to="/">Home</Link>
-          <Link to="/profile">Profile</Link>
-          <Link to="/login">Login</Link>
-          <Link to="/register">Register</Link>
-          <Link to="/recover">Recover</Link>
-          <button onClick={handleLogout}>Logout</button>
-        </div>
-      </nav>
-
-      <div className="content">
+    <Router>
+      <div>
+        {user && <Header />}
         <Routes>
-          <Route path="/" element={<Home user={null} />} />
-          <Route path="/projects" element={<Projects user={null} />} />
-          <Route path="/project/:id" element={<Project user={null} />} />
-          <Route path="/profile" element={<Profile user={null} />} />
-          <Route path="/notifications" element={<Notifications user={null} />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/login" element={<Login setUser={() => {}} />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={user ? <Navigate to="/" /> : <Login setUser={setUser} />} />
+          <Route path="/register" element={user ? <Navigate to="/" /> : <Register />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/recover" element={<Recover />} />
-          <Route path="*" element={<div>404 - Page Not Found</div>} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/" element={user ? <Home user={user} /> : <Navigate to="/login" />} />
+          <Route path="/profile" element={user ? <Profile user={user} /> : <Navigate to="/login" />} />
+          <Route path="/projects" element={user ? <Projects user={user} /> : <Navigate to="/login" />} />
+          <Route path="/notifications" element={user ? <Notifications user={user} /> : <Navigate to="/login" />} />
+          <Route path="/leaderboard" element={user ? <Leaderboard /> : <Navigate to="/login" />} />
+          <Route path="/logout" element={<Navigate to="/login" replace state={{ logout: handleLogout }} />} />
+          <Route path="*" element={<Navigate to={user ? '/' : '/login'} />} />
         </Routes>
       </div>
-    </div>
-  );
-}
-
-export default function AppWrapper() {
-  console.log('AppWrapper: Rendering Router');
-  return (
-    <Router>
-      <App />
     </Router>
   );
-}
+};
+
+export default App;

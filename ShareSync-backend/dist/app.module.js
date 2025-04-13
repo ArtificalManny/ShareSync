@@ -21,7 +21,7 @@ exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forRoot('mongodb://localhost:27017/intacom'),
+            mongoose_1.MongooseModule.forRoot('mongodb://localhost:27017/sharesync'),
             users_module_1.UsersModule,
             auth_module_1.AuthModule,
             notifications_module_1.NotificationsModule,

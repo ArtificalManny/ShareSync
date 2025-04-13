@@ -21,20 +21,40 @@ let NotificationsService = class NotificationsService {
     constructor(notificationModel) {
         this.notificationModel = notificationModel;
     }
-    async create(userId, type, message, relatedId) {
-        const notification = new this.notificationModel({
-            userId,
-            type,
-            message,
-            relatedId,
-        });
-        return notification.save();
-    }
     async findByUser(userId) {
-        return this.notificationModel.find({ userId }).sort({ createdAt: -1 }).exec();
+        return this.notificationModel.find({ userId }).exec();
     }
     async markAsRead(id) {
-        return this.notificationModel.findByIdAndUpdate(id, { isRead: true }, { new: true }).exec();
+        const notification = await this.notificationModel
+            .findByIdAndUpdate(id, { read: true }, { new: true })
+            .exec();
+        if (!notification) {
+            throw new common_1.HttpException('Notification not found', common_1.HttpStatus.NOT_FOUND);
+        }
+        return notification;
+    }
+};
+exports.NotificationsService = NotificationsService;
+exports.NotificationsService = NotificationsService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)(notification_schema_1.Notification.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model])
+], NotificationsService);
+let NotificationsService = class NotificationsService {
+    constructor(notificationModel) {
+        this.notificationModel = notificationModel;
+    }
+    async findByUser(userId) {
+        return this.notificationModel.find({ userId }).exec();
+    }
+    async markAsRead(id) {
+        const notification = await this.notificationModel
+            .findByIdAndUpdate(id, { read: true }, { new: true })
+            .exec();
+        if (!notification) {
+            throw new common_1.HttpException('Notification not found', common_1.HttpStatus.NOT_FOUND);
+        }
+        return notification;
     }
 };
 exports.NotificationsService = NotificationsService;

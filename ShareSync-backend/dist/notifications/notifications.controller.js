@@ -22,7 +22,7 @@ let NotificationsController = class NotificationsController {
         this.appGateway = appGateway;
     }
     async findByUserId(userId) {
-        const notifications = await this.notificationsService.findByUserId(userId);
+        const notifications = await this.notificationsService.findByUser(userId);
         return {
             status: 'success',
             data: notifications,

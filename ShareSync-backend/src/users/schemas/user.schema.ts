@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
-@Schema({ timestamps: true })
+@Schema()
 export class User {
   @Prop({ required: true })
   firstName: string;
@@ -23,45 +23,35 @@ export class User {
   @Prop()
   gender: string;
 
-  @Prop({ type: Object })
-  birthday: {
-    month: string;
-    day: string;
-    year: string;
-  };
+  @Prop()
+  birthday: { month: string; day: string; year: string };
 
-  @Prop({ default: 0 })
-  points: number;
+  @Prop()
+  bio: string;
 
-  @Prop({ default: false })
-  isVerified: boolean;
-
-  @Prop({ default: [] })
-  badges: string[];
-
-  @Prop({ default: [] })
-  endorsements: string[];
-
-  @Prop({ default: [] })
-  experience: string[];
-
-  @Prop({ default: [] })
-  followers: string[];
-
-  @Prop({ default: [] })
-  following: string[];
-
-  @Prop({ default: [] })
-  hobbies: string[];
-
-  @Prop({ default: [] })
+  @Prop([String])
   skills: string[];
 
   @Prop()
-  resetPasswordToken?: string;
+  experience: { company: string; role: string; duration: string }[];
 
   @Prop()
-  resetPasswordExpires?: Date;
+  profilePicture: string;
+
+  @Prop()
+  coverPhoto: string;
+
+  @Prop({ default: false })
+  verified: boolean;
+
+  @Prop()
+  verificationToken: string;
+
+  @Prop()
+  resetPasswordToken: string;
+
+  @Prop()
+  resetPasswordExpires: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

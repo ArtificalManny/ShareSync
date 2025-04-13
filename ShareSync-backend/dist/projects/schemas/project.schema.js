@@ -34,6 +34,10 @@ __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", Array)
 ], Project.prototype, "timeline", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], Project.prototype, "sharedWith", void 0);
 exports.Project = Project = __decorate([
     (0, mongoose_1.Schema)()
 ], Project);

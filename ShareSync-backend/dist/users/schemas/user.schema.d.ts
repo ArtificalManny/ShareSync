@@ -12,17 +12,19 @@ export declare class User {
         day: string;
         year: string;
     };
-    points: number;
-    isVerified: boolean;
-    badges: string[];
-    endorsements: string[];
-    experience: string[];
-    followers: string[];
-    following: string[];
-    hobbies: string[];
+    bio: string;
     skills: string[];
-    resetPasswordToken?: string;
-    resetPasswordExpires?: Date;
+    experience: {
+        company: string;
+        role: string;
+        duration: string;
+    }[];
+    profilePicture: string;
+    coverPhoto: string;
+    verified: boolean;
+    verificationToken: string;
+    resetPasswordToken: string;
+    resetPasswordExpires: Date;
 }
 export declare const UserSchema: import("mongoose").Schema<User, import("mongoose").Model<User, any, any, any, Document<unknown, any, User> & User & {
     _id: import("mongoose").Types.ObjectId;

@@ -11,7 +11,7 @@ export class NotificationsController {
 
   @Get(':userId')
   async findByUserId(@Param('userId') userId: string) {
-    const notifications = await this.notificationsService.findByUserId(userId);
+    const notifications = await this.notificationsService.findByUser(userId);
     return {
       status: 'success',
       data: notifications,

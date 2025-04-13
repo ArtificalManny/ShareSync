@@ -82,6 +82,7 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
   if (error) {
     return (
       <div style={styles.container}>
+        <h1>Notifications - ShareSync</h1>
         <p style={styles.error}>{error}</p>
       </div>
     );
@@ -89,7 +90,7 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
 
   return (
     <div style={styles.container}>
-      <h1>Notifications</h1>
+      <h1>Notifications - ShareSync</h1>
       {notifications.length > 0 ? (
         <ul style={styles.notificationList}>
           {notifications.map((notification) => (

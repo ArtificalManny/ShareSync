@@ -1,65 +1,50 @@
-// src/posts/posts.service.ts
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-// Import Post entity and DTOs
-import { Post } from './post.entity';
-import { CreatePostDto } from './dto/create-post.dto';
-import { Project } from '../projects/project.entity';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Post, PostDocument } from './schemas/post.schema';
+import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 
 @Injectable()
 export class PostsService {
   constructor(
-    @InjectRepository(Post)
-    private postsRepository: Repository<Post>,
-    @InjectRepository(Project)
-    private projectsRepository: Repository<Project>,
+    @InjectModel(Post.name) private postModel: Model<PostDocument>,
+    @InjectModel(Project.name) private projectModel: Model<ProjectDocument>
   ) {}
 
-  async create(createPostDto: CreatePostDto, projectId: string, userId: string): Promise<Post> {
-    const project = await this.projectsRepository.findOne(projectId);
-    if (!project) {
-      throw new Error('Project not found');
+  async create(post: { content: string; projectId: string; userId: string }): Promise<PostDocument> {
+    const createdPost = new this.postModel(post);
+    return createdPost.save();
+  }
+
+  async findByProject(projectId: string): Promise<PostDocument[]> {
+    return this.postModel.find({ projectId }).exec();
+  }
+
+  async like(postId: string, userId: string): Promise<PostDocument> {
+    const post = await this.postModel.findById(postId).exec();
+    if (!post) {
+      throw new HttpException('Post not found', HttpStatus.NOT_FOUND);
     }
-    const post = this.postsRepository.create({
-      ...createPostDto,
-      project,
-    });
-    return this.postsRepository.save(post);
-  }
+    if (post.likes.includes(userId)) {
+      post.likes = post.likes.filter((id) => id !== userId);
+    } else {
+      post.likes.push(userId);
 
-  async findAllByProject(projectId: string): Promise<Post[]> {
-    return this.postsRepository.find({
-      where: { project: { id: projectId } },
-      relations: ['comments', 'likes', 'user'],
-      order: { createdAt: 'DESC' },
-    });
-  }
+      // Create a notification
+      const project = await this.projectModel.findById(post.projectId).exec();
+      if (!project) {
+        throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
+      }
 
-  async findById(id: string): Promise<Post> {
-    return this.postsRepository.findOne(id, { relations: ['comments', 'likes', 'user'] });
-  }
-
-  async likePost(postId: string, userId: string): Promise<void> {
-    const post = await this.findById(postId);
-    if (!post) throw new Error('Post not found');
-    // Prevent duplicate likes
-    if (post.likes.some(like => like.user.id === userId)) {
-      throw new Error('User already liked this post');
+      for (const collaborator of project.sharedWith) {
+        if (collaborator !== userId) {
+          // In a real app, you'd inject a NotificationsService here
+          // For simplicity, we'll log the action
+          console.log(`Notification: User ${userId} liked a post in project ${project.name} for collaborator ${collaborator}`);
+        }
+      }
     }
-    post.likes.push({ user: { id: userId } as any });
-    await this.postsRepository.save(post);
-  }
-
-  async addComment(postId: string, userId: string, content: string): Promise<Comment> {
-    const post = await this.findById(postId);
-    if (!post) throw new Error('Post not found');
-    const comment = new Comment();
-    comment.content = content;
-    comment.user = { id: userId } as any;
-    comment.post = post;
-    post.comments.push(comment);
-    await this.postsRepository.save(post);
-    return comment;
+    await post.save();
+    return post;
   }
 }

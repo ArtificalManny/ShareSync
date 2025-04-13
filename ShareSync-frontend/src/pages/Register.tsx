@@ -58,6 +58,8 @@ function Register() {
         password,
         gender,
         birthday,
+      }, {
+        withCredentials: true,
       });
       console.log('Register.tsx: Register response:', response.data);
       alert('User registered successfully! Welcome to ShareSync!');

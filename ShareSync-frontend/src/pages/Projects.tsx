@@ -52,6 +52,7 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
   if (error) {
     return (
       <div style={styles.container}>
+        <h1>Projects - ShareSync</h1>
         <p style={styles.error}>{error}</p>
       </div>
     );
@@ -59,7 +60,7 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
 
   return (
     <div style={styles.container}>
-      <h1>Projects</h1>
+      <h1>Projects - ShareSync</h1>
       {projects.length > 0 ? (
         <ul style={styles.projectList}>
           {projects.map((project) => (

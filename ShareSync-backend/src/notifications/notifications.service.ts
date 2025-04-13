@@ -1,27 +1,49 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Notification, NotificationDocument } from './schemas/notification.schema';
 
 @Injectable()
 export class NotificationsService {
-  constructor(@InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>) {}
+  constructor(
+    @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>
+  ) {}
 
-  async create(userId: string, type: string, message: string, relatedId?: string) {
-    const notification = new this.notificationModel({
-      userId,
-      type,
-      message,
-      relatedId,
-    });
-    return notification.save();
+  async findByUser(userId: string): Promise<NotificationDocument[]> {
+    return this.notificationModel.find({ userId }).exec();
   }
 
-  async findByUser(userId: string) {
-    return this.notificationModel.find({ userId }).sort({ createdAt: -1 }).exec();
+  async markAsRead(id: string): Promise<NotificationDocument> {
+    const notification = await this.notificationModel
+      .findByIdAndUpdate(id, { read: true }, { new: true })
+      .exec();
+    if (!notification) {
+      throw new HttpException('Notification not found', HttpStatus.NOT_FOUND);
+    }
+    return notification;
+  }
+}import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Notification, NotificationDocument } from './schemas/notification.schema';
+
+@Injectable()
+export class NotificationsService {
+  constructor(
+    @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>
+  ) {}
+
+  async findByUser(userId: string): Promise<NotificationDocument[]> {
+    return this.notificationModel.find({ userId }).exec();
   }
 
-  async markAsRead(id: string) {
-    return this.notificationModel.findByIdAndUpdate(id, { isRead: true }, { new: true }).exec();
+  async markAsRead(id: string): Promise<NotificationDocument> {
+    const notification = await this.notificationModel
+      .findByIdAndUpdate(id, { read: true }, { new: true })
+      .exec();
+    if (!notification) {
+      throw new HttpException('Notification not found', HttpStatus.NOT_FOUND);
+    }
+    return notification;
   }
 }

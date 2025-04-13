@@ -9,7 +9,7 @@ import { AppGateway } from './app.gateway';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost:27017/intacom'),
+    MongooseModule.forRoot('mongodb://localhost:27017/sharesync'),
     UsersModule,
     AuthModule,
     NotificationsModule,

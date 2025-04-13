@@ -19,6 +19,9 @@ export class Project {
 
   @Prop()
   timeline: { date: string; event: string }[];
+
+  @Prop([String])
+  sharedWith: string[];
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
