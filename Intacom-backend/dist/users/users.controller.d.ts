@@ -4,10 +4,15 @@ export declare class UsersController {
     constructor(usersService: UsersService);
     findByUsername(username: string): Promise<{
         status: string;
-        data: import("./schemas/user.schema").UserDocument;
+        data: any;
     }>;
     findById(id: string): Promise<{
         status: string;
-        data: import("./schemas/user.schema").UserDocument;
+        data: any;
+    }>;
+    update(id: string, updateUserDto: any): Promise<{
+        status: string;
+        message: string;
+        data: any;
     }>;
 }

@@ -1,0 +1,132 @@
+/* From "The Art of Color" and "Why Fonts Matter": Use a cohesive color scheme and readable typography. */
+.App {
+  font-family: 'Roboto', sans-serif; /* From "Thinking with Type": Choose a clean, modern font for readability. */
+  /* From "The Graphic Design Bible": Use a vibrant gradient for visual appeal. */
+  background: linear-gradient(135deg, #1a2a44 0%, #2c3e50 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+}
+
+/* From "Design of Everyday Things": Ensure elements are discoverable and provide feedback. */
+.navbar.fixed-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, #1a2a44 0%, #00c4b4 100%);
+  padding: 10px 20px;
+  /* From "Refactoring UI": Ensure responsive design with flexible layouts. */
+  flex-wrap: wrap;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* From "Webs of Influence" by Nathalie Nahai: Use visual cues to guide user behavior. */
+.navbar-links {
+  display: flex;
+  gap: 15px;
+  /* Responsive design: Stack links on smaller screens. */
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.navbar-links a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
+  transition: color 0.3s ease, transform 0.3s ease;
+  /* From "Hooked": Add subtle animations for a dopamine hit. */
+  position: relative;
+}
+
+.navbar-links a:hover {
+  color: #00c4b4 !important;
+  transform: translateY(-2px);
+}
+
+.navbar-links a::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background-color: #00c4b4;
+  transition: width 0.3s ease;
+}
+
+.navbar-links a:hover::after {
+  width: 100%;
+}
+
+.navbar-links .active-link {
+  color: #00c4b4;
+  font-weight: bold;
+  border-bottom: 2px solid #00c4b4;
+}
+
+.navbar-links button.logout-button {
+  background-color: #00c4b4;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.navbar-links button.logout-button:hover {
+  background-color: #009a8a;
+  transform: translateY(-2px);
+}
+
+.navbar-brand {
+  color: #00c4b4;
+  font-size: 24px;
+  font-weight: bold;
+  /* From "The Graphic Design Bible": Add a subtle animation for branding. */
+  transition: transform 0.3s ease;
+}
+
+.navbar-brand:hover {
+  transform: scale(1.05);
+}
+
+/* Ensure content is responsive and doesn’t reframe on window minimization. */
+.content {
+  padding: 80px 20px 20px 20px; /* Adjusted for fixed navbar. */
+  flex: 1;
+  /* From "100 Things Every Designer Needs to Know About People": Reduce cognitive load with proper spacing. */
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Responsive design for smaller screens. */
+@media (max-width: 768px) {
+  .navbar.fixed-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .navbar-links {
+    margin-top: 10px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .navbar-brand {
+    align-self: flex-start;
+  }
+
+  .content {
+    padding: 120px 10px 10px 10px; /* Adjust padding for smaller screens. */
+  }
+}

@@ -9,20 +9,20 @@ export declare class ProjectsController {
     create(createProjectDto: CreateProjectDto): Promise<{
         status: string;
         message: string;
-        data: import("./schemas/project.schema").ProjectDocument;
+        data: any;
     }>;
     findByUsername(username: string): Promise<{
         status: string;
-        data: import("./schemas/project.schema").ProjectDocument[];
+        data: any;
     }>;
     findById(id: string): Promise<{
         status: string;
-        data: import("./schemas/project.schema").ProjectDocument;
+        data: any;
     }>;
     update(id: string, updateProjectDto: UpdateProjectDto): Promise<{
         status: string;
         message: string;
-        data: import("./schemas/project.schema").ProjectDocument;
+        data: any;
     }>;
     remove(id: string): Promise<{
         status: string;

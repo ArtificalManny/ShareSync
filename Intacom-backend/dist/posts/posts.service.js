@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PostsService = void 0;
 const common_1 = require("@nestjs/common");
@@ -116,8 +117,6 @@ exports.PostsService = PostsService = __decorate([
     __param(0, (0, mongoose_1.InjectModel)(post_schema_1.Post.name)),
     __param(1, (0, mongoose_1.InjectModel)(project_schema_1.Project.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
-        mongoose_2.Model,
-        notifications_service_1.NotificationsService,
-        points_service_1.PointsService])
+        mongoose_2.Model, typeof (_a = typeof notifications_service_1.NotificationsService !== "undefined" && notifications_service_1.NotificationsService) === "function" ? _a : Object, typeof (_b = typeof points_service_1.PointsService !== "undefined" && points_service_1.PointsService) === "function" ? _b : Object])
 ], PostsService);
 //# sourceMappingURL=posts.service.js.map

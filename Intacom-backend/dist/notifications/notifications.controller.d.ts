@@ -11,10 +11,6 @@ export declare class NotificationsController {
     markAsRead(id: string): Promise<{
         status: string;
         message: string;
-        data: import("mongoose").Document<unknown, {}, import("./schemas/notification.schema").NotificationDocument> & import("./schemas/notification.schema").Notification & import("mongoose").Document<unknown, any, any> & Required<{
-            _id: unknown;
-        }> & {
-            __v: number;
-        };
+        data: any;
     }>;
 }

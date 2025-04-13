@@ -1,16 +1,13 @@
 import { FeedbackService } from './feedback.service';
-import { Feedback } from './schemas/feedback.schema';
 export declare class FeedbackController {
     private readonly feedbackService;
     constructor(feedbackService: FeedbackService);
     create(projectId: string, userId: string, rating: number, message: string): Promise<{
         message: string;
-        data: Feedback;
+        data: any;
     }>;
     findByProjectId(projectId: string): Promise<{
-        data: Feedback[];
+        data: any;
     }>;
-    delete(id: string): Promise<{
-        message: string;
-    }>;
+    delete(id: string): Promise<any>;
 }

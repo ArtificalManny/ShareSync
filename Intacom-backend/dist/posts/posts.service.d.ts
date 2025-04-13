@@ -14,21 +14,9 @@ export declare class PostsService {
         userId: string;
         content: string;
         images: string[];
-    }): Promise<import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<unknown, any, any> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    }>;
-    findByProjectId(projectId: string): Promise<(import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<unknown, any, any> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    })[]>;
-    update(id: string, updates: Partial<Post>): Promise<import("mongoose").Document<unknown, {}, PostDocument> & Post & import("mongoose").Document<unknown, any, any> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    }>;
+    }): Promise<any>;
+    findByProjectId(projectId: string): Promise<any[]>;
+    update(id: string, updates: Partial<Post>): Promise<any>;
     delete(id: string): Promise<{
         message: string;
     }>;

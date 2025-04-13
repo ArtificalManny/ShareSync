@@ -4,6 +4,6 @@ export declare class PointsController {
     constructor(pointsService: PointsService);
     getLeaderboard(): Promise<{
         status: string;
-        data: import("../users/schemas/user.schema").User[];
+        data: any;
     }>;
 }

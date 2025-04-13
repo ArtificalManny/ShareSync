@@ -1,0 +1,7 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Link } from 'react-router-dom';
+import './Header.css'; //Optional: Component specific styles
+const Header = () => {
+    return (_jsxs("header", { className: "user-bar", children: [_jsx("div", { className: "left-section", children: _jsxs(Link, { to: "/", className: "logo", children: [_jsx("img", { src: "/logo.png", alt: "Intacom Logo", className: "logo-img" }), _jsx("span", { children: "Intacom" })] }) }), _jsx("div", { className: "middle-section", children: _jsxs("div", { className: "search-container", children: [_jsx("input", { type: "text", placeholder: "Search..." }), _jsxs("select", { children: [_jsx("option", { value: "projects", children: "Projects" }), _jsx("option", { value: "teams", children: "Teams" }), _jsx("option", { value: "documents", children: "Documents" })] }), _jsx("button", { type: "button", children: "Search" })] }) }), _jsxs("div", { className: "right-section", children: [_jsxs("div", { className: "notification-bell", children: [_jsx("i", { className: "icon fas fa-bell" }), _jsx("div", { className: "notification-dropdown", children: _jsx("p", { children: "No new notification" }) })] }), _jsx("div", { className: "settings-icon", children: _jsx("a", { href: "/settings", children: _jsx("i", { className: "icon fas fa-cog" }) }) }), _jsx("div", { className: "profile-pic", children: _jsx("img", { src: "/profile.jpg", alt: "Profile", className: "profile-img" }) })] })] }));
+};
+export default Header;

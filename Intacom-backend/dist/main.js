@@ -42,7 +42,7 @@ async function bootstrap() {
         credentials: true,
         allowedHeaders: 'Content-Type, Accept, Authorization',
     });
-    app.useStaticAssets((0, path_1.join)(__dirname, '..', '..', 'Intacom-frontend', 'dist'), {
+    app.useStaticAssets((0, path_1.join)(__dirname, '..', '..', 'ShareSync-frontend', 'dist'), {
         index: 'index.html',
         prefix: '/',
     });
@@ -60,7 +60,7 @@ async function bootstrap() {
         try {
             await app.listen(currentPort);
             console.log(`Backend server running on http://localhost:${currentPort}`);
-            console.log('Serving frontend from:', (0, path_1.join)(__dirname, '..', '..', 'Intacom-frontend', 'dist'));
+            console.log('Serving frontend from:', (0, path_1.join)(__dirname, '..', '..', 'ShareSync-frontend', 'dist'));
             serverStarted = true;
         }
         catch (error) {

@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b, _c, _d;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsController = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,6 +19,7 @@ const projects_service_1 = require("./projects.service");
 const create_project_dto_1 = require("./dto/create-project.dto");
 const update_project_dto_1 = require("./dto/update-project.dto");
 const app_gateway_1 = require("../app.gateway");
+const common_2 = require("@nestjs/common");
 let ProjectsController = class ProjectsController {
     constructor(projectsService, appGateway) {
         this.projectsService = projectsService;
@@ -41,6 +43,9 @@ let ProjectsController = class ProjectsController {
     }
     async findById(id) {
         const project = await this.projectsService.findById(id);
+        if (!project) {
+            throw new common_2.HttpException('Project not found', common_2.HttpStatus.NOT_FOUND);
+        }
         return {
             status: 'success',
             data: project,
@@ -67,7 +72,7 @@ __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_project_dto_1.CreateProjectDto]),
+    __metadata("design:paramtypes", [typeof (_c = typeof create_project_dto_1.CreateProjectDto !== "undefined" && create_project_dto_1.CreateProjectDto) === "function" ? _c : Object]),
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "create", null);
 __decorate([
@@ -89,7 +94,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_project_dto_1.UpdateProjectDto]),
+    __metadata("design:paramtypes", [String, typeof (_d = typeof update_project_dto_1.UpdateProjectDto !== "undefined" && update_project_dto_1.UpdateProjectDto) === "function" ? _d : Object]),
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "update", null);
 __decorate([
@@ -101,7 +106,6 @@ __decorate([
 ], ProjectsController.prototype, "remove", null);
 exports.ProjectsController = ProjectsController = __decorate([
     (0, common_1.Controller)('projects'),
-    __metadata("design:paramtypes", [projects_service_1.ProjectsService,
-        app_gateway_1.AppGateway])
+    __metadata("design:paramtypes", [typeof (_a = typeof projects_service_1.ProjectsService !== "undefined" && projects_service_1.ProjectsService) === "function" ? _a : Object, typeof (_b = typeof app_gateway_1.AppGateway !== "undefined" && app_gateway_1.AppGateway) === "function" ? _b : Object])
 ], ProjectsController);
 //# sourceMappingURL=projects.controller.js.map

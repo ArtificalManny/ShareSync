@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PointsController = void 0;
 const common_1 = require("@nestjs/common");
@@ -33,6 +34,6 @@ __decorate([
 ], PointsController.prototype, "getLeaderboard", null);
 exports.PointsController = PointsController = __decorate([
     (0, common_1.Controller)('points'),
-    __metadata("design:paramtypes", [points_service_1.PointsService])
+    __metadata("design:paramtypes", [typeof (_a = typeof points_service_1.PointsService !== "undefined" && points_service_1.PointsService) === "function" ? _a : Object])
 ], PointsController);
 //# sourceMappingURL=points.controller.js.map

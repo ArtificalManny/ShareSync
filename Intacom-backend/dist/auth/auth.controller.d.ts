@@ -9,12 +9,12 @@ export declare class AuthController {
     login(loginDto: LoginDto): Promise<{
         status: string;
         message: string;
-        data: import("../users/schemas/user.schema").UserDocument;
+        data: any;
     }>;
     register(registerDto: RegisterDto): Promise<{
         status: string;
         message: string;
-        data: import("../users/schemas/user.schema").UserDocument;
+        data: any;
     }>;
     forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{
         status: string;
