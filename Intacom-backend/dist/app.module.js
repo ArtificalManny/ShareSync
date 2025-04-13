@@ -13,6 +13,7 @@ const users_module_1 = require("./users/users.module");
 const auth_module_1 = require("./auth/auth.module");
 const notifications_module_1 = require("./notifications/notifications.module");
 const points_module_1 = require("./points/points.module");
+const projects_module_1 = require("./projects/projects.module");
 const app_gateway_1 = require("./app.gateway");
 let AppModule = class AppModule {
 };
@@ -25,6 +26,7 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             notifications_module_1.NotificationsModule,
             points_module_1.PointsModule,
+            projects_module_1.ProjectsModule,
         ],
         providers: [app_gateway_1.AppGateway],
     })

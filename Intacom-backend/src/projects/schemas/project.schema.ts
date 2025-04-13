@@ -3,41 +3,22 @@ import { Document } from 'mongoose';
 
 export type ProjectDocument = Project & Document;
 
-@Schema({ timestamps: true })
+@Schema()
 export class Project {
   @Prop({ required: true })
   name: string;
 
-  @Prop()
+  @Prop({ required: true })
   description: string;
 
   @Prop({ required: true })
-  admin: string;
+  creatorEmail: string;
 
-  @Prop({ type: [{ userId: String, role: String }] })
-  sharedWith: { userId: string; role: string }[];
-
-  @Prop({ default: 'current' })
-  status: string;
+  @Prop({ default: Date.now })
+  createdAt: Date;
 
   @Prop()
-  color: string;
-
-  @Prop([String])
-  tasks: string[];
-
-  @Prop({ type: Object })
-  timeline: {
-    startDate: string;
-    endDate: string;
-    milestones: { name: string; date: string }[];
-  };
-
-  @Prop({ default: 0 })
-  likes: number;
-
-  @Prop({ default: 0 })
-  comments: number;
+  timeline: { date: string; event: string }[];
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

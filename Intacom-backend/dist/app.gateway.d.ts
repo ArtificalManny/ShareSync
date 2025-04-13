@@ -10,4 +10,10 @@ export declare class AppGateway {
     handleLeaveProject(client: Socket, data: {
         projectId: string;
     }): void;
+    handleJoinUser(client: Socket, data: {
+        userId: string;
+    }): void;
+    emitProjectCreated(project: any): void;
+    emitNotificationCreated(notification: any): void;
+    emitTaskCompleted(task: any): void;
 }

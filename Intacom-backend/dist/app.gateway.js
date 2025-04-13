@@ -32,6 +32,19 @@ let AppGateway = class AppGateway {
         client.leave(data.projectId);
         this.server.to(data.projectId).emit('userLeft', { userId: client.id });
     }
+    handleJoinUser(client, data) {
+        console.log(`Client ${client.id} joined user room ${data.userId}`);
+        client.join(data.userId);
+    }
+    emitProjectCreated(project) {
+        this.server.emit('projectCreated', project);
+    }
+    emitNotificationCreated(notification) {
+        this.server.to(notification.userId).emit('notificationCreated', notification);
+    }
+    emitTaskCompleted(task) {
+        this.server.to(task.assignedTo).emit('taskCompleted', task);
+    }
 };
 exports.AppGateway = AppGateway;
 __decorate([
@@ -50,7 +63,13 @@ __decorate([
     __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", void 0)
 ], AppGateway.prototype, "handleLeaveProject", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('joinUser'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
+    __metadata("design:returntype", void 0)
+], AppGateway.prototype, "handleJoinUser", null);
 exports.AppGateway = AppGateway = __decorate([
-    (0, websockets_1.WebSocketGateway)({ cors: true })
+    (0, websockets_1.WebSocketGateway)({ cors: { origin: 'http://localhost:54693', credentials: true } })
 ], AppGateway);
 //# sourceMappingURL=app.gateway.js.map

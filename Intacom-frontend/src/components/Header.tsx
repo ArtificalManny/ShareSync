@@ -1,61 +1,71 @@
 import React from 'react';
-import { styled } from '@mui/material/styles';
-import { theme } from '../styles/theme';
-
-interface Theme {
-  colors: {
-    primary: string;
-    secondary: string;
-    background: string;
-    text: string;
-  };
-  spacing: {
-    small: string;
-    medium: string;
-    large: string;
-  };
-}
-
-const HeaderContainer = styled('header')(({ theme }: { theme: Theme }) => ({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: theme.spacing.medium,
-  backgroundColor: theme.colors.secondary,
-  color: theme.colors.text,
-}));
-
-const Logo = styled('h1')({
-  margin: 0,
-});
-
-const Nav = styled('nav')({
-  display: 'flex',
-  gap: '20px',
-});
-
-const NavLink = styled('a')({
-  color: 'inherit',
-  textDecoration: 'none',
-  '&:hover': {
-    textDecoration: 'underline',
-  },
-});
+import { useNavigate } from 'react-router-dom';
 
 const Header: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
+
   return (
-    <HeaderContainer theme={theme}>
-      <Logo>INTACOM</Logo>
-      <Nav>
-        <NavLink href="/">Home</NavLink>
-        <NavLink href="/profile">Profile</NavLink>
-        <NavLink href="/projects">Projects</NavLink>
-        <NavLink href="/notifications">Notifications</NavLink>
-        <NavLink href="/leaderboard">Leaderboard</NavLink>
-        <NavLink href="/logout">Logout</NavLink>
-      </Nav>
-    </HeaderContainer>
+    <nav style={styles.nav}>
+      <div style={styles.logo}>INTACOM</div>
+      <div style={styles.navLinks}>
+        <button onClick={() => handleNavigation('/')} style={styles.navButton}>
+          <span style={styles.icon}>🏠</span> Home
+        </button>
+        <button onClick={() => handleNavigation('/profile')} style={styles.navButton}>
+          <span style={styles.icon}>👤</span> Profile
+        </button>
+        <button onClick={() => handleNavigation('/projects')} style={styles.navButton}>
+          <span style={styles.icon}>📂</span> Projects
+        </button>
+        <button onClick={() => handleNavigation('/notifications')} style={styles.navButton}>
+          <span style={styles.icon}>🔔</span> Notifications
+        </button>
+        <button onClick={() => handleNavigation('/leaderboard')} style={styles.navButton}>
+          <span style={styles.icon}>🏆</span> Leaderboard
+        </button>
+        <button onClick={() => handleNavigation('/logout')} style={styles.navButton}>
+          <span style={styles.icon}>🚪</span> Logout
+        </button>
+      </div>
+    </nav>
   );
+};
+
+// Inline styles
+const styles: { [key: string]: React.CSSProperties } = {
+  nav: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    background: 'linear-gradient(90deg, #1A3C34, #00C4B4)',
+    padding: '10px 20px',
+    color: '#FFFFFF',
+  },
+  logo: {
+    fontSize: '24px',
+    fontWeight: 'bold',
+  },
+  navLinks: {
+    display: 'flex',
+    gap: '15px',
+  },
+  navButton: {
+    background: 'none',
+    border: 'none',
+    color: '#FFFFFF',
+    fontSize: '16px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+  },
+  icon: {
+    fontSize: '18px',
+  },
 };
 
 export default Header;

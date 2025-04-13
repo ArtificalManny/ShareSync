@@ -1,12 +1,13 @@
 import { Model } from 'mongoose';
-import { Project, ProjectDocument } from './schemas/project.schema';
+import { ProjectDocument } from './schemas/project.schema';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 export declare class ProjectsService {
     private projectModel;
     constructor(projectModel: Model<ProjectDocument>);
-    create(projectData: Partial<Project>): Promise<Project>;
-    findById(id: string): Promise<Project>;
-    findByUsername(username: string): Promise<Project[]>;
-    update(id: string, updates: Partial<Project>): Promise<Project>;
-    delete(id: string): Promise<void>;
-    likeProject(id: string, userId: string): Promise<Project>;
+    create(createProjectDto: CreateProjectDto): Promise<ProjectDocument>;
+    findByUsername(username: string): Promise<ProjectDocument[]>;
+    findById(id: string): Promise<ProjectDocument>;
+    update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectDocument>;
+    remove(id: string): Promise<void>;
 }

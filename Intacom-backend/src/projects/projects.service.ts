@@ -1,96 +1,48 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Project, ProjectDocument } from './schemas/project.schema';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Injectable()
 export class ProjectsService {
-  constructor(
-    @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
-  ) {}
+  constructor(@InjectModel(Project.name) private projectModel: Model<ProjectDocument>) {}
 
-  async create(projectData: Partial<Project>): Promise<Project> {
-    try {
-      const newProject = new this.projectModel(projectData);
-      const savedProject = await newProject.save();
-      return savedProject.toObject();
-    } catch (error) {
-      console.error('Error in create:', error);
-      throw error;
-    }
+  async create(createProjectDto: CreateProjectDto): Promise<ProjectDocument> {
+    const createdProject = new this.projectModel({
+      ...createProjectDto,
+      createdAt: new Date(),
+    });
+    return createdProject.save();
   }
 
-  async findById(id: string): Promise<Project> {
-    try {
-      const project = await this.projectModel
-        .findById(id)
-        .lean()
-        .exec();
-      if (!project) {
-        throw new NotFoundException('Project not found');
-      }
-      return project;
-    } catch (error) {
-      console.error('Error in findById:', error);
-      throw error;
-    }
+  async findByUsername(username: string): Promise<ProjectDocument[]> {
+    return this.projectModel.find({ creatorEmail: username }).exec();
   }
 
-  async findByUsername(username: string): Promise<Project[]> {
-    try {
-      return await this.projectModel
-        .find({ $or: [{ admin: username }, { 'sharedWith.userId': username }] })
-        .lean()
-        .exec();
-    } catch (error) {
-      console.error('Error in findByUsername:', error);
-      throw error;
+  async findById(id: string): Promise<ProjectDocument> {
+    const project = await this.projectModel.findById(id).exec();
+    if (!project) {
+      throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
     }
+    return project;
   }
 
-  async update(id: string, updates: Partial<Project>): Promise<Project> {
-    try {
-      const updatedProject = await this.projectModel
-        .findByIdAndUpdate(id, updates, { new: true })
-        .lean()
-        .exec();
-      if (!updatedProject) {
-        throw new NotFoundException('Project not found');
-      }
-      return updatedProject;
-    } catch (error) {
-      console.error('Error in update:', error);
-      throw error;
+  async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectDocument> {
+    const updatedProject = await this.projectModel
+      .findByIdAndUpdate(id, updateProjectDto, { new: true })
+      .exec();
+    if (!updatedProject) {
+      throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
     }
+    return updatedProject;
   }
 
-  async delete(id: string): Promise<void> {
-    try {
-      const result = await this.projectModel.findByIdAndDelete(id).exec();
-      if (!result) {
-        throw new NotFoundException('Project not found');
-      }
-    } catch (error) {
-      console.error('Error in delete:', error);
-      throw error;
-    }
-  }
-
-  async likeProject(id: string, userId: string): Promise<Project> {
-    try {
-      const project = await this.projectModel
-        .findById(id)
-        .exec();
-      if (!project) {
-        throw new NotFoundException('Project not found');
-      }
-      // Increment likes (assuming likes is a number field in the schema)
-      project.likes = (project.likes || 0) + 1;
-      const updatedProject = await project.save();
-      return updatedProject.toObject();
-    } catch (error) {
-      console.error('Error in likeProject:', error);
-      throw error;
+  async remove(id: string): Promise<void> {
+    const result = await this.projectModel.deleteOne({ _id: id }).exec();
+    if (result.deletedCount === 0) {
+      throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
     }
   }
 }

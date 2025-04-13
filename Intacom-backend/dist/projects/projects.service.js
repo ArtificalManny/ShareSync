@@ -21,88 +21,33 @@ let ProjectsService = class ProjectsService {
     constructor(projectModel) {
         this.projectModel = projectModel;
     }
-    async create(projectData) {
-        try {
-            const newProject = new this.projectModel(projectData);
-            const savedProject = await newProject.save();
-            return savedProject.toObject();
-        }
-        catch (error) {
-            console.error('Error in create:', error);
-            throw error;
-        }
-    }
-    async findById(id) {
-        try {
-            const project = await this.projectModel
-                .findById(id)
-                .lean()
-                .exec();
-            if (!project) {
-                throw new common_1.NotFoundException('Project not found');
-            }
-            return project;
-        }
-        catch (error) {
-            console.error('Error in findById:', error);
-            throw error;
-        }
+    async create(createProjectDto) {
+        const createdProject = new this.projectModel(Object.assign(Object.assign({}, createProjectDto), { createdAt: new Date() }));
+        return createdProject.save();
     }
     async findByUsername(username) {
-        try {
-            return await this.projectModel
-                .find({ $or: [{ admin: username }, { 'sharedWith.userId': username }] })
-                .lean()
-                .exec();
-        }
-        catch (error) {
-            console.error('Error in findByUsername:', error);
-            throw error;
-        }
+        return this.projectModel.find({ creatorEmail: username }).exec();
     }
-    async update(id, updates) {
-        try {
-            const updatedProject = await this.projectModel
-                .findByIdAndUpdate(id, updates, { new: true })
-                .lean()
-                .exec();
-            if (!updatedProject) {
-                throw new common_1.NotFoundException('Project not found');
-            }
-            return updatedProject;
+    async findById(id) {
+        const project = await this.projectModel.findById(id).exec();
+        if (!project) {
+            throw new common_1.HttpException('Project not found', common_1.HttpStatus.NOT_FOUND);
         }
-        catch (error) {
-            console.error('Error in update:', error);
-            throw error;
-        }
+        return project;
     }
-    async delete(id) {
-        try {
-            const result = await this.projectModel.findByIdAndDelete(id).exec();
-            if (!result) {
-                throw new common_1.NotFoundException('Project not found');
-            }
+    async update(id, updateProjectDto) {
+        const updatedProject = await this.projectModel
+            .findByIdAndUpdate(id, updateProjectDto, { new: true })
+            .exec();
+        if (!updatedProject) {
+            throw new common_1.HttpException('Project not found', common_1.HttpStatus.NOT_FOUND);
         }
-        catch (error) {
-            console.error('Error in delete:', error);
-            throw error;
-        }
+        return updatedProject;
     }
-    async likeProject(id, userId) {
-        try {
-            const project = await this.projectModel
-                .findById(id)
-                .exec();
-            if (!project) {
-                throw new common_1.NotFoundException('Project not found');
-            }
-            project.likes = (project.likes || 0) + 1;
-            const updatedProject = await project.save();
-            return updatedProject.toObject();
-        }
-        catch (error) {
-            console.error('Error in likeProject:', error);
-            throw error;
+    async remove(id) {
+        const result = await this.projectModel.deleteOne({ _id: id }).exec();
+        if (result.deletedCount === 0) {
+            throw new common_1.HttpException('Project not found', common_1.HttpStatus.NOT_FOUND);
         }
     }
 };

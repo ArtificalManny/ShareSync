@@ -19,43 +19,23 @@ __decorate([
     __metadata("design:type", String)
 ], Project.prototype, "name", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
 ], Project.prototype, "description", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
-], Project.prototype, "admin", void 0);
+], Project.prototype, "creatorEmail", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: [{ userId: String, role: String }] }),
-    __metadata("design:type", Array)
-], Project.prototype, "sharedWith", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ default: 'current' }),
-    __metadata("design:type", String)
-], Project.prototype, "status", void 0);
+    (0, mongoose_1.Prop)({ default: Date.now }),
+    __metadata("design:type", Date)
+], Project.prototype, "createdAt", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
-    __metadata("design:type", String)
-], Project.prototype, "color", void 0);
-__decorate([
-    (0, mongoose_1.Prop)([String]),
     __metadata("design:type", Array)
-], Project.prototype, "tasks", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ type: Object }),
-    __metadata("design:type", Object)
 ], Project.prototype, "timeline", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ default: 0 }),
-    __metadata("design:type", Number)
-], Project.prototype, "likes", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ default: 0 }),
-    __metadata("design:type", Number)
-], Project.prototype, "comments", void 0);
 exports.Project = Project = __decorate([
-    (0, mongoose_1.Schema)({ timestamps: true })
+    (0, mongoose_1.Schema)()
 ], Project);
 exports.ProjectSchema = mongoose_1.SchemaFactory.createForClass(Project);
 //# sourceMappingURL=project.schema.js.map

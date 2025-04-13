@@ -1,22 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { io, Socket } from 'socket.io-client';
 
 interface Project {
   _id: string;
   name: string;
   description: string;
+  creatorEmail: string;
+  createdAt: string;
 }
 
 interface Notification {
   _id: string;
-  message: string;
+  content: string;
   read: boolean;
+  createdAt: string;
+}
+
+interface Task {
+  _id: string;
+  title: string;
+  status: string;
 }
 
 interface User {
   _id: string;
   username: string;
+  email: string;
 }
 
 interface HomeProps {
@@ -26,18 +36,55 @@ interface HomeProps {
 const Home: React.FC<HomeProps> = ({ user }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [showCreateProject, setShowCreateProject] = useState(false);
-  const [projectName, setProjectName] = useState('');
-  const [projectDescription, setProjectDescription] = useState('');
-  const navigate = useNavigate();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [newProject, setNewProject] = useState({ name: '', description: '', creatorEmail: '' });
+  const [error, setError] = useState<string | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
+
+  // Initialize WebSocket connection
+  useEffect(() => {
+    if (!user) return;
+
+    const newSocket = io('http://localhost:3001', { withCredentials: true });
+    setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      console.log('Home.tsx: WebSocket connected');
+      newSocket.emit('joinUser', { userId: user._id });
+    });
+
+    // Listen for real-time updates
+    newSocket.on('projectCreated', (project: Project) => {
+      setProjects((prev) => [...prev, project]);
+    });
+
+    newSocket.on('notificationCreated', (notification: Notification) => {
+      setNotifications((prev) => [...prev, notification]);
+    });
+
+    newSocket.on('taskCompleted', (task: Task) => {
+      setTasks((prev) => {
+        const updatedTasks = prev.filter((t) => t._id !== task._id);
+        if (task.status === 'completed') {
+          return [...updatedTasks, task];
+        }
+        return updatedTasks;
+      });
+    });
+
+    return () => {
+      newSocket.disconnect();
+      console.log('Home.tsx: WebSocket disconnected');
+    };
+  }, [user]);
 
   const fetchProjects = async () => {
     if (!user) return;
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
-      setProjects(response.data.data);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
+      setProjects(response.data.data || []);
+    } catch (err: any) {
+      console.error('Home.tsx: Error fetching projects:', err.message);
     }
   };
 
@@ -45,77 +92,205 @@ const Home: React.FC<HomeProps> = ({ user }) => {
     if (!user) return;
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
-      setNotifications(response.data.data);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
+      setNotifications(response.data.data || []);
+    } catch (err: any) {
+      console.error('Home.tsx: Error fetching notifications:', err.message);
     }
   };
 
-  const handleCreateProject = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const fetchTasks = async () => {
     if (!user) return;
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
-        name: projectName,
-        description: projectDescription,
-        owner: user._id,
-      });
-      setProjects([...projects, response.data.data]);
-      setShowCreateProject(false);
-      setProjectName('');
-      setProjectDescription('');
-    } catch (error) {
-      console.error('Error creating project:', error);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/tasks/user/${user._id}`);
+      setTasks(response.data.data || []);
+    } catch (err: any) {
+      console.error('Home.tsx: Error fetching tasks:', err.message);
+    }
+  };
+
+  const handleCreateProject = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      setError('Please log in to create a project.');
+      return;
+    }
+    if (!newProject.name || !newProject.description) {
+      setError('Please fill in all required fields.');
+      return;
+    }
+    try {
+      const projectData = {
+        name: newProject.name,
+        description: newProject.description,
+        creatorEmail: user.email,
+      };
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, projectData);
+      const createdProject = response.data.data;
+      // Emit WebSocket event
+      if (socket) {
+        socket.emit('createProject', createdProject);
+      }
+      setNewProject({ name: '', description: '', creatorEmail: '' });
+      setError(null);
+    } catch (err: any) {
+      console.error('Home.tsx: Error creating project:', err.message);
+      setError('Failed to create project. Please try again.');
     }
   };
 
   useEffect(() => {
     fetchProjects();
     fetchNotifications();
+    fetchTasks();
   }, [user]);
 
+  if (!user) {
+    return <div style={styles.container}>Please log in to view this page.</div>;
+  }
+
   return (
-    <div>
-      <h1>Welcome, {user?.username || 'Guest'}</h1>
-      <button onClick={() => setShowCreateProject(true)}>Create New Project</button>
-
-      {showCreateProject && (
-        <form onSubmit={handleCreateProject}>
-          <input
-            type="text"
-            placeholder="Project Name"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            required
-          />
-          <textarea
-            placeholder="Project Description"
-            value={projectDescription}
-            onChange={(e) => setProjectDescription(e.target.value)}
-            required
-          />
-          <button type="submit">Create Project</button>
-          <button type="button" onClick={() => setShowCreateProject(false)}>Cancel</button>
-        </form>
-      )}
-
-      <h2>Your Projects</h2>
-      {projects.map((project) => (
-        <div key={project._id} onClick={() => navigate(`/project/${project._id}`)}>
-          <h3>{project.name}</h3>
-          <p>{project.description}</p>
+    <div style={styles.container}>
+      <button onClick={() => fetchProjects()} style={styles.createProjectButton}>Create Project</button>
+      <div style={styles.sections}>
+        <div style={styles.section}>
+          <h2>Create a New Project</h2>
+          <form onSubmit={handleCreateProject} style={styles.form}>
+            <input
+              type="text"
+              placeholder="Project Name"
+              value={newProject.name}
+              onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+              style={styles.input}
+              required
+            />
+            <textarea
+              placeholder="Description"
+              value={newProject.description}
+              onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+              style={styles.textarea}
+              required
+            />
+            <input
+              type="email"
+              placeholder="Creator Email"
+              value={user.email}
+              readOnly
+              style={styles.input}
+            />
+            <button type="submit" style={styles.submitButton}>Create Project</button>
+            {error && <p style={styles.error}>{error}</p>}
+          </form>
         </div>
-      ))}
-
-      <h2>Notifications</h2>
-      {notifications.map((notification) => (
-        <div key={notification._id}>
-          <p>{notification.message}</p>
-          <p>{notification.read ? 'Read' : 'Unread'}</p>
+        <div style={styles.section}>
+          <h2>Project Overview</h2>
+          {projects.map((project) => (
+            <div key={project._id} style={styles.projectCard}>
+              <h3>{project.name}</h3>
+              <p>{project.description}</p>
+              <p>Created by: {project.creatorEmail}</p>
+              <p>Created on: {new Date(project.createdAt).toLocaleDateString()}</p>
+            </div>
+          ))}
         </div>
-      ))}
+        <div style={styles.section}>
+          <h2>Tasks Completed</h2>
+          <p style={styles.stat}>{tasks.filter(task => task.status === 'completed').length}</p>
+        </div>
+        <div style={styles.section}>
+          <h2>Total Projects</h2>
+          <p style={styles.stat}>{projects.length}</p>
+        </div>
+        <div style={styles.section}>
+          <h2>Current Projects</h2>
+          <p style={styles.stat}>{projects.filter(p => new Date(p.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}</p>
+        </div>
+        <div style={styles.section}>
+          <h2>Past Projects</h2>
+          <p style={styles.stat}>{projects.filter(p => new Date(p.createdAt) <= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}</p>
+        </div>
+      </div>
+      <div style={styles.section}>
+        <h2>Team Activity</h2>
+        <p>No recent updates.</p>
+      </div>
     </div>
   );
+};
+
+// Inline styles for improved design
+const styles: { [key: string]: React.CSSProperties } = {
+  container: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    padding: '20px',
+    backgroundColor: '#0A192F',
+    color: '#FFFFFF',
+  },
+  createProjectButton: {
+    backgroundColor: '#00C4B4',
+    color: '#FFFFFF',
+    border: 'none',
+    padding: '10px 20px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    marginBottom: '20px',
+  },
+  sections: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '20px',
+    marginBottom: '20px',
+  },
+  section: {
+    flex: '1 1 300px',
+    backgroundColor: '#1A3C34',
+    padding: '20px',
+    borderRadius: '8px',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  input: {
+    padding: '10px',
+    borderRadius: '4px',
+    border: '1px solid #B0BEC5',
+    fontSize: '16px',
+  },
+  textarea: {
+    padding: '10px',
+    borderRadius: '4px',
+    border: '1px solid #B0BEC5',
+    fontSize: '16px',
+    minHeight: '100px',
+  },
+  submitButton: {
+    backgroundColor: '#00C4B4',
+    color: '#FFFFFF',
+    border: 'none',
+    padding: '10px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '16px',
+  },
+  error: {
+    color: '#EF5350',
+    marginTop: '10px',
+  },
+  projectCard: {
+    padding: '10px',
+    marginBottom: '10px',
+    backgroundColor: '#0A192F',
+    borderRadius: '4px',
+  },
+  stat: {
+    fontSize: '24px',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#00C4B4',
+  },
 };
 
 export default Home;
