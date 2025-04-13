@@ -21,5 +21,5 @@ export declare class PostsController {
         content: string;
     }>): Promise<import("./schemas/post.schema").PostDocument>;
     delete(id: string): Promise<void>;
-    like(id: string, userId: string): Promise<any>;
+    like(id: string, userId: string): Promise<import("./schemas/post.schema").PostDocument>;
 }
