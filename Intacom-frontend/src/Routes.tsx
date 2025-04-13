@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import Header from './components/Header';
 import Login from './components/Login';
 import Home from './pages/Home';
@@ -7,7 +7,7 @@ import Profile from './pages/Profile';
 import Projects from './pages/Projects';
 import Notifications from './pages/Notifications';
 import Leaderboard from './pages/Leaderboard';
-import ProjectPage from './pages/Project'; // Renamed to avoid conflict
+import ProjectPage from './pages/Project';
 import ProjectCreate from './pages/ProjectCreate';
 import ProjectEdit from './pages/ProjectEdit';
 import Register from './pages/Register';
@@ -195,7 +195,7 @@ interface LogoutProps {
 }
 
 const Logout: React.FC<LogoutProps> = ({ setUser }) => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Ensure useNavigate is imported
 
   return (
     <div>
