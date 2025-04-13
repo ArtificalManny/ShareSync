@@ -98,7 +98,7 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
               key={notification._id}
               style={{
                 ...styles.notificationItem,
-                backgroundColor: notification.read ? '#1A3C34' : '#263238',
+                backgroundColor: notification.read ? '#3F51B5' : '#2B3A67',
               }}
             >
               <p>{notification.content}</p>
@@ -123,14 +123,14 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
   );
 };
 
-// Inline styles
+// Inline styles with updated color palette
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
     margin: '0 auto',
     padding: '20px',
-    backgroundColor: '#0A192F',
-    color: '#FFFFFF',
+    backgroundColor: '#2B3A67', // Deep Blue
+    color: '#FFFFFF', // White text
   },
   notificationList: {
     listStyleType: 'none',
@@ -140,16 +140,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '15px',
     marginBottom: '10px',
     borderRadius: '4px',
-    border: '1px solid #B0BEC5',
+    border: '1px solid #E3F2FD', // Soft Blue
   },
   notificationDate: {
     fontSize: '12px',
-    color: '#B0BEC5',
+    color: '#E3F2FD', // Soft Blue
     marginTop: '5px',
   },
   markAsReadButton: {
-    backgroundColor: '#00C4B4',
-    color: '#FFFFFF',
+    backgroundColor: '#E3F2FD', // Soft Blue
+    color: '#2B3A67', // Deep Blue
     border: 'none',
     padding: '5px 10px',
     borderRadius: '4px',
@@ -158,7 +158,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginTop: '10px',
   },
   error: {
-    color: '#EF5350',
+    color: '#FF6F61', // Coral
   },
 };
 

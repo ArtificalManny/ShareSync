@@ -83,14 +83,14 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
   );
 };
 
-// Inline styles
+// Inline styles with updated color palette
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
     margin: '0 auto',
     padding: '20px',
-    backgroundColor: '#0A192F',
-    color: '#FFFFFF',
+    backgroundColor: '#2B3A67', // Deep Blue
+    color: '#FFFFFF', // White text
   },
   projectList: {
     listStyleType: 'none',
@@ -99,13 +99,13 @@ const styles: { [key: string]: React.CSSProperties } = {
   projectItem: {
     padding: '15px',
     marginBottom: '10px',
-    backgroundColor: '#1A3C34',
+    backgroundColor: '#3F51B5', // Indigo
     borderRadius: '4px',
     cursor: 'pointer',
     transition: 'background-color 0.3s',
   },
   error: {
-    color: '#EF5350',
+    color: '#FF6F61', // Coral
   },
 };
 

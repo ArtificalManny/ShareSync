@@ -35,15 +35,15 @@ const Header: React.FC = () => {
   );
 };
 
-// Inline styles
+// Inline styles with updated color palette
 const styles: { [key: string]: React.CSSProperties } = {
   nav: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    background: 'linear-gradient(90deg, #1A3C34, #00C4B4)',
+    background: 'linear-gradient(90deg, #2B3A67, #3F51B5)', // Deep Blue to Indigo
     padding: '10px 20px',
-    color: '#FFFFFF',
+    color: '#FFFFFF', // White text
   },
   logo: {
     fontSize: '24px',
@@ -56,7 +56,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   navButton: {
     background: 'none',
     border: 'none',
-    color: '#FFFFFF',
+    color: '#E3F2FD', // Soft Blue
     fontSize: '16px',
     cursor: 'pointer',
     display: 'flex',
@@ -65,6 +65,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   icon: {
     fontSize: '18px',
+    color: '#FF6F61', // Coral
   },
 };
 

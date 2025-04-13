@@ -65,34 +65,34 @@ const Leaderboard: React.FC = () => {
   );
 };
 
-// Inline styles
+// Inline styles with updated color palette
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
     margin: '0 auto',
     padding: '20px',
-    backgroundColor: '#0A192F',
-    color: '#FFFFFF',
+    backgroundColor: '#2B3A67', // Deep Blue
+    color: '#FFFFFF', // White text
   },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
   },
   tableHeader: {
-    backgroundColor: '#1A3C34',
+    backgroundColor: '#3F51B5', // Indigo
     padding: '10px',
     textAlign: 'left',
-    borderBottom: '2px solid #B0BEC5',
+    borderBottom: '2px solid #E3F2FD', // Soft Blue
   },
   tableRow: {
-    borderBottom: '1px solid #B0BEC5',
+    borderBottom: '1px solid #E3F2FD', // Soft Blue
   },
   tableCell: {
     padding: '10px',
     textAlign: 'left',
   },
   error: {
-    color: '#EF5350',
+    color: '#FF6F61', // Coral
   },
 };
 

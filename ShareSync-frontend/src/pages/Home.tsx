@@ -130,7 +130,7 @@ const Home: React.FC<HomeProps> = ({ user }) => {
       const projectData = {
         name: newProject.name,
         description: newProject.description,
-        creatorEmail: user.email,
+        creatorEmail: user.email, // Ensure creatorEmail is sent
         sharedWith: newProject.sharedWith ? [newProject.sharedWith] : [],
       };
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, projectData, {
@@ -254,18 +254,18 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   );
 };
 
-// Inline styles for improved design
+// Inline styles with updated color palette
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
     margin: '0 auto',
     padding: '20px',
-    backgroundColor: '#0A192F',
-    color: '#FFFFFF',
+    backgroundColor: '#2B3A67', // Deep Blue
+    color: '#FFFFFF', // White text
   },
   createProjectButton: {
-    backgroundColor: '#00C4B4',
-    color: '#FFFFFF',
+    backgroundColor: '#E3F2FD', // Soft Blue
+    color: '#2B3A67', // Deep Blue
     border: 'none',
     padding: '10px 20px',
     borderRadius: '4px',
@@ -281,7 +281,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   section: {
     flex: '1 1 300px',
-    backgroundColor: '#1A3C34',
+    backgroundColor: '#3F51B5', // Indigo
     padding: '20px',
     borderRadius: '8px',
   },
@@ -293,19 +293,23 @@ const styles: { [key: string]: React.CSSProperties } = {
   input: {
     padding: '10px',
     borderRadius: '4px',
-    border: '1px solid #B0BEC5',
+    border: '1px solid #E3F2FD', // Soft Blue
     fontSize: '16px',
+    backgroundColor: '#FFFFFF', // White
+    color: '#2B3A67', // Deep Blue
   },
   textarea: {
     padding: '10px',
     borderRadius: '4px',
-    border: '1px solid #B0BEC5',
+    border: '1px solid #E3F2FD', // Soft Blue
     fontSize: '16px',
     minHeight: '100px',
+    backgroundColor: '#FFFFFF', // White
+    color: '#2B3A67', // Deep Blue
   },
   submitButton: {
-    backgroundColor: '#00C4B4',
-    color: '#FFFFFF',
+    backgroundColor: '#E3F2FD', // Soft Blue
+    color: '#2B3A67', // Deep Blue
     border: 'none',
     padding: '10px',
     borderRadius: '4px',
@@ -313,30 +317,30 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '16px',
   },
   error: {
-    color: '#EF5350',
+    color: '#FF6F61', // Coral
     marginTop: '10px',
   },
   projectCard: {
     padding: '10px',
     marginBottom: '10px',
-    backgroundColor: '#0A192F',
+    backgroundColor: '#2B3A67', // Deep Blue
     borderRadius: '4px',
   },
   stat: {
     fontSize: '24px',
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#00C4B4',
+    color: '#E3F2FD', // Soft Blue
   },
   notification: {
     padding: '10px',
     marginBottom: '10px',
-    backgroundColor: '#263238',
+    backgroundColor: '#3F51B5', // Indigo
     borderRadius: '4px',
   },
   notificationDate: {
     fontSize: '12px',
-    color: '#B0BEC5',
+    color: '#E3F2FD', // Soft Blue
   },
 };
 

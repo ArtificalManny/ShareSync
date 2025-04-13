@@ -11,17 +11,14 @@ export class Project {
   @Prop({ required: true })
   description: string;
 
-  @Prop({ required: true })
+  @Prop()
   creatorEmail: string;
+
+  @Prop({ type: [String], default: [] })
+  sharedWith: string[];
 
   @Prop({ default: Date.now })
   createdAt: Date;
-
-  @Prop()
-  timeline: { date: string; event: string }[];
-
-  @Prop([String])
-  sharedWith: string[];
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

@@ -157,18 +157,18 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
   );
 };
 
-// Inline styles for Facebook/LinkedIn-inspired design
+// Inline styles with updated color palette
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
     margin: '0 auto',
     padding: '20px',
-    backgroundColor: '#0A192F',
-    color: '#FFFFFF',
+    backgroundColor: '#2B3A67', // Deep Blue
+    color: '#FFFFFF', // White text
   },
   coverPhoto: {
     height: '300px',
-    backgroundColor: '#1A3C34',
+    backgroundColor: '#3F51B5', // Indigo
     borderRadius: '8px 8px 0 0',
     position: 'relative',
   },
@@ -181,7 +181,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   defaultCover: {
     width: '100%',
     height: '100%',
-    background: 'linear-gradient(135deg, #1A3C34, #00C4B4)',
+    background: 'linear-gradient(135deg, #2B3A67, #3F51B5)', // Deep Blue to Indigo
   },
   profileHeader: {
     display: 'flex',
@@ -193,9 +193,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     width: '160px',
     height: '160px',
     borderRadius: '50%',
-    border: '4px solid #0A192F',
+    border: '4px solid #2B3A67', // Deep Blue
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF', // White
   },
   profileImage: {
     width: '100%',
@@ -208,8 +208,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1A3C34',
-    color: '#FFFFFF',
+    backgroundColor: '#3F51B5', // Indigo
+    color: '#FFFFFF', // White text
     fontSize: '48px',
     fontWeight: 'bold',
   },
@@ -218,8 +218,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: '20px',
   },
   editButton: {
-    backgroundColor: '#00C4B4',
-    color: '#FFFFFF',
+    backgroundColor: '#E3F2FD', // Soft Blue
+    color: '#2B3A67', // Deep Blue
     border: 'none',
     padding: '8px 16px',
     borderRadius: '4px',
@@ -234,7 +234,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   section: {
     flex: '1 1 300px',
-    backgroundColor: '#1A3C34',
+    backgroundColor: '#3F51B5', // Indigo
     padding: '20px',
     borderRadius: '8px',
   },
@@ -244,7 +244,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   listItem: {
     padding: '8px 0',
-    borderBottom: '1px solid #0A192F',
+    borderBottom: '1px solid #2B3A67', // Deep Blue
   },
   activityList: {
     listStyleType: 'none',
@@ -252,19 +252,19 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   activityItem: {
     padding: '10px 0',
-    borderBottom: '1px solid #0A192F',
+    borderBottom: '1px solid #2B3A67', // Deep Blue
   },
   activityDate: {
     fontSize: '12px',
-    color: '#B0BEC5',
+    color: '#E3F2FD', // Soft Blue
   },
   error: {
-    color: '#EF5350',
+    color: '#FF6F61', // Coral
     marginBottom: '10px',
   },
   retryButton: {
-    backgroundColor: '#FFFFFF',
-    color: '#0A192F',
+    backgroundColor: '#E3F2FD', // Soft Blue
+    color: '#2B3A67', // Deep Blue
     border: 'none',
     padding: '8px 16px',
     borderRadius: '4px',
