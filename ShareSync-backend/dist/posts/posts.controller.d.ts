@@ -8,27 +8,11 @@ export declare class PostsController {
         userId: string;
         content: string;
         images: string[];
-    }): Promise<import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<unknown, any, any> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    }>;
+    }): Promise<import("./schemas/post.schema").PostDocument>;
     findByProjectId(projectId: string): Promise<{
-        data: (import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<unknown, any, any> & Required<{
-            _id: unknown;
-        }> & {
-            __v: number;
-        })[];
+        data: any;
     }>;
-    update(id: string, updates: Partial<PostInterface>): Promise<import("mongoose").Document<unknown, {}, import("./schemas/post.schema").PostDocument> & import("./schemas/post.schema").Post & import("mongoose").Document<unknown, any, any> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    }>;
-    delete(id: string): Promise<{
-        message: string;
-    }>;
-    likePost(id: string, userId: string): Promise<{
-        message: string;
-    }>;
+    update(id: string, updates: Partial<PostInterface>): Promise<any>;
+    delete(id: string): Promise<any>;
+    likePost(id: string, userId: string): Promise<any>;
 }

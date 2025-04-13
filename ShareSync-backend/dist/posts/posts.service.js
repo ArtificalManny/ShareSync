@@ -19,95 +19,56 @@ const mongoose_2 = require("mongoose");
 const post_schema_1 = require("./schemas/post.schema");
 const project_schema_1 = require("../projects/schemas/project.schema");
 const notifications_service_1 = require("../notifications/notifications.service");
-const points_service_1 = require("../points/points.service");
 let PostsService = class PostsService {
-    constructor(postModel, projectModel, notificationsService, pointsService) {
+    constructor(postModel, projectModel, notificationsService) {
         this.postModel = postModel;
         this.projectModel = projectModel;
         this.notificationsService = notificationsService;
-        this.pointsService = pointsService;
     }
-    async create(createPostDto) {
-        try {
-            const { projectId, userId, content, images } = createPostDto;
-            const post = new this.postModel({
-                projectId,
-                userId,
-                content,
-                images,
-            });
-            const savedPost = await post.save();
-            const project = await this.projectModel.findById(projectId).exec();
+    async create(post) {
+        const createdPost = new this.postModel(post);
+        const project = await this.projectModel.findById(post.projectId).exec();
+        if (!project) {
+            throw new common_1.HttpException('Project not found', common_1.HttpStatus.NOT_FOUND);
+        }
+        for (const collaborator of project.sharedWith) {
+            if (collaborator !== post.userId) {
+                await this.notificationsService.create({
+                    userId: collaborator,
+                    content: `New post in project ${project.name} by user ${post.userId}`,
+                });
+            }
+        }
+        return createdPost.save();
+    }
+    async findByProject(projectId) {
+        return this.postModel.find({ projectId }).exec();
+    }
+    async like(postId, userId) {
+        const post = await this.postModel.findById(postId).exec();
+        if (!post) {
+            throw new common_1.HttpException('Post not found', common_1.HttpStatus.NOT_FOUND);
+        }
+        if (post.likes.includes(userId)) {
+            post.likes = post.likes.filter((id) => id !== userId);
+        }
+        else {
+            post.likes.push(userId);
+            const project = await this.projectModel.findById(post.projectId).exec();
             if (!project) {
-                throw new common_1.NotFoundException('Project not found');
+                throw new common_1.HttpException('Project not found', common_1.HttpStatus.NOT_FOUND);
             }
             for (const collaborator of project.sharedWith) {
-                await this.notificationsService.create(collaborator.userId, 'new_post', `A new post was added to ${project.name}!`, savedPost._id.toString());
+                if (collaborator !== userId) {
+                    await this.notificationsService.create({
+                        userId: collaborator,
+                        content: `User ${userId} liked a post in project ${project.name}`,
+                    });
+                }
             }
-            await this.pointsService.addPoints(userId, 5, 'create_post');
-            return savedPost;
         }
-        catch (error) {
-            console.error('Error in create post:', error);
-            throw new common_1.BadRequestException('Failed to create post');
-        }
-    }
-    async findByProjectId(projectId) {
-        try {
-            return await this.postModel.find({ projectId }).sort({ createdAt: -1 }).exec();
-        }
-        catch (error) {
-            console.error('Error in findByProjectId:', error);
-            throw error;
-        }
-    }
-    async update(id, updates) {
-        try {
-            const updatedPost = await this.postModel
-                .findByIdAndUpdate(id, updates, { new: true })
-                .exec();
-            if (!updatedPost) {
-                throw new common_1.NotFoundException('Post not found');
-            }
-            return updatedPost;
-        }
-        catch (error) {
-            console.error('Error in update post:', error);
-            throw error;
-        }
-    }
-    async delete(id) {
-        try {
-            const post = await this.postModel.findByIdAndDelete(id).exec();
-            if (!post) {
-                throw new common_1.NotFoundException('Post not found');
-            }
-            return { message: 'Post deleted successfully' };
-        }
-        catch (error) {
-            console.error('Error in delete post:', error);
-            throw error;
-        }
-    }
-    async likePost(id, userId) {
-        try {
-            const post = await this.postModel.findById(id).exec();
-            if (!post) {
-                throw new common_1.NotFoundException('Post not found');
-            }
-            if (!post.likedBy.includes(userId)) {
-                post.likes += 1;
-                post.likedBy.push(userId);
-                await post.save();
-                await this.notificationsService.create(post.userId, 'post_like', `Your post received a like!`, post._id.toString());
-                await this.pointsService.addPoints(userId, 1, 'like_post');
-            }
-            return { message: 'Post liked successfully' };
-        }
-        catch (error) {
-            console.error('Error in likePost:', error);
-            throw error;
-        }
+        await post.save();
+        return post;
     }
 };
 exports.PostsService = PostsService;
@@ -117,7 +78,6 @@ exports.PostsService = PostsService = __decorate([
     __param(1, (0, mongoose_1.InjectModel)(project_schema_1.Project.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
         mongoose_2.Model,
-        notifications_service_1.NotificationsService,
-        points_service_1.PointsService])
+        notifications_service_1.NotificationsService])
 ], PostsService);
 //# sourceMappingURL=posts.service.js.map

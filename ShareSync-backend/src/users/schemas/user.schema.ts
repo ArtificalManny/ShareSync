@@ -23,7 +23,14 @@ export class User {
   @Prop()
   gender: string;
 
-  @Prop()
+  @Prop({
+    type: {
+      month: { type: String, required: true },
+      day: { type: String, required: true },
+      year: { type: String, required: true },
+    },
+    required: true,
+  })
   birthday: { month: string; day: string; year: string };
 
   @Prop()
@@ -32,7 +39,7 @@ export class User {
   @Prop([String])
   skills: string[];
 
-  @Prop()
+  @Prop({ type: [{ company: String, role: String, duration: String }] })
   experience: { company: string; role: string; duration: string }[];
 
   @Prop()

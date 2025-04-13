@@ -207,14 +207,18 @@ const Home: React.FC<HomeProps> = ({ user }) => {
         </div>
         <div style={styles.section}>
           <h2>Project Overview</h2>
-          {projects.map((project) => (
-            <div key={project._id} style={styles.projectCard}>
-              <h3>{project.name}</h3>
-              <p>{project.description}</p>
-              <p>Created by: {project.creatorEmail}</p>
-              <p>Created on: {new Date(project.createdAt).toLocaleDateString()}</p>
-            </div>
-          ))}
+          {projects.length > 0 ? (
+            projects.map((project) => (
+              <div key={project._id} style={styles.projectCard}>
+                <h3>{project.name}</h3>
+                <p>{project.description}</p>
+                <p>Created by: {project.creatorEmail}</p>
+                <p>Created on: {new Date(project.createdAt).toLocaleDateString()}</p>
+              </div>
+            ))
+          ) : (
+            <p>No projects yet.</p>
+          )}
         </div>
         <div style={styles.section}>
           <h2>Tasks Completed</h2>
