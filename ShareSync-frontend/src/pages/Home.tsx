@@ -1,6 +1,7 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import axios from 'axios';
 import { io, Socket } from 'socket.io-client';
+import { useNavigate } from 'react-router-dom';
 
 interface Project {
   _id: string;
@@ -23,6 +24,11 @@ interface Task {
   status: string;
 }
 
+interface TeamActivity {
+  content: string;
+  timestamp: string;
+}
+
 interface User {
   _id: string;
   username: string;
@@ -37,9 +43,11 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [teamActivity, setTeamActivity] = useState<TeamActivity[]>([]);
   const [newProject, setNewProject] = useState({ name: '', description: '', creatorEmail: '', sharedWith: '' });
   const [error, setError] = useState<string | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
+  const navigate = useNavigate();
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -72,6 +80,11 @@ const Home: React.FC<HomeProps> = ({ user }) => {
         }
         return updatedTasks;
       });
+    });
+
+    newSocket.on('teamActivity', (activity: TeamActivity) => {
+      console.log('Home.tsx: Received teamActivity event:', activity);
+      setTeamActivity((prev) => [...prev, activity]);
     });
 
     return () => {
@@ -130,20 +143,17 @@ const Home: React.FC<HomeProps> = ({ user }) => {
       const projectData = {
         name: newProject.name,
         description: newProject.description,
-        creatorEmail: user.email, // Ensure creatorEmail is sent
+        creatorEmail: user.email,
         sharedWith: newProject.sharedWith ? [newProject.sharedWith] : [],
       };
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, projectData, {
         withCredentials: true,
       });
       const createdProject = response.data.data;
-      // Emit WebSocket event
-      if (socket) {
-        socket.emit('createProject', createdProject);
-      }
       setNewProject({ name: '', description: '', creatorEmail: '', sharedWith: '' });
       setError(null);
-      fetchProjects(); // Refresh project list
+      // Redirect to the project's home page
+      navigate(`/project/${createdProject._id}`);
     } catch (err: any) {
       console.error('Home.tsx: Error creating project:', err.message, err.response?.data);
       setError('Failed to create project. Please ensure the backend is running and try again.');
@@ -248,13 +258,22 @@ const Home: React.FC<HomeProps> = ({ user }) => {
       </div>
       <div style={styles.section}>
         <h2>👥 Team Activity</h2>
-        <p>No recent updates.</p>
+        {teamActivity.length > 0 ? (
+          teamActivity.map((activity, index) => (
+            <div key={index} style={styles.activity}>
+              <p>{activity.content}</p>
+              <p style={styles.activityDate}>{new Date(activity.timestamp).toLocaleString()}</p>
+            </div>
+          ))
+        ) : (
+          <p>No recent updates.</p>
+        )}
       </div>
     </div>
   );
 };
 
-// Inline styles with updated color palette
+// Inline styles with the new color palette
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
@@ -339,6 +358,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '4px',
   },
   notificationDate: {
+    fontSize: '12px',
+    color: '#E3F2FD', // Soft Blue
+  },
+  activity: {
+    padding: '10px',
+    marginBottom: '10px',
+    backgroundColor: '#3F51B5', // Indigo
+    borderRadius: '4px',
+  },
+  activityDate: {
     fontSize: '12px',
     color: '#E3F2FD', // Soft Blue
   },

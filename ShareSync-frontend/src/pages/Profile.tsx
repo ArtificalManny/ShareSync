@@ -44,7 +44,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
       setProfile(response.data.data);
     } catch (err: any) {
       console.error('Profile.tsx: Error fetching profile:', err.message, err.response?.data);
-      setError('Failed to load profile data. Please ensure the backend is running and try again.');
+      setError('Failed to load profile data. Please ensure you are logged in and try again.');
     }
   };
 
@@ -157,7 +157,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
   );
 };
 
-// Inline styles with updated color palette
+// Inline styles with the new color palette
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',

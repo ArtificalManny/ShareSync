@@ -37,7 +37,7 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
       setProjects(response.data.data || []);
     } catch (err: any) {
       console.error('Projects.tsx: Error fetching projects:', err.message);
-      setError('Failed to load projects. Please ensure the backend is running and try again.');
+      setError('Failed to load projects. Please ensure you are logged in and try again.');
     }
   };
 
@@ -83,7 +83,7 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
   );
 };
 
-// Inline styles with updated color palette
+// Inline styles with the new color palette
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',

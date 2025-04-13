@@ -53,4 +53,8 @@ export class AppGateway {
   emitTaskCompleted(task: any) {
     this.server.to(task.assignedTo).emit('taskCompleted', task);
   }
+
+  emitTeamActivity(activity: { content: string; timestamp: Date }) {
+    this.server.emit('teamActivity', activity);
+  }
 }

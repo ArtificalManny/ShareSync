@@ -1,121 +1,111 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
-import './Login.css';
-import { useAppDispatch } from '../hooks';
-import { login } from '../store/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 interface LoginProps {
-  setUser: (user: { _id: string; username: string; email: string } | null) => void;
+  setUser: (user: { _id: string; username: string; email: string }) => void;
 }
 
-function Login({ setUser }: LoginProps) {
-  const [identifier, setIdentifier] = useState('');
+const Login: React.FC<LoginProps> = ({ setUser }) => {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [isMounted, setIsMounted] = useState(true);
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
 
-  useEffect(() => {
-    console.log('Login.tsx: Component mounted');
-    return () => {
-      console.log('Login.tsx: Component unmounted');
-      setIsMounted(false);
-    };
-  }, []);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log('Login.tsx: handleLogin called with:', { identifier, password });
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
-        identifier,
-        password,
-      }, {
-        timeout: 5000,
-        withCredentials: true,
-      });
-      console.log('Login.tsx: Login response:', response.data);
-      const user = response.data.data;
-      if (isMounted) {
-        setUser(user);
-        localStorage.setItem('user', JSON.stringify(user));
-        dispatch(login(user));
-        alert('Login successful! Welcome back!');
-        navigate('/');
-      } else {
-        console.log('Login.tsx: Component unmounted before state update');
-      }
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/login`,
+        { email, password },
+        { withCredentials: true }
+      );
+      const userData = response.data.data;
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      navigate('/');
     } catch (err: any) {
-      console.error('Login.tsx: Login error:', err.message, err.response?.data);
-      if (isMounted) {
-        if (err.response?.data?.message) {
-          setError(err.response.data.message);
-        } else if (err.message.includes('Network Error')) {
-          setError('Unable to connect to the server. Please ensure the backend is running on port 3001.');
-        } else if (err.message.includes('CORS')) {
-          setError('A CORS error occurred. Please contact support or try again later.');
-        } else {
-          setError('An unexpected error occurred during login. Please try again.');
-        }
-      } else {
-        console.log('Login.tsx: Component unmounted before error state update');
-      }
+      console.error('Login.tsx: Error logging in:', err.message);
+      setError('Failed to log in. Please check your credentials and try again.');
     }
-  };
-
-  const togglePasswordVisibility = () => {
-    if (isMounted) {
-      setShowPassword(!showPassword);
-    }
-  };
-
-  const handleNavigation = (path: string) => {
-    console.log(`Login.tsx: Navigating to ${path}`);
-    navigate(path);
   };
 
   return (
-    <div className="login-container">
-      <h2>Login to ShareSync</h2>
-      <form onSubmit={handleLogin}>
+    <div style={styles.container}>
+      <h1>Login - ShareSync</h1>
+      <form onSubmit={handleSubmit} style={styles.form}>
         <input
-          type="text"
-          placeholder="Email or Username"
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
           required
         />
-        <div className="password-container">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <span onClick={togglePasswordVisibility} className="password-toggle">
-            {showPassword ? '👁️' : '👁️‍🗨️'}
-          </span>
-        </div>
-        <button type="submit">Login</button>
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={styles.input}
+          required
+        />
+        <button type="submit" style={styles.submitButton}>Login</button>
+        {error && <p style={styles.error}>{error}</p>}
       </form>
-      {error && <p className="error">{error}</p>}
-      <p>
-        <Link to="/recover" onClick={() => handleNavigation('/recover')}>
-          Forgot Password?
-        </Link>
-      </p>
       <p>
         Don't have an account?{' '}
-        <Link to="/register" onClick={() => handleNavigation('/register')}>
-          Register
-        </Link>
+        <a href="/register" style={styles.link}>Register</a>
+      </p>
+      <p>
+        Forgot your password?{' '}
+        <a href="/recover" style={styles.link}>Recover</a>
       </p>
     </div>
   );
-}
+};
+
+// Inline styles with the new color palette
+const styles: { [key: string]: React.CSSProperties } = {
+  container: {
+    maxWidth: '400px',
+    margin: '0 auto',
+    padding: '20px',
+    backgroundColor: '#2B3A67', // Deep Blue
+    color: '#FFFFFF', // White text
+    borderRadius: '8px',
+    marginTop: '100px',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  input: {
+    padding: '10px',
+    borderRadius: '4px',
+    border: '1px solid #E3F2FD', // Soft Blue
+    fontSize: '16px',
+    backgroundColor: '#FFFFFF', // White
+    color: '#2B3A67', // Deep Blue
+  },
+  submitButton: {
+    backgroundColor: '#E3F2FD', // Soft Blue
+    color: '#2B3A67', // Deep Blue
+    border: 'none',
+    padding: '10px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '16px',
+  },
+  error: {
+    color: '#FF6F61', // Coral
+    marginTop: '10px',
+  },
+  link: {
+    color: '#E3F2FD', // Soft Blue
+    textDecoration: 'underline',
+  },
+};
 
 export default Login;

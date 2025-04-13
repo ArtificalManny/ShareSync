@@ -11,6 +11,7 @@ import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import Recover from './pages/Recover';
 import ResetPassword from './pages/ResetPassword';
+import ProjectHome from './pages/ProjectHome'; // New page for project home
 
 interface User {
   _id: string;
@@ -28,9 +29,17 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      setUser(null);
+      localStorage.removeItem('user');
+    } catch (err) {
+      console.error('App.tsx: Error logging out:', err);
+    }
   };
 
   return (
@@ -46,6 +55,7 @@ const App: React.FC = () => {
           <Route path="/" element={user ? <Home user={user} /> : <Navigate to="/login" />} />
           <Route path="/profile" element={user ? <Profile user={user} /> : <Navigate to="/login" />} />
           <Route path="/projects" element={user ? <Projects user={user} /> : <Navigate to="/login" />} />
+          <Route path="/project/:id" element={user ? <ProjectHome user={user} /> : <Navigate to="/login" />} />
           <Route path="/notifications" element={user ? <Notifications user={user} /> : <Navigate to="/login" />} />
           <Route path="/leaderboard" element={user ? <Leaderboard /> : <Navigate to="/login" />} />
           <Route path="/logout" element={<Navigate to="/login" replace state={{ logout: handleLogout }} />} />

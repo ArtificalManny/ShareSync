@@ -2,23 +2,45 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Project, ProjectDocument } from './schemas/project.schema';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { AppGateway } from '../app.gateway';
 
 @Injectable()
 export class ProjectsService {
-  constructor(@InjectModel(Project.name) private projectModel: Model<ProjectDocument>) {}
+  constructor(
+    @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
+    private readonly notificationsService: NotificationsService,
+    private readonly appGateway: AppGateway,
+  ) {}
 
-  async create(createProjectDto: CreateProjectDto): Promise<ProjectDocument> {
-    const createdProject = new this.projectModel({
-      ...createProjectDto,
-      createdAt: new Date(),
+  async create(project: { name: string; description: string; creatorEmail?: string; sharedWith: string[] }): Promise<ProjectDocument> {
+    const createdProject = new this.projectModel(project);
+    const savedProject = await createdProject.save();
+
+    // Emit projectCreated event
+    this.appGateway.emitProjectCreated(savedProject);
+
+    // Notify collaborators
+    for (const collaborator of project.sharedWith) {
+      if (collaborator !== project.creatorEmail) {
+        await this.notificationsService.create({
+          userId: collaborator,
+          content: `You were added to a new project: ${project.name}`,
+        });
+      }
+    }
+
+    // Emit team activity update (simulating a team activity log)
+    this.appGateway.emitTeamActivity({
+      content: `User ${project.creatorEmail} created a new project: ${project.name}`,
+      timestamp: new Date(),
     });
-    return createdProject.save();
+
+    return savedProject;
   }
 
   async findByUsername(username: string): Promise<ProjectDocument[]> {
-    return this.projectModel.find({ creatorEmail: username }).exec();
+    return this.projectModel.find({ $or: [{ creatorEmail: username }, { sharedWith: username }] }).exec();
   }
 
   async findById(id: string): Promise<ProjectDocument> {
@@ -29,9 +51,9 @@ export class ProjectsService {
     return project;
   }
 
-  async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectDocument> {
+  async update(id: string, updates: Partial<Project>): Promise<ProjectDocument> {
     const updatedProject = await this.projectModel
-      .findByIdAndUpdate(id, updateProjectDto, { new: true })
+      .findByIdAndUpdate(id, updates, { new: true })
       .exec();
     if (!updatedProject) {
       throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
@@ -39,9 +61,9 @@ export class ProjectsService {
     return updatedProject;
   }
 
-  async remove(id: string): Promise<void> {
-    const result = await this.projectModel.deleteOne({ _id: id }).exec();
-    if (result.deletedCount === 0) {
+  async delete(id: string): Promise<void> {
+    const result = await this.projectModel.findByIdAndDelete(id).exec();
+    if (!result) {
       throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
     }
   }

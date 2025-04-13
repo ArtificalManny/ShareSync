@@ -19,7 +19,7 @@ const Leaderboard: React.FC = () => {
       setLeaderboard(response.data.data || []);
     } catch (err: any) {
       console.error('Leaderboard.tsx: Error fetching leaderboard:', err.message);
-      setError('Failed to load leaderboard. Please ensure the backend is running and try again.');
+      setError('Failed to load leaderboard. Please ensure you are logged in and try again.');
     }
   };
 
@@ -65,7 +65,7 @@ const Leaderboard: React.FC = () => {
   );
 };
 
-// Inline styles with updated color palette
+// Inline styles with the new color palette
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
