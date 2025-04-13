@@ -15,27 +15,27 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationsController = void 0;
 const common_1 = require("@nestjs/common");
 const notifications_service_1 = require("./notifications.service");
+const app_gateway_1 = require("../app.gateway");
 let NotificationsController = class NotificationsController {
-    constructor(notificationsService) {
+    constructor(notificationsService, appGateway) {
         this.notificationsService = notificationsService;
+        this.appGateway = appGateway;
     }
-    async findByUser(userId) {
-        try {
-            return await this.notificationsService.findByUser(userId);
-        }
-        catch (error) {
-            console.error('Error in findByUser:', error);
-            throw error;
-        }
+    async findByUserId(userId) {
+        const notifications = await this.notificationsService.findByUserId(userId);
+        return {
+            status: 'success',
+            data: notifications,
+        };
     }
     async markAsRead(id) {
-        try {
-            return await this.notificationsService.markAsRead(id);
-        }
-        catch (error) {
-            console.error('Error in markAsRead:', error);
-            throw error;
-        }
+        const notification = await this.notificationsService.markAsRead(id);
+        this.appGateway.emitNotificationCreated(notification);
+        return {
+            status: 'success',
+            message: 'Notification marked as read',
+            data: notification,
+        };
     }
 };
 exports.NotificationsController = NotificationsController;
@@ -45,7 +45,7 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], NotificationsController.prototype, "findByUser", null);
+], NotificationsController.prototype, "findByUserId", null);
 __decorate([
     (0, common_1.Put)('mark-as-read/:id'),
     __param(0, (0, common_1.Param)('id')),
@@ -55,6 +55,7 @@ __decorate([
 ], NotificationsController.prototype, "markAsRead", null);
 exports.NotificationsController = NotificationsController = __decorate([
     (0, common_1.Controller)('notifications'),
-    __metadata("design:paramtypes", [notifications_service_1.NotificationsService])
+    __metadata("design:paramtypes", [notifications_service_1.NotificationsService,
+        app_gateway_1.AppGateway])
 ], NotificationsController);
 //# sourceMappingURL=notifications.controller.js.map

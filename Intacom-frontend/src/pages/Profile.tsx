@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-// Define interfaces for user and activity data
 interface Activity {
   _id: string;
   type: 'post' | 'comment' | 'like' | 'task' | 'project';
@@ -39,10 +38,12 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
       return;
     }
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${user.username}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${user.username}`, {
+        withCredentials: true,
+      });
       setProfile(response.data.data);
     } catch (err: any) {
-      console.error('Profile.tsx: Error fetching profile:', err.message);
+      console.error('Profile.tsx: Error fetching profile:', err.message, err.response?.data);
       setError('Failed to load profile data. Please try again later.');
     }
   };
@@ -50,7 +51,9 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
   const fetchActivities = async () => {
     if (!user) return;
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/activities/user/${user._id}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/activities/user/${user._id}`, {
+        withCredentials: true,
+      });
       setActivities(response.data.data || []);
     } catch (err: any) {
       console.error('Profile.tsx: Error fetching activities:', err.message);
@@ -153,7 +156,6 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
   );
 };
 
-// Inline styles for Facebook/LinkedIn-inspired design
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
@@ -244,7 +246,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   activityList: {
     listStyleType: 'none',
-    padding: 0,
+    padding: '0',
   },
   activityItem: {
     padding: '10px 0',

@@ -17,7 +17,11 @@ let PointsController = class PointsController {
         this.pointsService = pointsService;
     }
     async getLeaderboard() {
-        return await this.pointsService.getLeaderboard();
+        const leaderboard = await this.pointsService.getLeaderboard();
+        return {
+            status: 'success',
+            data: leaderboard,
+        };
     }
 };
 exports.PointsController = PointsController;

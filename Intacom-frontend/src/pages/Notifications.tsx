@@ -36,6 +36,7 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
     });
 
     newSocket.on('notificationCreated', (notification: Notification) => {
+      console.log('Notifications.tsx: Received notificationCreated event:', notification);
       setNotifications((prev) => [...prev, notification]);
     });
 
@@ -51,7 +52,9 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
       return;
     }
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`, {
+        withCredentials: true,
+      });
       setNotifications(response.data.data || []);
     } catch (err: any) {
       console.error('Notifications.tsx: Error fetching notifications:', err.message);
@@ -61,7 +64,9 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
 
   const markAsRead = async (id: string) => {
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/notifications/mark-as-read/${id}`);
+      await axios.put(`${import.meta.env.VITE_API_URL}/notifications/mark-as-read/${id}`, {}, {
+        withCredentials: true,
+      });
       setNotifications((prev) =>
         prev.map((notif) => (notif._id === id ? { ...notif, read: true } : notif))
       );

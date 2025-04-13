@@ -38,7 +38,6 @@ export class AppGateway {
     client.join(data.userId);
   }
 
-  // Emit events for real-time updates
   emitProjectCreated(project: any) {
     this.server.emit('projectCreated', project);
   }

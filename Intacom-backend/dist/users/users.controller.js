@@ -15,96 +15,46 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
 const users_service_1 = require("./users.service");
-const create_user_dto_1 = require("./dto/create-user.dto");
-const update_user_dto_1 = require("./dto/update-user.dto");
 let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
     }
-    create(createUserDto) {
-        return this.usersService.create(createUserDto);
+    async findByUsername(username) {
+        const user = await this.usersService.findByUsername(username);
+        if (!user) {
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+        }
+        return {
+            status: 'success',
+            data: user,
+        };
     }
-    findAll() {
-        return this.usersService.findAll();
-    }
-    findOne(id) {
-        return this.usersService.findOne(id);
-    }
-    findByUsername(username) {
-        return this.usersService.findByUsername(username);
-    }
-    update(id, updateUserDto) {
-        return this.usersService.update(id, updateUserDto);
-    }
-    remove(id) {
-        return this.usersService.remove(id);
-    }
-    follow(id, followId) {
-        return this.usersService.follow(id, followId);
-    }
-    unfollow(id, unfollowId) {
-        return this.usersService.unfollow(id, unfollowId);
+    async findById(id) {
+        const user = await this.usersService.findById(id);
+        if (!user) {
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+        }
+        return {
+            status: 'success',
+            data: user,
+        };
     }
 };
 exports.UsersController = UsersController;
-__decorate([
-    (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_user_dto_1.CreateUserDto]),
-    __metadata("design:returntype", void 0)
-], UsersController.prototype, "create", null);
-__decorate([
-    (0, common_1.Get)(),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], UsersController.prototype, "findAll", null);
-__decorate([
-    (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], UsersController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Get)('by-username/:username'),
     __param(0, (0, common_1.Param)('username')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], UsersController.prototype, "findByUsername", null);
 __decorate([
-    (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_user_dto_1.UpdateUserDto]),
-    __metadata("design:returntype", void 0)
-], UsersController.prototype, "update", null);
-__decorate([
-    (0, common_1.Delete)(':id'),
+    (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], UsersController.prototype, "remove", null);
-__decorate([
-    (0, common_1.Post)(':id/follow/:followId'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Param)('followId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
-    __metadata("design:returntype", void 0)
-], UsersController.prototype, "follow", null);
-__decorate([
-    (0, common_1.Post)(':id/unfollow/:unfollowId'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Param)('unfollowId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
-    __metadata("design:returntype", void 0)
-], UsersController.prototype, "unfollow", null);
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "findById", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     __metadata("design:paramtypes", [users_service_1.UsersService])

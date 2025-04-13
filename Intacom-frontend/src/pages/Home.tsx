@@ -53,16 +53,18 @@ const Home: React.FC<HomeProps> = ({ user }) => {
       newSocket.emit('joinUser', { userId: user._id });
     });
 
-    // Listen for real-time updates
     newSocket.on('projectCreated', (project: Project) => {
+      console.log('Home.tsx: Received projectCreated event:', project);
       setProjects((prev) => [...prev, project]);
     });
 
     newSocket.on('notificationCreated', (notification: Notification) => {
+      console.log('Home.tsx: Received notificationCreated event:', notification);
       setNotifications((prev) => [...prev, notification]);
     });
 
     newSocket.on('taskCompleted', (task: Task) => {
+      console.log('Home.tsx: Received taskCompleted event:', task);
       setTasks((prev) => {
         const updatedTasks = prev.filter((t) => t._id !== task._id);
         if (task.status === 'completed') {
@@ -81,7 +83,9 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   const fetchProjects = async () => {
     if (!user) return;
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`, {
+        withCredentials: true,
+      });
       setProjects(response.data.data || []);
     } catch (err: any) {
       console.error('Home.tsx: Error fetching projects:', err.message);
@@ -91,7 +95,9 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   const fetchNotifications = async () => {
     if (!user) return;
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`, {
+        withCredentials: true,
+      });
       setNotifications(response.data.data || []);
     } catch (err: any) {
       console.error('Home.tsx: Error fetching notifications:', err.message);
@@ -101,7 +107,9 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   const fetchTasks = async () => {
     if (!user) return;
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/tasks/user/${user._id}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/tasks/user/${user._id}`, {
+        withCredentials: true,
+      });
       setTasks(response.data.data || []);
     } catch (err: any) {
       console.error('Home.tsx: Error fetching tasks:', err.message);
@@ -124,7 +132,9 @@ const Home: React.FC<HomeProps> = ({ user }) => {
         description: newProject.description,
         creatorEmail: user.email,
       };
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, projectData);
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, projectData, {
+        withCredentials: true,
+      });
       const createdProject = response.data.data;
       // Emit WebSocket event
       if (socket) {
@@ -133,7 +143,7 @@ const Home: React.FC<HomeProps> = ({ user }) => {
       setNewProject({ name: '', description: '', creatorEmail: '' });
       setError(null);
     } catch (err: any) {
-      console.error('Home.tsx: Error creating project:', err.message);
+      console.error('Home.tsx: Error creating project:', err.message, err.response?.data);
       setError('Failed to create project. Please try again.');
     }
   };
@@ -152,6 +162,19 @@ const Home: React.FC<HomeProps> = ({ user }) => {
     <div style={styles.container}>
       <button onClick={() => fetchProjects()} style={styles.createProjectButton}>Create Project</button>
       <div style={styles.sections}>
+        <div style={styles.section}>
+          <h2>Notifications ({notifications.length})</h2>
+          {notifications.length > 0 ? (
+            notifications.map((notif) => (
+              <div key={notif._id} style={styles.notification}>
+                <p>{notif.content}</p>
+                <p style={styles.notificationDate}>{new Date(notif.createdAt).toLocaleString()}</p>
+              </div>
+            ))
+          ) : (
+            <p>No notifications yet.</p>
+          )}
+        </div>
         <div style={styles.section}>
           <h2>Create a New Project</h2>
           <form onSubmit={handleCreateProject} style={styles.form}>
@@ -290,6 +313,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#00C4B4',
+  },
+  notification: {
+    padding: '10px',
+    marginBottom: '10px',
+    backgroundColor: '#263238',
+    borderRadius: '4px',
+  },
+  notificationDate: {
+    fontSize: '12px',
+    color: '#B0BEC5',
   },
 };
 
