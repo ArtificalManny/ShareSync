@@ -13,6 +13,8 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
+  root: resolve(__dirname), // Explicitly set the root to the project directory
+  publicDir: 'public', // Ensure public directory is set
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
