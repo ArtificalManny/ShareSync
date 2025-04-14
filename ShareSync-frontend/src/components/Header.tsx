@@ -35,38 +35,57 @@ const Header: React.FC = () => {
   );
 };
 
-// Inline styles with updated color palette
+// Futuristic styles
 const styles: { [key: string]: React.CSSProperties } = {
   nav: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    background: 'linear-gradient(90deg, #2B3A67, #3F51B5)', // Deep Blue to Indigo
-    padding: '10px 20px',
-    color: '#FFFFFF', // White text
+    background: 'linear-gradient(90deg, #1E1E2F, #2A2A4A)',
+    padding: '15px 30px',
+    color: '#A2E4FF',
+    boxShadow: '0 0 20px rgba(162, 228, 255, 0.3)',
+    borderBottom: '1px solid #A2E4FF',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1000,
   },
   logo: {
-    fontSize: '24px',
+    fontSize: '28px',
     fontWeight: 'bold',
+    fontFamily: '"Orbitron", sans-serif',
+    textShadow: '0 0 10px #A2E4FF',
   },
   navLinks: {
     display: 'flex',
-    gap: '15px',
+    gap: '20px',
   },
   navButton: {
     background: 'none',
     border: 'none',
-    color: '#E3F2FD', // Soft Blue
+    color: '#A2E4FF',
     fontSize: '16px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    gap: '5px',
+    gap: '8px',
+    fontFamily: '"Orbitron", sans-serif',
+    transition: 'color 0.3s ease, text-shadow 0.3s ease',
   },
   icon: {
-    fontSize: '18px',
-    color: '#FF6F61', // Coral
+    fontSize: '20px',
+    color: '#FF6F91',
+    textShadow: '0 0 5px #FF6F91',
   },
 };
+
+// Add hover effects via CSS
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`
+  nav button:hover {
+    color: #FF6F91;
+    text-shadow: 0 0 10px #FF6F91;
+  }
+`, styleSheet.cssRules.length);
 
 export default Header;

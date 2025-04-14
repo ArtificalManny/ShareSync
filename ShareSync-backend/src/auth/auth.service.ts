@@ -1,124 +1,97 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import * as bcrypt from 'bcrypt';
-import * as nodemailer from 'nodemailer';
-import { v4 as uuidv4 } from 'uuid';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
-import { UserDocument } from '../users/schemas/user.schema';
+import { JwtService } from '@nestjs/jwt';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly jwtService: JwtService,
+    private readonly mailerService: MailerService,
+  ) {}
 
-  async login(loginDto: LoginDto): Promise<UserDocument> {
-    console.log('AuthService: Login attempt with identifier:', loginDto.identifier);
-    const user = await this.usersService.findByEmail(loginDto.identifier) || await this.usersService.findByUsername(loginDto.identifier);
-    if (!user) {
-      console.log('AuthService: User not found for identifier:', loginDto.identifier);
-      throw new HttpException('Invalid username or password', HttpStatus.BAD_REQUEST);
+  async validateUser(email: string, password: string): Promise<User | null> {
+    const user = await this.userModel.findOne({ email }).exec();
+    if (user && (await bcrypt.compare(password, user.password))) {
+      return user;
     }
-
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
-    if (!isPasswordValid) {
-      console.log('AuthService: Invalid password for user:', user.email);
-      throw new HttpException('Invalid username or password', HttpStatus.BAD_REQUEST);
-    }
-
-    return user;
+    return null;
   }
 
-  async register(registerDto: RegisterDto): Promise<UserDocument> {
-    console.log('AuthService: Register attempt with email:', registerDto.email);
-    const existingUser = await this.usersService.findByEmail(registerDto.email);
+  async login(email: string, password: string): Promise<{ accessToken: string; user: any }> {
+    const user = await this.validateUser(email, password);
+    if (!user) {
+      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
+    }
+    const payload = { email: user.email, sub: user._id };
+    const accessToken = this.jwtService.sign(payload);
+    return {
+      accessToken,
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    };
+  }
+
+  async register(user: { username: string; email: string; password: string; firstName: string; lastName: string }): Promise<User> {
+    const existingUser = await this.userModel.findOne({ email: user.email }).exec();
     if (existingUser) {
-      console.log('AuthService: User already exists with email:', registerDto.email);
       throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
     }
-
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-    const user = await this.usersService.create({
-      ...registerDto,
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    const newUser = new this.userModel({
+      ...user,
       password: hashedPassword,
-      verificationToken: uuidv4(),
+    });
+    const savedUser = await newUser.save();
+
+    // Send verification email
+    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?email=${user.email}`;
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Verify your email - ShareSync',
+      text: `Please verify your email by clicking the following link: ${verificationLink}`,
     });
 
-    await this.sendVerificationEmail(user.email, user.verificationToken!);
-    return user;
-  }
-
-  async sendVerificationEmail(email: string, token: string) {
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT!, 10),
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Verify your email for INTACOM',
-      text: `Please verify your email by clicking the following link: ${process.env.FRONTEND_URL}/verify-email?token=${token}`,
-    };
-
-    await transporter.sendMail(mailOptions);
+    return savedUser;
   }
 
   async forgotPassword(email: string): Promise<void> {
-    const user = await this.usersService.findByEmail(email);
+    const user = await this.userModel.findOne({ email }).exec();
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
+    const payload = { email: user.email, sub: user._id };
+    const resetToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
-    const resetToken = uuidv4();
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
-    await user.save();
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT!, 10),
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Reset your password - ShareSync',
+      text: `Click the following link to reset your password: ${resetLink}`,
     });
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Password Reset for INTACOM',
-      text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
-        Please click on the following link, or paste this into your browser to complete the process within one hour of receiving it:\n\n
-        ${process.env.FRONTEND_URL}/reset-password?token=${resetToken}\n\n
-        If you did not request this, please ignore this email and your password will remain unchanged.\n`,
-    };
-
-    await transporter.sendMail(mailOptions);
   }
 
-  async resetPassword(token: string, newPassword: string, email: string): Promise<void> {
-    const user = await this.usersService.findByEmail(email);
-    if (!user || user.resetPasswordToken !== token || (user.resetPasswordExpires && user.resetPasswordExpires < new Date())) {
-      throw new HttpException('Password reset token is invalid or has expired', HttpStatus.BAD_REQUEST);
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    let payload;
+    try {
+      payload = this.jwtService.verify(token);
+    } catch (error) {
+      throw new HttpException('Invalid or expired token', HttpStatus.BAD_REQUEST);
     }
-
-    user.password = await bcrypt.hash(newPassword, 10);
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
-  }
-
-  async verifyEmail(token: string): Promise<void> {
-    const user = await this.usersService.findAll().then(users => users.find(u => u.verificationToken === token));
+    const user = await this.userModel.findOne({ email: payload.email }).exec();
     if (!user) {
-      throw new HttpException('Verification token is invalid', HttpStatus.BAD_REQUEST);
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
-
-    user.verified = true;
-    user.verificationToken = undefined;
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
   }
 }

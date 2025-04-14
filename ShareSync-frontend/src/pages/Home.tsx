@@ -44,7 +44,7 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [teamActivity, setTeamActivity] = useState<TeamActivity[]>([]);
-  const [newProject, setNewProject] = useState({ name: '', description: '', creatorEmail: '', sharedWith: '' });
+  const [newProject, setNewProject] = useState({ name: '', description: '', sharedWith: '' });
   const [error, setError] = useState<string | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
   const navigate = useNavigate();
@@ -53,7 +53,9 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   useEffect(() => {
     if (!user) return;
 
-    const newSocket = io('http://localhost:3001', { withCredentials: true });
+    const newSocket = io('http://localhost:3001', {
+      auth: { token: localStorage.getItem('token') },
+    });
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
@@ -96,9 +98,7 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   const fetchProjects = async () => {
     if (!user) return;
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
       setProjects(response.data.data || []);
     } catch (err: any) {
       console.error('Home.tsx: Error fetching projects:', err.message);
@@ -108,9 +108,7 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   const fetchNotifications = async () => {
     if (!user) return;
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
       setNotifications(response.data.data || []);
     } catch (err: any) {
       console.error('Home.tsx: Error fetching notifications:', err.message);
@@ -120,9 +118,7 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   const fetchTasks = async () => {
     if (!user) return;
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/tasks/user/${user._id}`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/tasks/user/${user._id}`);
       setTasks(response.data.data || []);
     } catch (err: any) {
       console.error('Home.tsx: Error fetching tasks:', err.message);
@@ -146,17 +142,14 @@ const Home: React.FC<HomeProps> = ({ user }) => {
         creatorEmail: user.email,
         sharedWith: newProject.sharedWith ? [newProject.sharedWith] : [],
       };
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, projectData, {
-        withCredentials: true,
-      });
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, projectData);
       const createdProject = response.data.data;
-      setNewProject({ name: '', description: '', creatorEmail: '', sharedWith: '' });
+      setNewProject({ name: '', description: '', sharedWith: '' });
       setError(null);
-      // Redirect to the project's home page
       navigate(`/project/${createdProject._id}`);
     } catch (err: any) {
       console.error('Home.tsx: Error creating project:', err.message, err.response?.data);
-      setError('Failed to create project. Please ensure the backend is running and try again.');
+      setError('Failed to create project. Please ensure you are logged in and try again.');
     }
   };
 
@@ -172,24 +165,24 @@ const Home: React.FC<HomeProps> = ({ user }) => {
 
   return (
     <div style={styles.container}>
-      <h1>🏠 Home - ShareSync</h1>
+      <h1 style={styles.heading}>🏠 Home - ShareSync</h1>
       <button onClick={() => fetchProjects()} style={styles.createProjectButton}>Create Project</button>
       <div style={styles.sections}>
         <div style={styles.section}>
-          <h2>🔔 Notifications ({notifications.length})</h2>
+          <h2 style={styles.subHeading}>🔔 Notifications ({notifications.length})</h2>
           {notifications.length > 0 ? (
             notifications.map((notif) => (
               <div key={notif._id} style={styles.notification}>
-                <p>{notif.content}</p>
+                <p style={styles.text}>{notif.content}</p>
                 <p style={styles.notificationDate}>{new Date(notif.createdAt).toLocaleString()}</p>
               </div>
             ))
           ) : (
-            <p>No notifications yet.</p>
+            <p style={styles.text}>No notifications yet.</p>
           )}
         </div>
         <div style={styles.section}>
-          <h2>📝 Create a New Project</h2>
+          <h2 style={styles.subHeading}>📝 Create a New Project</h2>
           <form onSubmit={handleCreateProject} style={styles.form}>
             <input
               type="text"
@@ -225,152 +218,234 @@ const Home: React.FC<HomeProps> = ({ user }) => {
           </form>
         </div>
         <div style={styles.section}>
-          <h2>📊 Project Overview</h2>
+          <h2 style={styles.subHeading}>📊 Project Overview</h2>
           {projects.length > 0 ? (
             projects.map((project) => (
               <div key={project._id} style={styles.projectCard}>
-                <h3>{project.name}</h3>
-                <p>{project.description}</p>
-                <p>Created by: {project.creatorEmail}</p>
-                <p>Created on: {new Date(project.createdAt).toLocaleDateString()}</p>
+                <h3 style={styles.cardTitle}>{project.name}</h3>
+                <p style={styles.text}>{project.description}</p>
+                <p style={styles.text}>Created by: {project.creatorEmail}</p>
+                <p style={styles.text}>Created on: {new Date(project.createdAt).toLocaleDateString()}</p>
               </div>
             ))
           ) : (
-            <p>No projects yet.</p>
+            <p style={styles.text}>No projects yet.</p>
           )}
         </div>
         <div style={styles.section}>
-          <h2>✅ Tasks Completed</h2>
+          <h2 style={styles.subHeading}>✅ Tasks Completed</h2>
           <p style={styles.stat}>{tasks.filter(task => task.status === 'completed').length}</p>
         </div>
         <div style={styles.section}>
-          <h2>📚 Total Projects</h2>
+          <h2 style={styles.subHeading}>📚 Total Projects</h2>
           <p style={styles.stat}>{projects.length}</p>
         </div>
         <div style={styles.section}>
-          <h2>🔄 Current Projects</h2>
+          <h2 style={styles.subHeading}>🔄 Current Projects</h2>
           <p style={styles.stat}>{projects.filter(p => new Date(p.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}</p>
         </div>
         <div style={styles.section}>
-          <h2>📜 Past Projects</h2>
+          <h2 style={styles.subHeading}>📜 Past Projects</h2>
           <p style={styles.stat}>{projects.filter(p => new Date(p.createdAt) <= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}</p>
         </div>
       </div>
       <div style={styles.section}>
-        <h2>👥 Team Activity</h2>
+        <h2 style={styles.subHeading}>👥 Team Activity</h2>
         {teamActivity.length > 0 ? (
           teamActivity.map((activity, index) => (
             <div key={index} style={styles.activity}>
-              <p>{activity.content}</p>
+              <p style={styles.text}>{activity.content}</p>
               <p style={styles.activityDate}>{new Date(activity.timestamp).toLocaleString()}</p>
             </div>
           ))
         ) : (
-          <p>No recent updates.</p>
+          <p style={styles.text}>No recent updates.</p>
         )}
       </div>
     </div>
   );
 };
 
-// Inline styles with the new color palette
+// Futuristic styles
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '20px',
-    backgroundColor: '#2B3A67', // Deep Blue
-    color: '#FFFFFF', // White text
+    padding: '40px',
+    background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
+    color: '#A2E4FF',
+    minHeight: '100vh',
+    animation: 'fadeIn 1s ease-in-out',
+  },
+  heading: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '32px',
+    textAlign: 'center',
+    marginBottom: '30px',
+    textShadow: '0 0 15px #A2E4FF',
   },
   createProjectButton: {
-    backgroundColor: '#E3F2FD', // Soft Blue
-    color: '#2B3A67', // Deep Blue
+    background: 'linear-gradient(90deg, #A2E4FF, #FF6F91)',
+    color: '#1E1E2F',
     border: 'none',
-    padding: '10px 20px',
-    borderRadius: '4px',
+    padding: '12px 24px',
+    borderRadius: '8px',
     cursor: 'pointer',
     fontSize: '16px',
-    marginBottom: '20px',
+    fontFamily: '"Orbitron", sans-serif',
+    boxShadow: '0 0 15px rgba(162, 228, 255, 0.5)',
+    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
+    marginBottom: '30px',
   },
   sections: {
     display: 'flex',
     flexWrap: 'wrap',
-    gap: '20px',
-    marginBottom: '20px',
+    gap: '30px',
+    marginBottom: '30px',
   },
   section: {
     flex: '1 1 300px',
-    backgroundColor: '#3F51B5', // Indigo
-    padding: '20px',
-    borderRadius: '8px',
+    background: 'linear-gradient(145deg, #2A2A4A, #3F3F6A)',
+    padding: '25px',
+    borderRadius: '12px',
+    boxShadow: '0 0 15px rgba(162, 228, 255, 0.2)',
+    border: '1px solid #A2E4FF',
+    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+  },
+  subHeading: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '22px',
+    marginBottom: '15px',
+    textShadow: '0 0 10px #A2E4FF',
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px',
+    gap: '15px',
   },
   input: {
-    padding: '10px',
-    borderRadius: '4px',
-    border: '1px solid #E3F2FD', // Soft Blue
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid #A2E4FF',
     fontSize: '16px',
-    backgroundColor: '#FFFFFF', // White
-    color: '#2B3A67', // Deep Blue
+    backgroundColor: '#1E1E2F',
+    color: '#A2E4FF',
+    fontFamily: '"Orbitron", sans-serif',
+    transition: 'box-shadow 0.3s ease',
   },
   textarea: {
-    padding: '10px',
-    borderRadius: '4px',
-    border: '1px solid #E3F2FD', // Soft Blue
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid #A2E4FF',
     fontSize: '16px',
     minHeight: '100px',
-    backgroundColor: '#FFFFFF', // White
-    color: '#2B3A67', // Deep Blue
+    backgroundColor: '#1E1E2F',
+    color: '#A2E4FF',
+    fontFamily: '"Orbitron", sans-serif',
+    transition: 'box-shadow 0.3s ease',
   },
   submitButton: {
-    backgroundColor: '#E3F2FD', // Soft Blue
-    color: '#2B3A67', // Deep Blue
+    background: 'linear-gradient(90deg, #A2E4FF, #FF6F91)',
+    color: '#1E1E2F',
     border: 'none',
-    padding: '10px',
-    borderRadius: '4px',
+    padding: '12px',
+    borderRadius: '8px',
     cursor: 'pointer',
     fontSize: '16px',
+    fontFamily: '"Orbitron", sans-serif',
+    boxShadow: '0 0 15px rgba(162, 228, 255, 0.5)',
+    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
   },
   error: {
-    color: '#FF6F61', // Coral
+    color: '#FF6F91',
     marginTop: '10px',
+    fontFamily: '"Orbitron", sans-serif',
   },
   projectCard: {
-    padding: '10px',
+    padding: '15px',
+    marginBottom: '15px',
+    background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
+    borderRadius: '8px',
+    boxShadow: '0 0 10px rgba(162, 228, 255, 0.1)',
+    transition: 'transform 0.3s ease',
+  },
+  cardTitle: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '18px',
     marginBottom: '10px',
-    backgroundColor: '#2B3A67', // Deep Blue
-    borderRadius: '4px',
+    color: '#A2E4FF',
+    textShadow: '0 0 5px #A2E4FF',
   },
   stat: {
-    fontSize: '24px',
+    fontSize: '28px',
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#E3F2FD', // Soft Blue
+    color: '#FF6F91',
+    textShadow: '0 0 10px #FF6F91',
+    fontFamily: '"Orbitron", sans-serif',
   },
   notification: {
-    padding: '10px',
-    marginBottom: '10px',
-    backgroundColor: '#3F51B5', // Indigo
-    borderRadius: '4px',
+    padding: '15px',
+    marginBottom: '15px',
+    background: 'linear-gradient(145deg, #2A2A4A, #3F3F6A)',
+    borderRadius: '8px',
+    boxShadow: '0 0 10px rgba(162, 228, 255, 0.1)',
   },
   notificationDate: {
     fontSize: '12px',
-    color: '#E3F2FD', // Soft Blue
+    color: '#A2E4FF',
+    marginTop: '5px',
+    fontFamily: '"Orbitron", sans-serif',
   },
   activity: {
-    padding: '10px',
-    marginBottom: '10px',
-    backgroundColor: '#3F51B5', // Indigo
-    borderRadius: '4px',
+    padding: '15px',
+    marginBottom: '15px',
+    background: 'linear-gradient(145deg, #2A2A4A, #3F3F6A)',
+    borderRadius: '8px',
+    boxShadow: '0 0 10px rgba(162, 228, 255, 0.1)',
   },
   activityDate: {
     fontSize: '12px',
-    color: '#E3F2FD', // Soft Blue
+    color: '#A2E4FF',
+    marginTop: '5px',
+    fontFamily: '"Orbitron", sans-serif',
+  },
+  text: {
+    fontFamily: '"Orbitron", sans-serif',
+    color: '#A2E4FF',
   },
 };
+
+// Add animations
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(162, 228, 255, 0.7);
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  div[style*="flex: 1 1 300px"]:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(162, 228, 255, 0.5);
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  div[style*="background: linear-gradient(145deg, #1E1E2F, #2A2A4A)"]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 15px rgba(162, 228, 255, 0.3);
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  input:focus, textarea:focus {
+    box-shadow: 0 0 10px rgba(162, 228, 255, 0.5);
+  }
+`, styleSheet.cssRules.length);
 
 export default Home;

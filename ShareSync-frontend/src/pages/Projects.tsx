@@ -31,9 +31,7 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
       return;
     }
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
       setProjects(response.data.data || []);
     } catch (err: any) {
       console.error('Projects.tsx: Error fetching projects:', err.message);
@@ -52,7 +50,7 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
   if (error) {
     return (
       <div style={styles.container}>
-        <h1>📂 Projects - ShareSync</h1>
+        <h1 style={styles.heading}>📂 Projects - ShareSync</h1>
         <p style={styles.error}>{error}</p>
       </div>
     );
@@ -60,7 +58,7 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
 
   return (
     <div style={styles.container}>
-      <h1>📂 Projects - ShareSync</h1>
+      <h1 style={styles.heading}>📂 Projects - ShareSync</h1>
       {projects.length > 0 ? (
         <ul style={styles.projectList}>
           {projects.map((project) => (
@@ -69,44 +67,82 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
               style={styles.projectItem}
               onClick={() => handleProjectClick(project._id)}
             >
-              <h3>{project.name}</h3>
-              <p>{project.description}</p>
-              <p>Created by: {project.creatorEmail}</p>
-              <p>Created on: {new Date(project.createdAt).toLocaleDateString()}</p>
+              <h3 style={styles.projectTitle}>{project.name}</h3>
+              <p style={styles.text}>{project.description}</p>
+              <p style={styles.text}>Created by: {project.creatorEmail}</p>
+              <p style={styles.text}>Created on: {new Date(project.createdAt).toLocaleDateString()}</p>
             </li>
           ))}
         </ul>
       ) : (
-        <p>No projects yet.</p>
+        <p style={styles.text}>No projects yet.</p>
       )}
     </div>
   );
 };
 
-// Inline styles with the new color palette
+// Futuristic styles
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '20px',
-    backgroundColor: '#2B3A67', // Deep Blue
-    color: '#FFFFFF', // White text
+    padding: '40px',
+    background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
+    color: '#A2E4FF',
+    minHeight: '100vh',
+    animation: 'fadeIn 1s ease-in-out',
+  },
+  heading: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '32px',
+    textAlign: 'center',
+    marginBottom: '30px',
+    textShadow: '0 0 15px #A2E4FF',
   },
   projectList: {
     listStyleType: 'none',
     padding: 0,
   },
   projectItem: {
-    padding: '15px',
-    marginBottom: '10px',
-    backgroundColor: '#3F51B5', // Indigo
-    borderRadius: '4px',
+    padding: '20px',
+    marginBottom: '15px',
+    background: 'linear-gradient(145deg, #2A2A4A, #3F3F6A)',
+    borderRadius: '12px',
+    border: '1px solid #A2E4FF',
+    boxShadow: '0 0 15px rgba(162, 228, 255, 0.2)',
     cursor: 'pointer',
-    transition: 'background-color 0.3s',
+    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+  },
+  projectTitle: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '20px',
+    marginBottom: '10px',
+    color: '#A2E4FF',
+    textShadow: '0 0 5px #A2E4FF',
   },
   error: {
-    color: '#FF6F61', // Coral
+    color: '#FF6F91',
+    fontFamily: '"Orbitron", sans-serif',
+  },
+  text: {
+    fontFamily: '"Orbitron", sans-serif',
+    color: '#A2E4FF',
   },
 };
+
+// Add animations
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  li:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(162, 228, 255, 0.5);
+  }
+`, styleSheet.cssRules.length);
 
 export default Projects;

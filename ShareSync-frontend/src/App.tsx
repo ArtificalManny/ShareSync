@@ -11,7 +11,8 @@ import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import Recover from './pages/Recover';
 import ResetPassword from './pages/ResetPassword';
-import ProjectHome from './pages/ProjectHome'; // New page for project home
+import ProjectHome from './pages/ProjectHome';
+import axios from 'axios';
 
 interface User {
   _id: string;
@@ -24,19 +25,20 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const token = localStorage.getItem('token');
+    if (storedUser && token) {
       setUser(JSON.parse(storedUser));
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
   }, []);
 
   const handleLogout = async () => {
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`);
       setUser(null);
       localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      delete axios.defaults.headers.common['Authorization'];
     } catch (err) {
       console.error('App.tsx: Error logging out:', err);
     }

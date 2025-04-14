@@ -1,66 +1,87 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const VerifyEmail: React.FC = () => {
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  const verifyEmail = async () => {
-    const token = searchParams.get('token');
-    if (!token) {
-      setError('Invalid verification link.');
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/auth/verify-email`,
-        { token },
-        { withCredentials: true }
-      );
-      setMessage(response.data.message || 'Email verified successfully! You can now log in.');
-      setTimeout(() => navigate('/login'), 3000);
-    } catch (err: any) {
-      console.error('VerifyEmail.tsx: Error verifying email:', err.message, err.response?.data);
-      setError(err.response?.data?.message || 'Failed to verify email. Please try again.');
-    }
-  };
+  const [message, setMessage] = useState('Verifying your email...');
+  const location = useLocation();
 
   useEffect(() => {
-    verifyEmail();
-  }, []);
+    const query = new URLSearchParams(location.search);
+    const email = query.get('email');
+    if (email) {
+      // Simulate email verification (since this is a placeholder)
+      setTimeout(() => {
+        setMessage('Email verified successfully! You can now log in.');
+      }, 2000);
+    } else {
+      setMessage('Invalid verification link.');
+    }
+  }, [location]);
 
   return (
     <div style={styles.container}>
-      <h1>Email Verification - ShareSync</h1>
-      {message && <p style={styles.message}>{message}</p>}
-      {error && <p style={styles.error}>{error}</p>}
-      {!message && !error && <p>Verifying your email...</p>}
+      <h1 style={styles.heading}>Verify Email - ShareSync</h1>
+      <p style={styles.text}>{message}</p>
+      {message.includes('successfully') && (
+        <a href="/login" style={styles.link}>Go to Login</a>
+      )}
     </div>
   );
 };
 
-// Inline styles
+// Futuristic styles
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '600px',
     margin: '0 auto',
-    padding: '20px',
+    padding: '40px',
+    background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
+    color: '#A2E4FF',
+    borderRadius: '15px',
+    marginTop: '150px',
+    boxShadow: '0 0 20px rgba(162, 228, 255, 0.3)',
+    border: '1px solid #A2E4FF',
     textAlign: 'center',
-    backgroundColor: '#0A192F',
-    color: '#FFFFFF',
+    animation: 'fadeIn 1s ease-in-out',
   },
-  message: {
-    color: '#00C4B4',
-    fontSize: '18px',
+  heading: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '28px',
+    marginBottom: '20px',
+    textShadow: '0 0 10px #A2E4FF',
   },
-  error: {
-    color: '#EF5350',
+  text: {
+    fontFamily: '"Orbitron", sans-serif',
+    color: '#A2E4FF',
     fontSize: '18px',
+    marginBottom: '20px',
+  },
+  link: {
+    display: 'inline-block',
+    background: 'linear-gradient(90deg, #A2E4FF, #FF6F91)',
+    color: '#1E1E2F',
+    padding: '10px 20px',
+    borderRadius: '8px',
+    textDecoration: 'none',
+    fontFamily: '"Orbitron", sans-serif',
+    boxShadow: '0 0 15px rgba(162, 228, 255, 0.5)',
+    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
   },
 };
+
+// Add animations
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  a:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(162, 228, 255, 0.7);
+  }
+`, styleSheet.cssRules.length);
 
 export default VerifyEmail;

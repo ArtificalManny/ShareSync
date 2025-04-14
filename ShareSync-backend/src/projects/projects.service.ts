@@ -14,7 +14,10 @@ export class ProjectsService {
   ) {}
 
   async create(project: { name: string; description: string; creatorEmail?: string; sharedWith: string[] }): Promise<ProjectDocument> {
-    const createdProject = new this.projectModel(project);
+    const createdProject = new this.projectModel({
+      ...project,
+      creatorEmail: project.creatorEmail || 'anonymous@example.com', // Fallback if creatorEmail is missing
+    });
     const savedProject = await createdProject.save();
 
     // Emit projectCreated event
@@ -24,15 +27,15 @@ export class ProjectsService {
     for (const collaborator of project.sharedWith) {
       if (collaborator !== project.creatorEmail) {
         await this.notificationsService.create({
-          userId: collaborator,
+          userId: collaborator, // Assuming userId is the email for simplicity
           content: `You were added to a new project: ${project.name}`,
         });
       }
     }
 
-    // Emit team activity update (simulating a team activity log)
+    // Emit team activity update
     this.appGateway.emitTeamActivity({
-      content: `User ${project.creatorEmail} created a new project: ${project.name}`,
+      content: `User ${project.creatorEmail || 'Anonymous'} created a new project: ${project.name}`,
       timestamp: new Date(),
     });
 

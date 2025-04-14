@@ -38,9 +38,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
       return;
     }
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${user.username}`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/by-username/${user.username}`);
       setProfile(response.data.data);
     } catch (err: any) {
       console.error('Profile.tsx: Error fetching profile:', err.message, err.response?.data);
@@ -51,9 +49,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
   const fetchActivities = async () => {
     if (!user) return;
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/activities/user/${user._id}`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/activities/user/${user._id}`);
       setActivities(response.data.data || []);
     } catch (err: any) {
       console.error('Profile.tsx: Error fetching activities:', err.message);
@@ -74,7 +70,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
   if (error) {
     return (
       <div style={styles.container}>
-        <h1>👤 Profile - ShareSync</h1>
+        <h1 style={styles.heading}>👤 Profile - ShareSync</h1>
         <p style={styles.error}>{error}</p>
         <button onClick={handleRetry} style={styles.retryButton}>Retry</button>
       </div>
@@ -85,7 +81,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
 
   return (
     <div style={styles.container}>
-      <h1>👤 Profile - ShareSync</h1>
+      <h1 style={styles.heading}>👤 Profile - ShareSync</h1>
       <div style={styles.coverPhoto}>
         {profile.coverPhoto ? (
           <img src={profile.coverPhoto} alt="Cover" style={styles.coverImage} />
@@ -104,15 +100,15 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
           )}
         </div>
         <div style={styles.profileInfo}>
-          <h2>{profile.firstName} {profile.lastName}</h2>
-          <p>{profile.username} | {profile.email}</p>
-          <p>{profile.bio || 'No bio available.'}</p>
+          <h2 style={styles.profileName}>{profile.firstName} {profile.lastName}</h2>
+          <p style={styles.text}>{profile.username} | {profile.email}</p>
+          <p style={styles.text}>{profile.bio || 'No bio available.'}</p>
           <button onClick={() => navigate('/profile/edit')} style={styles.editButton}>Edit Profile</button>
         </div>
       </div>
       <div style={styles.sections}>
         <div style={styles.section}>
-          <h3>🛠️ Skills</h3>
+          <h3 style={styles.subHeading}>🛠️ Skills</h3>
           {profile.skills && profile.skills.length > 0 ? (
             <ul style={styles.list}>
               {profile.skills.map((skill, index) => (
@@ -120,11 +116,11 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
               ))}
             </ul>
           ) : (
-            <p>No skills listed.</p>
+            <p style={styles.text}>No skills listed.</p>
           )}
         </div>
         <div style={styles.section}>
-          <h3>💼 Experience</h3>
+          <h3 style={styles.subHeading}>💼 Experience</h3>
           {profile.experience && profile.experience.length > 0 ? (
             <ul style={styles.list}>
               {profile.experience.map((exp, index) => (
@@ -134,22 +130,22 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
               ))}
             </ul>
           ) : (
-            <p>No experience listed.</p>
+            <p style={styles.text}>No experience listed.</p>
           )}
         </div>
         <div style={styles.section}>
-          <h3>📈 Activity Feed</h3>
+          <h3 style={styles.subHeading}>📈 Activity Feed</h3>
           {activities.length > 0 ? (
             <ul style={styles.activityList}>
               {activities.map((activity) => (
                 <li key={activity._id} style={styles.activityItem}>
-                  <p>{activity.content}</p>
+                  <p style={styles.text}>{activity.content}</p>
                   <p style={styles.activityDate}>{new Date(activity.createdAt).toLocaleString()}</p>
                 </li>
               ))}
             </ul>
           ) : (
-            <p>No recent activity.</p>
+            <p style={styles.text}>No recent activity.</p>
           )}
         </div>
       </div>
@@ -157,45 +153,57 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
   );
 };
 
-// Inline styles with the new color palette
+// Futuristic styles
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '20px',
-    backgroundColor: '#2B3A67', // Deep Blue
-    color: '#FFFFFF', // White text
+    padding: '40px',
+    background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
+    color: '#A2E4FF',
+    minHeight: '100vh',
+    animation: 'fadeIn 1s ease-in-out',
+  },
+  heading: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '32px',
+    textAlign: 'center',
+    marginBottom: '30px',
+    textShadow: '0 0 15px #A2E4FF',
   },
   coverPhoto: {
     height: '300px',
-    backgroundColor: '#3F51B5', // Indigo
-    borderRadius: '8px 8px 0 0',
+    background: 'linear-gradient(145deg, #2A2A4A, #3F3F6A)',
+    borderRadius: '12px 12px 0 0',
     position: 'relative',
+    boxShadow: '0 0 20px rgba(162, 228, 255, 0.3)',
+    border: '1px solid #A2E4FF',
   },
   coverImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    borderRadius: '8px 8px 0 0',
+    borderRadius: '12px 12px 0 0',
   },
   defaultCover: {
     width: '100%',
     height: '100%',
-    background: 'linear-gradient(135deg, #2B3A67, #3F51B5)', // Deep Blue to Indigo
+    background: 'linear-gradient(135deg, #1E1E2F, #2A2A4A)',
   },
   profileHeader: {
     display: 'flex',
     alignItems: 'flex-end',
     marginTop: '-80px',
-    padding: '0 20px',
+    padding: '0 30px',
   },
   profilePicture: {
     width: '160px',
     height: '160px',
     borderRadius: '50%',
-    border: '4px solid #2B3A67', // Deep Blue
+    border: '4px solid #A2E4FF',
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF', // White
+    backgroundColor: '#1E1E2F',
+    boxShadow: '0 0 20px rgba(162, 228, 255, 0.5)',
   },
   profileImage: {
     width: '100%',
@@ -208,43 +216,66 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#3F51B5', // Indigo
-    color: '#FFFFFF', // White text
+    background: 'linear-gradient(145deg, #2A2A4A, #3F3F6A)',
+    color: '#A2E4FF',
     fontSize: '48px',
     fontWeight: 'bold',
+    fontFamily: '"Orbitron", sans-serif',
+    textShadow: '0 0 10px #A2E4FF',
   },
   profileInfo: {
-    marginLeft: '20px',
-    marginBottom: '20px',
+    marginLeft: '30px',
+    marginBottom: '30px',
+  },
+  profileName: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '28px',
+    color: '#A2E4FF',
+    textShadow: '0 0 10px #A2E4FF',
+    marginBottom: '10px',
   },
   editButton: {
-    backgroundColor: '#E3F2FD', // Soft Blue
-    color: '#2B3A67', // Deep Blue
+    background: 'linear-gradient(90deg, #A2E4FF, #FF6F91)',
+    color: '#1E1E2F',
     border: 'none',
-    padding: '8px 16px',
-    borderRadius: '4px',
+    padding: '10px 20px',
+    borderRadius: '8px',
     cursor: 'pointer',
     fontSize: '16px',
+    fontFamily: '"Orbitron", sans-serif',
+    boxShadow: '0 0 15px rgba(162, 228, 255, 0.5)',
+    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
   },
   sections: {
     display: 'flex',
     flexWrap: 'wrap',
-    gap: '20px',
-    marginTop: '20px',
+    gap: '30px',
+    marginTop: '30px',
   },
   section: {
     flex: '1 1 300px',
-    backgroundColor: '#3F51B5', // Indigo
-    padding: '20px',
-    borderRadius: '8px',
+    background: 'linear-gradient(145deg, #2A2A4A, #3F3F6A)',
+    padding: '25px',
+    borderRadius: '12px',
+    boxShadow: '0 0 15px rgba(162, 228, 255, 0.2)',
+    border: '1px solid #A2E4FF',
+    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+  },
+  subHeading: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '22px',
+    marginBottom: '15px',
+    textShadow: '0 0 10px #A2E4FF',
   },
   list: {
     listStyleType: 'none',
     padding: 0,
   },
   listItem: {
-    padding: '8px 0',
-    borderBottom: '1px solid #2B3A67', // Deep Blue
+    padding: '10px 0',
+    borderBottom: '1px solid #A2E4FF',
+    fontFamily: '"Orbitron", sans-serif',
+    color: '#A2E4FF',
   },
   activityList: {
     listStyleType: 'none',
@@ -252,25 +283,56 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   activityItem: {
     padding: '10px 0',
-    borderBottom: '1px solid #2B3A67', // Deep Blue
+    borderBottom: '1px solid #A2E4FF',
   },
   activityDate: {
     fontSize: '12px',
-    color: '#E3F2FD', // Soft Blue
+    color: '#A2E4FF',
+    marginTop: '5px',
+    fontFamily: '"Orbitron", sans-serif',
   },
   error: {
-    color: '#FF6F61', // Coral
-    marginBottom: '10px',
+    color: '#FF6F91',
+    marginBottom: '15px',
+    fontFamily: '"Orbitron", sans-serif',
   },
   retryButton: {
-    backgroundColor: '#E3F2FD', // Soft Blue
-    color: '#2B3A67', // Deep Blue
+    background: 'linear-gradient(90deg, #A2E4FF, #FF6F91)',
+    color: '#1E1E2F',
     border: 'none',
-    padding: '8px 16px',
-    borderRadius: '4px',
+    padding: '10px 20px',
+    borderRadius: '8px',
     cursor: 'pointer',
     fontSize: '16px',
+    fontFamily: '"Orbitron", sans-serif',
+    boxShadow: '0 0 15px rgba(162, 228, 255, 0.5)',
+    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
+  },
+  text: {
+    fontFamily: '"Orbitron", sans-serif',
+    color: '#A2E4FF',
   },
 };
+
+// Add animations
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(162, 228, 255, 0.7);
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  div[style*="flex: 1 1 300px"]:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(162, 228, 255, 0.5);
+  }
+`, styleSheet.cssRules.length);
 
 export default Profile;

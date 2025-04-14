@@ -27,7 +27,9 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
   useEffect(() => {
     if (!user) return;
 
-    const newSocket = io('http://localhost:3001', { withCredentials: true });
+    const newSocket = io('http://localhost:3001', {
+      auth: { token: localStorage.getItem('token') },
+    });
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
@@ -52,21 +54,17 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
       return;
     }
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
       setNotifications(response.data.data || []);
     } catch (err: any) {
       console.error('Notifications.tsx: Error fetching notifications:', err.message);
-      setError('Failed to load notifications. Please ensure the backend is running and try again.');
+      setError('Failed to load notifications. Please ensure you are logged in and try again.');
     }
   };
 
   const markAsRead = async (id: string) => {
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/notifications/mark-as-read/${id}`, {}, {
-        withCredentials: true,
-      });
+      await axios.put(`${import.meta.env.VITE_API_URL}/notifications/mark-as-read/${id}`, {});
       setNotifications((prev) =>
         prev.map((notif) => (notif._id === id ? { ...notif, read: true } : notif))
       );
@@ -82,7 +80,7 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
   if (error) {
     return (
       <div style={styles.container}>
-        <h1>🔔 Notifications - ShareSync</h1>
+        <h1 style={styles.heading}>🔔 Notifications - ShareSync</h1>
         <p style={styles.error}>{error}</p>
       </div>
     );
@@ -90,7 +88,7 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
 
   return (
     <div style={styles.container}>
-      <h1>🔔 Notifications - ShareSync</h1>
+      <h1 style={styles.heading}>🔔 Notifications - ShareSync</h1>
       {notifications.length > 0 ? (
         <ul style={styles.notificationList}>
           {notifications.map((notification) => (
@@ -98,10 +96,12 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
               key={notification._id}
               style={{
                 ...styles.notificationItem,
-                backgroundColor: notification.read ? '#3F51B5' : '#2B3A67',
+                background: notification.read
+                  ? 'linear-gradient(145deg, #2A2A4A, #3F3F6A)'
+                  : 'linear-gradient(145deg, #3F3F6A, #4F4F8A)',
               }}
             >
-              <p>{notification.content}</p>
+              <p style={styles.text}>{notification.content}</p>
               <p style={styles.notificationDate}>
                 {new Date(notification.createdAt).toLocaleString()}
               </p>
@@ -117,49 +117,90 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
           ))}
         </ul>
       ) : (
-        <p>No notifications yet.</p>
+        <p style={styles.text}>No notifications yet.</p>
       )}
     </div>
   );
 };
 
-// Inline styles with updated color palette
+// Futuristic styles
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '20px',
-    backgroundColor: '#2B3A67', // Deep Blue
-    color: '#FFFFFF', // White text
+    padding: '40px',
+    background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
+    color: '#A2E4FF',
+    minHeight: '100vh',
+    animation: 'fadeIn 1s ease-in-out',
+  },
+  heading: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '32px',
+    textAlign: 'center',
+    marginBottom: '30px',
+    textShadow: '0 0 15px #A2E4FF',
   },
   notificationList: {
     listStyleType: 'none',
     padding: 0,
   },
   notificationItem: {
-    padding: '15px',
-    marginBottom: '10px',
-    borderRadius: '4px',
-    border: '1px solid #E3F2FD', // Soft Blue
+    padding: '20px',
+    marginBottom: '15px',
+    borderRadius: '12px',
+    border: '1px solid #A2E4FF',
+    boxShadow: '0 0 15px rgba(162, 228, 255, 0.2)',
+    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
   },
   notificationDate: {
     fontSize: '12px',
-    color: '#E3F2FD', // Soft Blue
+    color: '#A2E4FF',
     marginTop: '5px',
+    fontFamily: '"Orbitron", sans-serif',
   },
   markAsReadButton: {
-    backgroundColor: '#E3F2FD', // Soft Blue
-    color: '#2B3A67', // Deep Blue
+    background: 'linear-gradient(90deg, #A2E4FF, #FF6F91)',
+    color: '#1E1E2F',
     border: 'none',
-    padding: '5px 10px',
-    borderRadius: '4px',
+    padding: '8px 16px',
+    borderRadius: '8px',
     cursor: 'pointer',
     fontSize: '14px',
+    fontFamily: '"Orbitron", sans-serif',
+    boxShadow: '0 0 15px rgba(162, 228, 255, 0.5)',
+    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
     marginTop: '10px',
   },
   error: {
-    color: '#FF6F61', // Coral
+    color: '#FF6F91',
+    fontFamily: '"Orbitron", sans-serif',
+  },
+  text: {
+    fontFamily: '"Orbitron", sans-serif',
+    color: '#A2E4FF',
   },
 };
+
+// Add animations
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  li:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 20px rgba(162, 228, 255, 0.5);
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(162, 228, 255, 0.7);
+  }
+`, styleSheet.cssRules.length);
 
 export default Notifications;

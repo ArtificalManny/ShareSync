@@ -1,112 +1,43 @@
-import { useState, FormEvent } from 'react';
+import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
-import { useNavigate, Link } from 'react-router-dom';
-import './Register.css';
+import { useNavigate } from 'react-router-dom';
 
-const API_URL = '/auth';
-
-function Register() {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+const Register: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [gender, setGender] = useState('');
-  const [birthday, setBirthday] = useState({ month: '', day: '', year: '' });
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
-  console.log('Register.tsx: API_URL:', API_URL);
-
-  const handleRegister = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    // Validate birthday on submission
-    const monthNum = parseInt(birthday.month, 10);
-    const dayNum = parseInt(birthday.day, 10);
-    const yearNum = parseInt(birthday.year, 10);
-    const currentYear = new Date().getFullYear();
-
-    if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
-      setError('Month must be between 1 and 12.');
-      return;
-    }
-    const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
-    if (isNaN(dayNum) || dayNum < 1 || dayNum > daysInMonth) {
-      setError(`Day must be between 1 and ${daysInMonth} for the selected month.`);
-      return;
-    }
-    if (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear) {
-      setError(`Year must be between 1900 and ${currentYear}.`);
-      return;
-    }
-
     try {
-      console.log('Register.tsx: Registering user with email:', email);
-      const response = await axios.post(`${API_URL}/register`, {
-        firstName,
-        lastName,
+      await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, {
         username,
         email,
         password,
-        gender,
-        birthday,
-      }, {
-        withCredentials: true,
+        firstName,
+        lastName,
       });
-      console.log('Register.tsx: Register response:', response.data);
-      alert('User registered successfully! Welcome to ShareSync!');
-      navigate('/login', { replace: true });
+      navigate('/login');
     } catch (err: any) {
-      console.error('Register.tsx: Register error:', err.response?.data || err.message);
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.message.includes('Network Error')) {
-        setError('Unable to connect to the server. Please check your network connection.');
-      } else {
-        setError('An unexpected error occurred during registration. Please try again.');
-      }
+      console.error('Register.tsx: Error registering:', err.message);
+      setError('Failed to register. Please try again.');
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
-
   return (
-    <div className="register-container">
-      <h2>Register for ShareSync</h2>
-      <form onSubmit={handleRegister}>
-        <input
-          type="text"
-          placeholder="First Name"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Last Name"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          required
-        />
+    <div style={styles.container}>
+      <h1 style={styles.heading}>Register - ShareSync</h1>
+      <form onSubmit={handleSubmit} style={styles.form}>
         <input
           type="text"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          style={styles.input}
           required
         />
         <input
@@ -114,75 +45,134 @@ function Register() {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
           required
         />
-        <div className="password-container">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <span onClick={togglePasswordVisibility} className="password-toggle">
-            {showPassword ? '👁️' : '👁️‍🗨️'}
-          </span>
-        </div>
-        <div className="password-container">
-          <input
-            type={showConfirmPassword ? 'text' : 'password'}
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-          <span onClick={toggleConfirmPasswordVisibility} className="password-toggle">
-            {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
-          </span>
-        </div>
-        <select value={gender} onChange={(e) => setGender(e.target.value)} required>
-          <option value="">Select Gender</option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Other">Other</option>
-        </select>
-        <div className="birthday">
-          <input
-            type="text"
-            placeholder="MM"
-            value={birthday.month}
-            onChange={(e) => setBirthday({ ...birthday, month: e.target.value })}
-            required
-            maxLength={2}
-            pattern="\d*"
-          />
-          <input
-            type="text"
-            placeholder="DD"
-            value={birthday.day}
-            onChange={(e) => setBirthday({ ...birthday, day: e.target.value })}
-            required
-            maxLength={2}
-            pattern="\d*"
-          />
-          <input
-            type="text"
-            placeholder="YYYY"
-            value={birthday.year}
-            onChange={(e) => setBirthday({ ...birthday, year: e.target.value })}
-            required
-            maxLength={4}
-            pattern="\d*"
-          />
-        </div>
-        <button type="submit">Register</button>
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+ 
+         onChange={(e) => setPassword(e.target.value)}
+          style={styles.input}
+          required
+        />
+        <input
+          type="text"
+          placeholder="First Name"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          style={styles.input}
+          required
+        />
+        <input
+          type="text"
+          placeholder="Last Name"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          style={styles.input}
+          required
+        />
+        <button type="submit" style={styles.submitButton}>Register</button>
+        {error && <p style={styles.error}>{error}</p>}
       </form>
-      {error && <p className="error">{error}</p>}
-      <p>
-        Already have an account? <Link to="/login">Login</Link>
+      <p style={styles.text}>
+        Already have an account?{' '}
+        <a href="/login" style={styles.link}>Login</a>
       </p>
     </div>
   );
-}
+};
+
+// Futuristic styles
+const styles: { [key: string]: React.CSSProperties } = {
+  container: {
+    maxWidth: '400px',
+    margin: '0 auto',
+    padding: '40px',
+    background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
+    color: '#A2E4FF',
+    borderRadius: '15px',
+    marginTop: '100px',
+    boxShadow: '0 0 20px rgba(162, 228, 255, 0.3)',
+    border: '1px solid #A2E4FF',
+    animation: 'fadeIn 1s ease-in-out',
+  },
+  heading: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '28px',
+    textAlign: 'center',
+    marginBottom: '20px',
+    textShadow: '0 0 10px #A2E4FF',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+  },
+  input: {
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid #A2E4FF',
+    fontSize: '16px',
+    backgroundColor: '#1E1E2F',
+    color: '#A2E4FF',
+    fontFamily: '"Orbitron", sans-serif',
+    transition: 'box-shadow 0.3s ease',
+  },
+  submitButton: {
+    background: 'linear-gradient(90deg, #A2E4FF, #FF6F91)',
+    color: '#1E1E2F',
+    border: 'none',
+    padding: '12px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    fontFamily: '"Orbitron", sans-serif',
+    boxShadow: '0 0 15px rgba(162, 228, 255, 0.5)',
+    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
+  },
+  error: {
+    color: '#FF6F91',
+    marginTop: '10px',
+    fontFamily: '"Orbitron", sans-serif',
+  },
+  text: {
+    fontFamily: '"Orbitron", sans-serif',
+    color: '#A2E4FF',
+    marginTop: '10px',
+    textAlign: 'center',
+  },
+  link: {
+    color: '#FF6F91',
+    textDecoration: 'underline',
+    transition: 'color 0.3s ease',
+  },
+};
+
+// Add animations
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(162, 228, 255, 0.7);
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  input:focus {
+    box-shadow: 0 0 10px rgba(162, 228, 255, 0.5);
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  a:hover {
+    color: #A2E4FF;
+  }
+`, styleSheet.cssRules.length);
 
 export default Register;
