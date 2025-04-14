@@ -1,0 +1,192 @@
+.home-container {
+  display: flex;
+  min-height: calc(100vh - 60px); /* Adjust for navbar height. */
+  background: linear-gradient(135deg, #1a2a44 0%, #2c3e50 100%);
+}
+
+.sidebar {
+  width: 250px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 20px;
+  /* From "Design of Everyday Things": Ensure elements are discoverable. */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  /* From "Refactoring UI": Add a glassmorphism effect for vibrancy. */
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.create-project-button {
+  padding: 10px;
+  background-color: #00c4b4;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.create-project-button:hover {
+  background-color: #009a8a;
+  transform: translateY(-2px);
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  /* From "Refactoring UI": Ensure responsive design with a grid layout. */
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.create-project-section,
+.overview-section,
+.tasks-section,
+.activity-section {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 10px;
+  /* From "Refactoring UI": Add a glassmorphism effect for vibrancy. */
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.create-project-section:hover,
+.overview-section:hover,
+.tasks-section:hover,
+.activity-section:hover {
+  transform: translateY(-5px);
+}
+
+.create-project-section h2,
+.overview-section h2,
+.tasks-section h2,
+.activity-section h2 {
+  color: #00c4b4;
+  margin-bottom: 15px;
+  font-size: 20px;
+  font-weight: bold;
+  animation: fadeIn 1s ease-in-out;
+}
+
+.project-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.project-form input,
+.project-form textarea {
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transition: background 0.3s ease;
+}
+
+.project-form input:focus,
+.project-form textarea:focus {
+  background: rgba(255, 255, 255, 0.3);
+  outline: none;
+}
+
+.project-form button {
+  padding: 10px;
+  background-color: #00c4b4;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.project-form button:hover {
+  background-color: #009a8a;
+  transform: translateY(-2px);
+}
+
+.overview-stats {
+  display: flex;
+  gap: 15px;
+  /* Responsive design: Stack stats on smaller screens. */
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #1a2a44 0%, #00c4b4 100%);
+  color: #fff;
+  padding: 15px;
+  border-radius: 5px;
+  flex: 1;
+  min-width: 150px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: scale(1.05);
+}
+
+.stat-card h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.stat-card p {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.activity-feed {
+  list-style: none;
+  padding: 0;
+}
+
+.activity-feed li {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.error {
+  color: #FF4444;
+  margin-bottom: 15px;
+}
+
+/* Animation for vibrancy. */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive design for smaller screens. */
+@media (max-width: 768px) {
+  .home-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    padding: 10px;
+  }
+
+  .main-content {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+}
