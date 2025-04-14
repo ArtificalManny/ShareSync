@@ -1,0 +1,102 @@
+/* Profile.module.css */
+
+/* Container for the overall profile view */
+.profileContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #1c1c28; /* Dark background */
+    color: #ffffff; /* Light text */
+    padding: 2rem;
+    min-height: 100vh;
+  }
+  
+  /* Cover image at the top of the profile */
+  .coverImage {
+    width: 100%;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+  
+  /* Profile picture styling; it overlaps the cover image */
+  .profilePicture {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 4px solid #ffffff;
+    position: absolute;
+    bottom: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #fff; /* fallback background */
+  }
+  
+  /* Container for the details below the cover and profile picture */
+  .profileDetails {
+    margin-top: 60px;
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  /* Styling for the user's name */
+  .profileName {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    font-family: "Proxima Nova", sans-serif; /* Use your Proxima Nova font */
+  }
+  
+  /* Styling for a headline or role */
+  .profileHeadline {
+    font-size: 1.2rem;
+    color: #cccccc;
+    margin-bottom: 1rem;
+  }
+  
+  /* Bio or description text */
+  .profileBio {
+    font-size: 1rem;
+    line-height: 1.4;
+    margin: 1rem 0;
+    max-width: 600px;
+    font-family: "Proxima Nova", sans-serif;
+  }
+  
+  /* Additional classes, for example for social links or buttons */
+  .profileActions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .profileButton {
+    padding: 0.5rem 1rem;
+    background-color: #1976d2;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: "Proxima Nova", sans-serif;
+    transition: background-color 0.3s;
+  }
+  
+  .profileButton:hover {
+    background-color: #155a9b;
+  }
+
+  .container {
+    padding: 16px;
+    background-color: #fff;
+  }
+
+  /* Profile.module.css */
+.profileContainer {
+  padding: 2rem;
+  background-color: #1C1C28;
+  color: #fff;
+}
+
+
+  
