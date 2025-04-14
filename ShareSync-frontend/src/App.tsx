@@ -22,14 +22,23 @@ interface User {
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
     if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      try {
+        setUser(JSON.parse(storedUser));
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      } catch (error) {
+        console.error('App.tsx: Error parsing stored user:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        delete axios.defaults.headers.common['Authorization'];
+      }
     }
+    setLoading(false);
   }, []);
 
   const handleLogout = async () => {
@@ -44,9 +53,13 @@ const App: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return <div style={styles.loading}>Loading...</div>;
+  }
+
   return (
     <Router>
-      <div>
+      <div style={styles.appContainer}>
         {user && <Header />}
         <Routes>
           <Route path="/login" element={user ? <Navigate to="/" /> : <Login setUser={setUser} />} />
@@ -66,6 +79,25 @@ const App: React.FC = () => {
       </div>
     </Router>
   );
+};
+
+// Basic styles for loading and app container
+const styles: { [key: string]: React.CSSProperties } = {
+  appContainer: {
+    background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
+    minHeight: '100vh',
+  },
+  loading: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
+    color: '#A2E4FF',
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '24px',
+    textShadow: '0 0 10px #A2E4FF',
+  },
 };
 
 export default App;

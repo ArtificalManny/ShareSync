@@ -139,5 +139,21 @@ styleSheet.insertRule(`
     to { opacity: 1; transform: translateY(0); }
   }
 `, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(162, 228, 255, 0.7);
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  input:focus {
+    box-shadow: 0 0 10px rgba(162, 228, 255, 0.5);
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  a:hover {
+    color: #A2E4FF;
+  }
+`, styleSheet.cssRules.length);
 
 export default Login;

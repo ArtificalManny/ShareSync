@@ -160,7 +160,7 @@ const Home: React.FC<HomeProps> = ({ user }) => {
   }, [user]);
 
   if (!user) {
-    return <div style={styles.container}>Please log in to view this page.</div>;
+    return <div style={styles.errorMessage}>Please log in to view this page.</div>;
   }
 
   return (
@@ -413,6 +413,17 @@ const styles: { [key: string]: React.CSSProperties } = {
   text: {
     fontFamily: '"Orbitron", sans-serif',
     color: '#A2E4FF',
+  },
+  errorMessage: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
+    color: '#FF6F91',
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '24px',
+    textShadow: '0 0 10px #FF6F91',
   },
 };
 
