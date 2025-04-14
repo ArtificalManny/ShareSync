@@ -5,14 +5,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 54693,
-    proxy: {
-      '/auth': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
-        logLevel: 'debug',
-      },
-    },
+    open: true,
   },
-  envDir: './', // Ensure .env file is loaded from the root
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+  },
 });

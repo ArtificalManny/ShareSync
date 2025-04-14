@@ -25,37 +25,48 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('App.tsx: Initializing user state...');
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
     if (storedUser && token) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        console.log('App.tsx: User loaded from localStorage:', parsedUser);
       } catch (error) {
         console.error('App.tsx: Error parsing stored user:', error);
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         delete axios.defaults.headers.common['Authorization'];
       }
+    } else {
+      console.log('App.tsx: No user or token found in localStorage.');
     }
     setLoading(false);
+    console.log('App.tsx: Loading state set to false.');
   }, []);
 
   const handleLogout = async () => {
     try {
+      console.log('App.tsx: Logging out...');
       await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`);
       setUser(null);
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
+      console.log('App.tsx: Logout successful.');
     } catch (err) {
       console.error('App.tsx: Error logging out:', err);
     }
   };
 
   if (loading) {
+    console.log('App.tsx: Rendering loading state...');
     return <div style={styles.loading}>Loading...</div>;
   }
+
+  console.log('App.tsx: Rendering main app, user:', user);
 
   return (
     <Router>

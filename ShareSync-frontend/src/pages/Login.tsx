@@ -12,18 +12,23 @@ const Login: React.FC<LoginProps> = ({ setUser }) => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  console.log('Login.tsx: Rendering Login component...');
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    console.log('Login.tsx: Submitting login form...');
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/login`,
         { email, password },
       );
+      console.log('Login.tsx: Login response:', response.data);
       const { accessToken, user } = response.data.data;
       localStorage.setItem('token', accessToken);
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       navigate('/');
+      console.log('Login.tsx: Login successful, navigating to home.');
     } catch (err: any) {
       console.error('Login.tsx: Error logging in:', err.message);
       setError('Failed to log in. Please check your credentials and try again.');
