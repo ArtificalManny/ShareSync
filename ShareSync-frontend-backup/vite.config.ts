@@ -6,7 +6,4 @@ export default defineConfig({
   server: {
     port: 54693,
   },
-  preview: {
-    port: 54693,
-  },
 });

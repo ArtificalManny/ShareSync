@@ -1,37 +1,59 @@
 import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-interface CreatePostProps {
-  projectId: string;
+interface ProjectFormProps {
+  user: { _id: string; username: string; email: string };
 }
 
-const CreatePost: React.FC<CreatePostProps> = ({ projectId }) => {
-  const [content, setContent] = useState('');
+const ProjectForm: React.FC<ProjectFormProps> = ({ user }) => {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [sharedWith, setSharedWith] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/posts`, {
-        content,
-        projectId,
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/projects`, {
+        name,
+        description,
+        sharedWith: sharedWith.split(',').map(email => email.trim()),
+        creatorEmail: user.email,
       });
-      setContent('');
+      navigate(`/project/${response.data.data._id}`);
     } catch (err) {
-      console.error('CreatePost.tsx: Error creating post:', err);
+      console.error('ProjectForm.tsx: Error creating project:', err);
     }
   };
 
   return (
     <div style={styles.container}>
+      <h2 style={styles.heading}>Create a New Project</h2>
       <form onSubmit={handleSubmit} style={styles.form}>
+        <input
+          type="text"
+          placeholder="Project Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={styles.input}
+          required
+        />
         <textarea
-          placeholder="What's on your mind?"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
           style={styles.textarea}
           required
         />
-        <button type="submit" style={styles.submitButton}>Post</button>
+        <input
+          type="text"
+          placeholder="Share with (comma-separated emails)"
+          value={sharedWith}
+          onChange={(e) => setSharedWith(e.target.value)}
+          style={styles.input}
+        />
+        <button type="submit" style={styles.submitButton}>Create Project</button>
       </form>
     </div>
   );
@@ -49,10 +71,28 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: '1px solid #A2E4FF',
     animation: 'fadeIn 1s ease-in-out',
   },
+  heading: {
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '24px',
+    textAlign: 'center',
+    marginBottom: '20px',
+    color: '#A2E4FF',
+    textShadow: '0 0 10px #A2E4FF',
+  },
   form: {
     display: 'flex',
     flexDirection: 'column',
     gap: '15px',
+  },
+  input: {
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid #A2E4FF',
+    fontSize: '16px',
+    backgroundColor: '#1E1E2F',
+    color: '#A2E4FF',
+    fontFamily: '"Orbitron", sans-serif',
+    transition: 'box-shadow 0.3s ease',
   },
   textarea: {
     padding: '12px',
@@ -95,9 +135,9 @@ styleSheet.insertRule(`
   }
 `, styleSheet.cssRules.length);
 styleSheet.insertRule(`
-  textarea:focus {
+  input:focus, textarea:focus {
     box-shadow: 0 0 10px rgba(162, 228, 255, 0.5);
   }
 `, styleSheet.cssRules.length);
 
-export default CreatePost;
+export default ProjectForm;
