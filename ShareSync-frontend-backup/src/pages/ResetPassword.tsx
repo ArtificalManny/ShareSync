@@ -1,14 +1,14 @@
 import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const ResetPassword: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -16,30 +16,32 @@ const ResetPassword: React.FC = () => {
       setError('Passwords do not match.');
       return;
     }
+
     const query = new URLSearchParams(location.search);
     const token = query.get('token');
+
     if (!token) {
-      setError('Invalid reset link.');
+      setError('Invalid or missing reset token.');
       return;
     }
+
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/auth/reset-password`, {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/reset-password`, {
         token,
-        newPassword: password,
+        password,
       });
-      setMessage('Password reset successfully! You can now log in.');
+      setMessage(response.data.message);
       setError(null);
-      setTimeout(() => navigate('/login'), 2000);
+      setTimeout(() => navigate('/login'), 3000);
     } catch (err: any) {
-      console.error('ResetPassword.tsx: Error resetting password:', err.message);
-      setError('Failed to reset password. Please try again.');
+      setError(err.response?.data?.message || 'An error occurred. Please try again.');
       setMessage(null);
     }
   };
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.heading}>Reset Password - ShareSync</h1>
+      <h1 style={styles.heading}>Reset Password</h1>
       <form onSubmit={handleSubmit} style={styles.form}>
         <input
           type="password"
@@ -61,6 +63,10 @@ const ResetPassword: React.FC = () => {
         {message && <p style={styles.message}>{message}</p>}
         {error && <p style={styles.error}>{error}</p>}
       </form>
+      <p style={styles.text}>
+        Remembered your password?{' '}
+        <a href="/login" style={styles.link}>Login</a>
+      </p>
     </div>
   );
 };
@@ -117,15 +123,28 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#A2E4FF',
     marginTop: '10px',
     fontFamily: '"Orbitron", sans-serif',
+    textAlign: 'center',
   },
   error: {
     color: '#FF6F91',
     marginTop: '10px',
     fontFamily: '"Orbitron", sans-serif',
+    textAlign: 'center',
+  },
+  text: {
+    fontFamily: '"Orbitron", sans-serif',
+    color: '#A2E4FF',
+    marginTop: '10px',
+    textAlign: 'center',
+  },
+  link: {
+    color: '#FF6F91',
+    textDecoration: 'underline',
+    transition: 'color 0.3s ease',
   },
 };
 
-// Add animations
+// Add keyframes for animations
 const styleSheet = document.styleSheets[0];
 styleSheet.insertRule(`
   @keyframes fadeIn {
@@ -142,6 +161,11 @@ styleSheet.insertRule(`
 styleSheet.insertRule(`
   input:focus {
     box-shadow: 0 0 10px rgba(162, 228, 255, 0.5);
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  a:hover {
+    color: #A2E4FF;
   }
 `, styleSheet.cssRules.length);
 

@@ -2,123 +2,92 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { io, Socket } from 'socket.io-client';
 
-interface Notification {
-  _id: string;
-  content: string;
-  read: boolean;
-  createdAt: string;
-}
-
 interface User {
   _id: string;
   username: string;
   email: string;
 }
 
-interface NotificationsProps {
-  user: User | null;
+interface Notification {
+  _id: string;
+  recipient: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
 }
 
-const Notifications: React.FC<NotificationsProps> = ({ user }) => {
+const Notifications: React.FC<{ user: User }> = ({ user }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-
-    const newSocket = io('http://localhost:3001', {
+    const newSocket = io(`${process.env.REACT_APP_API_URL}`, {
       auth: { token: localStorage.getItem('token') },
     });
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
-      console.log('Notifications.tsx: WebSocket connected');
-      newSocket.emit('joinUser', { userId: user._id });
+      console.log('Notifications.tsx: Connected to WebSocket server');
+      newSocket.emit('joinUser', user._id);
     });
 
-    newSocket.on('notificationCreated', (notification: Notification) => {
-      console.log('Notifications.tsx: Received notificationCreated event:', notification);
-      setNotifications((prev) => [...prev, notification]);
+    newSocket.on('newNotification', (notification: Notification) => {
+      console.log('Notifications.tsx: New notification received:', notification);
+      setNotifications((prevNotifications) => [notification, ...prevNotifications]);
     });
 
     return () => {
       newSocket.disconnect();
-      console.log('Notifications.tsx: WebSocket disconnected');
     };
-  }, [user]);
+  }, [user._id]);
 
-  const fetchNotifications = async () => {
-    if (!user) {
-      setError('Please log in to view notifications.');
-      return;
-    }
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
-      setNotifications(response.data.data || []);
-    } catch (err: any) {
-      console.error('Notifications.tsx: Error fetching notifications:', err.message);
-      setError('Failed to load notifications. Please ensure you are logged in and try again.');
-    }
-  };
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/notifications/${user._id}`);
+        setNotifications(response.data.data);
+      } catch (err) {
+        console.error('Notifications.tsx: Error fetching notifications:', err);
+      }
+    };
+
+    fetchNotifications();
+  }, [user._id]);
 
   const markAsRead = async (id: string) => {
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/notifications/mark-as-read/${id}`, {});
-      setNotifications((prev) =>
-        prev.map((notif) => (notif._id === id ? { ...notif, read: true } : notif))
+      await axios.put(`${process.env.REACT_APP_API_URL}/notifications/mark-as-read/${id}`);
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notif) =>
+          notif._id === id ? { ...notif, read: true } : notif
+        )
       );
-    } catch (err: any) {
-      console.error('Notifications.tsx: Error marking notification as read:', err.message);
+    } catch (err) {
+      console.error('Notifications.tsx: Error marking notification as read:', err);
     }
   };
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [user]);
-
-  if (error) {
-    return (
-      <div style={styles.container}>
-        <h1 style={styles.heading}>🔔 Notifications - ShareSync</h1>
-        <p style={styles.error}>{error}</p>
-      </div>
-    );
-  }
-
   return (
     <div style={styles.container}>
-      <h1 style={styles.heading}>🔔 Notifications - ShareSync</h1>
-      {notifications.length > 0 ? (
-        <ul style={styles.notificationList}>
-          {notifications.map((notification) => (
-            <li
-              key={notification._id}
-              style={{
-                ...styles.notificationItem,
-                background: notification.read
-                  ? 'linear-gradient(145deg, #2A2A4A, #3F3F6A)'
-                  : 'linear-gradient(145deg, #3F3F6A, #4F4F8A)',
-              }}
-            >
-              <p style={styles.text}>{notification.content}</p>
-              <p style={styles.notificationDate}>
-                {new Date(notification.createdAt).toLocaleString()}
-              </p>
-              {!notification.read && (
-                <button
-                  onClick={() => markAsRead(notification._id)}
-                  style={styles.markAsReadButton}
-                >
-                  Mark as Read
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p style={styles.text}>No notifications yet.</p>
-      )}
+      <h1 style={styles.heading}>Notifications</h1>
+      <ul style={styles.list}>
+        {notifications.map((notification) => (
+          <li
+            key={notification._id}
+            style={{
+              ...styles.listItem,
+              background: notification.read ? 'rgba(162, 228, 255, 0.05)' : 'rgba(162, 228, 255, 0.2)',
+            }}
+            onClick={() => !notification.read && markAsRead(notification._id)}
+          >
+            <span style={styles.message}>{notification.message}</span>
+            <span style={styles.date}>
+              {new Date(notification.createdAt).toLocaleString()}
+            </span>
+            {!notification.read && <span style={styles.unreadDot}></span>}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
@@ -126,80 +95,67 @@ const Notifications: React.FC<NotificationsProps> = ({ user }) => {
 // Futuristic styles
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    maxWidth: '1200px',
-    margin: '0 auto',
     padding: '40px',
     background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
     color: '#A2E4FF',
     minHeight: '100vh',
-    animation: 'fadeIn 1s ease-in-out',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   heading: {
     fontFamily: '"Orbitron", sans-serif',
-    fontSize: '32px',
-    textAlign: 'center',
-    marginBottom: '30px',
+    fontSize: '36px',
     textShadow: '0 0 15px #A2E4FF',
+    marginBottom: '40px',
   },
-  notificationList: {
-    listStyleType: 'none',
+  list: {
+    listStyle: 'none',
     padding: 0,
+    width: '100%',
+    maxWidth: '600px',
   },
-  notificationItem: {
-    padding: '20px',
-    marginBottom: '15px',
-    borderRadius: '12px',
-    border: '1px solid #A2E4FF',
-    boxShadow: '0 0 15px rgba(162, 228, 255, 0.2)',
-    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-  },
-  notificationDate: {
-    fontSize: '12px',
-    color: '#A2E4FF',
-    marginTop: '5px',
-    fontFamily: '"Orbitron", sans-serif',
-  },
-  markAsReadButton: {
-    background: 'linear-gradient(90deg, #A2E4FF, #FF6F91)',
-    color: '#1E1E2F',
-    border: 'none',
-    padding: '8px 16px',
+  listItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '15px 20px',
+    marginBottom: '10px',
     borderRadius: '8px',
+    border: '1px solid #A2E4FF',
+    boxShadow: '0 0 10px rgba(162, 228, 255, 0.3)',
+    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
     cursor: 'pointer',
+    position: 'relative',
+  },
+  message: {
+    fontSize: '16px',
+    flex: 1,
+  },
+  date: {
     fontSize: '14px',
-    fontFamily: '"Orbitron", sans-serif',
-    boxShadow: '0 0 15px rgba(162, 228, 255, 0.5)',
-    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
-    marginTop: '10px',
-  },
-  error: {
     color: '#FF6F91',
-    fontFamily: '"Orbitron", sans-serif',
+    marginLeft: '20px',
   },
-  text: {
-    fontFamily: '"Orbitron", sans-serif',
-    color: '#A2E4FF',
+  unreadDot: {
+    width: '10px',
+    height: '10px',
+    backgroundColor: '#FF6F91',
+    borderRadius: '50%',
+    position: 'absolute',
+    right: '10px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    boxShadow: '0 0 5px #FF6F91',
   },
 };
 
-// Add animations
+// Add hover effect
 const styleSheet = document.styleSheets[0];
 styleSheet.insertRule(`
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-`, styleSheet.cssRules.length);
-styleSheet.insertRule(`
   li:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 0 20px rgba(162, 228, 255, 0.5);
-  }
-`, styleSheet.cssRules.length);
-styleSheet.insertRule(`
-  button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(162, 228, 255, 0.7);
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(162, 228, 255, 0.5);
   }
 `, styleSheet.cssRules.length);
 

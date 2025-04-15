@@ -19,7 +19,7 @@ const Login: React.FC<LoginProps> = ({ setUser }) => {
     console.log('Login.tsx: Submitting login form...');
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/auth/login`,
+        `${process.env.REACT_APP_API_URL}/auth/login`,
         { email, password },
       );
       console.log('Login.tsx: Login response:', response.data);

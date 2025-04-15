@@ -1,73 +1,43 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Project, ProjectDocument } from './schemas/project.schema';
-import { NotificationsService } from '../notifications/notifications.service';
-import { AppGateway } from '../app.gateway';
+import axios from 'axios';
 
-@Injectable()
-export class ProjectsService {
-  constructor(
-    @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
-    private readonly notificationsService: NotificationsService,
-    private readonly appGateway: AppGateway,
-  ) {}
-
-  async create(project: { name: string; description: string; creatorEmail?: string; sharedWith: string[] }): Promise<ProjectDocument> {
-    const createdProject = new this.projectModel({
-      ...project,
-      creatorEmail: project.creatorEmail || 'anonymous@example.com', // Fallback if creatorEmail is missing
-    });
-    const savedProject = await createdProject.save();
-
-    // Emit projectCreated event
-    this.appGateway.emitProjectCreated(savedProject);
-
-    // Notify collaborators
-    for (const collaborator of project.sharedWith) {
-      if (collaborator !== project.creatorEmail) {
-        await this.notificationsService.create({
-          userId: collaborator, // Assuming userId is the email for simplicity
-          content: `You were added to a new project: ${project.name}`,
-        });
-      }
-    }
-
-    // Emit team activity update
-    this.appGateway.emitTeamActivity({
-      content: `User ${project.creatorEmail || 'Anonymous'} created a new project: ${project.name}`,
-      timestamp: new Date(),
-    });
-
-    return savedProject;
-  }
-
-  async findByUsername(username: string): Promise<ProjectDocument[]> {
-    return this.projectModel.find({ $or: [{ creatorEmail: username }, { sharedWith: username }] }).exec();
-  }
-
-  async findById(id: string): Promise<ProjectDocument> {
-    const project = await this.projectModel.findById(id).exec();
-    if (!project) {
-      throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
-    }
-    return project;
-  }
-
-  async update(id: string, updates: Partial<Project>): Promise<ProjectDocument> {
-    const updatedProject = await this.projectModel
-      .findByIdAndUpdate(id, updates, { new: true })
-      .exec();
-    if (!updatedProject) {
-      throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
-    }
-    return updatedProject;
-  }
-
-  async delete(id: string): Promise<void> {
-    const result = await this.projectModel.findByIdAndDelete(id).exec();
-    if (!result) {
-      throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
-    }
-  }
+interface CreateProjectData {
+  name: string;
+  description: string;
+  sharedWith: string[];
+  creatorEmail: string;
 }
+
+interface UpdateProjectData {
+  name: string;
+  description: string;
+}
+
+const getProjects = async (username: string) => {
+  return axios.get(`${process.env.REACT_APP_API_URL}/projects/${username}`);
+};
+
+const getProjectById = async (id: string) => {
+  return axios.get(`${process.env.REACT_APP_API_URL}/projects/by-id/${id}`);
+};
+
+const createProject = async (data: CreateProjectData) => {
+  return axios.post(`${process.env.REACT_APP_API_URL}/projects`, data);
+};
+
+const updateProject = async (id: string, data: UpdateProjectData) => {
+  return axios.put(`${process.env.REACT_APP_API_URL}/projects/${id}`, data);
+};
+
+const deleteProject = async (id: string) => {
+  return axios.delete(`${process.env.REACT_APP_API_URL}/projects/${id}`);
+};
+
+const projectsService = {
+  getProjects,
+  getProjectById,
+  createProject,
+  updateProject,
+  deleteProject,
+};
+
+export default projectsService;

@@ -1,30 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const VerifyEmail: React.FC = () => {
-  const [message, setMessage] = useState('Verifying your email...');
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    const query = new URLSearchParams(location.search);
-    const email = query.get('email');
-    if (email) {
-      // Simulate email verification (since this is a placeholder)
-      setTimeout(() => {
-        setMessage('Email verified successfully! You can now log in.');
-      }, 2000);
-    } else {
-      setMessage('Invalid verification link.');
-    }
-  }, [location]);
+    const handleVerify = async () => {
+      const query = new URLSearchParams(location.search);
+      const token = query.get('token');
+
+      if (!token) {
+        setError('Invalid or missing verification token.');
+        return;
+      }
+
+      try {
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/verify-email`, { token });
+        setMessage(response.data.message);
+        setError(null);
+        setTimeout(() => navigate('/login'), 3000);
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'An error occurred. Please try again.');
+        setMessage(null);
+      }
+    };
+
+    handleVerify();
+  }, [location.search, navigate]);
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.heading}>Verify Email - ShareSync</h1>
-      <p style={styles.text}>{message}</p>
-      {message.includes('successfully') && (
-        <a href="/login" style={styles.link}>Go to Login</a>
-      )}
+      <h1 style={styles.heading}>Verify Email</h1>
+      {message && <p style={styles.message}>{message}</p>}
+      {error && <p style={styles.error}>{error}</p>}
+      <p style={styles.text}>
+        <a href="/login" style={styles.link}>Return to Login</a>
+      </p>
     </div>
   );
 };
@@ -32,7 +47,7 @@ const VerifyEmail: React.FC = () => {
 // Futuristic styles
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    maxWidth: '600px',
+    maxWidth: '400px',
     margin: '0 auto',
     padding: '40px',
     background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
@@ -41,8 +56,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginTop: '150px',
     boxShadow: '0 0 20px rgba(162, 228, 255, 0.3)',
     border: '1px solid #A2E4FF',
-    textAlign: 'center',
     animation: 'fadeIn 1s ease-in-out',
+    textAlign: 'center',
   },
   heading: {
     fontFamily: '"Orbitron", sans-serif',
@@ -50,26 +65,28 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: '20px',
     textShadow: '0 0 10px #A2E4FF',
   },
+  message: {
+    color: '#A2E4FF',
+    marginBottom: '20px',
+    fontFamily: '"Orbitron", sans-serif',
+  },
+  error: {
+    color: '#FF6F91',
+    marginBottom: '20px',
+    fontFamily: '"Orbitron", sans-serif',
+  },
   text: {
     fontFamily: '"Orbitron", sans-serif',
     color: '#A2E4FF',
-    fontSize: '18px',
-    marginBottom: '20px',
   },
   link: {
-    display: 'inline-block',
-    background: 'linear-gradient(90deg, #A2E4FF, #FF6F91)',
-    color: '#1E1E2F',
-    padding: '10px 20px',
-    borderRadius: '8px',
-    textDecoration: 'none',
-    fontFamily: '"Orbitron", sans-serif',
-    boxShadow: '0 0 15px rgba(162, 228, 255, 0.5)',
-    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
+    color: '#FF6F91',
+    textDecoration: 'underline',
+    transition: 'color 0.3s ease',
   },
 };
 
-// Add animations
+// Add keyframes for animations
 const styleSheet = document.styleSheets[0];
 styleSheet.insertRule(`
   @keyframes fadeIn {
@@ -79,8 +96,7 @@ styleSheet.insertRule(`
 `, styleSheet.cssRules.length);
 styleSheet.insertRule(`
   a:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(162, 228, 255, 0.7);
+    color: #A2E4FF;
   }
 `, styleSheet.cssRules.length);
 

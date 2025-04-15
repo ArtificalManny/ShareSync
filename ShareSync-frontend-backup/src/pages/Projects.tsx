@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
-interface Project {
-  _id: string;
-  name: string;
-  description: string;
-  creatorEmail: string;
-  createdAt: string;
-}
+import axios from 'axios';
 
 interface User {
   _id: string;
@@ -16,66 +8,119 @@ interface User {
   email: string;
 }
 
-interface ProjectsProps {
-  user: User | null;
+interface Project {
+  _id: string;
+  name: string;
+  description: string;
+  creator: { _id: string; username: string };
+  sharedWith: string[];
 }
 
-const Projects: React.FC<ProjectsProps> = ({ user }) => {
+const Projects: React.FC<{ user: User }> = ({ user }) => {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [editingProject, setEditingProject] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const navigate = useNavigate();
 
-  const fetchProjects = async () => {
-    if (!user) {
-      setError('Please log in to view projects.');
-      return;
-    }
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
-      setProjects(response.data.data || []);
-    } catch (err: any) {
-      console.error('Projects.tsx: Error fetching projects:', err.message);
-      setError('Failed to load projects. Please ensure you are logged in and try again.');
-    }
-  };
-
   useEffect(() => {
-    fetchProjects();
-  }, [user]);
+    const fetchProjects = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/projects/${user.username}`);
+        setProjects(response.data.data);
+      } catch (err) {
+        console.error('Projects.tsx: Error fetching projects:', err);
+      }
+    };
 
-  const handleProjectClick = (projectId: string) => {
-    navigate(`/project/${projectId}`);
+    fetchProjects();
+  }, [user.username]);
+
+  const handleEdit = (project: Project) => {
+    setEditingProject(project._id);
+    setEditName(project.name);
+    setEditDescription(project.description);
   };
 
-  if (error) {
-    return (
-      <div style={styles.container}>
-        <h1 style={styles.heading}>📂 Projects - ShareSync</h1>
-        <p style={styles.error}>{error}</p>
-      </div>
-    );
-  }
+  const updateProject = async (id: string) => {
+    try {
+      await axios.put(`${process.env.REACT_APP_API_URL}/projects/${id}`, {
+        name: editName,
+        description: editDescription,
+      });
+      setProjects((prevProjects) =>
+        prevProjects.map((project) =>
+          project._id === id ? { ...project, name: editName, description: editDescription } : project
+        )
+      );
+      setEditingProject(null);
+    } catch (err) {
+      console.error('Projects.tsx: Error updating project:', err);
+    }
+  };
+
+  const deleteProject = async (id: string) => {
+    try {
+      await axios.delete(`${process.env.REACT_APP_API_URL}/projects/${id}`);
+      setProjects((prevProjects) => prevProjects.filter((project) => project._id !== id));
+    } catch (err) {
+      console.error('Projects.tsx: Error deleting project:', err);
+    }
+  };
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.heading}>📂 Projects - ShareSync</h1>
+      <h1 style={styles.heading}>Your Projects</h1>
       {projects.length > 0 ? (
-        <ul style={styles.projectList}>
+        <ul style={styles.list}>
           {projects.map((project) => (
-            <li
-              key={project._id}
-              style={styles.projectItem}
-              onClick={() => handleProjectClick(project._id)}
-            >
-              <h3 style={styles.projectTitle}>{project.name}</h3>
-              <p style={styles.text}>{project.description}</p>
-              <p style={styles.text}>Created by: {project.creatorEmail}</p>
-              <p style={styles.text}>Created on: {new Date(project.createdAt).toLocaleDateString()}</p>
+            <li key={project._id} style={styles.listItem}>
+              {editingProject === project._id ? (
+                <div style={styles.editContainer}>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    style={styles.input}
+                  />
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    style={styles.textarea}
+                  />
+                  <button onClick={() => updateProject(project._id)} style={styles.saveButton}>
+                    Save
+                  </button>
+                  <button onClick={() => setEditingProject(null)} style={styles.cancelButton}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={styles.projectInfo}>
+                    <span
+                      style={styles.projectName}
+                      onClick={() => navigate(`/project/${project._id}`)}
+                    >
+                      {project.name}
+                    </span>
+                    <span style={styles.description}>{project.description}</span>
+                  </div>
+                  <div style={styles.actions}>
+                    <button onClick={() => handleEdit(project)} style={styles.editButton}>
+                      Edit
+                    </button>
+                    <button onClick={() => deleteProject(project._id)} style={styles.deleteButton}>
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
             </li>
           ))}
         </ul>
       ) : (
-        <p style={styles.text}>No projects yet.</p>
+        <p style={styles.noContent}>You haven't created any projects yet.</p>
       )}
     </div>
   );
@@ -84,64 +129,152 @@ const Projects: React.FC<ProjectsProps> = ({ user }) => {
 // Futuristic styles
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    maxWidth: '1200px',
-    margin: '0 auto',
     padding: '40px',
     background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
     color: '#A2E4FF',
     minHeight: '100vh',
-    animation: 'fadeIn 1s ease-in-out',
   },
   heading: {
     fontFamily: '"Orbitron", sans-serif',
-    fontSize: '32px',
-    textAlign: 'center',
-    marginBottom: '30px',
+    fontSize: '36px',
     textShadow: '0 0 15px #A2E4FF',
+    marginBottom: '40px',
+    textAlign: 'center',
   },
-  projectList: {
-    listStyleType: 'none',
+  list: {
+    listStyle: 'none',
     padding: 0,
   },
-  projectItem: {
-    padding: '20px',
-    marginBottom: '15px',
-    background: 'linear-gradient(145deg, #2A2A4A, #3F3F6A)',
-    borderRadius: '12px',
-    border: '1px solid #A2E4FF',
-    boxShadow: '0 0 15px rgba(162, 228, 255, 0.2)',
-    cursor: 'pointer',
-    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-  },
-  projectTitle: {
-    fontFamily: '"Orbitron", sans-serif',
-    fontSize: '20px',
+  listItem: {
+    background: 'rgba(162, 228, 255, 0.1)',
+    padding: '15px 20px',
     marginBottom: '10px',
-    color: '#A2E4FF',
-    textShadow: '0 0 5px #A2E4FF',
+    borderRadius: '8px',
+    border: '1px solid #A2E4FF',
+    boxShadow: '0 0 10px rgba(162, 228, 255, 0.3)',
+    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  error: {
+  projectInfo: {
+    flex: 1,
+  },
+  projectName: {
+    fontSize: '18px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'color 0.3s ease',
+  },
+  description: {
+    fontSize: '16px',
     color: '#FF6F91',
-    fontFamily: '"Orbitron", sans-serif',
+    marginLeft: '20px',
   },
-  text: {
+  actions: {
+    display: 'flex',
+    gap: '10px',
+  },
+  editButton: {
+    background: 'linear-gradient(90deg, #A2E4FF, #FF6F91)',
+    color: '#1E1E2F',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
     fontFamily: '"Orbitron", sans-serif',
+    boxShadow: '0 0 10px rgba(162, 228, 255, 0.5)',
+    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
+  },
+  deleteButton: {
+    background: 'linear-gradient(90deg, #FF6F91, #A2E4FF)',
+    color: '#1E1E2F',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontFamily: '"Orbitron", sans-serif',
+    boxShadow: '0 0 10px rgba(255, 111, 145, 0.5)',
+    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
+  },
+  editContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    width: '100%',
+  },
+  input: {
+    padding: '10px',
+    borderRadius: '8px',
+    border: '1px solid #A2E4FF',
+    backgroundColor: '#1E1E2F',
     color: '#A2E4FF',
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '16px',
+    transition: 'box-shadow 0.3s ease',
+  },
+  textarea: {
+    padding: '10px',
+    borderRadius: '8px',
+    border: '1px solid #A2E4FF',
+    backgroundColor: '#1E1E2F',
+    color: '#A2E4FF',
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: '16px',
+    resize: 'vertical',
+    minHeight: '100px',
+    transition: 'box-shadow 0.3s ease',
+  },
+  saveButton: {
+    background: 'linear-gradient(90deg, #A2E4FF, #FF6F91)',
+    color: '#1E1E2F',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontFamily: '"Orbitron", sans-serif',
+    boxShadow: '0 0 10px rgba(162, 228, 255, 0.5)',
+    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
+  },
+  cancelButton: {
+    background: 'linear-gradient(90deg, #FF6F91, #A2E4FF)',
+    color: '#1E1E2F',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontFamily: '"Orbitron", sans-serif',
+    boxShadow: '0 0 10px rgba(255, 111, 145, 0.5)',
+    transition: 'transform 0.1s ease, box-shadow 0.3s ease',
+  },
+  noContent: {
+    fontSize: '16px',
+    color: '#FF6F91',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 };
 
-// Add animations
+// Add hover effects
 const styleSheet = document.styleSheets[0];
 styleSheet.insertRule(`
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+  .projectName:hover {
+    color: #FF6F91;
   }
 `, styleSheet.cssRules.length);
 styleSheet.insertRule(`
-  li:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0 20px rgba(162, 228, 255, 0.5);
+  button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(162, 228, 255, 0.7);
+  }
+`, styleSheet.cssRules.length);
+styleSheet.insertRule(`
+  input:focus, textarea:focus {
+    box-shadow: 0 0 10px rgba(162, 228, 255, 0.5);
   }
 `, styleSheet.cssRules.length);
 

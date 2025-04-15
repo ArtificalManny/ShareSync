@@ -4,61 +4,36 @@ import axios from 'axios';
 interface LeaderboardEntry {
   username: string;
   points: number;
-  rank: number;
 }
 
 const Leaderboard: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchLeaderboard = async () => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/points/leaderboard`);
-      setLeaderboard(response.data.data || []);
-    } catch (err: any) {
-      console.error('Leaderboard.tsx: Error fetching leaderboard:', err.message);
-      setError('Failed to load leaderboard. Please ensure you are logged in and try again.');
-    }
-  };
 
   useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/points/leaderboard`);
+        setLeaderboard(response.data.data);
+      } catch (err) {
+        console.error('Leaderboard.tsx: Error fetching leaderboard:', err);
+      }
+    };
+
     fetchLeaderboard();
   }, []);
 
-  if (error) {
-    return (
-      <div style={styles.container}>
-        <h1 style={styles.heading}>🏆 Leaderboard - ShareSync</h1>
-        <p style={styles.error}>{error}</p>
-      </div>
-    );
-  }
-
   return (
     <div style={styles.container}>
-      <h1 style={styles.heading}>🏆 Leaderboard - ShareSync</h1>
-      {leaderboard.length > 0 ? (
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.tableHeader}>Rank</th>
-              <th style={styles.tableHeader}>Username</th>
-              <th style={styles.tableHeader}>Points</th>
-            </tr>
-          </thead>
-          <tbody>
-            {leaderboard.map((entry) => (
-              <tr key={entry.username} style={styles.tableRow}>
-                <td style={styles.tableCell}>{entry.rank}</td>
-                <td style={styles.tableCell}>{entry.username}</td>
-                <td style={styles.tableCell}>{entry.points}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p style={styles.text}>No leaderboard data available.</p>
-      )}
+      <h1 style={styles.heading}>Leaderboard</h1>
+      <ul style={styles.list}>
+        {leaderboard.map((entry, index) => (
+          <li key={index} style={styles.listItem}>
+            <span style={styles.rank}>{index + 1}.</span>
+            <span style={styles.username}>{entry.username}</span>
+            <span style={styles.points}>{entry.points} points</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
@@ -66,69 +41,61 @@ const Leaderboard: React.FC = () => {
 // Futuristic styles
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    maxWidth: '1200px',
-    margin: '0 auto',
     padding: '40px',
     background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
     color: '#A2E4FF',
     minHeight: '100vh',
-    animation: 'fadeIn 1s ease-in-out',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   heading: {
     fontFamily: '"Orbitron", sans-serif',
-    fontSize: '32px',
-    textAlign: 'center',
-    marginBottom: '30px',
+    fontSize: '36px',
     textShadow: '0 0 15px #A2E4FF',
+    marginBottom: '40px',
   },
-  table: {
+  list: {
+    listStyle: 'none',
+    padding: 0,
     width: '100%',
-    borderCollapse: 'collapse',
-    background: 'linear-gradient(145deg, #2A2A4A, #3F3F6A)',
-    borderRadius: '12px',
-    boxShadow: '0 0 20px rgba(162, 228, 255, 0.3)',
-    border: '1px solid #A2E4FF',
+    maxWidth: '600px',
   },
-  tableHeader: {
-    background: 'linear-gradient(145deg, #3F3F6A, #4F4F8A)',
-    padding: '15px',
-    textAlign: 'left',
-    borderBottom: '2px solid #A2E4FF',
-    fontFamily: '"Orbitron", sans-serif',
+  listItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    background: 'rgba(162, 228, 255, 0.1)',
+    padding: '15px 20px',
+    marginBottom: '10px',
+    borderRadius: '8px',
+    border: '1px solid #A2E4FF',
+    boxShadow: '0 0 10px rgba(162, 228, 255, 0.3)',
+    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+  },
+  rank: {
+    fontSize: '20px',
+    fontWeight: 'bold',
+    color: '#FF6F91',
+  },
+  username: {
+    fontSize: '18px',
+    flex: 1,
+    marginLeft: '20px',
+  },
+  points: {
+    fontSize: '18px',
     color: '#A2E4FF',
     textShadow: '0 0 5px #A2E4FF',
   },
-  tableRow: {
-    borderBottom: '1px solid #A2E4FF',
-    transition: 'background 0.3s ease',
-  },
-  tableCell: {
-    padding: '15px',
-    textAlign: 'left',
-    fontFamily: '"Orbitron", sans-serif',
-    color: '#A2E4FF',
-  },
-  error: {
-    color: '#FF6F91',
-    fontFamily: '"Orbitron", sans-serif',
-  },
-  text: {
-    fontFamily: '"Orbitron", sans-serif',
-    color: '#A2E4FF',
-  },
 };
 
-// Add animations
+// Add hover effect
 const styleSheet = document.styleSheets[0];
 styleSheet.insertRule(`
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-`, styleSheet.cssRules.length);
-styleSheet.insertRule(`
-  tr:hover {
-    background: linear-gradient(145deg, #3F3F6A, #4F4F8A);
+  li:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(162, 228, 255, 0.5);
   }
 `, styleSheet.cssRules.length);
 

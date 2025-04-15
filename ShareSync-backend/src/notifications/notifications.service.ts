@@ -1,34 +1,16 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Notification, NotificationDocument } from './schemas/notification.schema';
+import axios from 'axios';
 
-@Injectable()
-export class NotificationsService {
-  constructor(
-    @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>
-  ) {}
+const getNotifications = async (userId: string) => {
+  return axios.get(`${process.env.REACT_APP_API_URL}/notifications/${userId}`);
+};
 
-  async create(notification: { userId: string; content: string; read?: boolean; createdAt?: Date }): Promise<NotificationDocument> {
-    const createdNotification = new this.notificationModel({
-      ...notification,
-      read: notification.read || false,
-      createdAt: notification.createdAt || new Date(),
-    });
-    return createdNotification.save();
-  }
+const markAsRead = async (notificationId: string) => {
+  return axios.put(`${process.env.REACT_APP_API_URL}/notifications/mark-as-read/${notificationId}`);
+};
 
-  async findByUser(userId: string): Promise<NotificationDocument[]> {
-    return this.notificationModel.find({ userId }).exec();
-  }
+const notificationsService = {
+  getNotifications,
+  markAsRead,
+};
 
-  async markAsRead(id: string): Promise<NotificationDocument> {
-    const notification = await this.notificationModel
-      .findByIdAndUpdate(id, { read: true }, { new: true })
-      .exec();
-    if (!notification) {
-      throw new HttpException('Notification not found', HttpStatus.NOT_FOUND);
-    }
-    return notification;
-  }
-}
+export default notificationsService;

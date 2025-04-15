@@ -6,25 +6,24 @@ const Register: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/register`, {
         username,
         email,
         password,
-        firstName,
-        lastName,
       });
-      navigate('/login');
+      setMessage(response.data.message);
+      setError(null);
+      setTimeout(() => navigate('/verify-email'), 3000);
     } catch (err: any) {
-      console.error('Register.tsx: Error registering:', err.message);
-      setError('Failed to register. Please try again.');
+      setError(err.response?.data?.message || 'An error occurred. Please try again.');
+      setMessage(null);
     }
   };
 
@@ -52,28 +51,12 @@ const Register: React.FC = () => {
           type="password"
           placeholder="Password"
           value={password}
- 
-         onChange={(e) => setPassword(e.target.value)}
-          style={styles.input}
-          required
-        />
-        <input
-          type="text"
-          placeholder="First Name"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          style={styles.input}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Last Name"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           style={styles.input}
           required
         />
         <button type="submit" style={styles.submitButton}>Register</button>
+        {message && <p style={styles.message}>{message}</p>}
         {error && <p style={styles.error}>{error}</p>}
       </form>
       <p style={styles.text}>
@@ -93,7 +76,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',
     color: '#A2E4FF',
     borderRadius: '15px',
-    marginTop: '100px',
+    marginTop: '150px',
     boxShadow: '0 0 20px rgba(162, 228, 255, 0.3)',
     border: '1px solid #A2E4FF',
     animation: 'fadeIn 1s ease-in-out',
@@ -132,10 +115,17 @@ const styles: { [key: string]: React.CSSProperties } = {
     boxShadow: '0 0 15px rgba(162, 228, 255, 0.5)',
     transition: 'transform 0.1s ease, box-shadow 0.3s ease',
   },
+  message: {
+    color: '#A2E4FF',
+    marginTop: '10px',
+    fontFamily: '"Orbitron", sans-serif',
+    textAlign: 'center',
+  },
   error: {
     color: '#FF6F91',
     marginTop: '10px',
     fontFamily: '"Orbitron", sans-serif',
+    textAlign: 'center',
   },
   text: {
     fontFamily: '"Orbitron", sans-serif',
@@ -150,7 +140,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
 };
 
-// Add animations
+// Add keyframes for animations
 const styleSheet = document.styleSheets[0];
 styleSheet.insertRule(`
   @keyframes fadeIn {

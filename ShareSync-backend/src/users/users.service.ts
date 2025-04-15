@@ -1,41 +1,11 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { CreateUserDto } from './dto/create-user.dto';
-import { User, UserDocument } from './schemas/user.schema';
+import axios from 'axios';
 
-@Injectable()
-export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+const getLeaderboard = async () => {
+  return axios.get(`${process.env.REACT_APP_API_URL}/points/leaderboard`);
+};
 
-  async create(createUserDto: CreateUserDto): Promise<UserDocument> {
-    const createdUser = new this.userModel(createUserDto);
-    return createdUser.save();
-  }
+const usersService = {
+  getLeaderboard,
+};
 
-  async findByEmail(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email }).exec();
-  }
-
-  async findByUsername(username: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ username }).exec();
-  }
-
-  async findById(id: string): Promise<UserDocument | null> {
-    return this.userModel.findById(id).exec();
-  }
-
-  async findAll(): Promise<UserDocument[]> {
-    return this.userModel.find().exec();
-  }
-
-  async update(id: string, updateUserDto: Partial<User>): Promise<UserDocument> {
-    const updatedUser = await this.userModel
-      .findByIdAndUpdate(id, updateUserDto, { new: true })
-      .exec();
-    if (!updatedUser) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    }
-    return updatedUser;
-  }
-}
+export default usersService;

@@ -1,31 +1,33 @@
 import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Recover: React.FC = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/auth/forgot-password`, { email });
-      setMessage('A password reset link has been sent to your email.');
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/forgot-password`, { email });
+      setMessage(response.data.message);
       setError(null);
+      setTimeout(() => navigate('/login'), 3000);
     } catch (err: any) {
-      console.error('Recover.tsx: Error sending reset link:', err.message);
-      setError('Failed to send reset link. Please try again.');
+      setError(err.response?.data?.message || 'An error occurred. Please try again.');
       setMessage(null);
     }
   };
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.heading}>Recover Password - ShareSync</h1>
+      <h1 style={styles.heading}>Recover Password</h1>
       <form onSubmit={handleSubmit} style={styles.form}>
         <input
           type="email"
-          placeholder="Email"
+          placeholder="Enter your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           style={styles.input}
@@ -36,7 +38,7 @@ const Recover: React.FC = () => {
         {error && <p style={styles.error}>{error}</p>}
       </form>
       <p style={styles.text}>
-        Remember your password?{' '}
+        Remembered your password?{' '}
         <a href="/login" style={styles.link}>Login</a>
       </p>
     </div>
@@ -95,11 +97,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#A2E4FF',
     marginTop: '10px',
     fontFamily: '"Orbitron", sans-serif',
+    textAlign: 'center',
   },
   error: {
     color: '#FF6F91',
     marginTop: '10px',
     fontFamily: '"Orbitron", sans-serif',
+    textAlign: 'center',
   },
   text: {
     fontFamily: '"Orbitron", sans-serif',
@@ -114,7 +118,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
 };
 
-// Add animations
+// Add keyframes for animations
 const styleSheet = document.styleSheets[0];
 styleSheet.insertRule(`
   @keyframes fadeIn {
