@@ -12,7 +12,7 @@ const Leaderboard: React.FC = () => {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/points/leaderboard`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/points/leaderboard`);
         setLeaderboard(response.data.data);
       } catch (err) {
         console.error('Leaderboard.tsx: Error fetching leaderboard:', err);

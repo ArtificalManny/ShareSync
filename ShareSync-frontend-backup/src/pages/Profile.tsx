@@ -30,7 +30,7 @@ const Profile: React.FC<{ user: User }> = ({ user }) => {
   useEffect(() => {
     const fetchUserProjects = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/projects/${user.username}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
         setProjects(response.data.data);
       } catch (err) {
         console.error('Profile.tsx: Error fetching user projects:', err);
@@ -39,7 +39,7 @@ const Profile: React.FC<{ user: User }> = ({ user }) => {
 
     const fetchUserPosts = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/posts`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/posts`);
         const userPosts = response.data.data.filter(
           (post: Post) => post.creator._id === user._id
         );

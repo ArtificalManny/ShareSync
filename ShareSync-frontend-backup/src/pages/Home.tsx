@@ -32,7 +32,7 @@ const Home: React.FC<{ user: User }> = ({ user }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const newSocket = io(`${process.env.REACT_APP_API_URL}`, {
+    const newSocket = io(`${import.meta.env.VITE_API_URL}`, {
       auth: { token: localStorage.getItem('token') },
     });
     setSocket(newSocket);
@@ -60,7 +60,7 @@ const Home: React.FC<{ user: User }> = ({ user }) => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/projects/${user.username}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
         setProjects(response.data.data);
       } catch (err) {
         console.error('Home.tsx: Error fetching projects:', err);
@@ -69,7 +69,7 @@ const Home: React.FC<{ user: User }> = ({ user }) => {
 
     const fetchPosts = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/posts`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/posts`);
         setPosts(response.data.data);
       } catch (err) {
         console.error('Home.tsx: Error fetching posts:', err);

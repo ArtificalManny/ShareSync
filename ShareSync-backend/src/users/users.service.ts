@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const getLeaderboard = async () => {
-  return axios.get(`${process.env.REACT_APP_API_URL}/points/leaderboard`);
+  return axios.get(`${import.meta.env.VITE_API_URL}/points/leaderboard`);
 };
 
 const usersService = {

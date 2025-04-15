@@ -26,7 +26,7 @@ const Projects: React.FC<{ user: User }> = ({ user }) => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/projects/${user.username}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/projects/${user.username}`);
         setProjects(response.data.data);
       } catch (err) {
         console.error('Projects.tsx: Error fetching projects:', err);
@@ -44,7 +44,7 @@ const Projects: React.FC<{ user: User }> = ({ user }) => {
 
   const updateProject = async (id: string) => {
     try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/projects/${id}`, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/projects/${id}`, {
         name: editName,
         description: editDescription,
       });
@@ -61,7 +61,7 @@ const Projects: React.FC<{ user: User }> = ({ user }) => {
 
   const deleteProject = async (id: string) => {
     try {
-      await axios.delete(`${process.env.REACT_APP_API_URL}/projects/${id}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/projects/${id}`);
       setProjects((prevProjects) => prevProjects.filter((project) => project._id !== id));
     } catch (err) {
       console.error('Projects.tsx: Error deleting project:', err);

@@ -55,7 +55,7 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     try {
       console.log('App.tsx: Logging out...');
-      await axios.post(`${process.env.REACT_APP_API_URL}/auth/logout`);
+      await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`);
       setUser(null);
       localStorage.removeItem('user');
       localStorage.removeItem('token');
@@ -112,7 +112,7 @@ const App: React.FC = () => {
   );
 };
 
-// Basic styles for loading and app container
+// Futuristic styles
 const styles: { [key: string]: React.CSSProperties } = {
   appContainer: {
     background: 'linear-gradient(145deg, #1E1E2F, #2A2A4A)',

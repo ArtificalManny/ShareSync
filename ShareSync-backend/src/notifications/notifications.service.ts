@@ -1,11 +1,11 @@
 import axios from 'axios';
 
 const getNotifications = async (userId: string) => {
-  return axios.get(`${process.env.REACT_APP_API_URL}/notifications/${userId}`);
+  return axios.get(`${import.meta.env.VITE_API_URL}/notifications/${userId}`);
 };
 
 const markAsRead = async (notificationId: string) => {
-  return axios.put(`${process.env.REACT_APP_API_URL}/notifications/mark-as-read/${notificationId}`);
+  return axios.put(`${import.meta.env.VITE_API_URL}/notifications/mark-as-read/${notificationId}`);
 };
 
 const notificationsService = {

@@ -21,7 +21,7 @@ const Notifications: React.FC<{ user: User }> = ({ user }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const newSocket = io(`${process.env.REACT_APP_API_URL}`, {
+    const newSocket = io(`${import.meta.env.VITE_API_URL}`, {
       auth: { token: localStorage.getItem('token') },
     });
     setSocket(newSocket);
@@ -44,7 +44,7 @@ const Notifications: React.FC<{ user: User }> = ({ user }) => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/notifications/${user._id}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/${user._id}`);
         setNotifications(response.data.data);
       } catch (err) {
         console.error('Notifications.tsx: Error fetching notifications:', err);
@@ -56,7 +56,7 @@ const Notifications: React.FC<{ user: User }> = ({ user }) => {
 
   const markAsRead = async (id: string) => {
     try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/notifications/mark-as-read/${id}`);
+      await axios.put(`${import.meta.env.VITE_API_URL}/notifications/mark-as-read/${id}`);
       setNotifications((prevNotifications) =>
         prevNotifications.map((notif) =>
           notif._id === id ? { ...notif, read: true } : notif
