@@ -141,6 +141,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   description: {
     fontSize: '16px',
     color: '#FF6F91',
+    marginLeft: '20px',
   },
   postContent: {
     fontSize: '16px',
