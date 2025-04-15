@@ -1,42 +1,32 @@
-import { Controller, Get, Param, Put, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { HttpException, HttpStatus } from '@nestjs/common';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get('by-username/:username')
-  async findByUsername(@Param('username') username: string) {
-    const user = await this.usersService.findByUsername(username);
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    }
-    return {
-      status: 'success',
-      data: user,
-    };
+  @Post()
+  create(@Body() createUserDto: { username: string; email: string; password: string }) {
+    return this.usersService.create(createUserDto);
   }
 
-  @Get(':id')
-  async findById(@Param('id') id: string) {
-    const user = await this.usersService.findById(id);
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    }
-    return {
-      status: 'success',
-      data: user,
-    };
+  @Get(':email')
+  findByEmail(@Param('email') email: string) {
+    return this.usersService.findByEmail(email);
   }
 
-  @Put(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: any) {
-    const updatedUser = await this.usersService.update(id, updateUserDto);
-    return {
-      status: 'success',
-      message: 'User updated successfully',
-      data: updatedUser,
-    };
+  @Post('points/add')
+  addPoints(@Body() body: { userId: string; points: number }) {
+    return this.usersService.addPoints(body.userId, body.points);
+  }
+
+  @Get('points/:userId')
+  getPoints(@Param('userId') userId: string) {
+    return this.usersService.getPoints(userId);
+  }
+
+  @Get('points/leaderboard')
+  getLeaderboard() {
+    return this.usersService.getLeaderboard();
   }
 }

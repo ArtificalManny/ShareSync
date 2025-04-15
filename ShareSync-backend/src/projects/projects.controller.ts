@@ -1,65 +1,42 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, Query } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { AppGateway } from '../app.gateway';
-import { HttpException, HttpStatus } from '@nestjs/common';
 
 @Controller('projects')
 export class ProjectsController {
-  constructor(
-    private readonly projectsService: ProjectsService,
-    private readonly appGateway: AppGateway
-  ) {}
+  constructor(private readonly projectsService: ProjectsService) {}
 
   @Post()
-  async create(@Body() createProjectDto: CreateProjectDto) {
-    const project = await this.projectsService.create(createProjectDto);
-    this.appGateway.emitProjectCreated(project);
-    return {
-      status: 'success',
-      message: 'Project created successfully',
-      data: project,
-    };
+  create(@Body() createProjectDto: { name: string; description: string; sharedWith: string[]; creator: string }) {
+    return this.projectsService.create(createProjectDto);
+  }
+
+  @Get('public')
+  findPublic() {
+    return this.projectsService.findPublic();
+  }
+
+  @Get('search')
+  search(@Query('q') query: string) {
+    return this.projectsService.search(query);
   }
 
   @Get(':username')
-  async findByUsername(@Param('username') username: string) {
-    const projects = await this.projectsService.findByUsername(username);
-    return {
-      status: 'success',
-      data: projects,
-    };
+  findAllByUsername(@Param('username') username: string) {
+    return this.projectsService.findAllByUsername(username);
   }
 
   @Get('by-id/:id')
-  async findById(@Param('id') id: string) {
-    const project = await this.projectsService.findById(id);
-    if (!project) {
-      throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
-    }
-    return {
-      status: 'success',
-      data: project,
-    };
+  findById(@Param('id') id: string) {
+    return this.projectsService.findById(id);
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-    const project = await this.projectsService.update(id, updateProjectDto);
-    return {
-      status: 'success',
-      message: 'Project updated successfully',
-      data: project,
-    };
+  update(@Param('id') id: string, @Body() updateProjectDto: { name?: string; description?: string; isPublic?: boolean }) {
+    return this.projectsService.update(id, updateProjectDto);
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.projectsService.remove(id);
-    return {
-      status: 'success',
-      message: 'Project deleted successfully',
-    };
+  remove(@Param('id') id: string) {
+    return this.projectsService.remove(id);
   }
 }

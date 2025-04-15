@@ -6,16 +6,19 @@ export type FeedbackDocument = Feedback & Document;
 @Schema({ timestamps: true })
 export class Feedback {
   @Prop({ required: true })
-  userId: string; // The user providing feedback
+  feedback: string;
 
-  @Prop({ required: true })
-  projectId: string; // The project the feedback is for
+  @Prop()
+  featureRequest: string;
 
-  @Prop({ required: true })
-  message: string; // The feedback message
+  @Prop({ required: true, enum: ['general', 'feature', 'bug'] })
+  category: string;
 
-  @Prop({ default: 5 })
-  rating: number; // Rating out of 5
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
 }
 
 export const FeedbackSchema = SchemaFactory.createForClass(Feedback);
