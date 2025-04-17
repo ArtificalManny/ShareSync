@@ -6,7 +6,7 @@ import ProjectHome from './pages/ProjectHome';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
 import PublicProjects from './pages/PublicProjects';
-import Search from './pages/Search';
+import Search from './pages/Search'; // Ensure this matches the file name
 import TeamDashboard from './pages/TeamDashboard';
 import Recover from './pages/Recover';
 import Register from './pages/Register';
