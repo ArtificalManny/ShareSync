@@ -1,27 +1,11 @@
-import React from 'react';
-import './Footer.css'; // Optional: Components-specific styles
+import { useTheme } from '../../contexts/ThemeContext';
 
-const Footer: React.FC = () => {
+const Footer = () => {
+  const { currentTheme } = useTheme();
+
   return (
-    <footer className="footer">
-      <div className="footer-links">
-        <a href="/about">About Us</a> |<a href="/careers">Careers</a> |
-        <a href="/contact">Contact Support</a> |
-        <a href="/privacy">Privacy Policy</a> |
-        <a href="/terms">Terms of Service</a>
-      </div>
-      <div className="social-media">
-        <a href="https://facebook.com">
-          <i className="fab fa-facebook-f"></i>
-        </a>
-        <a href="https://twitter.com">
-          <i className="fab fa-twitter"></i>
-        </a>
-        <a href="https://linkedin.com">
-          <i className="fab fa-linkedin-in"></i>
-        </a>
-        {/* Add more social media icons as needed */}
-      </div>
+    <footer style={{ background: currentTheme.background, color: currentTheme.text, padding: '10px', textAlign: 'center' }}>
+      <p>&copy; 2025 ShareSync. All rights reserved.</p>
     </footer>
   );
 };
