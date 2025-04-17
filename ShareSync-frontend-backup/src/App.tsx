@@ -35,6 +35,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/project/:id" element={<ProjectHome />} />
           <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} /> {/* Add this line */}
           <Route path="/projects" element={<Projects />} />
           <Route path="/public-projects" element={<PublicProjects />} />
           <Route path="/search" element={<Search />} />

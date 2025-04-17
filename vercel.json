@@ -1,0 +1,20 @@
+{
+    "builds": [
+      {
+        "src": "ShareSync-frontend-backup/package.json",
+        "use": "@vercel/node",
+        "config": {
+          "root": "ShareSync-frontend-backup",
+          "installCommand": "npm install",
+          "buildCommand": "npm run build",
+          "outputDirectory": "ShareSync-frontend-backup/dist"
+        }
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "/ShareSync-frontend-backup/dist/index.html"
+      }
+    ]
+  }
