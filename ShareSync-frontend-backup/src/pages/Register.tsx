@@ -115,10 +115,10 @@ const Register = () => {
       await axios.post('/auth/register', {
         email,
         password,
-        username,
-        firstName,
-        lastName,
-        birthday,
+        username: username || undefined,
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+        birthday: birthday || undefined,
       }, { withCredentials: true });
       navigate('/login');
     } catch (err: any) {
@@ -145,36 +145,32 @@ const Register = () => {
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="Username"
+          placeholder="Username (optional)"
           theme={currentTheme}
-          required
           disabled={loading}
         />
         <Input
           type="text"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
-          placeholder="First Name"
+          placeholder="First Name (optional)"
           theme={currentTheme}
-          required
           disabled={loading}
         />
         <Input
           type="text"
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
-          placeholder="Last Name"
+          placeholder="Last Name (optional)"
           theme={currentTheme}
-          required
           disabled={loading}
         />
         <Input
           type="date"
           value={birthday}
           onChange={(e) => setBirthday(e.target.value)}
-          placeholder="Birthday"
+          placeholder="Birthday (optional)"
           theme={currentTheme}
-          required
           disabled={loading}
         />
         <Input

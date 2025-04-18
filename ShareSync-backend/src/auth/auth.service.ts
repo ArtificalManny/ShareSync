@@ -29,7 +29,7 @@ export class AuthService {
     };
   }
 
-  async register(userData: { email: string; password: string; username: string; firstName: string; lastName: string; birthday: Date }) {
+  async register(userData: { email: string; password: string; username?: string; firstName?: string; lastName?: string; birthday?: string }) {
     console.log('AuthService: Register attempt with email:', userData.email);
     const existingUser = await this.usersService.findOneByEmail(userData.email);
     if (existingUser) {
@@ -39,10 +39,10 @@ export class AuthService {
     const user = await this.usersService.create({
       email: userData.email,
       password: hashedPassword,
-      username: userData.username,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      birthday: userData.birthday,
+      username: userData.username || userData.email.split('@')[0],
+      firstName: userData.firstName || '',
+      lastName: userData.lastName || '',
+      birthday: userData.birthday ? new Date(userData.birthday) : undefined,
       isVerified: false,
       badges: [],
       endorsements: [],

@@ -1,0 +1,23 @@
+{
+  "name": "sharesync",
+  "version": "1.0.0",
+  "description": "ShareSync is a collaborative project management platform with real-time updates, task management, and team engagement features.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArtificalManny/ShareSync.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ArtificalManny/ShareSync/issues"
+  },
+  "homepage": "https://github.com/ArtificalManny/ShareSync#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.2"
+  }
+}
