@@ -11,6 +11,7 @@ import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { lightTheme, darkTheme } from './styles/theme';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -25,22 +26,24 @@ function App() {
   };
 
   return (
-    <ThemeProvider value={{ currentTheme, isDarkMode, toggleTheme }}>
-      <Router>
-        <Header />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/project/:id" element={<ProjectHome />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/recover" element={<Recover />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/verify-email/:token" element={<VerifyEmail />} />
-        </Routes>
-      </Router>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider value={{ currentTheme, isDarkMode, toggleTheme }}>
+        <Router>
+          <Header />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/project/:id" element={<ProjectHome />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/recover" element={<Recover />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/verify-email/:token" element={<VerifyEmail />} />
+          </Routes>
+        </Router>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
