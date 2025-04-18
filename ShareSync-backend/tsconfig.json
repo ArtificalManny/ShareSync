@@ -21,6 +21,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "app.module.ts"],
+  "include": ["src/**/*", "app.module.ts", "../ShareSync-frontend-backup/src/axios.ts"],
   "exclude": ["node_modules", "dist"]
 }
