@@ -5,9 +5,9 @@ interface Theme {
   text: string;
   primary: string;
   secondary: string;
-  border?: string;
-  buttonBackground?: string;
-  buttonText?: string;
+  border: string;
+  buttonBackground: string;
+  buttonText: string;
 }
 
 interface ThemeContextType {
@@ -22,6 +22,9 @@ export const ThemeContext = createContext<ThemeContextType>({
     text: '#000000',
     primary: '#007bff',
     secondary: '#6c757d',
+    border: '#ccc',
+    buttonBackground: '#007bff',
+    buttonText: '#ffffff',
   },
   isDarkMode: false,
   toggleTheme: () => {},

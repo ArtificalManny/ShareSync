@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Login from './pages/Login';
 import ProjectHome from './pages/ProjectHome';
@@ -10,8 +10,14 @@ import Register from './pages/Register';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { UserProvider, useUser } from './contexts/UserContext';
 import { lightTheme, darkTheme } from './styles/theme';
 import ErrorBoundary from './components/ErrorBoundary';
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useUser();
+  return user ? <>{children}</> : <Navigate to="/login" replace />;
+};
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -26,24 +32,26 @@ function App() {
   };
 
   return (
-    <ErrorBoundary>
+    <UserProvider>
       <ThemeProvider value={{ currentTheme, isDarkMode, toggleTheme }}>
-        <Router>
-          <Header />
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/project/:id" element={<ProjectHome />} />
-            <Route path="/" element={<Home />} />
-            <Route path="/home" element={<Home />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/recover" element={<Recover />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
-            <Route path="/verify-email/:token" element={<VerifyEmail />} />
-          </Routes>
-        </Router>
+        <ErrorBoundary>
+          <Router>
+            <Header />
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/recover" element={<Recover />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="/verify-email/:token" element={<VerifyEmail />} />
+              <Route path="/project/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
+              <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+              <Route path="/" element={<Home />} />
+              <Route path="/home" element={<Home />} />
+            </Routes>
+          </Router>
+        </ErrorBoundary>
       </ThemeProvider>
-    </ErrorBoundary>
+    </UserProvider>
   );
 }
 

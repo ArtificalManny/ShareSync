@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react';
 import axios from '../axios';
 import PostItem from './PostItem';
 import { useTheme } from '../contexts/ThemeContext';
+import styled from 'styled-components';
+
+const PostsListContainer = styled.div`
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+`;
 
 interface Post {
   _id: string;
@@ -21,7 +27,7 @@ const PostsList = ({ projectId }: PostsListProps) => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await axios.get(`/posts/project/${projectId}`);
+        const response = await axios.get(`/posts/project/${projectId}`, { withCredentials: true });
         setPosts(response.data);
       } catch (error) {
         console.error('Error fetching posts:', error);
@@ -31,11 +37,11 @@ const PostsList = ({ projectId }: PostsListProps) => {
   }, [projectId]);
 
   return (
-    <div style={{ background: currentTheme.background, color: currentTheme.text, padding: '20px' }}>
+    <PostsListContainer theme={currentTheme}>
       {posts.map((post) => (
         <PostItem key={post._id} post={post} />
       ))}
-    </div>
+    </PostsListContainer>
   );
 };
 

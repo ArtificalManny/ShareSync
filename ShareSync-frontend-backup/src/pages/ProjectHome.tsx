@@ -4,37 +4,72 @@ import { useParams } from 'react-router-dom';
 import CreatePost from '../components/CreatePost';
 import PostsList from '../components/PostsList';
 import { useTheme } from '../contexts/ThemeContext';
+import styled from 'styled-components';
+
+const ProjectHomeContainer = styled.div`
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+  padding: 40px;
+  min-height: calc(100vh - 70px);
+`;
+
+const Title = styled.h1`
+  font-size: 32px;
+  margin-bottom: 20px;
+  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+`;
 
 interface Project {
   _id: string;
   name: string;
+  description: string;
+  creator: string;
 }
 
 const ProjectHome = () => {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { currentTheme } = useTheme();
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const response = await axios.get(`/projects/by-id/${id}`);
+        const response = await axios.get(`/projects/by-id/${id}`, { withCredentials: true });
         setProject(response.data);
-      } catch (error) {
-        console.error('Error fetching project:', error);
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to fetch project.');
       }
     };
     fetchProject();
   }, [id]);
 
-  if (!project) return <div style={{ background: currentTheme.background, color: currentTheme.text, padding: '20px' }}>Loading...</div>;
+  if (error) {
+    return (
+      <ProjectHomeContainer theme={currentTheme}>
+        <Title>Error</Title>
+        <p>{error}</p>
+      </ProjectHomeContainer>
+    );
+  }
+
+  if (!project) {
+    return (
+      <ProjectHomeContainer theme={currentTheme}>
+        <Title>Loading...</Title>
+      </ProjectHomeContainer>
+    );
+  }
 
   return (
-    <div style={{ background: currentTheme.background, color: currentTheme.text, padding: '20px' }}>
-      <h1>{project.name}</h1>
+    <ProjectHomeContainer theme={currentTheme}>
+      <Title>{project.name}</Title>
+      <p>{project.description}</p>
       <CreatePost projectId={id!} />
       <PostsList projectId={id!} />
-    </div>
+    </ProjectHomeContainer>
   );
 };
 
