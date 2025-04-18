@@ -1,44 +1,28 @@
-import { Controller, Post, Get, Put, Body, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Req } from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import { Task } from './schemas/task.schema';
+import { Request } from 'express';
 
 @Controller('tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  async create(
-    @Body('projectId') projectId: string,
-    @Body('name') name: string,
-    @Body('description') description: string,
-    @Body('assignee') assignee: string,
-    @Body('dueDate') dueDate: string,
+  async createTask(
+    @Body() taskDto: { projectId: string; title: string; description: string },
+    @Req() req: Request,
   ) {
-    try {
-      return await this.tasksService.create(projectId, name, description, assignee, dueDate);
-    } catch (error) {
-      console.error('Error in create task:', error);
-      throw error;
-    }
+    const user = (req as any).user;
+    return this.tasksService.createTask(taskDto.projectId, taskDto.title, taskDto.description, user.sub);
   }
 
-  @Get(':projectId')
-  async findByProject(@Param('projectId') projectId: string) {
-    try {
-      return await this.tasksService.findByProject(projectId);
-    } catch (error) {
-      console.error('Error in findByProject:', error);
-      throw error;
-    }
+  @Post(':id/complete')
+  async completeTask(@Param('id') taskId: string, @Req() req: Request) {
+    const user = (req as any).user;
+    return this.tasksService.completeTask(taskId, user.sub);
   }
 
-  @Put(':id')
-  async update(@Param('id') id: string, @Body() updates: Partial<Task>) {
-    try {
-      return await this.tasksService.update(id, updates);
-    } catch (error) {
-      console.error('Error in update task:', error);
-      throw error;
-    }
+  @Get('completed')
+  async getCompletedTasks() {
+    return this.tasksService.getCompletedTasks();
   }
 }

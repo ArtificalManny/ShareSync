@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import axios from '../axios';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { useSocket } from '../contexts/SocketContext';
+import { useUser } from '../contexts/UserContext';
 import styled from 'styled-components';
 
 const ProjectsContainer = styled.div`
@@ -39,8 +41,35 @@ const SidebarTitle = styled.h3`
   margin-bottom: 15px;
 `;
 
-const Notification = styled.div`
-  opacity: 0.7;
+const NotificationList = styled.ul`
+  list-style: none;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+`;
+
+const NotificationItem = styled.li`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+  transition: background 0.3s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+  }
+`;
+
+const Avatar = styled.img`
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+`;
+
+const NotificationMessage = styled.p`
+  flex: 1;
   font-size: 14px;
 `;
 
@@ -72,6 +101,26 @@ const CardTitle = styled.h4`
 const CardValue = styled.div`
   font-size: 24px;
   font-weight: bold;
+`;
+
+const TaskList = styled.ul`
+  list-style: none;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+`;
+
+const TaskItem = styled.li`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+  transition: background 0.3s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+  }
 `;
 
 const ProjectList = styled.ul`
@@ -166,12 +215,23 @@ interface Project {
   creator: string;
 }
 
+interface Task {
+  _id: string;
+  projectId: string;
+  title: string;
+  completedBy: string;
+  completedAt: Date;
+}
+
 const Projects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [newProject, setNewProject] = useState({ name: '', description: '', shareWith: '' });
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { currentTheme } = useTheme();
+  const { notifications } = useSocket();
+  const { user } = useUser();
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -186,7 +246,22 @@ const Projects = () => {
         setError(err.response?.data?.message || 'Failed to fetch projects.');
       }
     };
+
+    const fetchCompletedTasks = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('/tasks/completed', {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setCompletedTasks(response.data);
+      } catch (err: any) {
+        console.error('Failed to fetch completed tasks:', err);
+      }
+    };
+
     fetchProjects();
+    fetchCompletedTasks();
   }, []);
 
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -239,8 +314,16 @@ const Projects = () => {
           <Button type="submit" theme={currentTheme}>Create Project</Button>
         </Form>
         {error && <ErrorMessage>{error}</ErrorMessage>}
-        <SidebarTitle theme={currentTheme} style={{ marginTop: '20px' }}>Notifications (0)</SidebarTitle>
-        <Notification>No notifications yet.</Notification>
+        <SidebarTitle theme={currentTheme} style={{ marginTop: '20px' }}>Notifications ({notifications.length})</SidebarTitle>
+        <NotificationList>
+          {notifications.map((notif, index) => (
+            <NotificationItem key={index} theme={currentTheme}>
+              <Avatar src="https://via.placeholder.com/30" alt="User avatar" />
+              <NotificationMessage>{notif.message}</NotificationMessage>
+            </NotificationItem>
+          ))}
+          {notifications.length === 0 && <NotificationMessage>No notifications yet.</NotificationMessage>}
+        </NotificationList>
       </Sidebar>
       <MainContent>
         <Card theme={currentTheme}>
@@ -249,7 +332,17 @@ const Projects = () => {
         </Card>
         <Card theme={currentTheme}>
           <CardTitle theme={currentTheme}>Tasks Completed</CardTitle>
-          <CardValue theme={currentTheme}>14</CardValue>
+          <TaskList>
+            {completedTasks.map((task) => (
+              <TaskItem key={task._id} theme={currentTheme}>
+                <Avatar src="https://via.placeholder.com/30" alt="User avatar" />
+                <NotificationMessage>
+                  {user?.email} completed task "{task.title}" in project {task.projectId}
+                </NotificationMessage>
+              </TaskItem>
+            ))}
+            {completedTasks.length === 0 && <NotificationMessage>No tasks completed yet.</NotificationMessage>}
+          </TaskList>
         </Card>
         <Card theme={currentTheme}>
           <CardTitle theme={currentTheme}>Current Projects</CardTitle>
@@ -261,7 +354,7 @@ const Projects = () => {
         </Card>
         <Card theme={currentTheme}>
           <CardTitle theme={currentTheme}>Team Activity</CardTitle>
-          <Notification>No recent activities.</Notification>
+          <NotificationMessage>No recent activities.</NotificationMessage>
         </Card>
         <Card theme={currentTheme}>
           <CardTitle theme={currentTheme}>Your Projects</CardTitle>

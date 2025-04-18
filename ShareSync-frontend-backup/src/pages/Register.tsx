@@ -44,10 +44,6 @@ const Title = styled.h2`
   text-align: center;
   margin-bottom: 20px;
   font-size: 28px;
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 5px ${({ theme }) => theme.glow};
 `;
 
 const Form = styled.form`
@@ -102,6 +98,10 @@ const ErrorMessage = styled.p`
 const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [birthday, setBirthday] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -112,7 +112,14 @@ const Register = () => {
     setError(null);
     setLoading(true);
     try {
-      await axios.post('/auth/register', { email, password }, { withCredentials: true });
+      await axios.post('/auth/register', {
+        email,
+        password,
+        username,
+        firstName,
+        lastName,
+        birthday,
+      }, { withCredentials: true });
       navigate('/login');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
@@ -130,6 +137,42 @@ const Register = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
+          theme={currentTheme}
+          required
+          disabled={loading}
+        />
+        <Input
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Username"
+          theme={currentTheme}
+          required
+          disabled={loading}
+        />
+        <Input
+          type="text"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          placeholder="First Name"
+          theme={currentTheme}
+          required
+          disabled={loading}
+        />
+        <Input
+          type="text"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          placeholder="Last Name"
+          theme={currentTheme}
+          required
+          disabled={loading}
+        />
+        <Input
+          type="date"
+          value={birthday}
+          onChange={(e) => setBirthday(e.target.value)}
+          placeholder="Birthday"
           theme={currentTheme}
           required
           disabled={loading}

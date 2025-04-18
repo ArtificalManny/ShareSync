@@ -19,10 +19,17 @@ export class AuthController {
   }
 
   @Post('register')
-  async register(@Body() registerDto: { email: string; password: string }) {
+  async register(@Body() registerDto: { email: string; password: string; username: string; firstName: string; lastName: string; birthday: string }) {
     console.log('AuthController: Register request received:', registerDto);
     try {
-      const user = await this.authService.register(registerDto.email, registerDto.password);
+      const user = await this.authService.register({
+        email: registerDto.email,
+        password: registerDto.password,
+        username: registerDto.username,
+        firstName: registerDto.firstName,
+        lastName: registerDto.lastName,
+        birthday: new Date(registerDto.birthday),
+      });
       return user;
     } catch (error) {
       console.error('AuthController: Register error:', error.message);

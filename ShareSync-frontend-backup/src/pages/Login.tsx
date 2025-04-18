@@ -45,10 +45,6 @@ const Title = styled.h2`
   text-align: center;
   margin-bottom: 20px;
   font-size: 28px;
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 5px ${({ theme }) => theme.glow};
 `;
 
 const Form = styled.form`

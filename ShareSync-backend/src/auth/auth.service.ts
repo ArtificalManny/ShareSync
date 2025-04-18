@@ -19,30 +19,30 @@ export class AuthService {
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      console.log('AuthService: Password comparison failed for user:', email);
       throw new UnauthorizedException('Invalid username or password');
     }
     const payload = { sub: user._id, email: user.email };
     return {
-      user: { _id: user._id, email: user.email },
+      user: { _id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName },
       access_token: this.jwtService.sign(payload),
     };
   }
 
-  async register(email: string, password: string) {
-    console.log('AuthService: Register attempt with email:', email);
-    const existingUser = await this.usersService.findOneByEmail(email);
+  async register(userData: { email: string; password: string; username: string; firstName: string; lastName: string; birthday: Date }) {
+    console.log('AuthService: Register attempt with email:', userData.email);
+    const existingUser = await this.usersService.findOneByEmail(userData.email);
     if (existingUser) {
       throw new UnauthorizedException('User already exists');
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    // Provide default values for required fields
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
     const user = await this.usersService.create({
-      email,
+      email: userData.email,
       password: hashedPassword,
-      username: email.split('@')[0], // Default username from email
-      firstName: '',
-      lastName: '',
-      birthday: new Date(), // Default birthday (current date)
+      username: userData.username,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      birthday: userData.birthday,
       isVerified: false,
       badges: [],
       endorsements: [],
@@ -50,8 +50,9 @@ export class AuthService {
       following: [],
       hobbies: [],
       points: 0,
+      notifications: [],
     });
-    return { _id: user._id, email: user.email };
+    return { _id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName };
   }
 
   async getCurrentUser(userId: string) {
@@ -59,6 +60,6 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    return { _id: user._id, email: user.email };
+    return { _id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName };
   }
 }

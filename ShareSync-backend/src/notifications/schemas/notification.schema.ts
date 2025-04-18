@@ -1,24 +1,25 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type NotificationDocument = Notification & Document;
-
-@Schema({ timestamps: true })
-export class Notification {
+@Schema()
+export class Notification extends Document {
   @Prop({ required: true })
-  userId: string; // The user receiving the notification
+  userId: string;
 
   @Prop({ required: true })
-  type: string; // e.g., "like", "comment", "project_update"
+  message: string;
 
   @Prop({ required: true })
-  message: string; // e.g., "Your project has a new comment!"
+  timestamp: Date;
 
   @Prop({ default: false })
-  isRead: boolean; // Whether the user has read the notification
+  read: boolean;
 
   @Prop()
-  relatedId: string; // ID of the related post, project, or comment
+  type: string; // e.g., 'task_completed', 'comment', 'project_update'
+
+  @Prop()
+  relatedId: string; // e.g., taskId, commentId, projectId
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
