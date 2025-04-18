@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 
 const ResetPassword = () => {
-  const { token } = useParams();
+  const { token } = useParams<{ token: string }>();
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
   const { currentTheme } = useTheme();
@@ -12,23 +12,29 @@ const ResetPassword = () => {
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`/auth/reset-password/${token}`, { password });
+      await axios.post(`/auth/reset-password`, { token, password });
       navigate('/login');
     } catch (error) {
-      console.error('Reset failed:', error);
+      console.error('Password reset failed:', error);
     }
   };
 
   return (
-    <form onSubmit={handleReset} style={{ background: currentTheme.background, color: currentTheme.text }}>
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="New Password"
-      />
-      <button type="submit">Reset Password</button>
-    </form>
+    <div style={{ background: currentTheme.background, color: currentTheme.text, padding: '20px' }}>
+      <h2>Reset Password</h2>
+      <form onSubmit={handleReset}>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="New Password"
+          style={{ marginBottom: '10px', padding: '5px', width: '100%' }}
+        />
+        <button type="submit" style={{ background: currentTheme.primary, color: currentTheme.buttonText, padding: '5px 10px' }}>
+          Reset Password
+        </button>
+      </form>
+    </div>
   );
 };
 

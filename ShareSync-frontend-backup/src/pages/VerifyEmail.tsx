@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../axios';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 
 const VerifyEmail = () => {
-  const { token } = useParams();
+  const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { currentTheme } = useTheme();
 
@@ -14,13 +14,17 @@ const VerifyEmail = () => {
         await axios.get(`/auth/verify-email/${token}`);
         navigate('/login');
       } catch (error) {
-        console.error('Verification failed:', error);
+        console.error('Email verification failed:', error);
       }
     };
     verifyEmail();
   }, [token, navigate]);
 
-  return <div style={{ background: currentTheme.background, color: currentTheme.text }}>Verifying email...</div>;
+  return (
+    <div style={{ background: currentTheme.background, color: currentTheme.text, padding: '20px' }}>
+      Verifying email...
+    </div>
+  );
 };
 
 export default VerifyEmail;

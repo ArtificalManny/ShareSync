@@ -20,21 +20,28 @@ const Register = () => {
   };
 
   return (
-    <form onSubmit={handleRegister} style={{ background: currentTheme.background, color: currentTheme.text }}>
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Email"
-      />
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-      />
-      <button type="submit">Register</button>
-    </form>
+    <div style={{ background: currentTheme.background, color: currentTheme.text, padding: '20px' }}>
+      <h2>Register</h2>
+      <form onSubmit={handleRegister}>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          style={{ marginBottom: '10px', padding: '5px', width: '100%' }}
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          style={{ marginBottom: '10px', padding: '5px', width: '100%' }}
+        />
+        <button type="submit" style={{ background: currentTheme.primary, color: currentTheme.buttonText, padding: '5px 10px' }}>
+          Register
+        </button>
+      </form>
+    </div>
   );
 };
 

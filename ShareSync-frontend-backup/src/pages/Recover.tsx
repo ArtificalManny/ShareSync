@@ -11,23 +11,29 @@ const Recover = () => {
   const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('/auth/recover', { email });
+      await axios.post('/auth/forgot-password', { email });
       navigate('/login');
     } catch (error) {
-      console.error('Recovery failed:', error);
+      console.error('Password recovery failed:', error);
     }
   };
 
   return (
-    <form onSubmit={handleRecover} style={{ background: currentTheme.background, color: currentTheme.text }}>
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Email"
-      />
-      <button type="submit">Recover Password</button>
-    </form>
+    <div style={{ background: currentTheme.background, color: currentTheme.text, padding: '20px' }}>
+      <h2>Recover Password</h2>
+      <form onSubmit={handleRecover}>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          style={{ marginBottom: '10px', padding: '5px', width: '100%' }}
+        />
+        <button type="submit" style={{ background: currentTheme.primary, color: currentTheme.buttonText, padding: '5px 10px' }}>
+          Recover Password
+        </button>
+      </form>
+    </div>
   );
 };
 

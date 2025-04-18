@@ -7,7 +7,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const { currentTheme, isDarkMode } = useTheme();
+  const { currentTheme } = useTheme();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,20 +21,25 @@ const Login = () => {
 
   return (
     <div style={{ background: currentTheme.background, color: currentTheme.text, padding: '20px' }}>
+      <h2>Login</h2>
       <form onSubmit={handleLogin}>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
+          style={{ marginBottom: '10px', padding: '5px', width: '100%' }}
         />
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
+          style={{ marginBottom: '10px', padding: '5px', width: '100%' }}
         />
-        <button type="submit">Login</button>
+        <button type="submit" style={{ background: currentTheme.primary, color: currentTheme.buttonText, padding: '5px 10px' }}>
+          Login
+        </button>
       </form>
     </div>
   );
