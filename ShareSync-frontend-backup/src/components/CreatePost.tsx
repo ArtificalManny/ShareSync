@@ -2,7 +2,11 @@ import { useState } from 'react';
 import axios from '../axios';
 import { useTheme } from '../contexts/ThemeContext';
 
-const CreatePost = ({ projectId }: { projectId: string }) => {
+interface CreatePostProps {
+  projectId: string;
+}
+
+const CreatePost = ({ projectId }: CreatePostProps) => {
   const [content, setContent] = useState('');
   const { currentTheme } = useTheme();
 
