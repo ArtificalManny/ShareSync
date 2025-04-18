@@ -81,6 +81,7 @@ const Login = () => {
   const [email, setEmail] = useState('eamonrivas@gmail.com');
   const [password, setPassword] = useState('S7mR0!%uMZ<$[w%@');
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { currentTheme } = useTheme();
   const { setUser } = useUser();
@@ -88,12 +89,15 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
     try {
       const response = await axios.post('/auth/login', { email, password }, { withCredentials: true });
       setUser(response.data.user);
       navigate('/projects');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials and try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -108,6 +112,7 @@ const Login = () => {
           placeholder="Email"
           theme={currentTheme}
           required
+          disabled={loading}
         />
         <Input
           type="password"
@@ -116,8 +121,11 @@ const Login = () => {
           placeholder="Password"
           theme={currentTheme}
           required
+          disabled={loading}
         />
-        <Button type="submit" theme={currentTheme}>Login</Button>
+        <Button type="submit" theme={currentTheme} disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
+        </Button>
       </Form>
       {error && <ErrorMessage>{error}</ErrorMessage>}
     </LoginContainer>

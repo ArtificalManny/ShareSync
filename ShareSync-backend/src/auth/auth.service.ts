@@ -45,23 +45,18 @@ export class AuthService {
     }
   }
 
-  async login(user: any) {
-    try {
-      const payload = { email: user.email, sub: user._id };
-      const result = {
-        accessToken: this.jwtService.sign(payload),
-        user: {
-          _id: user._id,
-          username: user.username,
-          email: user.email,
-        },
-      };
-      this.loggingService.log(`User ${user.email} logged in successfully`);
-      return result;
-    } catch (err) {
-      this.loggingService.error(`Error generating login token for user ${user.email}`, err.stack);
-      throw new UnauthorizedException('Error generating login token: ' + err.message);
+  async login(email: string, password: string) {
+    console.log('AuthService: Login attempt with identifier:', email);
+    const user = await this.usersService.findOneByEmail(email);
+    if (!user) {
+      console.log('AuthService: User not found for identifier:', email);
+      throw new Error('Invalid username or password');
     }
+    const isPasswordValid = await this.validatePassword(password, user.password);
+    if (!isPasswordValid) {
+      throw new Error('Invalid username or password');
+    }
+    return user;
   }
 
   async register(username: string, email: string, password: string) {
