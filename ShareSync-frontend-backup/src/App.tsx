@@ -5,9 +5,6 @@ import Login from './pages/Login';
 import ProjectHome from './pages/ProjectHome';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
-import PublicProjects from './pages/PublicProjects';
-import Search from './pages/Search';
-import TeamDashboard from './pages/TeamDashboard';
 import Recover from './pages/Recover';
 import Register from './pages/Register';
 import ResetPassword from './pages/ResetPassword';
@@ -37,9 +34,6 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
           <Route path="/projects" element={<Projects />} />
-          <Route path="/public-projects" element={<PublicProjects />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/team-dashboard" element={<TeamDashboard />} />
           <Route path="/recover" element={<Recover />} />
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
