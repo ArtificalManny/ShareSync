@@ -1,29 +1,18 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 
 const Header = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate();
-  const { currentTheme, isDarkMode, toggleTheme } = useTheme();
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery) navigate(`/search?q=${searchQuery}`);
-  };
+  const { currentTheme, toggleTheme } = useTheme();
 
   return (
-    <header style={{ background: currentTheme.primary, color: currentTheme.text, padding: '10px' }}>
+    <header style={{ background: currentTheme.background, color: currentTheme.text, padding: '10px' }}>
       <nav>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search..."
-          style={{ marginRight: '10px' }}
-        />
-        <button onClick={handleSearch}>Search</button>
-        <button onClick={toggleTheme}>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</button>
+        <Link to="/" style={{ color: currentTheme.primary, marginRight: '10px' }}>Home</Link>
+        <Link to="/projects" style={{ color: currentTheme.primary, marginRight: '10px' }}>Projects</Link>
+        <Link to="/login" style={{ color: currentTheme.primary, marginRight: '10px' }}>Login</Link>
+        <button onClick={toggleTheme} style={{ background: currentTheme.primary, color: currentTheme.buttonText, padding: '5px 10px' }}>
+          Toggle Theme
+        </button>
       </nav>
     </header>
   );

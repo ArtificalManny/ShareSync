@@ -36,8 +36,8 @@ function App() {
           <Route path="/projects" element={<Projects />} />
           <Route path="/recover" element={<Recover />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/verify-email/:token" element={<VerifyEmail />} />
         </Routes>
       </Router>
     </ThemeProvider>
