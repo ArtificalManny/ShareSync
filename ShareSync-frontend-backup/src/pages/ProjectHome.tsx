@@ -11,14 +11,35 @@ const ProjectHomeContainer = styled.div`
   color: ${({ theme }) => theme.text};
   padding: 40px;
   min-height: calc(100vh - 70px);
+  position: relative;
+
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, ${({ theme }) => theme.glow}, transparent);
+    opacity: 0.2;
+    z-index: -1;
+  }
 `;
 
 const Title = styled.h1`
-  font-size: 32px;
+  font-size: 36px;
   margin-bottom: 20px;
   background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 10px ${({ theme }) => theme.glow};
+`;
+
+const Description = styled.p`
+  font-size: 16px;
+  opacity: 0.8;
+  margin-bottom: 20px;
+  text-shadow: 0 0 5px ${({ theme }) => theme.glow};
 `;
 
 interface Project {
@@ -37,7 +58,11 @@ const ProjectHome = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const response = await axios.get(`/projects/by-id/${id}`, { withCredentials: true });
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`/projects/by-id/${id}`, {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setProject(response.data);
       } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to fetch project.');
@@ -50,7 +75,7 @@ const ProjectHome = () => {
     return (
       <ProjectHomeContainer theme={currentTheme}>
         <Title>Error</Title>
-        <p>{error}</p>
+        <Description>{error}</Description>
       </ProjectHomeContainer>
     );
   }
@@ -66,7 +91,7 @@ const ProjectHome = () => {
   return (
     <ProjectHomeContainer theme={currentTheme}>
       <Title>{project.name}</Title>
-      <p>{project.description}</p>
+      <Description>{project.description}</Description>
       <CreatePost projectId={id!} />
       <PostsList projectId={id!} />
     </ProjectHomeContainer>

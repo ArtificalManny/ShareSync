@@ -27,7 +27,11 @@ const PostsList = ({ projectId }: PostsListProps) => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await axios.get(`/posts/project/${projectId}`, { withCredentials: true });
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`/posts/project/${projectId}`, {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setPosts(response.data);
       } catch (error) {
         console.error('Error fetching posts:', error);

@@ -4,11 +4,11 @@ import { useTheme } from '../contexts/ThemeContext';
 import styled from 'styled-components';
 
 const CreatePostContainer = styled.div`
-  background: ${({ theme }) => theme.background === '#ffffff' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'};
+  background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
   padding: 20px;
-  border-radius: 10px;
+  border-radius: 15px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 15px ${({ theme }) => theme.glow};
 `;
 
 const Form = styled.form`
@@ -22,28 +22,32 @@ const Textarea = styled.textarea`
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 5px;
   font-size: 14px;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
   outline: none;
   resize: none;
   height: 100px;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 
   &:focus {
     border-color: ${({ theme }) => theme.primary};
+    box-shadow: 0 0 10px ${({ theme }) => theme.glow};
   }
 `;
 
 const Button = styled.button`
-  background: ${({ theme }) => theme.primary};
+  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
   color: ${({ theme }) => theme.buttonText};
   padding: 10px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
-  transition: background 0.3s ease, transform 0.1s ease;
+  box-shadow: 0 0 10px ${({ theme }) => theme.glow};
+  transition: transform 0.3s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.secondary};
+    transform: scale(1.05);
   }
 
   &:active {
@@ -55,6 +59,7 @@ const SuccessMessage = styled.p`
   color: #55ff55;
   text-align: center;
   margin-top: 10px;
+  text-shadow: 0 0 5px rgba(85, 255, 85, 0.5);
   animation: fadeIn 0.5s ease-in-out;
 
   @keyframes fadeIn {
@@ -79,7 +84,11 @@ const CreatePost = ({ projectId }: CreatePostProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('/posts', { projectId, content }, { withCredentials: true });
+      const token = localStorage.getItem('token');
+      await axios.post('/posts', { projectId, content }, {
+        withCredentials: true,
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setContent('');
       setSuccess('Post created successfully!');
       setTimeout(() => setSuccess(null), 3000);

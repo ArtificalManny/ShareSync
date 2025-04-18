@@ -12,19 +12,35 @@ const ProjectsContainer = styled.div`
   display: grid;
   grid-template-columns: 1fr 3fr;
   gap: 20px;
+  position: relative;
+
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, ${({ theme }) => theme.glow}, transparent);
+    opacity: 0.2;
+    z-index: -1;
+  }
 `;
 
 const Sidebar = styled.div`
-  background: ${({ theme }) => theme.background === '#ffffff' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'};
+  background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 15px;
+  box-shadow: 0 0 15px ${({ theme }) => theme.glow};
 `;
 
 const SidebarTitle = styled.h3`
-  font-size: 18px;
+  font-size: 20px;
   margin-bottom: 15px;
-  color: ${({ theme }) => theme.primary};
+  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 5px ${({ theme }) => theme.glow};
 `;
 
 const Notification = styled.div`
@@ -39,22 +55,25 @@ const MainContent = styled.div`
 `;
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.background === '#ffffff' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'};
+  background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 15px;
+  box-shadow: 0 0 15px ${({ theme }) => theme.glow};
   text-align: center;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 
   &:hover {
     transform: translateY(-5px);
+    box-shadow: 0 0 25px ${({ theme }) => theme.glow};
   }
 `;
 
 const CardTitle = styled.h4`
   font-size: 16px;
   margin-bottom: 10px;
-  color: ${({ theme }) => theme.primary};
+  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 `;
 
 const CardValue = styled.div`
@@ -74,11 +93,12 @@ const ProjectItem = styled.li`
   padding: 10px;
   border-bottom: 1px solid ${({ theme }) => theme.border};
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.1s ease;
+  transition: background 0.3s ease, transform 0.1s ease, text-shadow 0.3s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.background === '#ffffff' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'};
+    background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
     transform: scale(1.02);
+    text-shadow: 0 0 5px ${({ theme }) => theme.glow};
   }
 `;
 
@@ -93,11 +113,14 @@ const Input = styled.input`
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 5px;
   font-size: 14px;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
   outline: none;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 
   &:focus {
     border-color: ${({ theme }) => theme.primary};
+    box-shadow: 0 0 10px ${({ theme }) => theme.glow};
   }
 `;
 
@@ -106,28 +129,32 @@ const Textarea = styled.textarea`
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 5px;
   font-size: 14px;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
   outline: none;
   resize: none;
   height: 100px;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 
   &:focus {
     border-color: ${({ theme }) => theme.primary};
+    box-shadow: 0 0 10px ${({ theme }) => theme.glow};
   }
 `;
 
 const Button = styled.button`
-  background: ${({ theme }) => theme.primary};
+  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
   color: ${({ theme }) => theme.buttonText};
   padding: 10px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
-  transition: background 0.3s ease, transform 0.1s ease;
+  box-shadow: 0 0 10px ${({ theme }) => theme.glow};
+  transition: transform 0.3s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.secondary};
+    transform: scale(1.05);
   }
 
   &:active {
@@ -139,6 +166,7 @@ const ErrorMessage = styled.p`
   color: #ff5555;
   font-size: 14px;
   margin-top: 10px;
+  text-shadow: 0 0 5px rgba(255, 85, 85, 0.5);
 `;
 
 interface Project {
@@ -158,7 +186,11 @@ const Projects = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get('/projects', { withCredentials: true });
+        const token = localStorage.getItem('token');
+        const response = await axios.get('/projects', {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setProjects(response.data);
       } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to fetch projects.');
@@ -171,11 +203,15 @@ const Projects = () => {
     e.preventDefault();
     setError(null);
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.post('/projects', {
         name: newProject.name,
         description: newProject.description,
         shareWith: newProject.shareWith ? [newProject.shareWith] : [],
-      }, { withCredentials: true });
+      }, {
+        withCredentials: true,
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setProjects([...projects, response.data]);
       setNewProject({ name: '', description: '', shareWith: '' });
     } catch (err: any) {

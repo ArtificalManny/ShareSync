@@ -10,21 +10,24 @@ const HeaderContainer = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px ${({ theme }) => theme.glow};
   position: sticky;
   top: 0;
   z-index: 1000;
 `;
 
 const Logo = styled.div`
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
-  color: ${({ theme }) => theme.primary};
+  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   cursor: pointer;
-  transition: color 0.3s ease;
+  text-shadow: 0 0 10px ${({ theme }) => theme.glow};
+  transition: transform 0.3s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.secondary};
+    transform: scale(1.05);
   }
 `;
 
@@ -35,27 +38,30 @@ const Nav = styled.nav`
 `;
 
 const NavLink = styled(Link)`
-  color: ${({ theme }) => theme.primary};
+  color: ${({ theme }) => theme.text};
   text-decoration: none;
   font-size: 16px;
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.secondary};
+    color: ${({ theme }) => theme.primary};
+    text-shadow: 0 0 5px ${({ theme }) => theme.glow};
   }
 `;
 
 const ThemeButton = styled.button`
-  background: ${({ theme }) => theme.primary};
+  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
   color: ${({ theme }) => theme.buttonText};
   border: none;
   padding: 8px 16px;
-  border-radius: 5px;
+  border-radius: 25px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  font-size: 14px;
+  box-shadow: 0 0 10px ${({ theme }) => theme.glow};
+  transition: transform 0.3s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.secondary};
+    transform: scale(1.05);
   }
 `;
 
@@ -67,14 +73,15 @@ const UserInfo = styled.div`
 
 const LogoutButton = styled.button`
   background: transparent;
-  color: ${({ theme }) => theme.primary};
+  color: ${({ theme }) => theme.text};
   border: none;
   cursor: pointer;
   font-size: 14px;
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.secondary};
+    color: ${({ theme }) => theme.primary};
+    text-shadow: 0 0 5px ${({ theme }) => theme.glow};
   }
 `;
 
@@ -85,6 +92,7 @@ const Header = () => {
 
   const handleLogout = async () => {
     await logout();
+    localStorage.removeItem('token');
     navigate('/login');
   };
 

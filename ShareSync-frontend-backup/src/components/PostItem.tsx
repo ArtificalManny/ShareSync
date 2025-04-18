@@ -3,35 +3,38 @@ import { likePost } from '../store/slices/postsSlice';
 import styled from 'styled-components';
 
 const PostItemContainer = styled.div`
-  background: ${({ theme }) => theme.background === '#ffffff' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'};
+  background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
   padding: 20px;
-  border-radius: 10px;
+  border-radius: 15px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
+  box-shadow: 0 0 15px ${({ theme }) => theme.glow};
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 
   &:hover {
     transform: translateY(-5px);
+    box-shadow: 0 0 25px ${({ theme }) => theme.glow};
   }
 `;
 
 const Content = styled.p`
   margin-bottom: 10px;
   font-size: 16px;
+  text-shadow: 0 0 5px ${({ theme }) => theme.glow};
 `;
 
 const LikeButton = styled.button`
-  background: ${({ theme }) => theme.primary};
+  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
   color: ${({ theme }) => theme.buttonText};
   border: none;
   padding: 5px 10px;
   border-radius: 5px;
   cursor: pointer;
   font-size: 14px;
-  transition: background 0.3s ease, transform 0.1s ease;
+  box-shadow: 0 0 10px ${({ theme }) => theme.glow};
+  transition: transform 0.3s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.secondary};
+    transform: scale(1.05);
   }
 
   &:active {
@@ -57,9 +60,9 @@ const PostItem = ({ post }: PostItemProps) => {
   };
 
   return (
-    <PostItemContainer theme={{ primary: '#007bff', secondary: '#6c757d', buttonText: '#ffffff' }}>
-      <Content>{post.content}</Content>
-      <LikeButton onClick={handleLike} theme={{ primary: '#007bff', secondary: '#6c757d', buttonText: '#ffffff' }}>
+    <PostItemContainer theme={currentTheme}>
+      <Content theme={currentTheme}>{post.content}</Content>
+      <LikeButton onClick={handleLike} theme={currentTheme}>
         Like ({post.likes})
       </LikeButton>
     </PostItemContainer>
