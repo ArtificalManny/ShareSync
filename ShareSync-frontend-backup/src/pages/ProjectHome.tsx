@@ -29,17 +29,12 @@ const ProjectHomeContainer = styled.div`
 const Title = styled.h1`
   font-size: 36px;
   margin-bottom: 20px;
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 10px ${({ theme }) => theme.glow};
 `;
 
 const Description = styled.p`
   font-size: 16px;
   opacity: 0.8;
   margin-bottom: 20px;
-  text-shadow: 0 0 5px ${({ theme }) => theme.glow};
 `;
 
 interface Project {

@@ -35,7 +35,30 @@ export class AuthService {
       throw new UnauthorizedException('User already exists');
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await this.usersService.create({ email, password: hashedPassword });
+    // Provide default values for required fields
+    const user = await this.usersService.create({
+      email,
+      password: hashedPassword,
+      username: email.split('@')[0], // Default username from email
+      firstName: '',
+      lastName: '',
+      birthday: new Date(), // Default birthday (current date)
+      isVerified: false,
+      badges: [],
+      endorsements: [],
+      followers: [],
+      following: [],
+      hobbies: [],
+      points: 0,
+    });
+    return { _id: user._id, email: user.email };
+  }
+
+  async getCurrentUser(userId: string) {
+    const user = await this.usersService.findOneById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
     return { _id: user._id, email: user.email };
   }
 }

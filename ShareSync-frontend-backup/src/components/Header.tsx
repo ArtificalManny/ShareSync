@@ -92,7 +92,6 @@ const Header = () => {
 
   const handleLogout = async () => {
     await logout();
-    localStorage.removeItem('token');
     navigate('/login');
   };
 

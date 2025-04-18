@@ -37,10 +37,6 @@ const Sidebar = styled.div`
 const SidebarTitle = styled.h3`
   font-size: 20px;
   margin-bottom: 15px;
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 5px ${({ theme }) => theme.glow};
 `;
 
 const Notification = styled.div`
@@ -71,17 +67,11 @@ const Card = styled.div`
 const CardTitle = styled.h4`
   font-size: 16px;
   margin-bottom: 10px;
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 `;
 
 const CardValue = styled.div`
   font-size: 24px;
   font-weight: bold;
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 `;
 
 const ProjectList = styled.ul`

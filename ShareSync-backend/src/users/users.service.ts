@@ -1,35 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { User } from './user.schema';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(@InjectModel('User') private userModel: Model<User>) {}
 
-  async findByEmail(email: string) {
+  async findOneByEmail(email: string): Promise<User | null> {
     return this.userModel.findOne({ email }).exec();
   }
 
-  async create(createUserDto: { username: string; email: string; password: string }) {
-    const user = new this.userModel({ ...createUserDto, points: 0 });
-    return user.save();
+  async findOneById(id: string): Promise<User | null> {
+    return this.userModel.findById(id).exec();
   }
 
-  async addPoints(userId: string, points: number) {
-    return this.userModel.findByIdAndUpdate(
-      userId,
-      { $inc: { points } },
-      { new: true },
-    ).exec();
-  }
-
-  async getPoints(userId: string) {
-    const user = await this.userModel.findById(userId).exec();
-    return { points: user?.points || 0 };
-  }
-
-  async getLeaderboard() {
-    return this.userModel.find().sort({ points: -1 }).limit(10).select('username points').exec();
+  async create(userData: Partial<User>): Promise<User> {
+    const newUser = new this.userModel(userData);
+    return newUser.save();
   }
 }

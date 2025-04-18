@@ -20,11 +20,26 @@ const GlobalStyles = createGlobalStyle`
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Orbitron', sans-serif;
     letter-spacing: 1px;
+    background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 10px ${({ theme }) => theme.glow};
+    animation: textGlow 2s ease-in-out infinite;
+
+    @keyframes textGlow {
+      0% { text-shadow: 0 0 10px ${({ theme }) => theme.glow}; }
+      50% { text-shadow: 0 0 20px ${({ theme }) => theme.glow}; }
+      100% { text-shadow: 0 0 10px ${({ theme }) => theme.glow}; }
+    }
   }
 
   a {
     text-decoration: none;
-    transition: color 0.3s ease;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+
+    &:hover {
+      text-shadow: 0 0 5px ${({ theme }) => theme.glow};
+    }
   }
 
   button {

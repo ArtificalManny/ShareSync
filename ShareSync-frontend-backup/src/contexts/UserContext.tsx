@@ -24,11 +24,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get('/auth/me', { withCredentials: true });
-        setUser(response.data);
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await axios.get('/auth/me', {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          });
+          setUser(response.data);
+        }
       } catch (error) {
         console.error('Failed to fetch user:', error);
         setUser(null);
+        localStorage.removeItem('token');
       }
     };
     fetchUser();
@@ -38,6 +45,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await axios.post('/auth/logout', {}, { withCredentials: true });
       setUser(null);
+      localStorage.removeItem('token');
     } catch (error) {
       console.error('Logout failed:', error);
     }

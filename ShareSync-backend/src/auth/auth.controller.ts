@@ -1,5 +1,6 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, Get, UnauthorizedException, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { Request } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -10,7 +11,7 @@ export class AuthController {
     console.log('AuthController: Login request received:', loginDto);
     try {
       const user = await this.authService.login(loginDto.email, loginDto.password);
-      return { user };
+      return user;
     } catch (error) {
       console.error('AuthController: Login error:', error.message);
       throw new UnauthorizedException(error.message);
@@ -22,11 +23,20 @@ export class AuthController {
     console.log('AuthController: Register request received:', registerDto);
     try {
       const user = await this.authService.register(registerDto.email, registerDto.password);
-      return { user };
+      return user;
     } catch (error) {
       console.error('AuthController: Register error:', error.message);
       throw new UnauthorizedException(error.message);
     }
+  }
+
+  @Get('me')
+  async getCurrentUser(@Req() req: Request) {
+    const user = (req as any).user;
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+    return this.authService.getCurrentUser(user.sub);
   }
 
   @Post('logout')
