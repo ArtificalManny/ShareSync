@@ -21,15 +21,17 @@ const CreatePost = ({ projectId }: CreatePostProps) => {
   };
 
   return (
-    <div style={{ background: currentTheme.background, color: currentTheme.text }}>
+    <div style={{ background: currentTheme.background, color: currentTheme.text, padding: '20px' }}>
       <form onSubmit={handleSubmit}>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Write a post..."
-          style={{ width: '100%', minHeight: '100px' }}
+          style={{ width: '100%', minHeight: '100px', marginBottom: '10px', padding: '5px' }}
         />
-        <button type="submit">Post</button>
+        <button type="submit" style={{ background: currentTheme.primary, color: currentTheme.buttonText, padding: '5px 10px' }}>
+          Post
+        </button>
       </form>
     </div>
   );
