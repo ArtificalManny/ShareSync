@@ -17,7 +17,9 @@ export class AuthService {
       console.log('AuthService: User not found for identifier:', email);
       throw new UnauthorizedException('Invalid username or password');
     }
+    console.log('AuthService: Found user:', user.email, 'with password hash:', user.password);
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('AuthService: Password comparison result:', isPasswordValid);
     if (!isPasswordValid) {
       console.log('AuthService: Password comparison failed for user:', email);
       throw new UnauthorizedException('Invalid username or password');

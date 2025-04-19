@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../app.module';
+import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -19,6 +19,12 @@ async function bootstrap() {
 
   // Global validation pipe
   app.useGlobalPipes(new ValidationPipe());
+
+  // Log incoming requests
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    console.log('Incoming request:', req.method, req.url, 'Body:', req.body);
+    next();
+  });
 
   // JWT Middleware
   app.use(async (req: Request, res: Response, next: NextFunction) => {
