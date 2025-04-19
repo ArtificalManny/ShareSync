@@ -2,19 +2,32 @@ import { useState } from 'react';
 import axios from '../axios';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
+const glowPulse = keyframes`
+  0% { box-shadow: 0 0 10px ${({ theme }) => theme.glow}; }
+  50% { box-shadow: 0 0 20px ${({ theme }) => theme.glow}; }
+  100% { box-shadow: 0 0 10px ${({ theme }) => theme.glow}; }
+`;
 
 const RegisterContainer = styled.div`
-  background: ${({ theme }) => theme.background};
+  background: ${({ theme }) => theme.cardBackground};
+  backdrop-filter: blur(10px);
   color: ${({ theme }) => theme.text};
   padding: 40px;
   max-width: 400px;
   margin: 50px auto;
   border-radius: 15px;
-  box-shadow: 0 0 20px ${({ theme }) => theme.glow};
-  animation: fadeIn 1s ease-in-out;
+  box-shadow: ${({ theme }) => theme.shadow};
+  animation: ${fadeIn} 1s ease-in-out;
   position: relative;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 
   &:before {
     content: '';
@@ -24,19 +37,9 @@ const RegisterContainer = styled.div`
     width: 100%;
     height: 100%;
     background: radial-gradient(circle, ${({ theme }) => theme.glow}, transparent);
-    opacity: 0.2;
+    opacity: 0.3;
     z-index: -1;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+    animation: ${glowPulse} 5s ease infinite;
   }
 `;
 
@@ -44,6 +47,10 @@ const Title = styled.h2`
   text-align: center;
   margin-bottom: 20px;
   font-size: 28px;
+  color: ${({ theme }) => theme.accent};
+  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 `;
 
 const Form = styled.form`
@@ -57,15 +64,9 @@ const Input = styled.input`
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 5px;
   font-size: 16px;
-  background: ${({ theme }) => theme.background};
+  background: ${({ theme }) => theme.cardBackground};
   color: ${({ theme }) => theme.text};
   outline: none;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primary};
-    box-shadow: 0 0 10px ${({ theme }) => theme.glow};
-  }
 `;
 
 const Button = styled.button`
@@ -74,25 +75,14 @@ const Button = styled.button`
   padding: 12px;
   border: none;
   border-radius: 5px;
-  cursor: pointer;
   font-size: 16px;
-  box-shadow: 0 0 10px ${({ theme }) => theme.glow};
-  transition: transform 0.3s ease;
-
-  &:hover {
-    transform: scale(1.05);
-  }
-
-  &:active {
-    transform: scale(0.98);
-  }
 `;
 
 const ErrorMessage = styled.p`
-  color: #ff5555;
+  color: ${({ theme }) => theme.warning};
   text-align: center;
   margin-top: 10px;
-  text-shadow: 0 0 5px rgba(255, 85, 85, 0.5);
+  text-shadow: 0 0 5px ${({ theme }) => theme.warning};
 `;
 
 const Register = () => {
@@ -111,17 +101,17 @@ const Register = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    const payload = { email, password, username, firstName, lastName, birthday };
+    console.log('Frontend: Sending register request with payload:', payload);
     try {
-      await axios.post('/auth/register', {
-        email,
-        password,
-        username: username || undefined,
-        firstName: firstName || undefined,
-        lastName: lastName || undefined,
-        birthday: birthday || undefined,
-      }, { withCredentials: true });
+      const response = await axios.post('/auth/register', payload, {
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json' },
+      });
+      console.log('Frontend: Register response:', response.data);
       navigate('/login');
     } catch (err: any) {
+      console.error('Frontend: Register error:', err.response?.data);
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
@@ -145,7 +135,7 @@ const Register = () => {
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="Username (optional)"
+          placeholder="Username"
           theme={currentTheme}
           disabled={loading}
         />
@@ -153,7 +143,7 @@ const Register = () => {
           type="text"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
-          placeholder="First Name (optional)"
+          placeholder="First Name"
           theme={currentTheme}
           disabled={loading}
         />
@@ -161,7 +151,7 @@ const Register = () => {
           type="text"
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
-          placeholder="Last Name (optional)"
+          placeholder="Last Name"
           theme={currentTheme}
           disabled={loading}
         />
@@ -169,7 +159,7 @@ const Register = () => {
           type="date"
           value={birthday}
           onChange={(e) => setBirthday(e.target.value)}
-          placeholder="Birthday (optional)"
+          placeholder="Birthday"
           theme={currentTheme}
           disabled={loading}
         />
@@ -186,7 +176,7 @@ const Register = () => {
           {loading ? 'Registering...' : 'Register'}
         </Button>
       </Form>
-      {error && <ErrorMessage>{error}</ErrorMessage>}
+      {error && <ErrorMessage theme={currentTheme}>{error}</ErrorMessage>}
     </RegisterContainer>
   );
 };

@@ -38,9 +38,10 @@ export class AuthService {
   }
 
   async register(userData: { email: string; password: string; username?: string; firstName?: string; lastName?: string; birthday?: string }) {
-    console.log('AuthService: Register attempt with email:', userData.email);
+    console.log('AuthService: Register attempt with email:', userData.email, 'userData:', userData);
     const existingUser = await this.usersService.findOneByEmail(userData.email);
     if (existingUser) {
+      console.log('AuthService: User already exists with email:', userData.email);
       throw new UnauthorizedException('User already exists');
     }
     const hashedPassword = await bcrypt.hash(userData.password, 10);

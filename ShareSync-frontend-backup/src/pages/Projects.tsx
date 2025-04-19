@@ -4,8 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSocket } from '../contexts/SocketContext';
 import { useUser } from '../contexts/UserContext';
-import styled from 'styled-components';
-import { FaBell, FaCheckCircle, FaFolderPlus, FaChartBar, FaTasks, FaHistory, FaUsers } from 'react-icons/fa';
+import styled, { keyframes } from 'styled-components';
+import { FaBell, FaChartBar, FaTasks, FaHistory, FaUsers, FaFolderPlus, FaCheckCircle } from 'react-icons/fa';
+
+const glowAnimation = keyframes`
+  0% { box-shadow: 0 0 10px ${({ theme }) => theme.glow}; }
+  50% { box-shadow: 0 0 20px ${({ theme }) => theme.glow}; }
+  100% { box-shadow: 0 0 10px ${({ theme }) => theme.glow}; }
+`;
+
+const slideIn = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
 const ProjectsContainer = styled.div`
   background: ${({ theme }) => theme.background};
@@ -16,6 +27,7 @@ const ProjectsContainer = styled.div`
   grid-template-columns: 1fr 3fr;
   gap: 20px;
   position: relative;
+  overflow: hidden;
 
   &:before {
     content: '';
@@ -25,16 +37,19 @@ const ProjectsContainer = styled.div`
     width: 100%;
     height: 100%;
     background: radial-gradient(circle, ${({ theme }) => theme.glow}, transparent);
-    opacity: 0.2;
+    opacity: 0.3;
     z-index: -1;
+    animation: ${glowAnimation} 5s ease infinite;
   }
 `;
 
 const Sidebar = styled.div`
-  background: ${({ theme }) => theme.background === '#121212' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
+  background: ${({ theme }) => theme.cardBackground};
+  backdrop-filter: blur(10px);
   padding: 20px;
   border-radius: 15px;
-  box-shadow: 0 0 15px ${({ theme }) => theme.glow};
+  box-shadow: ${({ theme }) => theme.shadow};
+  animation: ${slideIn} 0.5s ease forwards;
 `;
 
 const SidebarTitle = styled.h3`
@@ -46,8 +61,13 @@ const SidebarTitle = styled.h3`
   gap: 8px;
 
   svg {
-    font-size: 18px; /* Smaller icon size for a clean look */
-    color: ${({ theme }) => theme.accent}; /* Match the title color */
+    font-size: 18px;
+    color: ${({ theme }) => theme.accent};
+    transition: transform 0.3s ease;
+  }
+
+  &:hover svg {
+    transform: scale(1.2);
   }
 `;
 
@@ -64,10 +84,14 @@ const NotificationItem = styled.li`
   gap: 10px;
   padding: 10px;
   border-bottom: 1px solid ${({ theme }) => theme.border};
-  transition: background 0.3s ease;
+  background: ${({ theme }) => theme.cardBackground};
+  border-radius: 8px;
+  margin-bottom: 5px;
+  transition: background 0.3s ease, transform 0.3s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.background === '#121212' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
   }
 `;
 
@@ -76,11 +100,13 @@ const Avatar = styled.img`
   height: 30px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid ${({ theme }) => theme.accent};
 `;
 
 const NotificationMessage = styled.p`
   flex: 1;
   font-size: 14px;
+  color: ${({ theme }) => theme.text};
 `;
 
 const MainContent = styled.div`
@@ -90,12 +116,15 @@ const MainContent = styled.div`
 `;
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.background === '#121212' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
+  background: ${({ theme }) => theme.cardBackground};
+  backdrop-filter: blur(10px);
   padding: 20px;
   border-radius: 15px;
-  box-shadow: 0 0 15px ${({ theme }) => theme.glow};
+  box-shadow: ${({ theme }) => theme.shadow};
   text-align: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  animation: ${slideIn} 0.5s ease forwards;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 
   &:hover {
     transform: translateY(-5px);
@@ -113,8 +142,13 @@ const CardTitle = styled.h4`
   gap: 8px;
 
   svg {
-    font-size: 16px; /* Smaller icon size for a clean look */
-    color: ${({ theme }) => theme.accent}; /* Match the title color */
+    font-size: 16px;
+    color: ${({ theme }) => theme.accent};
+    transition: transform 0.3s ease;
+  }
+
+  &:hover svg {
+    transform: rotate(360deg);
   }
 `;
 
@@ -122,6 +156,9 @@ const CardValue = styled.div`
   font-size: 24px;
   font-weight: bold;
   color: ${({ theme }) => theme.secondary};
+  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 `;
 
 const TaskList = styled.ul`
@@ -137,10 +174,14 @@ const TaskItem = styled.li`
   gap: 10px;
   padding: 10px;
   border-bottom: 1px solid ${({ theme }) => theme.border};
-  transition: background 0.3s ease;
+  background: ${({ theme }) => theme.cardBackground};
+  border-radius: 8px;
+  margin-bottom: 5px;
+  transition: background 0.3s ease, transform 0.3s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.background === '#121212' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
   }
 `;
 
@@ -153,12 +194,15 @@ const ProjectItem = styled.li`
   padding: 10px;
   border-bottom: 1px solid ${({ theme }) => theme.border};
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.1s ease, text-shadow 0.3s ease;
+  background: ${({ theme }) => theme.cardBackground};
+  border-radius: 8px;
+  margin-bottom: 5px;
+  transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.background === '#121212' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+    background: rgba(255, 255, 255, 0.1);
     transform: scale(1.02);
-    text-shadow: 0 0 5px ${({ theme }) => theme.glow};
+    box-shadow: 0 0 10px ${({ theme }) => theme.glow};
   }
 `;
 
@@ -173,15 +217,9 @@ const Input = styled.input`
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 5px;
   font-size: 14px;
-  background: ${({ theme }) => theme.background};
+  background: ${({ theme }) => theme.cardBackground};
   color: ${({ theme }) => theme.text};
   outline: none;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primary};
-    box-shadow: 0 0 10px ${({ theme }) => theme.glow};
-  }
 `;
 
 const Textarea = styled.textarea`
@@ -189,17 +227,11 @@ const Textarea = styled.textarea`
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 5px;
   font-size: 14px;
-  background: ${({ theme }) => theme.background};
+  background: ${({ theme }) => theme.cardBackground};
   color: ${({ theme }) => theme.text};
   outline: none;
   resize: none;
   height: 100px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primary};
-    box-shadow: 0 0 10px ${({ theme }) => theme.glow};
-  }
 `;
 
 const Button = styled.button`
@@ -208,25 +240,14 @@ const Button = styled.button`
   padding: 10px;
   border: none;
   border-radius: 5px;
-  cursor: pointer;
   font-size: 16px;
-  box-shadow: 0 0 10px ${({ theme }) => theme.glow};
-  transition: transform 0.3s ease;
-
-  &:hover {
-    transform: scale(1.05);
-  }
-
-  &:active {
-    transform: scale(0.98);
-  }
 `;
 
 const ErrorMessage = styled.p`
-  color: #ff5555;
+  color: ${({ theme }) => theme.warning};
   font-size: 14px;
   margin-top: 10px;
-  text-shadow: 0 0 5px rgba(255, 85, 85, 0.5);
+  text-shadow: 0 0 5px ${({ theme }) => theme.warning};
 `;
 
 interface Project {
@@ -336,7 +357,7 @@ const Projects = () => {
           />
           <Button type="submit" theme={currentTheme}>Create Project</Button>
         </Form>
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+        {error && <ErrorMessage theme={currentTheme}>{error}</ErrorMessage>}
         <SidebarTitle theme={currentTheme} style={{ marginTop: '20px' }}>
           <FaBell /> Notifications ({notifications.length})
         </SidebarTitle>
@@ -347,7 +368,7 @@ const Projects = () => {
               <NotificationMessage>{notif.message}</NotificationMessage>
             </NotificationItem>
           ))}
-          {notifications.length === 0 && <NotificationMessage>No notifications yet.</NotificationMessage>}
+          {notifications.length === 0 && <NotificationMessage theme={currentTheme}>No notifications yet.</NotificationMessage>}
         </NotificationList>
       </Sidebar>
       <MainContent>
@@ -365,12 +386,12 @@ const Projects = () => {
             {completedTasks.map((task) => (
               <TaskItem key={task._id} theme={currentTheme}>
                 <Avatar src="https://via.placeholder.com/30" alt="User avatar" />
-                <NotificationMessage>
+                <NotificationMessage theme={currentTheme}>
                   {user?.email} completed task "{task.title}" in project {task.projectId}
                 </NotificationMessage>
               </TaskItem>
             ))}
-            {completedTasks.length === 0 && <NotificationMessage>No tasks completed yet.</NotificationMessage>}
+            {completedTasks.length === 0 && <NotificationMessage theme={currentTheme}>No tasks completed yet.</NotificationMessage>}
           </TaskList>
         </Card>
         <Card theme={currentTheme}>
@@ -389,7 +410,7 @@ const Projects = () => {
           <CardTitle theme={currentTheme}>
             <FaUsers /> Team Activity
           </CardTitle>
-          <NotificationMessage>No recent activities.</NotificationMessage>
+          <NotificationMessage theme={currentTheme}>No recent activities.</NotificationMessage>
         </Card>
         <Card theme={currentTheme}>
           <CardTitle theme={currentTheme}>

@@ -19,7 +19,7 @@ export class User extends Document {
   lastName: string;
 
   @Prop()
-  birthday: Date;
+  birthday: Date; // Defined as Date, optional
 
   @Prop({ default: false })
   isVerified: boolean;
@@ -42,8 +42,8 @@ export class User extends Document {
   @Prop({ default: 0 })
   points: number;
 
-  @Prop({ type: [{ message: String, timestamp: Date, read: Boolean }], default: [] })
-  notifications: { message: string; timestamp: Date; read: boolean }[];
+  @Prop({ type: [String], default: [] })
+  notifications: string[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
