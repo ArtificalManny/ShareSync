@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Req, Res, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Get, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request, Response } from 'express';
 
@@ -68,7 +68,7 @@ export class AuthController {
     }
   }
 
-  @Post('reset-password/:token')
+  @Post('reset-password')
   async resetPassword(@Req() req: Request, @Res() res: Response) {
     console.log('AuthController: Reset password request received:', req.body);
     const { newPassword, token } = req.body;
@@ -109,10 +109,10 @@ export class AuthController {
   }
 
   @Get('test-user')
-  async testUser(@Res() res: Response) {
+  async testUser(@Req() req: Request, @Res() res: Response) {
     console.log('AuthController: Test user endpoint called');
     try {
-      const user = await this.usersService.findOneByEmail('eamonrivas@gmail.com');
+      const user = await this.authService.testUser('eamonrivas@gmail.com');
       if (!user) {
         res.status(404).json({ message: 'User not found' });
         return;

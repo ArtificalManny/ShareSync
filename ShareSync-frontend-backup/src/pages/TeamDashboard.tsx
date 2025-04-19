@@ -1,39 +1,78 @@
 import { useState, useEffect } from 'react';
-import axios from '../axios';
+import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
+import styled from 'styled-components';
+
+const DashboardContainer = styled.div`
+  padding: 20px;
+`;
+
+const MemberItem = styled.div`
+  margin-bottom: 20px;
+  padding: 15px;
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
+  border-radius: 10px;
+`;
+
+const ProjectItem = styled.div`
+  margin-bottom: 20px;
+  padding: 15px;
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
+  border-radius: 10px;
+`;
+
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
+
+interface Member {
+  _id: string;
+  username: string;
+}
+
+interface Project {
+  _id: string;
+  name: string;
+}
 
 const TeamDashboard = () => {
-  const [teamData, setTeamData] = useState({ members: [], projects: [] });
   const { currentTheme } = useTheme();
+  const [members, setMembers] = useState<Member[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
     const fetchTeamData = async () => {
       try {
-        const response = await axios.get('/team/dashboard');
-        setTeamData(response.data);
-      } catch (error) {
-        console.error('Error fetching team data:', error);
+        const membersResponse = await axios.get(`${API_URL}/team/members`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        setMembers(membersResponse.data);
+
+        const projectsResponse = await axios.get(`${API_URL}/team/projects`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        setProjects(projectsResponse.data);
+      } catch (err) {
+        console.error('Failed to fetch team data:', err);
       }
     };
     fetchTeamData();
   }, []);
 
   return (
-    <div style={{ background: currentTheme.background, color: currentTheme.text, padding: '20px' }}>
-      <h1>Team Dashboard</h1>
+    <DashboardContainer>
       <h2>Team Members</h2>
-      <ul>
-        {teamData.members.map((member) => (
-          <li key={member._id}>{member.username}</li>
-        ))}
-      </ul>
+      {members.map((member) => (
+        <MemberItem key={member._id} theme={currentTheme}>
+          {member.username}
+        </MemberItem>
+      ))}
+
       <h2>Team Projects</h2>
-      <ul>
-        {teamData.projects.map((project) => (
-          <li key={project._id}>{project.name}</li>
-        ))}
-      </ul>
-    </div>
+      {projects.map((project) => (
+        <ProjectItem key={project._id} theme={currentTheme}>
+          {project.name}
+        </ProjectItem>
+      ))}
+    </DashboardContainer>
   );
 };
 

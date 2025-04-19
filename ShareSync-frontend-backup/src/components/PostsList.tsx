@@ -1,51 +1,49 @@
-import { useEffect, useState } from 'react';
-import axios from '../axios';
-import PostItem from './PostItem';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
+import PostItem from './PostItem';
 import styled from 'styled-components';
 
-const PostsListContainer = styled.div`
-  background: ${({ theme }) => theme.background};
+const PostsContainer = styled.div`
+  background: ${({ theme }: { theme: any }) => theme.background};
   color: ${({ theme }) => theme.text};
+  padding: 20px;
+  border-radius: 10px;
 `;
+
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
 
 interface Post {
   _id: string;
   content: string;
-  projectId: string;
-  likes: number;
+  creator: { _id: string; firstName: string; lastName: string };
+  likes: string[];
 }
 
-interface PostsListProps {
-  projectId: string;
-}
-
-const PostsList = ({ projectId }: PostsListProps) => {
-  const [posts, setPosts] = useState<Post[]>([]);
+const PostsList = ({ projectId }: { projectId: string }) => {
   const { currentTheme } = useTheme();
+  const [posts, setPosts] = useState<Post[]>([]);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`/posts/project/${projectId}`, {
-          withCredentials: true,
-          headers: { Authorization: `Bearer ${token}` },
+        const response = await axios.get(`${API_URL}/posts/${projectId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         setPosts(response.data);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
+      } catch (err) {
+        console.error('Failed to fetch posts:', err);
       }
     };
     fetchPosts();
   }, [projectId]);
 
   return (
-    <PostsListContainer theme={currentTheme}>
+    <PostsContainer theme={currentTheme}>
       {posts.map((post) => (
         <PostItem key={post._id} post={post} />
       ))}
-    </PostsListContainer>
+    </PostsContainer>
   );
 };
 

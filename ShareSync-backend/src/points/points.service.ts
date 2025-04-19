@@ -1,24 +1,31 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from '../users/schemas/user.schema';
+import { Post } from './schemas/post.schema';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
-export class PointsService {
-  constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
+export class PostsService {
+  constructor(
+    @InjectModel('Post') private postModel: Model<Post>,
+    private notificationsService: NotificationsService,
+  ) {}
 
-  async addPoints(userId: string, points: number, reason?: string): Promise<void> {
-    await this.userModel.updateOne({ _id: userId }, { $inc: { points } });
-    if (reason) {
-      console.log(`Added ${points} points to user ${userId} for reason: ${reason}`);
-    }
+  async createPost(content: string, creator: string, projectId: string): Promise<Post> {
+    const post = new this.postModel({ content, creator, projectId });
+    const savedPost = await post.save();
+
+    // Notify project members
+    await this.notificationsService.createNotification(
+      projectId,
+      creator,
+      `${creator} created a new post`,
+    );
+
+    return savedPost;
   }
 
-  async getLeaderboard(): Promise<User[]> {
-    return this.userModel
-      .find()
-      .sort({ points: -1 }) // Sort by points in descending order
-      .limit(10) // Get top 10 users
-      .exec();
+  async getPosts(projectId: string): Promise<Post[]> {
+    return this.postModel.find({ projectId }).populate('creator').exec();
   }
 }

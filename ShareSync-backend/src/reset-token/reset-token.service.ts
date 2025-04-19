@@ -10,7 +10,8 @@ export class ResetTokenService {
 
   async createToken(userId: string): Promise<string> {
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 3600000); // 1 hour expiration
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // Token expires in 1 hour
     const resetToken = new this.resetTokenModel({ userId, token, expiresAt });
     await resetToken.save();
     return token;

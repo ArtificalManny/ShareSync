@@ -1,25 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Delete } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Comment, CommentDocument } from './schemas/comment.schema';
+import { Comment } from './schemas/comment.schema';
 
-@Injectable()
-export class CommentsService {
-  constructor(
-    @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
-  ) {}
+@Controller('comments')
+export class CommentsController {
+  constructor(@InjectModel('Comment') private commentModel: Model<Comment>) {}
 
-  async create(createCommentDto: { content: string; postId: string; creatorId: string }) {
-    const comment = new this.commentModel({
-      content: createCommentDto.content,
-      post: createCommentDto.postId,
-      creator: createCommentDto.creatorId,
-      createdAt: new Date(),
-    });
+  @Post()
+  async createComment(
+    @Body('postId') postId: string,
+    @Body('userId') userId: string,
+    @Body('content') content: string,
+  ) {
+    const comment = new this.commentModel({ postId, userId, content });
     return comment.save();
   }
 
-  async findByPostId(postId: string) {
-    return this.commentModel.find({ post: postId }).populate('creator').exec();
+  @Get(':postId')
+  async getComments(@Param('postId') postId: string) {
+    return this.commentModel.find({ postId }).exec();
+  }
+
+  @Delete(':id')
+  async deleteComment(@Param('id') id: string) {
+    return this.commentModel.findByIdAndDelete(id).exec();
   }
 }

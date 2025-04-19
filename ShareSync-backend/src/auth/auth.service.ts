@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { ResetTokenService } from '../reset-token/reset-token.service';
@@ -36,18 +36,18 @@ export class AuthService {
   async login(email: string, password: string) {
     console.log('AuthService: Login attempt with email:', email, 'password:', password);
     if (!email || !password) {
-      throw new UnauthorizedException('Email and password are required');
+      throw new Error('Email and password are required');
     }
     const user = await this.usersService.findOneByEmail(email);
     if (!user) {
       console.log('AuthService: User not found for email:', email);
-      throw new UnauthorizedException('Invalid username or password');
+      throw new Error('Invalid username or password');
     }
     console.log('AuthService: Found user:', user.email, 'with password hash:', user.password);
     const isPasswordValid = await bcrypt.compare(password, user.password);
     console.log('AuthService: Password comparison result:', isPasswordValid);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid username or password');
+      throw new Error('Invalid username or password');
     }
     const payload = { sub: user._id, email: user.email };
     return {
@@ -61,7 +61,7 @@ export class AuthService {
     const existingUser = await this.usersService.findOneByEmail(userData.email);
     if (existingUser) {
       console.log('AuthService: User already exists with email:', userData.email);
-      throw new UnauthorizedException('User already exists');
+      throw new Error('User already exists');
     }
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     const userPayload = {
@@ -81,7 +81,7 @@ export class AuthService {
   async getCurrentUser(userId: string) {
     const user = await this.usersService.findOneById(userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new Error('User not found');
     }
     return { _id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName };
   }
@@ -91,10 +91,10 @@ export class AuthService {
     const user = await this.usersService.findOneByEmail(email);
     if (!user) {
       console.log('AuthService: User not found for email:', email);
-      throw new UnauthorizedException('User not found');
+      throw new Error('User not found');
     }
     const token = await this.resetTokenService.createToken(user._id);
-    const resetLink = `http://localhost:54693/reset-password/${token}`;
+    const resetLink = `http://localhost:54693/reset-password?token=${token}`;
     console.log('AuthService: Generated reset link:', resetLink);
     return resetLink;
   }
@@ -104,16 +104,23 @@ export class AuthService {
     const resetToken = await this.resetTokenService.findToken(token);
     if (!resetToken || resetToken.expiresAt < new Date()) {
       console.log('AuthService: Invalid or expired reset token:', token);
-      throw new UnauthorizedException('Invalid or expired reset token');
+      throw new Error('Invalid or expired reset token');
     }
     const user = await this.usersService.findOneById(resetToken.userId);
     if (!user) {
       console.log('AuthService: User not found for reset token:', token);
-      throw new UnauthorizedException('User not found');
+      throw new Error('User not found');
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this.usersService.updatePassword(user._id, hashedPassword);
     await this.resetTokenService.deleteToken(token);
     console.log('AuthService: Password reset successful for user:', user.email);
+  }
+
+  async testUser(email: string) {
+    console.log('AuthService: Test user lookup with email:', email);
+    const user = await this.usersService.findOneByEmail(email);
+    console.log('AuthService: Test user result:', user);
+    return user;
   }
 }

@@ -1,25 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Idea, IdeaDocument } from './schemas/idea.schema';
+import { Idea } from './idea.schema';
 
 @Injectable()
 export class IdeasService {
-  constructor(
-    @InjectModel(Idea.name) private ideaModel: Model<IdeaDocument>,
-  ) {}
+  constructor(@InjectModel('Idea') private ideaModel: Model<Idea>) {}
 
-  async create(createIdeaDto: { content: string; projectId: string; creatorId: string }) {
-    const idea = new this.ideaModel({
-      content: createIdeaDto.content,
-      project: createIdeaDto.projectId,
-      creator: createIdeaDto.creatorId,
-      createdAt: new Date(),
-    });
+  async createIdea(title: string, description: string, creator: string, project?: string): Promise<Idea> {
+    const idea = new this.ideaModel({ title, description, creator, project });
     return idea.save();
   }
 
-  async findByProjectId(projectId: string) {
-    return this.ideaModel.find({ project: projectId }).populate('creator').exec();
+  async getIdeas(projectId?: string): Promise<Idea[]> {
+    if (projectId) {
+      return this.ideaModel.find({ project: projectId }).populate('creator').exec();
+    }
+    return this.ideaModel.find().populate('creator').exec();
   }
 }

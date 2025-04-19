@@ -1,95 +1,105 @@
-import { useEffect, useState } from 'react';
-import axios from '../axios';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import CreatePost from '../components/CreatePost';
-import PostsList from '../components/PostsList';
+import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
+import { useUser } from '../contexts/UserContext';
 import styled from 'styled-components';
 
-const ProjectHomeContainer = styled.div`
-  background: ${({ theme }) => theme.background};
+const ProjectContainer = styled.div`
+  padding: 20px;
+  background: ${({ theme }: { theme: any }) => theme.background};
   color: ${({ theme }) => theme.text};
-  padding: 40px;
-  min-height: calc(100vh - 70px);
-  position: relative;
-
-  &:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle, ${({ theme }) => theme.glow}, transparent);
-    opacity: 0.2;
-    z-index: -1;
-  }
 `;
 
-const Title = styled.h1`
-  font-size: 36px;
+const Section = styled.div`
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
+  padding: 20px;
+  border-radius: 10px;
   margin-bottom: 20px;
+  box-shadow: ${({ theme }) => theme.glow};
 `;
 
-const Description = styled.p`
-  font-size: 16px;
-  opacity: 0.8;
-  margin-bottom: 20px;
-`;
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
 
 interface Project {
   _id: string;
   name: string;
   description: string;
-  creator: string;
+  members: string[];
 }
 
 const ProjectHome = () => {
+  const { currentTheme } = useTheme();
+  const { user } = useUser();
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const { currentTheme } = useTheme();
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchProject = async () => {
+    const fetchProjectData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`/projects/by-id/${id}`, {
-          withCredentials: true,
-          headers: { Authorization: `Bearer ${token}` },
+        const projectResponse = await axios.get(`${API_URL}/projects/${id}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
-        setProject(response.data);
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to fetch project.');
+        setProject(projectResponse.data);
+
+        const tasksResponse = await axios.get(`${API_URL}/tasks/${id}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        setTasks(tasksResponse.data);
+
+        const messagesResponse = await axios.get(`${API_URL}/chat/${id}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        setMessages(messagesResponse.data);
+      } catch (err) {
+        console.error('Failed to fetch project data:', err);
       }
     };
-    fetchProject();
+
+    fetchProjectData();
   }, [id]);
 
-  if (error) {
-    return (
-      <ProjectHomeContainer theme={currentTheme}>
-        <Title>Error</Title>
-        <Description>{error}</Description>
-      </ProjectHomeContainer>
-    );
-  }
-
   if (!project) {
-    return (
-      <ProjectHomeContainer theme={currentTheme}>
-        <Title>Loading...</Title>
-      </ProjectHomeContainer>
-    );
+    return <div>Loading...</div>;
   }
 
   return (
-    <ProjectHomeContainer theme={currentTheme}>
-      <Title>{project.name}</Title>
-      <Description>{project.description}</Description>
-      <CreatePost projectId={id!} />
-      <PostsList projectId={id!} />
-    </ProjectHomeContainer>
+    <ProjectContainer theme={currentTheme}>
+      <Section theme={currentTheme}>
+        <h2>{project.name}</h2>
+        <p>{project.description}</p>
+      </Section>
+
+      <Section theme={currentTheme}>
+        <h3>Tasks</h3>
+        {tasks.length === 0 ? (
+          <p>No tasks yet.</p>
+        ) : (
+          tasks.map((task) => (
+            <div key={task._id}>
+              <h4>{task.title}</h4>
+              <p>{task.description}</p>
+              <p>Status: {task.status}</p>
+            </div>
+          ))
+        )}
+      </Section>
+
+      <Section theme={currentTheme}>
+        <h3>Chat</h3>
+        {messages.length === 0 ? (
+          <p>No messages yet.</p>
+        ) : (
+          messages.map((message) => (
+            <div key={message._id}>
+              <p>{message.senderId}: {message.message}</p>
+            </div>
+          ))
+        )}
+      </Section>
+    </ProjectContainer>
   );
 };
 

@@ -1,26 +1,24 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import { User } from '../../users/schemas/user.schema';
-import { Project } from '../../projects/schemas/project.schema';
+import { Document } from 'mongoose';
+import { User } from '../users/user.schema';
+import { Project } from '../projects/schemas/project.schema';
 
-export type IdeaDocument = Idea & Document;
-
-@Schema({ timestamps: true })
-export class Idea {
+@Schema()
+export class Idea extends Document {
   @Prop({ required: true })
-  content: string;
+  title: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  creator: User;
+  @Prop({ required: true })
+  description: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Project', required: true })
-  project: Project;
+  @Prop({ type: String, ref: 'User', required: true })
+  creator: string;
 
-  @Prop()
+  @Prop({ type: String, ref: 'Project' })
+  project?: string;
+
+  @Prop({ default: Date.now })
   createdAt: Date;
-
-  @Prop()
-  updatedAt: Date;
 }
 
 export const IdeaSchema = SchemaFactory.createForClass(Idea);

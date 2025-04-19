@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { NotificationSchema } from './notification.schema';
-import { TaskSchema } from './task.schema';
+import { NotificationSchema } from './notifications/schemas/notification.schema';
+import { TaskSchema } from './tasks/schemas/task.schema';
 import { ResetTokenSchema } from './reset-token/reset-token.schema';
 import { ChatMessageSchema } from './chat/chat.schema';
-import { ActivitySchema } from './activities.schemas/activity.schema'; // Corrected path
+import { ActivitySchema } from './activities.schemas/activity.schema';
 import { NotificationsGateway } from './notifications/notifications.gateway';
 import { NotificationsService } from './notifications/notifications.service';
 import { TasksService } from './tasks/tasks.service';

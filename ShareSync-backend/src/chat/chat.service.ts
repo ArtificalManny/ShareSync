@@ -7,7 +7,7 @@ import { ChatMessage } from './chat.schema';
 export class ChatService {
   constructor(@InjectModel('ChatMessage') private chatMessageModel: Model<ChatMessage>) {}
 
-  async createMessage(projectId: string, senderId: string, message: string): Promise<ChatMessage> {
+  async saveMessage(projectId: string, senderId: string, message: string): Promise<ChatMessage> {
     const chatMessage = new this.chatMessageModel({ projectId, senderId, message });
     return chatMessage.save();
   }

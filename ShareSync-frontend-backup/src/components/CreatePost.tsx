@@ -1,116 +1,76 @@
 import { useState } from 'react';
-import axios from '../axios';
+import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
 import styled from 'styled-components';
 
-const CreatePostContainer = styled.div`
-  background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
-  padding: 20px;
-  border-radius: 15px;
-  margin-bottom: 20px;
-  box-shadow: 0 0 15px ${({ theme }) => theme.glow};
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-`;
-
-const Textarea = styled.textarea`
-  padding: 10px;
-  border: 1px solid ${({ theme }) => theme.border};
-  border-radius: 5px;
-  font-size: 14px;
-  background: ${({ theme }) => theme.background};
+const PostFormContainer = styled.div`
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
   color: ${({ theme }) => theme.text};
-  outline: none;
-  resize: none;
-  height: 100px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: ${({ theme }) => theme.glow};
+  margin-bottom: 20px;
+  border: 1px solid ${({ theme }) => theme.border};
+`;
 
-  &:focus {
-    border-color: ${({ theme }) => theme.primary};
-    box-shadow: 0 0 10px ${({ theme }) => theme.glow};
-  }
+const TextArea = styled.textarea`
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid ${({ theme }: { theme: any }) => theme.border};
+  border-radius: 5px;
+  background: ${({ theme }) => theme.cardBackground};
+  color: ${({ theme }) => theme.text};
 `;
 
 const Button = styled.button`
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme.primary}, ${({ theme }) => theme.secondary});
   color: ${({ theme }) => theme.buttonText};
-  padding: 10px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 5px;
+  border-radius: 25px;
   cursor: pointer;
-  font-size: 16px;
-  box-shadow: 0 0 10px ${({ theme }) => theme.glow};
+  margin: 10px 0;
   transition: transform 0.3s ease;
-
   &:hover {
     transform: scale(1.05);
-  }
-
-  &:active {
-    transform: scale(0.98);
+    box-shadow: ${({ theme }) => theme.glow};
   }
 `;
 
-const SuccessMessage = styled.p`
-  color: #55ff55;
-  text-align: center;
-  margin-top: 10px;
-  text-shadow: 0 0 5px rgba(85, 255, 85, 0.5);
-  animation: fadeIn 0.5s ease-in-out;
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-`;
-
-interface CreatePostProps {
-  projectId: string;
-}
-
-const CreatePost = ({ projectId }: CreatePostProps) => {
-  const [content, setContent] = useState('');
-  const [success, setSuccess] = useState<string | null>(null);
+const CreatePost = ({ projectId }: { projectId: string }) => {
   const { currentTheme } = useTheme();
+  const [content, setContent] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('/posts', { projectId, content }, {
-        withCredentials: true,
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.post(
+        `${API_URL}/posts`,
+        { content, projectId },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } },
+      );
       setContent('');
-      setSuccess('Post created successfully!');
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (error) {
-      console.error('Error creating post:', error);
+    } catch (err) {
+      console.error('Failed to create post:', err);
     }
   };
 
   return (
-    <CreatePostContainer theme={currentTheme}>
-      <Form onSubmit={handleSubmit}>
-        <Textarea
+    <PostFormContainer theme={currentTheme}>
+      <form onSubmit={handleSubmit}>
+        <TextArea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Write a post..."
+          placeholder="What's on your mind?"
+          rows={3}
           theme={currentTheme}
-          required
         />
         <Button type="submit" theme={currentTheme}>Post</Button>
-      </Form>
-      {success && <SuccessMessage>{success}</SuccessMessage>}
-    </CreatePostContainer>
+      </form>
+    </PostFormContainer>
   );
 };
 

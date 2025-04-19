@@ -1,71 +1,84 @@
-import { useDispatch } from 'react-redux';
-import { likePost } from '../store/slices/postsSlice';
+import { useState } from 'react';
+import axios from 'axios';
+import { useTheme } from '../contexts/ThemeContext';
 import styled from 'styled-components';
 
-const PostItemContainer = styled.div`
-  background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
-  padding: 20px;
-  border-radius: 15px;
-  margin-bottom: 20px;
-  box-shadow: 0 0 15px ${({ theme }) => theme.glow};
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0 25px ${({ theme }) => theme.glow};
-  }
+const PostContainer = styled.div`
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  box-shadow: ${({ theme }) => theme.glow};
 `;
 
-const Content = styled.p`
-  margin-bottom: 10px;
-  font-size: 16px;
-  text-shadow: 0 0 5px ${({ theme }) => theme.glow};
+const PostContent = styled.p`
+  margin: 0 0 10px 0;
+  box-shadow: ${({ theme }: { theme: any }) => theme.glow};
 `;
 
 const LikeButton = styled.button`
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme.primary}, ${({ theme }) => theme.secondary});
   color: ${({ theme }) => theme.buttonText};
-  border: none;
   padding: 5px 10px;
-  border-radius: 5px;
+  border: none;
+  border-radius: 15px;
   cursor: pointer;
-  font-size: 14px;
-  box-shadow: 0 0 10px ${({ theme }) => theme.glow};
+  margin-right: 10px;
   transition: transform 0.3s ease;
-
   &:hover {
     transform: scale(1.05);
-  }
-
-  &:active {
-    transform: scale(0.98);
+    box-shadow: ${({ theme }) => theme.glow};
   }
 `;
+
+const CommentButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }: { theme: any }) => theme.accent};
+  cursor: pointer;
+  &:hover {
+    color: ${({ theme }) => theme.highlight};
+  }
+`;
+
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
 
 interface Post {
   _id: string;
   content: string;
-  likes: number;
+  creator: { _id: string; firstName: string; lastName: string };
+  likes: string[];
 }
 
-interface PostItemProps {
-  post: Post;
-}
+const PostItem = ({ post }: { post: Post }) => {
+  const { currentTheme } = useTheme();
+  const [likes, setLikes] = useState(post.likes.length);
+  const [liked, setLiked] = useState(false);
 
-const PostItem = ({ post }: PostItemProps) => {
-  const dispatch = useDispatch();
-
-  const handleLike = () => {
-    dispatch(likePost({ postId: post._id, userId: 'user_id' }));
+  const handleLike = async () => {
+    try {
+      await axios.post(
+        `${API_URL}/posts/${post._id}/like`,
+        {},
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } },
+      );
+      setLikes(liked ? likes - 1 : likes + 1);
+      setLiked(!liked);
+    } catch (err) {
+      console.error('Failed to like post:', err);
+    }
   };
 
   return (
-    <PostItemContainer theme={currentTheme}>
-      <Content theme={currentTheme}>{post.content}</Content>
+    <PostContainer theme={currentTheme}>
+      <PostContent theme={currentTheme}>
+        {post.creator.firstName} {post.creator.lastName}: {post.content}
+      </PostContent>
       <LikeButton onClick={handleLike} theme={currentTheme}>
-        Like ({post.likes})
+        {liked ? 'Unlike' : 'Like'} ({likes})
       </LikeButton>
-    </PostItemContainer>
+      <CommentButton theme={currentTheme}>Comment</CommentButton>
+    </PostContainer>
   );
 };
 

@@ -6,7 +6,7 @@ export class ResetToken extends Document {
   @Prop({ required: true })
   userId: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   token: string;
 
   @Prop({ required: true })

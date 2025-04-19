@@ -1,17 +1,35 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+interface PostState {
+  posts: any[];
+  loading: boolean;
+  error: string | null;
+}
+
+const initialState: PostState = {
+  posts: [],
+  loading: false,
+  error: null,
+};
+
 const postsSlice = createSlice({
   name: 'posts',
-  initialState: { posts: [] },
+  initialState,
   reducers: {
-    likePost(state, action) {
-      // Placeholder
+    fetchPostsStart() {
+      return { ...initialState, loading: true };
     },
-    addComment(state, action) {
-      // Placeholder
+    fetchPostsSuccess(state, action) {
+      state.posts = action.payload;
+      state.loading = false;
+      state.error = null;
+    },
+    fetchPostsFailure(state, action) {
+      state.loading = false;
+      state.error = action.payload;
     },
   },
 });
 
-export const { likePost, addComment } = postsSlice.actions;
+export const { fetchPostsStart, fetchPostsSuccess, fetchPostsFailure } = postsSlice.actions;
 export default postsSlice.reducer;

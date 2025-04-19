@@ -1,6 +1,5 @@
-import { Controller, Post, Body, Get, Param, Req } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param } from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import { Request } from 'express';
 
 @Controller('tasks')
 export class TasksController {
@@ -8,21 +7,30 @@ export class TasksController {
 
   @Post()
   async createTask(
-    @Body() taskDto: { projectId: string; title: string; description: string },
-    @Req() req: Request,
+    @Body('projectId') projectId: string,
+    @Body('title') title: string,
+    @Body('description') description: string,
   ) {
-    const user = (req as any).user;
-    return this.tasksService.createTask(taskDto.projectId, taskDto.title, taskDto.description, user.sub);
+    return this.tasksService.createTask(projectId, title, description);
   }
 
-  @Post(':id/complete')
-  async completeTask(@Param('id') taskId: string, @Req() req: Request) {
-    const user = (req as any).user;
-    return this.tasksService.completeTask(taskId, user.sub);
+  @Get(':projectId')
+  async getTasks(@Param('projectId') projectId: string) {
+    return this.tasksService.getTasks(projectId);
   }
 
-  @Get('completed')
-  async getCompletedTasks() {
-    return this.tasksService.getCompletedTasks();
+  @Patch(':id')
+  async updateTask(
+    @Param('id') id: string,
+    @Body('status') status?: string,
+    @Body('assignee') assignee?: string,
+    @Body('dueDate') dueDate?: string,
+  ) {
+    return this.tasksService.updateTask(id, { status, assignee, dueDate: dueDate ? new Date(dueDate) : undefined });
+  }
+
+  @Delete(':id')
+  async deleteTask(@Param('id') id: string) {
+    return this.tasksService.deleteTask(id);
   }
 }

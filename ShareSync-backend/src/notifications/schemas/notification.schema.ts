@@ -4,22 +4,19 @@ import { Document } from 'mongoose';
 @Schema()
 export class Notification extends Document {
   @Prop({ required: true })
+  projectId: string;
+
+  @Prop({ required: true })
   userId: string;
 
   @Prop({ required: true })
   message: string;
 
-  @Prop({ required: true })
-  timestamp: Date;
-
   @Prop({ default: false })
   read: boolean;
 
-  @Prop()
-  type: string; // e.g., 'task_completed', 'comment', 'project_update'
-
-  @Prop()
-  relatedId: string; // e.g., taskId, commentId, projectId
+  @Prop({ default: Date.now })
+  timestamp: Date;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);

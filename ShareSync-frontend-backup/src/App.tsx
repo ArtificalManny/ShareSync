@@ -10,7 +10,7 @@ import Register from './pages/Register';
 import ResetPassword from './pages/ResetPassword';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyEmail from './pages/VerifyEmail';
-import Profile from './pages/Profile'; // Add Profile route
+import Profile from './pages/Profile';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { SocketProvider } from './contexts/SocketContext';
@@ -19,7 +19,23 @@ import ErrorBoundary from './components/ErrorBoundary';
 import GlobalStyles from './styles/GlobalStyles';
 import styled from 'styled-components';
 
-const AppContainer = styled.div`
+interface Theme {
+  background: string;
+  text: string;
+  primary: string;
+  secondary: string;
+  border: string;
+  buttonBackground: string;
+  buttonText: string;
+  glow: string;
+  accent: string;
+  highlight: string;
+  warning: string;
+  cardBackground: string;
+  shadow: string;
+}
+
+const AppContainer = styled.div<{ theme: Theme }>`
   min-height: 100vh;
   background: ${({ theme }) => theme.background};
   position: relative;
@@ -54,7 +70,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 function App() {
   console.log('App: Starting render');
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [currentTheme, setCurrentTheme] = useState(isDarkMode ? darkTheme : lightTheme);
+  const [currentTheme, setCurrentTheme] = useState<Theme>(isDarkMode ? darkTheme : lightTheme);
 
   useEffect(() => {
     console.log('App: useEffect - Updating theme, isDarkMode:', isDarkMode);
@@ -82,11 +98,11 @@ function App() {
                   <Route path="/register" element={<Register />} />
                   <Route path="/recover" element={<Recover />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/reset-password/:token" element={<ResetPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/verify-email/:token" element={<VerifyEmail />} />
                   <Route path="/project/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
                   <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} /> {/* Add Profile route */}
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/" element={<Home />} />
                   <Route path="/home" element={<Home />} />
                 </Routes>

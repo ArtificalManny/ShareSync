@@ -1,102 +1,128 @@
+import { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import ProjectForm from '../components/ProjectForm';
 
 const HomeContainer = styled.div`
-  background: ${({ theme }) => theme.background};
-  color: ${({ theme }) => theme.text};
-  min-height: calc(100vh - 70px);
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+  background: ${({ theme }: { theme: any }) => theme.background};
+  color: ${({ theme }) => theme.text};
+`;
+
+const Section = styled.div`
+  flex: 1;
+  min-width: 300px;
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: ${({ theme }) => theme.glow};
+`;
+
+const NotificationSection = styled(Section)`
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
+  border: 1px solid ${({ theme }) => theme.border};
+`;
+
+const ProjectFormSection = styled(Section)`
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
+  border: 1px solid ${({ theme }) => theme.border};
+`;
+
+const OverviewSection = styled(Section)`
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
+  border: 1px solid ${({ theme }) => theme.border};
+`;
+
+const StatsSection = styled(Section)`
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
+  border: 1px solid ${({ theme }) => theme.border};
   text-align: center;
-  position: relative;
-  overflow: hidden;
-
-  &:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary}, ${({ theme }) => theme.accent});
-    opacity: 0.3;
-    z-index: -1;
-    animation: gradientShift 15s ease infinite;
-
-    @keyframes gradientShift {
-      0% { transform: translateX(0); }
-      50% { transform: translateX(50%); }
-      100% { transform: translateX(0); }
-    }
-  }
 `;
 
-const Title = styled.h1`
-  font-size: 64px;
-  margin-bottom: 20px;
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 15px ${({ theme }) => theme.glow};
-  animation: glow 3s ease-in-out infinite;
-
-  @keyframes glow {
-    0% { text-shadow: 0 0 15px ${({ theme }) => theme.glow}; }
-    50% { text-shadow: 0 0 25px ${({ theme }) => theme.glow}; }
-    100% { text-shadow: 0 0 15px ${({ theme }) => theme.glow}; }
-  }
+const TeamActivitySection = styled(Section)`
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
+  border: 1px solid ${({ theme }) => theme.border};
 `;
 
-const Subtitle = styled.p`
-  font-size: 20px;
-  margin-bottom: 30px;
-  color: ${({ theme }) => theme.accent};
-  text-shadow: 0 0 5px ${({ theme }) => theme.glow};
-`;
-
-const ActionLink = styled(Link)`
+const Button = styled.button`
+  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme.primary}, ${({ theme }) => theme.secondary});
   color: ${({ theme }) => theme.buttonText};
-  text-decoration: none;
-  font-size: 18px;
-  margin: 0 15px;
   padding: 10px 20px;
+  border: none;
   border-radius: 25px;
-  background: linear-gradient(45deg, ${({ theme }) => theme.secondary}, ${({ theme }) => theme.highlight});
-  box-shadow: 0 0 10px ${({ theme }) => theme.glow};
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-
+  cursor: pointer;
+  margin: 10px 0;
+  transition: transform 0.3s ease;
   &:hover {
     transform: scale(1.05);
-    box-shadow: 0 0 20px ${({ theme }) => theme.glow};
+    box-shadow: ${({ theme }) => theme.glow};
   }
 `;
 
-interface User {
-  _id: string;
-  username: string;
-}
+const StatBox = styled.div`
+  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme.secondary}, ${({ theme }) => theme.highlight});
+  padding: 15px;
+  border-radius: 10px;
+  margin: 10px 0;
+  box-shadow: ${({ theme }) => theme.glow};
+`;
 
-interface HomeProps {
-  user?: User;
-}
+const StatNumber = styled.div`
+  font-size: 24px;
+  color: ${({ theme }: { theme: any }) => theme.accent};
+`;
 
-const Home = ({ user }: HomeProps) => {
+const Home = () => {
   const { currentTheme } = useTheme();
+  const [notifications] = useState<string[]>([]);
 
   return (
     <HomeContainer theme={currentTheme}>
-      <Title>Welcome to ShareSync{user ? `, ${user.username}` : ''}</Title>
-      <Subtitle>Collaborate, manage projects, and connect with your team in a seamless, futuristic workspace.</Subtitle>
-      <div>
-        <ActionLink to="/login" theme={currentTheme}>Login</ActionLink>
-        <ActionLink to="/register" theme={currentTheme}>Register</ActionLink>
-      </div>
-      <ActionLink to="/projects" theme={currentTheme} style={{ marginTop: '30px' }}>
-        Explore Projects
-      </ActionLink>
+      <Button theme={currentTheme}>Create Project</Button>
+      <NotificationSection theme={currentTheme}>
+        <h2>Notifications ({notifications.length})</h2>
+        {notifications.length === 0 ? (
+          <p>No notifications yet.</p>
+        ) : (
+          notifications.map((notification, index) => (
+            <p key={index}>{notification}</p>
+          ))
+        )}
+      </NotificationSection>
+
+      <ProjectFormSection theme={currentTheme}>
+        <h2>Create a New Project</h2>
+        <ProjectForm />
+      </ProjectFormSection>
+
+      <OverviewSection theme={currentTheme}>
+        <h2>Project Overview</h2>
+        <StatBox theme={currentTheme}>
+          <h3>Total Projects</h3>
+          <StatNumber theme={currentTheme}>0</StatNumber>
+        </StatBox>
+        <StatBox theme={currentTheme}>
+          <h3>Current Projects</h3>
+          <StatNumber theme={currentTheme}>0</StatNumber>
+        </StatBox>
+        <StatBox theme={currentTheme}>
+          <h3>Past Projects</h3>
+          <StatNumber theme={currentTheme}>0</StatNumber>
+        </StatBox>
+      </OverviewSection>
+
+      <StatsSection theme={currentTheme}>
+        <h2>Tasks Completed</h2>
+        <StatNumber theme={currentTheme}>14</StatNumber>
+      </StatsSection>
+
+      <TeamActivitySection theme={currentTheme}>
+        <h2>Team Activity</h2>
+        <p>No recent updates.</p>
+      </TeamActivitySection>
     </HomeContainer>
   );
 };

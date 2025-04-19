@@ -1,30 +1,28 @@
-import { WebSocketGateway, WebSocketServer, SubscribeMessage, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { Server } from 'socket.io';
 import { NotificationsService } from './notifications.service';
 
 @WebSocketGateway({ cors: { origin: 'http://localhost:54693', credentials: true } })
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer() server: Server;
+export class NotificationsGateway {
+  @WebSocketServer()
+  server: Server;
 
-  constructor(private notificationsService: NotificationsService) {}
+  constructor(private readonly notificationsService: NotificationsService) {}
 
-  handleConnection(client: Socket) {
-    console.log('Client connected:', client.id);
+  @SubscribeMessage('joinProject')
+  handleJoinProject(client: any, projectId: string): void {
+    client.join(projectId);
+    console.log(`Client joined project room: ${projectId}`);
   }
 
-  handleDisconnect(client: Socket) {
-    console.log('Client disconnected:', client.id);
+  @SubscribeMessage('leaveProject')
+  handleLeaveProject(client: any, projectId: string): void {
+    client.leave(projectId);
+    console.log(`Client left project room: ${projectId}`);
   }
 
-  @SubscribeMessage('join')
-  handleJoin(client: Socket, userId: string) {
-    console.log('User joined:', userId);
-    client.join(userId);
-  }
-
-  async sendNotification(userId: string, notification: { message: string; timestamp: Date; read: boolean; type: string; relatedId?: string }) {
-    console.log('Sending notification to user:', userId, 'notification:', notification);
-    await this.notificationsService.create(userId, notification);
-    this.server.to(userId).emit('notification', notification);
+  async sendNotification(projectId: string, userId: string, message: string) {
+    await this.notificationsService.createNotification(projectId, userId, message);
+    this.server.to(projectId).emit('notification', { userId, message });
   }
 }

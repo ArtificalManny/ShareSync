@@ -1,127 +1,95 @@
 import { useState } from 'react';
-import axios from '../axios';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 
-const fadeIn = keyframes`
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-`;
-
-const glowPulse = keyframes`
-  0% { box-shadow: 0 0 10px ${({ theme }) => theme.glow}; }
-  50% { box-shadow: 0 0 20px ${({ theme }) => theme.glow}; }
-  100% { box-shadow: 0 0 10px ${({ theme }) => theme.glow}; }
-`;
-
-const RegisterContainer = styled.div`
-  background: ${({ theme }) => theme.cardBackground};
-  backdrop-filter: blur(10px);
+const FormContainer = styled.div`
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
   color: ${({ theme }) => theme.text};
-  padding: 40px;
-  max-width: 400px;
-  margin: 50px auto;
+  padding: 30px;
   border-radius: 15px;
   box-shadow: ${({ theme }) => theme.shadow};
-  animation: ${fadeIn} 1s ease-in-out;
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-
-  &:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle, ${({ theme }) => theme.glow}, transparent);
-    opacity: 0.3;
-    z-index: -1;
-    animation: ${glowPulse} 5s ease infinite;
-  }
-`;
-
-const Title = styled.h2`
+  backdrop-filter: blur(10px);
+  border: 1px solid ${({ theme }) => theme.border};
+  width: 100%;
+  max-width: 400px;
   text-align: center;
-  margin-bottom: 20px;
-  font-size: 28px;
-  color: ${({ theme }) => theme.accent};
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  margin: 0 auto;
+  margin-top: 50px;
 `;
 
 const Input = styled.input`
-  padding: 12px;
-  border: 1px solid ${({ theme }) => theme.border};
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid ${({ theme }: { theme: any }) => theme.border};
   border-radius: 5px;
-  font-size: 16px;
   background: ${({ theme }) => theme.cardBackground};
   color: ${({ theme }) => theme.text};
-  outline: none;
 `;
 
 const Button = styled.button`
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme.primary}, ${({ theme }) => theme.secondary});
   color: ${({ theme }) => theme.buttonText};
-  padding: 12px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 5px;
-  font-size: 16px;
+  border-radius: 25px;
+  cursor: pointer;
+  margin: 10px 0;
+  transition: transform 0.3s ease;
+  &:hover {
+    transform: scale(1.05);
+  }
 `;
 
 const ErrorMessage = styled.p`
-  color: ${({ theme }) => theme.warning};
-  text-align: center;
-  margin-top: 10px;
-  text-shadow: 0 0 5px ${({ theme }) => theme.warning};
+  color: ${({ theme }: { theme: any }) => theme.warning};
+  font-size: 14px;
 `;
 
+const SuccessMessage = styled.p`
+  color: ${({ theme }: { theme: any }) => theme.accent};
+  font-size: 14px;
+`;
+
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
+
 const Register = () => {
+  const { currentTheme } = useTheme();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [birthday, setBirthday] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const { currentTheme } = useTheme();
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-    const payload = { email, password, username, firstName, lastName, birthday };
-    console.log('Frontend: Sending register request with payload:', payload);
+    setError('');
+    setSuccess('');
     try {
-      const response = await axios.post('/auth/register', payload, {
-        withCredentials: true,
-        headers: { 'Content-Type': 'application/json' },
+      const response = await axios.post(`${API_URL}/auth/register`, {
+        email,
+        username,
+        firstName,
+        lastName,
+        birthday,
+        password,
       });
-      console.log('Frontend: Register response:', response.data);
-      navigate('/login');
+      setSuccess('Registration successful! Redirecting to login...');
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
-      console.error('Frontend: Register error:', err.response?.data);
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
+      setError(err.response?.data?.message || 'Registration failed');
     }
   };
 
   return (
-    <RegisterContainer theme={currentTheme}>
-      <Title>Register</Title>
-      <Form onSubmit={handleRegister}>
+    <FormContainer theme={currentTheme}>
+      <form onSubmit={handleSubmit}>
         <Input
           type="email"
           value={email}
@@ -129,7 +97,6 @@ const Register = () => {
           placeholder="Email"
           theme={currentTheme}
           required
-          disabled={loading}
         />
         <Input
           type="text"
@@ -137,7 +104,7 @@ const Register = () => {
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Username"
           theme={currentTheme}
-          disabled={loading}
+          required
         />
         <Input
           type="text"
@@ -145,7 +112,7 @@ const Register = () => {
           onChange={(e) => setFirstName(e.target.value)}
           placeholder="First Name"
           theme={currentTheme}
-          disabled={loading}
+          required
         />
         <Input
           type="text"
@@ -153,7 +120,7 @@ const Register = () => {
           onChange={(e) => setLastName(e.target.value)}
           placeholder="Last Name"
           theme={currentTheme}
-          disabled={loading}
+          required
         />
         <Input
           type="date"
@@ -161,7 +128,7 @@ const Register = () => {
           onChange={(e) => setBirthday(e.target.value)}
           placeholder="Birthday"
           theme={currentTheme}
-          disabled={loading}
+          required
         />
         <Input
           type="password"
@@ -170,14 +137,12 @@ const Register = () => {
           placeholder="Password"
           theme={currentTheme}
           required
-          disabled={loading}
         />
-        <Button type="submit" theme={currentTheme} disabled={loading}>
-          {loading ? 'Registering...' : 'Register'}
-        </Button>
-      </Form>
+        <Button type="submit" theme={currentTheme}>Register</Button>
+      </form>
       {error && <ErrorMessage theme={currentTheme}>{error}</ErrorMessage>}
-    </RegisterContainer>
+      {success && <SuccessMessage theme={currentTheme}>{success}</SuccessMessage>}
+    </FormContainer>
   );
 };
 

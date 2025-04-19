@@ -1,39 +1,39 @@
 import { useState } from 'react';
-import axios from '../axios';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
+import styled from 'styled-components';
+
+const RecoverContainer = styled.div`
+  background: ${({ theme }: { theme: any }) => theme.cardBackground};
+  color: ${({ theme }) => theme.text};
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: ${({ theme }) => theme.shadow};
+  backdrop-filter: blur(10px);
+  border: 1px solid ${({ theme }) => theme.border};
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  margin: 0 auto;
+  margin-top: 50px;
+`;
+
+const Message = styled.p`
+  color: ${({ theme }: { theme: any }) => theme.accent};
+  font-size: 16px;
+`;
 
 const Recover = () => {
-  const [email, setEmail] = useState('');
-  const navigate = useNavigate();
   const { currentTheme } = useTheme();
-
-  const handleRecover = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await axios.post('/auth/forgot-password', { email });
-      navigate('/login');
-    } catch (error) {
-      console.error('Password recovery failed:', error);
-    }
-  };
+  const navigate = useNavigate();
+  const [message] = useState('Recovery instructions have been sent to your email.');
 
   return (
-    <div style={{ background: currentTheme.background, color: currentTheme.text, padding: '20px' }}>
-      <h2>Recover Password</h2>
-      <form onSubmit={handleRecover}>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          style={{ marginBottom: '10px', padding: '5px', width: '100%' }}
-        />
-        <button type="submit" style={{ background: currentTheme.primary, color: currentTheme.buttonText, padding: '5px 10px' }}>
-          Recover Password
-        </button>
-      </form>
-    </div>
+    <RecoverContainer theme={currentTheme}>
+      <Message theme={currentTheme}>{message}</Message>
+      <button onClick={() => navigate('/login')}>Back to Login</button>
+    </RecoverContainer>
   );
 };
 
