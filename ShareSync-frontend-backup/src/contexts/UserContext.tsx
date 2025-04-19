@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from '../axios';
+import { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
 
 interface User {
   _id: string;
@@ -11,13 +13,11 @@ interface User {
 interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
-  logout: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType>({
   user: null,
   setUser: () => {},
-  logout: async () => {},
 });
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -25,35 +25,25 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const fetchUser = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const response = await axios.get('/auth/me', {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await axios.get(`${API_URL}/auth/me`, {
             headers: { Authorization: `Bearer ${token}` },
-            withCredentials: true,
           });
           setUser(response.data);
+        } catch (err) {
+          console.error('Failed to fetch user:', err);
+          setUser(null);
+          localStorage.removeItem('token');
         }
-      } catch (error) {
-        console.error('Failed to fetch user:', error);
-        setUser(null);
       }
     };
     fetchUser();
   }, []);
 
-  const logout = async () => {
-    try {
-      await axios.post('/auth/logout', {}, { withCredentials: true });
-      localStorage.removeItem('token');
-      setUser(null);
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
-
   return (
-    <UserContext.Provider value={{ user, setUser, logout }}>
+    <UserContext.Provider value={{ user, setUser }}>
       {children}
     </UserContext.Provider>
   );

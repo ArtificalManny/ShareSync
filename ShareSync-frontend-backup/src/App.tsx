@@ -85,11 +85,11 @@ function App() {
   console.log('App: Rendering with currentTheme:', currentTheme);
 
   return (
-    <UserProvider>
-      <SocketProvider>
-        <ThemeProvider value={{ currentTheme, isDarkMode, toggleTheme }}>
-          <GlobalStyles />
-          <ErrorBoundary>
+    <ErrorBoundary>
+      <UserProvider>
+        <SocketProvider>
+          <ThemeProvider value={{ currentTheme, isDarkMode, toggleTheme }}>
+            <GlobalStyles />
             <AppContainer theme={currentTheme}>
               <Router>
                 <Header />
@@ -108,10 +108,10 @@ function App() {
                 </Routes>
               </Router>
             </AppContainer>
-          </ErrorBoundary>
-        </ThemeProvider>
-      </SocketProvider>
-    </UserProvider>
+          </ThemeProvider>
+        </SocketProvider>
+      </UserProvider>
+    </ErrorBoundary>
   );
 }
 
