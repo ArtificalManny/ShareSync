@@ -7,12 +7,12 @@ import Home from './pages/Home';
 import Projects from './pages/Projects';
 import Recover from './pages/Recover';
 import Register from './pages/Register';
-import ResetPassword from './pages/ResetPassword'; // Corrected path
+import ResetPassword from './pages/ResetPassword';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { UserProvider, useUser } from './contexts/UserContext';
-import { SocketProvider } from './contexts/SocketContext';
+import { SocketProvider } from './contexts/SocketContext'; // Corrected path
 import { lightTheme, darkTheme } from './styles/theme';
 import ErrorBoundary from './components/ErrorBoundary';
 import GlobalStyles from './styles/GlobalStyles';

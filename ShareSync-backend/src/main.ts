@@ -14,8 +14,8 @@ async function bootstrap() {
   });
 
   // Enable body-parser middleware
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: true }));
+  app.use(bodyParser.json({ limit: '50mb' }));
+  app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
   // Enable cookie-parser middleware
   app.use(cookieParser());
