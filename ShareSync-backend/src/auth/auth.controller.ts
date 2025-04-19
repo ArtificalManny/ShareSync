@@ -34,6 +34,36 @@ export class AuthController {
     }
   }
 
+  @Post('forgot-password')
+  async forgotPassword(@Body('email') email: string) {
+    console.log('AuthController: Forgot password request received for email:', email);
+    if (!email) {
+      throw new UnauthorizedException('Email is required');
+    }
+    try {
+      const resetLink = await this.authService.forgotPassword(email);
+      return { message: 'Password reset link sent (simulated)', resetLink };
+    } catch (error) {
+      console.error('AuthController: Forgot password error:', error.message);
+      throw new UnauthorizedException(error.message);
+    }
+  }
+
+  @Post('reset-password/:token')
+  async resetPassword(@Body('newPassword') newPassword: string, @Body('token') token: string) {
+    console.log('AuthController: Reset password request received with token:', token);
+    if (!newPassword || !token) {
+      throw new UnauthorizedException('New password and token are required');
+    }
+    try {
+      await this.authService.resetPassword(token, newPassword);
+      return { message: 'Password reset successful' };
+    } catch (error) {
+      console.error('AuthController: Reset password error:', error.message);
+      throw new UnauthorizedException(error.message);
+    }
+  }
+
   @Get('me')
   async getCurrentUser(@Req() req: Request) {
     const user = (req as any).user;

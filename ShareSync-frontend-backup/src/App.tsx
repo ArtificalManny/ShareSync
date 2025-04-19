@@ -7,7 +7,7 @@ import Home from './pages/Home';
 import Projects from './pages/Projects';
 import Recover from './pages/Recover';
 import Register from './pages/Register';
-import ResetPassword from './pages/ResetPassword';
+import ResetPassword from './pages/ResetPassword'; // Corrected path
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import { ThemeProvider } from './contexts/ThemeContext';
