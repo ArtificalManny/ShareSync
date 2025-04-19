@@ -1,16 +1,27 @@
 import { Controller, Post, Body, Get, UnauthorizedException, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request } from 'express';
-import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Post('create-test-user')
+  async createTestUser() {
+    try {
+      const user = await this.authService.createTestUser();
+      return { message: 'Test user created', user };
+    } catch (error) {
+      console.error('AuthController: Create test user error:', error.message);
+      throw new UnauthorizedException(error.message);
+    }
+  }
+
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    console.log('AuthController: Login request received with DTO:', loginDto);
-    const { email, password } = loginDto;
+  async login(@Body() body: any) {
+    console.log('AuthController: Login request received:', body);
+    const email = body.email;
+    const password = body.password;
     console.log('AuthController: Extracted email:', email, 'password:', password);
     try {
       const user = await this.authService.login(email, password);

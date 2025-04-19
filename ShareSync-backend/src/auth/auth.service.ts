@@ -12,10 +12,40 @@ export class AuthService {
     private resetTokenService: ResetTokenService,
   ) {}
 
+  async createTestUser() {
+    const email = 'eamonrivas@gmail.com';
+    const password = 'S7mR0!%uMZ<$[w%@';
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const existingUser = await this.usersService.findOneByEmail(email);
+    if (existingUser) {
+      console.log('AuthService: Test user already exists:', email);
+      return existingUser;
+    }
+    const user = await this.usersService.create({
+      email,
+      password: hashedPassword,
+      username: 'eamonrivas',
+      firstName: 'Eamon',
+      lastName: 'Rivas',
+      birthday: new Date('1990-01-01'),
+      isVerified: false,
+      badges: [],
+      endorsements: [],
+      followers: [],
+      following: [],
+      hobbies: [],
+      points: 0,
+      notifications: [],
+      skills: [],
+      bio: '',
+    });
+    console.log('AuthService: Test user created:', user);
+    return user;
+  }
+
   async login(email: string, password: string) {
     console.log('AuthService: Login attempt with email:', email, 'and password:', password);
     if (!email || !password) {
-      console.log('AuthService: Email or password is undefined');
       throw new UnauthorizedException('Invalid username or password');
     }
     const user = await this.usersService.findOneByEmail(email);
@@ -27,7 +57,6 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     console.log('AuthService: Password comparison result:', isPasswordValid);
     if (!isPasswordValid) {
-      console.log('AuthService: Password comparison failed for user:', email);
       throw new UnauthorizedException('Invalid username or password');
     }
     const payload = { sub: user._id, email: user.email };

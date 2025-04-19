@@ -17,9 +17,7 @@ const HeaderContainer = styled.header`
 
 const Logo = styled.h1`
   font-size: 24px;
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: ${({ theme }) => (theme.background === '#d1d8f0' ? theme.text : theme.accent)}; /* Solid color in light mode */
 `;
 
 const Nav = styled.nav`
@@ -28,12 +26,12 @@ const Nav = styled.nav`
 `;
 
 const NavLink = styled(Link)`
-  color: ${({ theme }) => theme.text};
+  color: ${({ theme }) => (theme.background === '#d1d8f0' ? theme.text : theme.accent)}; /* Solid color in light mode */
   font-size: 16px;
   transition: color 0.3s ease, transform 0.3s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.accent};
+    color: ${({ theme }) => theme.highlight};
     transform: scale(1.1);
   }
 `;
@@ -73,7 +71,7 @@ const Header = () => {
         <NavLink to="/login">Login</NavLink>
         <NavLink to="/register">Register</NavLink>
         <NavLink to="/projects">Projects</NavLink>
-        <NavLink to="/profile">Profile</NavLink> {/* Add Profile link */}
+        <NavLink to="/profile">Profile</NavLink>
         {user && <NavLink to="/login" onClick={handleLogout}>Logout</NavLink>}
       </Nav>
       <ThemeButton onClick={toggleTheme}>Toggle Theme</ThemeButton>
