@@ -2,18 +2,18 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 @Schema()
-export class Activity extends Document {
+export class ChatMessage extends Document {
   @Prop({ required: true })
   projectId: string;
 
   @Prop({ required: true })
-  userId: string;
+  senderId: string;
 
   @Prop({ required: true })
-  action: string; // e.g., "completed task", "joined project"
+  message: string;
 
   @Prop({ default: Date.now })
   timestamp: Date;
 }
 
-export const ActivitySchema = SchemaFactory.createForClass(Activity);
+export const ChatMessageSchema = SchemaFactory.createForClass(ChatMessage);

@@ -10,6 +10,7 @@ import Register from './pages/Register';
 import ResetPassword from './pages/ResetPassword';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyEmail from './pages/VerifyEmail';
+import Profile from './pages/Profile'; // Add Profile route
 import { ThemeProvider } from './contexts/ThemeContext';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { SocketProvider } from './contexts/SocketContext';
@@ -20,7 +21,7 @@ import styled from 'styled-components';
 
 const AppContainer = styled.div`
   min-height: 100vh;
-  background: ${({ theme }) => theme.background || '#121212'}; /* Fallback background */
+  background: ${({ theme }) => theme.background};
   position: relative;
   overflow: hidden;
 
@@ -31,7 +32,7 @@ const AppContainer = styled.div`
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(45deg, ${({ theme }) => theme.primary || '#ab47bc'}, ${({ theme }) => theme.secondary || '#f06292'});
+    background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
     opacity: 0.1;
     z-index: -1;
     animation: gradientShift 15s ease infinite;
@@ -85,6 +86,7 @@ function App() {
                   <Route path="/verify-email/:token" element={<VerifyEmail />} />
                   <Route path="/project/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
                   <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} /> {/* Add Profile route */}
                   <Route path="/" element={<Home />} />
                   <Route path="/home" element={<Home />} />
                 </Routes>

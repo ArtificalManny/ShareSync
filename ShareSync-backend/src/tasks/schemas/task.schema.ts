@@ -12,17 +12,23 @@ export class Task extends Document {
   @Prop()
   description: string;
 
-  @Prop({ required: true })
-  createdBy: string;
+  @Prop()
+  assignedTo: string;
+
+  @Prop({ default: 'pending' })
+  status: string; // e.g., 'pending', 'in-progress', 'completed'
 
   @Prop()
   completedBy: string;
 
-  @Prop({ default: false })
-  isCompleted: boolean;
-
   @Prop()
   completedAt: Date;
+
+  @Prop({ default: Date.now })
+  createdAt: Date;
+
+  @Prop()
+  dueDate: Date;
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);

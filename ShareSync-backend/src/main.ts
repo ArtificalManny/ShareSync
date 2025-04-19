@@ -20,9 +20,9 @@ async function bootstrap() {
   // Enable cookie-parser middleware
   app.use(cookieParser());
 
-  // Log incoming requests
+  // Log raw request body
   app.use((req: Request, res: Response, next: NextFunction) => {
-    console.log('Middleware: Incoming request:', req.method, req.url, 'Body:', req.body);
+    console.log('Middleware: Raw request - Method:', req.method, 'URL:', req.url, 'Body:', req.body);
     next();
   });
 

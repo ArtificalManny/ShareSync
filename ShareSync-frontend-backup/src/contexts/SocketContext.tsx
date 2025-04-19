@@ -10,16 +10,26 @@ interface Notification {
   relatedId?: string;
 }
 
+interface ChatMessage {
+  projectId: string;
+  senderId: string;
+  message: string;
+  timestamp: Date;
+}
+
 interface SocketContextType {
   socket: Socket | null;
   notifications: Notification[];
+  chatMessages: { [projectId: string]: ChatMessage[] };
+  sendChatMessage: (projectId: string, message: string) => void;
 }
 
-const SocketContext = createContext<SocketContextType>({ socket: null, notifications: [] });
+const SocketContext = createContext<SocketContextType>({ socket: null, notifications: [], chatMessages: {}, sendChatMessage: () => {} });
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [chatMessages, setChatMessages] = useState<{ [projectId: string]: ChatMessage[] }>({});
   const { user } = useUser();
 
   useEffect(() => {
@@ -49,6 +59,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         console.log('SocketProvider: Received notification:', notification);
         setNotifications((prev) => [notification, ...prev]);
       });
+      socket.on('chatMessage', (message: ChatMessage) => {
+        console.log('SocketProvider: Received chat message:', message);
+        setChatMessages((prev) => ({
+          ...prev,
+          [message.projectId]: [...(prev[message.projectId] || []), message],
+        }));
+      });
 
       socket.on('connect_error', (error) => {
         console.error('SocketProvider: Connection error:', error);
@@ -60,8 +77,21 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [socket, user]);
 
+  const sendChatMessage = (projectId: string, message: string) => {
+    if (socket && user) {
+      const chatMessage = {
+        projectId,
+        senderId: user._id,
+        message,
+        timestamp: new Date(),
+      };
+      console.log('SocketProvider: Sending chat message:', chatMessage);
+      socket.emit('chatMessage', chatMessage);
+    }
+  };
+
   return (
-    <SocketContext.Provider value={{ socket, notifications }}>
+    <SocketContext.Provider value={{ socket, notifications, chatMessages, sendChatMessage }}>
       {children}
     </SocketContext.Provider>
   );

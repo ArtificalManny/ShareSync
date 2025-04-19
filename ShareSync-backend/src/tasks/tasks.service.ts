@@ -1,72 +1,89 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Task } from '../task.schema';
-import { NotificationsService } from '../notifications/notifications.service';
-import { UsersService } from '../users/users.service';
+import { Task } from './task.schema';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
 export class TasksService {
   constructor(
     @InjectModel('Task') private taskModel: Model<Task>,
-    private notificationsService: NotificationsService,
-    private usersService: UsersService,
+    private notificationsGateway: NotificationsGateway,
   ) {}
 
-  async createTask(projectId: string, title: string, description: string, createdBy: string) {
+  async create(projectId: string, title: string, description: string, creatorId: string, assignedTo?: string, dueDate?: string) {
     const task = new this.taskModel({
       projectId,
       title,
       description,
-      createdBy,
-      isCompleted: false,
+      assignedTo,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
     });
-    await task.save();
-    // Notify the project creator
-    const creator = await this.usersService.findOneById(createdBy);
-    if (creator) {
-      await this.notificationsService.createNotification(
-        createdBy,
-        `New task "${title}" created in project ${projectId}`,
-        'task_created',
-        task._id.toString(),
-      );
+    const savedTask = await task.save();
+    if (assignedTo) {
+      this.notificationsGateway.sendNotification(assignedTo, {
+        message: `You have been assigned a new task: "${title}"`,
+        timestamp: new Date(),
+        read: false,
+        type: 'task-assigned',
+        relatedId: savedTask._id,
+      });
     }
-    return task;
+    return savedTask;
   }
 
-  async completeTask(taskId: string, completedBy: string) {
-    const task = await this.taskModel.findById(taskId).exec();
+  async getCompletedTasks(projectId: string) {
+    return this.taskModel.find({ projectId, status: 'completed' }).exec();
+  }
+
+  async assignTask(taskId: string, assignedTo: string) {
+    const task = await this.taskModel.findById(taskId);
     if (!task) {
       throw new Error('Task not found');
     }
-    task.isCompleted = true;
-    task.completedBy = completedBy;
-    task.completedAt = new Date();
-    await task.save();
-    // Notify the project creator and the user who completed the task
-    const creator = await this.usersService.findOneById(task.createdBy);
-    const completer = await this.usersService.findOneById(completedBy);
-    if (creator) {
-      await this.notificationsService.createNotification(
-        task.createdBy,
-        `${completer?.email} completed task "${task.title}" in project ${task.projectId}`,
-        'task_completed',
-        taskId,
-      );
+    task.assignedTo = assignedTo;
+    task.status = 'in-progress';
+    const updatedTask = await task.save();
+    if (assignedTo) {
+      this.notificationsGateway.sendNotification(assignedTo, {
+        message: `You have been assigned a new task: "${task.title}"`,
+        timestamp: new Date(),
+        read: false,
+        type: 'task-assigned',
+        relatedId: taskId,
+      });
     }
-    if (completer) {
-      await this.notificationsService.createNotification(
-        completedBy,
-        `You completed task "${task.title}" in project ${task.projectId}`,
-        'task_completed',
-        taskId,
-      );
-    }
-    return task;
+    return updatedTask;
   }
 
-  async getCompletedTasks() {
-    return this.taskModel.find({ isCompleted: true }).exec();
+  async completeTask(taskId: string, completedBy: string) {
+    const task = await this.taskModel.findById(taskId);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+    task.status = 'completed';
+    task.completedBy = completedBy;
+    task.completedAt = new Date();
+    const updatedTask = await task.save();
+    if (task.assignedTo) {
+      this.notificationsGateway.sendNotification(task.assignedTo, {
+        message: `Task "${task.title}" has been completed by ${completedBy}`,
+        timestamp: new Date(),
+        read: false,
+        type: 'task-completed',
+        relatedId: taskId,
+      });
+    }
+    return updatedTask;
+  }
+
+  async getProjectTasks(projectId: string) {
+    return this.taskModel.find({ projectId }).exec();
+  }
+
+  async getProjectProgress(projectId: string): Promise<number> {
+    const totalTasks = await this.taskModel.countDocuments({ projectId });
+    const completedTasks = await this.taskModel.countDocuments({ projectId, status: 'completed' });
+    return totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
   }
 }

@@ -5,6 +5,8 @@ import { UsersModule } from './users/users.module';
 import { NotificationSchema } from './notification.schema';
 import { TaskSchema } from './task.schema';
 import { ResetTokenSchema } from './reset-token/reset-token.schema';
+import { ChatMessageSchema } from './chat/chat.schema';
+import { ActivitySchema } from './activities.schemas/activity.schema'; // Corrected path
 import { NotificationsGateway } from './notifications/notifications.gateway';
 import { NotificationsService } from './notifications/notifications.service';
 import { TasksService } from './tasks/tasks.service';
@@ -18,6 +20,8 @@ import { ResetTokenService } from './reset-token/reset-token.service';
       { name: 'Notification', schema: NotificationSchema },
       { name: 'Task', schema: TaskSchema },
       { name: 'ResetToken', schema: ResetTokenSchema },
+      { name: 'ChatMessage', schema: ChatMessageSchema },
+      { name: 'Activity', schema: ActivitySchema },
     ]),
     AuthModule,
     UsersModule,

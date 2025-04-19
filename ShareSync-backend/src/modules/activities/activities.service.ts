@@ -1,22 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Activity, ActivityDocument } from './schemas/activity.schema';
+import { Activity } from './activity.schema';
 
 @Injectable()
-export class ActivitiesService {
-  constructor(@InjectModel(Activity.name) private activityModel: Model<ActivityDocument>) {}
+export class ActivityService {
+  constructor(@InjectModel('Activity') private activityModel: Model<Activity>) {}
 
-  async create(activity: Partial<Activity>): Promise<Activity> {
-    const newActivity = new this.activityModel(activity);
-    return newActivity.save();
+  async createActivity(projectId: string, userId: string, action: string): Promise<Activity> {
+    const activity = new this.activityModel({ projectId, userId, action });
+    return activity.save();
   }
 
-  async findByUserId(userId: string): Promise<Activity[]> {
-    return this.activityModel.find({ userId }).sort({ createdAt: -1 }).exec();
-  }
-
-  async findByProjectId(projectId: string): Promise<Activity[]> {
-    return this.activityModel.find({ projectId }).sort({ createdAt: -1 }).exec();
+  async getActivities(projectId: string): Promise<Activity[]> {
+    return this.activityModel.find({ projectId }).sort({ timestamp: -1 }).limit(20).exec();
   }
 }

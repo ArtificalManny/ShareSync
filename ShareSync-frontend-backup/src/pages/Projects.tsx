@@ -5,7 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useSocket } from '../contexts/SocketContext';
 import { useUser } from '../contexts/UserContext';
 import styled, { keyframes } from 'styled-components';
-import { FaBell, FaChartBar, FaTasks, FaHistory, FaUsers, FaFolderPlus, FaCheckCircle } from 'react-icons/fa';
+import { FaBell, FaChartBar, FaTasks, FaHistory, FaUsers, FaFolderPlus, FaCheckCircle, FaComment, FaStream, FaUser, FaPercentage } from 'react-icons/fa';
 
 const glowAnimation = keyframes`
   0% { box-shadow: 0 0 10px ${({ theme }) => theme.glow}; }
@@ -250,6 +250,53 @@ const ErrorMessage = styled.p`
   text-shadow: 0 0 5px ${({ theme }) => theme.warning};
 `;
 
+const ChatContainer = styled.div`
+  margin-top: 20px;
+  max-height: 300px;
+  overflow-y: auto;
+`;
+
+const ChatMessage = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: ${({ theme }) => theme.cardBackground};
+  border-radius: 8px;
+  margin-bottom: 5px;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: translateX(5px);
+  }
+`;
+
+const ChatInput = styled.input`
+  width: 100%;
+  padding: 10px;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 5px;
+  background: ${({ theme }) => theme.cardBackground};
+  color: ${({ theme }) => theme.text};
+  outline: none;
+`;
+
+const ProgressBarContainer = styled.div`
+  width: 100%;
+  background: ${({ theme }) => theme.border};
+  border-radius: 5px;
+  height: 10px;
+  margin-top: 10px;
+`;
+
+const ProgressBarFill = styled.div<{ progress: number }>`
+  width: ${({ progress }) => progress}%;
+  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s ease;
+`;
+
 interface Project {
   _id: string;
   name: string;
@@ -261,18 +308,34 @@ interface Task {
   _id: string;
   projectId: string;
   title: string;
-  completedBy: string;
-  completedAt: Date;
+  description: string;
+  assignedTo?: string;
+  status: string;
+  completedBy?: string;
+  completedAt?: Date;
+  dueDate?: Date;
+}
+
+interface Activity {
+  projectId: string;
+  userId: string;
+  action: string;
+  timestamp: Date;
 }
 
 const Projects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [newProject, setNewProject] = useState({ name: '', description: '', shareWith: '' });
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+  const [projectTasks, setProjectTasks] = useState<Task[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [progress, setProgress] = useState<number>(0);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [chatInput, setChatInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { currentTheme } = useTheme();
-  const { notifications } = useSocket();
+  const { notifications, chatMessages, sendChatMessage } = useSocket();
   const { user } = useUser();
 
   useEffect(() => {
@@ -306,6 +369,36 @@ const Projects = () => {
     fetchCompletedTasks();
   }, []);
 
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      if (selectedProjectId) {
+        try {
+          const token = localStorage.getItem('token');
+          const tasksResponse = await axios.get(`/tasks/project/${selectedProjectId}`, {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setProjectTasks(tasksResponse.data);
+
+          const progressResponse = await axios.get(`/tasks/project/${selectedProjectId}/progress`, {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setProgress(progressResponse.data);
+
+          const activitiesResponse = await axios.get(`/activities/project/${selectedProjectId}`, {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setActivities(activitiesResponse.data);
+        } catch (err: any) {
+          console.error('Failed to fetch project data:', err);
+        }
+      }
+    };
+    fetchProjectData();
+  }, [selectedProjectId]);
+
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -323,6 +416,48 @@ const Projects = () => {
       setNewProject({ name: '', description: '', shareWith: '' });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Please log in to create a project.');
+    }
+  };
+
+  const handleSendChatMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedProjectId && chatInput.trim() && user) {
+      sendChatMessage(selectedProjectId, chatInput);
+      setChatInput('');
+    }
+  };
+
+  const handleAssignTask = async (taskId: string, assignedTo: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`/tasks/${taskId}/assign`, { assignedTo }, {
+        withCredentials: true,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setProjectTasks(tasks =>
+        tasks.map(task =>
+          task._id === taskId ? { ...task, assignedTo, status: 'in-progress' } : task
+        )
+      );
+    } catch (err: any) {
+      console.error('Failed to assign task:', err);
+    }
+  };
+
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`/tasks/${taskId}/complete`, { completedBy: user?._id }, {
+        withCredentials: true,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setProjectTasks(tasks =>
+        tasks.map(task =>
+          task._id === taskId ? { ...task, status: 'completed', completedBy: user?._id, completedAt: new Date() } : task
+        )
+      );
+    } catch (err: any) {
+      console.error('Failed to complete task:', err);
     }
   };
 
@@ -370,67 +505,144 @@ const Projects = () => {
           ))}
           {notifications.length === 0 && <NotificationMessage theme={currentTheme}>No notifications yet.</NotificationMessage>}
         </NotificationList>
-      </Sidebar>
-      <MainContent>
-        <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>
-            <FaChartBar /> Project Overview
-          </CardTitle>
-          <CardValue theme={currentTheme}>Total Projects<br />{projects.length}</CardValue>
-        </Card>
-        <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>
-            <FaCheckCircle /> Tasks Completed
-          </CardTitle>
-          <TaskList>
-            {completedTasks.map((task) => (
-              <TaskItem key={task._id} theme={currentTheme}>
-                <Avatar src="https://via.placeholder.com/30" alt="User avatar" />
-                <NotificationMessage theme={currentTheme}>
-                  {user?.email} completed task "{task.title}" in project {task.projectId}
-                </NotificationMessage>
-              </TaskItem>
-            ))}
-            {completedTasks.length === 0 && <NotificationMessage theme={currentTheme}>No tasks completed yet.</NotificationMessage>}
-          </TaskList>
-        </Card>
-        <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>
-            <FaTasks /> Current Projects
-          </CardTitle>
-          <CardValue theme={currentTheme}>{projects.length}</CardValue>
-        </Card>
-        <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>
-            <FaHistory /> Past Projects
-          </CardTitle>
-          <CardValue theme={currentTheme}>0</CardValue>
-        </Card>
-        <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>
-            <FaUsers /> Team Activity
-          </CardTitle>
-          <NotificationMessage theme={currentTheme}>No recent activities.</NotificationMessage>
-        </Card>
-        <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>
-            <FaFolderPlus /> Your Projects
-          </CardTitle>
-          <ProjectList>
-            {projects.map((project) => (
-              <ProjectItem
-                key={project._id}
-                onClick={() => navigate(`/project/${project._id}`)}
-                theme={currentTheme}
-              >
-                {project.name}
-              </ProjectItem>
-            ))}
-          </ProjectList>
-        </Card>
-      </MainContent>
-    </ProjectsContainer>
-  );
-};
+        {selectedProjectId && (
+          <>
+                        <SidebarTitle theme={currentTheme} style={{ marginTop: '20px' }}>
+                <FaComment /> Chat
+              </SidebarTitle>
+              <ChatContainer>
+                {chatMessages[selectedProjectId]?.map((msg, index) => (
+                  <ChatMessage key={index} theme={currentTheme}>
+                    <Avatar src="https://via.placeholder.com/30" alt="User avatar" />
+                    <NotificationMessage theme={currentTheme}>
+                      {msg.senderId}: {msg.message}
+                    </NotificationMessage>
+                  </ChatMessage>
+                ))}
+              </ChatContainer>
+              <Form onSubmit={handleSendChatMessage}>
+                <ChatInput
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Type a message..."
+                  theme={currentTheme}
+                />
+                <Button type="submit" theme={currentTheme}>Send</Button>
+              </Form>
+            </>
+          )}
+        </Sidebar>
+        <MainContent>
+          <Card theme={currentTheme}>
+            <CardTitle theme={currentTheme}>
+              <FaChartBar /> Project Overview
+            </CardTitle>
+            <CardValue theme={currentTheme}>Total Projects<br />{projects.length}</CardValue>
+          </Card>
+          <Card theme={currentTheme}>
+            <CardTitle theme={currentTheme}>
+              <FaCheckCircle /> Tasks Completed
+            </CardTitle>
+            <TaskList>
+              {completedTasks.map((task) => (
+                <TaskItem key={task._id} theme={currentTheme}>
+                  <Avatar src="https://via.placeholder.com/30" alt="User avatar" />
+                  <NotificationMessage theme={currentTheme}>
+                    {user?.email} completed task "{task.title}" in project {task.projectId}
+                  </NotificationMessage>
+                </TaskItem>
+              ))}
+              {completedTasks.length === 0 && <NotificationMessage theme={currentTheme}>No tasks completed yet.</NotificationMessage>}
+            </TaskList>
+          </Card>
+          <Card theme={currentTheme}>
+            <CardTitle theme={currentTheme}>
+              <FaTasks /> Current Projects
+            </CardTitle>
+            <CardValue theme={currentTheme}>{projects.length}</CardValue>
+          </Card>
+          <Card theme={currentTheme}>
+            <CardTitle theme={currentTheme}>
+              <FaHistory /> Past Projects
+            </CardTitle>
+            <CardValue theme={currentTheme}>0</CardValue>
+          </Card>
+          <Card theme={currentTheme}>
+            <CardTitle theme={currentTheme}>
+              <FaStream /> Activity Feed
+            </CardTitle>
+            <TaskList>
+              {activities.map((activity, index) => (
+                <TaskItem key={index} theme={currentTheme}>
+                  <Avatar src="https://via.placeholder.com/30" alt="User avatar" />
+                  <NotificationMessage theme={currentTheme}>
+                    User {activity.userId} {activity.action} at {new Date(activity.timestamp).toLocaleString()}
+                  </NotificationMessage>
+                </TaskItem>
+              ))}
+              {activities.length === 0 && <NotificationMessage theme={currentTheme}>No recent activities.</NotificationMessage>}
+            </TaskList>
+          </Card>
+          <Card theme={currentTheme}>
+            <CardTitle theme={currentTheme}>
+              <FaFolderPlus /> Your Projects
+            </CardTitle>
+            <ProjectList>
+              {projects.map((project) => (
+                <ProjectItem
+                  key={project._id}
+                  onClick={() => setSelectedProjectId(project._id)}
+                  theme={currentTheme}
+                >
+                  {project.name}
+                </ProjectItem>
+              ))}
+            </ProjectList>
+            {selectedProjectId && (
+              <>
+                <CardTitle theme={currentTheme}>
+                  <FaPercentage /> Project Progress
+                </CardTitle>
+                <ProgressBarContainer>
+                  <ProgressBarFill progress={progress} theme={currentTheme} />
+                </ProgressBarContainer>
+                <CardTitle theme={currentTheme}>
+                  <FaTasks /> Project Tasks
+                </CardTitle>
+                <TaskList>
+                  {projectTasks.map((task) => (
+                    <TaskItem key={task._id} theme={currentTheme}>
+                      <Avatar src="https://via.placeholder.com/30" alt="User avatar" />
+                      <NotificationMessage theme={currentTheme}>
+                        {task.title} (Status: {task.status})
+                        {task.dueDate && ` - Due: ${new Date(task.dueDate).toLocaleDateString()}`}
+                      </NotificationMessage>
+                      {task.status !== 'completed' && (
+                        <>
+                          <Input
+                            type="text"
+                            placeholder="Assign to (email)"
+                            onChange={(e) => {
+                              const email = e.target.value;
+                              if (e.key === 'Enter') {
+                                handleAssignTask(task._id, email);
+                              }
+                            }}
+                            theme={currentTheme}
+                          />
+                          <Button onClick={() => handleCompleteTask(task._id)} theme={currentTheme}>Complete</Button>
+                        </>
+                      )}
+                    </TaskItem>
+                  ))}
+                </TaskList>
+              </>
+            )}
+          </Card>
+        </MainContent>
+      </ProjectsContainer>
+    );
+  };
 
-export default Projects;
+  export default Projects;

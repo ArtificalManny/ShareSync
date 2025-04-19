@@ -18,8 +18,8 @@ export class User extends Document {
   @Prop()
   lastName: string;
 
-  @Prop()
-  birthday: Date; // Defined as Date, optional
+  @Prop({ type: Date })
+  birthday: Date;
 
   @Prop({ default: false })
   isVerified: boolean;
@@ -44,6 +44,12 @@ export class User extends Document {
 
   @Prop({ type: [String], default: [] })
   notifications: string[];
+
+  @Prop({ type: [String], default: [] })
+  skills: string[];
+
+  @Prop()
+  bio: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

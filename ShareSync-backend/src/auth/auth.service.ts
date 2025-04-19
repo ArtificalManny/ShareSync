@@ -45,7 +45,7 @@ export class AuthService {
       throw new UnauthorizedException('User already exists');
     }
     const hashedPassword = await bcrypt.hash(userData.password, 10);
-    const user = await this.usersService.create({
+    const userPayload = {
       email: userData.email,
       password: hashedPassword,
       username: userData.username || userData.email.split('@')[0],
@@ -60,7 +60,9 @@ export class AuthService {
       hobbies: [],
       points: 0,
       notifications: [],
-    });
+    };
+    console.log('AuthService: Creating user with payload:', userPayload);
+    const user = await this.usersService.create(userPayload);
     return { _id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName };
   }
 
@@ -73,27 +75,33 @@ export class AuthService {
   }
 
   async forgotPassword(email: string): Promise<string> {
+    console.log('AuthService: Forgot password for email:', email);
     const user = await this.usersService.findOneByEmail(email);
     if (!user) {
+      console.log('AuthService: User not found for email:', email);
       throw new UnauthorizedException('User not found');
     }
     const token = await this.resetTokenService.createToken(user._id);
     const resetLink = `http://localhost:54693/reset-password/${token}`;
-    console.log('Password reset link (simulated email):', resetLink);
+    console.log('AuthService: Generated reset link:', resetLink);
     return resetLink;
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
+    console.log('AuthService: Reset password with token:', token, 'newPassword:', newPassword);
     const resetToken = await this.resetTokenService.findToken(token);
     if (!resetToken || resetToken.expiresAt < new Date()) {
+      console.log('AuthService: Invalid or expired reset token:', token);
       throw new UnauthorizedException('Invalid or expired reset token');
     }
     const user = await this.usersService.findOneById(resetToken.userId);
     if (!user) {
+      console.log('AuthService: User not found for reset token:', token);
       throw new UnauthorizedException('User not found');
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this.usersService.updatePassword(user._id, hashedPassword);
     await this.resetTokenService.deleteToken(token);
+    console.log('AuthService: Password reset successful for user:', user.email);
   }
 }
