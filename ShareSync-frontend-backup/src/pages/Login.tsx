@@ -1,75 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useTheme } from '../contexts/ThemeContext';
-import { useUser } from '../contexts/UserContext';
-import styled from 'styled-components';
-
-const FormContainer = styled.div`
-  background: ${({ theme }: { theme: any }) => theme.cardBackground};
-  color: ${({ theme }) => theme.text};
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: ${({ theme }) => theme.shadow};
-  backdrop-filter: blur(10px);
-  border: 1px solid ${({ theme }) => theme.border};
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-  margin: 0 auto;
-  margin-top: 50px;
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border: 1px solid ${({ theme }: { theme: any }) => theme.border};
-  border-radius: 5px;
-  background: ${({ theme }) => theme.cardBackground};
-  color: ${({ theme }) => theme.text};
-`;
-
-const Button = styled.button`
-  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme.primary}, ${({ theme }) => theme.secondary});
-  color: ${({ theme }) => theme.buttonText};
-  padding: 10px 20px;
-  border: none;
-  border-radius: 25px;
-  cursor: pointer;
-  margin: 10px 0;
-  transition: transform 0.3s ease;
-  &:hover {
-    transform: scale(1.05);
-  }
-`;
-
-const LinkText = styled.a`
-  color: ${({ theme }: { theme: any }) => theme.accent};
-  cursor: pointer;
-  &:hover {
-    color: ${({ theme }) => theme.highlight};
-  }
-`;
-
-const ErrorMessage = styled.p`
-  color: ${({ theme }: { theme: any }) => theme.warning};
-  font-size: 14px;
-`;
-
-const SuccessMessage = styled.p`
-  color: ${({ theme }: { theme: any }) => theme.accent};
-  font-size: 14px;
-`;
 
 const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
 
 const Login = () => {
   console.log('Login: Starting render');
-  const { currentTheme } = useTheme();
-  console.log('Login: Theme context:', currentTheme);
-  const { setUser } = useUser();
-  console.log('Login: User context setUser function retrieved');
   const navigate = useNavigate();
   console.log('Login: Navigate function retrieved');
   const [email, setEmail] = useState('');
@@ -86,7 +22,6 @@ const Login = () => {
       const response = await axios.post(`${API_URL}/auth/login`, { email, password });
       const { user, access_token } = response.data;
       localStorage.setItem('token', access_token);
-      setUser(user);
       setSuccess('Login successful! Redirecting...');
       setTimeout(() => navigate('/projects'), 1000);
     } catch (err: any) {
@@ -97,33 +32,35 @@ const Login = () => {
 
   console.log('Login: Rendering form with email:', email, 'password:', password);
   return (
-    <FormContainer theme={currentTheme}>
+    <div style={{ padding: '20px', textAlign: 'center' }}>
       <h2>Login</h2>
       <form onSubmit={handleSubmit}>
-        <Input
+        <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          theme={currentTheme}
           required
+          style={{ margin: '10px', padding: '10px', width: '200px' }}
         />
-        <Input
+        <br />
+        <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          theme={currentTheme}
           required
+          style={{ margin: '10px', padding: '10px', width: '200px' }}
         />
-        <Button type="submit" theme={currentTheme}>Login</Button>
+        <br />
+        <button type="submit" style={{ padding: '10px 20px' }}>Login</button>
       </form>
-      <LinkText theme={currentTheme} onClick={() => navigate('/forgot-password')}>
+      <p onClick={() => navigate('/forgot-password')} style={{ color: 'blue', cursor: 'pointer' }}>
         Forgot Password?
-      </LinkText>
-      {error && <ErrorMessage theme={currentTheme}>{error}</ErrorMessage>}
-      {success && <SuccessMessage theme={currentTheme}>{success}</SuccessMessage>}
-    </FormContainer>
+      </p>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {success && <p style={{ color: 'green' }}>{success}</p>}
+    </div>
   );
 };
 
