@@ -60,6 +60,8 @@ export class AuthService {
       hobbies: [],
       points: 0,
       notifications: [],
+      skills: [],
+      bio: '',
     };
     console.log('AuthService: Creating user with payload:', userPayload);
     const user = await this.usersService.create(userPayload);

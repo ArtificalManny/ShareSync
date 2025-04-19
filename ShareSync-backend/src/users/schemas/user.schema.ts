@@ -48,7 +48,7 @@ export class User extends Document {
   @Prop({ type: [String], default: [] })
   skills: string[];
 
-  @Prop()
+  @Prop({ default: '' })
   bio: string;
 }
 
