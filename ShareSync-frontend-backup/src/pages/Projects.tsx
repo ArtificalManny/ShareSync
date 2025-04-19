@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useSocket } from '../contexts/SocketContext';
 import { useUser } from '../contexts/UserContext';
 import styled from 'styled-components';
+import { FaBell, FaCheckCircle, FaFolderPlus, FaChartBar, FaTasks, FaHistory, FaUsers } from 'react-icons/fa';
 
 const ProjectsContainer = styled.div`
   background: ${({ theme }) => theme.background};
@@ -39,7 +40,15 @@ const Sidebar = styled.div`
 const SidebarTitle = styled.h3`
   font-size: 20px;
   margin-bottom: 15px;
-  color: ${({ theme }) => theme.accent}; /* Use gold/amber for titles */
+  color: ${({ theme }) => theme.accent};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  svg {
+    font-size: 18px; /* Smaller icon size for a clean look */
+    color: ${({ theme }) => theme.accent}; /* Match the title color */
+  }
 `;
 
 const NotificationList = styled.ul`
@@ -97,13 +106,22 @@ const Card = styled.div`
 const CardTitle = styled.h4`
   font-size: 16px;
   margin-bottom: 10px;
-  color: ${({ theme }) => theme.accent}; /* Use gold/amber for card titles */
+  color: ${({ theme }) => theme.accent};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  svg {
+    font-size: 16px; /* Smaller icon size for a clean look */
+    color: ${({ theme }) => theme.accent}; /* Match the title color */
+  }
 `;
 
 const CardValue = styled.div`
   font-size: 24px;
   font-weight: bold;
-  color: ${({ theme }) => theme.secondary}; /* Use magenta for values */
+  color: ${({ theme }) => theme.secondary};
 `;
 
 const TaskList = styled.ul`
@@ -290,7 +308,9 @@ const Projects = () => {
   return (
     <ProjectsContainer theme={currentTheme}>
       <Sidebar theme={currentTheme}>
-        <SidebarTitle theme={currentTheme}>Create Project</SidebarTitle>
+        <SidebarTitle theme={currentTheme}>
+          <FaFolderPlus /> Create Project
+        </SidebarTitle>
         <Form onSubmit={handleCreateProject}>
           <Input
             type="text"
@@ -317,7 +337,9 @@ const Projects = () => {
           <Button type="submit" theme={currentTheme}>Create Project</Button>
         </Form>
         {error && <ErrorMessage>{error}</ErrorMessage>}
-        <SidebarTitle theme={currentTheme} style={{ marginTop: '20px' }}>Notifications ({notifications.length})</SidebarTitle>
+        <SidebarTitle theme={currentTheme} style={{ marginTop: '20px' }}>
+          <FaBell /> Notifications ({notifications.length})
+        </SidebarTitle>
         <NotificationList>
           {notifications.map((notif, index) => (
             <NotificationItem key={index} theme={currentTheme}>
@@ -330,11 +352,15 @@ const Projects = () => {
       </Sidebar>
       <MainContent>
         <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>Project Overview</CardTitle>
+          <CardTitle theme={currentTheme}>
+            <FaChartBar /> Project Overview
+          </CardTitle>
           <CardValue theme={currentTheme}>Total Projects<br />{projects.length}</CardValue>
         </Card>
         <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>Tasks Completed</CardTitle>
+          <CardTitle theme={currentTheme}>
+            <FaCheckCircle /> Tasks Completed
+          </CardTitle>
           <TaskList>
             {completedTasks.map((task) => (
               <TaskItem key={task._id} theme={currentTheme}>
@@ -348,19 +374,27 @@ const Projects = () => {
           </TaskList>
         </Card>
         <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>Current Projects</CardTitle>
+          <CardTitle theme={currentTheme}>
+            <FaTasks /> Current Projects
+          </CardTitle>
           <CardValue theme={currentTheme}>{projects.length}</CardValue>
         </Card>
         <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>Past Projects</CardTitle>
+          <CardTitle theme={currentTheme}>
+            <FaHistory /> Past Projects
+          </CardTitle>
           <CardValue theme={currentTheme}>0</CardValue>
         </Card>
         <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>Team Activity</CardTitle>
+          <CardTitle theme={currentTheme}>
+            <FaUsers /> Team Activity
+          </CardTitle>
           <NotificationMessage>No recent activities.</NotificationMessage>
         </Card>
         <Card theme={currentTheme}>
-          <CardTitle theme={currentTheme}>Your Projects</CardTitle>
+          <CardTitle theme={currentTheme}>
+            <FaFolderPlus /> Your Projects
+          </CardTitle>
           <ProjectList>
             {projects.map((project) => (
               <ProjectItem

@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import axios from '../axios';
-import { useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import { useUser } from '../contexts/UserContext';
 import styled from 'styled-components';
 
-const LoginContainer = styled.div`
+const ResetPasswordContainer = styled.div`
   background: ${({ theme }) => theme.background};
   color: ${({ theme }) => theme.text};
   padding: 40px;
@@ -89,17 +88,10 @@ const Button = styled.button`
   }
 `;
 
-const ForgotPasswordLink = styled(Link)`
+const Message = styled.p`
   color: ${({ theme }) => theme.accent};
   text-align: center;
   margin-top: 10px;
-  text-decoration: none;
-  font-size: 14px;
-  transition: color 0.3s ease;
-
-  &:hover {
-    color: ${({ theme }) => theme.primary};
-  }
 `;
 
 const ErrorMessage = styled.p`
@@ -109,71 +101,52 @@ const ErrorMessage = styled.p`
   text-shadow: 0 0 5px rgba(255, 85, 85, 0.5);
 `;
 
-const Login = () => {
-  const [email, setEmail] = useState('eamonrivas@gmail.com');
-  const [password, setPassword] = useState('S7mR0!%uMZ<$[w%@');
+const ResetPassword = () => {
+  const { token } = useParams<{ token: string }>();
+  const [newPassword, setNewPassword] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { currentTheme } = useTheme();
-  const { setUser } = useUser();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setMessage(null);
     setLoading(true);
-    console.log('Frontend: Sending login request with email:', email, 'and password:', password);
     try {
-      const response = await axios.post('/auth/login', { email, password }, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      console.log('Frontend: Login response:', response.data);
-      setUser(response.data.user);
-      localStorage.setItem('token', response.data.access_token);
-      navigate('/projects');
+      await axios.post(`/auth/reset-password/${token}`, { newPassword, token }, { withCredentials: true });
+      setMessage('Password reset successful. Redirecting to login...');
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
-      console.error('Frontend: Login error:', err.response?.data);
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials and try again.');
+      setError(err.response?.data?.message || 'Failed to reset password. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <LoginContainer theme={currentTheme}>
-      <Title>Login</Title>
-      <Form onSubmit={handleLogin}>
-        <Input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          theme={currentTheme}
-          required
-          disabled={loading}
-        />
+    <ResetPasswordContainer theme={currentTheme}>
+      <Title>Reset Password</Title>
+      <Form onSubmit={handleResetPassword}>
         <Input
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder="New Password"
           theme={currentTheme}
           required
           disabled={loading}
         />
         <Button type="submit" theme={currentTheme} disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
+          {loading ? 'Resetting...' : 'Reset Password'}
         </Button>
       </Form>
-      <ForgotPasswordLink to="/forgot-password" theme={currentTheme}>
-        Forgot Password?
-      </ForgotPasswordLink>
+      {message && <Message>{message}</Message>}
       {error && <ErrorMessage>{error}</ErrorMessage>}
-    </LoginContainer>
+    </ResetPasswordContainer>
   );
 };
 
-export default Login;
+export default ResetPassword;

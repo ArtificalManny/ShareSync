@@ -21,15 +21,15 @@ const HomeContainer = styled.div`
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle, ${({ theme }) => theme.glow}, transparent);
+    background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary}, ${({ theme }) => theme.accent});
     opacity: 0.3;
     z-index: -1;
-    animation: pulse 10s ease infinite;
+    animation: gradientShift 15s ease infinite;
 
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 0.3; }
-      50% { transform: scale(1.5); opacity: 0.1; }
-      100% { transform: scale(1); opacity: 0.3; }
+    @keyframes gradientShift {
+      0% { transform: translateX(0); }
+      50% { transform: translateX(50%); }
+      100% { transform: translateX(0); }
     }
   }
 `;
@@ -53,19 +53,18 @@ const Title = styled.h1`
 const Subtitle = styled.p`
   font-size: 20px;
   margin-bottom: 30px;
-  opacity: 0.8;
-  color: ${({ theme }) => theme.accent}; /* Use gold/amber for subtitle */
+  color: ${({ theme }) => theme.accent};
   text-shadow: 0 0 5px ${({ theme }) => theme.glow};
 `;
 
 const ActionLink = styled(Link)`
-  color: ${({ theme }) => theme.text};
+  color: ${({ theme }) => theme.buttonText};
   text-decoration: none;
   font-size: 18px;
   margin: 0 15px;
   padding: 10px 20px;
   border-radius: 25px;
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  background: linear-gradient(45deg, ${({ theme }) => theme.secondary}, ${({ theme }) => theme.highlight});
   box-shadow: 0 0 10px ${({ theme }) => theme.glow};
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 

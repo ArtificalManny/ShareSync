@@ -19,4 +19,8 @@ export class UsersService {
     const newUser = new this.userModel(userData);
     return newUser.save();
   }
+
+  async updatePassword(userId: string, newPassword: string): Promise<void> {
+    await this.userModel.updateOne({ _id: userId }, { $set: { password: newPassword } }).exec();
+  }
 }

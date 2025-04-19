@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
+import { ResetTokenService } from '../reset-token/reset-token.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private resetTokenService: ResetTokenService,
   ) {}
 
   async login(email: string, password: string) {
@@ -67,5 +69,30 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
     return { _id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName };
+  }
+
+  async forgotPassword(email: string): Promise<string> {
+    const user = await this.usersService.findOneByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    const token = await this.resetTokenService.createToken(user._id);
+    const resetLink = `http://localhost:54693/reset-password/${token}`;
+    console.log('Password reset link (simulated email):', resetLink);
+    return resetLink;
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const resetToken = await this.resetTokenService.findToken(token);
+    if (!resetToken || resetToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+    const user = await this.usersService.findOneById(resetToken.userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersService.updatePassword(user._id, hashedPassword);
+    await this.resetTokenService.deleteToken(token);
   }
 }

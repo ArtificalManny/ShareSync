@@ -8,6 +8,8 @@ export const lightTheme = {
   buttonText: '#ffffff',
   glow: 'rgba(106, 27, 154, 0.3)', // Purple glow for effects
   accent: '#ffd740', // Subtle gold for highlights
+  highlight: '#00e676', // Bright green for highlights
+  warning: '#ff1744', // Vivid red for warnings
 };
 
 export const darkTheme = {
@@ -20,4 +22,6 @@ export const darkTheme = {
   buttonText: '#121212',
   glow: 'rgba(171, 71, 188, 0.5)', // Purple glow for effects
   accent: '#ffca28', // Warm amber for highlights
+  highlight: '#00c853', // Bright green for highlights
+  warning: '#d81b60', // Vivid magenta for warnings
 };
