@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import * as bodyParser from 'body-parser';
+import { ValidationPipe } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 
 async function bootstrap() {
@@ -19,6 +20,9 @@ async function bootstrap() {
 
   // Enable cookie-parser middleware
   app.use(cookieParser());
+
+  // Enable validation pipe
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   // Log incoming requests
   app.use((req: Request, res: Response, next: NextFunction) => {

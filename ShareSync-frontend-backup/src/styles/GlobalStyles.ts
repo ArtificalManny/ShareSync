@@ -1,49 +1,51 @@
 import { createGlobalStyle } from 'styled-components';
 
 const GlobalStyles = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Orbitron:wght@700&display=swap');
-
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter', sans-serif;
   }
 
   body {
-    background: ${({ theme }) => theme.background};
-    color: ${({ theme }) => theme.text};
-    line-height: 1.6;
+    font-family: 'Orbitron', sans-serif;
+    background: ${({ theme }) => {
+      console.log('GlobalStyles: Theme value:', theme);
+      return theme?.background || '#121212'; // Fallback to a default color
+    }};
+    color: ${({ theme }) => theme?.text || '#e0e0e0'};
     overflow-x: hidden;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Orbitron', sans-serif;
-    letter-spacing: 1px;
-    background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 10px ${({ theme }) => theme.glow};
-    animation: textGlow 2s ease-in-out infinite;
-
-    @keyframes textGlow {
-      0% { text-shadow: 0 0 10px ${({ theme }) => theme.glow}; }
-      50% { text-shadow: 0 0 20px ${({ theme }) => theme.glow}; }
-      100% { text-shadow: 0 0 10px ${({ theme }) => theme.glow}; }
-    }
-  }
-
   a {
+    color: inherit;
     text-decoration: none;
-    transition: color 0.3s ease, text-shadow 0.3s ease;
-
-    &:hover {
-      text-shadow: 0 0 5px ${({ theme }) => theme.glow};
-    }
   }
 
   button {
-    transition: all 0.3s ease;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+  }
+
+  input, textarea {
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme?.background || '#121212'};
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme?.primary || '#ab47bc'};
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: ${({ theme }) => theme?.secondary || '#f06292'};
   }
 `;
 

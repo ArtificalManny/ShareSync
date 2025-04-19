@@ -20,7 +20,7 @@ import styled from 'styled-components';
 
 const AppContainer = styled.div`
   min-height: 100vh;
-  background: ${({ theme }) => theme.background};
+  background: ${({ theme }) => theme.background || '#121212'}; /* Fallback background */
   position: relative;
   overflow: hidden;
 
@@ -31,7 +31,7 @@ const AppContainer = styled.div`
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+    background: linear-gradient(45deg, ${({ theme }) => theme.primary || '#ab47bc'}, ${({ theme }) => theme.secondary || '#f06292'});
     opacity: 0.1;
     z-index: -1;
     animation: gradientShift 15s ease infinite;
@@ -51,12 +51,12 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 function App() {
-  console.log('App: Rendering App component');
+  console.log('App: Starting render');
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [currentTheme, setCurrentTheme] = useState(isDarkMode ? darkTheme : lightTheme);
 
   useEffect(() => {
-    console.log('App: useEffect - Updating theme');
+    console.log('App: useEffect - Updating theme, isDarkMode:', isDarkMode);
     setCurrentTheme(isDarkMode ? darkTheme : lightTheme);
   }, [isDarkMode]);
 
