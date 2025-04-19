@@ -29,7 +29,6 @@ const ThemeContext = createContext<ThemeContextType>({
   toggleTheme: () => {},
 });
 
-// Export ThemeProvider as a named export
 export const ThemeProvider = ThemeContext.Provider;
 
 export const useTheme = () => {
