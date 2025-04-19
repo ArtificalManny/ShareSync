@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import * as bodyParser from 'body-parser';
-import { ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request, Response, NextFunction } from 'express';
 
@@ -22,20 +21,19 @@ async function bootstrap() {
   // Enable cookie-parser middleware
   app.use(cookieParser());
 
-  // Global validation pipe
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
-
   // Log incoming requests
   app.use((req: Request, res: Response, next: NextFunction) => {
-    console.log('Incoming request:', req.method, req.url, 'Body:', req.body);
+    console.log('Middleware: Incoming request:', req.method, req.url, 'Body:', req.body);
     next();
   });
 
   // JWT Middleware
   app.use(async (req: Request, res: Response, next: NextFunction) => {
+    console.log('JWT Middleware: Processing request for', req.path);
     const jwtService = app.get(JwtService);
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (req.path === '/auth/login' || req.path === '/auth/register' || req.path === '/auth/forgot-password' || req.path === '/auth/reset-password') {
+      console.log('JWT Middleware: Skipping authentication for', req.path);
       return next();
     }
     if (!token) {

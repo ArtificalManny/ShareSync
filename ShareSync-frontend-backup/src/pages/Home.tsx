@@ -54,6 +54,7 @@ const Subtitle = styled.p`
   font-size: 20px;
   margin-bottom: 30px;
   opacity: 0.8;
+  color: ${({ theme }) => theme.accent}; /* Use gold/amber for subtitle */
   text-shadow: 0 0 5px ${({ theme }) => theme.glow};
 `;
 

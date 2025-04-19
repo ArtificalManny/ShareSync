@@ -109,10 +109,11 @@ const Login = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const payload = { email, password };
-    console.log('Frontend: Sending login request with payload:', payload);
+    console.log('Frontend: Sending login request with email:', email, 'and password:', password);
     try {
-      const response = await axios.post('/auth/login', payload, { withCredentials: true });
+      const response = await axios.post(`/auth/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {}, {
+        withCredentials: true,
+      });
       console.log('Frontend: Login response:', response.data);
       setUser(response.data.user);
       localStorage.setItem('token', response.data.access_token);

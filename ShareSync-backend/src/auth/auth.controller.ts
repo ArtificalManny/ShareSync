@@ -1,17 +1,20 @@
-import { Controller, Post, Body, Get, UnauthorizedException, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, UnauthorizedException, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request } from 'express';
-import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    console.log('AuthController: Login request received:', loginDto);
+  async login(@Query('email') email: string, @Query('password') password: string, @Body() body: any) {
+    console.log('AuthController: Login request received - Query:', { email, password }, 'Body:', body);
+    if (!email || !password) {
+      console.log('AuthController: Missing email or password in query params');
+      throw new UnauthorizedException('Email and password are required');
+    }
     try {
-      const user = await this.authService.login(loginDto.email, loginDto.password);
+      const user = await this.authService.login(email, password);
       return user;
     } catch (error) {
       console.error('AuthController: Login error:', error.message);
