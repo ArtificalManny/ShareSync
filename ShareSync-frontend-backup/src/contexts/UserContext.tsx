@@ -4,18 +4,20 @@ import axios from '../axios';
 interface User {
   _id: string;
   email: string;
+  firstName: string;
+  lastName: string;
 }
 
 interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType>({
   user: null,
   setUser: () => {},
-  logout: () => {},
+  logout: async () => {},
 });
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -35,7 +37,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('Failed to fetch user:', error);
         setUser(null);
-        localStorage.removeItem('token');
       }
     };
     fetchUser();
@@ -44,8 +45,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await axios.post('/auth/logout', {}, { withCredentials: true });
-      setUser(null);
       localStorage.removeItem('token');
+      setUser(null);
     } catch (error) {
       console.error('Logout failed:', error);
     }

@@ -12,7 +12,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { UserProvider, useUser } from './contexts/UserContext';
-import { SocketProvider } from './contexts/SocketContext'; // Corrected path
+import { SocketProvider } from './contexts/SocketContext';
 import { lightTheme, darkTheme } from './styles/theme';
 import ErrorBoundary from './components/ErrorBoundary';
 import GlobalStyles from './styles/GlobalStyles';
@@ -46,20 +46,26 @@ const AppContainer = styled.div`
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useUser();
+  console.log('ProtectedRoute: User context value:', user);
   return user ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 function App() {
+  console.log('App: Rendering App component');
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [currentTheme, setCurrentTheme] = useState(isDarkMode ? darkTheme : lightTheme);
 
   useEffect(() => {
+    console.log('App: useEffect - Updating theme');
     setCurrentTheme(isDarkMode ? darkTheme : lightTheme);
   }, [isDarkMode]);
 
   const toggleTheme = () => {
+    console.log('App: Toggling theme');
     setIsDarkMode(!isDarkMode);
   };
+
+  console.log('App: Rendering with currentTheme:', currentTheme);
 
   return (
     <UserProvider>

@@ -23,19 +23,39 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { user } = useUser();
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3001', { withCredentials: true });
-    setSocket(newSocket);
+    console.log('SocketProvider: Initializing socket connection');
+    let newSocket: Socket;
+    try {
+      newSocket = io('http://localhost:3001', { withCredentials: true });
+      setSocket(newSocket);
+    } catch (error) {
+      console.error('SocketProvider: Failed to initialize socket:', error);
+      setSocket(null);
+    }
 
     return () => {
-      newSocket.disconnect();
+      if (newSocket) {
+        console.log('SocketProvider: Disconnecting socket');
+        newSocket.disconnect();
+      }
     };
   }, []);
 
   useEffect(() => {
     if (socket && user) {
+      console.log('SocketProvider: Joining room for user:', user._id);
       socket.emit('join', user._id);
       socket.on('notification', (notification: Notification) => {
+        console.log('SocketProvider: Received notification:', notification);
         setNotifications((prev) => [notification, ...prev]);
+      });
+
+      socket.on('connect_error', (error) => {
+        console.error('SocketProvider: Connection error:', error);
+      });
+
+      socket.on('disconnect', () => {
+        console.log('SocketProvider: Socket disconnected');
       });
     }
   }, [socket, user]);
