@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import { lightTheme, darkTheme } from '../styles/theme';
 
 interface Theme {
   background: string;
@@ -23,23 +24,15 @@ interface ThemeContextType {
 }
 
 export const ThemeContext = createContext<ThemeContextType>({
-  currentTheme: {
-    background: '#0f172a',
-    text: '#e0e7ff',
-    primary: '#818cf8',
-    secondary: '#f9a8d4',
-    border: '#334155',
-    buttonBackground: '#818cf8',
-    buttonText: '#0f172a',
-    glow: 'rgba(129, 140, 248, 0.5)',
-    accent: '#10b981',
-    highlight: '#c4b5fd',
-    warning: '#e11d48',
-    cardBackground: 'rgba(255, 255, 255, 0.05)',
-    shadow: '0 4px 30px rgba(0, 0, 0, 0.3)',
-  },
+  currentTheme: darkTheme, // Default to darkTheme to avoid undefined
   isDarkMode: true,
   toggleTheme: () => {},
 });
 
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+};
