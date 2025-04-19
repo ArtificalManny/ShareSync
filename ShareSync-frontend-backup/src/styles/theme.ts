@@ -1,21 +1,23 @@
 export const lightTheme = {
-  background: '#e0f7fa', // Light cyan background for a fresh, airy feel
+  background: '#f5f5f5', // Soft gray for a clean base
   text: '#1a1a2e', // Deep navy text for contrast
-  primary: '#00c4b4', // Vibrant teal for primary actions (Avatar-inspired)
-  secondary: '#ff6f61', // Coral accent for secondary elements (warm contrast)
+  primary: '#6a1b9a', // Deep purple for primary actions
+  secondary: '#d81b60', // Vibrant magenta for secondary elements
   border: '#b0bec5', // Soft blue-gray for borders
-  buttonBackground: '#00c4b4',
+  buttonBackground: '#6a1b9a',
   buttonText: '#ffffff',
-  glow: 'rgba(0, 196, 180, 0.3)', // Teal glow for effects
+  glow: 'rgba(106, 27, 154, 0.3)', // Purple glow for effects
+  accent: '#ffd740', // Subtle gold for highlights
 };
 
 export const darkTheme = {
-  background: '#0d1b2a', // Deep navy background (space-like depth)
-  text: '#e0f7fa', // Light cyan text for readability
-  primary: '#40c4ff', // Bright sky blue for primary actions (neon glow)
-  secondary: '#ff4081', // Neon pink for secondary elements (vibrant contrast)
-  border: '#455a64', // Darker blue-gray for borders
-  buttonBackground: '#40c4ff',
-  buttonText: '#0d1b2a',
-  glow: 'rgba(64, 196, 255, 0.5)', // Sky blue glow for effects
+  background: '#121212', // Dark gray for depth
+  text: '#e0e0e0', // Light gray text for readability
+  primary: '#ab47bc', // Bright purple for primary actions
+  secondary: '#f06292', // Soft magenta for secondary elements
+  border: '#37474f', // Darker blue-gray for borders
+  buttonBackground: '#ab47bc',
+  buttonText: '#121212',
+  glow: 'rgba(171, 71, 188, 0.5)', // Purple glow for effects
+  accent: '#ffca28', // Warm amber for highlights
 };

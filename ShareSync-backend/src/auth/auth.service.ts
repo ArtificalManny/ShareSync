@@ -11,10 +11,14 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string) {
-    console.log('AuthService: Login attempt with identifier:', email);
+    console.log('AuthService: Login attempt with email:', email, 'and password:', password);
+    if (!email || !password) {
+      console.log('AuthService: Email or password is undefined');
+      throw new UnauthorizedException('Invalid username or password');
+    }
     const user = await this.usersService.findOneByEmail(email);
     if (!user) {
-      console.log('AuthService: User not found for identifier:', email);
+      console.log('AuthService: User not found for email:', email);
       throw new UnauthorizedException('Invalid username or password');
     }
     console.log('AuthService: Found user:', user.email, 'with password hash:', user.password);

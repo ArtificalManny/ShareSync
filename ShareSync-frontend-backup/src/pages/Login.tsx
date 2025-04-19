@@ -109,12 +109,16 @@ const Login = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    const payload = { email, password };
+    console.log('Frontend: Sending login request with payload:', payload);
     try {
-      const response = await axios.post('/auth/login', { email, password }, { withCredentials: true });
+      const response = await axios.post('/auth/login', payload, { withCredentials: true });
+      console.log('Frontend: Login response:', response.data);
       setUser(response.data.user);
       localStorage.setItem('token', response.data.access_token);
       navigate('/projects');
     } catch (err: any) {
+      console.error('Frontend: Login error:', err.response?.data);
       setError(err.response?.data?.message || 'Login failed. Please check your credentials and try again.');
     } finally {
       setLoading(false);

@@ -30,7 +30,7 @@ const ProjectsContainer = styled.div`
 `;
 
 const Sidebar = styled.div`
-  background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
+  background: ${({ theme }) => theme.background === '#121212' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
   padding: 20px;
   border-radius: 15px;
   box-shadow: 0 0 15px ${({ theme }) => theme.glow};
@@ -39,6 +39,7 @@ const Sidebar = styled.div`
 const SidebarTitle = styled.h3`
   font-size: 20px;
   margin-bottom: 15px;
+  color: ${({ theme }) => theme.accent}; /* Use gold/amber for titles */
 `;
 
 const NotificationList = styled.ul`
@@ -57,7 +58,7 @@ const NotificationItem = styled.li`
   transition: background 0.3s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+    background: ${({ theme }) => theme.background === '#121212' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
   }
 `;
 
@@ -80,7 +81,7 @@ const MainContent = styled.div`
 `;
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
+  background: ${({ theme }) => theme.background === '#121212' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
   padding: 20px;
   border-radius: 15px;
   box-shadow: 0 0 15px ${({ theme }) => theme.glow};
@@ -96,11 +97,13 @@ const Card = styled.div`
 const CardTitle = styled.h4`
   font-size: 16px;
   margin-bottom: 10px;
+  color: ${({ theme }) => theme.accent}; /* Use gold/amber for card titles */
 `;
 
 const CardValue = styled.div`
   font-size: 24px;
   font-weight: bold;
+  color: ${({ theme }) => theme.secondary}; /* Use magenta for values */
 `;
 
 const TaskList = styled.ul`
@@ -119,7 +122,7 @@ const TaskItem = styled.li`
   transition: background 0.3s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+    background: ${({ theme }) => theme.background === '#121212' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
   }
 `;
 
@@ -135,7 +138,7 @@ const ProjectItem = styled.li`
   transition: background 0.3s ease, transform 0.1s ease, text-shadow 0.3s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.background === '#0d1b2a' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+    background: ${({ theme }) => theme.background === '#121212' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
     transform: scale(1.02);
     text-shadow: 0 0 5px ${({ theme }) => theme.glow};
   }
