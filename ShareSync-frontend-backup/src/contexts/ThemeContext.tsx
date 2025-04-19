@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { lightTheme, darkTheme } from '../styles/theme';
 
 interface Theme {
@@ -23,11 +23,14 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
-export const ThemeContext = createContext<ThemeContextType>({
-  currentTheme: darkTheme, // Default to darkTheme to avoid undefined
+const ThemeContext = createContext<ThemeContextType>({
+  currentTheme: darkTheme,
   isDarkMode: true,
   toggleTheme: () => {},
 });
+
+// Export ThemeProvider as a named export
+export const ThemeProvider = ThemeContext.Provider;
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
