@@ -31,7 +31,8 @@ const Input = styled.input`
 `;
 
 const Button = styled.button`
-  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme?.primary || '#818cf8', ${({ theme }) => theme?.secondary || '#f9a8d4'});
+  background: ${({ theme }: { theme: any }) =>
+    `linear-gradient(45deg, ${theme?.primary || '#818cf8'}, ${theme?.secondary || '#f9a8d4'})`};
   color: ${({ theme }) => theme?.buttonText || '#0f172a'};
   padding: 10px 20px;
   border: none;
@@ -60,7 +61,7 @@ const ErrorMessage = styled.p`
 const SuccessMessage = styled.p`
   color: ${({ theme }: { theme: any }) => theme?.accent || '#10b981'};
   font-size: 14px;
-;
+`;
 
 const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
 

@@ -36,7 +36,8 @@ const NavLink = styled.a`
 `;
 
 const ThemeButton = styled.button`
-  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme?.primary || '#818cf8', ${({ theme }) => theme?.secondary || '#f9a8d4'});
+  background: ${({ theme }: { theme: any }) =>
+    `linear-gradient(45deg, ${theme?.primary || '#818cf8'}, ${theme?.secondary || '#f9a8d4'})`};
   color: ${({ theme }) => theme?.buttonText || '#0f172a'};
   padding: 10px 20px;
   border: none;
@@ -47,7 +48,7 @@ const ThemeButton = styled.button`
     transform: scale(1.05);
     box-shadow: ${({ theme }) => theme?.glow || 'rgba(129, 140, 248, 0.5)'};
   }
-;
+`;
 
 const Header = () => {
   console.log('Header: Starting render');
