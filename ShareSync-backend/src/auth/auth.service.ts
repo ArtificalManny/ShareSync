@@ -12,9 +12,8 @@ export class AuthService {
     private resetTokenService: ResetTokenService,
   ) {}
 
-  async createTestUser() {
-    const email = 'eamonrivas@gmail.com';
-    const password = 'S7mR0!%uMZ<$[w%@';
+  async createTestUser(email: string, password: string) {
+    console.log('AuthService: Creating test user with email:', email);
     const hashedPassword = await bcrypt.hash(password, 10);
     const existingUser = await this.usersService.findOneByEmail(email);
     if (existingUser) {
@@ -24,29 +23,20 @@ export class AuthService {
     const user = await this.usersService.create({
       email,
       password: hashedPassword,
-      username: 'eamonrivas',
-      firstName: 'Eamon',
-      lastName: 'Rivas',
+      username: email.split('@')[0],
+      firstName: 'Test',
+      lastName: 'User',
       birthday: new Date('1990-01-01'),
       isVerified: false,
-      badges: [],
-      endorsements: [],
-      followers: [],
-      following: [],
-      hobbies: [],
-      points: 0,
-      notifications: [],
-      skills: [],
-      bio: '',
     });
     console.log('AuthService: Test user created:', user);
     return user;
   }
 
   async login(email: string, password: string) {
-    console.log('AuthService: Login attempt with email:', email, 'and password:', password);
+    console.log('AuthService: Login attempt with email:', email, 'password:', password);
     if (!email || !password) {
-      throw new UnauthorizedException('Invalid username or password');
+      throw new UnauthorizedException('Email and password are required');
     }
     const user = await this.usersService.findOneByEmail(email);
     if (!user) {
@@ -82,15 +72,6 @@ export class AuthService {
       lastName: userData.lastName || '',
       birthday: userData.birthday ? new Date(userData.birthday) : undefined,
       isVerified: false,
-      badges: [],
-      endorsements: [],
-      followers: [],
-      following: [],
-      hobbies: [],
-      points: 0,
-      notifications: [],
-      skills: [],
-      bio: '',
     };
     console.log('AuthService: Creating user with payload:', userPayload);
     const user = await this.usersService.create(userPayload);

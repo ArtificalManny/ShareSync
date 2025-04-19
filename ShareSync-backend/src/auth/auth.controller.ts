@@ -9,7 +9,7 @@ export class AuthController {
   @Post('create-test-user')
   async createTestUser() {
     try {
-      const user = await this.authService.createTestUser();
+      const user = await this.authService.createTestUser('eamonrivas@gmail.com', 'S7mR0!%uMZ<$[w%@');
       return { message: 'Test user created', user };
     } catch (error) {
       console.error('AuthController: Create test user error:', error.message);
@@ -18,11 +18,13 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() body: any) {
+  async login(@Body() body: { email: string; password: string }) {
     console.log('AuthController: Login request received:', body);
-    const email = body.email;
-    const password = body.password;
+    const { email, password } = body;
     console.log('AuthController: Extracted email:', email, 'password:', password);
+    if (!email || !password) {
+      throw new UnauthorizedException('Email and password are required');
+    }
     try {
       const user = await this.authService.login(email, password);
       console.log('AuthController: Login successful, user:', user);
@@ -34,19 +36,10 @@ export class AuthController {
   }
 
   @Post('register')
-  async register(@Body() body: any) {
+  async register(@Body() body: { email: string; password: string; username?: string; firstName?: string; lastName?: string; birthday?: string }) {
     console.log('AuthController: Register request received:', body);
-    const registerDto = {
-      email: body.email,
-      password: body.password,
-      username: body.username,
-      firstName: body.firstName,
-      lastName: body.lastName,
-      birthday: body.birthday,
-    };
-    console.log('AuthController: Register DTO:', registerDto);
     try {
-      const user = await this.authService.register(registerDto);
+      const user = await this.authService.register(body);
       console.log('AuthController: Register successful, user:', user);
       return user;
     } catch (error) {
