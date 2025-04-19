@@ -1,41 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Activity, ActivityDocument } from './schemas/activity.schema';
+import { Activity } from './schemas/activity.schema';
 
 @Injectable()
 export class ActivitiesService {
-  constructor(@InjectModel(Activity.name) private activityModel: Model<ActivityDocument>) {}
+  constructor(@InjectModel('Activity') private activityModel: Model<Activity>) {}
 
-  async create(userId: string, projectId: string, action: string) {
-    try {
-      const activity = new this.activityModel({
-        userId,
-        projectId,
-        action,
-      });
-      return await activity.save();
-    } catch (error) {
-      console.error('Error in create activity:', error);
-      throw error;
-    }
+  async logActivity(userId: string, action: string, projectId?: string, taskId?: string): Promise<void> {
+    const activity = new this.activityModel({
+      userId,
+      action,
+      projectId,
+      taskId,
+      timestamp: new Date(),
+    });
+    await activity.save();
   }
 
-  async findByUser(userId: string) {
-    try {
-      return await this.activityModel.find({ userId }).sort({ createdAt: -1 }).exec();
-    } catch (error) {
-      console.error('Error in findByUser:', error);
-      throw error;
+  async getActivities(projectId?: string): Promise<Activity[]> {
+    if (projectId) {
+      return this.activityModel.find({ projectId }).exec();
     }
-  }
-
-  async findByProject(projectId: string) {
-    try {
-      return await this.activityModel.find({ projectId }).sort({ createdAt: -1 }).exec();
-    } catch (error) {
-      console.error('Error in findByProject:', error);
-      throw error;
-    }
+    return this.activityModel.find().exec();
   }
 }

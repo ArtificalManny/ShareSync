@@ -84,35 +84,40 @@ function App() {
 
   console.log('App: Rendering with currentTheme:', currentTheme);
 
-  return (
-    <ErrorBoundary>
-      <UserProvider>
-        <SocketProvider>
-          <ThemeProvider value={{ currentTheme, isDarkMode, toggleTheme }}>
-            <GlobalStyles />
-            <AppContainer theme={currentTheme}>
-              <Router>
-                <Header />
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/recover" element={<Recover />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/verify-email/:token" element={<VerifyEmail />} />
-                  <Route path="/project/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
-                  <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                  <Route path="/" element={<Home />} />
-                  <Route path="/home" element={<Home />} />
-                </Routes>
-              </Router>
-            </AppContainer>
-          </ThemeProvider>
-        </SocketProvider>
-      </UserProvider>
-    </ErrorBoundary>
-  );
+  try {
+    return (
+      <ErrorBoundary>
+        <UserProvider>
+          <SocketProvider>
+            <ThemeProvider value={{ currentTheme, isDarkMode, toggleTheme }}>
+              <GlobalStyles />
+              <AppContainer theme={currentTheme}>
+                <Router>
+                  <Header />
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/recover" element={<Recover />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/verify-email/:token" element={<VerifyEmail />} />
+                    <Route path="/project/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
+                    <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+                    <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                    <Route path="/" element={<Home />} />
+                    <Route path="/home" element={<Home />} />
+                  </Routes>
+                </Router>
+              </AppContainer>
+            </ThemeProvider>
+          </SocketProvider>
+        </UserProvider>
+      </ErrorBoundary>
+    );
+  } catch (error) {
+    console.error('App: Rendering failed:', error);
+    return <div>Error rendering app: {error.message}</div>;
+  }
 }
 
 export default App;

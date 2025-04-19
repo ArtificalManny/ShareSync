@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { NotificationSchema } from './notifications/schemas/notification.schema';
-import { TaskSchema } from './tasks/schemas/task.schema';
+import { NotificationSchema } from './notifications.schemas/notification.schema';
+import { TaskSchema } from './tasks.schemas/task.schema';
 import { ResetTokenSchema } from './reset-token/reset-token.schema';
 import { ChatMessageSchema } from './chat/chat.schema';
 import { ActivitySchema } from './activities.schemas/activity.schema';
@@ -12,6 +12,8 @@ import { NotificationsService } from './notifications/notifications.service';
 import { TasksService } from './tasks/tasks.service';
 import { TasksController } from './tasks/tasks.controller';
 import { ResetTokenService } from './reset-token/reset-token.service';
+import { CacheModule } from './cache/cache.module';
+import { ActivitiesService } from './activities/activities.service';
 
 @Module({
   imports: [
@@ -25,8 +27,9 @@ import { ResetTokenService } from './reset-token/reset-token.service';
     ]),
     AuthModule,
     UsersModule,
+    CacheModule,
   ],
   controllers: [TasksController],
-  providers: [NotificationsGateway, NotificationsService, TasksService, ResetTokenService],
+  providers: [NotificationsGateway, NotificationsService, TasksService, ResetTokenService, ActivitiesService],
 })
 export class AppModule {}

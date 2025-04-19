@@ -4,13 +4,16 @@ import { Document } from 'mongoose';
 @Schema()
 export class Activity extends Document {
   @Prop({ required: true })
-  projectId: string;
-
-  @Prop({ required: true })
   userId: string;
 
   @Prop({ required: true })
-  action: string; // e.g., "completed task", "joined project"
+  action: string;
+
+  @Prop()
+  projectId?: string;
+
+  @Prop()
+  taskId?: string;
 
   @Prop({ default: Date.now })
   timestamp: Date;

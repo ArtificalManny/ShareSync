@@ -1,23 +1,23 @@
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
 import styled from 'styled-components';
 
 const HeaderContainer = styled.header`
-  background: ${({ theme }) => theme.background};
+  background: ${({ theme }: { theme: any }) => theme.background};
   padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 0 20px ${({ theme }) => theme.glow};
-  position: sticky;
-  top: 0;
-  z-index: 1000;
+  box-shadow: ${({ theme }) => theme.glow};
 `;
 
 const Logo = styled.h1`
-  font-size: 24px;
-  color: ${({ theme }) => (theme.background === '#d1d8f0' ? theme.text : theme.accent)}; /* Solid color in light mode */
+  background: ${({ theme }: { theme: any }) => theme.background};
+  color: ${({ theme }) => theme.text};
+  margin: 0;
+  cursor: pointer;
+  border: 1px solid ${({ theme }) => theme.accent};
 `;
 
 const Nav = styled.nav`
@@ -25,56 +25,57 @@ const Nav = styled.nav`
   gap: 20px;
 `;
 
-const NavLink = styled(Link)`
-  color: ${({ theme }) => (theme.background === '#d1d8f0' ? theme.text : theme.accent)}; /* Solid color in light mode */
-  font-size: 16px;
-  transition: color 0.3s ease, transform 0.3s ease;
-
+const NavLink = styled.a`
+  background: ${({ theme }: { theme: any }) => theme.background};
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+  border: 1px solid ${({ theme }) => theme.accent};
   &:hover {
-    color: ${({ theme }) => theme.highlight};
-    transform: scale(1.1);
+    color: ${({ theme }) => theme.accent};
   }
 `;
 
 const ThemeButton = styled.button`
-  background: linear-gradient(45deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.secondary});
+  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme.primary}, ${({ theme }) => theme.secondary});
   color: ${({ theme }) => theme.buttonText};
   padding: 10px 20px;
   border: none;
   border-radius: 25px;
   cursor: pointer;
-  box-shadow: 0 0 10px ${({ theme }) => theme.glow};
   transition: transform 0.3s ease;
-
   &:hover {
     transform: scale(1.05);
+    box-shadow: ${({ theme }) => theme.glow};
   }
 `;
 
 const Header = () => {
-  const { toggleTheme } = useTheme();
-  const { user, logout } = useUser();
+  console.log('Header: Starting render');
+  const { currentTheme, toggleTheme } = useTheme();
+  console.log('Header: Theme context:', currentTheme);
+  const { user, setUser } = useUser();
+  console.log('Header: User context:', user);
+  const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+    navigate('/login');
   };
 
+  console.log('Header: Rendering component');
   return (
-    <HeaderContainer>
-      <Logo>ShareSync</Logo>
+    <HeaderContainer theme={currentTheme}>
+      <Logo theme={currentTheme} onClick={() => navigate('/')}>ShareSync</Logo>
       <Nav>
-        <NavLink to="/home">Home</NavLink>
-        <NavLink to="/login">Login</NavLink>
-        <NavLink to="/register">Register</NavLink>
-        <NavLink to="/projects">Projects</NavLink>
-        <NavLink to="/profile">Profile</NavLink>
-        {user && <NavLink to="/login" onClick={handleLogout}>Logout</NavLink>}
+        <NavLink theme={currentTheme} onClick={() => navigate('/home')}>Home</NavLink>
+        <NavLink theme={currentTheme} onClick={() => navigate('/login')}>Login</NavLink>
+        <NavLink theme={currentTheme} onClick={() => navigate('/register')}>Register</NavLink>
+        <NavLink theme={currentTheme} onClick={() => navigate('/projects')}>Projects</NavLink>
+        <NavLink theme={currentTheme} onClick={() => navigate('/profile')}>Profile</NavLink>
+        {user && <NavLink theme={currentTheme} onClick={handleLogout}>Logout</NavLink>}
       </Nav>
-      <ThemeButton onClick={toggleTheme}>Toggle Theme</ThemeButton>
+      <ThemeButton theme={currentTheme} onClick={toggleTheme}>Toggle Theme</ThemeButton>
     </HeaderContainer>
   );
 };
