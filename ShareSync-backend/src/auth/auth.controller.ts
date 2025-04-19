@@ -8,8 +8,9 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: any) {
-    console.log('AuthController: Login request received:', body);
-    const { email, password } = body;
+    console.log('AuthController: Raw login request body:', body);
+    const email = body.email;
+    const password = body.password;
     console.log('AuthController: Extracted email:', email, 'password:', password);
     if (!email || !password) {
       console.log('AuthController: Missing email or password in request body');
@@ -26,8 +27,17 @@ export class AuthController {
   }
 
   @Post('register')
-  async register(@Body() registerDto: { email: string; password: string; username?: string; firstName?: string; lastName?: string; birthday?: string }) {
-    console.log('AuthController: Register request received:', registerDto);
+  async register(@Body() body: any) {
+    console.log('AuthController: Raw register request body:', body);
+    const registerDto = {
+      email: body.email,
+      password: body.password,
+      username: body.username,
+      firstName: body.firstName,
+      lastName: body.lastName,
+      birthday: body.birthday,
+    };
+    console.log('AuthController: Register DTO:', registerDto);
     try {
       const user = await this.authService.register(registerDto);
       console.log('AuthController: Register successful, user:', user);
