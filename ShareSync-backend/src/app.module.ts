@@ -17,7 +17,7 @@ import { ActivitiesService } from './activities/activities.service';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost/intacom'), // Removed deprecated options
+    MongooseModule.forRoot('mongodb://localhost/intacom'),
     MongooseModule.forFeature([
       { name: 'Notification', schema: NotificationSchema },
       { name: 'Task', schema: TaskSchema },
