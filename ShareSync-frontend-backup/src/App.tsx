@@ -82,6 +82,11 @@ function App() {
     setIsDarkMode(!isDarkMode);
   };
 
+  if (!currentTheme) {
+    console.error('App: currentTheme is undefined, defaulting to darkTheme');
+    setCurrentTheme(darkTheme);
+  }
+
   console.log('App: Rendering with currentTheme:', currentTheme);
 
   try {
@@ -89,9 +94,9 @@ function App() {
       <ErrorBoundary>
         <UserProvider>
           <SocketProvider>
-            <ThemeProvider value={{ currentTheme, isDarkMode, toggleTheme }}>
+            <ThemeProvider value={{ currentTheme: currentTheme || darkTheme, isDarkMode, toggleTheme }}>
               <GlobalStyles />
-              <AppContainer theme={currentTheme}>
+              <AppContainer theme={currentTheme || darkTheme}>
                 <Router>
                   <Header />
                   <Routes>

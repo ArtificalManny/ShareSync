@@ -1,181 +1,131 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
-import { FaTrophy, FaUserPlus, FaUserMinus, FaEdit } from 'react-icons/fa';
 import styled from 'styled-components';
 
 const ProfileContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
   padding: 20px;
-  background: ${({ theme }: { theme: any }) => theme.cardBackground};
-  border-radius: 15px;
-  box-shadow: ${({ theme }) => theme.shadow};
-  backdrop-filter: blur(10px);
-  border: 1px solid ${({ theme }) => theme.border};
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  margin-top: 20px;
+  background: ${({ theme }: { theme: any }) => theme.background};
+  color: ${({ theme }) => theme.text};
 `;
 
 const Section = styled.div`
   background: ${({ theme }: { theme: any }) => theme.cardBackground};
   padding: 20px;
   border-radius: 10px;
-  border: 1px solid ${({ theme }) => theme.border};
+  margin-bottom: 20px;
+  box-shadow: ${({ theme }) => theme.glow};
 `;
 
-const SectionTitle = styled.h2`
-  color: ${({ theme }: { theme: any }) => theme.text};
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-`;
-
-const List = styled.ul`
-  list-style: none;
-  padding: 0;
-`;
-
-const ListItem = styled.li`
-  color: ${({ theme }: { theme: any }) => theme.text};
-  padding: 5px 0;
+const Input = styled.input`
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid ${({ theme }: { theme: any }) => theme?.border || '#334155'};
+  border-radius: 5px;
+  background: ${({ theme }) => theme?.cardBackground || 'rgba(255, 255, 255, 0.05)'};
+  color: ${({ theme }) => theme?.text || '#e0e7ff'};
 `;
 
 const Button = styled.button`
-  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme.primary}, ${({ theme }) => theme.secondary});
-  color: ${({ theme }) => theme.buttonText};
-  padding: 8px 16px;
+  background: ${({ theme }: { theme: any }) =>
+    `linear-gradient(45deg, ${theme?.primary || '#818cf8'}, ${theme?.secondary || '#f9a8d4'})`};
+  color: ${({ theme }) => theme?.buttonText || '#0f172a'};
+  padding: 10px 20px;
   border: none;
-  border-radius: 20px;
+  border-radius: 25px;
   cursor: pointer;
-  margin: 5px;
+  margin: 10px 0;
   transition: transform 0.3s ease;
   &:hover {
     transform: scale(1.05);
   }
 `;
 
-const EditButton = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }: { theme: any }) => theme.accent};
-  cursor: pointer;
-  margin-left: 10px;
-  &:hover {
-    color: ${({ theme }) => theme.highlight};
-  }
+const ErrorMessage = styled.p`
+  color: ${({ theme }: { theme: any }) => theme?.warning || '#e11d48'};
+  font-size: 14px;
 `;
 
-interface User {
-  _id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-}
+const SuccessMessage = styled.p`
+  color: ${({ theme }: { theme: any }) => theme?.accent || '#10b981'};
+  font-size: 14px;
+`;
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const Profile = () => {
   const { currentTheme } = useTheme();
-  const { user } = useUser();
-  const [isEditing, setIsEditing] = useState(false);
-  const [bio, setBio] = useState('Software Developer | Tech Enthusiast');
-  const [skills, setSkills] = useState(['React', 'TypeScript', 'Node.js']);
-  const [newSkill, setNewSkill] = useState('');
-  const [badges] = useState(['Top Contributor', 'Team Leader']);
-  const [followers] = useState(120);
-  const [following] = useState(85);
-  const [points] = useState(450);
+  const { user, setUser } = useUser();
+  const navigate = useNavigate();
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleEditToggle = () => {
-    setIsEditing(!isEditing);
-  };
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
 
-  const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setBio(e.target.value);
-  };
-
-  const handleAddSkill = () => {
-    if (newSkill.trim()) {
-      setSkills([...skills, newSkill.trim()]);
-      setNewSkill('');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    try {
+      const response = await axios.put(
+        `${API_URL}/users/update`,
+        { firstName, lastName, email },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        }
+      );
+      setUser(response.data);
+      setSuccess('Profile updated successfully!');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update profile');
     }
   };
-
-  const handleFollow = () => {
-    // Implement follow functionality
-  };
-
-  const handleUnfollow = () => {
-    // Implement unfollow functionality
-  };
-
-  if (!user) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <ProfileContainer theme={currentTheme}>
       <Section theme={currentTheme}>
-        <SectionTitle theme={currentTheme}>
-          Profile
-          <EditButton theme={currentTheme} onClick={handleEditToggle}>
-            <FaEdit />
-          </EditButton>
-        </SectionTitle>
-        <List>
-          <ListItem theme={currentTheme}>Username: {user.firstName} {user.lastName}</ListItem>
-          <ListItem theme={currentTheme}>
-            Bio: {isEditing ? (
-              <textarea value={bio} onChange={handleBioChange} />
-            ) : (
-              bio
-            )}
-          </ListItem>
-          <ListItem theme={currentTheme}>Email: {user.email}</ListItem>
-          <ListItem theme={currentTheme}>Followers: {followers}</ListItem>
-          <ListItem theme={currentTheme}>Following: {following}</ListItem>
-          <ListItem theme={currentTheme}>Points: {points}</ListItem>
-        </List>
-        <Button theme={currentTheme} onClick={handleFollow}>
-          <FaUserPlus /> Follow
-        </Button>
-        <Button theme={currentTheme} onClick={handleUnfollow}>
-          <FaUserMinus /> Unfollow
-        </Button>
-      </Section>
-
-      <Section theme={currentTheme}>
-        <SectionTitle theme={currentTheme}>Skills</SectionTitle>
-        {isEditing ? (
-          <div>
-            <input
-              type="text"
-              value={newSkill}
-              onChange={(e) => setNewSkill(e.target.value)}
-              placeholder="Add a new skill"
-            />
-            <Button theme={currentTheme} onClick={handleAddSkill}>Add Skill</Button>
-          </div>
-        ) : null}
-        <List>
-          {skills.map((skill, index) => (
-            <ListItem key={index} theme={currentTheme}>{skill}</ListItem>
-          ))}
-        </List>
-      </Section>
-
-      <Section theme={currentTheme}>
-        <SectionTitle theme={currentTheme}>
-          <FaTrophy /> Badges
-        </SectionTitle>
-        <List>
-          {badges.map((badge, index) => (
-            <ListItem key={index} theme={currentTheme}>{badge}</ListItem>
-          ))}
-        </List>
+        <h2>Profile</h2>
+        <form onSubmit={handleSubmit}>
+          <Input
+            type="text"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="First Name"
+            theme={currentTheme}
+            required
+          />
+          <Input
+            type="text"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Last Name"
+            theme={currentTheme}
+            required
+          />
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            theme={currentTheme}
+            required
+          />
+          <Button type="submit" theme={currentTheme}>
+            Update Profile
+          </Button>
+        </form>
+        {error && <ErrorMessage theme={currentTheme}>{error}</ErrorMessage>}
+        {success && <SuccessMessage theme={currentTheme}>{success}</SuccessMessage>}
       </Section>
     </ProfileContainer>
   );

@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
 import styled from 'styled-components';
 
-const VerifyContainer = styled.div`
-  background: ${({ theme }: { theme: any }) => theme.cardBackground};
-  color: ${({ theme }) => theme.text};
+const Container = styled.div`
+  background: ${({ theme }: { theme: any }) => theme?.cardBackground || 'rgba(255, 255, 255, 0.05)'};
+  color: ${({ theme }) => theme?.text || '#e0e7ff'};
   padding: 30px;
   border-radius: 15px;
-  box-shadow: ${({ theme }) => theme.shadow};
+  box-shadow: ${({ theme }) => theme?.shadow || '0 4px 30px rgba(0, 0, 0, 0.3)'};
   backdrop-filter: blur(10px);
-  border: 1px solid ${({ theme }) => theme.border};
+  border: 1px solid ${({ theme }) => theme?.border || '#334155'};
   width: 100%;
   max-width: 400px;
   text-align: center;
@@ -20,16 +20,16 @@ const VerifyContainer = styled.div`
 `;
 
 const Message = styled.p`
-  color: ${({ theme }: { theme: any }) => theme.accent};
   font-size: 16px;
+  color: ${({ theme }: { theme: any }) => theme?.accent || '#10b981'};
 `;
 
 const ErrorMessage = styled.p`
-  color: ${({ theme }: { theme: any }) => theme.warning};
   font-size: 16px;
+  color: ${({ theme }: { theme: any }) => theme?.warning || '#e11d48'};
 `;
 
-const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const VerifyEmail = () => {
   const { currentTheme } = useTheme();
@@ -42,20 +42,21 @@ const VerifyEmail = () => {
     const verifyEmail = async () => {
       try {
         const response = await axios.get(`${API_URL}/auth/verify-email/${token}`);
-        setMessage(response.data.message);
+        setMessage('Email verified successfully! Redirecting to login...');
         setTimeout(() => navigate('/login'), 2000);
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Verification failed');
+        setError(err.response?.data?.message || 'Failed to verify email');
       }
     };
     verifyEmail();
   }, [token, navigate]);
 
   return (
-    <VerifyContainer theme={currentTheme}>
+    <Container theme={currentTheme}>
+      <h2>Email Verification</h2>
       {message && <Message theme={currentTheme}>{message}</Message>}
       {error && <ErrorMessage theme={currentTheme}>{error}</ErrorMessage>}
-    </VerifyContainer>
+    </Container>
   );
 };
 

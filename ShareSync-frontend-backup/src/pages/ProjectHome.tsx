@@ -19,7 +19,7 @@ const Section = styled.div`
   box-shadow: ${({ theme }) => theme.glow};
 `;
 
-const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 interface Project {
   _id: string;
