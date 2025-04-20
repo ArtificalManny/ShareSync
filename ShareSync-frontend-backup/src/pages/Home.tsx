@@ -48,8 +48,9 @@ const TeamActivitySection = styled(Section)`
 `;
 
 const Button = styled.button`
-  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme.primary}, ${({ theme }) => theme.secondary});
-  color: ${({ theme }) => theme.buttonText};
+  background: ${({ theme }: { theme: any }) =>
+    `linear-gradient(45deg, ${theme?.primary || '#818cf8'}, ${theme?.secondary || '#f9a8d4'})`};
+  color: ${({ theme }) => theme.buttonText || '#0f172a'};
   padding: 10px 20px;
   border: none;
   border-radius: 25px;
@@ -63,7 +64,8 @@ const Button = styled.button`
 `;
 
 const StatBox = styled.div`
-  background: linear-gradient(45deg, ${({ theme }: { theme: any }) => theme.secondary}, ${({ theme }) => theme.highlight});
+  background: ${({ theme }: { theme: any }) =>
+    `linear-gradient(45deg, ${theme?.secondary || '#f9a8d4'}, ${theme?.highlight || '#c4b5fd'})`};
   padding: 15px;
   border-radius: 10px;
   margin: 10px 0;

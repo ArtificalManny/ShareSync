@@ -63,7 +63,7 @@ const SuccessMessage = styled.p`
   font-size: 14px;
 `;
 
-const API_URL = process.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const Login = () => {
   console.log('Login: Starting render');
