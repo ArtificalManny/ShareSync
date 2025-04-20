@@ -17,7 +17,7 @@ import { ActivitiesService } from './activities/activities.service';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb+srv://<username>:<password>@cluster0.z7xm8.mongodb.net/intacom?retryWrites=true&w=majority'),
+    MongooseModule.forRoot('mongodb+srv://ClusterZero:NR8P0FLTk0JWLA@cluster0.z7xm8.mongodb.net/intacom?retryWrites=true&w=majority&appName=Cluster0'),
     MongooseModule.forFeature([
       { name: 'Notification', schema: NotificationSchema },
       { name: 'Task', schema: TaskSchema },
