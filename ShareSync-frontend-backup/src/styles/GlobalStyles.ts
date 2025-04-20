@@ -1,52 +1,39 @@
 import { createGlobalStyle } from 'styled-components';
 
-const GlobalStyles = createGlobalStyle`
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+  const GlobalStyles = createGlobalStyle`
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Inter:wght@400&display=swap');
 
-  body {
-    font-family: 'Orbitron', sans-serif;
-    background: ${({ theme }) => {
-      console.log('GlobalStyles: Theme value:', theme);
-      return theme?.background || '#121212'; // Fallback to a default color
-    }};
-    color: ${({ theme }) => theme?.text || '#e0e0e0'};
-    overflow-x: hidden;
-  }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-  a {
-    color: inherit;
-    text-decoration: none;
-  }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1e1e2f 0%, #2a2a4a 100%);
+      color: #e0e7ff;
+      line-height: 1.6;
+    }
 
-  button {
-    font-family: 'Orbitron', sans-serif;
-    cursor: pointer;
-  }
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Poppins', sans-serif;
+      color: #e0e7ff;
+    }
 
-  input, textarea {
-    font-family: 'Orbitron', sans-serif;
-  }
+    a {
+      color: #48ffeb;
+      text-decoration: none;
+      &:hover {
+        color: #6b48ff;
+      }
+    }
 
-  ::-webkit-scrollbar {
-    width: 8px;
-  }
+    button {
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+  `;
 
-  ::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme?.background || '#121212'};
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme?.primary || '#ab47bc'};
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: ${({ theme }) => theme?.secondary || '#f06292'};
-  }
-`;
-
-export default GlobalStyles;
+  export default GlobalStyles;
