@@ -85,6 +85,8 @@ const Register = () => {
     setError('');
     setSuccess('');
     try {
+      console.log('Register: API_URL:', API_URL);
+      console.log('Register: Submitting form with email:', username);
       const response = await axios.post(`${API_URL}/auth/register`, {
         email: username,
         firstName,
@@ -97,6 +99,7 @@ const Register = () => {
       setSuccess('Registration successful! Redirecting to home...');
       setTimeout(() => navigate('/home'), 2000);
     } catch (err: any) {
+      console.error('Register: Error during registration:', err);
       setError(err.response?.data?.message || 'Registration failed');
     }
   };
