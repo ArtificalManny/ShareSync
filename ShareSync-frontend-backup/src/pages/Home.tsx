@@ -50,7 +50,7 @@ const TeamActivitySection = styled(Section)`
 const Button = styled.button`
   background: ${({ theme }: { theme: any }) =>
     `linear-gradient(45deg, ${theme?.primary || '#818cf8'}, ${theme?.secondary || '#f9a8d4'})`};
-  color: ${({ theme }) => theme.buttonText || '#0f172a'};
+  color: ${({ theme }) => theme?.buttonText || '#0f172a'};
   padding: 10px 20px;
   border: none;
   border-radius: 25px;
@@ -59,7 +59,7 @@ const Button = styled.button`
   transition: transform 0.3s ease;
   &:hover {
     transform: scale(1.05);
-    box-shadow: ${({ theme }) => theme.glow};
+    box-shadow: ${({ theme }) => theme?.glow};
   }
 `;
 
@@ -69,7 +69,7 @@ const StatBox = styled.div`
   padding: 15px;
   border-radius: 10px;
   margin: 10px 0;
-  box-shadow: ${({ theme }) => theme.glow};
+  box-shadow: ${({ theme }) => theme?.glow};
 `;
 
 const StatNumber = styled.div`
