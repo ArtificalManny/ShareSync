@@ -17,7 +17,17 @@ import { ActivitiesService } from './activities/activities.service';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb+srv://ClusterZero:NR8P0FLTk0JWLA@cluster0.z7xm8.mongodb.net/intacom?retryWrites=true&w=majority&appName=Cluster0'),
+    MongooseModule.forRoot(process.env.MONGODB_URI, {
+      connectionFactory: (connection) => {
+        connection.on('connected', () => {
+          console.log('Successfully connected to MongoDB Atlas');
+        });
+        connection.on('error', (error) => {
+          console.error('MongoDB connection error:', error);
+        });
+        return connection;
+      },
+    }),
     MongooseModule.forFeature([
       { name: 'Notification', schema: NotificationSchema },
       { name: 'Task', schema: TaskSchema },

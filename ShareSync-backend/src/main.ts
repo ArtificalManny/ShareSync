@@ -1,5 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 async function bootstrap() {
   try {
@@ -13,8 +17,9 @@ async function bootstrap() {
       allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
     });
 
-    await app.listen(3001);
-    console.log('Backend server running on http://localhost:3001');
+    const port = 3001;
+    await app.listen(port);
+    console.log(`Backend server running on http://localhost:${port}`);
   } catch (error) {
     console.error('Failed to start backend:', error);
     process.exit(1);
