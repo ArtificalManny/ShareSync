@@ -12,7 +12,7 @@ async function bootstrap() {
     allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
   });
 
-  await app.listen(3001);
+  await app.listen(3001); // Changed from 3000 to 3001
   console.log('Backend server running on http://localhost:3001');
 }
 bootstrap();

@@ -1,126 +1,85 @@
-import { Controller, Post, Get, Req, Res } from '@nestjs/common';
+import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { Request, Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('create-test-user')
-  async createTestUser(@Req() req: Request, @Res() res: Response) {
+  @Post('register')
+  async register(@Body() body: { email: string; firstName: string; lastName: string; password: string }) {
     try {
-      const user = await this.authService.createTestUser('eamonrivas@gmail.com', 'S7mR0!%uMZ<$[w%@');
-      res.status(201).json({ message: 'Test user created', user });
+      const { email, firstName, lastName, password } = body;
+      if (!email || !firstName || !lastName || !password) {
+        throw new HttpException('All fields are required', HttpStatus.BAD_REQUEST);
+      }
+
+      const existingUser = await this.authService.findByEmail(email);
+      if (existingUser) {
+        throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await this.authService.createUser({ email, firstName, lastName, password: hashedPassword });
+      const access_token = await this.authService.generateToken(user);
+      return { user, access_token };
     } catch (error) {
-      console.error('AuthController: Create test user error:', error.message);
-      res.status(401).json({ message: error.message });
+      throw new HttpException(error.message || 'Registration failed', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   @Post('login')
-  async login(@Req() req: Request, @Res() res: Response) {
-    console.log('AuthController: Login request received:', req.body);
-    const { email, password } = req.body;
-    console.log('AuthController: Extracted email:', email, 'password:', password);
-    if (!email || !password) {
-      res.status(400).json({ message: 'Email and password are required' });
-      return;
-    }
+  async login(@Body() body: { email: string; password: string }) {
     try {
-      const user = await this.authService.login(email, password);
-      console.log('AuthController: Login successful, user:', user);
-      res.status(200).json(user);
-    } catch (error) {
-      console.error('AuthController: Login error:', error.message);
-      res.status(401).json({ message: error.message });
-    }
-  }
-
-  @Post('register')
-  async register(@Req() req: Request, @Res() res: Response) {
-    console.log('AuthController: Register request received:', req.body);
-    try {
-      const user = await this.authService.register(req.body);
-      console.log('AuthController: Register successful, user:', user);
-      res.status(201).json(user);
-    } catch (error) {
-      console.error('AuthController: Register error:', error.message);
-      res.status(400).json({ message: error.message });
-    }
-  }
-
-  @Post('forgot-password')
-  async forgotPassword(@Req() req: Request, @Res() res: Response) {
-    console.log('AuthController: Forgot password request received:', req.body);
-    const { email } = req.body;
-    if (!email) {
-      console.log('AuthController: Email is required for forgot password');
-      res.status(400).json({ message: 'Email is required' });
-      return;
-    }
-    try {
-      const resetLink = await this.authService.forgotPassword(email);
-      console.log('AuthController: Reset link generated:', resetLink);
-      res.status(200).json({ message: 'Password reset link sent (check console for link)', resetLink });
-    } catch (error) {
-      console.error('AuthController: Forgot password error:', error.message);
-      res.status(401).json({ message: error.message });
-    }
-  }
-
-  @Post('reset-password')
-  async resetPassword(@Req() req: Request, @Res() res: Response) {
-    console.log('AuthController: Reset password request received:', req.body);
-    const { newPassword, token } = req.body;
-    if (!newPassword || !token) {
-      console.log('AuthController: New password and token are required for reset password');
-      res.status(400).json({ message: 'New password and token are required' });
-      return;
-    }
-    try {
-      await this.authService.resetPassword(token, newPassword);
-      console.log('AuthController: Password reset successful');
-      res.status(200).json({ message: 'Password reset successful' });
-    } catch (error) {
-      console.error('AuthController: Reset password error:', error.message);
-      res.status(401).json({ message: error.message });
-    }
-  }
-
-  @Get('me')
-  async getCurrentUser(@Req() req: Request, @Res() res: Response) {
-    const user = (req as any).user;
-    if (!user) {
-      res.status(401).json({ message: 'User not authenticated' });
-      return;
-    }
-    try {
-      const currentUser = await this.authService.getCurrentUser(user.sub);
-      res.status(200).json(currentUser);
-    } catch (error) {
-      console.error('AuthController: Get current user error:', error.message);
-      res.status(401).json({ message: error.message });
-    }
-  }
-
-  @Post('logout')
-  async logout(@Res() res: Response) {
-    res.status(200).json({ message: 'Logged out successfully' });
-  }
-
-  @Get('test-user')
-  async testUser(@Req() req: Request, @Res() res: Response) {
-    console.log('AuthController: Test user endpoint called');
-    try {
-      const user = await this.authService.testUser('eamonrivas@gmail.com');
-      if (!user) {
-        res.status(404).json({ message: 'User not found' });
-        return;
+      const { email, password } = body;
+      if (!email || !password) {
+        throw new HttpException('Email and password are required', HttpStatus.BAD_REQUEST);
       }
-      res.status(200).json({ message: 'User found', user });
+
+      const user = await this.authService.validateUser(email, password);
+      if (!user) {
+        throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
+      }
+
+      const access_token = await this.authService.generateToken(user);
+      return { user, access_token };
     } catch (error) {
-      console.error('AuthController: Test user error:', error.message);
-      res.status(500).json({ message: 'Internal server error' });
+      throw new HttpException(error.message || 'Login failed', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+}
+@Post('forgot-password')
+async forgotPassword(@Body() body: { email: string }) {
+  try {
+    const { email } = body;
+    if (!email) {
+      throw new HttpException('Email is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const user = await this.authService.findByEmail(email);
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    const token = await this.authService.generateResetToken(user);
+    const resetLink = `http://localhost:54693/reset-password/${token}`;
+    console.log(`Reset link for ${email}: ${resetLink}`);
+    return { message: 'Password reset email sent' };
+  } catch (error) {
+    throw new HttpException(error.message || 'Failed to send reset email', HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+}
+
+@Post('reset-password')
+async resetPassword(@Body() body: { token: string; newPassword: string }) {
+  try {
+    const { token, newPassword } = body;
+    if (!token || !newPassword) {
+      throw new HttpException('Token and new password are required', HttpStatus.BAD_REQUEST);
+    }
+
+    const user = await this.authService.resetPassword(token, newPassword);
+    return { message: 'Password reset successful' };
+  } catch (error) {
+    throw new HttpException(error.message || 'Failed to reset password', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }

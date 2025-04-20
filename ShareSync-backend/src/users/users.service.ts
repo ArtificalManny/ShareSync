@@ -34,3 +34,29 @@ export class UsersService {
     await this.userModel.updateOne({ _id: userId }, { $set: { password: newPassword } }).exec();
   }
 }
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User } from './user.schema';
+
+@Injectable()
+export class UsersService {
+  constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
+
+  async create(userData: { email: string; firstName: string; lastName: string; password: string }) {
+    const user = new this.userModel(userData);
+    return user.save();
+  }
+
+  async findByEmail(email: string) {
+    return this.userModel.findOne({ email }).exec();
+  }
+
+  async findById(id: string) {
+    return this.userModel.findById(id).exec();
+  }
+
+  async updatePassword(userId: string, newPassword: string) {
+    return this.userModel.findByIdAndUpdate(userId, { password: newPassword }, { new: true }).exec();
+  }
+}
