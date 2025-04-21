@@ -2,18 +2,18 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 @Schema()
-export class Notification extends Document {
+export class Comment extends Document {
   @Prop({ required: true })
   userId: string;
 
   @Prop({ required: true })
-  message: string;
+  projectId: string;
 
-  @Prop({ default: false })
-  read: boolean;
+  @Prop({ required: true })
+  content: string;
 
   @Prop({ default: Date.now })
   createdAt: Date;
 }
 
-export const NotificationSchema = SchemaFactory.createForClass(Notification);
+export const CommentSchema = SchemaFactory.createForClass(Comment);

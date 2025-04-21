@@ -1,5 +1,6 @@
 import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import * as bcrypt from 'bcrypt'; // Added import
 
 @Controller('auth')
 export class AuthController {
@@ -74,7 +75,7 @@ export class AuthController {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
-      const token = await this.authService.generateResetToken(user);
+      const token = await this.authService.createResetToken(user); // Fixed method name
       const resetLink = `http://localhost:54693/reset-password/${token}`;
       console.log(`Reset link for ${email}: ${resetLink}`);
       return { message: 'Password reset email sent' };
@@ -94,7 +95,7 @@ export class AuthController {
         throw new HttpException('Token and new password are required', HttpStatus.BAD_REQUEST);
       }
 
-      const user = await this.authService.resetPassword(token, newPassword);
+      const user = await this.authService.updatePasswordWithToken(token, newPassword); // Fixed method name
       console.log('Password reset successful for user:', user.email);
       return { message: 'Password reset successful' };
     } catch (error) {

@@ -9,12 +9,6 @@ export class UploadsController {
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File): Promise<string> {
-    try {
-      const result = await this.uploadsService.uploadFile(file);
-      return result.url;
-    } catch (error) {
-      console.error('Error in uploadFile:', error);
-      throw error;
-    }
+    return this.uploadsService.uploadFile(file);
   }
 }

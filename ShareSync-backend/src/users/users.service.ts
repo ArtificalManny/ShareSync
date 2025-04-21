@@ -7,30 +7,33 @@ import { User } from './user.schema';
 export class UsersService {
   constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
 
-  async create(userData: { email: string; firstName: string; lastName: string; password: string }) {
-    console.log('UsersService: Creating user with data:', userData);
+  async create(userData: { email: string; firstName: string; lastName: string; password: string }): Promise<User> {
     const user = new this.userModel(userData);
-    const savedUser = await user.save();
-    console.log('UsersService: User created:', savedUser);
-    return savedUser;
+    return user.save();
   }
 
-  async findByEmail(email: string) {
-    console.log('UsersService: Finding user by email:', email);
-    const user = await this.userModel.findOne({ email }).exec();
-    console.log('UsersService: Find result:', user);
-    return user;
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
   }
 
-  async findById(id: string) {
-    console.log('UsersService: Finding user by id:', id);
-    const user = await this.userModel.findById(id).exec();
-    console.log('UsersService: Find result:', user);
-    return user;
+  async findById(id: string): Promise<User | null> {
+    return this.userModel.findById(id).exec();
   }
 
-  async updatePassword(userId: string, newPassword: string) {
-    console.log('UsersService: Updating password for userId:', userId);
+  async updatePassword(userId: string, newPassword: string): Promise<User | null> {
     return this.userModel.findByIdAndUpdate(userId, { password: newPassword }, { new: true }).exec();
+  }
+
+  async addPoints(userId: string, points: number): Promise<User | null> {
+    return this.userModel.findByIdAndUpdate(userId, { $inc: { points: points } }, { new: true }).exec();
+  }
+
+  async getPoints(userId: string): Promise<number> {
+    const user = await this.userModel.findById(userId).exec();
+    return user ? user.points || 0 : 0;
+  }
+
+  async getLeaderboard(): Promise<User[]> {
+    return this.userModel.find().sort({ points: -1 }).limit(10).exec();
   }
 }

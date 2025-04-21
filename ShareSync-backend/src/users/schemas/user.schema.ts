@@ -7,22 +7,19 @@ export class User extends Document {
   email: string;
 
   @Prop({ required: true })
-  password: string;
-
-  @Prop()
-  username: string;
-
-  @Prop()
   firstName: string;
 
-  @Prop()
+  @Prop({ required: true })
   lastName: string;
 
-  @Prop({ type: Date })
-  birthday: Date;
+  @Prop({ required: true })
+  password: string;
 
-  @Prop({ default: false })
-  isVerified: boolean;
+  @Prop({ default: 0 })
+  points: number;
+
+  @Prop({ default: Date.now })
+  createdAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

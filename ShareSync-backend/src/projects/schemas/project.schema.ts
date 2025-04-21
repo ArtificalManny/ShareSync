@@ -1,21 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type ProjectDocument = Project & Document;
-
 @Schema()
-export class Project {
+export class Project extends Document {
   @Prop({ required: true })
-  name: string;
-
-  @Prop({ required: true })
-  description: string;
+  title: string;
 
   @Prop()
-  creatorEmail: string;
+  description: string;
 
-  @Prop({ type: [String], default: [] })
-  sharedWith: string[];
+  @Prop({ required: true })
+  ownerId: string;
+
+  @Prop({ default: false })
+  isPublic: boolean;
 
   @Prop({ default: Date.now })
   createdAt: Date;

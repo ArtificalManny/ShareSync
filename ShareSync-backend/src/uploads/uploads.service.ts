@@ -3,9 +3,8 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class UploadsService {
   async uploadFile(file: Express.Multer.File): Promise<{ url: string }> {
-    // In a real application, you would upload the file to a storage service (e.g., AWS S3)
-    // For this example, we'll return a mock URL
-    const mockUrl = `http://localhost:3006/uploads/${file.originalname}`;
-    return { url: mockUrl };
+    // Placeholder for file upload logic (e.g., upload to S3)
+    // In a real app, this would save the file and return a URL
+    return { url: `https://example.com/uploads/${file.originalname}` };
   }
 }
