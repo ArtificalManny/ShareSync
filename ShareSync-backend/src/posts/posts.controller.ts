@@ -4,7 +4,7 @@ import { Post } from '../schemas/post.schema';
 
 @Controller('posts')
 export class PostsController {
-  constructor private readonly postsService: PostsService) {}
+  constructor(private readonly postsService: PostsService) {}
 
   @Post()
   async create(@Body() createPostDto: { title: string; content: string; projectId: string; userId: string }): Promise<Post> {

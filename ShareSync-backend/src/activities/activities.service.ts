@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Activity } from '../schemas/activity.schema'; // Correct path
+import { Activity } from '../schemas/activity.schema';
 
 @Injectable()
 export class ActivitiesService {

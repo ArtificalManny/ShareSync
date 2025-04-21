@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ActivitiesController } from './activities.controller';
 import { ActivitiesService } from './activities.service';
-import { Activity, ActivitySchema } from './schemas/activity.schema';
+import { Activity, ActivitySchema } from '../schemas/activity.schema';
 
 @Module({
   imports: [

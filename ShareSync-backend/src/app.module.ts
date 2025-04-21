@@ -10,7 +10,7 @@ import { ActivitySchema } from './schemas/activity.schema';
 import { NotificationsGateway } from './notifications/notifications.gateway';
 import { NotificationsService } from './notifications/notifications.service';
 import { TasksService } from './tasks/tasks.service';
-import { TasksController } from './tasks/tasks.controller';
+import { TasksController } from './tasks/tasks.controller'; // Should now resolve
 import { ResetTokenService } from './reset-token/reset-token.service';
 import { CacheModule } from './cache/cache.module';
 import { ActivitiesService } from './activities/activities.service';

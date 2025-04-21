@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Project } from './project.schema';
+import { Project } from '../schemas/project.schema';
 
 @Injectable()
 export class ProjectsService {
@@ -37,8 +37,6 @@ export class ProjectsService {
   }
 
   async addTeamActivity(projectId: string, activity: string): Promise<void> {
-    // Placeholder for adding team activity
-    // In a real app, this would update the project with activity logs
     console.log(`Adding team activity to project ${projectId}: ${activity}`);
   }
 }

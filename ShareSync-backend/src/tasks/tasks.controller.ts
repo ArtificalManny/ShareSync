@@ -1,26 +1,32 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Controller, Post, Get, Put, Delete, Body, Param } from '@nestjs/common';
+import { TasksService } from './tasks.service';
 import { Task } from '../schemas/task.schema';
 
-@Injectable()
-export class TasksService {
-  constructor(@InjectModel('Task') private taskModel: Model<Task>) {}
+@Controller('tasks')
+export class TasksController {
+  constructor(private readonly tasksService: TasksService) {}
 
-  async create(createTaskDto: { title: string; description?: string; projectId: string }): Promise<Task> {
-    const task = new this.taskModel(createTaskDto);
-    return task.save();
+  @Post()
+  async create(@Body() createTaskDto: { title: string; description?: string; projectId: string }): Promise<Task> {
+    return this.tasksService.create(createTaskDto);
   }
 
-  async findByProject(projectId: string): Promise<Task[]> {
-    return this.taskModel.find({ projectId }).exec();
+  @Get(':projectId')
+  async findByProject(@Param('projectId') projectId: string): Promise<Task[]> {
+    return this.tasksService.findByProject(projectId);
   }
 
-  async updateTask(taskId: string, update: Partial<Task>): Promise<Task | null> {
-    return this.taskModel.findByIdAndUpdate(taskId, update, { new: true }).exec();
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() updateTaskDto: { status?: string; assignee?: string; dueDate?: string },
+  ): Promise<Task> {
+    const { status, assignee, dueDate } = updateTaskDto;
+    return this.tasksService.updateTask(id, { status, assignee, dueDate: dueDate ? new Date(dueDate) : undefined });
   }
 
-  async deleteTask(taskId: string): Promise<void> {
-    await this.taskModel.findByIdAndDelete(taskId).exec();
+  @Delete(':id')
+  async delete(@Param('id') id: string): Promise<void> {
+    return this.tasksService.deleteTask(id);
   }
 }
