@@ -1,19 +1,21 @@
 import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
-import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
-import { ResetTokenService } from '../reset-token/reset-token.service';
+import { ResetTokenSchema } from '../reset-token/reset-token.schema';
 
 @Module({
   imports: [
     UsersModule,
     JwtModule.register({
-      secret: 'your_jwt_secret', // Replace with a secure secret
+      secret: process.env.JWT_SECRET || 'your_jwt_secret',
       signOptions: { expiresIn: '1h' },
     }),
+    MongooseModule.forFeature([{ name: 'ResetToken', schema: ResetTokenSchema }]), // Added
   ],
   controllers: [AuthController],
-  providers: [AuthService, ResetTokenService],
+  providers: [AuthService],
 })
 export class AuthModule {}

@@ -7,8 +7,14 @@ dotenv.config();
 
 async function bootstrap() {
   try {
+    // Log the MONGODB_URI to verify it's loaded
+    console.log('MONGODB_URI:', process.env.MONGODB_URI);
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI is not defined in the environment variables');
+    }
+
     const app = await NestFactory.create(AppModule);
-    
+
     // Global CORS configuration
     app.enableCors({
       origin: 'http://localhost:54693',
