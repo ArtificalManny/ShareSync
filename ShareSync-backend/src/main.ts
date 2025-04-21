@@ -2,13 +2,13 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables as the very first step
+dotenv.config({ path: '.env' }); // Explicitly specify the path
 
 async function bootstrap() {
   try {
     // Log the MONGODB_URI to verify it's loaded
-    console.log('MONGODB_URI:', process.env.MONGODB_URI);
+    console.log('MONGODB_URI in main.ts:', process.env.MONGODB_URI);
     if (!process.env.MONGODB_URI) {
       throw new Error('MONGODB_URI is not defined in the environment variables');
     }

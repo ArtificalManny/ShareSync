@@ -10,15 +10,16 @@ import { ActivitySchema } from './schemas/activity.schema';
 import { NotificationsGateway } from './notifications/notifications.gateway';
 import { NotificationsService } from './notifications/notifications.service';
 import { TasksService } from './tasks/tasks.service';
-import { TasksController } from './tasks/tasks.controller'; // Should now resolve
+import { TasksController } from './tasks/tasks.controller';
 import { ResetTokenService } from './reset-token/reset-token.service';
 import { CacheModule } from './cache/cache.module';
 import { ActivitiesService } from './activities/activities.service';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI, {
+    MongooseModule.forRoot(process.env.MONGODB_URI || '', {
       connectionFactory: (connection) => {
+        console.log('Attempting to connect to MongoDB with URI in AppModule:', process.env.MONGODB_URI);
         connection.on('connected', () => {
           console.log('Successfully connected to MongoDB Atlas');
         });
