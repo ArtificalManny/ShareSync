@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common'; // Added imports
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
@@ -78,7 +78,7 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.usersService.updatePassword(user._id, hashedPassword);
+    await this.usersService.updatePassword(user._id.toString(), hashedPassword); // Cast to string
     await this.resetTokenModel.deleteOne({ token });
 
     const { password: _, ...result } = user.toObject();
