@@ -6,7 +6,7 @@ import { NotificationSchema } from './schemas/notification.schema';
 import { TaskSchema } from './schemas/task.schema';
 import { ResetTokenSchema } from './reset-token/reset-token.schema';
 import { ChatMessageSchema } from './chat/chat.schema';
-import { ActivitySchema } from './schemas/activity.schema'; // Corrected path
+import { ActivitySchema } from './schemas/activity.schema';
 import { NotificationsGateway } from './notifications/notifications.gateway';
 import { NotificationsService } from './notifications/notifications.service';
 import { TasksService } from './tasks/tasks.service';

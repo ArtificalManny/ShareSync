@@ -1,6 +1,6 @@
 import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import * as bcrypt from 'bcrypt'; // Added import
+import * as bcrypt from 'bcrypt';
 
 @Controller('auth')
 export class AuthController {
@@ -28,8 +28,8 @@ export class AuthController {
       const access_token = await this.authService.generateToken(user);
       console.log('Registration successful for email:', email);
       return { user, access_token };
-    } catch (error) {
-      console.error('Registration error:', error.message);
+    } catch (error: any) {
+      console.error('Registration error:', error.message || error);
       throw new HttpException(error.message || 'Registration failed', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -53,8 +53,8 @@ export class AuthController {
       const access_token = await this.authService.generateToken(user);
       console.log('Login successful for email:', email);
       return { user, access_token };
-    } catch (error) {
-      console.error('Login error:', error.message);
+    } catch (error: any) {
+      console.error('Login error:', error.message || error);
       throw new HttpException(error.message || 'Login failed', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -75,12 +75,12 @@ export class AuthController {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
-      const token = await this.authService.createResetToken(user); // Fixed method name
+      const token = await this.authService.createResetToken(user);
       const resetLink = `http://localhost:54693/reset-password/${token}`;
       console.log(`Reset link for ${email}: ${resetLink}`);
       return { message: 'Password reset email sent' };
-    } catch (error) {
-      console.error('Forgot password error:', error.message);
+    } catch (error: any) {
+      console.error('Forgot password error:', error.message || error);
       throw new HttpException(error.message || 'Failed to send reset email', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -95,11 +95,11 @@ export class AuthController {
         throw new HttpException('Token and new password are required', HttpStatus.BAD_REQUEST);
       }
 
-      const user = await this.authService.updatePasswordWithToken(token, newPassword); // Fixed method name
+      const user = await this.authService.updatePasswordWithToken(token, newPassword);
       console.log('Password reset successful for user:', user.email);
       return { message: 'Password reset successful' };
-    } catch (error) {
-      console.error('Reset password error:', error.message);
+    } catch (error: any) {
+      console.error('Reset password error:', error.message || error);
       throw new HttpException(error.message || 'Failed to reset password', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

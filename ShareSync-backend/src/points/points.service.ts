@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Post } from './schemas/post.schema';
+import { Post } from '../schemas/post.schema'; // Corrected path
 
 @Injectable()
 export class PointsService {
