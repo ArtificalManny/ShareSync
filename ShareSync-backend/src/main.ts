@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 
 // Load environment variables as the very first step
-dotenv.config({ path: '.env' }); // Explicitly specify the path
+dotenv.config({ path: '.env' });
 
 async function bootstrap() {
   try {

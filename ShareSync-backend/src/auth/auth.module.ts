@@ -13,9 +13,10 @@ import { ResetTokenSchema } from '../reset-token/reset-token.schema';
       secret: process.env.JWT_SECRET || 'your_jwt_secret',
       signOptions: { expiresIn: '1h' },
     }),
-    MongooseModule.forFeature([{ name: 'ResetToken', schema: ResetTokenSchema }]), // Added
+    MongooseModule.forFeature([{ name: 'ResetToken', schema: ResetTokenSchema }]),
   ],
   controllers: [AuthController],
   providers: [AuthService],
+  exports: [AuthService], // Ensure AuthService is exported if needed elsewhere
 })
 export class AuthModule {}
