@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Post } from '../points/schemas/post.schema';
+import { Post } from '../schemas/post.schema'; // Corrected path
 import { ProjectsService } from '../projects/projects.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -29,5 +29,13 @@ export class PostsService {
     );
 
     return savedPost;
+  }
+
+  async findAll(): Promise<Post[]> {
+    return this.postModel.find().exec();
+  }
+
+  async search(query: string): Promise<Post[]> {
+    return this.postModel.find({ title: new RegExp(query, 'i') }).exec();
   }
 }

@@ -1,22 +1,23 @@
-import { Controller, Post, Body, Get, Query } from '@nestjs/common';
-import { PostsService } from './posts.service';
+import { Controller, Post as PostDecorator, Get, Body, Query } from '@nestjs/common';
+import { Post as PostSchema } from '../schemas/post.schema'; // Renamed to avoid conflict
 
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) {}
-
-  @Post()
-  create(@Body() createPostDto: { content: string; projectId: string; creatorId: string }) {
-    return this.postsService.create(createPostDto);
+  // Use PostDecorator for the NestJS decorator
+  @PostDecorator()
+  async create(
+    @Body() createPostDto: { title: string; content: string; projectId: string; userId: string }
+  ): Promise<PostSchema> {
+    // ...existing code...
   }
 
   @Get()
-  findAll() {
-    return this.postsService.findAll();
+  async findAll(): Promise<PostSchema[]> {
+    // ...existing code...
   }
 
   @Get('search')
-  search(@Query('q') query: string) {
-    return this.postsService.search(query);
+  async search(@Query('query') query: string): Promise<PostSchema[]> {
+    // ...existing code...
   }
 }

@@ -6,7 +6,7 @@ export class FeedbackController {
   constructor(private readonly feedbackService: FeedbackService) {}
 
   @Post()
-  create(@Body() createFeedbackDto: { feedback: string; featureRequest?: string; category: string }) {
+  async create(@Body() createFeedbackDto: { userId: string; content: string }): Promise<any> {
     return this.feedbackService.create(createFeedbackDto);
   }
 }

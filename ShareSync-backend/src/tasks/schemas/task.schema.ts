@@ -15,6 +15,12 @@ export class Task extends Document {
   @Prop({ default: 'pending' })
   status: string;
 
+  @Prop()
+  assignee: string; // Added
+
+  @Prop()
+  dueDate: Date;
+
   @Prop({ default: Date.now })
   createdAt: Date;
 }

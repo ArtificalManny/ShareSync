@@ -24,3 +24,17 @@ export class TasksService {
     await this.taskModel.findByIdAndDelete(taskId).exec();
   }
 }
+@Injectable()
+export class TasksService {
+  // ...existing code...
+
+  async create(createTaskDto: any): Promise<Task> {
+    // Implement the logic to create a task
+    return; // Replace with actual implementation
+  }
+
+  async findByProject(projectId: string): Promise<Task[]> {
+    // Implement the logic to find tasks by project
+    return; // Replace with actual implementation
+  }
+}

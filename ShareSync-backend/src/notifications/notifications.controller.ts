@@ -1,31 +1,22 @@
-import { Controller, Get, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
-import { AppGateway } from '../app.gateway';
+import { Notification } from '../schemas/notification.schema';
 
 @Controller('notifications')
 export class NotificationsController {
-  constructor(
-    private readonly notificationsService: NotificationsService,
-    private readonly appGateway: AppGateway
-  ) {}
+  constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get(':userId')
-  async findByUserId(@Param('userId') userId: string) {
-    const notifications = await this.notificationsService.findByUser(userId);
-    return {
-      status: 'success',
-      data: notifications,
-    };
+  async getNotifications(@Param('userId') userId: string): Promise<Notification[]> {
+    return this.notificationsService.findByUser(userId);
   }
 
-  @Put('mark-as-read/:id')
-  async markAsRead(@Param('id') id: string) {
+  @Post(':id/read')
+  async markAsRead(@Param('id') id: string): Promise<Notification> {
     const notification = await this.notificationsService.markAsRead(id);
-    this.appGateway.emitNotificationCreated(notification);
-    return {
-      status: 'success',
-      message: 'Notification marked as read',
-      data: notification,
-    };
+    if (!notification) {
+      throw new Error('Notification not found');
+    }
+    return notification;
   }
 }

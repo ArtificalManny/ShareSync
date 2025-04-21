@@ -1,36 +1,32 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Body, Param } from '@nestjs/common';
 import { TasksService } from './tasks.service';
+import { Task } from '../schemas/task.schema';
 
 @Controller('tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  async createTask(
-    @Body('projectId') projectId: string,
-    @Body('title') title: string,
-    @Body('description') description: string,
-  ) {
-    return this.tasksService.createTask(projectId, title, description);
+  async create(@Body() createTaskDto: { title: string; description?: string; projectId: string }): Promise<Task> {
+    return this.tasksService.create(createTaskDto);
   }
 
   @Get(':projectId')
-  async getTasks(@Param('projectId') projectId: string) {
-    return this.tasksService.getTasks(projectId);
+  async findByProject(@Param('projectId') projectId: string): Promise<Task[]> {
+    return this.tasksService.findByProject(projectId);
   }
 
-  @Patch(':id')
-  async updateTask(
+  @Put(':id')
+  async update(
     @Param('id') id: string,
-    @Body('status') status?: string,
-    @Body('assignee') assignee?: string,
-    @Body('dueDate') dueDate?: string,
-  ) {
+    @Body() updateTaskDto: { status?: string; assignee?: string; dueDate?: string },
+  ): Promise<Task> {
+    const { status, assignee, dueDate } = updateTaskDto;
     return this.tasksService.updateTask(id, { status, assignee, dueDate: dueDate ? new Date(dueDate) : undefined });
   }
 
   @Delete(':id')
-  async deleteTask(@Param('id') id: string) {
+  async delete(@Param('id') id: string): Promise<void> {
     return this.tasksService.deleteTask(id);
   }
 }

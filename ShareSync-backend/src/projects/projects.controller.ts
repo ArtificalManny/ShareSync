@@ -1,42 +1,43 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, Query } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
+import { Project } from '../schemas/project.schema';
 
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Post()
-  create(@Body() createProjectDto: { name: string; description: string; sharedWith: string[]; creator: string }) {
+  async create(@Body() createProjectDto: { title: string; description: string; ownerId: string }): Promise<Project> {
     return this.projectsService.create(createProjectDto);
   }
 
   @Get('public')
-  findPublic() {
+  async findPublic(): Promise<Project[]> {
     return this.projectsService.findPublic();
   }
 
   @Get('search')
-  search(@Query('q') query: string) {
+  async search(@Query('query') query: string): Promise<Project[]> {
     return this.projectsService.search(query);
   }
 
-  @Get(':username')
-  findAllByUsername(@Param('username') username: string) {
+  @Get('user/:username')
+  async findAllByUsername(@Param('username') username: string): Promise<Project[]> {
     return this.projectsService.findAllByUsername(username);
   }
 
-  @Get('by-id/:id')
-  findById(@Param('id') id: string) {
+  @Get(':id')
+  async findById(@Param('id') id: string): Promise<Project> {
     return this.projectsService.findById(id);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateProjectDto: { name?: string; description?: string; isPublic?: boolean }) {
+  async update(@Param('id') id: string, @Body() updateProjectDto: { title?: string; description?: string }): Promise<Project> {
     return this.projectsService.update(id, updateProjectDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string): Promise<any> {
     return this.projectsService.remove(id);
   }
 }

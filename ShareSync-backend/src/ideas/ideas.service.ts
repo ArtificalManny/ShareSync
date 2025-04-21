@@ -5,17 +5,14 @@ import { Idea } from './idea.schema';
 
 @Injectable()
 export class IdeasService {
-  constructor(@InjectModel('Idea') private ideaModel: Model<Idea>) {}
+  constructor(@InjectModel('Idea') private readonly ideaModel: Model<Idea>) {}
 
-  async createIdea(title: string, description: string, creator: string, project?: string): Promise<Idea> {
-    const idea = new this.ideaModel({ title, description, creator, project });
+  async create(createIdeaDto: { title: string; description: string; userId: string }): Promise<Idea> {
+    const idea = new this.ideaModel(createIdeaDto);
     return idea.save();
   }
 
-  async getIdeas(projectId?: string): Promise<Idea[]> {
-    if (projectId) {
-      return this.ideaModel.find({ project: projectId }).populate('creator').exec();
-    }
-    return this.ideaModel.find().populate('creator').exec();
+  async findByUser(userId: string): Promise<Idea[]> {
+    return this.ideaModel.find({ userId }).exec();
   }
 }

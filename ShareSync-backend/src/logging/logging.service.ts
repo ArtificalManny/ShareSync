@@ -1,30 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import * as winston from 'winston';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Notification } from '../schemas/notification.schema';
 
 @Injectable()
-export class LoggingService {
-  private logger: winston.Logger;
+export class NotificationsService {
+  constructor(@InjectModel('Notification') private readonly notificationModel: Model<Notification>) {}
 
-  constructor() {
-    this.logger = winston.createLogger({
-      level: 'info',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.json(),
-      ),
-      transports: [
-        new winston.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston.transports.File({ filename: 'combined.log' }),
-        new winston.transports.Console(),
-      ],
-    });
+  async createNotification(projectId: string, userId: string, message: string): Promise<Notification> {
+    const notification = new this.notificationModel({ projectId, userId, message });
+    return notification.save();
   }
 
-  log(message: string) {
-    this.logger.info(message);
+  async findByUser(userId: string): Promise<Notification[]> {
+    return this.notificationModel.find({ userId }).exec();
   }
 
-  error(message: string) {
-    this.logger.error(message);
+  async markAsRead(id: string): Promise<Notification> {
+    return this.notificationModel.findByIdAndUpdate(id, { read: true }, { new: true }).exec();
   }
 }

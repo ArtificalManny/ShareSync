@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PostsService } from './posts.service';
-import { Post, PostSchema } from './schemas/post.schema';
+import { Post, PostSchema } from '../schemas/post.schema';
 import { Project, ProjectSchema } from '../projects/schemas/project.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Notification, NotificationSchema } from '../notifications/schemas/notification.schema';
