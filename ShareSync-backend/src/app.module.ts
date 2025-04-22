@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthModule } from './auth/auth.module'; // Ensure this matches the file path exactly
+import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { NotificationSchema } from './schemas/notification.schema';
 import { TaskSchema } from './schemas/task.schema';
@@ -15,11 +15,16 @@ import { ResetTokenService } from './reset-token/reset-token.service';
 import { CacheModule } from './cache/cache.module';
 import { ActivitiesService } from './activities/activities.service';
 
+const fallbackMongoUri = 'mongodb+srv://ClusterZero:NR8P0FLTk0JWLA@cluster0.z7xm8.mongodb.net/intacom?retryWrites=true&w=majority&appName=Cluster0';
+
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI || '', {
+    MongooseModule.forRoot(process.env.MONGODB_URI || fallbackMongoUri, {
       connectionFactory: (connection) => {
-        console.log('Attempting to connect to MongoDB with URI in AppModule:', process.env.MONGODB_URI);
+        console.log('Attempting to connect to MongoDB with URI in AppModule:', process.env.MONGODB_URI || fallbackMongoUri);
+        if (!process.env.MONGODB_URI) {
+          console.warn('MONGODB_URI is not defined in AppModule, using fallback URI');
+        }
         connection.on('connected', () => {
           console.log('Successfully connected to MongoDB Atlas');
         });
