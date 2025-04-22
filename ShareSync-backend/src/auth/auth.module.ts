@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
+import { AuthController } from './auth.controller'; // Should import from './auth.controller'
 import { UsersModule } from '../users/users.module';
 import { ResetTokenSchema } from '../reset-token/reset-token.schema';
 
@@ -17,6 +17,6 @@ import { ResetTokenSchema } from '../reset-token/reset-token.schema';
   ],
   controllers: [AuthController],
   providers: [AuthService],
-  exports: [AuthService], // Ensure AuthService is exported if needed elsewhere
+  exports: [AuthService],
 })
 export class AuthModule {}
