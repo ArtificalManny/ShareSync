@@ -1,8 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-@Schema()
-export class Notification extends Document {
+export type NotificationDocument = Notification & Document;
+
+@Schema({ timestamps: true })
+export class Notification {
   @Prop({ required: true })
   userId: string;
 
@@ -12,8 +14,11 @@ export class Notification extends Document {
   @Prop({ default: false })
   read: boolean;
 
-  @Prop({ default: Date.now })
-  createdAt: Date;
+  @Prop({ required: true })
+  type: string;
+
+  @Prop()
+  relatedId?: string;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
