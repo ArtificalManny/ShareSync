@@ -1,4 +1,5 @@
 export class CreateProjectDto {
-    name: string;
-    status: string;
-}
+    title: string;
+    description?: string;
+    category?: string;
+  }

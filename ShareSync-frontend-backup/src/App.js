@@ -3,10 +3,12 @@ import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react
 import CreateProject from './components/CreateProject';
 import Profile from './components/Profile';
 import Projects from './components/Projects';
-import Login from './components/Login'; // Add Login component
-import Register from './components/Register'; // Add Register component
-import ForgotPassword from './components/ForgotPassword'; // Add ForgotPassword component
-import ResetPassword from './components/ResetPassword'; // Add ResetPassword component
+import ProjectHome from './components/ProjectHome';
+import Login from './components/Login';
+import Register from './components/Register';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
+import Home from './components/Home';
 import { logout } from './services/auth.service';
 
 const Header = () => {
@@ -71,10 +73,11 @@ const App = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/projects" element={<Projects />} />
+        <Route path="/project/:projectId" element={<ProjectHome />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/create-project" element={<CreateProject />} />
-        <Route path="/home" element={<div><h2>Home</h2></div>} />
-        <Route path="/" element={<div><h2>Welcome to ShareSync</h2></div>} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/" element={<Home />} />
       </Routes>
     </Router>
   );

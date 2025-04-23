@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ResetToken } from '../reset-token/reset-token.schema';
+import { UserDocument } from '../schemas/user.schema';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
@@ -42,15 +43,15 @@ export class AuthService {
     return result;
   }
 
-  async register(userData: { email: string; firstName: string; lastName: string; username: string; password: string; gender: string; birthday: { month: string; day: string; year: string }; profilePicture?: string }) {
+  async register(userData: { email: string; firstName: string; lastName: string; username: string; password: string; gender: string; birthday: { month: string; day: string; year: string }; profilePicture?: string; bannerPicture?: string; school?: string; job?: string; projects?: string[] }): Promise<UserDocument> {
     return this.usersService.create(userData);
   }
 
-  async findByEmail(email: string) {
+  async findByEmail(email: string): Promise<UserDocument | null> {
     return this.usersService.findByEmail(email);
   }
 
-  async findById(id: string) {
+  async findById(id: string): Promise<UserDocument | null> {
     return this.usersService.findById(id);
   }
 

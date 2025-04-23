@@ -15,10 +15,35 @@ export class User {
   lastName: string;
 
   @Prop({ required: true })
+  username: string;
+
+  @Prop({ required: true })
   password: string;
 
+  @Prop({ required: true })
+  gender: string;
+
+  @Prop({ required: true })
+  birthday: {
+    month: string;
+    day: string;
+    year: string;
+  };
+
   @Prop()
-  profilePicture?: string; // URL to the user's profile picture
+  profilePicture?: string;
+
+  @Prop()
+  bannerPicture?: string;
+
+  @Prop()
+  school?: string;
+
+  @Prop()
+  job?: string;
+
+  @Prop([String])
+  projects?: string[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { Project } from '../schemas/project.schema';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -21,5 +21,31 @@ export class ProjectsController {
   @Get()
   async getProjects(@Request() req): Promise<Project[]> {
     return this.projectsService.getProjectsByUser(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('announcement')
+  async addAnnouncement(@Body() body: { projectId: string; message: string }, @Request() req) {
+    const announcement = {
+      message: body.message,
+      timestamp: new Date(),
+      postedBy: req.user.userId,
+    };
+    await this.projectsService.addAnnouncement(body.projectId, announcement);
+    return { message: 'Announcement added' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('snapshot')
+  async updateSnapshot(@Body() body: { projectId: string; snapshot: string }) {
+    await this.projectsService.updateSnapshot(body.projectId, body.snapshot);
+    return { message: 'Snapshot updated' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('status')
+  async updateStatus(@Body() body: { projectId: string; status: string }) {
+    await this.projectsService.updateStatus(body.projectId, body.status);
+    return { message: 'Status updated' };
   }
 }

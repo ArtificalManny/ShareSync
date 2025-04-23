@@ -1,39 +1,58 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from '../schemas/user.schema';
+import { User, UserDocument } from '../schemas/user.schema';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
+  constructor(@InjectModel('User') private userModel: Model<UserDocument>) {}
 
-  async create(userData: { email: string; firstName: string; lastName: string; password: string }): Promise<User> {
-    const user = new this.userModel(userData);
+  async create(userData: { email: string; firstName: string; lastName: string; username: string; password: string; gender: string; birthday: { month: string; day: string; year: string }; profilePicture?: string; bannerPicture?: string; school?: string; job?: string; projects?: string[] }): Promise<UserDocument> {
+    const existingUser = await this.userModel.findOne({ email: userData.email });
+    if (existingUser) {
+      throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
+    }
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const user = new this.userModel({ ...userData, password: hashedPassword });
     return user.save();
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ email }).exec();
   }
 
-  async findById(id: string): Promise<User | null> {
+  async findById(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id).exec();
   }
 
-  async updatePassword(userId: string, newPassword: string): Promise<User | null> {
-    return this.userModel.findByIdAndUpdate(userId, { password: newPassword }, { new: true }).exec();
+  async updatePassword(id: string, newPassword: string): Promise<void> {
+    const user = await this.userModel.findById(id);
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+    user.password = newPassword;
+    await user.save();
   }
 
-  async addPoints(userId: string, points: number): Promise<User | null> {
-    return this.userModel.findByIdAndUpdate(userId, { $inc: { points: points } }, { new: true }).exec();
+  async updateProfile(id: string, updates: { profilePicture?: string; bannerPicture?: string; school?: string; job?: string }): Promise<UserDocument> {
+    const user = await this.userModel.findById(id);
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+    Object.assign(user, updates);
+    return user.save();
   }
 
-  async getPoints(userId: string): Promise<number> {
-    const user = await this.userModel.findById(userId).exec();
-    return user ? user.points || 0 : 0;
-  }
-
-  async getLeaderboard(): Promise<User[]> {
-    return this.userModel.find().sort({ points: -1 }).limit(10).exec();
+  async addProject(id: string, projectId: string): Promise<UserDocument> {
+    const user = await this.userModel.findById(id);
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+    if (!user.projects) {
+      user.projects = [];
+    }
+    user.projects.push(projectId);
+    return user.save();
   }
 }
