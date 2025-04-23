@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../dist/app.module';
+import { AppModule } from './app.module'; // Fixed import path
 import * as dotenv from 'dotenv';
 
 // Load environment variables as the very first step

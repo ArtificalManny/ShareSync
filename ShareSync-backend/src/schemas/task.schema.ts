@@ -15,7 +15,7 @@ export class Task {
   projectId: string;
 
   @Prop({ required: true })
-  assignedTo: string;
+  assignedTo: string; // This is the correct property name
 
   @Prop({ default: 'pending' })
   status: string;

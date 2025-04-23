@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -41,7 +41,7 @@ const fallbackMongoUri = 'mongodb+srv://ClusterZero:NR8P0FLTk0JWLA@cluster0.z7xm
       { name: 'ChatMessage', schema: ChatMessageSchema },
       { name: 'Activity', schema: ActivitySchema },
     ]),
-    AuthModule,
+    AuthModule, // Already imported
     UsersModule,
     CacheModule,
   ],
@@ -49,9 +49,9 @@ const fallbackMongoUri = 'mongodb+srv://ClusterZero:NR8P0FLTk0JWLA@cluster0.z7xm
   providers: [NotificationsGateway, NotificationsService, TasksService, ResetTokenService, ActivitiesService],
 })
 export class AppModule {
-  configure(consumer) {
-    consumer.apply((app) => {
-      app.use((req, res, next) => {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply((req, res, next) => {
         res.header('Access-Control-Allow-Origin', 'http://localhost:54693');
         res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
@@ -61,7 +61,7 @@ export class AppModule {
         } else {
           next();
         }
-      });
-    }).forRoutes('*');
+      })
+      .forRoutes('*');
   }
 }
