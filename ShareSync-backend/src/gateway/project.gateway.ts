@@ -1,5 +1,5 @@
-import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { Server } from 'socket.io';
 import { ProjectsService } from '../projects/projects.service';
 
 @WebSocketGateway({ cors: { origin: 'http://localhost:54693', credentials: true } })
@@ -9,23 +9,15 @@ export class ProjectGateway {
 
   constructor(private readonly projectsService: ProjectsService) {}
 
-  @SubscribeMessage('joinProject')
-  handleJoinProject(@MessageBody() projectId: string, @ConnectedSocket() client: Socket): void {
-    client.join(projectId);
-    this.server.to(projectId).emit('userJoined', { userId: client.id, projectId });
-  }
-
-  @SubscribeMessage('leaveProject')
-  handleLeaveProject(@MessageBody() projectId: string, @ConnectedSocket() client: Socket): void {
-    client.leave(projectId);
-    this.server.to(projectId).emit('userLeft', { userId: client.id, projectId });
-  }
-
-  @SubscribeMessage('projectUpdate')
-  async handleProjectUpdate(@MessageBody() data: { projectId: string; user: any; action: string; timestamp: string }): Promise<void> {
-    const { projectId, user, action, timestamp } = data;
-    const activity = `${user.email} ${action} at ${timestamp}`;
+  @SubscribeMessage('projectCreated')
+  async handleProjectCreated(client: any, payload: { projectId: string; title: string; description: string }) {
+    const { projectId, title, description } = payload;
+    const activity = {
+      type: 'projectCreated',
+      message: `New project created: ${title}`,
+      timestamp: new Date(),
+    };
     await this.projectsService.addTeamActivity(projectId, activity);
-    this.server.to(projectId).emit('projectUpdated', { user, action, timestamp });
+    this.server.emit('teamActivity', { projectId, activity });
   }
 }

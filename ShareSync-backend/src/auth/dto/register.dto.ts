@@ -32,3 +32,10 @@ export class RegisterDto {
     year: string;
   };
 }
+export class RegisterDto {
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  profilePicture?: string;
+}

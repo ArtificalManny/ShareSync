@@ -1,43 +1,25 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { Project } from '../schemas/project.schema';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CreateProjectDto } from './dto/create-project.dto';
 
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body() createProjectDto: { title: string; description: string; ownerId: string }): Promise<Project> {
-    return this.projectsService.create(createProjectDto);
+  async createProject(@Body() createProjectDto: CreateProjectDto, @Request() req): Promise<Project> {
+    console.log('Received project creation request:', createProjectDto, 'ownerId:', req.user.userId);
+    const project = await this.projectsService.createProject(createProjectDto, req.user.userId);
+    console.log('Project created:', project);
+    return project;
   }
 
-  @Get('public')
-  async findPublic(): Promise<Project[]> {
-    return this.projectsService.findPublic();
-  }
-
-  @Get('search')
-  async search(@Query('query') query: string): Promise<Project[]> {
-    return this.projectsService.search(query);
-  }
-
-  @Get('user/:username')
-  async findAllByUsername(@Param('username') username: string): Promise<Project[]> {
-    return this.projectsService.findAllByUsername(username);
-  }
-
-  @Get(':id')
-  async findById(@Param('id') id: string): Promise<Project> {
-    return this.projectsService.findById(id);
-  }
-
-  @Put(':id')
-  async update(@Param('id') id: string, @Body() updateProjectDto: { title?: string; description?: string }): Promise<Project> {
-    return this.projectsService.update(id, updateProjectDto);
-  }
-
-  @Delete(':id')
-  async remove(@Param('id') id: string): Promise<any> {
-    return this.projectsService.remove(id);
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async getProjects(@Request() req): Promise<Project[]> {
+    return this.projectsService.getProjectsByUser(req.user.userId);
   }
 }
