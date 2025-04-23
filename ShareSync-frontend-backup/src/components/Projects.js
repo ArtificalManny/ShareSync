@@ -23,18 +23,20 @@ const Projects = () => {
   }
 
   return (
-    <div>
+    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
       <h2>Projects</h2>
       <Link to="/create-project">
-        <button>Create New Project</button>
+        <button style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+          Create New Project
+        </button>
       </Link>
       {projects.length === 0 ? (
         <p>No projects found.</p>
       ) : (
-        <ul>
+        <ul style={{ listStyle: 'none', padding: 0 }}>
           {projects.map((project) => (
-            <li key={project._id}>
-              {project.title} - {project.description}
+            <li key={project._id} style={{ margin: '10px 0', padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>
+              <strong>{project.title}</strong> - {project.description}
             </li>
           ))}
         </ul>

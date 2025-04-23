@@ -26,10 +26,13 @@ const Profile = () => {
   }
 
   return (
-    <div>
+    <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
       <h2>Profile</h2>
       <p>Name: {user.firstName} {user.lastName}</p>
       <p>Email: {user.email}</p>
+      <p>Username: {user.username}</p>
+      <p>Gender: {user.gender}</p>
+      <p>Birthday: {user.birthday.month}/{user.birthday.day}/{user.birthday.year}</p>
       {user.profilePicture && (
         <img src={user.profilePicture} alt="Profile" style={{ width: '100px', height: '100px', borderRadius: '50%' }} />
       )}

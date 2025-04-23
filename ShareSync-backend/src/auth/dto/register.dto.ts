@@ -31,11 +31,6 @@ export class RegisterDto {
     day: string;
     year: string;
   };
-}
-export class RegisterDto {
-  email: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-  profilePicture?: string;
+
+  profilePicture?: string; // Add profilePicture as an optional field
 }
