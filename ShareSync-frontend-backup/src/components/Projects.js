@@ -81,6 +81,9 @@ const Projects = () => {
               <option value="In Progress">In Progress</option>
               <option value="Completed">Completed</option>
             </select>
+            <Link to={`/project/${project._id}`} style={{ marginLeft: '10px', color: '#00d1b2', textDecoration: 'none' }}>
+              View Project
+            </Link>
 
             {/* Announcements */}
             <div style={{ marginTop: '20px' }}>

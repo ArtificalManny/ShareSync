@@ -49,14 +49,14 @@ const Header = () => {
       </div>
       {user && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Link to="/profile">
+          <Link to="/profile" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'white' }}>
             <img
               src={user.profilePicture || 'https://via.placeholder.com/40'}
               alt="Profile"
-              style={{ width: '40px', height: '40px', borderRadius: '50%' }}
+              style={{ width: '40px', height: '40px', borderRadius: '50%', marginRight: '10px' }}
             />
+            <span>{user.firstName} {user.lastName}</span>
           </Link>
-          <span>{user.firstName} {user.lastName}</span>
         </div>
       )}
     </nav>

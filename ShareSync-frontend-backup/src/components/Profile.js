@@ -43,6 +43,7 @@ const Profile = () => {
     try {
       const updatedUser = await updateProfile(formData);
       setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       setEditMode(false);
     } catch (err) {
       setError(err.message || 'Failed to update profile');
