@@ -154,6 +154,29 @@ const ProjectHome = () => {
           </button>
         </div>
       </div>
+
+      {/* Metrics Dashboard */}
+      <div style={{ marginBottom: '20px' }}>
+        <h3 style={{ color: '#00d1b2' }}>Project Overview</h3>
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
+            <h4 style={{ color: '#ccc', margin: 0 }}>Total Projects</h4>
+            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>{projects.length}</p>
+          </div>
+          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
+            <h4 style={{ color: '#ccc', margin: 0 }}>Current Projects</h4>
+            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>{projects.filter(p => p.status === 'In Progress').length}</p>
+          </div>
+          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
+            <h4 style={{ color: '#ccc', margin: 0 }}>Past Projects</h4>
+            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>{projects.filter(p => p.status === 'Completed').length}</p>
+          </div>
+          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
+            <h4 style={{ color: '#ccc', margin: 0 }}>Tasks Completed</h4>
+            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>14</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

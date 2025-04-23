@@ -39,8 +39,8 @@ const Register = () => {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
-      <h2>Register</h2>
+    <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h2 style={{ color: '#00d1b2' }}>Register</h2>
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '10px' }}>
           <label>First Name</label>
