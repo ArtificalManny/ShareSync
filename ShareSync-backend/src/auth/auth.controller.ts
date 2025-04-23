@@ -10,9 +10,8 @@ export class AuthController {
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     try {
-      // Add a default profile picture if not provided
       if (!registerDto.profilePicture) {
-        registerDto.profilePicture = 'https://via.placeholder.com/150'; // Default placeholder image
+        registerDto.profilePicture = 'https://via.placeholder.com/150';
       }
       const user = await this.authService.register(registerDto);
       const token = await this.authService.generateToken(user);

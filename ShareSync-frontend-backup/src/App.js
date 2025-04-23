@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react
 import CreateProject from './components/CreateProject';
 import Profile from './components/Profile';
 import Projects from './components/Projects';
-// Import other components as needed
+import { logout } from './services/auth.service';
 
 const Header = () => {
   const [user, setUser] = useState(null);
@@ -16,10 +16,8 @@ const Header = () => {
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -28,8 +26,12 @@ const Header = () => {
       <div style={{ display: 'flex', gap: '10px' }}>
         <Link to="/" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>ShareSync</Link>
         <Link to="/home" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Home</Link>
-        <Link to="/login" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Login</Link>
-        <Link to="/register" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Register</Link>
+        {!user && (
+          <>
+            <Link to="/login" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Login</Link>
+            <Link to="/register" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Register</Link>
+          </>
+        )}
         <Link to="/projects" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Projects</Link>
         <Link to="/profile" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Profile</Link>
         {user && (
