@@ -13,8 +13,9 @@ const Projects = () => {
       try {
         const projectList = await getProjects();
         setProjects(projectList);
+        setError(null);
       } catch (err) {
-        setError(err.message || 'Failed to load projects');
+        setError(err.message);
       }
     };
     fetchProjects();
@@ -26,8 +27,9 @@ const Projects = () => {
       setAnnouncement('');
       const updatedProjects = await getProjects();
       setProjects(updatedProjects);
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to add announcement');
+      setError(err.message);
     }
   };
 
@@ -37,8 +39,9 @@ const Projects = () => {
       setSnapshot('');
       const updatedProjects = await getProjects();
       setProjects(updatedProjects);
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to update snapshot');
+      setError(err.message);
     }
   };
 
@@ -47,13 +50,21 @@ const Projects = () => {
       await updateStatus(projectId, status);
       const updatedProjects = await getProjects();
       setProjects(updatedProjects);
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to update status');
+      setError(err.message);
     }
   };
 
   if (error) {
-    return <p style={{ color: 'red' }}>{error}</p>;
+    return (
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+        <p style={{ color: 'red' }}>{error}</p>
+        <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+          Retry
+        </button>
+      </div>
+    );
   }
 
   return (

@@ -5,6 +5,7 @@ import { getProjects, addAnnouncement, updateSnapshot, updateStatus } from '../s
 const ProjectHome = () => {
   const { projectId } = useParams();
   const [project, setProject] = useState(null);
+  const [projects, setProjects] = useState([]); // To calculate metrics
   const [error, setError] = useState(null);
   const [announcement, setAnnouncement] = useState('');
   const [snapshot, setSnapshot] = useState('');
@@ -12,14 +13,16 @@ const ProjectHome = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const projects = await getProjects();
-        const project = projects.find(p => p._id === projectId);
-        if (!project) {
+        const projectList = await getProjects();
+        setProjects(projectList);
+        const foundProject = projectList.find(p => p._id === projectId);
+        if (!foundProject) {
           throw new Error('Project not found');
         }
-        setProject(project);
+        setProject(foundProject);
+        setError(null);
       } catch (err) {
-        setError(err.message || 'Failed to load project');
+        setError(err.message);
       }
     };
     fetchProject();
@@ -29,11 +32,13 @@ const ProjectHome = () => {
     try {
       await addAnnouncement(projectId, announcement);
       setAnnouncement('');
-      const projects = await getProjects();
-      const updatedProject = projects.find(p => p._id === projectId);
+      const projectList = await getProjects();
+      setProjects(projectList);
+      const updatedProject = projectList.find(p => p._id === projectId);
       setProject(updatedProject);
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to add announcement');
+      setError(err.message);
     }
   };
 
@@ -41,31 +46,42 @@ const ProjectHome = () => {
     try {
       await updateSnapshot(projectId, snapshot);
       setSnapshot('');
-      const projects = await getProjects();
-      const updatedProject = projects.find(p => p._id === projectId);
+      const projectList = await getProjects();
+      setProjects(projectList);
+      const updatedProject = projectList.find(p => p._id === projectId);
       setProject(updatedProject);
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to update snapshot');
+      setError(err.message);
     }
   };
 
   const handleStatusChange = async (status) => {
     try {
       await updateStatus(projectId, status);
-      const projects = await getProjects();
-      const updatedProject = projects.find(p => p._id === projectId);
+      const projectList = await getProjects();
+      setProjects(projectList);
+      const updatedProject = projectList.find(p => p._id === projectId);
       setProject(updatedProject);
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to update status');
+      setError(err.message);
     }
   };
 
   if (error) {
-    return <p style={{ color: 'red' }}>{error}</p>;
+    return (
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+        <p style={{ color: 'red' }}>{error}</p>
+        <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+          Retry
+        </button>
+      </div>
+    );
   }
 
   if (!project) {
-    return <p>Loading...</p>;
+    return <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}><p>Loading...</p></div>;
   }
 
   return (

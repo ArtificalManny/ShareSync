@@ -15,14 +15,23 @@ const CreateProject = () => {
       const projectData = { title, description, category };
       const newProject = await createProject(projectData);
       navigate(`/project/${newProject._id}`);
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to create project');
+      setError(err.message);
     }
   };
 
   return (
     <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       <h2 style={{ color: '#00d1b2' }}>Create a New Project</h2>
+      {error && (
+        <div style={{ marginBottom: '20px' }}>
+          <p style={{ color: 'red' }}>{error}</p>
+          <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+            Retry
+          </button>
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '10px' }}>
           <label>Project Name:</label>
@@ -58,7 +67,6 @@ const CreateProject = () => {
           Create Project
         </button>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
     </div>
   );
 };

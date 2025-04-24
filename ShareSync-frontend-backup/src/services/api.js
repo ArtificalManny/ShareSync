@@ -18,14 +18,10 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+// Remove the automatic redirect on 401 to allow components to handle errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
     return Promise.reject(error);
   },
 );

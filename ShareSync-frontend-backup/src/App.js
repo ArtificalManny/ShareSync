@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Link, useNavigate, Navigate } from 'react-router-dom';
 import CreateProject from './components/CreateProject';
 import Profile from './components/Profile';
 import Projects from './components/Projects';
@@ -10,6 +10,11 @@ import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import Home from './components/Home';
 import { logout } from './services/auth.service';
+
+const ProtectedRoute = ({ children }) => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  return user ? children : <Navigate to="/login" />;
+};
 
 const Header = () => {
   const [user, setUser] = useState(null);
@@ -39,12 +44,14 @@ const Header = () => {
             <Link to="/register" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Register</Link>
           </>
         )}
-        <Link to="/projects" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Projects</Link>
-        <Link to="/profile" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Profile</Link>
         {user && (
-          <button onClick={handleLogout} style={{ color: 'white', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px', background: 'none', cursor: 'pointer' }}>
-            Logout
-          </button>
+          <>
+            <Link to="/projects" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Projects</Link>
+            <Link to="/profile" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Profile</Link>
+            <button onClick={handleLogout} style={{ color: 'white', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px', background: 'none', cursor: 'pointer' }}>
+              Logout
+            </button>
+          </>
         )}
       </div>
       {user && (
@@ -72,12 +79,47 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/project/:projectId" element={<ProjectHome />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/create-project" element={<CreateProject />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/" element={<Home />} />
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <Projects />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/project/:projectId"
+          element={
+            <ProtectedRoute>
+              <ProjectHome />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create-project"
+          element={
+            <ProtectedRoute>
+              <CreateProject />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/" element={<Navigate to="/home" />} />
       </Routes>
     </Router>
   );
