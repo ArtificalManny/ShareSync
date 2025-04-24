@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { register } from '../services/auth.service';
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
@@ -13,6 +13,7 @@ const Register = () => {
     birthday: { month: '', day: '', year: '' },
   });
   const [error, setError] = useState(null);
+  const { registerUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -30,17 +31,18 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      await register(formData);
+    const result = await registerUser(formData);
+    if (result.success) {
       navigate('/login');
-    } catch (err) {
-      setError(err.message || 'Failed to register');
+    } else {
+      setError(result.message);
     }
   };
 
   return (
     <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       <h2 style={{ color: '#00d1b2' }}>Register</h2>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '10px' }}>
           <label>First Name</label>
@@ -148,7 +150,6 @@ const Register = () => {
           Register
         </button>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
     </div>
   );
 };

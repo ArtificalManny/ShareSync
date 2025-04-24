@@ -1,28 +1,31 @@
-import React, { useState } from 'react';
-import { resetPassword } from '../services/auth.service';
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const ResetPassword = () => {
   const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+  const { resetPasswordUser } = useContext(AuthContext);
   const { token } = useParams();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const response = await resetPassword(token, newPassword);
-      setMessage(response.message || 'Password reset successful');
+    const result = await resetPasswordUser(token, newPassword);
+    if (result.success) {
+      setMessage(result.message);
       setTimeout(() => navigate('/login'), 3000);
-    } catch (err) {
-      setError(err.message || 'Failed to reset password');
+    } else {
+      setError(result.message);
     }
   };
 
   return (
     <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       <h2 style={{ color: '#00d1b2' }}>Reset Password</h2>
+      {message && <p style={{ color: 'green' }}>{message}</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '10px' }}>
           <label>New Password</label>
@@ -38,8 +41,6 @@ const ResetPassword = () => {
           Reset Password
         </button>
       </form>
-      {message && <p style={{ color: 'green' }}>{message}</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
     </div>
   );
 };

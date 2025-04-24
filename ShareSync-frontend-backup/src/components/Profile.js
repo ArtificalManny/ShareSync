@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { getProfile, updateProfile } from '../services/user.service';
 import { getProjects } from '../services/project.service';
 
 const Profile = () => {
-  const [user, setUser] = useState(null);
+  const { user, loading: authLoading } = useContext(AuthContext);
+  const [profile, setProfile] = useState(null);
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -17,22 +19,25 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const profile = await getProfile();
-        setUser(profile);
+        const profileData = await getProfile();
+        setProfile(profileData);
         setFormData({
-          profilePicture: profile.profilePicture || '',
-          bannerPicture: profile.bannerPicture || '',
-          school: profile.school || '',
-          job: profile.job || '',
+          profilePicture: profileData.profilePicture || '',
+          bannerPicture: profileData.bannerPicture || '',
+          school: profileData.school || '',
+          job: profileData.job || '',
         });
         const projectList = await getProjects();
         setProjects(projectList);
+        setError(null);
       } catch (err) {
-        setError(err.message || 'Failed to load profile');
+        setError(err.message);
       }
     };
-    fetchProfile();
-  }, []);
+    if (!authLoading) {
+      fetchProfile();
+    }
+  }, [authLoading]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -41,12 +46,13 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const updatedUser = await updateProfile(formData);
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      const updatedProfile = await updateProfile(formData);
+      setProfile(updatedProfile);
+      localStorage.setItem('user', JSON.stringify(updatedProfile));
       setEditMode(false);
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to update profile');
+      setError(err.message);
     }
   };
 
@@ -59,22 +65,34 @@ const Profile = () => {
     return categories;
   };
 
-  if (error) {
-    return <p style={{ color: 'red' }}>{error}</p>;
+  if (authLoading) {
+    return <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}><p>Loading...</p></div>;
   }
 
-  if (!user) {
-    return <p>Loading...</p>;
+  if (error) {
+    return (
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+        <p style={{ color: 'red' }}>{error}</p>
+        <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}><p>Loading...</p></div>;
   }
 
   const projectCategories = categorizeProjects();
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h2 style={{ color: '#00d1b2' }}>Profile</h2>
       {/* Banner */}
       <div style={{ position: 'relative', height: '200px', backgroundColor: '#1a2b3c', borderRadius: '10px', marginBottom: '20px' }}>
-        {user.bannerPicture && (
-          <img src={user.bannerPicture} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} />
+        {profile.bannerPicture && (
+          <img src={profile.bannerPicture} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} />
         )}
       </div>
 
@@ -82,16 +100,16 @@ const Profile = () => {
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
         <div style={{ position: 'relative', marginRight: '20px' }}>
           <img
-            src={user.profilePicture || 'https://via.placeholder.com/150'}
+            src={profile.profilePicture || 'https://via.placeholder.com/150'}
             alt="Profile"
             style={{ width: '150px', height: '150px', borderRadius: '50%', border: '3px solid #00d1b2' }}
           />
         </div>
         <div>
-          <h2 style={{ margin: 0, color: '#00d1b2' }}>{user.firstName} {user.lastName}</h2>
-          <p style={{ color: '#ccc' }}>@{user.username}</p>
-          <p>{user.job || 'No job specified'}</p>
-          <p>{user.school || 'No school specified'}</p>
+          <h3 style={{ margin: 0, color: '#00d1b2' }}>{profile.firstName} {profile.lastName}</h3>
+          <p style={{ color: '#ccc' }}>@{profile.username}</p>
+          <p>{profile.job || 'No job specified'}</p>
+          <p>{profile.school || 'No school specified'}</p>
         </div>
       </div>
 

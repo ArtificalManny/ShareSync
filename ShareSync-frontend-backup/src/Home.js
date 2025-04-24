@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { getProjects } from '../services/project.service';
 import { Link } from 'react-router-dom';
 
 const Home = () => {
+  const { loading: authLoading } = useContext(AuthContext);
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
 
@@ -16,8 +18,14 @@ const Home = () => {
         setError(err.message);
       }
     };
-    fetchProjects();
-  }, []);
+    if (!authLoading) {
+      fetchProjects();
+    }
+  }, [authLoading]);
+
+  if (authLoading) {
+    return <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}><p>Loading...</p></div>;
+  }
 
   if (error) {
     return (

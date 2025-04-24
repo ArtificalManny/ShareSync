@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { createProject } from '../services/project.service';
 import { useNavigate } from 'react-router-dom';
 
 const CreateProject = () => {
+  const { loading: authLoading } = useContext(AuthContext);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Personal');
@@ -20,6 +22,10 @@ const CreateProject = () => {
       setError(err.message);
     }
   };
+
+  if (authLoading) {
+    return <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}><p>Loading...</p></div>;
+  }
 
   return (
     <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>

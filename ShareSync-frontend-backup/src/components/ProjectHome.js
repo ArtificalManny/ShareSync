@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { useParams } from 'react-router-dom';
 import { getProjects, addAnnouncement, updateSnapshot, updateStatus } from '../services/project.service';
 
 const ProjectHome = () => {
+  const { loading: authLoading } = useContext(AuthContext);
   const { projectId } = useParams();
   const [project, setProject] = useState(null);
-  const [projects, setProjects] = useState([]); // To calculate metrics
+  const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
   const [announcement, setAnnouncement] = useState('');
   const [snapshot, setSnapshot] = useState('');
@@ -25,8 +27,10 @@ const ProjectHome = () => {
         setError(err.message);
       }
     };
-    fetchProject();
-  }, [projectId]);
+    if (!authLoading) {
+      fetchProject();
+    }
+  }, [projectId, authLoading]);
 
   const handleAnnouncementSubmit = async () => {
     try {
@@ -68,6 +72,10 @@ const ProjectHome = () => {
       setError(err.message);
     }
   };
+
+  if (authLoading) {
+    return <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}><p>Loading...</p></div>;
+  }
 
   if (error) {
     return (
