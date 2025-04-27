@@ -1,88 +1,97 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
+import React, { createContext, useState, useEffect } from 'react';
+import { login, logout, register, forgotPassword, resetPassword } from '../services/auth.service';
+
+export const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const initializeAuth = () => {
+      const token = localStorage.getItem('token');
+      const userData = localStorage.getItem('user');
+      console.log('AuthContext - Initializing: token=', token, 'userData=', userData);
+      if (token && userData) {
+        setUser(JSON.parse(userData));
+        setIsAuthenticated(true);
+        console.log('AuthContext - User authenticated:', JSON.parse(userData));
+      } else {
+        console.log('AuthContext - No token or user data found');
+      }
+      setLoading(false);
+    };
+    initializeAuth();
+  }, []);
+
+  const loginUser = async (email, password) => {
+    try {
+      const data = await login(email, password);
+      console.log('AuthContext - Login successful:', data);
+      setUser(data.user);
+      setIsAuthenticated(true);
+      return { success: true };
+    } catch (error) {
+      console.error('AuthContext - Login failed:', error.message);
+      return { success: false, message: error.message || 'Failed to login' };
     }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.useAuth = exports.AuthProvider = void 0;
-const react_1 = __importStar(require("react"));
-const AuthContext = (0, react_1.createContext)(undefined);
-const AuthProvider = ({ children }) => {
-    const login = async (username, password) => {
-        const response = await fetch('http://localhost:3000/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password }),
-        });
-        const data = await response.json();
-        if (data.user) {
-            localStorage.setItem('currentUser', JSON.stringify(data.user));
-            window.location.reload();
-        }
-        else {
-            throw new Error('Login failed');
-        }
-    };
-    const register = async (username, password, profilePic) => {
-        const response = await fetch('http://localhost:3000/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, profilePic }),
-        });
-        const data = await response.json();
-        if (data) {
-            localStorage.setItem('currentUser', JSON.stringify(data));
-            window.location.reload();
-        }
-        else {
-            throw new Error('Registration failed');
-        }
-    };
-    const logout = () => {
-        localStorage.removeItem('currentUser');
-        document.cookie = 'userToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        window.location.reload();
-    };
-    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
-    return (<AuthContext.Provider value={{ user, login, register, logout }}>
+  };
+
+  const logoutUser = async () => {
+    console.log('AuthContext - Logging out');
+    await logout();
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
+  const registerUser = async (userData) => {
+    try {
+      await register(userData);
+      console.log('AuthContext - Registration successful');
+      return { success: true };
+    } catch (error) {
+      console.error('AuthContext - Registration failed:', error.message);
+      return { success: false, message: error.message || 'Failed to register' };
+    }
+  };
+
+  const forgotPasswordUser = async (email) => {
+    try {
+      const response = await forgotPassword(email);
+      console.log('AuthContext - Forgot password successful:', response);
+      return { success: true, message: response.message || 'Reset link sent to your email' };
+    } catch (error) {
+      console.error('AuthContext - Forgot password failed:', error.message);
+      return { success: false, message: error.message || 'Failed to send reset link' };
+    }
+  };
+
+  const resetPasswordUser = async (token, newPassword) => {
+    try {
+      const response = await resetPassword(token, newPassword);
+      console.log('AuthContext - Reset password successful:', response);
+      return { success: true, message: response.message || 'Password reset successful' };
+    } catch (error) {
+      console.error('AuthContext - Reset password failed:', error.message);
+      return { success: false, message: error.message || 'Failed to reset password' };
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        loading,
+        loginUser,
+        logoutUser,
+        registerUser,
+        forgotPasswordUser,
+        resetPasswordUser,
+      }}
+    >
       {children}
-    </AuthContext.Provider>);
+    </AuthContext.Provider>
+  );
 };
-exports.AuthProvider = AuthProvider;
-const useAuth = () => {
-    const context = (0, react_1.useContext)(AuthContext);
-    if (!context)
-        throw new Error('useAuth must be used within an AuthProvider');
-    return context;
-};
-exports.useAuth = useAuth;
-exports.default = AuthContext;

@@ -1,6 +1,6 @@
 import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthModule } from './auth/auth.module';
+import { AuthModule } from '../../ShareSync-frontend-backup/src/services/auth.module';
 import { UsersModule } from './users/users.module';
 import { NotificationSchema } from './schemas/notification.schema';
 import { TaskSchema } from './schemas/task.schema';
