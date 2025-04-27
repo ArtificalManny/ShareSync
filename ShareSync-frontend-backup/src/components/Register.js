@@ -1,155 +1,93 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Register = () => {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    username: '',
-    email: '',
-    password: '',
-    gender: '',
-    birthday: { month: '', day: '', year: '' },
-  });
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const { registerUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name.includes('birthday.')) {
-      const field = name.split('.')[1];
-      setFormData({
-        ...formData,
-        birthday: { ...formData.birthday, [field]: value },
-      });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await registerUser(formData);
+    console.log('Register - Submitting form with email:', email);
+    const result = await registerUser({ firstName, lastName, username, email, password });
     if (result.success) {
+      console.log('Register - Registration successful, navigating to /login');
       navigate('/login');
     } else {
+      console.log('Register - Registration failed:', result.message);
       setError(result.message);
     }
   };
 
+  console.log('Register - Rendering component, error:', error);
+
   return (
-    <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h2 style={{ color: '#00d1b2' }}>Register</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '10px' }}>
-          <label>First Name</label>
-          <input
-            type="text"
-            name="firstName"
-            value={formData.firstName}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Last Name</label>
-          <input
-            type="text"
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Username</label>
-          <input
-            type="text"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Password</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Gender</label>
-          <select
-            name="gender"
-            value={formData.gender}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2' }}
-          >
-            <option value="">Select</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Birthday</label>
-          <div style={{ display: 'flex', gap: '10px' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 60px)' }}>
+      <div style={{ backgroundColor: '#1a2b3c', padding: '20px', borderRadius: '10px', width: '300px', textAlign: 'center' }}>
+        <h2 style={{ color: '#00d1b2', marginBottom: '20px' }}>Register</h2>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '10px' }}>
             <input
               type="text"
-              name="birthday.month"
-              placeholder="Month"
-              value={formData.birthday.month}
-              onChange={handleChange}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="First Name"
               required
-              style={{ width: '33%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2' }}
-            />
-            <input
-              type="text"
-              name="birthday.day"
-              placeholder="Day"
-              value={formData.birthday.day}
-              onChange={handleChange}
-              required
-              style={{ width: '33%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2' }}
-            />
-            <input
-              type="text"
-              name="birthday.year"
-              placeholder="Year"
-              value={formData.birthday.year}
-              onChange={handleChange}
-              required
-              style={{ width: '33%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2' }}
+              style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2', backgroundColor: '#0d1a26', color: 'white' }}
             />
           </div>
-        </div>
-        <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-          Register
-        </button>
-      </form>
+          <div style={{ marginBottom: '10px' }}>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Last Name"
+              required
+              style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2', backgroundColor: '#0d1a26', color: 'white' }}
+            />
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Username"
+              required
+              style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2', backgroundColor: '#0d1a26', color: 'white' }}
+            />
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              required
+              style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2', backgroundColor: '#0d1a26', color: 'white' }}
+            />
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              required
+              style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2', backgroundColor: '#0d1a26', color: 'white' }}
+            />
+          </div>
+          <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+            Register
+          </button>
+        </form>
+        {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
+      </div>
     </div>
   );
 };

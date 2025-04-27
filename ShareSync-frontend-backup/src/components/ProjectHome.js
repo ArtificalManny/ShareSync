@@ -1,204 +1,141 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getProjects, addAnnouncement, updateSnapshot, updateStatus } from '../services/project.service';
+import { getProjects, updateProjectAnnouncement, updateProjectSnapshot } from '../services/project.service';
 
 const ProjectHome = () => {
-  const { loading: authLoading } = useContext(AuthContext);
   const { projectId } = useParams();
   const [project, setProject] = useState(null);
-  const [projects, setProjects] = useState([]);
-  const [error, setError] = useState(null);
   const [announcement, setAnnouncement] = useState('');
   const [snapshot, setSnapshot] = useState('');
+  const [metrics, setMetrics] = useState({
+    totalProjects: 0,
+    currentProjects: 0,
+    pastProjects: 0,
+    tasksCompleted: 0,
+  });
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const projectList = await getProjects();
-        setProjects(projectList);
-        const foundProject = projectList.find(p => p._id === projectId);
-        if (!foundProject) {
-          throw new Error('Project not found');
-        }
-        setProject(foundProject);
-        setError(null);
-      } catch (err) {
-        setError(err.message);
+        const projects = await getProjects();
+        const selectedProject = projects.find(p => p._id === projectId);
+        console.log('ProjectHome - Fetched project:', selectedProject);
+        setProject(selectedProject);
+
+        const total = projects.length;
+        const current = projects.filter(p => p.status === 'In Progress').length;
+        const past = projects.filter(p => p.status === 'Completed').length;
+        const tasks = past * 10; // Placeholder: 10 tasks per completed project
+
+        setMetrics({
+          totalProjects: total,
+          currentProjects: current,
+          pastProjects: past,
+          tasksCompleted: tasks,
+        });
+      } catch (error) {
+        console.error('ProjectHome - Error fetching project:', error);
       }
     };
-    if (!authLoading) {
-      fetchProject();
-    }
-  }, [projectId, authLoading]);
+    fetchProject();
+  }, [projectId]);
 
   const handleAnnouncementSubmit = async () => {
     try {
-      await addAnnouncement(projectId, announcement);
-      setAnnouncement('');
-      const projectList = await getProjects();
-      setProjects(projectList);
-      const updatedProject = projectList.find(p => p._id === projectId);
+      const updatedProject = await updateProjectAnnouncement(projectId, announcement);
+      console.log('ProjectHome - Announcement updated:', updatedProject);
       setProject(updatedProject);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
+      setAnnouncement('');
+    } catch (error) {
+      console.error('ProjectHome - Error updating announcement:', error);
     }
   };
 
   const handleSnapshotSubmit = async () => {
     try {
-      await updateSnapshot(projectId, snapshot);
+      const updatedProject = await updateProjectSnapshot(projectId, snapshot);
+      console.log('ProjectHome - Snapshot updated:', updatedProject);
+      setProject(updatedProject);
       setSnapshot('');
-      const projectList = await getProjects();
-      setProjects(projectList);
-      const updatedProject = projectList.find(p => p._id === projectId);
-      setProject(updatedProject);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
+    } catch (error) {
+      console.error('ProjectHome - Error updating snapshot:', error);
     }
   };
 
-  const handleStatusChange = async (status) => {
-    try {
-      await updateStatus(projectId, status);
-      const projectList = await getProjects();
-      setProjects(projectList);
-      const updatedProject = projectList.find(p => p._id === projectId);
-      setProject(updatedProject);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  if (authLoading) {
-    return <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}><p>Loading...</p></div>;
-  }
-
-  if (error) {
-    return (
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-        <p style={{ color: 'red' }}>{error}</p>
-        <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  if (!project) {
-    return <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}><p>Loading...</p></div>;
-  }
+  if (!project) return <div>Loading...</div>;
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h2 style={{ color: '#00d1b2' }}>{project.title}</h2>
-      <p style={{ color: '#ccc' }}>{project.description || 'No description'}</p>
-      <p>Category: {project.category || 'Personal'}</p>
-      <p>Status: {project.status}</p>
-      <select
-        value={project.status}
-        onChange={(e) => handleStatusChange(e.target.value)}
-        style={{ padding: '5px', borderRadius: '5px', marginBottom: '20px' }}
-      >
-        <option value="In Progress">In Progress</option>
-        <option value="Completed">Completed</option>
-      </select>
-
-      {/* Team Activities */}
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ color: '#00d1b2' }}>Team Activities</h3>
-        {project.teamActivities && project.teamActivities.length > 0 ? (
-          project.teamActivities.map((activity, index) => (
-            <div key={index} style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', marginBottom: '10px' }}>
-              <p style={{ margin: 0 }}>{activity.message}</p>
-              <p style={{ margin: 0, color: '#ccc', fontSize: '0.9em' }}>
-                {activity.type} on {new Date(activity.timestamp).toLocaleString()}
-              </p>
-            </div>
-          ))
-        ) : (
-          <p>No team activities yet.</p>
-        )}
+    <div style={{ padding: '20px', color: 'white' }}>
+      <h2 style={{ color: '#00d1b2', marginBottom: '20px' }}>{project.title}</h2>
+      <div style={{ backgroundColor: '#1a2b3c', padding: '20px', borderRadius: '5px', marginBottom: '20px' }}>
+        <p><strong>Description:</strong> {project.description}</p>
+        <p><strong>Category:</strong> {project.category}</p>
+        <p><strong>Status:</strong> {project.status}</p>
       </div>
-
-      {/* Announcements */}
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ color: '#00d1b2' }}>Announcements</h3>
-        {project.announcements && project.announcements.length > 0 ? (
-          project.announcements.map((ann, index) => (
-            <div key={index} style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', marginBottom: '10px' }}>
-              <p style={{ margin: 0 }}>{ann.message}</p>
-              <p style={{ margin: 0, color: '#ccc', fontSize: '0.9em' }}>
-                Posted by {ann.postedBy} on {new Date(ann.timestamp).toLocaleString()}
-              </p>
-            </div>
-          ))
-        ) : (
-          <p>No announcements yet.</p>
-        )}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '20px' }}>
+        <div style={{ backgroundColor: '#1a2b3c', padding: '10px', borderRadius: '5px', textAlign: 'center' }}>
+          <h3>Total Projects</h3>
+          <p>{metrics.totalProjects}</p>
+        </div>
+        <div style={{ backgroundColor: '#1a2b3c', padding: '10px', borderRadius: '5px', textAlign: 'center' }}>
+          <h3>Current Projects</h3>
+          <p>{metrics.currentProjects}</p>
+        </div>
+        <div style={{ backgroundColor: '#1a2b3c', padding: '10px', borderRadius: '5px', textAlign: 'center' }}>
+          <h3>Past Projects</h3>
+          <p>{metrics.pastProjects}</p>
+        </div>
+        <div style={{ backgroundColor: '#1a2b3c', padding: '10px', borderRadius: '5px', textAlign: 'center' }}>
+          <h3>Tasks Completed</h3>
+          <p>{metrics.tasksCompleted}</p>
+        </div>
+      </div>
+      <div style={{ backgroundColor: '#1a2b3c', padding: '20px', borderRadius: '5px', marginBottom: '20px' }}>
+        <h3 style={{ color: '#00d1b2', marginBottom: '10px' }}>Team Activities</h3>
+        <p>{project.teamActivities?.length > 0 ? project.teamActivities.map(activity => (
+          <div key={activity._id}>{activity.message} - {new Date(activity.timestamp).toLocaleString()}</div>
+        )) : 'No team activities yet'}</p>
+      </div>
+      <div style={{ backgroundColor: '#1a2b3c', padding: '20px', borderRadius: '5px', marginBottom: '20px' }}>
+        <h3 style={{ color: '#00d1b2', marginBottom: '10px' }}>Announcements</h3>
+        {project.announcements?.length > 0 && project.announcements.map(ann => (
+          <div key={ann._id} style={{ marginBottom: '10px' }}>
+            <p>{ann.message} - {new Date(ann.timestamp).toLocaleString()}</p>
+          </div>
+        ))}
         <div style={{ marginTop: '10px' }}>
-          <textarea
+          <input
+            type="text"
             value={announcement}
             onChange={(e) => setAnnouncement(e.target.value)}
-            placeholder="Post an announcement..."
-            style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2' }}
+            placeholder="Post an announcement"
+            style={{ width: '70%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2', backgroundColor: '#0d1a26', color: 'white', marginRight: '10px' }}
           />
           <button
             onClick={handleAnnouncementSubmit}
-            style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginTop: '10px' }}
+            style={{ padding: '8px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
           >
-            Post Announcement
+            Post
           </button>
         </div>
       </div>
-
-      {/* Snapshot */}
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ color: '#00d1b2' }}>Current Snapshot</h3>
-        {project.snapshot ? (
-          <p>{project.snapshot}</p>
-        ) : (
-          <p>No snapshot available.</p>
-        )}
+      <div style={{ backgroundColor: '#1a2b3c', padding: '20px', borderRadius: '5px' }}>
+        <h3 style={{ color: '#00d1b2', marginBottom: '10px' }}>Current Snapshot</h3>
+        <p>{project.snapshot || 'No snapshot available'}</p>
         <div style={{ marginTop: '10px' }}>
-          <textarea
+          <input
+            type="text"
             value={snapshot}
             onChange={(e) => setSnapshot(e.target.value)}
-            placeholder="Update project snapshot..."
-            style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2' }}
+            placeholder="Update snapshot"
+            style={{ width: '70%', padding: '8px', borderRadius: '5px', border: '1px solid #00d1b2', backgroundColor: '#0d1a26', color: 'white', marginRight: '10px' }}
           />
           <button
             onClick={handleSnapshotSubmit}
-            style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginTop: '10px' }}
+            style={{ padding: '8px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
           >
-            Update Snapshot
+            Update
           </button>
-        </div>
-      </div>
-
-      {/* Metrics Dashboard */}
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ color: '#00d1b2' }}>Project Overview</h3>
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
-            <h4 style={{ color: '#ccc', margin: 0 }}>Total Projects</h4>
-            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>{projects.length}</p>
-          </div>
-          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
-            <h4 style={{ color: '#ccc', margin: 0 }}>Current Projects</h4>
-            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>{projects.filter(p => p.status === 'In Progress').length}</p>
-          </div>
-          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
-            <h4 style={{ color: '#ccc', margin: 0 }}>Past Projects</h4>
-            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>{projects.filter(p => p.status === 'Completed').length}</p>
-          </div>
-          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
-            <h4 style={{ color: '#ccc', margin: 0 }}>Tasks Completed</h4>
-            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>14</p>
-          </div>
         </div>
       </div>
     </div>

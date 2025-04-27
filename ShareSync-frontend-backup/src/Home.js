@@ -1,78 +1,75 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
-import { getProjects } from '../services/project.service';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { getProjects } from '../services/project.service';
 
 const Home = () => {
-  const { loading: authLoading } = useContext(AuthContext);
   const [projects, setProjects] = useState([]);
-  const [error, setError] = useState(null);
+  const [metrics, setMetrics] = useState({
+    totalProjects: 0,
+    currentProjects: 0,
+    pastProjects: 0,
+    tasksCompleted: 0,
+  });
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const projectList = await getProjects();
-        setProjects(projectList);
-        setError(null);
-      } catch (err) {
-        setError(err.message);
+        const data = await getProjects();
+        console.log('Home - Fetched projects:', data);
+        setProjects(data);
+
+        const total = data.length;
+        const current = data.filter(project => project.status === 'In Progress').length;
+        const past = data.filter(project => project.status === 'Completed').length;
+        const tasks = past * 10; // Placeholder: 10 tasks per completed project
+
+        setMetrics({
+          totalProjects: total,
+          currentProjects: current,
+          pastProjects: past,
+          tasksCompleted: tasks,
+        });
+      } catch (error) {
+        console.error('Home - Error fetching projects:', error);
       }
     };
-    if (!authLoading) {
-      fetchProjects();
-    }
-  }, [authLoading]);
-
-  if (authLoading) {
-    return <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}><p>Loading...</p></div>;
-  }
-
-  if (error) {
-    return (
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-        <p style={{ color: 'red' }}>{error}</p>
-        <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-          Retry
-        </button>
-      </div>
-    );
-  }
+    fetchProjects();
+  }, []);
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <Link to="/create-project">
-        <button style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginBottom: '20px' }}>
-          Create Project
-        </button>
-      </Link>
-
-      {/* Metrics Dashboard */}
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ color: '#00d1b2' }}>Project Overview</h3>
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
-            <h4 style={{ color: '#ccc', margin: 0 }}>Total Projects</h4>
-            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>{projects.length}</p>
-          </div>
-          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
-            <h4 style={{ color: '#ccc', margin: 0 }}>Current Projects</h4>
-            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>{projects.filter(p => p.status === 'In Progress').length}</p>
-          </div>
-          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
-            <h4 style={{ color: '#ccc', margin: 0 }}>Past Projects</h4>
-            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>{projects.filter(p => p.status === 'Completed').length}</p>
-          </div>
-          <div style={{ padding: '10px', border: '1px solid #00d1b2', borderRadius: '5px', backgroundColor: '#1a2b3c', flex: '1', minWidth: '150px', textAlign: 'center' }}>
-            <h4 style={{ color: '#ccc', margin: 0 }}>Tasks Completed</h4>
-            <p style={{ color: '#00d1b2', fontSize: '1.5rem', margin: 0 }}>14</p>
-          </div>
+    <div style={{ padding: '20px', color: 'white' }}>
+      <h2 style={{ color: '#00d1b2', marginBottom: '20px' }}>Dashboard</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '20px' }}>
+        <div style={{ backgroundColor: '#1a2b3c', padding: '10px', borderRadius: '5px', textAlign: 'center' }}>
+          <h3>Total Projects</h3>
+          <p>{metrics.totalProjects}</p>
+        </div>
+        <div style={{ backgroundColor: '#1a2b3c', padding: '10px', borderRadius: '5px', textAlign: 'center' }}>
+          <h3>Current Projects</h3>
+          <p>{metrics.currentProjects}</p>
+        </div>
+        <div style={{ backgroundColor: '#1a2b3c', padding: '10px', borderRadius: '5px', textAlign: 'center' }}>
+          <h3>Past Projects</h3>
+          <p>{metrics.pastProjects}</p>
+        </div>
+        <div style={{ backgroundColor: '#1a2b3c', padding: '10px', borderRadius: '5px', textAlign: 'center' }}>
+          <h3>Tasks Completed</h3>
+          <p>{metrics.tasksCompleted}</p>
         </div>
       </div>
-
-      <h3 style={{ color: '#00d1b2' }}>Notifications (0)</h3>
-      <p>No notifications yet.</p>
-      <h3 style={{ color: '#00d1b2' }}>Team Activity</h3>
-      <p>No recent updates.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div style={{ backgroundColor: '#1a2b3c', padding: '10px', borderRadius: '5px', width: '48%' }}>
+          <h3>Notifications</h3>
+          <p>No notifications yet</p>
+        </div>
+        <div style={{ backgroundColor: '#1a2b3c', padding: '10px', borderRadius: '5px', width: '48%' }}>
+          <h3>Team Activity</h3>
+          <p>No recent updates</p>
+        </div>
+      </div>
+      <Link to="/create-project" style={{ padding: '10px 20px', backgroundColor: '#00d1b2', color: 'white', border: 'none', borderRadius: '5px', textDecoration: 'none' }}>
+        Create New Project
+      </Link>
     </div>
   );
 };
