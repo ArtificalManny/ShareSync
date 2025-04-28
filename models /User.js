@@ -10,6 +10,14 @@ const userSchema = new mongoose.Schema({
   school: String,
   profilePicture: String,
   bannerPicture: String,
+  notificationPreferences: {
+    emailNotifications: { type: Boolean, default: true },
+    smsNotifications: { type: Boolean, default: true },
+    projectUpdates: { type: Boolean, default: true },
+    taskAssignments: { type: Boolean, default: true },
+    comments: { type: Boolean, default: true },
+    fileUploads: { type: Boolean, default: true },
+  },
 });
 
 module.exports = mongoose.model('User', userSchema);
