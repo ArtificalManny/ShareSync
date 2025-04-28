@@ -112,6 +112,7 @@ const CreatePost = ({ projectId, fetchPosts }) => {
           placeholder="Category (optional)"
           style={{
             padding: '12px',
+            border: '1px solid #00d1b2',
             borderRadius: '8px',
             border: `1px solid ${currentTheme === 'dark' ? '#00d1b2' : '#6c63ff'}`,
             backgroundColor: currentTheme === 'dark' ? '#0d1a26' : '#ffffff',

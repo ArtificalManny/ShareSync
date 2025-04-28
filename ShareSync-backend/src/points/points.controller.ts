@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Body, Param } from '@nestjs/common';
 import { PointsService } from './points.service';
-import { UsersService } from '../users/users.service'; // Added
+import { UsersService } from '../user/user.service'; // Added
 
 @Controller('points')
 export class PointsController {
