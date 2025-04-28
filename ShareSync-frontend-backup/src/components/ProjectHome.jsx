@@ -2143,8 +2143,8 @@ const ProjectHome = () => {
                   fontWeight: 'bold',
                   transition: 'all 0.3s ease',
                   boxShadow: '0 4px 8px rgba(255, 56, 96, 0.3)',
- band: '0 4px 8px rgba(255, 56, 96, 0.3)',
-                  e.target.style.transform = 'scale(1)';
+                  band: '0 4px 8px rgba(255, 56, 96, 0.3)',
+                  e.target.style.transform = 'scale(1)',
                 }}
               >
                 Cancel

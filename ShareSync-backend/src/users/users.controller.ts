@@ -1,27 +1,20 @@
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
+import { UserService } from './user.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('users')
-export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+export class UserController {
+  constructor(private userService: UserService) {}
 
-  @Post()
-  async create(@Body() createUserDto: { email: string; firstName: string; lastName: string; password: string }): Promise<any> {
-    return this.usersService.create(createUserDto);
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async getProfile(@Request() req) {
+    return this.userService.findById(req.user._id);
   }
 
-  @Post('points')
-  async addPoints(@Body() body: { userId: string; points: number }): Promise<any> {
-    return this.usersService.addPoints(body.userId, body.points);
-  }
-
-  @Get('points/:userId')
-  async getPoints(@Param('userId') userId: string): Promise<number> {
-    return this.usersService.getPoints(userId);
-  }
-
-  @Get('leaderboard')
-  async getLeaderboard(): Promise<any[]> {
-    return this.usersService.getLeaderboard();
+  @UseGuards(JwtAuthGuard)
+  @Put('me')
+  async updateProfile(@Request() req, @Body() updateData: any) {
+    return this.userService.update(req.user._id, updateData);
   }
 }

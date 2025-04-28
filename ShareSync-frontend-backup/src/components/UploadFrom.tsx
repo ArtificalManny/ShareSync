@@ -1,31 +1,46 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useContext } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { AuthContext } from '../context/AuthContext';
 import { uploadFile } from '../services/api';
+import { toast } from 'react-toastify';
 
-interface UploadFormProps {
-  onUpload: (url: string) => void;
-}
+const UploadForm = ({ projectId, onUploadSuccess }) => {
+  const { user } = useContext(AuthContext);
 
-const UploadForm: React.FC<UploadFormProps> = ({ onUpload }) => {
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
     try {
-      const file = acceptedFiles[0];
-      const { url } = await uploadFile(file);
-      onUpload(url);
+      const response = await uploadFile(projectId, formData, user.token);
+      toast.success('File uploaded successfully!', { position: 'top-right', autoClose: 3000 });
+      if (onUploadSuccess) onUploadSuccess(response.data);
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error('UploadForm - Error uploading file:', error);
+      toast.error('Failed to upload file', { position: 'top-right', autoClose: 3000 });
     }
-  }, [onUpload]);
+  }, [projectId, user.token, onUploadSuccess]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
   return (
-    <div {...getRootProps()}>
+    <div {...getRootProps()} style={{
+      border: '2px dashed #00d1b2',
+      padding: '20px',
+      textAlign: 'center',
+      backgroundColor: '#1a2b3c',
+      borderRadius: '10px',
+      cursor: 'pointer',
+      marginBottom: '20px',
+    }}>
       <input {...getInputProps()} />
       {isDragActive ? (
-        <p>Drop the files here ...</p>
+        <p style={{ color: '#00d1b2' }}>Drop the files here...</p>
       ) : (
-        <p>Drag 'n' drop some files here, or click to select files</p>
+        <p style={{ color: '#00d1b2' }}>Drag & drop files here, or click to select files</p>
       )}
     </div>
   );

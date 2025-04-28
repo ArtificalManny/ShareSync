@@ -1,0 +1,17 @@
+/* Existing content remains unchanged until line 305 */
+@media (min-width: 640px) {
+  .sm\:bg-gradient-to-r {
+    background-image: linear-gradient(to right, var(--tw-gradient-stops));
+    -webkit-background-clip: text; /* Existing */
+    background-clip: text; /* Added for compatibility */
+  }
+}
+
+/* Existing content remains unchanged until line 564 */
+@media (min-width: 1024px) {
+  .lg\:bg-gradient-to-r {
+    background-image: linear-gradient(to right, var(--tw-gradient-stops));
+    -webkit-background-clip: text; /* Existing */
+    background-clip: text; /* Added for compatibility */
+  }
+}

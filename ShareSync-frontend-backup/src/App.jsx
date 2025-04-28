@@ -1,357 +1,213 @@
-import React, { useContext, useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom';
-import { AuthContext, AuthProvider } from './context/AuthContext';
-import CreateProject from './components/CreateProject';
-import Profile from './components/Profile';
+import React, { useContext } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { AuthContext } from './context/AuthContext';
+import { ThemeContext } from './context/ThemeContext';
+import Register from './components/Register';
+import Login from './components/Login';
+import Home from './components/Home';
 import Projects from './components/Projects';
 import ProjectHome from './components/ProjectHome';
-import Login from './components/Login';
-import Register from './components/Register';
+import Profile from './components/Profile';
+import CreateProject from './components/CreateProject';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
-import Home from './components/Home';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useContext(AuthContext);
-  console.log('ProtectedRoute - isAuthenticated:', isAuthenticated, 'loading:', loading);
+const App = () => {
+  const { user, loading, logout } = useContext(AuthContext);
+  const { currentTheme, toggleTheme } = useContext(ThemeContext);
+
   if (loading) {
     return <div style={{ color: 'white', textAlign: 'center', padding: '20px', background: '#0d1a26', minHeight: '100vh' }}>Loading...</div>;
   }
-  return isAuthenticated ? children : <Navigate to="/login" />;
-};
 
-const Header = () => {
-  const { user, isAuthenticated, logoutUser, loading } = useContext(AuthContext);
-  const [theme, setTheme] = useState('dark');
-
-  if (loading) {
-    return null;
-  }
-
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-    toast.info(`Theme switched to ${theme === 'dark' ? 'light' : 'dark'} mode!`, { position: 'top-right', autoClose: 2000 });
-  };
+  const isAuthenticated = !!user;
 
   return (
-    <nav style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      padding: '15px 30px',
-      background: 'linear-gradient(90deg, #1a2b3c 0%, #0d1a26 100%)',
-      color: 'white',
-      boxShadow: '0 4px 12px rgba(0, 209, 178, 0.3)',
-      borderBottom: '2px solid #00d1b2',
-      position: 'sticky',
-      top: 0,
-      zIndex: 1000,
-      animation: 'glow 2s infinite alternate',
-    }}>
-      <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-        <Link to="/" style={{
-          color: '#00d1b2',
-          textDecoration: 'none',
-          padding: '8px 16px',
-          border: '2px solid #00d1b2',
-          borderRadius: '8px',
-          fontWeight: 'bold',
-          fontSize: '1.2em',
-          transition: 'all 0.3s ease',
-          textShadow: '0 0 8px rgba(0, 209, 178, 0.5)',
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.background = 'linear-gradient(45deg, #00d1b2, #6c63ff)';
-          e.target.style.color = 'white';
-          e.target.style.transform = 'scale(1.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'transparent';
-          e.target.style.color = '#00d1b2';
-          e.target.style.transform = 'scale(1)';
-        }}
-        onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
-        onMouseUp={(e) => e.target.style.transform = 'scale(1.05)'}
-        >
-          ShareSync
-        </Link>
-        <Link to="/home" style={{
-          color: 'white',
-          textDecoration: 'none',
-          padding: '8px 16px',
-          border: '1px solid #00d1b2',
-          borderRadius: '8px',
-          transition: 'all 0.3s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.background = '#00d1b2';
-          e.target.style.color = '#0d1a26';
-          e.target.style.transform = 'scale(1.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'transparent';
-          e.target.style.color = 'white';
-          e.target.style.transform = 'scale(1)';
-        }}
-        onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
-        onMouseUp={(e) => e.target.style.transform = 'scale(1.05)'}
-        >
-          Home
-        </Link>
-        {!isAuthenticated && (
-          <>
-            <Link to="/login" style={{
-              color: 'white',
-              textDecoration: 'none',
-              padding: '8px 16px',
-              border: '1px solid #00d1b2',
-              borderRadius: '8px',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#00d1b2';
-              e.target.style.color = '#0d1a26';
-              e.target.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'transparent';
-              e.target.style.color = 'white';
-              e.target.style.transform = 'scale(1)';
-            }}
-            onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
-            onMouseUp={(e) => e.target.style.transform = 'scale(1.05)'}
-            >
-              Login
-            </Link>
-            <Link to="/register" style={{
-              color: 'white',
-              textDecoration: 'none',
-              padding: '8px 16px',
-              border: '1px solid #00d1b2',
-              borderRadius: '8px',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#00d1b2';
-              e.target.style.color = '#0d1a26';
-              e.target.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'transparent';
-              e.target.style.color = 'white';
-              e.target.style.transform = 'scale(1)';
-            }}
-            onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
-            onMouseUp={(e) => e.target.style.transform = 'scale(1.05)'}
-            >
-              Register
-            </Link>
-          </>
-        )}
-        {isAuthenticated && (
-          <>
-            <Link to="/projects" style={{
-              color: 'white',
-              textDecoration: 'none',
-              padding: '8px 16px',
-              border: '1px solid #00d1b2',
-              borderRadius: '8px',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#00d1b2';
-              e.target.style.color = '#0d1a26';
-              e.target.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'transparent';
-              e.target.style.color = 'white';
-              e.target.style.transform = 'scale(1)';
-            }}
-            onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
-            onMouseUp={(e) => e.target.style.transform = 'scale(1.05)'}
-            >
-              Projects
-            </Link>
-            <Link to="/profile" style={{
-              color: 'white',
-              textDecoration: 'none',
-              padding: '8px 16px',
-              border: '1px solid #00d1b2',
-              borderRadius: '8px',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#00d1b2';
-              e.target.style.color = '#0d1a26';
-              e.target.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'transparent';
-              e.target.style.color = 'white';
-              e.target.style.transform = 'scale(1)';
-            }}
-            onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
-            onMouseUp={(e) => e.target.style.transform = 'scale(1.05)'}
-            >
-              Profile
-            </Link>
-            <button
-              onClick={() => {
-                logoutUser();
-                toast.success('Logged out successfully!', { position: 'top-right', autoClose: 2000 });
-              }}
-              style={{
-                color: 'white',
-                padding: '8px 16px',
-                border: '1px solid #00d1b2',
-                borderRadius: '8px',
-                background: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = '#ff3860';
-                e.target.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'transparent';
-                e.target.style.transform = 'scale(1)';
-              }}
-              onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
-              onMouseUp={(e) => e.target.style.transform = 'scale(1.05)'}
-            >
-              Logout
-            </button>
-          </>
-        )}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        <button onClick={toggleTheme} style={{
-          padding: '8px 16px',
-          background: 'linear-gradient(45deg, #6c63ff, #00d1b2)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
+    <Router>
+      <div style={{
+        background: currentTheme === 'dark' ? 'linear-gradient(45deg, #0d1a26, #1a2b3c)' : 'linear-gradient(45deg, #e0e7ff, #f0f0f0)',
+        minHeight: '100vh',
+        color: currentTheme === 'dark' ? 'white' : 'black',
+      }}>
+        <nav style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '20px 40px',
+          background: currentTheme === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)',
+          backdropFilter: 'blur(10px)',
           boxShadow: '0 4px 8px rgba(0, 209, 178, 0.3)',
-        }}
-        onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
-        onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
-        onMouseEnter={(e) => e.target.style.boxShadow = '0 6px 12px rgba(0, 209, 178, 0.5)'}
-        onMouseLeave={(e) => e.target.style.boxShadow = '0 4px 8px rgba(0, 209, 178, 0.3)'}
-        >
-          Toggle Theme
-        </button>
-        {isAuthenticated && user && (
-          <Link to="/profile" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'white' }}>
-            <img
-              src={user.profilePicture || 'https://via.placeholder.com/40'}
-              alt="Profile"
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                marginRight: '10px',
-                border: '2px solid #00d1b2',
-                transition: 'transform 0.3s ease',
-                boxShadow: '0 0 8px rgba(0, 209, 178, 0.5)',
-              }}
-              onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
-              onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-            />
-            <span style={{ fontWeight: 'bold', textShadow: '0 0 4px rgba(0, 209, 178, 0.3)' }}>{user.firstName} {user.lastName}</span>
-          </Link>
-        )}
-      </div>
-    </nav>
-  );
-};
-
-const App = () => {
-  console.log('App - Rendering');
-  return (
-    <AuthProvider>
-      <Router>
-        <div style={{
-          background: 'linear-gradient(135deg, #0d1a26 0%, #1a2b3c 100%)',
-          minHeight: '100vh',
-          padding: '20px',
-          fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
-          color: 'white',
-          animation: 'fadeIn 1s ease-in-out',
         }}>
-          <style>
-            {`
-              @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-              }
-              @keyframes glow {
-                from { box-shadow: 0 0 8px rgba(0, 209, 178, 0.3); }
-                to { box-shadow: 0 0 16px rgba(0, 209, 178, 0.6); }
-              }
-              @keyframes pulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.05); }
-                100% { transform: scale(1); }
-              }
-            `}
-          </style>
-          <Header />
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
-            <Route
-              path="/projects"
-              element={
-                <ProtectedRoute>
-                  <Projects />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:projectId"
-              element={
-                <ProtectedRoute>
-                  <ProjectHome />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/create-project"
-              element={
-                <ProtectedRoute>
-                  <CreateProject />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/home"
-              element={
-                <ProtectedRoute>
-                  <Home />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/" element={<Navigate to="/home" />} />
-          </Routes>
-          <ToastContainer />
-        </div>
-      </Router>
-    </AuthProvider>
+          <Link to="/" style={{
+            fontSize: '1.5em',
+            fontWeight: 'bold',
+            color: currentTheme === 'dark' ? '#00d1b2' : '#6c63ff',
+            textDecoration: 'none',
+            border: `2px solid ${currentTheme === 'dark' ? '#00d1b2' : '#6c63ff'}`,
+            padding: '5px 15px',
+            borderRadius: '10px',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = currentTheme === 'dark' ? 'rgba(0, 209, 178, 0.2)' : 'rgba(108, 99, 255, 0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'transparent';
+          }}
+          >
+            ShareSync
+          </Link>
+          <div style={{ display: 'flex', gap: '20px' }}>
+            <Link to="/" style={{
+              color: currentTheme === 'dark' ? '#00d1b2' : '#6c63ff',
+              textDecoration: 'none',
+              fontSize: '1em',
+              padding: '5px 15px',
+              borderRadius: '5px',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = currentTheme === 'dark' ? 'rgba(0, 209, 178, 0.2)' : 'rgba(108, 99, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'transparent';
+            }}
+            >
+              Home
+            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/projects" style={{
+                  color: currentTheme === 'dark' ? '#00d1b2' : '#6c63ff',
+                  textDecoration: 'none',
+                  fontSize: '1em',
+                  padding: '5px 15px',
+                  borderRadius: '5px',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = currentTheme === 'dark' ? 'rgba(0, 209, 178, 0.2)' : 'rgba(108, 99, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'transparent';
+                }}
+                >
+                  Projects
+                </Link>
+                <Link to="/profile" style={{
+                  color: currentTheme === 'dark' ? '#00d1b2' : '#6c63ff',
+                  textDecoration: 'none',
+                  fontSize: '1em',
+                  padding: '5px 15px',
+                  borderRadius: '5px',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = currentTheme === 'dark' ? 'rgba(0, 209, 178, 0.2)' : 'rgba(108, 99, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'transparent';
+                }}
+                >
+                  Profile
+                </Link>
+                <button onClick={logout} style={{
+                  color: currentTheme === 'dark' ? '#00d1b2' : '#6c63ff',
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1em',
+                  padding: '5px 15px',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = currentTheme === 'dark' ? 'rgba(0, 209, 178, 0.2)' : 'rgba(108, 99, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'transparent';
+                }}
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" style={{
+                  color: currentTheme === 'dark' ? '#00d1b2' : '#6c63ff',
+                  textDecoration: 'none',
+                  fontSize: '1em',
+                  padding: '5px 15px',
+                  borderRadius: '5px',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = currentTheme === 'dark' ? 'rgba(0, 209, 178, 0.2)' : 'rgba(108, 99, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'transparent';
+                }}
+                >
+                  Login
+                </Link>
+                <Link to="/register" style={{
+                  color: currentTheme === 'dark' ? '#00d1b2' : '#6c63ff',
+                  textDecoration: 'none',
+                  fontSize: '1em',
+                  padding: '5px 15px',
+                  borderRadius: '5px',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = currentTheme === 'dark' ? 'rgba(0, 209, 178, 0.2)' : 'rgba(108, 99, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'transparent';
+                }}
+                >
+                  Register
+                </Link>
+              </>
+            )}
+            <button onClick={toggleTheme} style={{
+              padding: '8px 20px',
+              background: 'linear-gradient(45deg, #6c63ff, #00d1b2)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '1em',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 8px rgba(0, 209, 178, 0.3)',
+            }}
+            onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
+            onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
+            onMouseEnter={(e) => {
+              e.target.style.boxShadow = '0 6px 12px rgba(0, 209, 178, 0.5)';
+              e.target.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.boxShadow = '0 4px 8px rgba(0, 209, 178, 0.3)';
+              e.target.style.transform = 'scale(1)';
+            }}
+            >
+              Toggle Theme
+            </button>
+          </div>
+        </nav>
+        <Routes>
+          <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
+          <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
+          <Route path="/forgot-password" element={isAuthenticated ? <Navigate to="/" /> : <ForgotPassword />} />
+          <Route path="/reset-password/:token" element={isAuthenticated ? <Navigate to="/" /> : <ResetPassword />} />
+          <Route path="/" element={isAuthenticated ? <Home /> : <Navigate to="/login" />} />
+          <Route path="/projects" element={isAuthenticated ? <Projects /> : <Navigate to="/login" />} />
+          <Route path="/project/:projectId" element={isAuthenticated ? <ProjectHome /> : <Navigate to="/login" />} />
+          <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
+          <Route path="/create-project" element={isAuthenticated ? <CreateProject /> : <Navigate to="/login" />} />
+        </Routes>
+      </div>
+    </Router>
   );
 };
 

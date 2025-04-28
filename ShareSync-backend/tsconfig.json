@@ -1,15 +1,23 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es2017",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "sourceMap": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "allowSyntheticDefaultImports": true,
+    "target": "es2017",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false
   },
-  "include": ["src/**/*.ts", "src/main.ts", "../ShareSync-frontend-backup/src/services/auth.module.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
