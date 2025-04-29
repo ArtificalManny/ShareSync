@@ -2129,26 +2129,35 @@ const ProjectHome = () => {
               >
                 Save
               </button>
-              <button
-                type="button"
-                onClick={() => setEditingNotifications(false)}
-                style={{
-                  padding: '12px 24px',
-                  background: 'linear-gradient(45deg, #ff3860, #ff6347)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '1em',
-                  fontWeight: 'bold',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 8px rgba(255, 56, 96, 0.3)',
-                  band: '0 4px 8px rgba(255, 56, 96, 0.3)',
-                  e.target.style.transform = 'scale(1)',
-                }}
-              >
-                Cancel
-              </button>
+              // From line 2139 to 2149 (approximate, based on your screenshot)
+<button
+  type="button"
+  onClick={() => setEditingNotifications(false)}
+  style={{
+    padding: '12px 24px',
+    background: 'linear-gradient(45deg, #ff3860, #ff6347)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '1em',
+    fontWeight: 'bold',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 8px rgba(255, 56, 96, 0.3)',
+  }}
+  onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
+  onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
+  onMouseEnter={(e) => {
+    e.target.style.boxShadow = '0 6px 12px rgba(255, 56, 96, 0.5)';
+    e.target.style.transform = 'scale(1.05)';
+  }}
+  onMouseLeave={(e) => {
+    e.target.style.boxShadow = '0 4px 8px rgba(255, 56, 96, 0.3)';
+    e.target.style.transform = 'scale(1)';
+  }}
+>
+  Cancel
+</button>
             </div>
           </form>
         ) : (
