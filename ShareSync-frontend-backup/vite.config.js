@@ -6,13 +6,10 @@ export default defineConfig({
   server: {
     port: 54693,
     hmr: {
-      overlay: true,
+      overlay: false,
     },
   },
   resolve: {
-    alias: {
-      './context': '/src/context',
-      './components': '/src/components',
-    },
+    extensions: ['.js', '.jsx', '.json'], // Ensure .jsx is included
   },
 });

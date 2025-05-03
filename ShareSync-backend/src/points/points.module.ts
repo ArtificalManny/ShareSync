@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PointsService } from './points.service';
-import { UsersModule } from '../users/users.module';
+import { UsersModule } from '../user/users.module';
 
 @Module({
   imports: [UsersModule], // Import UsersModule to access UserModel

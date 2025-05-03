@@ -1,21 +1,21 @@
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { PointsService } from './points.service';
-import { UsersService } from '../users/users.service'; // Added
+import { UserService } from '../user/user.service';
 
 @Controller('points')
 export class PointsController {
   constructor(
     private readonly pointsService: PointsService,
-    private readonly usersService: UsersService, // Added
+    private readonly userService: UserService,
   ) {}
 
-  @Post()
-  async create(@Body() createPostDto: { title: string; content: string }): Promise<any> {
-    return this.pointsService.create(createPostDto);
+  @Get()
+  async getPoints() {
+    return this.pointsService.getPoints();
   }
 
   @Get('leaderboard')
-  async getLeaderboard(): Promise<any[]> {
-    return this.usersService.getLeaderboard(); // Fixed
+  async getLeaderboard() {
+    return this.userService.getLeaderboard();
   }
 }
