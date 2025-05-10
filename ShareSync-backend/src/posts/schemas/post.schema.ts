@@ -9,8 +9,12 @@ export class Post extends Document {
   @Prop({ required: true })
   content: string;
 
-  @Prop({ default: Date.now })
-  createdAt: Date;
+  @Prop()
+  category: string;
+
+  @Prop()
+  userId: string;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);
+export type PostDocument = Post & Document;

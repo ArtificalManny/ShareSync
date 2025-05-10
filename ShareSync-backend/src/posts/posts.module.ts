@@ -1,20 +1,15 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { Post, PostSchema } from './schemas/post.schema';
 import { PostsService } from './posts.service';
-import { Post, PostSchema } from '../schemas/post.schema';
-import { Project, ProjectSchema } from '../project/schemas/project.schema';
-import { NotificationsService } from '../notifications/notifications.service';
-import { Notification, NotificationSchema } from '../schemas/notification.schema';
+import { PostsController } from './posts.controller';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Post.name, schema: PostSchema },
-      { name: Project.name, schema: ProjectSchema },
-      { name: Notification.name, schema: NotificationSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
   ],
-  providers: [PostsService, NotificationsService],
+  controllers: [PostsController],
+  providers: [PostsService],
   exports: [PostsService],
 })
 export class PostsModule {}

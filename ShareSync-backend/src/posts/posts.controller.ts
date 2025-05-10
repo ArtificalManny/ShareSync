@@ -1,23 +1,32 @@
-import { Controller, Post as PostDecorator, Get, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
 import { PostsService } from './posts.service';
-import { Post as PostModel } from '../schemas/post.schema';
 
-@Controller('posts')
+@Controller('api/posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
-  @PostDecorator()
-  async create(@Body() createPostDto: { title: string; content: string; projectId: string; userId: string }): Promise<PostModel> {
+  @Post()
+  create(@Body() createPostDto: any) {
     return this.postsService.create(createPostDto);
   }
 
   @Get()
-  async findAll(): Promise<PostModel[]> {
+  findAll() {
     return this.postsService.findAll();
   }
 
-  @Get('search')
-  async search(@Query('query') query: string): Promise<PostModel[]> {
-    return this.postsService.search(query);
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.postsService.findOne(id);
+  }
+
+  @Put(':id')
+  update(@Param('id') id: string, @Body() updatePostDto: any) {
+    return this.postsService.update(id, updatePostDto);
+  }
+
+  @Delete(':id')
+  delete(@Param('id') id: string) {
+    return this.postsService.delete(id);
   }
 }

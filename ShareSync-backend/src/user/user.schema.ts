@@ -3,35 +3,32 @@ import { Document } from 'mongoose';
 
 @Schema()
 export class User extends Document {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   email: string;
+
+  @Prop({ required: true, unique: true })
+  username: string;
 
   @Prop({ required: true })
   password: string;
 
-  @Prop({ required: true })
-  username: string;
-
-  @Prop({ default: 0 })
-  points: number;
-
-  @Prop()
+  @Prop({ required: false })
   firstName: string;
 
-  @Prop()
+  @Prop({ required: false })
   lastName: string;
 
-  @Prop()
-  job: string;
-
-  @Prop()
-  school: string;
-
-  @Prop()
+  @Prop({ required: false })
   profilePicture: string;
 
-  @Prop()
+  @Prop({ required: false })
   bannerPicture: string;
+
+  @Prop({ required: false })
+  job: string;
+
+  @Prop({ required: false })
+  school: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

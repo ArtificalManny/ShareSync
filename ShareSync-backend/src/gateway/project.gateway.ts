@@ -1,23 +1,23 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server } from 'socket.io';
-import { ProjectsService } from '../projects/projects.service';
+import { ProjectService } from '../projects/project.service';
 
-@WebSocketGateway({ cors: { origin: 'http://localhost:54693', credentials: true } })
+@WebSocketGateway({ cors: true })
 export class ProjectGateway {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(private readonly projectService: ProjectService) {}
 
-  @SubscribeMessage('projectCreated')
-  async handleProjectCreated(client: any, payload: { projectId: string; title: string; description: string }) {
-    const { projectId, title, description } = payload;
-    const activity = {
-      type: 'projectCreated',
-      message: `New project created: ${title}`,
-      timestamp: new Date(),
-    };
-    await this.projectsService.addTeamActivity(projectId, activity);
-    this.server.emit('teamActivity', { projectId, activity });
+  @SubscribeMessage('projectUpdate')
+  async handleProjectUpdate(client: any, payload: { projectId: string }) {
+    const project = await this.projectService.findOne(payload.projectId);
+    this.server.emit('projectUpdated', project);
+  }
+
+  @SubscribeMessage('taskUpdate')
+  async handleTaskUpdate(client: any, payload: { projectId: string; taskId: string }) {
+    const project = await this.projectService.findOne(payload.projectId);
+    this.server.emit('taskUpdated', { projectId: payload.projectId, taskId: payload.taskId, project });
   }
 }

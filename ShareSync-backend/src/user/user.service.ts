@@ -1,30 +1,33 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { User, UserDocument } from './user.schema';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+  ) {}
 
-  async findByEmail(email: string): Promise<User> {
+  async create(createUserDto: { email: string; username: string; password: string; firstName?: string; lastName?: string }): Promise<UserDocument> {
+    const createdUser = new this.userModel(createUserDto);
+    return createdUser.save();
+  }
+
+  async findOneByEmail(email: string): Promise<UserDocument | undefined> {
     return this.userModel.findOne({ email }).exec();
   }
 
-  async create(userData: any): Promise<User> {
-    const user = new this.userModel(userData);
-    return user.save();
-  }
-
-  async update(id: string, updateData: any): Promise<User> {
-    return this.userModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
-  }
-
-  async findById(id: string): Promise<User> {
+  async findById(id: string): Promise<UserDocument | undefined> {
     return this.userModel.findById(id).exec();
   }
 
-  async getLeaderboard(): Promise<User[]> {
-    return this.userModel.find().sort({ points: -1 }).limit(10).exec();
+  async update(id: string, updateUserDto: any): Promise<UserDocument> {
+    const user = await this.userModel.findById(id).exec();
+    if (!user) {
+      throw new Error('User not found');
+    }
+    Object.assign(user, updateUserDto);
+    return user.save();
   }
 }

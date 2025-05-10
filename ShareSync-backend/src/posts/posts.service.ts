@@ -1,41 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Post } from '../schemas/post.schema'; // Corrected path
-import { ProjectsService } from '../projects/projects.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { Post, PostDocument } from './schemas/post.schema';
 
 @Injectable()
 export class PostsService {
   constructor(
-    @InjectModel('Post') private readonly postModel: Model<Post>,
-    private readonly projectsService: ProjectsService,
-    private readonly notificationsService: NotificationsService,
+    @InjectModel(Post.name) private postModel: Model<PostDocument>,
   ) {}
 
-  async create(createPostDto: { title: string; content: string; projectId: string; userId: string }): Promise<Post> {
-    const project = await this.projectsService.findById(createPostDto.projectId);
-    if (!project) {
-      throw new Error('Project not found');
-    }
-
-    const post = new this.postModel(createPostDto);
-    const savedPost = await post.save();
-
-    await this.notificationsService.createNotification(
-      createPostDto.projectId,
-      createPostDto.userId,
-      `New post created: ${createPostDto.title}`,
-    );
-
-    return savedPost;
+  async create(createPostDto: any): Promise<Post> {
+    const createdPost = new this.postModel(createPostDto);
+    return createdPost.save();
   }
 
   async findAll(): Promise<Post[]> {
     return this.postModel.find().exec();
   }
 
-  async search(query: string): Promise<Post[]> {
-    return this.postModel.find({ title: new RegExp(query, 'i') }).exec();
+  async findOne(id: string): Promise<Post> {
+    return this.postModel.findById(id).exec();
+  }
+
+  async update(id: string, updatePostDto: any): Promise<Post> {
+    return this.postModel.findByIdAndUpdate(id, updatePostDto, { new: true }).exec();
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.postModel.findByIdAndDelete(id).exec();
   }
 }
