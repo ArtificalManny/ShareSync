@@ -1,52 +1,72 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserService } from '../user/user.service';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private userService: UserService,
-    private jwtService: JwtService,
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async register(userDto: { email: string; username: string; password: string }): Promise<any> {
-    const { email, username, password } = userDto;
-    const existingUser = await this.userService.findOneByEmail(email);
+  async register(registerDto: { email: string; username: string; password: string; firstName: string; lastName: string }) {
+    const existingUser = await this.userService.findOneByEmail(registerDto.email);
     if (existingUser) {
-      throw new UnauthorizedException('Email already exists');
+      throw new HttpException('Email already exists', HttpStatus.BAD_REQUEST);
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await this.userService.create({ email, username, password: hashedPassword });
-    const payload = { sub: user._id, username: user.username };
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const user = await this.userService.create({
+      email: registerDto.email,
+      username: registerDto.username,
+      password: hashedPassword,
+      firstName: registerDto.firstName,
+      lastName: registerDto.lastName,
+    });
+    const payload = { sub: user._id, email: user.email };
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      access_token: this.jwtService.sign(payload),
+      user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName },
     };
   }
 
-  async login(email: string, password: string): Promise<any> {
-    const user = await this.userService.findOneByEmail(email);
+  async login(loginDto: { email: string; password: string }) {
+    const user = await this.userService.findOneByEmail(loginDto.email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
     }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-    const payload = { sub: user._id, username: user.username };
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
-  }
-
-  async forgotPassword(email: string): Promise<string> {
-    const user = await this.userService.findOneByEmail(email);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
     }
     const payload = { sub: user._id, email: user.email };
-    const token = await this.jwtService.signAsync(payload, { expiresIn: '1h' });
-    console.log(`Reset Token: ${token}`); // In production, send this via email
-    return token;
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName },
+    };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.userService.findOneByEmail(email);
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+    const token = this.jwtService.sign({ email }, { expiresIn: '1h' });
+    console.log(`Password reset token for ${email}: ${token}`);
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    let payload;
+    try {
+      payload = this.jwtService.verify(token);
+    } catch (error) {
+      throw new HttpException('Invalid or expired token', HttpStatus.BAD_REQUEST);
+    }
+    const user = await this.userService.findOneByEmail(payload.email);
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.userService.update(user._id.toString(), { password: hashedPassword });
   }
 }
