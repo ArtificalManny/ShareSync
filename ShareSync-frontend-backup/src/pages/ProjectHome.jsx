@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProject, updateProject, addPost, addPostComment, likePost, addTask, updateTask, addSubtask, addTaskComment, likeTask, addTeam, addFile, requestFile, shareProject, requestShare, getProjectMetrics, updateNotificationPreferences, getUserDetails } from '../utils/api';
+import { getProject, updateProject, addPost, addPostComment, likePost, addTask, updateTask, addSubtask, addTaskComment, likeTask, addTeam, addFile, requestFile, shareProject, requestShare, updateNotificationPreferences, getUserDetails } from '../utils/api';
 
 const ProjectHome = () => {
   const { id } = useParams();
@@ -27,6 +27,22 @@ const ProjectHome = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch user details
+        try {
+          console.log('Fetching user details...');
+          const userData = await getUserDetails();
+          setUser(userData);
+          setNotificationPrefs(userData.notificationPreferences || []);
+        } catch (err) {
+          console.error('Failed to fetch user details:', err.message);
+          if (err.message.includes('Invalid token')) {
+            localStorage.removeItem('token');
+            navigate('/login', { replace: true });
+            return;
+          }
+          setError('Failed to load user data.');
+        }
+
         // Fetch project details
         try {
           console.log('Fetching project details...');
@@ -47,38 +63,20 @@ const ProjectHome = () => {
           setNewSubtask(initialSubtasks);
         } catch (err) {
           console.error('Failed to fetch project details:', err.message);
-          setError(prev => prev ? `${prev}; Project details failed: ${err.message}` : `Project details failed: ${err.message}`);
+          setError('Failed to load project details.');
         }
 
-        // Fetch user details
-        try {
-          console.log('Fetching user details...');
-          const userData = await getUserDetails();
-          setUser(userData);
-          setNotificationPrefs(userData.notificationPreferences || []);
-        } catch (err) {
-          console.error('Failed to fetch user details:', err.message);
-          setError(prev => prev ? `${prev}; User details failed: ${err.message}` : `User details failed: ${err.message}`);
-        }
-
-        // Fetch project metrics
-        try {
-          console.log('Fetching project metrics...');
-          const metricsData = await getProjectMetrics();
-          setMetrics(metricsData);
-        } catch (err) {
-          console.error('Failed to fetch project metrics:', err.message);
-          setMetrics({ totalProjects: 0, currentProjects: 0, pastProjects: 0, tasksCompleted: 0 });
-        }
+        // Skip getProjectMetrics due to consistent failure
+        setMetrics({ totalProjects: 0, currentProjects: 0, pastProjects: 0, tasksCompleted: 0 });
       } catch (err) {
-        setError(`Unexpected error: ${err.message}`);
         console.error('ProjectHome unexpected error:', err.message);
+        setError('An unexpected error occurred.');
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [id]);
+  }, [id, navigate]);
 
   const handleUpdateProject = async (updateData) => {
     try {
@@ -425,6 +423,7 @@ const ProjectHome = () => {
     if (activityFilter === 'posts') return activity.action.includes('post');
     if (activityFilter === 'files') return activity.action.includes('file');
     if (activityFilter === 'shares') return activity.action.includes('share');
+    if (activityFilter === 'teams') return activity.action.includes('team');
     return false;
   }) || [];
 

@@ -21,6 +21,7 @@ const apiRequest = async (endpoint, method = 'GET', body = null) => {
 
   try {
     console.log(`Making ${method} request to ${API_URL}${endpoint} with token: ${token ? 'present' : 'missing'}`);
+    console.log('Request body:', body);
     const response = await fetch(`${API_URL}${endpoint}`, options);
     console.log(`Response status for ${endpoint}: ${response.status}`);
 
@@ -29,6 +30,7 @@ const apiRequest = async (endpoint, method = 'GET', body = null) => {
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorMessage;
+        console.log(`Error response for ${endpoint}:`, errorData);
       } catch (jsonError) {
         console.error(`Failed to parse error response for ${endpoint}:`, jsonError);
       }
