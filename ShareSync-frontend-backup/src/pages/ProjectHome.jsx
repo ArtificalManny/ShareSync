@@ -11,6 +11,7 @@ const ProjectHome = () => {
   const [newPost, setNewPost] = useState({ title: '', content: '', category: 'Announcement' });
   const [newComment, setNewComment] = useState({});
   const [newTask, setNewTask] = useState({ title: '', description: '', assignedTo: [] });
+  const [editTask, setEditTask] = useState(null);
   const [newSubtask, setNewSubtask] = useState({});
   const [taskComment, setTaskComment] = useState({});
   const [newTeam, setNewTeam] = useState({ name: '', description: '', members: [] });
@@ -67,7 +68,6 @@ const ProjectHome = () => {
           setMetrics(metricsData);
         } catch (err) {
           console.error('Failed to fetch project metrics:', err.message);
-          setError(prev => prev ? `${prev}; Project metrics failed: ${err.message}` : `Project metrics failed: ${err.message}`);
           setMetrics({ totalProjects: 0, currentProjects: 0, pastProjects: 0, tasksCompleted: 0 });
         }
       } catch (err) {
@@ -97,6 +97,15 @@ const ProjectHome = () => {
       setProject(updatedProject);
       setNewComment({ ...newComment, [updatedProject.posts[updatedProject.posts.length - 1]._id]: '' });
       setNewPost({ title: '', content: '', category: 'Announcement' });
+
+      // Log the action in activity log
+      const newActivity = {
+        action: 'post_added',
+        details: `Added post: ${newPost.title}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(project?.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to add post: ${err.message}`);
       console.error('Add post error:', err.message);
@@ -108,6 +117,16 @@ const ProjectHome = () => {
       const updatedProject = await addPostComment(id, postId, { content: newComment[postId] || '' });
       setProject(updatedProject);
       setNewComment({ ...newComment, [postId]: '' });
+
+      // Log the action in activity log
+      const post = updatedProject.posts.find(p => p._id === postId);
+      const newActivity = {
+        action: 'post_commented',
+        details: `Commented on post: ${post.title}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(updatedProject.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to add comment: ${err.message}`);
       console.error('Add post comment error:', err.message);
@@ -118,9 +137,39 @@ const ProjectHome = () => {
     try {
       const updatedProject = await likePost(id, postId);
       setProject(updatedProject);
+
+      // Log the action in activity log
+      const post = updatedProject.posts.find(p => p._id === postId);
+      const newActivity = {
+        action: 'post_liked',
+        details: `Liked post: ${post.title}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(updatedProject.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to like post: ${err.message}`);
       console.error('Like post error:', err.message);
+    }
+  };
+
+  const handleSharePost = async (postId) => {
+    try {
+      const post = project.posts.find(p => p._id === postId);
+      const newActivity = {
+        action: 'post_shared',
+        details: `Shared post: ${post.title}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(project.activityLog || []), newActivity] });
+      setProject(prev => ({
+        ...prev,
+        activityLog: [...(prev.activityLog || []), newActivity],
+      }));
+    } catch (err) {
+      setError(`Failed to share post: ${err.message}`);
+      console.error('Share post error:', err.message);
     }
   };
 
@@ -132,16 +181,40 @@ const ProjectHome = () => {
       setTaskComment({ ...taskComment, [updatedProject.tasks[updatedProject.tasks.length - 1]._id]: '' });
       setNewSubtask({ ...newSubtask, [updatedProject.tasks[updatedProject.tasks.length - 1]._id]: { title: '', description: '', status: 'To Do' } });
       setNewTask({ title: '', description: '', assignedTo: [] });
+
+      // Log the action in activity log
+      const newActivity = {
+        action: 'task_added',
+        details: `Added task: ${newTask.title}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(updatedProject.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to add task: ${err.message}`);
       console.error('Add task error:', err.message);
     }
   };
 
+  const handleEditTask = (task) => {
+    setEditTask({ ...task, assignedTo: task.assignedTo || [] });
+  };
+
   const handleUpdateTask = async (taskId, updateData) => {
     try {
       const updatedProject = await updateTask(id, taskId, updateData);
       setProject(updatedProject);
+      setEditTask(null);
+
+      // Log the action in activity log
+      const task = updatedProject.tasks.find(t => t._id === taskId);
+      const newActivity = {
+        action: 'task_updated',
+        details: `Updated task: ${task.title}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(updatedProject.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to update task: ${err.message}`);
       console.error('Update task error:', err.message);
@@ -154,6 +227,16 @@ const ProjectHome = () => {
       const updatedProject = await addSubtask(id, taskId, subtaskData);
       setProject(updatedProject);
       setNewSubtask({ ...newSubtask, [taskId]: { title: '', description: '', status: 'To Do' } });
+
+      // Log the action in activity log
+      const task = updatedProject.tasks.find(t => t._id === taskId);
+      const newActivity = {
+        action: 'subtask_added',
+        details: `Added subtask to task: ${task.title}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(updatedProject.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to add subtask: ${err.message}`);
       console.error('Add subtask error:', err.message);
@@ -165,6 +248,16 @@ const ProjectHome = () => {
       const updatedProject = await addTaskComment(id, taskId, { content: taskComment[taskId] || '' });
       setProject(updatedProject);
       setTaskComment({ ...taskComment, [taskId]: '' });
+
+      // Log the action in activity log
+      const task = updatedProject.tasks.find(t => t._id === taskId);
+      const newActivity = {
+        action: 'task_commented',
+        details: `Commented on task: ${task.title}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(updatedProject.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to add task comment: ${err.message}`);
       console.error('Add task comment error:', err.message);
@@ -175,9 +268,39 @@ const ProjectHome = () => {
     try {
       const updatedProject = await likeTask(id, taskId);
       setProject(updatedProject);
+
+      // Log the action in activity log
+      const task = updatedProject.tasks.find(t => t._id === taskId);
+      const newActivity = {
+        action: 'task_liked',
+        details: `Liked task: ${task.title}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(updatedProject.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to like task: ${err.message}`);
       console.error('Like task error:', err.message);
+    }
+  };
+
+  const handleShareTask = async (taskId) => {
+    try {
+      const task = project.tasks.find(t => t._id === taskId);
+      const newActivity = {
+        action: 'task_shared',
+        details: `Shared task: ${task.title}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(project.activityLog || []), newActivity] });
+      setProject(prev => ({
+        ...prev,
+        activityLog: [...(prev.activityLog || []), newActivity],
+      }));
+    } catch (err) {
+      setError(`Failed to share task: ${err.message}`);
+      console.error('Share task error:', err.message);
     }
   };
 
@@ -187,6 +310,15 @@ const ProjectHome = () => {
       const updatedProject = await addTeam(id, newTeam);
       setProject(updatedProject);
       setNewTeam({ name: '', description: '', members: [] });
+
+      // Log the action in activity log
+      const newActivity = {
+        action: 'team_added',
+        details: `Added team: ${newTeam.name}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(updatedProject.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to add team: ${err.message}`);
       console.error('Add team error:', err.message);
@@ -199,6 +331,15 @@ const ProjectHome = () => {
       const updatedProject = await addFile(id, newFile);
       setProject(updatedProject);
       setNewFile({ name: '', url: '' });
+
+      // Log the action in activity log
+      const newActivity = {
+        action: 'file_added',
+        details: `Added file: ${newFile.name}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(updatedProject.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to add file: ${err.message}`);
       console.error('Add file error:', err.message);
@@ -210,6 +351,15 @@ const ProjectHome = () => {
     try {
       await requestFile(id, newFile);
       setNewFile({ name: '', url: '' });
+
+      // Log the action in activity log
+      const newActivity = {
+        action: 'file_requested',
+        details: `Requested to add file: ${newFile.name}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(project?.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to request file: ${err.message}`);
       console.error('Request file error:', err.message);
@@ -223,6 +373,15 @@ const ProjectHome = () => {
       setProject(updatedProject);
       setShareUserId('');
       setShowShareModal(false);
+
+      // Log the action in activity log
+      const newActivity = {
+        action: 'project_shared',
+        details: `Shared project with user: ${shareUserId}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(updatedProject.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to share project: ${err.message}`);
       console.error('Share project error:', err.message);
@@ -235,6 +394,15 @@ const ProjectHome = () => {
       await requestShare(id, shareUserId);
       setShareUserId('');
       setShowShareModal(false);
+
+      // Log the action in activity log
+      const newActivity = {
+        action: 'share_requested',
+        details: `Requested to share project with user: ${shareUserId}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      await updateProject(id, { activityLog: [...(project?.activityLog || []), newActivity] });
     } catch (err) {
       setError(`Failed to request share: ${err.message}`);
       console.error('Request share error:', err.message);
@@ -263,6 +431,8 @@ const ProjectHome = () => {
   if (loading) {
     return <div className="text-white text-center mt-10">Loading...</div>;
   }
+
+  const isAdmin = project && user && project.admins.includes(user.id);
 
   return (
     <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 px-4">
@@ -305,10 +475,10 @@ const ProjectHome = () => {
           <div className="card">
             <h2 className="text-xl font-display text-vibrant-pink mb-4">Announcement</h2>
             <p className="text-white">{project?.announcement || 'No announcement'}</p>
-            {project && user && project.admins.includes(user.id) && (
+            {isAdmin && (
               <div className="mt-2">
                 <textarea
-                  value={project.announcement || ''}
+                  value={project?.announcement || ''}
                   onChange={(e) => handleUpdateProject({ announcement: e.target.value })}
                   className="w-full"
                 />
@@ -321,11 +491,11 @@ const ProjectHome = () => {
           <div className="card">
             <h2 className="text-xl font-display text-vibrant-pink mb-4">Snapshot</h2>
             <p className="text-white">{project?.snapshot || 'No snapshot'}</p>
-            {project && user && project.admins.includes(user.id) && (
+            {isAdmin && (
               <div className="mt-2">
                 <input
                   type="text"
-                  value={project.snapshot || ''}
+                  value={project?.snapshot || ''}
                   onChange={(e) => handleUpdateProject({ snapshot: e.target.value })}
                   className="w-full"
                 />
@@ -382,12 +552,20 @@ const ProjectHome = () => {
                     <p className="text-sm text-white">Category: {post.category}</p>
                     <p className="text-sm text-white">Posted by: {post.userId}</p>
                     <p className="text-sm text-white">Likes: {post.likes}</p>
-                    <button
-                      onClick={() => handleLikePost(post._id)}
-                      className="text-vibrant-pink hover:underline mr-2"
-                    >
-                      Like
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleLikePost(post._id)}
+                        className="text-vibrant-pink hover:underline"
+                      >
+                        Like
+                      </button>
+                      <button
+                        onClick={() => handleSharePost(post._id)}
+                        className="text-vibrant-pink hover:underline"
+                      >
+                        Share
+                      </button>
+                    </div>
                     <div className="mt-2">
                       <h4 className="text-lg text-vibrant-pink">Comments</h4>
                       {post.comments.map((comment, idx) => (
@@ -419,7 +597,7 @@ const ProjectHome = () => {
         <section className="mb-6">
           <div className="card animate-fade-in">
             <h2 className="text-xl font-display text-vibrant-pink mb-4">Tasks</h2>
-            {project && user && project.admins.includes(user.id) && (
+            {isAdmin && (
               <form onSubmit={handleAddTask} className="mb-4">
                 <div className="mb-2">
                   <label className="block text-white mb-1">Title</label>
@@ -438,12 +616,17 @@ const ProjectHome = () => {
                   />
                 </div>
                 <div className="mb-2">
-                  <label className="block text-white mb-1">Assigned To (comma-separated user IDs)</label>
-                  <input
-                    type="text"
-                    value={newTask.assignedTo.join(',')}
-                    onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value.split(',').map(id => id.trim()) })}
-                  />
+                  <label className="block text-white mb-1">Assigned To</label>
+                  <select
+                    multiple
+                    value={newTask.assignedTo}
+                    onChange={(e) => setNewTask({ ...newTask, assignedTo: Array.from(e.target.selectedOptions, option => option.value) })}
+                    className="w-full"
+                  >
+                    {project?.sharedWith.map(userId => (
+                      <option key={userId} value={userId}>{userId}</option>
+                    ))}
+                  </select>
                 </div>
                 <button type="submit" className="btn-primary w-full">
                   Add Task
@@ -457,90 +640,167 @@ const ProjectHome = () => {
               <div className="space-y-4">
                 {project.tasks.map(task => (
                   <div key={task._id} className="card transform hover:scale-105 transition-transform">
-                    <h3 className="text-lg font-display text-vibrant-pink">{task.title}</h3>
-                    <p className="text-gray-300">{task.description}</p>
-                    <p className="text-sm text-white">Status: {task.status}</p>
-                    <p className="text-sm text-white">Assigned To: {task.assignedTo.join(', ')}</p>
-                    <p className="text-sm text-white">Likes: {task.likes}</p>
-                    {(task.assignedTo.includes(user?.id) || (project && user && project.admins.includes(user.id))) && (
-                      <select
-                        value={task.status}
-                        onChange={(e) => handleUpdateTask(task._id, { status: e.target.value })}
-                        className="w-full mt-2"
-                      >
-                        <option value="To Do">To Do</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Completed">Completed</option>
-                      </select>
-                    )}
-                    <button
-                      onClick={() => handleLikeTask(task._id)}
-                      className="text-vibrant-pink hover:underline mr-2 mt-2"
-                    >
-                      Like
-                    </button>
-                    <div className="mt-2">
-                      <h4 className="text-lg text-vibrant-pink">Subtasks</h4>
-                      {task.subtasks.map((subtask, idx) => (
-                        <div key={idx} className="text-gray-300">
-                          <p>{subtask.title} - {subtask.status}</p>
-                        </div>
-                      ))}
-                      {project && user && project.admins.includes(user.id) && (
-                        <div className="mt-2">
+                    {editTask && editTask._id === task._id ? (
+                      <div>
+                        <div className="mb-2">
+                          <label className="block text-white mb-1">Title</label>
                           <input
                             type="text"
-                            placeholder="Subtask Title"
-                            value={newSubtask[task._id]?.title || ''}
-                            onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], title: e.target.value } })}
+                            value={editTask.title}
+                            onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
                             className="w-full"
                           />
-                          <input
-                            type="text"
-                            placeholder="Description"
-                            value={newSubtask[task._id]?.description || ''}
-                            onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], description: e.target.value } })}
-                            className="w-full mt-2"
+                        </div>
+                        <div className="mb-2">
+                          <label className="block text-white mb-1">Description</label>
+                          <textarea
+                            value={editTask.description}
+                            onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
+                            className="w-full"
                           />
+                        </div>
+                        <div className="mb-2">
+                          <label className="block text-white mb-1">Status</label>
                           <select
-                            value={newSubtask[task._id]?.status || 'To Do'}
-                            onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], status: e.target.value } })}
+                            value={editTask.status}
+                            onChange={(e) => setEditTask({ ...editTask, status: e.target.value })}
+                            className="w-full"
+                          >
+                            <option value="To Do">To Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                          </select>
+                        </div>
+                        <div className="mb-2">
+                          <label className="block text-white mb-1">Assigned To</label>
+                          <select
+                            multiple
+                            value={editTask.assignedTo}
+                            onChange={(e) => setEditTask({ ...editTask, assignedTo: Array.from(e.target.selectedOptions, option => option.value) })}
+                            className="w-full"
+                          >
+                            {project?.sharedWith.map(userId => (
+                              <option key={userId} value={userId}>{userId}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => handleUpdateTask(task._id, editTask)}
+                          className="btn-primary mr-2"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditTask(null)}
+                          className="btn-secondary"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-display text-vibrant-pink">{task.title}</h3>
+                        <p className="text-gray-300">{task.description}</p>
+                        <p className="text-sm text-white">Status: {task.status}</p>
+                        <p className="text-sm text-white">Assigned To: {task.assignedTo.join(', ') || 'None'}</p>
+                        <p className="text-sm text-white">Likes: {task.likes}</p>
+                        {(task.assignedTo.includes(user?.id) || isAdmin) && (
+                          <select
+                            value={task.status}
+                            onChange={(e) => handleUpdateTask(task._id, { status: e.target.value })}
                             className="w-full mt-2"
                           >
                             <option value="To Do">To Do</option>
                             <option value="In Progress">In Progress</option>
                             <option value="Completed">Completed</option>
                           </select>
+                        )}
+                        <div className="flex space-x-2 mt-2">
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleEditTask(task)}
+                              className="text-vibrant-pink hover:underline"
+                            >
+                              Edit
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleAddSubtask(task._id)}
-                            className="btn-primary mt-2"
+                            onClick={() => handleLikeTask(task._id)}
+                            className="text-vibrant-pink hover:underline"
                           >
-                            Add Subtask
+                            Like
+                          </button>
+                          <button
+                            onClick={() => handleShareTask(task._id)}
+                            className="text-vibrant-pink hover:underline"
+                          >
+                            Share
                           </button>
                         </div>
-                      )}
-                    </div>
-                    <div className="mt-2">
-                      <h4 className="text-lg text-vibrant-pink">Comments</h4>
-                      {task.comments.map((comment, idx) => (
-                        <div key={idx} className="text-gray-300">
-                          <p>{comment.content} - by {comment.userId}</p>
+                        <div className="mt-2">
+                          <h4 className="text-lg text-vibrant-pink">Subtasks</h4>
+                          {task.subtasks.map((subtask, idx) => (
+                            <div key={idx} className="text-gray-300">
+                              <p>{subtask.title} - {subtask.status}</p>
+                            </div>
+                          ))}
+                          {isAdmin && (
+                            <div className="mt-2">
+                              <input
+                                type="text"
+                                placeholder="Subtask Title"
+                                value={newSubtask[task._id]?.title || ''}
+                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], title: e.target.value } })}
+                                className="w-full"
+                              />
+                              <input
+                                type="text"
+                                placeholder="Description"
+                                value={newSubtask[task._id]?.description || ''}
+                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], description: e.target.value } })}
+                                className="w-full mt-2"
+                              />
+                              <select
+                                value={newSubtask[task._id]?.status || 'To Do'}
+                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], status: e.target.value } })}
+                                className="w-full mt-2"
+                              >
+                                <option value="To Do">To Do</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                              </select>
+                              <button
+                                onClick={() => handleAddSubtask(task._id)}
+                                className="btn-primary mt-2"
+                              >
+                                Add Subtask
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      ))}
-                      <input
-                        type="text"
-                        value={taskComment[task._id] || ''}
-                        onChange={(e) => setTaskComment({ ...taskComment, [task._id]: e.target.value })}
-                        placeholder="Add a comment..."
-                        className="w-full mt-2"
-                      />
-                      <button
-                        onClick={() => handleAddTaskComment(task._id)}
-                        className="btn-primary mt-2"
-                      >
-                        Comment
-                      </button>
-                    </div>
+                        <div className="mt-2">
+                          <h4 className="text-lg text-vibrant-pink">Comments</h4>
+                          {task.comments.map((comment, idx) => (
+                            <div key={idx} className="text-gray-300">
+                              <p>{comment.content} - by {comment.userId}</p>
+                            </div>
+                          ))}
+                          <input
+                            type="text"
+                            value={taskComment[task._id] || ''}
+                            onChange={(e) => setTaskComment({ ...taskComment, [task._id]: e.target.value })}
+                            placeholder="Add a comment..."
+                            className="w-full mt-2"
+                          />
+                          <button
+                            onClick={() => handleAddTaskComment(task._id)}
+                            className="btn-primary mt-2"
+                          >
+                            Comment
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -551,7 +811,7 @@ const ProjectHome = () => {
         <section className="mb-6">
           <div className="card animate-fade-in">
             <h2 className="text-xl font-display text-vibrant-pink mb-4">Teams</h2>
-            {project && user && project.admins.includes(user.id) && (
+            {isAdmin && (
               <form onSubmit={handleAddTeam} className="mb-4">
                 <div className="mb-2">
                   <label className="block text-white mb-1">Team Name</label>
@@ -570,12 +830,17 @@ const ProjectHome = () => {
                   />
                 </div>
                 <div className="mb-2">
-                  <label className="block text-white mb-1">Members (comma-separated user IDs)</label>
-                  <input
-                    type="text"
-                    value={newTeam.members.join(',')}
-                    onChange={(e) => setNewTeam({ ...newTeam, members: e.target.value.split(',').map(id => id.trim()) })}
-                  />
+                  <label className="block text-white mb-1">Members</label>
+                  <select
+                    multiple
+                    value={newTeam.members}
+                    onChange={(e) => setNewTeam({ ...newTeam, members: Array.from(e.target.selectedOptions, option => option.value) })}
+                    className="w-full"
+                  >
+                    {project?.sharedWith.map(userId => (
+                      <option key={userId} value={userId}>{userId}</option>
+                    ))}
+                  </select>
                 </div>
                 <button type="submit" className="btn-primary w-full">
                   Add Team
@@ -602,7 +867,7 @@ const ProjectHome = () => {
         <section className="mb-6">
           <div className="card animate-fade-in">
             <h2 className="text-xl font-display text-vibrant-pink mb-4">Files</h2>
-            {project && user && project.admins.includes(user.id) ? (
+            {isAdmin ? (
               <form onSubmit={handleAddFile} className="mb-4">
                 <div className="mb-2">
                   <label className="block text-white mb-1">File Name</label>
@@ -684,6 +949,7 @@ const ProjectHome = () => {
                 <option value="posts">Posts</option>
                 <option value="files">Files</option>
                 <option value="shares">Shares</option>
+                <option value="teams">Teams</option>
               </select>
             </div>
             {filteredActivityLog.length === 0 ? (
@@ -713,7 +979,7 @@ const ProjectHome = () => {
               <div className="modal-overlay" onClick={() => setShowShareModal(false)}></div>
               <div className="modal">
                 <h2 className="text-2xl font-display text-vibrant-pink mb-4">Share Project</h2>
-                <form onSubmit={project && user && project.admins.includes(user.id) ? handleShareProject : handleRequestShare}>
+                <form onSubmit={isAdmin ? handleShareProject : handleRequestShare}>
                   <div className="mb-4">
                     <label className="block text-white mb-1">User ID to Share With</label>
                     <input
@@ -724,7 +990,7 @@ const ProjectHome = () => {
                     />
                   </div>
                   <button type="submit" className="btn-primary mr-2">
-                    {project && user && project.admins.includes(user.id) ? 'Share' : 'Request Share'}
+                    {isAdmin ? 'Share' : 'Request Share'}
                   </button>
                   <button
                     type="button"
@@ -821,6 +1087,20 @@ const ProjectHome = () => {
                       className="mr-2"
                     />
                     Email on Team Updates
+                  </label>
+                  <label className="flex items-center text-white">
+                    <input
+                      type="checkbox"
+                      checked={notificationPrefs.includes('email_activity_log')}
+                      onChange={() => {
+                        const updatedPrefs = notificationPrefs.includes('email_activity_log')
+                          ? notificationPrefs.filter(pref => pref !== 'email_activity_log')
+                          : [...notificationPrefs, 'email_activity_log'];
+                        setNotificationPrefs(updatedPrefs);
+                      }}
+                      className="mr-2"
+                    />
+                    Email on Activity Log Updates
                   </label>
                 </div>
                 <button

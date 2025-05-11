@@ -28,7 +28,7 @@ const CreateProject = () => {
       console.log('Create project response:', response);
       navigate('/projects');
     } catch (err) {
-      setError(`Failed to create project: ${err.message}. Please ensure the backend supports project creation at /api/projects (POST).`);
+      setError(`Failed to create project: ${err.message}`);
       console.error('Create project error:', err.message);
     } finally {
       setLoading(false);

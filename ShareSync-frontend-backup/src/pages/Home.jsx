@@ -36,7 +36,7 @@ const Home = () => {
           setMetrics(metricsData);
         } catch (err) {
           console.error('Failed to fetch project metrics:', err.message);
-          setError(prev => prev ? `${prev}; Project metrics failed: ${err.message}` : `Project metrics failed: ${err.message}`);
+          // Suppress error display for metrics failure
           setMetrics({ totalProjects: 0, currentProjects: 0, pastProjects: 0, tasksCompleted: 0 });
         }
 

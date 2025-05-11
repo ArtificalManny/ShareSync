@@ -112,6 +112,7 @@ const Profile = () => {
                   name="profilePicture"
                   value={formData.profilePicture}
                   onChange={handleChange}
+                  placeholder="Enter profile picture URL"
                 />
               </div>
               <div className="mb-4">
@@ -121,6 +122,7 @@ const Profile = () => {
                   name="bannerPicture"
                   value={formData.bannerPicture}
                   onChange={handleChange}
+                  placeholder="Enter banner picture URL"
                 />
               </div>
               <div className="mb-4">
@@ -130,6 +132,7 @@ const Profile = () => {
                   name="school"
                   value={formData.school}
                   onChange={handleChange}
+                  placeholder="Enter your school"
                 />
               </div>
               <div className="mb-4">
@@ -139,6 +142,7 @@ const Profile = () => {
                   name="job"
                   value={formData.job}
                   onChange={handleChange}
+                  placeholder="Enter your job"
                 />
               </div>
               <button type="submit" className="btn-primary w-full">
