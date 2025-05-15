@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { getUserDetails } from './utils/api';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
@@ -46,13 +46,14 @@ const SettingsIcon = () => (
   </svg>
 );
 
-// ProtectedRoute component with improved logic
 const ProtectedRoute = ({ user, loading, children }) => {
   const hasToken = !!localStorage.getItem('token');
+  console.log('ProtectedRoute - hasToken:', hasToken, 'user:', user, 'loading:', loading);
   if (loading) {
     return <div className="text-white text-center mt-10 animate-shimmer">Loading...</div>;
   }
   if (!hasToken || !user) {
+    console.log('Redirecting to login - hasToken:', hasToken, 'user:', user);
     return <Navigate to="/login" replace />;
   }
   return children;
@@ -60,6 +61,7 @@ const ProtectedRoute = ({ user, loading, children }) => {
 
 const App = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // Access navigation state
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
@@ -68,16 +70,30 @@ const App = () => {
   const hasToken = !!localStorage.getItem('token');
 
   useEffect(() => {
-    console.log('App.jsx useEffect - hasToken:', hasToken, 'user:', user);
-    const fetchUser = async () => {
+    console.log('App.jsx useEffect - hasToken:', hasToken, 'initial user:', user, 'location.state:', location.state);
+    const validateToken = async () => {
       try {
-        const userData = await getUserDetails();
-        console.log('Fetched user data:', userData);
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+        // Check if user data is passed via navigation state (e.g., from Login)
+        if (location.state?.user) {
+          console.log('User found in navigation state, setting user:', location.state.user);
+          setUser(location.state.user);
+          localStorage.setItem('user', JSON.stringify(location.state.user));
+        } else if (hasToken) {
+          console.log('Token found, using stored user data...');
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            setUser(JSON.parse(storedUser));
+            console.log('User set from localStorage:', storedUser);
+          } else {
+            throw new Error('No user data found in localStorage');
+          }
+        } else {
+          console.log('No token found, skipping user details fetch');
+          setUser(null);
+        }
       } catch (err) {
-        console.error('Failed to fetch user details:', err.message);
-        // Clear invalid token and redirect to login
+        console.error('Token validation failed:', err.message);
+        console.log('Clearing token and redirecting to login');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);
@@ -88,15 +104,11 @@ const App = () => {
       }
     };
 
-    if (hasToken && !user) {
-      fetchUser();
-    } else {
-      setLoading(false);
-      console.log('No token or user already set, loading set to false');
-    }
-  }, [hasToken, user, navigate]);
+    validateToken();
+  }, [hasToken, navigate, location.state]);
 
   const handleLogout = () => {
+    console.log('Logging out user');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
@@ -142,6 +154,7 @@ const App = () => {
                   src={user?.profilePicture || 'https://via.placeholder.com/40'}
                   alt="User Avatar"
                   className="w-10 h-10 rounded-full animate-pulse-glow"
+                  onError={(e) => (e.target.src = 'https://via.placeholder.com/40')}
                 />
                 <span className="hidden sm:inline text-white ml-2">{user?.username || 'User'}</span>
                 <div className="dropdown">
@@ -178,6 +191,7 @@ const App = () => {
                     src={user?.profilePicture || 'https://via.placeholder.com/24'}
                     alt="Profile"
                     className="w-6 h-6 rounded-full animate-pulse-glow"
+                    onError={(e) => (e.target.src = 'https://via.placeholder.com/24')}
                   />
                   <span>Profile</span>
                 </button>

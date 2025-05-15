@@ -1,40 +1,21 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { updateProfile, updateNotificationPreferences } from '../utils/api';
 
 const Settings = ({ user, setUser }) => {
+  const navigate = useNavigate();
   const [profileForm, setProfileForm] = useState({
-    firstName: user?.firstName || 'Manny',
-    lastName: user?.lastName || 'Rivas',
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
     username: user?.username || '',
     email: user?.email || '',
-    profilePicture: user?.profilePicture || '',
-    bannerPicture: user?.bannerPicture || '',
-    school: user?.school || '',
-    job: user?.job || '',
   });
   const [notificationPrefs, setNotificationPrefs] = useState(user?.notificationPreferences || []);
-  const [accountForm, setAccountForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-  const [profilePicturePreview, setProfilePicturePreview] = useState(user?.profilePicture || '');
-  const [bannerPicturePreview, setBannerPicturePreview] = useState(user?.bannerPicture || '');
+  const [projectVisibility, setProjectVisibility] = useState(user?.projectVisibility || 'public');
+  const [error, setError] = useState(null);
 
   const handleProfileChange = (e) => {
     setProfileForm({ ...profileForm, [e.target.name]: e.target.value });
-  };
-
-  const handleProfilePictureChange = (e) => {
-    const url = e.target.value;
-    setProfileForm({ ...profileForm, profilePicture: url });
-    setProfilePicturePreview(url);
-  };
-
-  const handleBannerPictureChange = (e) => {
-    const url = e.target.value;
-    setProfileForm({ ...profileForm, bannerPicture: url });
-    setBannerPicturePreview(url);
   };
 
   const handleProfileSubmit = async (e) => {
@@ -42,273 +23,160 @@ const Settings = ({ user, setUser }) => {
     try {
       await updateProfile(profileForm);
       setUser({ ...user, ...profileForm });
+      localStorage.setItem('user', JSON.stringify({ ...user, ...profileForm }));
+      alert('Profile updated successfully!');
     } catch (err) {
       console.error('Update profile error:', err.message);
-      // Fallback: Update local state if API fails
-      setUser({ ...user, ...profileForm });
+      setError('Failed to update profile. Please try again.');
     }
   };
 
-  const handleNotificationSubmit = async (e) => {
+  const handleNotificationPrefsSubmit = async (e) => {
     e.preventDefault();
     try {
       await updateNotificationPreferences(notificationPrefs);
       setUser({ ...user, notificationPreferences: notificationPrefs });
+      localStorage.setItem('user', JSON.stringify({ ...user, notificationPreferences: notificationPrefs }));
+      alert('Notification preferences updated successfully!');
     } catch (err) {
       console.error('Update notification preferences error:', err.message);
-      // Fallback: Update local state if API fails
-      setUser({ ...user, notificationPreferences: notificationPrefs });
+      setError('Failed to update notification preferences. Please try again.');
     }
   };
 
-  const handleAccountChange = (e) => {
-    setAccountForm({ ...accountForm, [e.target.name]: e.target.value });
-  };
-
-  const handleAccountSubmit = async (e) => {
+  const handleProjectVisibilitySubmit = async (e) => {
     e.preventDefault();
-    if (accountForm.newPassword !== accountForm.confirmPassword) {
-      alert('New password and confirm password do not match.');
-      return;
-    }
     try {
-      // Simulate password update (requires backend integration)
-      console.log('Password update simulated:', accountForm);
-      setAccountForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      await updateProfile({ projectVisibility });
+      setUser({ ...user, projectVisibility });
+      localStorage.setItem('user', JSON.stringify({ ...user, projectVisibility }));
+      alert('Project visibility updated successfully!');
     } catch (err) {
-      console.error('Update account error:', err.message);
+      console.error('Update project visibility error:', err.message);
+      setError('Failed to update project visibility. Please try again.');
     }
-  };
-
-  const toggleNotificationPref = (pref) => {
-    setNotificationPrefs(
-      notificationPrefs.includes(pref)
-        ? notificationPrefs.filter(p => p !== pref)
-        : [...notificationPrefs, pref]
-    );
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4">
-      <h1 className="text-3xl font-display text-vibrant-pink mb-6 animate-fade-in">Settings</h1>
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <h2 className="text-2xl font-display text-vibrant-pink mb-6 animate-fade-in">Settings</h2>
+      {error && (
+        <div className="bg-red-500 text-white p-3 rounded-lg mb-6 animate-shimmer">
+          {error}
+        </div>
+      )}
 
       {/* Profile Settings */}
-      <div className="card glassmorphic mb-6 animate-fade-in">
-        <div className="settings-section">
-          <h3 className="text-xl font-display">Profile Settings</h3>
-          <div className="relative mb-6">
-            <img
-              src={bannerPicturePreview || 'https://via.placeholder.com/1200x300'}
-              alt="Banner Preview"
-              className="w-full h-48 object-cover rounded-t-lg animate-pulse-glow"
-            />
-            <img
-              src={profilePicturePreview || 'https://via.placeholder.com/150'}
-              alt="Profile Preview"
-              className="absolute bottom-0 left-4 transform translate-y-1/2 w-32 h-32 rounded-full border-4 border-dark-navy animate-pulse-glow"
+      <div className="card glassmorphic mb-8 animate-fade-in">
+        <h3 className="text-xl font-display text-vibrant-pink mb-4">Profile Settings</h3>
+        <form onSubmit={handleProfileSubmit} className="space-y-4">
+          <div>
+            <label className="block text-white mb-2 font-medium">First Name</label>
+            <input
+              type="text"
+              name="firstName"
+              value={profileForm.firstName}
+              onChange={handleProfileChange}
+              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+              placeholder="Enter your first name"
             />
           </div>
-          <form onSubmit={handleProfileSubmit} className="pt-16">
-            <div className="mb-4">
-              <label className="block text-white mb-2">First Name</label>
-              <input
-                type="text"
-                name="firstName"
-                value={profileForm.firstName}
-                onChange={handleProfileChange}
-                placeholder="Enter your first name"
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white mb-2">Last Name</label>
-              <input
-                type="text"
-                name="lastName"
-                value={profileForm.lastName}
-                onChange={handleProfileChange}
-                placeholder="Enter your last name"
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white mb-2">Profile Picture URL</label>
-              <input
-                type="text"
-                name="profilePicture"
-                value={profileForm.profilePicture}
-                onChange={handleProfilePictureChange}
-                placeholder="Enter profile picture URL"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white mb-2">Banner Picture URL</label>
-              <input
-                type="text"
-                name="bannerPicture"
-                value={profileForm.bannerPicture}
-                onChange={handleBannerPictureChange}
-                placeholder="Enter banner picture URL"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white mb-2">Username</label>
-              <input
-                type="text"
-                name="username"
-                value={profileForm.username}
-                onChange={handleProfileChange}
-                placeholder="Enter your username"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white mb-2">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={profileForm.email}
-                onChange={handleProfileChange}
-                placeholder="Enter your email"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white mb-2">School</label>
-              <input
-                type="text"
-                name="school"
-                value={profileForm.school}
-                onChange={handleProfileChange}
-                placeholder="Enter your school"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white mb-2">Job</label>
-              <input
-                type="text"
-                name="job"
-                value={profileForm.job}
-                onChange={handleProfileChange}
-                placeholder="Enter your job"
-              />
-            </div>
-            <button type="submit" className="btn-primary w-full neumorphic">
-              Save Profile Changes
-            </button>
-          </form>
-        </div>
+          <div>
+            <label className="block text-white mb-2 font-medium">Last Name</label>
+            <input
+              type="text"
+              name="lastName"
+              value={profileForm.lastName}
+              onChange={handleProfileChange}
+              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+              placeholder="Enter your last name"
+            />
+          </div>
+          <div>
+            <label className="block text-white mb-2 font-medium">Username</label>
+            <input
+              type="text"
+              name="username"
+              value={profileForm.username}
+              onChange={handleProfileChange}
+              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+              placeholder="Enter your username"
+            />
+          </div>
+          <div>
+            <label className="block text-white mb-2 font-medium">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={profileForm.email}
+              onChange={handleProfileChange}
+              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+              placeholder="Enter your email"
+            />
+          </div>
+          <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform">
+            Save Profile
+          </button>
+        </form>
       </div>
 
       {/* Notification Preferences */}
-      <div className="card glassmorphic mb-6 animate-fade-in">
-        <div className="settings-section">
-          <h3 className="text-xl font-display">Notification Preferences</h3>
-          <form onSubmit={handleNotificationSubmit}>
-            <div className="mb-4">
-              <label className="flex items-center text-white">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.includes('email_task_completion')}
-                  onChange={() => toggleNotificationPref('email_task_completion')}
-                  className="mr-2"
-                />
-                Email on Task Completion
-              </label>
-              <label className="flex items-center text-white">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.includes('email_new_post')}
-                  onChange={() => toggleNotificationPref('email_new_post')}
-                  className="mr-2"
-                />
-                Email on New Post
-              </label>
-              <label className="flex items-center text-white">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.includes('email_file_request')}
-                  onChange={() => toggleNotificationPref('email_file_request')}
-                  className="mr-2"
-                />
-                Email on File Request (Admins Only)
-              </label>
-              <label className="flex items-center text-white">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.includes('email_share_request')}
-                  onChange={() => toggleNotificationPref('email_share_request')}
-                  className="mr-2"
-                />
-                Email on Share Request (Admins Only)
-              </label>
-              <label className="flex items-center text-white">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.includes('email_team_update')}
-                  onChange={() => toggleNotificationPref('email_team_update')}
-                  className="mr-2"
-                />
-                Email on Team Updates
-              </label>
-              <label className="flex items-center text-white">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.includes('email_activity_log')}
-                  onChange={() => toggleNotificationPref('email_activity_log')}
-                  className="mr-2"
-                />
-                Email on Activity Log Updates
-              </label>
+      <div className="card glassmorphic mb-8 animate-fade-in">
+        <h3 className="text-xl font-display text-vibrant-pink mb-4">Notification Preferences</h3>
+        <form onSubmit={handleNotificationPrefsSubmit} className="space-y-4">
+          {['email', 'sms', 'push'].map(type => (
+            <div key={type} className="flex items-center">
+              <input
+                type="checkbox"
+                checked={notificationPrefs.includes(type)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setNotificationPrefs([...notificationPrefs, type]);
+                  } else {
+                    setNotificationPrefs(notificationPrefs.filter(pref => pref !== type));
+                  }
+                }}
+                className="mr-2 h-5 w-5 text-vibrant-pink focus:ring-vibrant-pink rounded"
+              />
+              <label className="text-white">{type.charAt(0).toUpperCase() + type.slice(1)} Notifications</label>
             </div>
-            <button type="submit" className="btn-primary w-full neumorphic">
-              Save Notification Preferences
-            </button>
-          </form>
-        </div>
+          ))}
+          <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform">
+            Save Notification Preferences
+          </button>
+        </form>
       </div>
 
-      {/* Account Settings */}
-      <div className="card glassmorphic animate-fade-in">
-        <div className="settings-section">
-          <h3 className="text-xl font-display">Account Settings</h3>
-          <form onSubmit={handleAccountSubmit}>
-            <div className="mb-4">
-              <label className="block text-white mb-2">Current Password</label>
-              <input
-                type="password"
-                name="currentPassword"
-                value={accountForm.currentPassword}
-                onChange={handleAccountChange}
-                placeholder="Enter current password"
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white mb-2">New Password</label>
-              <input
-                type="password"
-                name="newPassword"
-                value={accountForm.newPassword}
-                onChange={handleAccountChange}
-                placeholder="Enter new password"
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white mb-2">Confirm New Password</label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={accountForm.confirmPassword}
-                onChange={handleAccountChange}
-                placeholder="Confirm new password"
-                required
-              />
-            </div>
-            <button type="submit" className="btn-primary w-full neumorphic">
-              Update Password
-            </button>
-          </form>
-        </div>
+      {/* Project Visibility */}
+      <div className="card glassmorphic mb-8 animate-fade-in">
+        <h3 className="text-xl font-display text-vibrant-pink mb-4">Project Visibility</h3>
+        <form onSubmit={handleProjectVisibilitySubmit} className="space-y-4">
+          <div>
+            <label className="block text-white mb-2 font-medium">Project Visibility</label>
+            <select
+              value={projectVisibility}
+              onChange={(e) => setProjectVisibility(e.target.value)}
+              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+            >
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+              <option value="team">Team Only</option>
+            </select>
+          </div>
+          <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform">
+            Save Project Visibility
+          </button>
+        </form>
+      </div>
+
+      {/* Back to Profile */}
+      <div className="text-center">
+        <button
+          onClick={() => navigate('/profile')}
+          className="btn-secondary neumorphic hover:scale-105 transition-transform"
+        >
+          Back to Profile
+        </button>
       </div>
     </div>
   );

@@ -46,11 +46,18 @@ const apiRequest = async (endpoint, method = 'GET', body = null) => {
   }
 };
 
+export const getUserDetails = async () => {
+  try {
+    return await apiRequest('/users/me');
+  } catch (error) {
+    throw new Error(`Failed to fetch user details: ${error.message}`);
+  }
+};
+
 export const login = (email, password) => apiRequest('/auth/login', 'POST', { email, password });
 export const register = (data) => apiRequest('/auth/register', 'POST', data);
 export const forgotPassword = (email) => apiRequest('/auth/forgot-password', 'POST', { email });
 export const resetPassword = (token, newPassword) => apiRequest('/auth/reset-password', 'POST', { token, newPassword });
-export const getUserDetails = () => apiRequest('/users/me');
 export const updateProfile = (data) => apiRequest('/users/profile', 'PUT', data);
 export const updateNotificationPreferences = (preferences) => apiRequest('/users/notifications', 'PUT', { preferences });
 export const getUserProjects = () => apiRequest('/users/projects');
