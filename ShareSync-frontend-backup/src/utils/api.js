@@ -75,6 +75,7 @@ export const addSubtask = (projectId, taskId, data) => apiRequest(`/projects/${p
 export const addTaskComment = (projectId, taskId, data) => apiRequest(`/projects/${projectId}/tasks/${taskId}/comments`, 'POST', data);
 export const likeTask = (projectId, taskId) => apiRequest(`/projects/${projectId}/tasks/${taskId}/like`, 'POST');
 export const addTeam = (projectId, data) => apiRequest(`/projects/${projectId}/teams`, 'POST', data);
+export const updateTeam = (projectId, teamId, data) => apiRequest(`/projects/${projectId}/teams/${teamId}`, 'PUT', data);
 export const addFile = (projectId, data) => apiRequest(`/projects/${projectId}/files`, 'POST', data);
 export const requestFile = (projectId, data) => apiRequest(`/projects/${projectId}/files/request`, 'POST', data);
 export const shareProject = (projectId, userId) => apiRequest(`/projects/${projectId}/share`, 'POST', { userId });
