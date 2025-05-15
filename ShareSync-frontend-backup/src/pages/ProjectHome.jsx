@@ -31,6 +31,7 @@ const ProjectHome = ({ user, setUser }) => {
   const [editTask, setEditTask] = useState(null);
   const [newSubtask, setNewSubtask] = useState({});
   const [taskComment, setTaskComment] = useState({});
+  const [subtaskComment, setSubtaskComment] = useState({});
   const [newTeam, setNewTeam] = useState({ name: '', description: '', members: [] });
   const [editTeam, setEditTeam] = useState(null);
   const [newFile, setNewFile] = useState({ name: '', url: '' });
@@ -41,6 +42,8 @@ const ProjectHome = ({ user, setUser }) => {
   const [activityFilter, setActivityFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('activity'); // For sidebar tabs
+  const [showComments, setShowComments] = useState({}); // For toggling post comments
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,6 +55,7 @@ const ProjectHome = ({ user, setUser }) => {
 
         // Initialize comments and subtasks
         const initialComments = {};
+        const initialSubtaskComments = {};
         const initialSubtasks = {};
         if (projectData?.posts && Array.isArray(projectData.posts)) {
           projectData.posts.forEach(post => {
@@ -62,13 +66,19 @@ const ProjectHome = ({ user, setUser }) => {
           projectData.tasks.forEach(task => {
             initialComments[task._id] = '';
             initialSubtasks[task._id] = { title: '', description: '', status: 'To Do' };
+            if (task.subtasks && Array.isArray(task.subtasks)) {
+              task.subtasks.forEach(subtask => {
+                initialSubtaskComments[subtask._id] = '';
+              });
+            }
           });
         }
         setNewComment(initialComments);
         setTaskComment(initialComments);
+        setSubtaskComment(initialSubtaskComments);
         setNewSubtask(initialSubtasks);
 
-        // Mock metrics data (replace with actual API call if available)
+        // Mock metrics data
         setMetrics({
           totalProjects: 10,
           currentProjects: 5,
@@ -89,7 +99,6 @@ const ProjectHome = ({ user, setUser }) => {
     try {
       const updatedProject = await updateProject(id, updateData);
       setProject(updatedProject);
-      // Notify all project members
       await notifyMembers(updatedProject, 'Project updated', `Project "${updatedProject.title}" has been updated.`);
     } catch (err) {
       console.error('Update project error:', err.message);
@@ -100,7 +109,12 @@ const ProjectHome = ({ user, setUser }) => {
   const handleAddPost = async (e) => {
     e.preventDefault();
     try {
-      const updatedProject = await addPost(id, newPost);
+      const postData = {
+        ...newPost,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      const updatedProject = await addPost(id, postData);
       setProject(updatedProject);
       setNewComment({ ...newComment, [updatedProject.posts[updatedProject.posts.length - 1]._id]: '' });
       setNewPost({ title: '', content: '', category: 'Announcement' });
@@ -114,7 +128,6 @@ const ProjectHome = ({ user, setUser }) => {
       const updatedActivityLog = [...(updatedProject?.activityLog || []), newActivity];
       await updateProject(id, { activityLog: updatedActivityLog });
 
-      // Notify all project members
       await notifyMembers(updatedProject, 'New post added', `A new post "${newPost.title}" has been added to project "${updatedProject.title}".`);
     } catch (err) {
       console.error('Add post error:', err.message);
@@ -124,7 +137,12 @@ const ProjectHome = ({ user, setUser }) => {
 
   const handleAddPostComment = async (postId) => {
     try {
-      const updatedProject = await addPostComment(id, postId, { content: newComment[postId] || '' });
+      const commentData = {
+        content: newComment[postId] || '',
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      const updatedProject = await addPostComment(id, postId, commentData);
       setProject(updatedProject);
       setNewComment({ ...newComment, [postId]: '' });
 
@@ -194,9 +212,21 @@ const ProjectHome = ({ user, setUser }) => {
   const handleAddTask = async (e) => {
     e.preventDefault();
     try {
-      const updatedProject = await addTask(id, newTask);
+      const taskData = {
+        ...newTask,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      const updatedProject = await addTask(id, taskData);
       setProject(updatedProject);
       setTaskComment({ ...taskComment, [updatedProject.tasks[updatedProject.tasks.length - 1]._id]: '' });
+      setSubtaskComment(prev => ({
+        ...prev,
+        ...updatedProject.tasks[updatedProject.tasks.length - 1].subtasks.reduce((acc, subtask) => ({
+          ...acc,
+          [subtask._id]: '',
+        }), {}),
+      }));
       setNewSubtask({ ...newSubtask, [updatedProject.tasks[updatedProject.tasks.length - 1]._id]: { title: '', description: '', status: 'To Do' } });
       setNewTask({ title: '', description: '', assignedTo: [], dueDate: '', priority: 'Medium', pictureUrl: '', voiceRecordingUrl: '' });
 
@@ -249,10 +279,18 @@ const ProjectHome = ({ user, setUser }) => {
 
   const handleAddSubtask = async (taskId) => {
     try {
-      const subtaskData = newSubtask[taskId] || { title: '', description: '', status: 'To Do' };
+      const subtaskData = {
+        ...newSubtask[taskId],
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
       const updatedProject = await addSubtask(id, taskId, subtaskData);
       setProject(updatedProject);
       setNewSubtask({ ...newSubtask, [taskId]: { title: '', description: '', status: 'To Do' } });
+      setSubtaskComment(prev => ({
+        ...prev,
+        [updatedProject.tasks.find(t => t._id === taskId).subtasks.slice(-1)[0]._id]: '',
+      }));
 
       const task = updatedProject.tasks.find(t => t._id === taskId);
       const newActivity = {
@@ -273,7 +311,12 @@ const ProjectHome = ({ user, setUser }) => {
 
   const handleAddTaskComment = async (taskId) => {
     try {
-      const updatedProject = await addTaskComment(id, taskId, { content: taskComment[taskId] || '' });
+      const commentData = {
+        content: taskComment[taskId] || '',
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      const updatedProject = await addTaskComment(id, taskId, commentData);
       setProject(updatedProject);
       setTaskComment({ ...taskComment, [taskId]: '' });
 
@@ -291,6 +334,35 @@ const ProjectHome = ({ user, setUser }) => {
     } catch (err) {
       console.error('Add task comment error:', err.message);
       setError('Failed to add task comment. Please try again.');
+    }
+  };
+
+  const handleAddSubtaskComment = async (taskId, subtaskId) => {
+    try {
+      const commentData = {
+        content: subtaskComment[subtaskId] || '',
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      const updatedProject = await addTaskComment(id, taskId, { subtaskId, ...commentData });
+      setProject(updatedProject);
+      setSubtaskComment({ ...subtaskComment, [subtaskId]: '' });
+
+      const task = updatedProject.tasks.find(t => t._id === taskId);
+      const subtask = task.subtasks.find(s => s._id === subtaskId);
+      const newActivity = {
+        action: 'subtask_commented',
+        details: `Commented on subtask: ${subtask?.title || 'Untitled'} in task: ${task?.title || 'Untitled'}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      const updatedActivityLog = [...(updatedProject?.activityLog || []), newActivity];
+      await updateProject(id, { activityLog: updatedActivityLog });
+
+      await notifyMembers(updatedProject, 'New comment on subtask', `A new comment was added to subtask "${subtask?.title}" in task "${task?.title}" in project "${updatedProject.title}".`);
+    } catch (err) {
+      console.error('Add subtask comment error:', err.message);
+      setError('Failed to add subtask comment. Please try again.');
     }
   };
 
@@ -313,6 +385,29 @@ const ProjectHome = ({ user, setUser }) => {
     } catch (err) {
       console.error('Like task error:', err.message);
       setError('Failed to like task. Please try again.');
+    }
+  };
+
+  const handleLikeSubtask = async (taskId, subtaskId) => {
+    try {
+      const updatedProject = await likeTask(id, taskId, { subtaskId });
+      setProject(updatedProject);
+
+      const task = updatedProject.tasks.find(t => t._id === taskId);
+      const subtask = task.subtasks.find(s => s._id === subtaskId);
+      const newActivity = {
+        action: 'subtask_liked',
+        details: `Liked subtask: ${subtask?.title || 'Untitled'} in task: ${task?.title || 'Untitled'}`,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      const updatedActivityLog = [...(updatedProject?.activityLog || []), newActivity];
+      await updateProject(id, { activityLog: updatedActivityLog });
+
+      await notifyMembers(updatedProject, 'Subtask liked', `Subtask "${subtask?.title}" in task "${task?.title}" in project "${updatedProject.title}" was liked by ${user?.username}.`);
+    } catch (err) {
+      console.error('Like subtask error:', err.message);
+      setError('Failed to like subtask. Please try again.');
     }
   };
 
@@ -393,7 +488,11 @@ const ProjectHome = ({ user, setUser }) => {
   const handleAddFile = async (e) => {
     e.preventDefault();
     try {
-      const updatedProject = await addFile(id, newFile);
+      const fileData = {
+        ...newFile,
+        uploadedBy: user?.id || 'Unknown',
+      };
+      const updatedProject = await addFile(id, fileData);
       setProject(updatedProject);
       setNewFile({ name: '', url: '' });
 
@@ -495,9 +594,8 @@ const ProjectHome = ({ user, setUser }) => {
   };
 
   const notifyMembers = async (project, subject, message) => {
-    // Mock notification logic (replace with actual backend implementation)
     console.log('Notifying members:', { project, subject, message, notificationPrefs });
-    // Example: Send email/SMS/push notifications based on user preferences
+    // Backend should handle actual notifications
   };
 
   const filteredActivityLog = (project?.activityLog || []).filter(activity => {
@@ -612,60 +710,81 @@ const ProjectHome = ({ user, setUser }) => {
         <section className="mb-8">
           <div className="card glassmorphic animate-fade-in">
             <h2 className="text-2xl font-display text-vibrant-pink mb-4">Posts</h2>
-            <form onSubmit={handleAddPost} className="mb-6 space-y-4">
-              <div>
-                <label className="block text-white mb-2 font-medium">Title</label>
+            <div className="mb-6 space-y-4">
+              <div className="flex items-center space-x-3">
+                <img
+                  src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                  alt="User Avatar"
+                  className="w-10 h-10 rounded-full"
+                  onError={(e) => (e.target.src = 'https://via.placeholder.com/40')}
+                />
                 <input
                   type="text"
                   value={newPost.title}
                   onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-                  required
+                  placeholder="What's on your mind?"
                   className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                 />
               </div>
-              <div>
-                <label className="block text-white mb-2 font-medium">Content</label>
+              <div className="space-y-4">
                 <textarea
                   value={newPost.content}
                   onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-                  required
+                  placeholder="Add more details..."
                   className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
                 />
+                <div className="flex items-center space-x-3">
+                  <select
+                    value={newPost.category}
+                    onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}
+                    className="p-2 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  >
+                    <option value="Announcement">Announcement</option>
+                    <option value="Poll">Poll</option>
+                    <option value="Picture">Picture</option>
+                  </select>
+                  <button onClick={handleAddPost} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                    Post
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="block text-white mb-2 font-medium">Category</label>
-                <select
-                  value={newPost.category}
-                  onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                >
-                  <option value="Announcement">Announcement</option>
-                  <option value="Poll">Poll</option>
-                  <option value="Picture">Picture</option>
-                </select>
-              </div>
-              <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                Add Post
-              </button>
-            </form>
+            </div>
 
             {(!project?.posts || project.posts.length === 0) ? (
               <p className="text-white">No posts yet.</p>
             ) : (
               <div className="space-y-6">
                 {project.posts.map(post => (
-                  <div key={post._id} className="card glassmorphic transform hover: translate-x-2 transition-transform animate-fade-in">
-                    <h3 className="text-lg font-display text-vibrant-pink">{post.title}</h3>
-                    <p className="text-gray-300 mt-2">{post.content}</p>
-                    <p className="text-sm text-white mt-2">Category: {post.category}</p>
-                    <p className="text-sm text-white">Posted by: {post.userId}</p>
-                    <p className="text-sm text-white">Likes: {post.likes || 0}</p>
-                    <div className="flex space-x-3 mt-3">
+                  <div key={post._id} className="card glassmorphic animate-fade-in">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <img
+                        src={'https://via.placeholder.com/40'} // Placeholder; replace with post.userId's avatar if available
+                        alt="Post Author"
+                        className="w-10 h-10 rounded-full"
+                      />
+                      <div>
+                        <p className="text-white font-medium">{post.userId}</p>
+                        <p className="text-sm text-gray-300">{new Date(post.createdAt).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-display text-vibrant-pink mb-2">{post.title}</h3>
+                    <p className="text-gray-300">{post.content}</p>
+                    {post.category !== 'Announcement' && (
+                      <p className="text-sm text-white mt-2">Category: {post.category}</p>
+                    )}
+                    <div className="flex items-center space-x-4 mt-3 border-t border-gray-600 pt-3">
                       <button
                         onClick={() => handleLikePost(post._id)}
+                        className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-1"
+                      >
+                        <span>Like</span>
+                        <span>({post.likes || 0})</span>
+                      </button>
+                      <button
+                        onClick={() => setShowComments(prev => ({ ...prev, [post._id]: !prev[post._id] }))}
                         className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
                       >
-                        Like
+                        Comment
                       </button>
                       <button
                         onClick={() => handleSharePost(post._id)}
@@ -674,31 +793,49 @@ const ProjectHome = ({ user, setUser }) => {
                         Share
                       </button>
                     </div>
-                    <div className="mt-4">
-                      <h4 className="text-lg text-vibrant-pink">Comments</h4>
-                      {(!post.comments || post.comments.length === 0) ? (
-                        <p className="text-white">No comments yet.</p>
-                      ) : (
-                        post.comments.map((comment, idx) => (
-                          <div key={idx} className="text-gray-300 mt-2">
-                            <p>{comment.content} - by {comment.userId}</p>
-                          </div>
-                        ))
-                      )}
-                      <input
-                        type="text"
-                        value={newComment[post._id] || ''}
-                        onChange={(e) => setNewComment({ ...newComment, [post._id]: e.target.value })}
-                        placeholder="Add a comment..."
-                        className="w-full mt-3 p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                      />
-                      <button
-                        onClick={() => handleAddPostComment(post._id)}
-                        className="btn-primary mt-3 neumorphic hover:scale-105 transition-transform"
-                      >
-                        Comment
-                      </button>
-                    </div>
+                    {showComments[post._id] && (
+                      <div className="mt-4">
+                        <h4 className="text-lg text-vibrant-pink mb-2">Comments</h4>
+                        {(!post.comments || post.comments.length === 0) ? (
+                          <p className="text-white">No comments yet.</p>
+                        ) : (
+                          post.comments.map((comment, idx) => (
+                            <div key={idx} className="flex items-start space-x-3 mb-2">
+                              <img
+                                src={'https://via.placeholder.com/32'}
+                                alt="Comment Author"
+                                className="w-8 h-8 rounded-full"
+                              />
+                              <div className="bg-dark-navy p-2 rounded-lg">
+                                <p className="text-white font-medium">{comment.userId}</p>
+                                <p className="text-gray-300">{comment.content}</p>
+                                <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                        <div className="flex items-center space-x-3 mt-3">
+                          <img
+                            src={user?.profilePicture || 'https://via.placeholder.com/32'}
+                            alt="User Avatar"
+                            className="w-8 h-8 rounded-full"
+                          />
+                          <input
+                            type="text"
+                            value={newComment[post._id] || ''}
+                            onChange={(e) => setNewComment({ ...newComment, [post._id]: e.target.value })}
+                            placeholder="Write a comment..."
+                            className="w-full p-2 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                          />
+                          <button
+                            onClick={() => handleAddPostComment(post._id)}
+                            className="btn-primary neumorphic hover:scale-105 transition-transform"
+                          >
+                            Post
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -709,89 +846,87 @@ const ProjectHome = ({ user, setUser }) => {
         <section className="mb-8">
           <div className="card glassmorphic animate-fade-in">
             <h2 className="text-2xl font-display text-vibrant-pink mb-4">Tasks</h2>
-            {isAdmin && (
-              <form onSubmit={handleAddTask} className="mb-6 space-y-4">
-                <div>
-                  <label className="block text-white mb-2 font-medium">Title</label>
-                  <input
-                    type="text"
-                    value={newTask.title}
-                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    required
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Description (Markdown Supported)</label>
-                  <textarea
-                    value={newTask.description}
-                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    placeholder="Enter task description (e.g., **bold**, *italic*, - list item)"
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Picture URL</label>
-                  <input
-                    type="text"
-                    value={newTask.pictureUrl}
-                    onChange={(e) => setNewTask({ ...newTask, pictureUrl: e.target.value })}
-                    placeholder="Enter picture URL"
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Voice Recording URL</label>
-                  <input
-                    type="text"
-                    value={newTask.voiceRecordingUrl}
-                    onChange={(e) => setNewTask({ ...newTask, voiceRecordingUrl: e.target.value })}
-                    placeholder="Enter voice recording URL"
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Due Date</label>
-                  <input
-                    type="date"
-                    value={newTask.dueDate}
-                    onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Priority</label>
-                  <select
-                    value={newTask.priority}
-                    onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Assigned To</label>
-                  <select
-                    multiple
-                    value={newTask.assignedTo}
-                    onChange={(e) => setNewTask({ ...newTask, assignedTo: Array.from(e.target.selectedOptions, option => option.value) })}
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  >
-                    {(project?.sharedWith || []).map(userId => (
-                      <option key={userId} value={userId}>{userId}</option>
-                    ))}
-                    {(project?.teams || []).map(team => (
-                      <option key={`team-${team._id}`} value={`team-${team._id}`}>{team.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                  Add Task
-                </button>
-              </form>
-            )}
+            <form onSubmit={handleAddTask} className="mb-6 space-y-4">
+              <div>
+                <label className="block text-white mb-2 font-medium">Title</label>
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  required
+                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 font-medium">Description (Markdown Supported)</label>
+                <textarea
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  placeholder="Enter task description (e.g., **bold**, *italic*, - list item)"
+                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 font-medium">Picture URL</label>
+                <input
+                  type="text"
+                  value={newTask.pictureUrl}
+                  onChange={(e) => setNewTask({ ...newTask, pictureUrl: e.target.value })}
+                  placeholder="Enter picture URL"
+                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 font-medium">Voice Recording URL</label>
+                <input
+                  type="text"
+                  value={newTask.voiceRecordingUrl}
+                  onChange={(e) => setNewTask({ ...newTask, voiceRecordingUrl: e.target.value })}
+                  placeholder="Enter voice recording URL"
+                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 font-medium">Due Date</label>
+                <input
+                  type="date"
+                  value={newTask.dueDate}
+                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 font-medium">Priority</label>
+                <select
+                  value={newTask.priority}
+                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-white mb-2 font-medium">Assigned To</label>
+                <select
+                  multiple
+                  value={newTask.assignedTo}
+                  onChange={(e) => setNewTask({ ...newTask, assignedTo: Array.from(e.target.selectedOptions, option => option.value) })}
+                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                >
+                  {(project?.sharedWith || []).map(userId => (
+                    <option key={userId} value={userId}>{userId}</option>
+                  ))}
+                  {(project?.teams || []).map(team => (
+                    <option key={`team-${team._id}`} value={`team-${team._id}`}>{team.name}</option>
+                  ))}
+                </select>
+              </div>
+              <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                Add Task
+              </button>
+            </form>
 
             {(!project?.tasks || project.tasks.length === 0) ? (
               <p className="text-white">No tasks yet.</p>
@@ -904,6 +1039,17 @@ const ProjectHome = ({ user, setUser }) => {
                       </div>
                     ) : (
                       <>
+                        <div className="flex items-center space-x-3 mb-3">
+                          <img
+                            src={'https://via.placeholder.com/40'}
+                            alt="Task Creator"
+                            className="w-10 h-10 rounded-full"
+                          />
+                          <div>
+                            <p className="text-white font-medium">{task.userId}</p>
+                            <p className="text-sm text-gray-300">{new Date(task.createdAt).toLocaleString()}</p>
+                          </div>
+                        </div>
                         <h3 className="text-lg font-display text-vibrant-pink">{task.title}</h3>
                         <p className="text-gray-300 mt-2">{task.description}</p>
                         {task.pictureUrl && (
@@ -928,26 +1074,22 @@ const ProjectHome = ({ user, setUser }) => {
                         <p className="text-sm text-white">Priority: {task.priority || 'Medium'}</p>
                         <p className="text-sm text-white">Assigned To: {task.assignedTo || 'None'}</p>
                         <p className="text-sm text-white">Likes: {task.likes || 0}</p>
-                        {(task.assignedTo === user?.id || isAdmin) && (
-                          <select
-                            value={task.status}
-                            onChange={(e) => handleUpdateTask(task._id, { status: e.target.value })}
-                            className="w-full mt-3 p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          >
-                            <option value="To Do">To Do</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Completed">Completed</option>
-                          </select>
-                        )}
+                        <select
+                          value={task.status}
+                          onChange={(e) => handleUpdateTask(task._id, { status: e.target.value })}
+                          className="w-full mt-3 p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                        >
+                          <option value="To Do">To Do</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Completed">Completed</option>
+                        </select>
                         <div className="flex space-x-3 mt-3">
-                          {isAdmin && (
-                            <button
-                              onClick={() => handleEditTask(task)}
-                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                            >
-                              Edit
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleEditTask(task)}
+                            className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
+                          >
+                            Edit
+                          </button>
                           <button
                             onClick={() => handleLikeTask(task._id)}
                             className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
@@ -967,45 +1109,104 @@ const ProjectHome = ({ user, setUser }) => {
                             <p className="text-white">No subtasks yet.</p>
                           ) : (
                             task.subtasks.map((subtask, idx) => (
-                              <div key={idx} className="text-gray-300 ml-4 mt-2">
-                                <p>{subtask.title} - {subtask.status}</p>
-                                <p className="text-sm">{subtask.description}</p>
+                              <div key={idx} className="ml-4 mt-2 card glassmorphic p-3">
+                                <div className="flex items-center space-x-3 mb-2">
+                                  <img
+                                    src={'https://via.placeholder.com/32'}
+                                    alt="Subtask Creator"
+                                    className="w-8 h-8 rounded-full"
+                                  />
+                                  <div>
+                                    <p className="text-white font-medium">{subtask.userId}</p>
+                                    <p className="text-xs text-gray-300">{new Date(subtask.createdAt).toLocaleString()}</p>
+                                  </div>
+                                </div>
+                                <p className="text-gray-300">{subtask.title} - {subtask.status}</p>
+                                <p className="text-sm text-gray-300">{subtask.description}</p>
+                                <p className="text-sm text-white mt-1">Likes: {subtask.likes || 0}</p>
+                                <div className="flex space-x-3 mt-2">
+                                  <button
+                                    onClick={() => handleLikeSubtask(task._id, subtask._id)}
+                                    className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
+                                  >
+                                    Like
+                                  </button>
+                                </div>
+                                <div className="mt-2">
+                                  <h5 className="text-sm text-vibrant-pink">Comments</h5>
+                                  {(!subtask.comments || subtask.comments.length === 0) ? (
+                                    <p className="text-white text-sm">No comments yet.</p>
+                                  ) : (
+                                    subtask.comments.map((comment, cIdx) => (
+                                      <div key={cIdx} className="flex items-start space-x-2 mt-1">
+                                        <img
+                                          src={'https://via.placeholder.com/24'}
+                                          alt="Comment Author"
+                                          className="w-6 h-6 rounded-full"
+                                        />
+                                        <div className="bg-dark-navy p-1 rounded-lg">
+                                          <p className="text-white text-sm font-medium">{comment.userId}</p>
+                                          <p className="text-gray-300 text-sm">{comment.content}</p>
+                                          <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
+                                        </div>
+                                      </div>
+                                    ))
+                                  )}
+                                  <div className="flex items-center space-x-2 mt-2">
+                                    <img
+                                      src={user?.profilePicture || 'https://via.placeholder.com/24'}
+                                      alt="User Avatar"
+                                      className="w-6 h-6 rounded-full"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={subtaskComment[subtask._id] || ''}
+                                      onChange={(e) => setSubtaskComment({ ...subtaskComment, [subtask._id]: e.target.value })}
+                                      placeholder="Add a comment..."
+                                      className="w-full p-1 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                    />
+                                    <button
+                                      onClick={() => handleAddSubtaskComment(task._id, subtask._id)}
+                                      className="btn-primary text-sm neumorphic hover:scale-105 transition-transform"
+                                    >
+                                      Post
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
                             ))
                           )}
-                          {isAdmin && (
-                            <div className="mt-3 ml-4 space-y-3">
-                              <input
-                                type="text"
-                                placeholder="Subtask Title"
-                                value={newSubtask[task._id]?.title || ''}
-                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], title: e.target.value } })}
-                                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                              />
-                              <input
-                                type="text"
-                                placeholder="Description"
-                                value={newSubtask[task._id]?.description || ''}
-                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], description: e.target.value } })}
-                                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                              />
-                              <select
-                                value={newSubtask[task._id]?.status || 'To Do'}
-                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], status: e.target.value } })}
-                                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                              >
-                                <option value="To Do">To Do</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Completed">Completed</option>
-                              </select>
-                              <button
-                                onClick={() => handleAddSubtask(task._id)}
-                                className="btn-primary mt-2 neumorphic hover:scale-105 transition-transform"
-                              >
-                                Add Subtask
-                              </button>
-                            </div>
-                          )}
+                          <div className="mt-3 ml-4 space-y-3">
+                            <input
+                              type="text"
+                              placeholder="Subtask Title"
+                              value={newSubtask[task._id]?.title || ''}
+                              onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], title: e.target.value } })}
+                              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Description"
+                              value={newSubtask[task._id]?.description || ''}
+                              onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], description: e.target.value } })}
+                              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            />
+                            <select
+                              value={newSubtask[task._id]?.status || 'To Do'}
+                              onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], status: e.target.value } })}
+                              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            >
+                              <option value="To Do">To Do</option>
+                              <option value="In Progress">In Progress</option>
+                              <option value="Completed">Completed</option>
+                            </select>
+                            <button
+                              onClick={() => handleAddSubtask(task._id)}
+                              className="btn-primary mt-2 neumorphic hover:scale-105 transition-transform"
+                            >
+                              Add Subtask
+                            </button>
+                          </div>
                         </div>
                         <div className="mt-4">
                           <h4 className="text-lg text-vibrant-pink">Comments</h4>
@@ -1013,24 +1214,40 @@ const ProjectHome = ({ user, setUser }) => {
                             <p className="text-white">No comments yet.</p>
                           ) : (
                             task.comments.map((comment, idx) => (
-                              <div key={idx} className="text-gray-300 ml-4 mt-2">
-                                <p>{comment.content} - by {comment.userId}</p>
+                              <div key={idx} className="flex items-start space-x-3 mb-2">
+                                <img
+                                  src={'https://via.placeholder.com/32'}
+                                  alt="Comment Author"
+                                  className="w-8 h-8 rounded-full"
+                                />
+                                <div className="bg-dark-navy p-2 rounded-lg">
+                                  <p className="text-white font-medium">{comment.userId}</p>
+                                  <p className="text-gray-300">{comment.content}</p>
+                                  <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
+                                </div>
                               </div>
                             ))
                           )}
-                          <input
-                            type="text"
-                            value={taskComment[task._id] || ''}
-                            onChange={(e) => setTaskComment({ ...taskComment, [task._id]: e.target.value })}
-                            placeholder="Add a comment..."
-                            className="w-full mt-3 p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          />
-                          <button
-                            onClick={() => handleAddTaskComment(task._id)}
-                            className="btn-primary mt-2 neumorphic hover:scale-105 transition-transform"
-                          >
-                            Comment
-                          </button>
+                          <div className="flex items-center space-x-3 mt-3">
+                            <img
+                              src={user?.profilePicture || 'https://via.placeholder.com/32'}
+                              alt="User Avatar"
+                              className="w-8 h-8 rounded-full"
+                            />
+                            <input
+                              type="text"
+                              value={taskComment[task._id] || ''}
+                              onChange={(e) => setTaskComment({ ...taskComment, [task._id]: e.target.value })}
+                              placeholder="Add a comment..."
+                              className="w-full p-2 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            />
+                            <button
+                              onClick={() => handleAddTaskComment(task._id)}
+                              className="btn-primary neumorphic hover:scale-105 transition-transform"
+                            >
+                              Post
+                            </button>
+                          </div>
                         </div>
                       </>
                     )}
@@ -1176,11 +1393,69 @@ const ProjectHome = ({ user, setUser }) => {
             )}
           </div>
         </section>
+      </div>
 
-        <section className="mb-8">
-          <div className="card glassmorphic animate-fade-in">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Files</h2>
-            {isAdmin && (
+      {/* Right Sidebar with Tabs */}
+      <div className="md:col-span-2">
+        <div className="card glassmorphic animate-fade-in mb-8">
+          <div className="flex space-x-4 border-b border-gray-600">
+            <button
+              onClick={() => setActiveTab('activity')}
+              className={`p-3 ${activeTab === 'activity' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
+            >
+              Activity
+            </button>
+            <button
+              onClick={() => setActiveTab('files')}
+              className={`p-3 ${activeTab === 'files' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
+            >
+              Files
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`p-3 ${activeTab === 'settings' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
+            >
+              Settings
+            </button>
+          </div>
+
+          {activeTab === 'activity' && (
+            <div className="pt-4">
+              <h2 className="text-2xl font-display text-vibrant-pink mb-4">Activity Log</h2>
+              <div className="mb-4">
+                <label className="block text-white mb-2 font-medium">Filter Activity</label>
+                <select
+                  value={activityFilter}
+                  onChange={(e) => setActivityFilter(e.target.value)}
+                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                >
+                  <option value="all">All</option>
+                  <option value="tasks">Tasks</option>
+                  <option value="posts">Posts</option>
+                  <option value="files">Files</option>
+                  <option value="shares">Shares</option>
+                  <option value="teams">Teams</option>
+                </select>
+              </div>
+              {filteredActivityLog.length === 0 ? (
+                <p className="text-white">No activity yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {filteredActivityLog.map((activity, idx) => (
+                    <div key={idx} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow">
+                      <p className="text-white">{activity.details}</p>
+                      <p className="text-sm text-gray-300">By: {activity.userId}</p>
+                      <p className="text-sm text-gray-300">{new Date(activity.createdAt).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'files' && (
+            <div className="pt-4">
+              <h2 className="text-2xl font-display text-vibrant-pink mb-4">Files</h2>
               <form onSubmit={handleAddFile} className="mb-6 space-y-4">
                 <div>
                   <label className="block text-white mb-2 font-medium">File Name</label>
@@ -1206,116 +1481,73 @@ const ProjectHome = ({ user, setUser }) => {
                   Add File
                 </button>
               </form>
-            )}
-            <form onSubmit={handleRequestFile} className="mb-6 space-y-4">
-              <div>
-                <label className="block text-white mb-2 font-medium">Request File Name</label>
-                <input
-                  type="text"
-                  value={newFile.name}
-                  onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
-                  required
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-white mb-2 font-medium">Request File URL</label>
-                <input
-                  type="text"
-                  value={newFile.url}
-                  onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
-                  required
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                />
-              </div>
-              <button type="submit" className="btn-secondary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                Request File
-              </button>
-            </form>
+              <form onSubmit={handleRequestFile} className="mb-6 space-y-4">
+                <div>
+                  <label className="block text-white mb-2 font-medium">Request File Name</label>
+                  <input
+                    type="text"
+                    value={newFile.name}
+                    onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
+                    required
+                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white mb-2 font-medium">Request File URL</label>
+                  <input
+                    type="text"
+                    value={newFile.url}
+                    onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
+                    required
+                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  />
+                </div>
+                <button type="submit" className="btn-secondary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                  Request File
+                </button>
+              </form>
 
-            {(!project?.files || project.files.length === 0) ? (
-              <p className="text-white">No files yet.</p>
-            ) : (
-              <div className="space-y-4">
-                {project.files.map(file => (
-                  <div key={file._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow">
-                    <h3 className="text-lg font-display text-vibrant-pink">{file.name}</h3>
-                    <a
-                      href={file.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                    >
-                      View File
-                    </a>
-                    <p className="text-sm text-white mt-2">Uploaded by: {file.uploadedBy}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-
-      {/* Right Sidebar */}
-      <div className="md:col-span-2">
-        <section className="mb-8">
-          <div className="card glassmorphic animate-fade-in">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Activity Log</h2>
-            <div className="mb-4">
-              <label className="block text-white mb-2 font-medium">Filter Activity</label>
-              <select
-                value={activityFilter}
-                onChange={(e) => setActivityFilter(e.target.value)}
-                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-              >
-                <option value="all">All</option>
-                <option value="tasks">Tasks</option>
-                <option value="posts">Posts</option>
-                <option value="files">Files</option>
-                <option value="shares">Shares</option>
-                <option value="teams">Teams</option>
-              </select>
+              {(!project?.files || project.files.length === 0) ? (
+                <p className="text-white">No files yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {project.files.map(file => (
+                    <div key={file._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow">
+                      <h3 className="text-lg font-display text-vibrant-pink">{file.name}</h3>
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
+                      >
+                        Open File
+                      </a>
+                      <p className="text-sm text-white mt-2">Uploaded by: {file.uploadedBy}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            {filteredActivityLog.length === 0 ? (
-              <p className="text-white">No activity yet.</p>
-            ) : (
-              <div className="space-y-4">
-                {filteredActivityLog.map((activity, idx) => (
-                  <div key={idx} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow">
-                    <p className="text-white">{activity.details}</p>
-                    <p className="text-sm text-gray-300">By: {activity.userId}</p>
-                    <p className="text-sm text-gray-300">{new Date(activity.createdAt).toLocaleString()}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
+          )}
 
-        <section className="mb-8">
-          <div className="card glassmorphic animate-fade-in">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Share Project</h2>
-            <button
-              onClick={() => setShowShareModal(true)}
-              className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow"
-            >
-              Share Project
-            </button>
-          </div>
-        </section>
-
-        <section className="mb-8">
-          <div className="card glassmorphic animate-fade-in">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Settings</h2>
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow"
-            >
-              Update Notification Preferences
-            </button>
-          </div>
-        </section>
+          {activeTab === 'settings' && (
+            <div className="pt-4">
+              <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Settings</h2>
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow mb-4"
+              >
+                Share Project
+              </button>
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow"
+              >
+                Update Notification Preferences
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Share Modal */}
@@ -1342,115 +1574,115 @@ const ProjectHome = ({ user, setUser }) => {
                 Request Share
               </button>
               <button
-                onClick={() => setShowShareModal(false)}
-                className="btn-secondary neumorphic hover:scale-105 transition-transform"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Settings Modal */}
-      {showSettingsModal && (
-        <>
-          <div className="modal-overlay" onClick={() => setShowSettingsModal(false)}></div>
-          <div className="modal glassmorphic">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-6">Notification Preferences</h2>
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.email}
-                  onChange={(e) => setNotificationPrefs({ ...notificationPrefs, email: e.target.checked })}
-                  className="mr-2"
-                />
-                <label className="text-white">Email Notifications</label>
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.sms}
-                  onChange={(e) => setNotificationPrefs({ ...notificationPrefs, sms: e.target.checked })}
-                  className="mr-2"
-                />
-                <label className="text-white">SMS Notifications</label>
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.push}
-                  onChange={(e) => setNotificationPrefs({ ...notificationPrefs, push: e.target.checked })}
-                  className="mr-2"
-                />
-                <label className="text-white">Push Notifications</label>
-              </div>
-              <div>
-                <label className="block text-white mb-2 font-medium">Notify me about:</label>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={notificationPrefs.tasks}
-                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, tasks: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <label className="text-white">Task Updates</label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={notificationPrefs.posts}
-                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, posts: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <label className="text-white">Post Updates</label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={notificationPrefs.files}
-                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, files: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <label className="text-white">File Updates</label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={notificationPrefs.shares}
-                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, shares: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <label className="text-white">Share Requests</label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={notificationPrefs.teams}
-                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, teams: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <label className="text-white">Team Updates</label>
-                </div>
-              </div>
-            </div>
-            <div className="flex space-x-3 mt-6">
-              <button onClick={handleUpdateNotificationPrefs} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                Save
-              </button>
-              <button
-                onClick={() => setShowSettingsModal(false)}
-                className="btn-secondary neumorphic hover:scale-105 transition-transform"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-export default ProjectHome;
+                                onClick={() => setShowShareModal(false)}
+                                className="btn-secondary neumorphic hover:scale-105 transition-transform"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                
+                      {/* Settings Modal */}
+                      {showSettingsModal && (
+                        <>
+                          <div className="modal-overlay" onClick={() => setShowSettingsModal(false)}></div>
+                          <div className="modal glassmorphic">
+                            <h2 className="text-2xl font-display text-vibrant-pink mb-6">Notification Preferences</h2>
+                            <div className="space-y-4">
+                              <div className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={notificationPrefs.email}
+                                  onChange={(e) => setNotificationPrefs({ ...notificationPrefs, email: e.target.checked })}
+                                  className="mr-2"
+                                />
+                                <label className="text-white">Email Notifications</label>
+                              </div>
+                              <div className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={notificationPrefs.sms}
+                                  onChange={(e) => setNotificationPrefs({ ...notificationPrefs, sms: e.target.checked })}
+                                  className="mr-2"
+                                />
+                                <label className="text-white">SMS Notifications</label>
+                              </div>
+                              <div className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={notificationPrefs.push}
+                                  onChange={(e) => setNotificationPrefs({ ...notificationPrefs, push: e.target.checked })}
+                                  className="mr-2"
+                                />
+                                <label className="text-white">Push Notifications</label>
+                              </div>
+                              <div>
+                                <label className="block text-white mb-2 font-medium">Notify me about:</label>
+                                <div className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={notificationPrefs.tasks}
+                                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, tasks: e.target.checked })}
+                                    className="mr-2"
+                                  />
+                                  <label className="text-white">Task Updates</label>
+                                </div>
+                                <div className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={notificationPrefs.posts}
+                                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, posts: e.target.checked })}
+                                    className="mr-2"
+                                  />
+                                  <label className="text-white">Post Updates</label>
+                                </div>
+                                <div className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={notificationPrefs.files}
+                                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, files: e.target.checked })}
+                                    className="mr-2"
+                                  />
+                                  <label className="text-white">File Updates</label>
+                                </div>
+                                <div className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={notificationPrefs.shares}
+                                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, shares: e.target.checked })}
+                                    className="mr-2"
+                                  />
+                                  <label className="text-white">Share Requests</label>
+                                </div>
+                                <div className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={notificationPrefs.teams}
+                                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, teams: e.target.checked })}
+                                    className="mr-2"
+                                  />
+                                  <label className="text-white">Team Updates</label>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex space-x-3 mt-6">
+                              <button onClick={handleUpdateNotificationPrefs} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setShowSettingsModal(false)}
+                                className="btn-secondary neumorphic hover:scale-105 transition-transform"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                };
+                
+                export default ProjectHome;
