@@ -1,262 +1,177 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getProjectMetrics, getProjects, updateProject } from '../utils/api';
+import { getProjects, createProject } from '../utils/api';
 
-const Projects = () => {
+const Projects = ({ user }) => {
   const navigate = useNavigate();
-  const [metrics, setMetrics] = useState({
-    totalProjects: 0,
-    currentProjects: 0,
-    pastProjects: 0,
-    tasksCompleted: 0,
-  });
   const [projects, setProjects] = useState([]);
-  const [editing, setEditing] = useState({ id: null, type: null, value: '' });
+  const [newProject, setNewProject] = useState({
+    title: '',
+    description: '',
+    category: 'Personal',
+    status: 'Active',
+    admins: [user?.id],
+    sharedWith: [],
+    announcement: '',
+    snapshot: '',
+  });
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProjects = async () => {
       try {
-        // Fetch project metrics
-        try {
-          console.log('Fetching project metrics...');
-          const metricsData = await getProjectMetrics();
-          setMetrics(metricsData);
-        } catch (err) {
-          console.error('Failed to fetch project metrics:', err.message);
-          setError(prev => prev ? `${prev}; Project metrics failed: ${err.message}` : `Project metrics failed: ${err.message}`);
-          setMetrics({ totalProjects: 0, currentProjects: 0, pastProjects: 0, tasksCompleted: 0 });
-        }
-
-        // Fetch projects
-        try {
-          console.log('Fetching projects...');
-          const projectsData = await getProjects();
-          setProjects(projectsData);
-        } catch (err) {
-          console.error('Failed to fetch projects:', err.message);
-          setError(prev => prev ? `${prev}; Projects failed: ${err.message}` : `Projects failed: ${err.message}`);
-          setProjects([]);
-        }
+        console.log('Fetching projects...');
+        const projectList = await getProjects();
+        console.log('Projects:', projectList);
+        setProjects(projectList);
       } catch (err) {
-        setError(`Unexpected error: ${err.message}`);
-        console.error('Projects page unexpected error:', err.message);
+        console.error('Failed to fetch projects:', err.message);
+        setError(`Failed to load projects: ${err.message}. Please try again later.`);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchProjects();
   }, []);
 
-  const handleCreateProject = () => {
-    navigate('/create-project');
+  const handleInputChange = (e) => {
+    setNewProject({ ...newProject, [e.target.name]: e.target.value });
   };
 
-  const handleUpdateAnnouncement = async (projectId, announcement) => {
+  const handleCreateProject = async (e) => {
+    e.preventDefault();
     try {
-      await updateProject(projectId, { announcement });
-      const updatedProjects = await getProjects();
-      setProjects(updatedProjects);
-      setEditing({ id: null, type: null, value: '' });
+      const createdProject = await createProject(newProject);
+      setProjects([...projects, createdProject]);
+      setNewProject({
+        title: '',
+        description: '',
+        category: 'Personal',
+        status: 'Active',
+        admins: [user?.id],
+        sharedWith: [],
+        announcement: '',
+        snapshot: '',
+      });
+      setShowCreateForm(false);
     } catch (err) {
-      setError(`Failed to update announcement: ${err.message}`);
-      console.error('Update announcement error:', err.message);
+      console.error('Create project error:', err.message);
+      setError('Failed to create project. Please try again.');
     }
   };
 
-  const handleUpdateSnapshot = async (projectId, snapshot) => {
-    try {
-      await updateProject(projectId, { snapshot });
-      const updatedProjects = await getProjects();
-      setProjects(updatedProjects);
-      setEditing({ id: null, type: null, value: '' });
-    } catch (err) {
-      setError(`Failed to update snapshot: ${err.message}`);
-      console.error('Update snapshot error:', err.message);
-    }
+  const handleProjectClick = (projectId) => {
+    navigate(`/project/${projectId}`, { state: { user } }); // Pass user via navigation state
   };
 
-  const handleUpdateStatus = async (projectId, status) => {
-    try {
-      await updateProject(projectId, { status });
-      const updatedProjects = await getProjects();
-      setProjects(updatedProjects);
-    } catch (err) {
-      setError(`Failed to update status: ${err.message}`);
-      console.error('Update status error:', err.message);
-    }
-  };
+  if (!user) {
+    return <div className="text-white text-center mt-10">User not authenticated. Please log in.</div>;
+  }
 
   if (loading) {
-    return <div className="text-white text-center mt-10">Loading...</div>;
+    return <div className="text-white text-center mt-10 animate-shimmer">Loading...</div>;
   }
 
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 px-4">
-      {/* Center Content */}
-      <div className="md:col-span-2">
-        <header className="mb-6 animate-fade-in">
-          <h1 className="text-3xl font-display text-vibrant-pink">Projects</h1>
-        </header>
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <h2 className="text-2xl font-display text-vibrant-pink mb-6 animate-fade-in">Your Projects</h2>
+      {error && (
+        <div className="bg-red-500 text-white p-3 rounded-lg mb-6 animate-shimmer">
+          {error}
+        </div>
+      )}
 
-        {error && <p className="text-red-500 mb-4">{error}</p>}
-
-        <section className="mb-6 animate-fade-in">
-          <button
-            onClick={handleCreateProject}
-            className="btn-primary w-full mb-4"
-          >
-            Create New Project
-          </button>
-          <div className="card">
-            <h2 className="text-xl font-display text-vibrant-pink mb-4">Your Progress</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform">
-                <h3 className="text-lg text-white">Total Projects</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.totalProjects}</p>
-              </div>
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform">
-                <h3 className="text-lg text-white">Current Projects</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.currentProjects}</p>
-              </div>
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform">
-                <h3 className="text-lg text-white">Past Projects</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.pastProjects}</p>
-              </div>
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform">
-                <h3 className="text-lg text-white">Tasks Completed</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.tasksCompleted}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mb-6">
-          <h2 className="text-xl font-display text-vibrant-pink mb-4 animate-fade-in">Your Projects</h2>
-          {projects.length === 0 ? (
-            <div className="card text-center animate-fade-in">
-              <p className="text-white">No projects yet. Create one to get started!</p>
-              <button onClick={handleCreateProject} className="btn-primary mt-4">
-                Create Project
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {projects.map(project => (
-                <div key={project._id} className="card animate-fade-in">
-                  <div
-                    className="cursor-pointer"
-                    onClick={() => navigate(`/project/${project._id}`)}
-                  >
-                    <h3 className="text-lg font-display text-vibrant-pink">{project.title}</h3>
-                    <p className="text-gray-300">{project.description}</p>
-                    <p className="text-sm mt-2 text-white">Category: {project.category}</p>
-                  </div>
-
-                  <div className="mt-2">
-                    <label className="block text-white mb-1">Status:</label>
-                    <select
-                      value={project.status}
-                      onChange={(e) => handleUpdateStatus(project._id, e.target.value)}
-                      className="w-full"
-                    >
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-
-                  <div className="mt-2">
-                    <label className="block text-white mb-1">Announcement:</label>
-                    {editing.id === project._id && editing.type === 'announcement' ? (
-                      <div>
-                        <textarea
-                          value={editing.value}
-                          onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                          className="w-full"
-                        />
-                        <button
-                          onClick={() => handleUpdateAnnouncement(project._id, editing.value)}
-                          className="btn-primary mt-2 mr-2"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditing({ id: null, type: null, value: '' })}
-                          className="btn-secondary mt-2"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-white">{project.announcement || 'No announcement'}</p>
-                        <button
-                          onClick={() => setEditing({ id: project._id, type: 'announcement', value: project.announcement || '' })}
-                          className="text-vibrant-pink hover:underline"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-2">
-                    <label className="block text-white mb-1">Snapshot:</label>
-                    {editing.id === project._id && editing.type === 'snapshot' ? (
-                      <div>
-                        <input
-                          type="text"
-                          value={editing.value}
-                          onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                          className="w-full"
-                        />
-                        <button
-                          onClick={() => handleUpdateSnapshot(project._id, editing.value)}
-                          className="btn-primary mt-2 mr-2"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditing({ id: null, type: null, value: '' })}
-                          className="btn-secondary mt-2"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-white">{project.snapshot || 'No snapshot'}</p>
-                        <button
-                          onClick={() => setEditing({ id: project._id, type: 'snapshot', value: project.snapshot || '' })}
-                          className="text-vibrant-pink hover:underline"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+      <div className="mb-8">
+        <button
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          className="btn-primary neumorphic hover:scale-105 transition-transform"
+        >
+          {showCreateForm ? 'Cancel' : 'Create New Project'}
+        </button>
       </div>
 
-      {/* Right Sidebar */}
-      <div className="md:col-span-1">
-        <section className="mb-6 animate-fade-in">
-          <div className="card">
-            <h2 className="text-xl font-display text-vibrant-pink mb-2">Notifications</h2>
-            <p className="text-white">No notifications yet.</p>
+      {showCreateForm && (
+        <div className="card glassmorphic mb-8 animate-fade-in">
+          <h3 className="text-xl font-display text-vibrant-pink mb-4">Create a New Project</h3>
+          <form onSubmit={handleCreateProject} className="space-y-4">
+            <div>
+              <label className="block text-white mb-2 font-medium">Title</label>
+              <input
+                type="text"
+                name="title"
+                value={newProject.title}
+                onChange={handleInputChange}
+                required
+                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                placeholder="Enter project title"
+              />
+            </div>
+            <div>
+              <label className="block text-white mb-2 font-medium">Description</label>
+              <textarea
+                name="description"
+                value={newProject.description}
+                onChange={handleInputChange}
+                required
+                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                placeholder="Enter project description"
+              />
+            </div>
+            <div>
+              <label className="block text-white mb-2 font-medium">Category</label>
+              <select
+                name="category"
+                value={newProject.category}
+                onChange={handleInputChange}
+                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+              >
+                <option value="Personal">Personal</option>
+                <option value="Work">Work</option>
+                <option value="Collaboration">Collaboration</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-white mb-2 font-medium">Status</label>
+              <select
+                name="status"
+                value={newProject.status}
+                onChange={handleInputChange}
+                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+            <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform">
+              Create Project
+            </button>
+          </form>
+        </div>
+      )}
+
+      <div className="card glassmorphic animate-fade-in">
+        <h3 className="text-xl font-display text-vibrant-pink mb-4">Project List</h3>
+        {projects.length === 0 ? (
+          <p className="text-white">No projects yet.</p>
+        ) : (
+          <div className="space-y-4">
+            {projects.map(project => (
+              <div
+                key={project._id}
+                className="card glassmorphic transform hover:scale-105 transition-transform cursor-pointer"
+                onClick={() => handleProjectClick(project._id)}
+              >
+                <h4 className="text-lg font-display text-vibrant-pink">{project.title}</h4>
+                <p className="text-gray-300 mt-2">{project.description}</p>
+                <p className="text-sm text-white mt-2">Status: {project.status}</p>
+                <p className="text-sm text-white">Category: {project.category}</p>
+              </div>
+            ))}
           </div>
-        </section>
-        <section className="animate-fade-in">
-          <div className="card">
-            <h2 className="text-xl font-display text-vibrant-pink mb-2">Team Activity</h2>
-            <p className="text-white">No recent updates.</p>
-          </div>
-        </section>
+        )}
       </div>
     </div>
   );

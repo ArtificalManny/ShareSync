@@ -61,7 +61,7 @@ const ProtectedRoute = ({ user, loading, children }) => {
 
 const App = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // Access navigation state
+  const location = useLocation();
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
@@ -73,7 +73,7 @@ const App = () => {
     console.log('App.jsx useEffect - hasToken:', hasToken, 'initial user:', user, 'location.state:', location.state);
     const validateToken = async () => {
       try {
-        // Check if user data is passed via navigation state (e.g., from Login)
+        // Prioritize user from navigation state (e.g., from Login or Projects)
         if (location.state?.user) {
           console.log('User found in navigation state, setting user:', location.state.user);
           setUser(location.state.user);
@@ -82,8 +82,13 @@ const App = () => {
           console.log('Token found, using stored user data...');
           const storedUser = localStorage.getItem('user');
           if (storedUser) {
-            setUser(JSON.parse(storedUser));
-            console.log('User set from localStorage:', storedUser);
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            console.log('User set from localStorage:', parsedUser);
+            // Optionally validate token with getUserDetails (revert to original behavior)
+            // const userData = await getUserDetails();
+            // setUser(userData);
+            // localStorage.setItem('user', JSON.stringify(userData));
           } else {
             throw new Error('No user data found in localStorage');
           }
@@ -105,7 +110,7 @@ const App = () => {
     };
 
     validateToken();
-  }, [hasToken, navigate, location.state]);
+  }, [hasToken, navigate, location.state]); // Dependencies include location.state to react to navigation state changes
 
   const handleLogout = () => {
     console.log('Logging out user');

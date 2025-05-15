@@ -4,359 +4,276 @@ import { getUserProjects, updateProfile } from '../utils/api';
 
 const Profile = ({ user, setUser }) => {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState({ School: [], Job: [], Personal: [] });
-  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
-  const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [editProfile, setEditProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
-    job: user?.job || '',
-    school: user?.school || '',
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    username: user?.username || '',
+    email: user?.email || '',
+    bio: user?.bio || '',
+    profilePicture: user?.profilePicture || 'https://via.placeholder.com/150',
   });
-  const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
-  const [bannerPicture, setBannerPicture] = useState(user?.bannerPicture || '');
-  const [showProfilePictureModal, setShowProfilePictureModal] = useState(false);
-  const [showBannerModal, setShowBannerModal] = useState(false);
-  const [profilePicturePreview, setProfilePicturePreview] = useState(user?.profilePicture || '');
-  const [bannerPicturePreview, setBannerPicturePreview] = useState(user?.bannerPicture || '');
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(profileForm.profilePicture);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProjects = async () => {
       try {
-        try {
-          console.log('Fetching user projects...');
-          const projectsData = await getUserProjects();
-          setProjects(projectsData);
-        } catch (err) {
-          console.error('Failed to fetch user projects:', err.message);
-          if (err.message.includes('401') || err.message.includes('Unauthorized')) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            setUser(null);
-            navigate('/login');
-          } else {
-            setError('Failed to load projects. Please try again later.');
-            setProjects({ School: [], Job: [], Personal: [] });
-          }
-        }
+        console.log('Fetching user projects...');
+        const userProjects = await getUserProjects();
+        console.log('User projects:', userProjects);
+        setProjects(userProjects);
       } catch (err) {
-        console.error('Profile page unexpected error:', err.message);
-        setError('An unexpected error occurred. Please try again later.');
+        console.error('Failed to fetch user projects:', err.message);
+        setError(`Failed to load projects: ${err.message}. Please try again later.`);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [navigate, setUser]);
+    fetchProjects();
+  }, []);
 
   const handleProfileChange = (e) => {
     setProfileForm({ ...profileForm, [e.target.name]: e.target.value });
   };
 
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePictureFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     try {
-      await updateProfile(profileForm);
-      setUser({ ...user, ...profileForm });
-      localStorage.setItem('user', JSON.stringify({ ...user, ...profileForm }));
-      setEditMode(false);
+      let updatedProfile = { ...profileForm };
+
+      // If a new profile picture is selected, upload it
+      if (profilePictureFile) {
+        const formData = new FormData();
+        formData.append('profilePicture', profilePictureFile);
+        formData.append('firstName', profileForm.firstName);
+        formData.append('lastName', profileForm.lastName);
+        formData.append('username', profileForm.username);
+        formData.append('email', profileForm.email);
+        formData.append('bio', profileForm.bio);
+
+        const response = await updateProfile(formData);
+        updatedProfile = response;
+      } else {
+        updatedProfile = await updateProfile(profileForm);
+      }
+
+      setUser({ ...user, ...updatedProfile });
+      localStorage.setItem('user', JSON.stringify({ ...user, ...updatedProfile }));
+      setEditProfile(false);
+      setProfilePictureFile(null);
+      setPreviewUrl(updatedProfile.profilePicture);
+      alert('Profile updated successfully!');
     } catch (err) {
       console.error('Update profile error:', err.message);
-      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
-        navigate('/login');
-      } else {
-        setUser({ ...user, ...profileForm });
-        localStorage.setItem('user', JSON.stringify({ ...user, ...profileForm }));
-        setEditMode(false);
-      }
+      setError('Failed to update profile. Please try again.');
     }
   };
 
-  const handleProfilePictureChange = async (e) => {
-    e.preventDefault();
-    try {
-      await updateProfile({ profilePicture });
-      setUser({ ...user, profilePicture });
-      localStorage.setItem('user', JSON.stringify({ ...user, profilePicture }));
-      setShowProfilePictureModal(false);
-    } catch (err) {
-      console.error('Update profile picture error:', err.message);
-      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
-        navigate('/login');
-      } else {
-        setUser({ ...user, profilePicture });
-        localStorage.setItem('user', JSON.stringify({ ...user, profilePicture }));
-        setShowProfilePictureModal(false);
-      }
-    }
+  const handleCreateProject = () => {
+    navigate('/projects/create');
   };
 
-  const handleBannerChange = async (e) => {
-    e.preventDefault();
-    try {
-      await updateProfile({ bannerPicture });
-      setUser({ ...user, bannerPicture });
-      localStorage.setItem('user', JSON.stringify({ ...user, bannerPicture }));
-      setShowBannerModal(false);
-    } catch (err) {
-      console.error('Update banner picture error:', err.message);
-      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
-        navigate('/login');
-      } else {
-        setUser({ ...user, bannerPicture });
-        localStorage.setItem('user', JSON.stringify({ ...user, bannerPicture }));
-        setShowBannerModal(false);
-      }
-    }
-  };
-
-  const handleFileSelect = (e, setPicture, setPreview) => {
-    const file = e.target.files[0];
-    if (file) {
-      const fileUrl = URL.createObjectURL(file);
-      setPicture(fileUrl);
-      setPreview(fileUrl);
-    }
+  const handleProjectClick = (projectId) => {
+    navigate(`/project/${projectId}`, { state: { user } });
   };
 
   if (loading) {
     return <div className="text-white text-center mt-10 animate-shimmer">Loading...</div>;
   }
 
-  if (error) {
-    return <div className="text-white text-center mt-10">{error}</div>;
-  }
-
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="card glassmorphic mb-8 animate-fade-in">
-        <div className="relative">
-          <img
-            src={bannerPicturePreview || 'https://via.placeholder.com/1200x300?text=Banner'}
-            alt="Banner"
-            className="w-full h-64 object-cover rounded-t-lg animate-pulse-glow"
-            onError={(e) => (e.target.src = 'https://via.placeholder.com/1200x300?text=Banner')}
-          />
-          <button
-            onClick={() => setShowBannerModal(true)}
-            className="absolute top-4 right-4 btn-primary neumorphic text-sm hover:scale-105 transition-transform"
-          >
-            Change Banner
-          </button>
-          <div className="absolute bottom-0 left-6 transform translate-y-1/2">
-            <img
-              src={profilePicturePreview || 'https://via.placeholder.com/150?text=Profile'}
-              alt="Profile"
-              className="w-32 h-32 rounded-full border-4 border-dark-navy animate-pulse-glow"
-              onError={(e) => (e.target.src = 'https://via.placeholder.com/150?text=Profile')}
-            />
-            <button
-              onClick={() => setShowProfilePictureModal(true)}
-              className="absolute bottom-0 right-0 bg-vibrant-pink text-white rounded-full p-2 hover:bg-neon-blue transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-              </svg>
-            </button>
-          </div>
+      {/* Cover Photo Section (Facebook-inspired) */}
+      <div className="relative">
+        <div className="h-64 bg-gray-700 rounded-t-lg">
+          {/* Placeholder for cover photo */}
+          <div className="w-full h-full bg-gradient-to-r from-vibrant-pink to-neon-blue opacity-50"></div>
         </div>
-        <div className="pt-20 p-6">
-          <h1 className="text-4xl font-display text-vibrant-pink animate-fade-in">{user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'Manny Rivas'}</h1>
-          <p className="text-gray-300 text-lg mt-2">{user?.username ? `@${user.username}` : '@MannyRivas'}</p>
-          {editMode ? (
-            <form onSubmit={handleProfileSubmit} className="mt-6 space-y-4">
-              <div>
-                <label className="block text-white mb-2 font-medium">Job</label>
+        {/* Profile Picture Section */}
+        <div className="absolute bottom-0 left-8 transform translate-y-1/2">
+          <div className="relative">
+            <img
+              src={previewUrl}
+              alt="Profile"
+              className="w-40 h-40 rounded-full border-4 border-dark-navy shadow-lg"
+              onError={(e) => (e.target.src = 'https://via.placeholder.com/150')}
+            />
+            {editProfile && (
+              <label className="absolute bottom-2 right-2 bg-vibrant-pink text-white rounded-full p-2 cursor-pointer hover:bg-neon-blue transition-all">
                 <input
-                  type="text"
-                  name="job"
-                  value={profileForm.job}
-                  onChange={handleProfileChange}
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  placeholder="Enter your job"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureChange}
+                  className="hidden"
                 />
-              </div>
-              <div>
-                <label className="block text-white mb-2 font-medium">School</label>
-                <input
-                  type="text"
-                  name="school"
-                  value={profileForm.school}
-                  onChange={handleProfileChange}
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  placeholder="Enter your school"
-                />
-              </div>
-              <div className="flex space-x-3">
-                <button type="submit" className="btn-primary neumorphic hover:scale-105 transition-transform">
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditMode(false);
-                    setProfileForm({
-                      job: user?.job || '',
-                      school: user?.school || '',
-                    });
-                  }}
-                  className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="mt-6">
-              <p className="text-white text-lg">Job: {user?.job || 'Not specified'}</p>
-              <p className="text-white text-lg">School: {user?.school || 'Not specified'}</p>
-              <div className="mt-4 flex space-x-3">
-                <button
-                  onClick={() => setEditMode(true)}
-                  className="btn-primary neumorphic hover:scale-105 transition-transform"
-                >
-                  Edit Profile
-                </button>
-                <button
-                  onClick={() => navigate('/settings')}
-                  className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                >
-                  Settings
-                </button>
-              </div>
-            </div>
-          )}
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0017.07 7H18a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+              </label>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="card glassmorphic animate-fade-in">
-        <h2 className="text-2xl font-display text-vibrant-pink mb-6">Your Projects</h2>
-        {['School', 'Job', 'Personal'].map(category => (
-          <div key={category} className="mb-8">
-            <h3 className="text-xl font-display text-vibrant-pink mb-4">{category}</h3>
-            {projects[category].length === 0 ? (
-              <p className="text-white">No {category} projects yet.</p>
+      {/* Main Profile Content */}
+      <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Left Sidebar (LinkedIn-inspired: Bio, Details) */}
+        <div className="md:col-span-1">
+          <div className="card glassmorphic mb-6 animate-fade-in">
+            <h3 className="text-xl font-display text-vibrant-pink mb-4">About Me</h3>
+            {editProfile ? (
+              <textarea
+                name="bio"
+                value={profileForm.bio}
+                onChange={handleProfileChange}
+                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                placeholder="Tell us about yourself..."
+              />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {projects[category].map(project => (
+              <p className="text-white">{user?.bio || 'No bio yet.'}</p>
+            )}
+          </div>
+
+          <div className="card glassmorphic mb-6 animate-fade-in">
+            <h3 className="text-xl font-display text-vibrant-pink mb-4">Profile Information</h3>
+            {editProfile ? (
+              <form onSubmit={handleProfileSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-white mb-2 font-medium">First Name</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={profileForm.firstName}
+                    onChange={handleProfileChange}
+                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    placeholder="Enter your first name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white mb-2 font-medium">Last Name</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={profileForm.lastName}
+                    onChange={handleProfileChange}
+                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    placeholder="Enter your last name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white mb-2 font-medium">Username</label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={profileForm.username}
+                    onChange={handleProfileChange}
+                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    placeholder="Enter your username"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white mb-2 font-medium">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={profileForm.email}
+                    onChange={handleProfileChange}
+                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    placeholder="Enter your email"
+                  />
+                </div>
+                <div className="flex space-x-3">
+                  <button type="submit" className="btn-primary neumorphic hover:scale-105 transition-transform">
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditProfile(false);
+                      setProfileForm({
+                        firstName: user?.firstName || '',
+                        lastName: user?.lastName || '',
+                        username: user?.username || '',
+                        email: user?.email || '',
+                        bio: user?.bio || '',
+                        profilePicture: user?.profilePicture || 'https://via.placeholder.com/150',
+                      });
+                      setPreviewUrl(user?.profilePicture || 'https://via.placeholder.com/150');
+                      setProfilePictureFile(null);
+                    }}
+                    className="btn-secondary neumorphic hover:scale-105 transition-transform"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-white"><strong>Name:</strong> {user?.firstName} {user?.lastName}</p>
+                <p className="text-white"><strong>Username:</strong> {user?.username || 'N/A'}</p>
+                <p className="text-white"><strong>Email:</strong> {user?.email || 'N/A'}</p>
+                <button
+                  onClick={() => setEditProfile(true)}
+                  className="btn-primary mt-4 neumorphic hover:scale-105 transition-transform"
+                >
+                  Edit Profile
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Main Content (Projects Section: LinkedIn-inspired) */}
+        <div className="md:col-span-2">
+          <div className="card glassmorphic mb-8 animate-fade-in">
+            <h3 className="text-xl font-display text-vibrant-pink mb-4">My Projects</h3>
+            {error && (
+              <div className="bg-red-500 text-white p-3 rounded-lg mb-6 animate-shimmer">
+                {error}
+              </div>
+            )}
+            <button
+              onClick={handleCreateProject}
+              className="btn-primary mb-6 neumorphic hover:scale-105 transition-transform"
+            >
+              Create New Project
+            </button>
+            {projects.length === 0 ? (
+              <p className="text-white">No projects yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {projects.map(project => (
                   <div
                     key={project._id}
                     className="card glassmorphic transform hover:scale-105 transition-transform cursor-pointer"
-                    onClick={() => navigate(`/project/${project._id}`)}
+                    onClick={() => handleProjectClick(project._id)}
                   >
                     <h4 className="text-lg font-display text-vibrant-pink">{project.title}</h4>
                     <p className="text-gray-300 mt-2">{project.description}</p>
-                    <p className="text-sm mt-3 text-white">Status: {project.status}</p>
+                    <p className="text-sm text-white mt-2">Status: {project.status}</p>
                   </div>
                 ))}
               </div>
             )}
           </div>
-        ))}
+        </div>
       </div>
-
-      {/* Profile Picture Modal */}
-      {showProfilePictureModal && (
-        <>
-          <div className="modal-overlay" onClick={() => setShowProfilePictureModal(false)}></div>
-          <div className="modal glassmorphic">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-6">Change Profile Picture</h2>
-            <form onSubmit={handleProfilePictureChange}>
-              <div className="mb-6">
-                <label className="block text-white mb-3 font-medium">Select a Photo</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileSelect(e, setProfilePicture, setProfilePicturePreview)}
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                />
-              </div>
-              {profilePicturePreview && (
-                <div className="mb-6 flex justify-center">
-                  <img
-                    src={profilePicturePreview}
-                    alt="Profile Preview"
-                    className="w-48 h-48 rounded-full object-cover animate-pulse-glow"
-                    onError={(e) => (e.target.src = 'https://via.placeholder.com/150?text=Profile')}
-                  />
-                </div>
-              )}
-              <div className="flex space-x-3">
-                <button type="submit" className="btn-primary neumorphic hover:scale-105 transition-transform">
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowProfilePictureModal(false);
-                    setProfilePicture(user?.profilePicture || '');
-                    setProfilePicturePreview(user?.profilePicture || '');
-                  }}
-                  className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </>
-      )}
-
-      {/* Banner Modal */}
-      {showBannerModal && (
-        <>
-          <div className="modal-overlay" onClick={() => setShowBannerModal(false)}></div>
-          <div className="modal glassmorphic">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-6">Change Banner</h2>
-            <form onSubmit={handleBannerChange}>
-              <div className="mb-6">
-                <label className="block text-white mb-3 font-medium">Select a Banner Image</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileSelect(e, setBannerPicture, setBannerPicturePreview)}
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                />
-              </div>
-              {bannerPicturePreview && (
-                <div className="mb-6">
-                  <img
-                    src={bannerPicturePreview}
-                    alt="Banner Preview"
-                    className="w-full h-48 object-cover rounded-lg animate-pulse-glow"
-                    onError={(e) => (e.target.src = 'https://via.placeholder.com/1200x300?text=Banner')}
-                  />
-                </div>
-              )}
-              <div className="flex space-x-3">
-                <button type="submit" className="btn-primary neumorphic hover:scale-105 transition-transform">
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowBannerModal(false);
-                    setBannerPicture(user?.bannerPicture || '');
-                    setBannerPicturePreview(user?.bannerPicture || '');
-                  }}
-                  className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </>
-      )}
     </div>
   );
 };
