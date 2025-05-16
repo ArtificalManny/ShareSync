@@ -20,6 +20,58 @@ import {
   updateNotificationPreferences,
 } from '../utils/api';
 
+// Helper function to render a simple task progress infographic
+const TaskProgressInfographic = ({ tasks }) => {
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(task => task.status === 'Completed').length;
+  const progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+  return (
+    <div className="mt-4 p-4 bg-dark-navy rounded-lg shadow-inner">
+      <h4 className="text-lg font-display text-vibrant-pink mb-2">Task Progress</h4>
+      <div className="w-full bg-gray-800 rounded-full h-4">
+        <div
+          className="bg-neon-blue h-4 rounded-full transition-all duration-500"
+          style={{ width: `${progressPercentage}%` }}
+        ></div>
+      </div>
+      <p className="text-white mt-2 text-sm">
+        {completedTasks} of {totalTasks} tasks completed ({progressPercentage.toFixed(1)}%)
+      </p>
+    </div>
+  );
+};
+
+// Helper function to render a team contribution infographic (mock data for now)
+const TeamContributionInfographic = ({ teams }) => {
+  const mockContributions = teams.map((team, idx) => ({
+    name: team.name,
+    contributions: Math.floor(Math.random() * 50) + 10, // Mock data
+  }));
+
+  const maxContributions = Math.max(...mockContributions.map(c => c.contributions), 1);
+
+  return (
+    <div className="mt-4 p-4 bg-dark-navy rounded-lg shadow-inner">
+      <h4 className="text-lg font-display text-vibrant-pink mb-2">Team Contributions</h4>
+      <div className="space-y-3">
+        {mockContributions.map((team, idx) => (
+          <div key={idx} className="flex items-center space-x-3">
+            <span className="text-white w-32 truncate">{team.name}</span>
+            <div className="flex-1 bg-gray-800 rounded-full h-3">
+              <div
+                className="bg-vibrant-pink h-3 rounded-full transition-all duration-500"
+                style={{ width: `${(team.contributions / maxContributions) * 100}%` }}
+              ></div>
+            </div>
+            <span className="text-white text-sm">{team.contributions} tasks</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const ProjectHome = ({ user, setUser }) => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -107,12 +159,21 @@ const ProjectHome = ({ user, setUser }) => {
   const handleAddPost = async (e) => {
     e.preventDefault();
     try {
+      // Validate inputs to prevent errors
+      if (!newPost.title.trim() || !newPost.content.trim()) {
+        throw new Error('Post title and content are required.');
+      }
+
       const postData = {
-        ...newPost,
+        title: newPost.title.trim(),
+        content: newPost.content.trim(),
+        category: newPost.category,
         userId: user?.id || 'Unknown',
         createdAt: new Date().toISOString(),
       };
+      console.log('Submitting post:', postData);
       const updatedProject = await addPost(id, postData);
+      console.log('Updated project after adding post:', updatedProject);
       setProject(updatedProject);
       setNewComment({ ...newComment, [updatedProject.posts[updatedProject.posts.length - 1]._id]: '' });
       setNewPost({ title: '', content: '', category: 'Announcement' });
@@ -129,7 +190,7 @@ const ProjectHome = ({ user, setUser }) => {
       await notifyMembers(updatedProject, 'New post added', `A new post "${newPost.title}" has been added to project "${updatedProject.title}".`);
     } catch (err) {
       console.error('Add post error:', err.message);
-      setError('Failed to add post. Please try again.');
+      setError(`Failed to add post: ${err.message}. Please try again.`);
     }
   };
 
@@ -663,65 +724,7 @@ const ProjectHome = ({ user, setUser }) => {
           </div>
         </header>
 
-        <section className="mb-8 animate-fade-in">
-          <div className="card glassmorphic">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Metrics</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                <h3 className="text-lg text-white">Total Projects</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.totalProjects}</p>
-              </div>
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                <h3 className="text-lg text-white">Current Projects</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.currentProjects}</p>
-              </div>
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                <h3 className="text-lg text-white">Past Projects</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.pastProjects}</p>
-              </div>
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                <h3 className="text-lg text-white">Tasks Completed</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.tasksCompleted}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mb-8 animate-fade-in">
-          <div className="card glassmorphic">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Announcement</h2>
-            <p className="text-white">{project?.announcement || 'No announcement'}</p>
-            {isAdmin && (
-              <div className="mt-4">
-                <textarea
-                  value={project?.announcement || ''}
-                  onChange={(e) => handleUpdateProject({ announcement: e.target.value })}
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  placeholder="Post an announcement..."
-                />
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="mb-8 animate-fade-in">
-          <div className="card glassmorphic">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Snapshot</h2>
-            <p className="text-white">{project?.snapshot || 'No snapshot'}</p>
-            {isAdmin && (
-              <div className="mt-4">
-                <input
-                  type="text"
-                  value={project?.snapshot || ''}
-                  onChange={(e) => handleUpdateProject({ snapshot: e.target.value })}
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  placeholder="Update the project snapshot..."
-                />
-              </div>
-            )}
-          </div>
-        </section>
-
+        {/* Posts Section - Moved to Top */}
         <section className="mb-8">
           <div className="card glassmorphic animate-fade-in">
             <h2 className="text-2xl font-display text-vibrant-pink mb-4">Posts</h2>
@@ -858,6 +861,26 @@ const ProjectHome = ({ user, setUser }) => {
           </div>
         </section>
 
+        {/* Snapshot Section */}
+        <section className="mb-8 animate-fade-in">
+          <div className="card glassmorphic">
+            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Snapshot</h2>
+            <p className="text-white">{project?.snapshot || 'No snapshot'}</p>
+            {isAdmin && (
+              <div className="mt-4">
+                <input
+                  type="text"
+                  value={project?.snapshot || ''}
+                  onChange={(e) => handleUpdateProject({ snapshot: e.target.value })}
+                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  placeholder="Update the project snapshot..."
+                />
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Tasks Section */}
         <section className="mb-8">
           <div className="card glassmorphic animate-fade-in">
             <h2 className="text-2xl font-display text-vibrant-pink mb-4">Tasks</h2>
@@ -944,323 +967,327 @@ const ProjectHome = ({ user, setUser }) => {
             {(!project?.tasks || project.tasks.length === 0) ? (
               <p className="text-white">No tasks yet.</p>
             ) : (
-              <div className="space-y-6">
-                {project.tasks.map(task => (
-                  <div key={task._id} className="card glassmorphic animate-fade-in p-4">
-                    {editTask && editTask._id === task._id ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center space-x-3">
-                          <img
-                            src={user?.profilePicture || 'https://via.placeholder.com/40'}
-                            alt="User Avatar"
-                            className="w-10 h-10 rounded-full"
-                          />
-                          <input
-                            type="text"
-                            value={editTask.title}
-                            onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
-                            className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white mb-2 font-medium">Description (Markdown Supported)</label>
-                          <textarea
-                            value={editTask.description}
-                            onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white mb-2 font-medium">Attach File</label>
-                          <input
-                            type="file"
-                            onChange={(e) => setEditTask({ ...editTask, file: e.target.files[0] })}
-                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          />
-                          {editTask.file && (
-                            <p className="text-gray-300 mt-1">Selected: {editTask.file.name}</p>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-white mb-2 font-medium">Due Date</label>
-                          <input
-                            type="date"
-                            value={editTask.dueDate}
-                            onChange={(e) => setEditTask({ ...editTask, dueDate: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white mb-2 font-medium">Priority</label>
-                          <select
-                            value={editTask.priority}
-                            onChange={(e) => setEditTask({ ...editTask, priority: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          >
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-white mb-2 font-medium">Assigned To</label>
-                          <select
-                            multiple
-                            value={editTask.assignedTo}
-                            onChange={(e) => setEditTask({ ...editTask, assignedTo: Array.from(e.target.selectedOptions, option => option.value) })}
-                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          >
-                            {(project?.sharedWith || []).map(userId => (
-                              <option key={userId} value={userId}>{userId}</option>
-                            ))}
-                            {(project?.teams || []).map(team => (
-                              <option key={`team-${team._id}`} value={`team-${team._id}`}>{team.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-white mb-2 font-medium">Status</label>
-                          <select
-                            value={editTask.status}
-                            onChange={(e) => setEditTask({ ...editTask, status: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          >
-                            <option value="To Do">To Do</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Completed">Completed</option>
-                          </select>
-                        </div>
-                        <div className="flex space-x-3">
-                          <button
-                            onClick={() => handleUpdateTask(task._id, editTask)}
-                            className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditTask(null)}
-                            className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center space-x-3 mb-3">
-                          <img
-                            src={'https://via.placeholder.com/40'}
-                            alt="Task Creator"
-                            className="w-10 h-10 rounded-full"
-                          />
+              <>
+                <TaskProgressInfographic tasks={project.tasks} />
+                <div className="space-y-6">
+                  {project.tasks.map(task => (
+                    <div key={task._id} className="card glassmorphic animate-fade-in p-4">
+                      {editTask && editTask._id === task._id ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-3">
+                            <img
+                              src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                              alt="User Avatar"
+                              className="w-10 h-10 rounded-full"
+                            />
+                            <input
+                              type="text"
+                              value={editTask.title}
+                              onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
+                              className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            />
+                          </div>
                           <div>
-                            <p className="text-white font-medium">{task.userId}</p>
-                            <p className="text-sm text-gray-300">{new Date(task.createdAt).toLocaleString()}</p>
+                            <label className="block text-white mb-2 font-medium">Description (Markdown Supported)</label>
+                            <textarea
+                              value={editTask.description}
+                              onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
+                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                            />
                           </div>
-                        </div>
-                        <h3 className="text-lg font-display text-vibrant-pink">{task.title}</h3>
-                        <p className="text-gray-300 mt-2">{task.description}</p>
-                        {task.fileUrl && (
-                          <div className="mt-4">
-                            <a
-                              href={task.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-vibrant-pink hover:text-neon-blue transition-colors"
-                            >
-                              View Attached File
-                            </a>
-                          </div>
-                        )}
-                        <p className="text-sm text-white mt-2">Status: {task.status}</p>
-                        <p className="text-sm text-white">Due Date: {task.dueDate || 'Not set'}</p>
-                        <p className="text-sm text-white">Priority: {task.priority || 'Medium'}</p>
-                        <p className="text-sm text-white">Assigned To: {task.assignedTo || 'None'}</p>
-                        <p className="text-sm text-white">Likes: {task.likes || 0}</p>
-                        <select
-                          value={task.status}
-                          onChange={(e) => handleUpdateTask(task._id, { status: e.target.value })}
-                          className="w-full mt-3 p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                        >
-                          <option value="To Do">To Do</option>
-                          <option value="In Progress">In Progress</option>
-                          <option value="Completed">Completed</option>
-                        </select>
-                        <div className="flex space-x-3 mt-3">
-                          <button
-                            onClick={() => handleEditTask(task)}
-                            className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleLikeTask(task._id)}
-                            className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                          >
-                            Like
-                          </button>
-                          <button
-                            onClick={() => handleShareTask(task._id)}
-                            className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                          >
-                            Share
-                          </button>
-                        </div>
-                        <div className="mt-4">
-                          <h4 className="text-lg text-vibrant-pink">Subtasks</h4>
-                          {(!task.subtasks || task.subtasks.length === 0) ? (
-                            <p className="text-white">No subtasks yet.</p>
-                          ) : (
-                            task.subtasks.map((subtask, idx) => (
-                              <div key={idx} className="ml-4 mt-2 card glassmorphic p-3">
-                                <div className="flex items-center space-x-3 mb-2">
-                                  <img
-                                    src={'https://via.placeholder.com/32'}
-                                    alt="Subtask Creator"
-                                    className="w-8 h-8 rounded-full"
-                                  />
-                                  <div>
-                                    <p className="text-white font-medium">{subtask.userId}</p>
-                                    <p className="text-xs text-gray-300">{new Date(subtask.createdAt).toLocaleString()}</p>
-                                  </div>
-                                </div>
-                                <p className="text-gray-300">{subtask.title} - {subtask.status}</p>
-                                <p className="text-sm text-gray-300">{subtask.description}</p>
-                                <p className="text-sm text-white mt-1">Likes: {subtask.likes || 0}</p>
-                                <div className="flex space-x-3 mt-2">
-                                  <button
-                                    onClick={() => handleLikeSubtask(task._id, subtask._id)}
-                                    className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                                  >
-                                    Like
-                                  </button>
-                                </div>
-                                <div className="mt-2">
-                                  <h5 className="text-sm text-vibrant-pink">Comments</h5>
-                                  {(!subtask.comments || subtask.comments.length === 0) ? (
-                                    <p className="text-white text-sm">No comments yet.</p>
-                                  ) : (
-                                    subtask.comments.map((comment, cIdx) => (
-                                      <div key={cIdx} className="flex items-start space-x-2 mt-1">
-                                        <img
-                                          src={'https://via.placeholder.com/24'}
-                                          alt="Comment Author"
-                                          className="w-6 h-6 rounded-full"
-                                        />
-                                        <div className="bg-gray-800 p-1 rounded-lg">
-                                          <p className="text-white text-sm font-medium">{comment.userId}</p>
-                                          <p className="text-gray-300 text-sm">{comment.content}</p>
-                                          <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
-                                        </div>
-                                      </div>
-                                    ))
-                                  )}
-                                  <div className="flex items-center space-x-2 mt-2">
-                                    <img
-                                      src={user?.profilePicture || 'https://via.placeholder.com/24'}
-                                      alt="User Avatar"
-                                      className="w-6 h-6 rounded-full"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={subtaskComment[subtask._id] || ''}
-                                      onChange={(e) => setSubtaskComment({ ...subtaskComment, [subtask._id]: e.target.value })}
-                                      placeholder="Add a comment..."
-                                      className="w-full p-1 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                                    />
-                                    <button
-                                      onClick={() => handleAddSubtaskComment(task._id, subtask._id)}
-                                      className="btn-primary text-sm neumorphic hover:scale-105 transition-transform"
-                                    >
-                                      Post
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                          <div className="mt-3 ml-4 space-y-3">
+                          <div>
+                            <label className="block text-white mb-2 font-medium">Attach File</label>
                             <input
-                              type="text"
-                              placeholder="Subtask Title"
-                              value={newSubtask[task._id]?.title || ''}
-                              onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], title: e.target.value } })}
+                              type="file"
+                              onChange={(e) => setEditTask({ ...editTask, file: e.target.files[0] })}
                               className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                             />
+                            {editTask.file && (
+                              <p className="text-gray-300 mt-1">Selected: {editTask.file.name}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-white mb-2 font-medium">Due Date</label>
                             <input
-                              type="text"
-                              placeholder="Description"
-                              value={newSubtask[task._id]?.description || ''}
-                              onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], description: e.target.value } })}
+                              type="date"
+                              value={editTask.dueDate}
+                              onChange={(e) => setEditTask({ ...editTask, dueDate: e.target.value })}
                               className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                             />
+                          </div>
+                          <div>
+                            <label className="block text-white mb-2 font-medium">Priority</label>
                             <select
-                              value={newSubtask[task._id]?.status || 'To Do'}
-                              onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], status: e.target.value } })}
+                              value={editTask.priority}
+                              onChange={(e) => setEditTask({ ...editTask, priority: e.target.value })}
+                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            >
+                              <option value="Low">Low</option>
+                              <option value="Medium">Medium</option>
+                              <option value="High">High</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-white mb-2 font-medium">Assigned To</label>
+                            <select
+                              multiple
+                              value={editTask.assignedTo}
+                              onChange={(e) => setEditTask({ ...editTask, assignedTo: Array.from(e.target.selectedOptions, option => option.value) })}
+                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            >
+                              {(project?.sharedWith || []).map(userId => (
+                                <option key={userId} value={userId}>{userId}</option>
+                              ))}
+                              {(project?.teams || []).map(team => (
+                                <option key={`team-${team._id}`} value={`team-${team._id}`}>{team.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-white mb-2 font-medium">Status</label>
+                            <select
+                              value={editTask.status}
+                              onChange={(e) => setEditTask({ ...editTask, status: e.target.value })}
                               className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                             >
                               <option value="To Do">To Do</option>
                               <option value="In Progress">In Progress</option>
                               <option value="Completed">Completed</option>
                             </select>
-                            <button
-                              onClick={() => handleAddSubtask(task._id)}
-                              className="btn-primary mt-2 neumorphic hover:scale-105 transition-transform"
-                            >
-                              Add Subtask
-                              </button>
                           </div>
-                        </div>
-                        <div className="mt-4">
-                          <h4 className="text-lg text-vibrant-pink">Comments</h4>
-                          {(!task.comments || task.comments.length === 0) ? (
-                            <p className="text-white">No comments yet.</p>
-                          ) : (
-                            task.comments.map((comment, idx) => (
-                              <div key={idx} className="flex items-start space-x-3 mb-2">
-                                <img
-                                  src={'https://via.placeholder.com/32'}
-                                  alt="Comment Author"
-                                  className="w-8 h-8 rounded-full"
-                                />
-                                <div className="bg-gray-800 p-2 rounded-lg">
-                                  <p className="text-white font-medium">{comment.userId}</p>
-                                  <p className="text-gray-300">{comment.content}</p>
-                                  <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                          <div className="flex items-center space-x-3 mt-3">
-                            <img
-                              src={user?.profilePicture || 'https://via.placeholder.com/32'}
-                              alt="User Avatar"
-                              className="w-8 h-8 rounded-full"
-                            />
-                            <input
-                              type="text"
-                              value={taskComment[task._id] || ''}
-                              onChange={(e) => setTaskComment({ ...taskComment, [task._id]: e.target.value })}
-                              placeholder="Add a comment..."
-                              className="w-full p-2 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                            />
+                          <div className="flex space-x-3">
                             <button
-                              onClick={() => handleAddTaskComment(task._id)}
-                              className="btn-primary px-4 py-1 neumorphic hover:scale-105 transition-transform"
+                              onClick={() => handleUpdateTask(task._id, editTask)}
+                              className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow"
                             >
-                              Post
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditTask(null)}
+                              className="btn-secondary neumorphic hover:scale-105 transition-transform"
+                            >
+                              Cancel
                             </button>
                           </div>
                         </div>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center space-x-3 mb-3">
+                            <img
+                              src={'https://via.placeholder.com/40'}
+                              alt="Task Creator"
+                              className="w-10 h-10 rounded-full"
+                            />
+                            <div>
+                              <p className="text-white font-medium">{task.userId}</p>
+                              <p className="text-sm text-gray-300">{new Date(task.createdAt).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <h3 className="text-lg font-display text-vibrant-pink">{task.title}</h3>
+                          <p className="text-gray-300 mt-2">{task.description}</p>
+                          {task.fileUrl && (
+                            <div className="mt-4">
+                              <a
+                                href={task.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-vibrant-pink hover:text-neon-blue transition-colors"
+                              >
+                                View Attached File
+                              </a>
+                            </div>
+                          )}
+                          <p className="text-sm text-white mt-2">Status: {task.status}</p>
+                          <p className="text-sm text-white">Due Date: {task.dueDate || 'Not set'}</p>
+                          <p className="text-sm text-white">Priority: {task.priority || 'Medium'}</p>
+                          <p className="text-sm text-white">Assigned To: {task.assignedTo || 'None'}</p>
+                          <p className="text-sm text-white">Likes: {task.likes || 0}</p>
+                          <select
+                            value={task.status}
+                            onChange={(e) => handleUpdateTask(task._id, { status: e.target.value })}
+                            className="w-full mt-3 p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                          >
+                            <option value="To Do">To Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                          </select>
+                          <div className="flex space-x-3 mt-3">
+                            <button
+                              onClick={() => handleEditTask(task)}
+                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleLikeTask(task._id)}
+                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
+                            >
+                              Like
+                            </button>
+                            <button
+                              onClick={() => handleShareTask(task._id)}
+                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
+                            >
+                              Share
+                            </button>
+                          </div>
+                          <div className="mt-4">
+                            <h4 className="text-lg text-vibrant-pink">Subtasks</h4>
+                            {(!task.subtasks || task.subtasks.length === 0) ? (
+                              <p className="text-white">No subtasks yet.</p>
+                            ) : (
+                              task.subtasks.map((subtask, idx) => (
+                                <div key={idx} className="ml-4 mt-2 card glassmorphic p-3">
+                                  <div className="flex items-center space-x-3 mb-2">
+                                    <img
+                                      src={'https://via.placeholder.com/32'}
+                                      alt="Subtask Creator"
+                                      className="w-8 h-8 rounded-full"
+                                    />
+                                    <div>
+                                      <p className="text-white font-medium">{subtask.userId}</p>
+                                      <p className="text-xs text-gray-300">{new Date(subtask.createdAt).toLocaleString()}</p>
+                                    </div>
+                                  </div>
+                                  <p className="text-gray-300">{subtask.title} - {subtask.status}</p>
+                                  <p className="text-sm text-gray-300">{subtask.description}</p>
+                                  <p className="text-sm text-white mt-1">Likes: {subtask.likes || 0}</p>
+                                  <div className="flex space-x-3 mt-2">
+                                    <button
+                                      onClick={() => handleLikeSubtask(task._id, subtask._id)}
+                                      className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
+                                    >
+                                      Like
+                                    </button>
+                                  </div>
+                                  <div className="mt-2">
+                                    <h5 className="text-sm text-vibrant-pink">Comments</h5>
+                                    {(!subtask.comments || subtask.comments.length === 0) ? (
+                                      <p className="text-white text-sm">No comments yet.</p>
+                                    ) : (
+                                      subtask.comments.map((comment, cIdx) => (
+                                        <div key={cIdx} className="flex items-start space-x-2 mt-1">
+                                          <img
+                                            src={'https://via.placeholder.com/24'}
+                                            alt="Comment Author"
+                                            className="w-6 h-6 rounded-full"
+                                          />
+                                          <div className="bg-gray-800 p-1 rounded-lg">
+                                            <p className="text-white text-sm font-medium">{comment.userId}</p>
+                                            <p className="text-gray-300 text-sm">{comment.content}</p>
+                                            <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
+                                          </div>
+                                        </div>
+                                      ))
+                                    )}
+                                    <div className="flex items-center space-x-2 mt-2">
+                                      <img
+                                        src={user?.profilePicture || 'https://via.placeholder.com/24'}
+                                        alt="User Avatar"
+                                        className="w-6 h-6 rounded-full"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={subtaskComment[subtask._id] || ''}
+                                        onChange={(e) => setSubtaskComment({ ...subtaskComment, [subtask._id]: e.target.value })}
+                                        placeholder="Add a comment..."
+                                        className="w-full p-1 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                      />
+                                      <button
+                                        onClick={() => handleAddSubtaskComment(task._id, subtask._id)}
+                                        className="btn-primary text-sm neumorphic hover:scale-105 transition-transform"
+                                      >
+                                        Post
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                            <div className="mt-3 ml-4 space-y-3">
+                              <input
+                                type="text"
+                                placeholder="Subtask Title"
+                                value={newSubtask[task._id]?.title || ''}
+                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], title: e.target.value } })}
+                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              />
+                              <input
+                                type="text"
+                                placeholder="Description"
+                                value={newSubtask[task._id]?.description || ''}
+                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], description: e.target.value } })}
+                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              />
+                              <select
+                                value={newSubtask[task._id]?.status || 'To Do'}
+                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], status: e.target.value } })}
+                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              >
+                                <option value="To Do">To Do</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                              </select>
+                              <button
+                                onClick={() => handleAddSubtask(task._id)}
+                                className="btn-primary mt-2 neumorphic hover:scale-105 transition-transform"
+                              >
+                                Add Subtask
+                              </button>
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <h4 className="text-lg text-vibrant-pink">Comments</h4>
+                            {(!task.comments || task.comments.length === 0) ? (
+                              <p className="text-white">No comments yet.</p>
+                            ) : (
+                              task.comments.map((comment, idx) => (
+                                <div key={idx} className="flex items-start space-x-3 mb-2">
+                                  <img
+                                    src={'https://via.placeholder.com/32'}
+                                    alt="Comment Author"
+                                    className="w-8 h-8 rounded-full"
+                                  />
+                                  <div className="bg-gray-800 p-2 rounded-lg">
+                                    <p className="text-white font-medium">{comment.userId}</p>
+                                    <p className="text-gray-300">{comment.content}</p>
+                                    <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                            <div className="flex items-center space-x-3 mt-3">
+                              <img
+                                src={user?.profilePicture || 'https://via.placeholder.com/32'}
+                                alt="User Avatar"
+                                className="w-8 h-8 rounded-full"
+                              />
+                              <input
+                                type="text"
+                                value={taskComment[task._id] || ''}
+                                onChange={(e) => setTaskComment({ ...taskComment, [task._id]: e.target.value })}
+                                placeholder="Add a comment..."
+                                className="w-full p-2 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              />
+                              <button
+                                onClick={() => handleAddTaskComment(task._id)}
+                                className="btn-primary px-4 py-1 neumorphic hover:scale-105 transition-transform"
+                              >
+                                Post
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </section>
 
+        {/* Project Members Section */}
         <section className="mb-8">
           <div className="card glassmorphic animate-fade-in">
             <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Members</h2>
@@ -1269,7 +1296,7 @@ const ProjectHome = ({ user, setUser }) => {
                 <p className="text-white">No members yet.</p>
               ) : (
                 [...new Set([...(project?.admins || []), ...(project?.sharedWith || [])])].map(memberId => (
-                  <div key={memberId} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow">
+                  <div key={memberId} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
                     <div className="flex items-center space-x-3">
                       <img
                         src={'https://via.placeholder.com/40'}
@@ -1288,6 +1315,7 @@ const ProjectHome = ({ user, setUser }) => {
           </div>
         </section>
 
+        {/* Teams Section */}
         <section className="mb-8">
           <div className="card glassmorphic animate-fade-in">
             <h2 className="text-2xl font-display text-vibrant-pink mb-4">Teams</h2>
@@ -1342,87 +1370,90 @@ const ProjectHome = ({ user, setUser }) => {
             {(!project?.teams || project.teams.length === 0) ? (
               <p className="text-white">No teams yet.</p>
             ) : (
-              <div className="space-y-4">
-                {project.teams.map(team => (
-                  <div key={team._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
-                    {editTeam && editTeam._id === team._id ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center space-x-3">
-                          <img
-                            src={user?.profilePicture || 'https://via.placeholder.com/40'}
-                            alt="User Avatar"
-                            className="w-10 h-10 rounded-full"
-                          />
-                          <input
-                            type="text"
-                            value={editTeam.name}
-                            onChange={(e) => setEditTeam({ ...editTeam, name: e.target.value })}
-                            className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white mb-2 font-medium">Description</label>
-                          <textarea
-                            value={editTeam.description}
-                            onChange={(e) => setEditTeam({ ...editTeam, description: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white mb-2 font-medium">Members</label>
-                          <select
-                            multiple
-                            value={editTeam.members}
-                            onChange={(e) => setEditTeam({ ...editTeam, members: Array.from(e.target.selectedOptions, option => option.value) })}
-                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          >
-                            {(project?.sharedWith || []).map(userId => (
-                              <option key={userId} value={userId}>{userId}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="flex space-x-3">
-                          <button
-                            onClick={() => handleUpdateTeam(team._id, editTeam)}
-                            className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditTeam(null)}
-                            className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center space-x-3">
-                          <img
-                            src={'https://via.placeholder.com/40'}
-                            alt="Team Icon"
-                            className="w-10 h-10 rounded-full"
-                          />
+              <>
+                <TeamContributionInfographic teams={project.teams} />
+                <div className="space-y-4">
+                  {project.teams.map(team => (
+                    <div key={team._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
+                      {editTeam && editTeam._id === team._id ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-3">
+                            <img
+                              src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                              alt="User Avatar"
+                              className="w-10 h-10 rounded-full"
+                            />
+                            <input
+                              type="text"
+                              value={editTeam.name}
+                              onChange={(e) => setEditTeam({ ...editTeam, name: e.target.value })}
+                              className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            />
+                          </div>
                           <div>
-                            <h3 className="text-lg font-display text-vibrant-pink">{team.name}</h3>
-                            <p className="text-gray-300 mt-2">{team.description}</p>
-                            <p className="text-sm text-white mt-2">Members: {team.members?.join(', ') || 'None'}</p>
+                            <label className="block text-white mb-2 font-medium">Description</label>
+                            <textarea
+                              value={editTeam.description}
+                              onChange={(e) => setEditTeam({ ...editTeam, description: e.target.value })}
+                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-white mb-2 font-medium">Members</label>
+                            <select
+                              multiple
+                              value={editTeam.members}
+                              onChange={(e) => setEditTeam({ ...editTeam, members: Array.from(e.target.selectedOptions, option => option.value) })}
+                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            >
+                              {(project?.sharedWith || []).map(userId => (
+                                <option key={userId} value={userId}>{userId}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={() => handleUpdateTeam(team._id, editTeam)}
+                              className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditTeam(null)}
+                              className="btn-secondary neumorphic hover:scale-105 transition-transform"
+                            >
+                              Cancel
+                            </button>
                           </div>
                         </div>
-                        {isAdmin && (
-                          <button
-                            onClick={() => handleEditTeam(team)}
-                            className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors mt-3"
-                          >
-                            Edit Team
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center space-x-3">
+                            <img
+                              src={'https://via.placeholder.com/40'}
+                              alt="Team Icon"
+                              className="w-10 h-10 rounded-full"
+                            />
+                            <div>
+                              <h3 className="text-lg font-display text-vibrant-pink">{team.name}</h3>
+                              <p className="text-gray-300 mt-2">{team.description}</p>
+                              <p className="text-sm text-white mt-2">Members: {team.members?.join(', ') || 'None'}</p>
+                            </div>
+                          </div>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleEditTeam(team)}
+                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors mt-3"
+                            >
+                              Edit Team
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </section>
@@ -1432,6 +1463,18 @@ const ProjectHome = ({ user, setUser }) => {
       <div className="md:col-span-2">
         <div className="card glassmorphic animate-fade-in mb-8">
           <div className="flex space-x-4 border-b border-gray-600">
+            <button
+              onClick={() => setActiveTab('metrics')}
+              className={`p-3 ${activeTab === 'metrics' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
+            >
+              Metrics
+            </button>
+            <button
+              onClick={() => setActiveTab('announcements')}
+              className={`p-3 ${activeTab === 'announcements' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
+            >
+              Announcements
+            </button>
             <button
               onClick={() => setActiveTab('activity')}
               className={`p-3 ${activeTab === 'activity' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
@@ -1452,6 +1495,47 @@ const ProjectHome = ({ user, setUser }) => {
             </button>
           </div>
 
+          {activeTab === 'metrics' && (
+            <div className="pt-4">
+              <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Metrics</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
+                  <h3 className="text-lg text-white">Total Projects</h3>
+                  <p className="text-2xl font-bold text-vibrant-pink">{metrics.totalProjects}</p>
+                </div>
+                <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
+                  <h3 className="text-lg text-white">Current Projects</h3>
+                  <p className="text-2xl font-bold text-vibrant-pink">{metrics.currentProjects}</p>
+                </div>
+                <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
+                  <h3 className="text-lg text-white">Past Projects</h3>
+                  <p className="text-2xl font-bold text-vibrant-pink">{metrics.pastProjects}</p>
+                </div>
+                <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
+                  <h3 className="text-lg text-white">Tasks Completed</h3>
+                  <p className="text-2xl font-bold text-vibrant-pink">{metrics.tasksCompleted}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'announcements' && (
+            <div className="pt-4">
+              <h2 className="text-2xl font-display text-vibrant-pink mb-4">Announcements</h2>
+              <p className="text-white">{project?.announcement || 'No announcement'}</p>
+              {isAdmin && (
+                <div className="mt-4">
+                  <textarea
+                    value={project?.announcement || ''}
+                    onChange={(e) => handleUpdateProject({ announcement: e.target.value })}
+                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    placeholder="Post an announcement..."
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'activity' && (
             <div className="pt-4">
               <h2 className="text-2xl font-display text-vibrant-pink mb-4">Activity Log</h2>
@@ -1462,7 +1546,7 @@ const ProjectHome = ({ user, setUser }) => {
                   onChange={(e) => setActivityFilter(e.target.value)}
                   className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                 >
-                  <option value="all">All</option>
+                                   <option value="all">All</option>
                   <option value="tasks">Tasks</option>
                   <option value="posts">Posts</option>
                   <option value="files">Files</option>

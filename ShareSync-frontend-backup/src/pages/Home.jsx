@@ -1,210 +1,142 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getUserDetails, getProjectMetrics, getProjects } from '../utils/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { getUserDetails, getUserProjects, getProjectMetrics } from '../utils/api';
 
-const Home = () => {
+// Helper function to render a user activity infographic
+const UserActivityInfographic = ({ projects, metrics }) => {
+  const activeProjects = projects.filter(project => project.status === 'Active').length;
+  const completedTasks = metrics.tasksCompleted || 0;
+
+  return (
+    <div className="card glassmorphic animate-fade-in mb-8">
+      <h2 className="text-2xl font-display text-vibrant-pink mb-4">Your Activity</h2>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
+          <h3 className="text-lg text-white">Active Projects</h3>
+          <p className="text-2xl font-bold text-vibrant-pink">{activeProjects}</p>
+          <div className="mt-2 w-full bg-gray-800 rounded-full h-4">
+            <div
+              className="bg-neon-blue h-4 rounded-full transition-all duration-500"
+              style={{ width: `${(activeProjects / projects.length) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+        <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
+          <h3 className="text-lg text-white">Tasks Completed</h3>
+          <p className="text-2xl font-bold text-vibrant-pink">{completedTasks}</p>
+          <div className="mt-2 w-full bg-gray-800 rounded-full h-4">
+            <div
+              className="bg-vibrant-pink h-4 rounded-full transition-all duration-500"
+              style={{ width: `${(completedTasks / 50) * 100}%` }} // Assuming 50 as a max for visualization
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Home = ({ user, setUser }) => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [metrics, setMetrics] = useState({
-    totalProjects: 0,
-    currentProjects: 0,
-    pastProjects: 0,
-    tasksCompleted: 0,
-  });
   const [projects, setProjects] = useState([]);
+  const [metrics, setMetrics] = useState({ totalProjects: 0, currentProjects: 0, pastProjects: 0, tasksCompleted: 0 });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [quickProjectTitle, setQuickProjectTitle] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch user details
-        try {
-          console.log('Fetching user details...');
-          const userData = await getUserDetails();
-          setUser(userData);
-        } catch (err) {
-          console.error('Failed to fetch user details:', err.message);
-          setError(prev => prev ? `${prev}; User details failed: ${err.message}` : `User details failed: ${err.message}`);
+        if (!user) {
+          const storedUser = JSON.parse(localStorage.getItem('user'));
+          if (storedUser) {
+            setUser(storedUser);
+          } else {
+            navigate('/login');
+            return;
+          }
         }
 
-        // Fetch project metrics
-        try {
-          console.log('Fetching project metrics...');
-          const metricsData = await getProjectMetrics();
-          setMetrics(metricsData);
-        } catch (err) {
-          console.error('Failed to fetch project metrics:', err.message);
-          // Suppress error display for metrics failure
-          setMetrics({ totalProjects: 0, currentProjects: 0, pastProjects: 0, tasksCompleted: 0 });
-        }
+        console.log('Fetching user details...');
+        const userDetails = await getUserDetails();
+        console.log('User details:', userDetails);
+        setUser(userDetails);
 
-        // Fetch projects
-        try {
-          console.log('Fetching projects...');
-          const projectsData = await getProjects();
-          setProjects(projectsData);
-        } catch (err) {
-          console.error('Failed to fetch projects:', err.message);
-          setError(prev => prev ? `${prev}; Projects failed: ${err.message}` : `Projects failed: ${err.message}`);
-          setProjects([]);
-        }
+        console.log('Fetching user projects...');
+        const userProjects = await getUserProjects();
+        console.log('User projects:', userProjects);
+        setProjects(userProjects);
+
+        console.log('Fetching project metrics...');
+        const projectMetrics = await getProjectMetrics();
+        console.log('Project metrics:', projectMetrics);
+        setMetrics(projectMetrics);
       } catch (err) {
-        setError(`Unexpected error: ${err.message}`);
-        console.error('Home page unexpected error:', err.message);
+        console.error('Fetch data error:', err.message);
+        setError(`Failed to load data: ${err.message}. Please try again later.`);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [user, setUser, navigate]);
 
-  const handleQuickCreate = () => {
-    if (quickProjectTitle.trim()) {
-      navigate('/create-project', { state: { title: quickProjectTitle } });
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    navigate('/login');
   };
 
   if (loading) {
-    return <div className="text-white text-center mt-10">Loading...</div>;
+    return <div className="text-white text-center mt-10 animate-shimmer">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-white text-center mt-10">{error}</div>;
+  }
+
+  if (!user) {
+    return <div className="text-white text-center mt-10">User not authenticated. Please log in.</div>;
   }
 
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 px-4">
-      {/* Center Content */}
-      <div className="md:col-span-2">
-        <section className="mb-6 animate-fade-in">
-          <div className="relative rounded-lg shadow-lg p-8 text-center bg-gradient-to-r from-deep-blue to-vibrant-pink">
-            <div className="absolute inset-0 opacity-10 bg-pattern" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')" }}></div>
-            <div className="relative flex items-center justify-center space-x-4">
-              <img
-                src={user?.profilePicture || 'https://via.placeholder.com/60'}
-                alt="User Avatar"
-                className="w-16 h-16 rounded-full border-4 border-white shadow-md animate-pulse-glow"
-              />
-              <div>
-                <h1 className="text-3xl font-display text-white">
-                  Welcome, {user ? `${user.firstName} ${user.lastName}` : 'User'}!
-                </h1>
-                <p className="text-gray-200 mt-2">Manage your projects with transparency and ease.</p>
-              </div>
-            </div>
-          </div>
-        </section>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <header className="flex justify-between items-center mb-8 animate-fade-in">
+        <h1 className="text-4xl font-display text-vibrant-pink">Welcome, {user.username}!</h1>
+        <button onClick={handleLogout} className="btn-secondary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+          Logout
+        </button>
+      </header>
 
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+      {/* User Activity Infographic */}
+      <UserActivityInfographic projects={projects} metrics={metrics} />
 
-        <section className="mb-6 animate-fade-in">
-          <div className="card">
-            <h2 className="text-xl font-display text-vibrant-pink mb-4">Quick Create Project</h2>
-            <div className="flex items-center space-x-4">
-              <input
-                type="text"
-                value={quickProjectTitle}
-                onChange={(e) => setQuickProjectTitle(e.target.value)}
-                placeholder="Enter project title..."
-              />
-              <button onClick={handleQuickCreate} className="btn-primary">
-                Create
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="mb-6">
-          <h2 className="text-xl font-display text-vibrant-pink mb-4 animate-fade-in">Your Projects</h2>
-          {projects.length === 0 ? (
-            <div className="card text-center animate-fade-in">
-              <p className="text-white">No projects yet. Create one to get started!</p>
-              <button
-                onClick={() => navigate('/create-project')}
-                className="btn-primary mt-4"
+      <section className="card glassmorphic animate-fade-in mb-8">
+        <h2 className="text-2xl font-display text-vibrant-pink mb-4">Your Projects</h2>
+        {projects.length === 0 ? (
+          <p className="text-white">No projects yet. Start by creating a new project!</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map(project => (
+              <Link
+                key={project._id}
+                to={`/project/${project._id}`}
+                className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow"
               >
-                Create Project
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {projects.map(project => (
-                <div
-                  key={project._id}
-                  className="card transform hover:scale-105 transition-transform cursor-pointer animate-fade-in"
-                  onClick={() => navigate(`/project/${project._id}`)}
-                >
-                  <div className="flex items-start space-x-4">
-                    <img
-                      src="https://via.placeholder.com/80"
-                      alt="Project Icon"
-                      className="w-20 h-20 rounded-lg object-cover"
-                    />
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-xl font-display text-vibrant-pink">{project.title}</h3>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/project/${project._id}`);
-                          }}
-                          className="btn-primary"
-                        >
-                          View
-                        </button>
-                      </div>
-                      <p className="text-gray-300 mt-1">{project.description}</p>
-                      <div className="flex space-x-4 mt-2">
-                        <p className="text-sm text-white">Category: {project.category}</p>
-                        <p className="text-sm text-white">Status: {project.status}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-
-      {/* Right Sidebar */}
-      <div className="md:col-span-1">
-        <section className="mb-6 animate-fade-in">
-          <div className="card">
-            <h2 className="text-xl font-display text-vibrant-pink mb-4">Your Progress</h2>
-            <div className="space-y-4">
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform">
-                <h3 className="text-lg text-white">Total Projects</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.totalProjects}</p>
-              </div>
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform">
-                <h3 className="text-lg text-white">Current Projects</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.currentProjects}</p>
-              </div>
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform">
-                <h3 className="text-lg text-white">Past Projects</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.pastProjects}</p>
-              </div>
-              <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform">
-                <h3 className="text-lg text-white">Tasks Completed</h3>
-                <p className="text-2xl font-bold text-vibrant-pink">{metrics.tasksCompleted}</p>
-              </div>
-            </div>
+                <h3 className="text-lg font-display text-vibrant-pink">{project.title}</h3>
+                <p className="text-gray-300 mt-2">{project.description}</p>
+                <p className="text-sm text-white mt-2">Status: {project.status}</p>
+              </Link>
+            ))}
           </div>
-        </section>
+        )}
+      </section>
 
-        <section className="mb-6 animate-fade-in">
-          <div className="card">
-            <h2 className="text-xl font-display text-vibrant-pink mb-2">Notifications</h2>
-            <p className="text-white">No notifications yet.</p>
-          </div>
-        </section>
-
-        <section className="animate-fade-in">
-          <div className="card">
-            <h2 className="text-xl font-display text-vibrant-pink mb-2">Team Activity</h2>
-            <p className="text-white">No recent updates.</p>
-          </div>
-        </section>
-      </div>
+      <section className="text-center animate-fade-in">
+        <Link to="/projects/create" className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+          Create New Project
+        </Link>
+      </section>
     </div>
   );
 };
