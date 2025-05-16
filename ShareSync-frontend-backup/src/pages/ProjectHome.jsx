@@ -27,7 +27,7 @@ const ProjectHome = ({ user, setUser }) => {
   const [metrics, setMetrics] = useState({ totalProjects: 0, currentProjects: 0, pastProjects: 0, tasksCompleted: 0 });
   const [newPost, setNewPost] = useState({ title: '', content: '', category: 'Announcement' });
   const [newComment, setNewComment] = useState({});
-  const [newTask, setNewTask] = useState({ title: '', description: '', assignedTo: [], dueDate: '', priority: 'Medium', pictureUrl: '', voiceRecordingUrl: '' });
+  const [newTask, setNewTask] = useState({ title: '', description: '', assignedTo: [], dueDate: '', priority: 'Medium', file: null });
   const [editTask, setEditTask] = useState(null);
   const [newSubtask, setNewSubtask] = useState({});
   const [taskComment, setTaskComment] = useState({});
@@ -42,8 +42,8 @@ const ProjectHome = ({ user, setUser }) => {
   const [activityFilter, setActivityFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('activity'); // For sidebar tabs
-  const [showComments, setShowComments] = useState({}); // For toggling post comments
+  const [activeTab, setActiveTab] = useState('activity');
+  const [showComments, setShowComments] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,7 +53,6 @@ const ProjectHome = ({ user, setUser }) => {
         console.log('Project data:', projectData);
         setProject(projectData);
 
-        // Initialize comments and subtasks
         const initialComments = {};
         const initialSubtaskComments = {};
         const initialSubtasks = {};
@@ -78,7 +77,6 @@ const ProjectHome = ({ user, setUser }) => {
         setSubtaskComment(initialSubtaskComments);
         setNewSubtask(initialSubtasks);
 
-        // Mock metrics data
         setMetrics({
           totalProjects: 10,
           currentProjects: 5,
@@ -212,12 +210,19 @@ const ProjectHome = ({ user, setUser }) => {
   const handleAddTask = async (e) => {
     e.preventDefault();
     try {
-      const taskData = {
-        ...newTask,
-        userId: user?.id || 'Unknown',
-        createdAt: new Date().toISOString(),
-      };
-      const updatedProject = await addTask(id, taskData);
+      const formData = new FormData();
+      formData.append('title', newTask.title);
+      formData.append('description', newTask.description);
+      formData.append('assignedTo', JSON.stringify(newTask.assignedTo));
+      formData.append('dueDate', newTask.dueDate);
+      formData.append('priority', newTask.priority);
+      formData.append('userId', user?.id || 'Unknown');
+      formData.append('createdAt', new Date().toISOString());
+      if (newTask.file) {
+        formData.append('file', newTask.file);
+      }
+
+      const updatedProject = await addTask(id, formData);
       setProject(updatedProject);
       setTaskComment({ ...taskComment, [updatedProject.tasks[updatedProject.tasks.length - 1]._id]: '' });
       setSubtaskComment(prev => ({
@@ -228,7 +233,7 @@ const ProjectHome = ({ user, setUser }) => {
         }), {}),
       }));
       setNewSubtask({ ...newSubtask, [updatedProject.tasks[updatedProject.tasks.length - 1]._id]: { title: '', description: '', status: 'To Do' } });
-      setNewTask({ title: '', description: '', assignedTo: [], dueDate: '', priority: 'Medium', pictureUrl: '', voiceRecordingUrl: '' });
+      setNewTask({ title: '', description: '', assignedTo: [], dueDate: '', priority: 'Medium', file: null });
 
       const newActivity = {
         action: 'task_added',
@@ -247,12 +252,23 @@ const ProjectHome = ({ user, setUser }) => {
   };
 
   const handleEditTask = (task) => {
-    setEditTask({ ...task, assignedTo: task.assignedTo || [], dueDate: task.dueDate || '', priority: task.priority || 'Medium', pictureUrl: task.pictureUrl || '', voiceRecordingUrl: task.voiceRecordingUrl || '' });
+    setEditTask({ ...task, assignedTo: task.assignedTo || [], dueDate: task.dueDate || '', priority: task.priority || 'Medium', file: null });
   };
 
   const handleUpdateTask = async (taskId, updateData) => {
     try {
-      const updatedProject = await updateTask(id, taskId, updateData);
+      const formData = new FormData();
+      formData.append('title', updateData.title);
+      formData.append('description', updateData.description);
+      formData.append('assignedTo', JSON.stringify(updateData.assignedTo));
+      formData.append('dueDate', updateData.dueDate);
+      formData.append('priority', updateData.priority);
+      formData.append('status', updateData.status);
+      if (updateData.file) {
+        formData.append('file', updateData.file);
+      }
+
+      const updatedProject = await updateTask(id, taskId, formData);
       setProject(updatedProject);
       setEditTask(null);
 
@@ -595,7 +611,6 @@ const ProjectHome = ({ user, setUser }) => {
 
   const notifyMembers = async (project, subject, message) => {
     console.log('Notifying members:', { project, subject, message, notificationPrefs });
-    // Backend should handle actual notifications
   };
 
   const filteredActivityLog = (project?.activityLog || []).filter(activity => {
@@ -710,7 +725,7 @@ const ProjectHome = ({ user, setUser }) => {
         <section className="mb-8">
           <div className="card glassmorphic animate-fade-in">
             <h2 className="text-2xl font-display text-vibrant-pink mb-4">Posts</h2>
-            <div className="mb-6 space-y-4">
+            <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
               <div className="flex items-center space-x-3">
                 <img
                   src={user?.profilePicture || 'https://via.placeholder.com/40'}
@@ -723,7 +738,7 @@ const ProjectHome = ({ user, setUser }) => {
                   value={newPost.title}
                   onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
                   placeholder="What's on your mind?"
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                 />
               </div>
               <div className="space-y-4">
@@ -731,9 +746,9 @@ const ProjectHome = ({ user, setUser }) => {
                   value={newPost.content}
                   onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
                   placeholder="Add more details..."
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
                 />
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-between">
                   <select
                     value={newPost.category}
                     onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}
@@ -743,7 +758,7 @@ const ProjectHome = ({ user, setUser }) => {
                     <option value="Poll">Poll</option>
                     <option value="Picture">Picture</option>
                   </select>
-                  <button onClick={handleAddPost} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                  <button onClick={handleAddPost} className="btn-primary px-6 py-2 neumorphic hover:scale-105 transition-transform animate-pulse-glow">
                     Post
                   </button>
                 </div>
@@ -755,10 +770,10 @@ const ProjectHome = ({ user, setUser }) => {
             ) : (
               <div className="space-y-6">
                 {project.posts.map(post => (
-                  <div key={post._id} className="card glassmorphic animate-fade-in">
+                  <div key={post._id} className="card glassmorphic animate-fade-in p-4">
                     <div className="flex items-center space-x-3 mb-3">
                       <img
-                        src={'https://via.placeholder.com/40'} // Placeholder; replace with post.userId's avatar if available
+                        src={'https://via.placeholder.com/40'}
                         alt="Post Author"
                         className="w-10 h-10 rounded-full"
                       />
@@ -806,7 +821,7 @@ const ProjectHome = ({ user, setUser }) => {
                                 alt="Comment Author"
                                 className="w-8 h-8 rounded-full"
                               />
-                              <div className="bg-dark-navy p-2 rounded-lg">
+                              <div className="bg-gray-800 p-2 rounded-lg">
                                 <p className="text-white font-medium">{comment.userId}</p>
                                 <p className="text-gray-300">{comment.content}</p>
                                 <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
@@ -825,11 +840,11 @@ const ProjectHome = ({ user, setUser }) => {
                             value={newComment[post._id] || ''}
                             onChange={(e) => setNewComment({ ...newComment, [post._id]: e.target.value })}
                             placeholder="Write a comment..."
-                            className="w-full p-2 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            className="w-full p-2 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                           />
                           <button
                             onClick={() => handleAddPostComment(post._id)}
-                            className="btn-primary neumorphic hover:scale-105 transition-transform"
+                            className="btn-primary px-4 py-1 neumorphic hover:scale-105 transition-transform"
                           >
                             Post
                           </button>
@@ -846,103 +861,105 @@ const ProjectHome = ({ user, setUser }) => {
         <section className="mb-8">
           <div className="card glassmorphic animate-fade-in">
             <h2 className="text-2xl font-display text-vibrant-pink mb-4">Tasks</h2>
-            <form onSubmit={handleAddTask} className="mb-6 space-y-4">
-              <div>
-                <label className="block text-white mb-2 font-medium">Title</label>
-                <input
-                  type="text"
-                  value={newTask.title}
-                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                  required
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-white mb-2 font-medium">Description (Markdown Supported)</label>
-                <textarea
-                  value={newTask.description}
-                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  placeholder="Enter task description (e.g., **bold**, *italic*, - list item)"
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
-                />
-              </div>
-              <div>
-                <label className="block text-white mb-2 font-medium">Picture URL</label>
-                <input
-                  type="text"
-                  value={newTask.pictureUrl}
-                  onChange={(e) => setNewTask({ ...newTask, pictureUrl: e.target.value })}
-                  placeholder="Enter picture URL"
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-white mb-2 font-medium">Voice Recording URL</label>
-                <input
-                  type="text"
-                  value={newTask.voiceRecordingUrl}
-                  onChange={(e) => setNewTask({ ...newTask, voiceRecordingUrl: e.target.value })}
-                  placeholder="Enter voice recording URL"
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-white mb-2 font-medium">Due Date</label>
-                <input
-                  type="date"
-                  value={newTask.dueDate}
-                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-white mb-2 font-medium">Priority</label>
-                <select
-                  value={newTask.priority}
-                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-white mb-2 font-medium">Assigned To</label>
-                <select
-                  multiple
-                  value={newTask.assignedTo}
-                  onChange={(e) => setNewTask({ ...newTask, assignedTo: Array.from(e.target.selectedOptions, option => option.value) })}
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                >
-                  {(project?.sharedWith || []).map(userId => (
-                    <option key={userId} value={userId}>{userId}</option>
-                  ))}
-                  {(project?.teams || []).map(team => (
-                    <option key={`team-${team._id}`} value={`team-${team._id}`}>{team.name}</option>
-                  ))}
-                </select>
-              </div>
-              <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                Add Task
-              </button>
-            </form>
+            <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
+              <form onSubmit={handleAddTask} className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <img
+                    src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                    alt="User Avatar"
+                    className="w-10 h-10 rounded-full"
+                  />
+                  <input
+                    type="text"
+                    value={newTask.title}
+                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                    required
+                    placeholder="Add a new task..."
+                    className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white mb-2 font-medium">Description (Markdown Supported)</label>
+                  <textarea
+                    value={newTask.description}
+                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                    placeholder="Enter task description (e.g., **bold**, *italic*, - list item)"
+                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white mb-2 font-medium">Attach File</label>
+                  <input
+                    type="file"
+                    onChange={(e) => setNewTask({ ...newTask, file: e.target.files[0] })}
+                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  />
+                  {newTask.file && (
+                    <p className="text-gray-300 mt-1">Selected: {newTask.file.name}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-white mb-2 font-medium">Due Date</label>
+                  <input
+                    type="date"
+                    value={newTask.dueDate}
+                    onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white mb-2 font-medium">Priority</label>
+                  <select
+                    value={newTask.priority}
+                    onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-white mb-2 font-medium">Assigned To</label>
+                  <select
+                    multiple
+                    value={newTask.assignedTo}
+                    onChange={(e) => setNewTask({ ...newTask, assignedTo: Array.from(e.target.selectedOptions, option => option.value) })}
+                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  >
+                    {(project?.sharedWith || []).map(userId => (
+                      <option key={userId} value={userId}>{userId}</option>
+                    ))}
+                    {(project?.teams || []).map(team => (
+                      <option key={`team-${team._id}`} value={`team-${team._id}`}>{team.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                  Add Task
+                </button>
+              </form>
+            </div>
 
             {(!project?.tasks || project.tasks.length === 0) ? (
               <p className="text-white">No tasks yet.</p>
             ) : (
               <div className="space-y-6">
                 {project.tasks.map(task => (
-                  <div key={task._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-fade-in">
+                  <div key={task._id} className="card glassmorphic animate-fade-in p-4">
                     {editTask && editTask._id === task._id ? (
                       <div className="space-y-4">
-                        <div>
-                          <label className="block text-white mb-2 font-medium">Title</label>
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                            alt="User Avatar"
+                            className="w-10 h-10 rounded-full"
+                          />
                           <input
                             type="text"
                             value={editTask.title}
                             onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                           />
                         </div>
                         <div>
@@ -950,28 +967,19 @@ const ProjectHome = ({ user, setUser }) => {
                           <textarea
                             value={editTask.description}
                             onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
                           />
                         </div>
                         <div>
-                          <label className="block text-white mb-2 font-medium">Picture URL</label>
+                          <label className="block text-white mb-2 font-medium">Attach File</label>
                           <input
-                            type="text"
-                            value={editTask.pictureUrl}
-                            onChange={(e) => setEditTask({ ...editTask, pictureUrl: e.target.value })}
-                            placeholder="Enter picture URL"
-                            className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            type="file"
+                            onChange={(e) => setEditTask({ ...editTask, file: e.target.files[0] })}
+                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                           />
-                        </div>
-                        <div>
-                          <label className="block text-white mb-2 font-medium">Voice Recording URL</label>
-                          <input
-                            type="text"
-                            value={editTask.voiceRecordingUrl}
-                            onChange={(e) => setEditTask({ ...editTask, voiceRecordingUrl: e.target.value })}
-                            placeholder="Enter voice recording URL"
-                            className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          />
+                          {editTask.file && (
+                            <p className="text-gray-300 mt-1">Selected: {editTask.file.name}</p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-white mb-2 font-medium">Due Date</label>
@@ -979,7 +987,7 @@ const ProjectHome = ({ user, setUser }) => {
                             type="date"
                             value={editTask.dueDate}
                             onChange={(e) => setEditTask({ ...editTask, dueDate: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                           />
                         </div>
                         <div>
@@ -987,7 +995,7 @@ const ProjectHome = ({ user, setUser }) => {
                           <select
                             value={editTask.priority}
                             onChange={(e) => setEditTask({ ...editTask, priority: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                           >
                             <option value="Low">Low</option>
                             <option value="Medium">Medium</option>
@@ -1000,7 +1008,7 @@ const ProjectHome = ({ user, setUser }) => {
                             multiple
                             value={editTask.assignedTo}
                             onChange={(e) => setEditTask({ ...editTask, assignedTo: Array.from(e.target.selectedOptions, option => option.value) })}
-                            className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                           >
                             {(project?.sharedWith || []).map(userId => (
                               <option key={userId} value={userId}>{userId}</option>
@@ -1015,7 +1023,7 @@ const ProjectHome = ({ user, setUser }) => {
                           <select
                             value={editTask.status}
                             onChange={(e) => setEditTask({ ...editTask, status: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                           >
                             <option value="To Do">To Do</option>
                             <option value="In Progress">In Progress</option>
@@ -1052,21 +1060,16 @@ const ProjectHome = ({ user, setUser }) => {
                         </div>
                         <h3 className="text-lg font-display text-vibrant-pink">{task.title}</h3>
                         <p className="text-gray-300 mt-2">{task.description}</p>
-                        {task.pictureUrl && (
+                        {task.fileUrl && (
                           <div className="mt-4">
-                            <img
-                              src={task.pictureUrl}
-                              alt="Task Image"
-                              className="w-full h-48 object-cover rounded-lg"
-                              onError={(e) => (e.target.src = 'https://via.placeholder.com/150?text=Image')}
-                            />
-                          </div>
-                        )}
-                        {task.voiceRecordingUrl && (
-                          <div className="mt-4">
-                            <audio controls src={task.voiceRecordingUrl} className="w-full">
-                              Your browser does not support the audio element.
-                            </audio>
+                            <a
+                              href={task.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-vibrant-pink hover:text-neon-blue transition-colors"
+                            >
+                              View Attached File
+                            </a>
                           </div>
                         )}
                         <p className="text-sm text-white mt-2">Status: {task.status}</p>
@@ -1077,7 +1080,7 @@ const ProjectHome = ({ user, setUser }) => {
                         <select
                           value={task.status}
                           onChange={(e) => handleUpdateTask(task._id, { status: e.target.value })}
-                          className="w-full mt-3 p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                          className="w-full mt-3 p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                         >
                           <option value="To Do">To Do</option>
                           <option value="In Progress">In Progress</option>
@@ -1144,7 +1147,7 @@ const ProjectHome = ({ user, setUser }) => {
                                           alt="Comment Author"
                                           className="w-6 h-6 rounded-full"
                                         />
-                                        <div className="bg-dark-navy p-1 rounded-lg">
+                                        <div className="bg-gray-800 p-1 rounded-lg">
                                           <p className="text-white text-sm font-medium">{comment.userId}</p>
                                           <p className="text-gray-300 text-sm">{comment.content}</p>
                                           <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
@@ -1163,7 +1166,7 @@ const ProjectHome = ({ user, setUser }) => {
                                       value={subtaskComment[subtask._id] || ''}
                                       onChange={(e) => setSubtaskComment({ ...subtaskComment, [subtask._id]: e.target.value })}
                                       placeholder="Add a comment..."
-                                      className="w-full p-1 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                      className="w-full p-1 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                                     />
                                     <button
                                       onClick={() => handleAddSubtaskComment(task._id, subtask._id)}
@@ -1182,19 +1185,19 @@ const ProjectHome = ({ user, setUser }) => {
                               placeholder="Subtask Title"
                               value={newSubtask[task._id]?.title || ''}
                               onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], title: e.target.value } })}
-                              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                             />
                             <input
                               type="text"
                               placeholder="Description"
                               value={newSubtask[task._id]?.description || ''}
                               onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], description: e.target.value } })}
-                              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                             />
                             <select
                               value={newSubtask[task._id]?.status || 'To Do'}
                               onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], status: e.target.value } })}
-                              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                             >
                               <option value="To Do">To Do</option>
                               <option value="In Progress">In Progress</option>
@@ -1205,7 +1208,7 @@ const ProjectHome = ({ user, setUser }) => {
                               className="btn-primary mt-2 neumorphic hover:scale-105 transition-transform"
                             >
                               Add Subtask
-                            </button>
+                              </button>
                           </div>
                         </div>
                         <div className="mt-4">
@@ -1220,7 +1223,7 @@ const ProjectHome = ({ user, setUser }) => {
                                   alt="Comment Author"
                                   className="w-8 h-8 rounded-full"
                                 />
-                                <div className="bg-dark-navy p-2 rounded-lg">
+                                <div className="bg-gray-800 p-2 rounded-lg">
                                   <p className="text-white font-medium">{comment.userId}</p>
                                   <p className="text-gray-300">{comment.content}</p>
                                   <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
@@ -1239,11 +1242,11 @@ const ProjectHome = ({ user, setUser }) => {
                               value={taskComment[task._id] || ''}
                               onChange={(e) => setTaskComment({ ...taskComment, [task._id]: e.target.value })}
                               placeholder="Add a comment..."
-                              className="w-full p-2 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              className="w-full p-2 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                             />
                             <button
                               onClick={() => handleAddTaskComment(task._id)}
-                              className="btn-primary neumorphic hover:scale-105 transition-transform"
+                              className="btn-primary px-4 py-1 neumorphic hover:scale-105 transition-transform"
                             >
                               Post
                             </button>
@@ -1267,8 +1270,17 @@ const ProjectHome = ({ user, setUser }) => {
               ) : (
                 [...new Set([...(project?.admins || []), ...(project?.sharedWith || [])])].map(memberId => (
                   <div key={memberId} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow">
-                    <h3 className="text-lg font-display text-vibrant-pink">{memberId}</h3>
-                    <p className="text-sm text-white">Role: {project?.admins?.includes(memberId) ? 'Admin' : 'Member'}</p>
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src={'https://via.placeholder.com/40'}
+                        alt="Member Avatar"
+                        className="w-10 h-10 rounded-full"
+                      />
+                      <div>
+                        <h3 className="text-lg font-display text-vibrant-pink">{memberId}</h3>
+                        <p className="text-sm text-white">Role: {project?.admins?.includes(memberId) ? 'Admin' : 'Member'}</p>
+                      </div>
+                    </div>
                   </div>
                 ))
               )}
@@ -1280,43 +1292,51 @@ const ProjectHome = ({ user, setUser }) => {
           <div className="card glassmorphic animate-fade-in">
             <h2 className="text-2xl font-display text-vibrant-pink mb-4">Teams</h2>
             {isAdmin && (
-              <form onSubmit={handleAddTeam} className="mb-6 space-y-4">
-                <div>
-                  <label className="block text-white mb-2 font-medium">Team Name</label>
-                  <input
-                    type="text"
-                    value={newTeam.name}
-                    onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-                    required
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Description</label>
-                  <textarea
-                    value={newTeam.description}
-                    onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
-                    required
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Members</label>
-                  <select
-                    multiple
-                    value={newTeam.members}
-                    onChange={(e) => setNewTeam({ ...newTeam, members: Array.from(e.target.selectedOptions, option => option.value) })}
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  >
-                    {(project?.sharedWith || []).map(userId => (
-                      <option key={userId} value={userId}>{userId}</option>
-                    ))}
-                  </select>
-                </div>
-                <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                  Add Team
-                </button>
-              </form>
+              <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
+                <form onSubmit={handleAddTeam} className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                      alt="User Avatar"
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <input
+                      type="text"
+                      value={newTeam.name}
+                      onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                      required
+                      placeholder="Team Name"
+                      className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-white mb-2 font-medium">Description</label>
+                    <textarea
+                      value={newTeam.description}
+                      onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
+                      required
+                      placeholder="Team Description"
+                      className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-white mb-2 font-medium">Members</label>
+                    <select
+                      multiple
+                      value={newTeam.members}
+                      onChange={(e) => setNewTeam({ ...newTeam, members: Array.from(e.target.selectedOptions, option => option.value) })}
+                      className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    >
+                      {(project?.sharedWith || []).map(userId => (
+                        <option key={userId} value={userId}>{userId}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                    Add Team
+                  </button>
+                </form>
+              </div>
             )}
 
             {(!project?.teams || project.teams.length === 0) ? (
@@ -1324,16 +1344,20 @@ const ProjectHome = ({ user, setUser }) => {
             ) : (
               <div className="space-y-4">
                 {project.teams.map(team => (
-                  <div key={team._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow">
+                  <div key={team._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
                     {editTeam && editTeam._id === team._id ? (
                       <div className="space-y-4">
-                        <div>
-                          <label className="block text-white mb-2 font-medium">Team Name</label>
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                            alt="User Avatar"
+                            className="w-10 h-10 rounded-full"
+                          />
                           <input
                             type="text"
                             value={editTeam.name}
                             onChange={(e) => setEditTeam({ ...editTeam, name: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                           />
                         </div>
                         <div>
@@ -1341,7 +1365,7 @@ const ProjectHome = ({ user, setUser }) => {
                           <textarea
                             value={editTeam.description}
                             onChange={(e) => setEditTeam({ ...editTeam, description: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
                           />
                         </div>
                         <div>
@@ -1350,7 +1374,7 @@ const ProjectHome = ({ user, setUser }) => {
                             multiple
                             value={editTeam.members}
                             onChange={(e) => setEditTeam({ ...editTeam, members: Array.from(e.target.selectedOptions, option => option.value) })}
-                            className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                           >
                             {(project?.sharedWith || []).map(userId => (
                               <option key={userId} value={userId}>{userId}</option>
@@ -1374,9 +1398,18 @@ const ProjectHome = ({ user, setUser }) => {
                       </div>
                     ) : (
                       <>
-                        <h3 className="text-lg font-display text-vibrant-pink">{team.name}</h3>
-                        <p className="text-gray-300 mt-2">{team.description}</p>
-                        <p className="text-sm text-white mt-2">Members: {team.members?.join(', ') || 'None'}</p>
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src={'https://via.placeholder.com/40'}
+                            alt="Team Icon"
+                            className="w-10 h-10 rounded-full"
+                          />
+                          <div>
+                            <h3 className="text-lg font-display text-vibrant-pink">{team.name}</h3>
+                            <p className="text-gray-300 mt-2">{team.description}</p>
+                            <p className="text-sm text-white mt-2">Members: {team.members?.join(', ') || 'None'}</p>
+                          </div>
+                        </div>
                         {isAdmin && (
                           <button
                             onClick={() => handleEditTeam(team)}
@@ -1427,7 +1460,7 @@ const ProjectHome = ({ user, setUser }) => {
                 <select
                   value={activityFilter}
                   onChange={(e) => setActivityFilter(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                 >
                   <option value="all">All</option>
                   <option value="tasks">Tasks</option>
@@ -1442,10 +1475,19 @@ const ProjectHome = ({ user, setUser }) => {
               ) : (
                 <div className="space-y-4">
                   {filteredActivityLog.map((activity, idx) => (
-                    <div key={idx} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow">
-                      <p className="text-white">{activity.details}</p>
-                      <p className="text-sm text-gray-300">By: {activity.userId}</p>
-                      <p className="text-sm text-gray-300">{new Date(activity.createdAt).toLocaleString()}</p>
+                    <div key={idx} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={'https://via.placeholder.com/32'}
+                          alt="Activity Icon"
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div>
+                          <p className="text-white">{activity.details}</p>
+                          <p className="text-sm text-gray-300">By: {activity.userId}</p>
+                          <p className="text-sm text-gray-300">{new Date(activity.createdAt).toLocaleString()}</p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1456,73 +1498,96 @@ const ProjectHome = ({ user, setUser }) => {
           {activeTab === 'files' && (
             <div className="pt-4">
               <h2 className="text-2xl font-display text-vibrant-pink mb-4">Files</h2>
-              <form onSubmit={handleAddFile} className="mb-6 space-y-4">
-                <div>
-                  <label className="block text-white mb-2 font-medium">File Name</label>
-                  <input
-                    type="text"
-                    value={newFile.name}
-                    onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
-                    required
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">File URL</label>
-                  <input
-                    type="text"
-                    value={newFile.url}
-                    onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
-                    required
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                </div>
-                <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                  Add File
-                </button>
-              </form>
-              <form onSubmit={handleRequestFile} className="mb-6 space-y-4">
-                <div>
-                  <label className="block text-white mb-2 font-medium">Request File Name</label>
-                  <input
-                    type="text"
-                    value={newFile.name}
-                    onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
-                    required
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Request File URL</label>
-                  <input
-                    type="text"
-                    value={newFile.url}
-                    onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
-                    required
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                </div>
-                <button type="submit" className="btn-secondary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                  Request File
-                </button>
-              </form>
+              <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
+                <form onSubmit={handleAddFile} className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                      alt="User Avatar"
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <input
+                      type="text"
+                      value={newFile.name}
+                      onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
+                      required
+                      placeholder="File Name"
+                      className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-white mb-2 font-medium">File URL</label>
+                    <input
+                      type="text"
+                      value={newFile.url}
+                      onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
+                      required
+                      placeholder="File URL"
+                      className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    />
+                  </div>
+                  <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                    Add File
+                  </button>
+                </form>
+                <form onSubmit={handleRequestFile} className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                      alt="User Avatar"
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <input
+                      type="text"
+                      value={newFile.name}
+                      onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
+                      required
+                      placeholder="Request File Name"
+                      className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-white mb-2 font-medium">Request File URL</label>
+                    <input
+                      type="text"
+                      value={newFile.url}
+                      onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
+                      required
+                      placeholder="Request File URL"
+                      className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    />
+                  </div>
+                  <button type="submit" className="btn-secondary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                    Request File
+                  </button>
+                </form>
+              </div>
 
               {(!project?.files || project.files.length === 0) ? (
                 <p className="text-white">No files yet.</p>
               ) : (
                 <div className="space-y-4">
                   {project.files.map(file => (
-                    <div key={file._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow">
-                      <h3 className="text-lg font-display text-vibrant-pink">{file.name}</h3>
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                      >
-                        Open File
-                      </a>
-                      <p className="text-sm text-white mt-2">Uploaded by: {file.uploadedBy}</p>
+                    <div key={file._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={'https://via.placeholder.com/32'}
+                          alt="File Icon"
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div>
+                          <h3 className="text-lg font-display text-vibrant-pink">{file.name}</h3>
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
+                          >
+                            Open File
+                          </a>
+                          <p className="text-sm text-white mt-2">Uploaded by: {file.uploadedBy}</p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1553,136 +1618,140 @@ const ProjectHome = ({ user, setUser }) => {
       {/* Share Modal */}
       {showShareModal && (
         <>
-          <div className="modal-overlay" onClick={() => setShowShareModal(false)}></div>
-          <div className="modal glassmorphic">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-6">Share Project</h2>
-            <div className="mb-6">
-              <label className="block text-white mb-3 font-medium">User ID to Share With</label>
-              <input
-                type="text"
-                value={shareUserId}
-                onChange={(e) => setShareUserId(e.target.value)}
-                placeholder="Enter user ID"
-                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-              />
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowShareModal(false)}></div>
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
+            <div className="modal glassmorphic p-6">
+              <h2 className="text-2xl font-display text-vibrant-pink mb-6">Share Project</h2>
+              <div className="mb-6">
+                <label className="block text-white mb-3 font-medium">User ID to Share With</label>
+                <input
+                  type="text"
+                  value={shareUserId}
+                  onChange={(e) => setShareUserId(e.target.value)}
+                  placeholder="Enter user ID"
+                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                />
+              </div>
+              <div className="flex space-x-3">
+                <button onClick={handleShareProject} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                  Share
+                </button>
+                <button onClick={handleRequestShare} className="btn-secondary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                  Request Share
+                </button>
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="btn-secondary neumorphic hover:scale-105 transition-transform"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-            <div className="flex space-x-3">
-              <button onClick={handleShareProject} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                Share
-              </button>
-              <button onClick={handleRequestShare} className="btn-secondary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                Request Share
-              </button>
-              <button
-                                onClick={() => setShowShareModal(false)}
-                                className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                
-                      {/* Settings Modal */}
-                      {showSettingsModal && (
-                        <>
-                          <div className="modal-overlay" onClick={() => setShowSettingsModal(false)}></div>
-                          <div className="modal glassmorphic">
-                            <h2 className="text-2xl font-display text-vibrant-pink mb-6">Notification Preferences</h2>
-                            <div className="space-y-4">
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  checked={notificationPrefs.email}
-                                  onChange={(e) => setNotificationPrefs({ ...notificationPrefs, email: e.target.checked })}
-                                  className="mr-2"
-                                />
-                                <label className="text-white">Email Notifications</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  checked={notificationPrefs.sms}
-                                  onChange={(e) => setNotificationPrefs({ ...notificationPrefs, sms: e.target.checked })}
-                                  className="mr-2"
-                                />
-                                <label className="text-white">SMS Notifications</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  checked={notificationPrefs.push}
-                                  onChange={(e) => setNotificationPrefs({ ...notificationPrefs, push: e.target.checked })}
-                                  className="mr-2"
-                                />
-                                <label className="text-white">Push Notifications</label>
-                              </div>
-                              <div>
-                                <label className="block text-white mb-2 font-medium">Notify me about:</label>
-                                <div className="flex items-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={notificationPrefs.tasks}
-                                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, tasks: e.target.checked })}
-                                    className="mr-2"
-                                  />
-                                  <label className="text-white">Task Updates</label>
-                                </div>
-                                <div className="flex items-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={notificationPrefs.posts}
-                                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, posts: e.target.checked })}
-                                    className="mr-2"
-                                  />
-                                  <label className="text-white">Post Updates</label>
-                                </div>
-                                <div className="flex items-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={notificationPrefs.files}
-                                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, files: e.target.checked })}
-                                    className="mr-2"
-                                  />
-                                  <label className="text-white">File Updates</label>
-                                </div>
-                                <div className="flex items-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={notificationPrefs.shares}
-                                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, shares: e.target.checked })}
-                                    className="mr-2"
-                                  />
-                                  <label className="text-white">Share Requests</label>
-                                </div>
-                                <div className="flex items-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={notificationPrefs.teams}
-                                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, teams: e.target.checked })}
-                                    className="mr-2"
-                                  />
-                                  <label className="text-white">Team Updates</label>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex space-x-3 mt-6">
-                              <button onClick={handleUpdateNotificationPrefs} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                                Save
-                              </button>
-                              <button
-                                onClick={() => setShowSettingsModal(false)}
-                                className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                };
-                
-                export default ProjectHome;
+          </div>
+        </>
+      )}
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <>
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowSettingsModal(false)}></div>
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
+            <div className="modal glassmorphic p-6">
+              <h2 className="text-2xl font-display text-vibrant-pink mb-6">Notification Preferences</h2>
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.email}
+                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, email: e.target.checked })}
+                    className="mr-2"
+                  />
+                  <label className="text-white">Email Notifications</label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.sms}
+                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, sms: e.target.checked })}
+                    className="mr-2"
+                  />
+                  <label className="text-white">SMS Notifications</label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.push}
+                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, push: e.target.checked })}
+                    className="mr-2"
+                  />
+                  <label className="text-white">Push Notifications</label>
+                </div>
+                <div>
+                  <label className="block text-white mb-2 font-medium">Notify me about:</label>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={notificationPrefs.tasks}
+                      onChange={(e) => setNotificationPrefs({ ...notificationPrefs, tasks: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <label className="text-white">Task Updates</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={notificationPrefs.posts}
+                      onChange={(e) => setNotificationPrefs({ ...notificationPrefs, posts: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <label className="text-white">Post Updates</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={notificationPrefs.files}
+                      onChange={(e) => setNotificationPrefs({ ...notificationPrefs, files: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <label className="text-white">File Updates</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={notificationPrefs.shares}
+                      onChange={(e) => setNotificationPrefs({ ...notificationPrefs, shares: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <label className="text-white">Share Requests</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={notificationPrefs.teams}
+                      onChange={(e) => setNotificationPrefs({ ...notificationPrefs, teams: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <label className="text-white">Team Updates</label>
+                  </div>
+                </div>
+              </div>
+              <div className="flex space-x-3 mt-6">
+                <button onClick={handleUpdateNotificationPrefs} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                  Save
+                </button>
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="btn-secondary neumorphic hover:scale-105 transition-transform"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default ProjectHome;

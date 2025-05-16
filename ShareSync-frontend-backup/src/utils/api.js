@@ -1,13 +1,15 @@
 const API_URL = 'http://localhost:3000/api';
 
-const apiRequest = async (endpoint, method = 'GET', body = null) => {
+const apiRequest = async (endpoint, method = 'GET', body = null, isFormData = false) => {
   const token = localStorage.getItem('token');
-  const headers = {
-    'Content-Type': 'application/json',
-  };
+  const headers = {};
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
   }
 
   const options = {
@@ -16,7 +18,7 @@ const apiRequest = async (endpoint, method = 'GET', body = null) => {
   };
 
   if (body) {
-    options.body = JSON.stringify(body);
+    options.body = isFormData ? body : JSON.stringify(body);
   }
 
   try {
@@ -58,7 +60,7 @@ export const login = (email, password) => apiRequest('/auth/login', 'POST', { em
 export const register = (data) => apiRequest('/auth/register', 'POST', data);
 export const forgotPassword = (email) => apiRequest('/auth/forgot-password', 'POST', { email });
 export const resetPassword = (token, newPassword) => apiRequest('/auth/reset-password', 'POST', { token, newPassword });
-export const updateProfile = (data) => apiRequest('/users/profile', 'PUT', data);
+export const updateProfile = (data) => apiRequest('/users/profile', 'PUT', data, true); // Set isFormData to true
 export const updateNotificationPreferences = (preferences) => apiRequest('/users/notifications', 'PUT', { preferences });
 export const getUserProjects = () => apiRequest('/users/projects');
 export const getProjectMetrics = () => apiRequest('/projects/metrics');
@@ -73,7 +75,7 @@ export const addTask = (projectId, data) => apiRequest(`/projects/${projectId}/t
 export const updateTask = (projectId, taskId, data) => apiRequest(`/projects/${projectId}/tasks/${taskId}`, 'PUT', data);
 export const addSubtask = (projectId, taskId, data) => apiRequest(`/projects/${projectId}/tasks/${taskId}/subtasks`, 'POST', data);
 export const addTaskComment = (projectId, taskId, data) => apiRequest(`/projects/${projectId}/tasks/${taskId}/comments`, 'POST', data);
-export const likeTask = (projectId, taskId) => apiRequest(`/projects/${projectId}/tasks/${taskId}/like`, 'POST');
+export const likeTask = (projectId, taskId, data) => apiRequest(`/projects/${projectId}/tasks/${taskId}/like`, 'POST', data);
 export const addTeam = (projectId, data) => apiRequest(`/projects/${projectId}/teams`, 'POST', data);
 export const updateTeam = (projectId, teamId, data) => apiRequest(`/projects/${projectId}/teams/${teamId}`, 'PUT', data);
 export const addFile = (projectId, data) => apiRequest(`/projects/${projectId}/files`, 'POST', data);
