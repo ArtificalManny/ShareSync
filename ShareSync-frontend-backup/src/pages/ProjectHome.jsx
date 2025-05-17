@@ -96,6 +96,11 @@ const ProjectHome = ({ user, setUser }) => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('activity');
   const [showComments, setShowComments] = useState({});
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  console.log('ProjectHome component rendered at', new Date().toISOString());
+  console.log('User prop:', user);
+  console.log('Project state:', project);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -104,6 +109,7 @@ const ProjectHome = ({ user, setUser }) => {
         const projectData = await getProject(id);
         console.log('Project data:', projectData);
         setProject(projectData);
+        console.log('Project state updated:', projectData);
 
         const initialComments = {};
         const initialSubtaskComments = {};
@@ -145,6 +151,10 @@ const ProjectHome = ({ user, setUser }) => {
     fetchData();
   }, [id]);
 
+  useEffect(() => {
+    console.log('Project state changed:', project);
+  }, [project]);
+
   const handleUpdateProject = async (updateData) => {
     try {
       const updatedProject = await updateProject(id, updateData);
@@ -159,7 +169,6 @@ const ProjectHome = ({ user, setUser }) => {
   const handleAddPost = async (e) => {
     e.preventDefault();
     try {
-      // Validate inputs to prevent errors
       if (!newPost.title.trim() || !newPost.content.trim()) {
         throw new Error('Post title and content are required.');
       }
@@ -700,6 +709,17 @@ const ProjectHome = ({ user, setUser }) => {
 
   return (
     <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 px-4 py-8">
+      {/* Debug Header */}
+      <div className="md:col-span-4 mb-4 p-4 bg-dark-navy rounded-lg shadow-inner">
+        <h1 className="text-2xl font-display text-vibrant-pink">Debug: Project Page Updated - May 16, 2025</h1>
+        <button
+          onClick={() => setForceUpdate(prev => prev + 1)}
+          className="btn-primary mt-2"
+        >
+          Force Re-render
+        </button>
+      </div>
+
       {/* Center Content */}
       <div className="md:col-span-2">
         <header className="mb-6 animate-fade-in">
@@ -727,7 +747,7 @@ const ProjectHome = ({ user, setUser }) => {
         {/* Posts Section - Moved to Top */}
         <section className="mb-8">
           <div className="card glassmorphic animate-fade-in">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Posts</h2>
+            <h2 className="text-2xl font-display text-vibrant-pink mb-4">[Updated] Project Posts Feed</h2>
             <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
               <div className="flex items-center space-x-3">
                 <img
@@ -1441,401 +1461,401 @@ const ProjectHome = ({ user, setUser }) => {
                             </div>
                           </div>
                           {isAdmin && (
-                            <button
-                              onClick={() => handleEditTeam(team)}
-                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors mt-3"
-                            >
-                              Edit Team
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-      </div>
-
-      {/* Right Sidebar with Tabs */}
-      <div className="md:col-span-2">
-        <div className="card glassmorphic animate-fade-in mb-8">
-          <div className="flex space-x-4 border-b border-gray-600">
-            <button
-              onClick={() => setActiveTab('metrics')}
-              className={`p-3 ${activeTab === 'metrics' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
-            >
-              Metrics
-            </button>
-            <button
-              onClick={() => setActiveTab('announcements')}
-              className={`p-3 ${activeTab === 'announcements' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
-            >
-              Announcements
-            </button>
-            <button
-              onClick={() => setActiveTab('activity')}
-              className={`p-3 ${activeTab === 'activity' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
-            >
-              Activity
-            </button>
-            <button
-              onClick={() => setActiveTab('files')}
-              className={`p-3 ${activeTab === 'files' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
-            >
-              Files
-            </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`p-3 ${activeTab === 'settings' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
-            >
-              Settings
-            </button>
-          </div>
-
-          {activeTab === 'metrics' && (
-            <div className="pt-4">
-              <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Metrics</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                  <h3 className="text-lg text-white">Total Projects</h3>
-                  <p className="text-2xl font-bold text-vibrant-pink">{metrics.totalProjects}</p>
-                </div>
-                <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                  <h3 className="text-lg text-white">Current Projects</h3>
-                  <p className="text-2xl font-bold text-vibrant-pink">{metrics.currentProjects}</p>
-                </div>
-                <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                  <h3 className="text-lg text-white">Past Projects</h3>
-                  <p className="text-2xl font-bold text-vibrant-pink">{metrics.pastProjects}</p>
-                </div>
-                <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                  <h3 className="text-lg text-white">Tasks Completed</h3>
-                  <p className="text-2xl font-bold text-vibrant-pink">{metrics.tasksCompleted}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'announcements' && (
-            <div className="pt-4">
-              <h2 className="text-2xl font-display text-vibrant-pink mb-4">Announcements</h2>
-              <p className="text-white">{project?.announcement || 'No announcement'}</p>
-              {isAdmin && (
-                <div className="mt-4">
-                  <textarea
-                    value={project?.announcement || ''}
-                    onChange={(e) => handleUpdateProject({ announcement: e.target.value })}
-                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                    placeholder="Post an announcement..."
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'activity' && (
-            <div className="pt-4">
-              <h2 className="text-2xl font-display text-vibrant-pink mb-4">Activity Log</h2>
-              <div className="mb-4">
-                <label className="block text-white mb-2 font-medium">Filter Activity</label>
-                <select
-                  value={activityFilter}
-                  onChange={(e) => setActivityFilter(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                >
-                                   <option value="all">All</option>
-                  <option value="tasks">Tasks</option>
-                  <option value="posts">Posts</option>
-                  <option value="files">Files</option>
-                  <option value="shares">Shares</option>
-                  <option value="teams">Teams</option>
-                </select>
-              </div>
-              {filteredActivityLog.length === 0 ? (
-                <p className="text-white">No activity yet.</p>
-              ) : (
-                <div className="space-y-4">
-                  {filteredActivityLog.map((activity, idx) => (
-                    <div key={idx} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
-                      <div className="flex items-center space-x-3">
-                        <img
-                          src={'https://via.placeholder.com/32'}
-                          alt="Activity Icon"
-                          className="w-8 h-8 rounded-full"
-                        />
-                        <div>
-                          <p className="text-white">{activity.details}</p>
-                          <p className="text-sm text-gray-300">By: {activity.userId}</p>
-                          <p className="text-sm text-gray-300">{new Date(activity.createdAt).toLocaleString()}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'files' && (
-            <div className="pt-4">
-              <h2 className="text-2xl font-display text-vibrant-pink mb-4">Files</h2>
-              <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
-                <form onSubmit={handleAddFile} className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={user?.profilePicture || 'https://via.placeholder.com/40'}
-                      alt="User Avatar"
-                      className="w-10 h-10 rounded-full"
-                    />
-                    <input
-                      type="text"
-                      value={newFile.name}
-                      onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
-                      required
-                      placeholder="File Name"
-                      className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-white mb-2 font-medium">File URL</label>
-                    <input
-                      type="text"
-                      value={newFile.url}
-                      onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
-                      required
-                      placeholder="File URL"
-                      className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                    />
-                  </div>
-                  <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                    Add File
-                  </button>
-                </form>
-                <form onSubmit={handleRequestFile} className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={user?.profilePicture || 'https://via.placeholder.com/40'}
-                      alt="User Avatar"
-                      className="w-10 h-10 rounded-full"
-                    />
-                    <input
-                      type="text"
-                      value={newFile.name}
-                      onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
-                      required
-                      placeholder="Request File Name"
-                      className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-white mb-2 font-medium">Request File URL</label>
-                    <input
-                      type="text"
-                      value={newFile.url}
-                      onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
-                      required
-                      placeholder="Request File URL"
-                      className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                    />
-                  </div>
-                  <button type="submit" className="btn-secondary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                    Request File
-                  </button>
-                </form>
-              </div>
-
-              {(!project?.files || project.files.length === 0) ? (
-                <p className="text-white">No files yet.</p>
-              ) : (
-                <div className="space-y-4">
-                  {project.files.map(file => (
-                    <div key={file._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
-                      <div className="flex items-center space-x-3">
-                        <img
-                          src={'https://via.placeholder.com/32'}
-                          alt="File Icon"
-                          className="w-8 h-8 rounded-full"
-                        />
-                        <div>
-                          <h3 className="text-lg font-display text-vibrant-pink">{file.name}</h3>
-                          <a
-                            href={file.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                          >
-                            Open File
-                          </a>
-                          <p className="text-sm text-white mt-2">Uploaded by: {file.uploadedBy}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'settings' && (
-            <div className="pt-4">
-              <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Settings</h2>
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow mb-4"
-              >
-                Share Project
-              </button>
-              <button
-                onClick={() => setShowSettingsModal(true)}
-                className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow"
-              >
-                Update Notification Preferences
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Share Modal */}
-      {showShareModal && (
-        <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowShareModal(false)}></div>
-          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
-            <div className="modal glassmorphic p-6">
-              <h2 className="text-2xl font-display text-vibrant-pink mb-6">Share Project</h2>
-              <div className="mb-6">
-                <label className="block text-white mb-3 font-medium">User ID to Share With</label>
-                <input
-                  type="text"
-                  value={shareUserId}
-                  onChange={(e) => setShareUserId(e.target.value)}
-                  placeholder="Enter user ID"
-                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                />
-              </div>
-              <div className="flex space-x-3">
-                <button onClick={handleShareProject} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                  Share
-                </button>
-                <button onClick={handleRequestShare} className="btn-secondary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                  Request Share
-                </button>
-                <button
-                  onClick={() => setShowShareModal(false)}
-                  className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Settings Modal */}
-      {showSettingsModal && (
-        <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowSettingsModal(false)}></div>
-          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
-            <div className="modal glassmorphic p-6">
-              <h2 className="text-2xl font-display text-vibrant-pink mb-6">Notification Preferences</h2>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={notificationPrefs.email}
-                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, email: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <label className="text-white">Email Notifications</label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={notificationPrefs.sms}
-                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, sms: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <label className="text-white">SMS Notifications</label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={notificationPrefs.push}
-                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, push: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <label className="text-white">Push Notifications</label>
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Notify me about:</label>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={notificationPrefs.tasks}
-                      onChange={(e) => setNotificationPrefs({ ...notificationPrefs, tasks: e.target.checked })}
-                      className="mr-2"
-                    />
-                    <label className="text-white">Task Updates</label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={notificationPrefs.posts}
-                      onChange={(e) => setNotificationPrefs({ ...notificationPrefs, posts: e.target.checked })}
-                      className="mr-2"
-                    />
-                    <label className="text-white">Post Updates</label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={notificationPrefs.files}
-                      onChange={(e) => setNotificationPrefs({ ...notificationPrefs, files: e.target.checked })}
-                      className="mr-2"
-                    />
-                    <label className="text-white">File Updates</label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={notificationPrefs.shares}
-                      onChange={(e) => setNotificationPrefs({ ...notificationPrefs, shares: e.target.checked })}
-                      className="mr-2"
-                    />
-                    <label className="text-white">Share Requests</label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={notificationPrefs.teams}
-                      onChange={(e) => setNotificationPrefs({ ...notificationPrefs, teams: e.target.checked })}
-                      className="mr-2"
-                    />
-                    <label className="text-white">Team Updates</label>
-                  </div>
-                </div>
-              </div>
-              <div className="flex space-x-3 mt-6">
-                <button onClick={handleUpdateNotificationPrefs} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                  Save
-                </button>
-                <button
-                  onClick={() => setShowSettingsModal(false)}
-                  className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-export default ProjectHome;
+                                                        <button
+                                                        onClick={() => handleEditTeam(team)}
+                                                        className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors mt-3"
+                                                      >
+                                                        Edit Team
+                                                      </button>
+                                                    )}
+                                                  </>
+                                                )}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  </section>
+                                </div>
+                          
+                                {/* Right Sidebar with Tabs */}
+                                <div className="md:col-span-2">
+                                  <div className="card glassmorphic animate-fade-in mb-8">
+                                    <div className="flex space-x-4 border-b border-gray-600">
+                                      <button
+                                        onClick={() => setActiveTab('metrics')}
+                                        className={`p-3 ${activeTab === 'metrics' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
+                                      >
+                                        Metrics
+                                      </button>
+                                      <button
+                                        onClick={() => setActiveTab('announcements')}
+                                        className={`p-3 ${activeTab === 'announcements' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
+                                      >
+                                        Announcements
+                                      </button>
+                                      <button
+                                        onClick={() => setActiveTab('activity')}
+                                        className={`p-3 ${activeTab === 'activity' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
+                                      >
+                                        Activity
+                                      </button>
+                                      <button
+                                        onClick={() => setActiveTab('files')}
+                                        className={`p-3 ${activeTab === 'files' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
+                                      >
+                                        Files
+                                      </button>
+                                      <button
+                                        onClick={() => setActiveTab('settings')}
+                                        className={`p-3 ${activeTab === 'settings' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
+                                      >
+                                        Settings
+                                      </button>
+                                    </div>
+                          
+                                    {activeTab === 'metrics' && (
+                                      <div className="pt-4">
+                                        <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Metrics</h2>
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
+                                            <h3 className="text-lg text-white">Total Projects</h3>
+                                            <p className="text-2xl font-bold text-vibrant-pink">{metrics.totalProjects}</p>
+                                          </div>
+                                          <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
+                                            <h3 className="text-lg text-white">Current Projects</h3>
+                                            <p className="text-2xl font-bold text-vibrant-pink">{metrics.currentProjects}</p>
+                                          </div>
+                                          <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
+                                            <h3 className="text-lg text-white">Past Projects</h3>
+                                            <p className="text-2xl font-bold text-vibrant-pink">{metrics.pastProjects}</p>
+                                          </div>
+                                          <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
+                                            <h3 className="text-lg text-white">Tasks Completed</h3>
+                                            <p className="text-2xl font-bold text-vibrant-pink">{metrics.tasksCompleted}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                          
+                                    {activeTab === 'announcements' && (
+                                      <div className="pt-4">
+                                        <h2 className="text-2xl font-display text-vibrant-pink mb-4">Announcements</h2>
+                                        <p className="text-white">{project?.announcement || 'No announcement'}</p>
+                                        {isAdmin && (
+                                          <div className="mt-4">
+                                            <textarea
+                                              value={project?.announcement || ''}
+                                              onChange={(e) => handleUpdateProject({ announcement: e.target.value })}
+                                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                              placeholder="Post an announcement..."
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                          
+                                    {activeTab === 'activity' && (
+                                      <div className="pt-4">
+                                        <h2 className="text-2xl font-display text-vibrant-pink mb-4">Activity Log</h2>
+                                        <div className="mb-4">
+                                          <label className="block text-white mb-2 font-medium">Filter Activity</label>
+                                          <select
+                                            value={activityFilter}
+                                            onChange={(e) => setActivityFilter(e.target.value)}
+                                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                          >
+                                            <option value="all">All</option>
+                                            <option value="tasks">Tasks</option>
+                                            <option value="posts">Posts</option>
+                                            <option value="files">Files</option>
+                                            <option value="shares">Shares</option>
+                                            <option value="teams">Teams</option>
+                                          </select>
+                                        </div>
+                                        {filteredActivityLog.length === 0 ? (
+                                          <p className="text-white">No activity yet.</p>
+                                        ) : (
+                                          <div className="space-y-4">
+                                            {filteredActivityLog.map((activity, idx) => (
+                                              <div key={idx} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
+                                                <div className="flex items-center space-x-3">
+                                                  <img
+                                                    src={'https://via.placeholder.com/32'}
+                                                    alt="Activity Icon"
+                                                    className="w-8 h-8 rounded-full"
+                                                  />
+                                                  <div>
+                                                    <p className="text-white">{activity.details}</p>
+                                                    <p className="text-sm text-gray-300">By: {activity.userId}</p>
+                                                    <p className="text-sm text-gray-300">{new Date(activity.createdAt).toLocaleString()}</p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                          
+                                    {activeTab === 'files' && (
+                                      <div className="pt-4">
+                                        <h2 className="text-2xl font-display text-vibrant-pink mb-4">Files</h2>
+                                        <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
+                                          <form onSubmit={handleAddFile} className="space-y-4">
+                                            <div className="flex items-center space-x-3">
+                                              <img
+                                                src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                                                alt="User Avatar"
+                                                className="w-10 h-10 rounded-full"
+                                              />
+                                              <input
+                                                type="text"
+                                                value={newFile.name}
+                                                onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
+                                                required
+                                                placeholder="File Name"
+                                                className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="block text-white mb-2 font-medium">File URL</label>
+                                              <input
+                                                type="text"
+                                                value={newFile.url}
+                                                onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
+                                                required
+                                                placeholder="File URL"
+                                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                              />
+                                            </div>
+                                            <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                                              Add File
+                                            </button>
+                                          </form>
+                                          <form onSubmit={handleRequestFile} className="space-y-4">
+                                            <div className="flex items-center space-x-3">
+                                              <img
+                                                src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                                                alt="User Avatar"
+                                                className="w-10 h-10 rounded-full"
+                                              />
+                                              <input
+                                                type="text"
+                                                value={newFile.name}
+                                                onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
+                                                required
+                                                placeholder="Request File Name"
+                                                className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="block text-white mb-2 font-medium">Request File URL</label>
+                                              <input
+                                                type="text"
+                                                value={newFile.url}
+                                                onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
+                                                required
+                                                placeholder="Request File URL"
+                                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                              />
+                                            </div>
+                                            <button type="submit" className="btn-secondary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                                              Request File
+                                            </button>
+                                          </form>
+                                        </div>
+                          
+                                        {(!project?.files || project.files.length === 0) ? (
+                                          <p className="text-white">No files yet.</p>
+                                        ) : (
+                                          <div className="space-y-4">
+                                            {project.files.map(file => (
+                                              <div key={file._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
+                                                <div className="flex items-center space-x-3">
+                                                  <img
+                                                    src={'https://via.placeholder.com/32'}
+                                                    alt="File Icon"
+                                                    className="w-8 h-8 rounded-full"
+                                                  />
+                                                  <div>
+                                                    <h3 className="text-lg font-display text-vibrant-pink">{file.name}</h3>
+                                                    <a
+                                                      href={file.url}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
+                                                    >
+                                                      Open File
+                                                    </a>
+                                                    <p className="text-sm text-white mt-2">Uploaded by: {file.uploadedBy}</p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                          
+                                    {activeTab === 'settings' && (
+                                      <div className="pt-4">
+                                        <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Settings</h2>
+                                        <button
+                                          onClick={() => setShowShareModal(true)}
+                                          className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow mb-4"
+                                        >
+                                          Share Project
+                                        </button>
+                                        <button
+                                          onClick={() => setShowSettingsModal(true)}
+                                          className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow"
+                                        >
+                                          Update Notification Preferences
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                          
+                                {/* Share Modal */}
+                                {showShareModal && (
+                                  <>
+                                    <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowShareModal(false)}></div>
+                                    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
+                                      <div className="modal glassmorphic p-6">
+                                        <h2 className="text-2xl font-display text-vibrant-pink mb-6">Share Project</h2>
+                                        <div className="mb-6">
+                                          <label className="block text-white mb-3 font-medium">User ID to Share With</label>
+                                          <input
+                                            type="text"
+                                            value={shareUserId}
+                                            onChange={(e) => setShareUserId(e.target.value)}
+                                            placeholder="Enter user ID"
+                                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                          />
+                                        </div>
+                                        <div className="flex space-x-3">
+                                          <button onClick={handleShareProject} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                                            Share
+                                          </button>
+                                          <button onClick={handleRequestShare} className="btn-secondary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                                            Request Share
+                                          </button>
+                                          <button
+                                            onClick={() => setShowShareModal(false)}
+                                            className="btn-secondary neumorphic hover:scale-105 transition-transform"
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+                          
+                                {/* Settings Modal */}
+                                {showSettingsModal && (
+                                  <>
+                                    <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowSettingsModal(false)}></div>
+                                    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
+                                      <div className="modal glassmorphic p-6">
+                                        <h2 className="text-2xl font-display text-vibrant-pink mb-6">Notification Preferences</h2>
+                                        <div className="space-y-4">
+                                          <div className="flex items-center">
+                                            <input
+                                              type="checkbox"
+                                              checked={notificationPrefs.email}
+                                              onChange={(e) => setNotificationPrefs({ ...notificationPrefs, email: e.target.checked })}
+                                              className="mr-2"
+                                            />
+                                            <label className="text-white">Email Notifications</label>
+                                          </div>
+                                          <div className="flex items-center">
+                                            <input
+                                              type="checkbox"
+                                              checked={notificationPrefs.sms}
+                                              onChange={(e) => setNotificationPrefs({ ...notificationPrefs, sms: e.target.checked })}
+                                              className="mr-2"
+                                            />
+                                            <label className="text-white">SMS Notifications</label>
+                                          </div>
+                                          <div className="flex items-center">
+                                            <input
+                                              type="checkbox"
+                                              checked={notificationPrefs.push}
+                                              onChange={(e) => setNotificationPrefs({ ...notificationPrefs, push: e.target.checked })}
+                                              className="mr-2"
+                                            />
+                                            <label className="text-white">Push Notifications</label>
+                                          </div>
+                                          <div>
+                                            <label className="block text-white mb-2 font-medium">Notify me about:</label>
+                                            <div className="flex items-center">
+                                              <input
+                                                type="checkbox"
+                                                checked={notificationPrefs.tasks}
+                                                onChange={(e) => setNotificationPrefs({ ...notificationPrefs, tasks: e.target.checked })}
+                                                className="mr-2"
+                                              />
+                                              <label className="text-white">Task Updates</label>
+                                            </div>
+                                            <div className="flex items-center">
+                                              <input
+                                                type="checkbox"
+                                                checked={notificationPrefs.posts}
+                                                onChange={(e) => setNotificationPrefs({ ...notificationPrefs, posts: e.target.checked })}
+                                                className="mr-2"
+                                              />
+                                              <label className="text-white">Post Updates</label>
+                                            </div>
+                                            <div className="flex items-center">
+                                              <input
+                                                type="checkbox"
+                                                checked={notificationPrefs.files}
+                                                onChange={(e) => setNotificationPrefs({ ...notificationPrefs, files: e.target.checked })}
+                                                className="mr-2"
+                                              />
+                                              <label className="text-white">File Updates</label>
+                                            </div>
+                                            <div className="flex items-center">
+                                              <input
+                                                type="checkbox"
+                                                checked={notificationPrefs.shares}
+                                                onChange={(e) => setNotificationPrefs({ ...notificationPrefs, shares: e.target.checked })}
+                                                className="mr-2"
+                                              />
+                                              <label className="text-white">Share Requests</label>
+                                            </div>
+                                            <div className="flex items-center">
+                                              <input
+                                                type="checkbox"
+                                                checked={notificationPrefs.teams}
+                                                onChange={(e) => setNotificationPrefs({ ...notificationPrefs, teams: e.target.checked })}
+                                                className="mr-2"
+                                              />
+                                              <label className="text-white">Team Updates</label>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="flex space-x-3 mt-6">
+                                          <button onClick={handleUpdateNotificationPrefs} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
+                                            Save
+                                          </button>
+                                          <button
+                                            onClick={() => setShowSettingsModal(false)}
+                                            className="btn-secondary neumorphic hover:scale-105 transition-transform"
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          };
+                          
+                          export default ProjectHome;
