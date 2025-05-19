@@ -18,7 +18,14 @@
   },
   "homepage": "https://github.com/ArtificalManny/ShareSync#readme",
   "dependencies": {
-    "bcryptjs": "^3.0.2"
+    "@nestjs/mongoose": "^11.0.3",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.15.0",
+    "react-joyride": "^2.9.3",
+    "react-toastify": "^11.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.1",

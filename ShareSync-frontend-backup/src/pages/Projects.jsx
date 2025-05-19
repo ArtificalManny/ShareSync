@@ -1,272 +1,242 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getProjects, createProject, updateProject } from '../utils/api';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Projects = ({ user }) => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
-  const [newProject, setNewProject] = useState({
-    title: '',
-    description: '',
-    category: 'Personal',
-    status: 'Active',
-    admins: [user?.id],
-    sharedWith: [],
-    announcement: '',
-    snapshot: '',
-  });
-  const [metrics, setMetrics] = useState({ totalProjects: 0, currentProjects: 0, pastProjects: 0, tasksCompleted: 0 });
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [error, setError] = useState(null);
+  const [newProject, setNewProject] = useState({ title: '', description: '' });
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        console.log('Fetching projects...');
-        const projectList = await getProjects();
-        console.log('Projects:', projectList);
-        setProjects(projectList);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No token found. Please log in.');
+        }
 
-        // Calculate metrics based on fetched projects
-        setMetrics({
-          totalProjects: projectList.length,
-          currentProjects: projectList.filter(p => p.status === 'Active' || p.status === 'In Progress').length,
-          pastProjects: projectList.filter(p => p.status === 'Completed').length,
-          tasksCompleted: 20, // Mock data; replace with actual API call if available
+        const response = await fetch('/api/projects', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to fetch projects');
+        }
+
+        const projectsData = await response.json();
+        setProjects(projectsData);
       } catch (err) {
-        console.error('Failed to fetch projects:', err.message);
-        setError(`Failed to load projects: ${err.message}. Please try again later.`);
+        if (err.message.includes('No token found') || err.message.includes('Invalid token')) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/login');
+        } else {
+          setError('Failed to load projects. Please try again later.');
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchProjects();
-  }, []);
-
-  const handleInputChange = (e) => {
-    setNewProject({ ...newProject, [e.target.name]: e.target.value });
-  };
+  }, [navigate]);
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
     try {
-      const createdProject = await createProject(newProject);
-      setProjects([...projects, createdProject]);
-      setNewProject({
-        title: '',
-        description: '',
-        category: 'Personal',
-        status: 'Active',
-        admins: [user?.id],
-        sharedWith: [],
-        announcement: '',
-        snapshot: '',
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newProject.title,
+          description: newProject.description,
+          createdBy: user?.id || 'Unknown',
+          createdAt: new Date().toISOString(),
+        }),
       });
-      setShowCreateForm(false);
-      setMetrics(prev => ({
-        ...prev,
-        totalProjects: prev.totalProjects + 1,
-        currentProjects: prev.currentProjects + 1,
-      }));
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to create project');
+      }
+
+      const createdProject = await response.json();
+      setProjects([...projects, createdProject]);
+      setNewProject({ title: '', description: '' });
+      setSuccessMessage('Project created successfully!');
     } catch (err) {
-      console.error('Create project error:', err.message);
-      setError('Failed to create project. Please try again.');
+      if (err.message.includes('Invalid token')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      } else {
+        setError('Failed to create project. Please try again later.');
+      }
     }
   };
-
-  const handleUpdateProject = async (projectId, updateData) => {
-    try {
-      const updatedProject = await updateProject(projectId, updateData);
-      setProjects(projects.map(p => (p._id === projectId ? updatedProject : p)));
-      setMetrics(prev => ({
-        ...prev,
-        currentProjects: projects.filter(p => (p._id === projectId ? updatedProject.status : p.status) === 'Active' || (p._id === projectId ? updatedProject.status : p.status) === 'In Progress').length,
-        pastProjects: projects.filter(p => (p._id === projectId ? updatedProject.status : p.status) === 'Completed').length,
-      }));
-    } catch (err) {
-      console.error('Update project error:', err.message);
-      setError('Failed to update project. Please try again.');
-    }
-  };
-
-  const handleProjectClick = (projectId) => {
-    navigate(`/project/${projectId}`, { state: { user } });
-  };
-
-  if (!user) {
-    return <div className="text-white text-center mt-10">User not authenticated. Please log in.</div>;
-  }
 
   if (loading) {
-    return <div className="text-white text-center mt-10 animate-shimmer">Loading...</div>;
+    return (
+      <div className="text-white text-center mt-10 flex items-center justify-center space-x-2 animate-shimmer">
+        <svg className="w-6 h-6 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        <span>Loading...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-white text-center mt-10 flex items-center justify-center space-x-2">
+        <svg className="w-6 h-6 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+        <span>{error}</span>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <h2 className="text-2xl font-display text-vibrant-pink mb-6 animate-fade-in">Your Projects</h2>
-      {error && (
-        <div className="bg-red-500 text-white p-3 rounded-lg mb-6 animate-shimmer">
-          {error}
-        </div>
-      )}
+    <div className="min-h-screen bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-display text-primary-blue mb-8 flex items-center space-x-2">
+          <svg className="w-8 h-8 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+          <span>Your Projects</span>
+        </h1>
 
-      <section className="mb-8 animate-fade-in">
-        <div className="card glassmorphic">
-          <h3 className="text-xl font-display text-vibrant-pink mb-4">Project Metrics</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-              <h4 className="text-lg text-white">Total Projects</h4>
-              <p className="text-2xl font-bold text-vibrant-pink">{metrics.totalProjects}</p>
-            </div>
-            <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-              <h4 className="text-lg text-white">Current Projects</h4>
-              <p className="text-2xl font-bold text-vibrant-pink">{metrics.currentProjects}</p>
-            </div>
-            <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-              <h4 className="text-lg text-white">Past Projects</h4>
-              <p className="text-2xl font-bold text-vibrant-pink">{metrics.pastProjects}</p>
-            </div>
-            <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-              <h4 className="text-lg text-white">Tasks Completed</h4>
-              <p className="text-2xl font-bold text-vibrant-pink">{metrics.tasksCompleted}</p>
-            </div>
+        {successMessage && (
+          <div className="text-center mb-4 p-4 bg-gray-800 rounded-lg">
+            <p className="text-primary-blue flex items-center justify-center space-x-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <span>{successMessage}</span>
+            </p>
           </div>
-        </div>
-      </section>
-
-      <section className="mb-8 animate-fade-in">
-        <div className="card glassmorphic">
-          <h3 className="text-xl font-display text-vibrant-pink mb-4">Notifications</h3>
-          <p className="text-white">No notifications yet.</p>
-        </div>
-      </section>
-
-      <section className="mb-8 animate-fade-in">
-        <div className="card glassmorphic">
-          <h3 className="text-xl font-display text-vibrant-pink mb-4">Team Activity</h3>
-          <p className="text-white">No recent updates.</p>
-        </div>
-      </section>
-
-      <div className="mb-8">
-        <button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow"
-        >
-          {showCreateForm ? 'Cancel' : 'Create New Project'}
-        </button>
-      </div>
-
-      {showCreateForm && (
-        <div className="card glassmorphic mb-8 animate-fade-in">
-          <h3 className="text-xl font-display text-vibrant-pink mb-4">Create a New Project</h3>
+        )}
+        <div className="mb-12 p-6 bg-gray-700 rounded-lg">
+          <h3 className="text-xl font-display text-primary-blue mb-4 flex items-center space-x-2">
+            <svg className="w-6 h-6 text-muted-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>Create a New Project</span>
+          </h3>
           <form onSubmit={handleCreateProject} className="space-y-4">
             <div>
-              <label className="block text-white mb-2 font-medium">Title</label>
+              <label className="block text-neutral-gray mb-2 font-medium flex items-center space-x-2">
+                <svg className="w-5 h-5 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <span>Project Title</span>
+              </label>
               <input
                 type="text"
-                name="title"
                 value={newProject.title}
-                onChange={handleInputChange}
+                onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
                 required
-                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                 placeholder="Enter project title"
+                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-primary-blue focus:border-accent-orange focus:outline-none transition-all"
               />
             </div>
             <div>
-              <label className="block text-white mb-2 font-medium">Description</label>
+              <label className="block text-neutral-gray mb-2 font-medium flex items-center space-x-2">
+                <svg className="w-5 h-5 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span>Project Description</span>
+              </label>
               <textarea
-                name="description"
                 value={newProject.description}
-                onChange={handleInputChange}
-                required
-                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
                 placeholder="Enter project description"
+                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-primary-blue focus:border-accent-orange focus:outline-none transition-all"
+                rows="4"
               />
             </div>
-            <div>
-              <label className="block text-white mb-2 font-medium">Category</label>
-              <select
-                name="category"
-                value={newProject.category}
-                onChange={handleInputChange}
-                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-              >
-                <option value="Personal">Personal</option>
-                <option value="Work">Work</option>
-                <option value="Collaboration">Collaboration</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-white mb-2 font-medium">Status</label>
-              <select
-                name="status"
-                value={newProject.status}
-                onChange={handleInputChange}
-                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-              >
-                <option value="Active">Active</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </div>
-            <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-              Create Project
+            <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform flex items-center justify-center space-x-2 border border-muted-purple">
+              <svg className="w-5 h-5 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              <span>Create Project</span>
             </button>
           </form>
         </div>
-      )}
 
-      <div className="card glassmorphic animate-fade-in">
-        <h3 className="text-xl font-display text-vibrant-pink mb-4">Project List</h3>
         {projects.length === 0 ? (
-          <p className="text-white">No projects yet.</p>
+          <p className="text-neutral-gray flex items-center space-x-2">
+            <svg className="w-6 h-6 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>No projects found.</span>
+          </p>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map(project => (
-              <div key={project._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow">
-                <h4 className="text-lg font-display text-vibrant-pink">{project.title}</h4>
-                <p className="text-gray-300 mt-2">{project.description}</p>
-                <p className="text-sm text-white mt-2">Category: {project.category}</p>
-                <div className="flex items-center mt-2">
-                  <p className="text-sm text-white">Status: </p>
-                  <select
-                    value={project.status}
-                    onChange={(e) => handleUpdateProject(project._id, { status: e.target.value })}
-                    className="ml-2 p-1 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+              <div key={project._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-6">
+                <h2 className="text-xl font-display text-primary-blue mb-2 flex items-center space-x-2">
+                  <svg className="w-6 h-6 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                  </svg>
+                  <span>{project.title}</span>
+                </h2>
+                <p className="text-white mb-2 flex items-center space-x-2">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                  <span>{project.description || 'No description available.'}</span>
+                </p>
+                <p className="text-sm text-neutral-gray mb-2 flex items-center space-x-2">
+                  <svg className="w-5 h-5 text-muted-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  <span>Status: {project.status || 'Active'}</span>
+                </p>
+                <p className="text-sm text-neutral-gray mb-2 flex items-center space-x-2">
+                  <svg className="w-5 h-5 text-muted-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  <span>Created: {new Date(project.createdAt).toLocaleDateString()}</span>
+                </p>
+                <p className="text-sm text-neutral-gray mb-4 flex items-center space-x-2">
+                  <svg className="w-5 h-5 text-muted-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                  </svg>
+                  <span>Owner: {project.owner || 'Unknown'}</span>
+                </p>
+                <div className="flex space-x-3">
+                  <Link
+                    to={`/project/${project._id}`}
+                    className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
                   >
-                    <option value="Active">Active</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                  </select>
+                    <svg className="w-5 h-5 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    <span>View</span>
+                  </Link>
+                  {user?.role === 'admin' && (
+                    <button
+                      onClick={() => navigate(`/project/edit/${project._id}`)}
+                      className="btn-secondary neumorphic hover:scale-105 transition-transform flex items-center space-x-2"
+                    >
+                      <svg className="w-5 h-5 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path>
+                      </svg>
+                      <span>Edit</span>
+                    </button>
+                  )}
                 </div>
-                <div className="mt-4">
-                  <label className="block text-white mb-2 font-medium">Announcement</label>
-                  <textarea
-                    value={project.announcement || ''}
-                    onChange={(e) => handleUpdateProject(project._id, { announcement: e.target.value })}
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-20"
-                    placeholder="Post an announcement..."
-                  />
-                </div>
-                <div className="mt-4">
-                  <label className="block text-white mb-2 font-medium">Snapshot</label>
-                  <input
-                    type="text"
-                    value={project.snapshot || ''}
-                    onChange={(e) => handleUpdateProject(project._id, { snapshot: e.target.value })}
-                    className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                    placeholder="Update the project snapshot..."
-                  />
-                </div>
-                <button
-                  onClick={() => handleProjectClick(project._id)}
-                  className="btn-primary mt-4 neumorphic hover:scale-105 transition-transform animate-pulse-glow"
-                >
-                  View Details
-                </button>
               </div>
             ))}
           </div>

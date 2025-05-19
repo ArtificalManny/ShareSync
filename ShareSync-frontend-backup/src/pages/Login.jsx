@@ -1,131 +1,114 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { login as loginApi } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
 
 const Login = ({ setUser }) => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ email: '', password: '', username: '' });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [useUsername, setUseUsername] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-
     try {
-      const loginData = useUsername
-        ? { username: formData.username, password: formData.password }
-        : { email: formData.email, password: formData.password };
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      console.log('Attempting login with:', loginData);
-      const data = await loginApi(
-        useUsername ? formData.username : formData.email,
-        formData.password
-      );
-      console.log('Login API response data:', data);
-
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      setUser(data.user); // Set user state synchronously
-      console.log('Login successful, navigating to homepage with user:', data.user);
-      navigate('/', { state: { user: data.user } }); // Pass user data via navigation state
-    } catch (err) {
-      console.error('Login error:', err);
-      if (err.message.includes('Failed to fetch')) {
-        setError('Unable to reach the server. Please ensure the backend is running on http://localhost:3000.');
-      } else if (err.message.includes('401')) {
-        setError('Invalid credentials. Please check your email/username and password.');
-      } else {
-        setError(err.message || 'An unexpected error occurred. Please try again.');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
       }
-    } finally {
-      setLoading(false);
+
+      const data = await response.json();
+      localStorage.setItem('token', data.access_token); // Use access_token
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+      navigate('/', { state: { user: data.user } });
+    } catch (err) {
+      setError(err.message);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="card glassmorphic animate-fade-in">
-        <h2 className="text-3xl font-display text-vibrant-pink mb-6">Login to ShareSync</h2>
+    <div className="auth-page min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-3xl font-display text-primary-blue mb-6 text-center flex items-center justify-center space-x-2">
+          <svg className="w-8 h-8 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+          </svg>
+          <span>Login to ShareSync</span>
+        </h2>
         {error && (
-          <div className="bg-red-500 text-white p-3 rounded-lg mb-6 animate-shimmer">
-            {error}
+          <div className="text-center mb-4 p-4 bg-gray-700 rounded-lg">
+            <p className="text-accent-orange flex items-center justify-center space-x-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <span>{error}</span>
+            </p>
           </div>
         )}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex items-center mb-4">
-            <input
-              type="checkbox"
-              checked={useUsername}
-              onChange={(e) => setUseUsername(e.target.checked)}
-              className="mr-2 h-5 w-5 text-vibrant-pink focus:ring-vibrant-pink rounded"
-            />
-            <label className="text-white">Use Username Instead of Email</label>
-          </div>
-          {useUsername ? (
-            <div>
-              <label className="block text-white mb-2 font-medium">Username</label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                required
-                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                placeholder="Enter your username"
-              />
-            </div>
-          ) : (
-            <div>
-              <label className="block text-white mb-2 font-medium">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                placeholder="Enter your email"
-              />
-            </div>
-          )}
+        <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-white mb-2 font-medium">Password</label>
+            <label className="block text-neutral-gray mb-2 font-medium flex items-center space-x-2">
+              <svg className="w-5 h-5 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              <span>Email</span>
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="Enter your email"
+              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-primary-blue focus:border-accent-orange focus:outline-none transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-neutral-gray mb-2 font-medium flex items-center space-x-2">
+              <svg className="w-5 h-5 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11c0-1.1.9-2 2-2s2 .9 2 2-2 4-2 4m-4-4c0-1.1.9-2 2-2s2 .9 2 2m-2 4v1m-6-5h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6a2 2 0 012-2z"></path>
+              </svg>
+              <span>Password</span>
+            </label>
             <input
               type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
               placeholder="Enter your password"
+              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-primary-blue focus:border-accent-orange focus:outline-none transition-all"
             />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full neumorphic hover:scale-105 transition-transform"
-          >
-            {loading ? 'Logging in...' : 'Login'}
+          <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform flex items-center justify-center space-x-2 border border-muted-purple">
+            <svg className="w-5 h-5 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+            </svg>
+            <span>Login</span>
           </button>
         </form>
-        <div className="mt-6 text-center">
-          <Link to="/forgot-password" className="text-vibrant-pink hover:text-neon-blue transition-colors">
-            Forgot Password?
-          </Link>
+        <div className="mt-4 text-center">
+          <a href="/forgot-password" className="text-accent-orange hover:underline flex items-center justify-center space-x-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 11V7a4 4 0 118 0v4M6 21h12a2 2 0 002-2v-7a2 2 0 00-2-2H6a2 2 0 00-2 2v7a2 2 0 002 2z"></path>
+            </svg>
+            <span>Forgot Password?</span>
+          </a>
         </div>
-        <div className="mt-3 text-center">
-          <p className="text-white">
+        <div className="mt-2 text-center">
+          <p className="text-neutral-gray">
             Don't have an account?{' '}
-            <Link to="/register" className="text-vibrant-pink hover:text-neon-blue transition-colors">
-              Register
-            </Link>
+            <a href="/register" className="text-accent-orange hover:underline flex items-center justify-center space-x-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+              </svg>
+              <span>Register</span>
+            </a>
           </p>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   getProject,
   updateProject,
@@ -27,17 +27,39 @@ const TaskProgressInfographic = ({ tasks }) => {
   const progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   return (
-    <div className="mt-4 p-4 bg-dark-navy rounded-lg shadow-inner">
-      <h4 className="text-lg font-display text-vibrant-pink mb-2">Task Progress</h4>
-      <div className="w-full bg-gray-800 rounded-full h-4">
-        <div
-          className="bg-neon-blue h-4 rounded-full transition-all duration-500"
-          style={{ width: `${progressPercentage}%` }}
-        ></div>
+    <div className="mt-4 p-4 bg-dark-navy rounded-lg shadow-inner flex justify-center">
+      <div className="flex flex-col items-center">
+        <h4 className="text-lg font-display text-vibrant-pink mb-2 flex items-center space-x-2">
+          <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>Task Progress</span>
+        </h4>
+        <div className="relative w-32 h-32">
+          <svg className="w-full h-full" viewBox="0 0 36 36">
+            <path
+              className="fill-none stroke-gray-800 stroke-2"
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+            <path
+              className="fill-none stroke-neon-blue stroke-2"
+              strokeDasharray={`${progressPercentage}, 100`}
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+            <text x="18" y="20" className="text-vibrant-pink text-sm font-bold" textAnchor="middle">{`${progressPercentage.toFixed(1)}%`}</text>
+          </svg>
+        </div>
+        <p className="text-white mt-2 text-sm flex items-center space-x-2">
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <span>{completedTasks} of {totalTasks} tasks completed</span>
+        </p>
       </div>
-      <p className="text-white mt-2 text-sm">
-        {completedTasks} of {totalTasks} tasks completed ({progressPercentage.toFixed(1)}%)
-      </p>
     </div>
   );
 };
@@ -53,18 +75,39 @@ const TeamContributionInfographic = ({ teams }) => {
 
   return (
     <div className="mt-4 p-4 bg-dark-navy rounded-lg shadow-inner">
-      <h4 className="text-lg font-display text-vibrant-pink mb-2">Team Contributions</h4>
-      <div className="space-y-3">
+      <h4 className="text-lg font-display text-vibrant-pink mb-4 flex items-center space-x-2">
+        <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+        </svg>
+        <span>Team Contributions</span>
+      </h4>
+      <div className="grid grid-cols-2 gap-4">
         {mockContributions.map((team, idx) => (
-          <div key={idx} className="flex items-center space-x-3">
-            <span className="text-white w-32 truncate">{team.name}</span>
-            <div className="flex-1 bg-gray-800 rounded-full h-3">
-              <div
-                className="bg-vibrant-pink h-3 rounded-full transition-all duration-500"
-                style={{ width: `${(team.contributions / maxContributions) * 100}%` }}
-              ></div>
+          <div key={idx} className="flex flex-col items-center">
+            <div className="relative w-20 h-20">
+              <svg className="w-full h-full" viewBox="0 0 36 36">
+                <path
+                  className="fill-none stroke-gray-800 stroke-2"
+                  d="M18 2.0845
+                    a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className="fill-none stroke-vibrant-pink stroke-2"
+                  strokeDasharray={`${(team.contributions / maxContributions) * 100}, 100`}
+                  d="M18 2.0845
+                    a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <text x="18" y="20" className="text-neon-blue text-xs font-bold" textAnchor="middle">{team.contributions}</text>
+              </svg>
             </div>
-            <span className="text-white text-sm">{team.contributions} tasks</span>
+            <span className="text-white text-sm mt-2 flex items-center space-x-2">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+              <span>{team.name}</span>
+            </span>
           </div>
         ))}
       </div>
@@ -97,6 +140,11 @@ const ProjectHome = ({ user, setUser }) => {
   const [activeTab, setActiveTab] = useState('activity');
   const [showComments, setShowComments] = useState({});
   const [forceUpdate, setForceUpdate] = useState(0);
+  const [teamMemberTab, setTeamMemberTab] = useState('teams'); // State for Teams/Members toggle
+  const [showGrokSidebar, setShowGrokSidebar] = useState(false);
+  const [grokQuery, setGrokQuery] = useState('');
+  const [grokResponse, setGrokResponse] = useState('');
+  const [grokError, setGrokError] = useState('');
 
   console.log('ProjectHome component rendered at', new Date().toISOString());
   console.log('User prop:', user);
@@ -524,7 +572,12 @@ const ProjectHome = ({ user, setUser }) => {
   const handleAddTeam = async (e) => {
     e.preventDefault();
     try {
-      const updatedProject = await addTeam(id, newTeam);
+      const teamData = {
+        ...newTeam,
+        userId: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      const updatedProject = await addTeam(id, teamData);
       setProject(updatedProject);
       setNewTeam({ name: '', description: '', members: [] });
 
@@ -548,9 +601,9 @@ const ProjectHome = ({ user, setUser }) => {
     setEditTeam({ ...team, members: team.members || [] });
   };
 
-  const handleUpdateTeam = async (teamId, updateData) => {
+  const handleUpdateTeam = async (teamId) => {
     try {
-      const updatedProject = await updateTeam(id, teamId, updateData);
+      const updatedProject = await updateTeam(id, teamId, editTeam);
       setProject(updatedProject);
       setEditTeam(null);
 
@@ -575,8 +628,10 @@ const ProjectHome = ({ user, setUser }) => {
     e.preventDefault();
     try {
       const fileData = {
-        ...newFile,
+        name: newFile.name,
+        url: newFile.url,
         uploadedBy: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
       };
       const updatedProject = await addFile(id, fileData);
       setProject(updatedProject);
@@ -601,27 +656,33 @@ const ProjectHome = ({ user, setUser }) => {
   const handleRequestFile = async (e) => {
     e.preventDefault();
     try {
-      await requestFile(id, newFile);
+      const fileData = {
+        name: newFile.name,
+        url: newFile.url,
+        requestedBy: user?.id || 'Unknown',
+        createdAt: new Date().toISOString(),
+      };
+      const updatedProject = await requestFile(id, fileData);
+      setProject(updatedProject);
       setNewFile({ name: '', url: '' });
 
       const newActivity = {
         action: 'file_requested',
-        details: `Requested to add file: ${newFile.name}`,
+        details: `Requested file: ${newFile.name}`,
         userId: user?.id || 'Unknown',
         createdAt: new Date().toISOString(),
       };
-      const updatedActivityLog = [...(project?.activityLog || []), newActivity];
+      const updatedActivityLog = [...(updatedProject?.activityLog || []), newActivity];
       await updateProject(id, { activityLog: updatedActivityLog });
 
-      await notifyMembers(project, 'File request', `A request to add file "${newFile.name}" was made in project "${project.title}" by ${user?.username}.`);
+      await notifyMembers(updatedProject, 'File requested', `A file "${newFile.name}" was requested in project "${updatedProject.title}" by ${user?.username}.`);
     } catch (err) {
       console.error('Request file error:', err.message);
       setError('Failed to request file. Please try again.');
     }
   };
 
-  const handleShareProject = async (e) => {
-    e.preventDefault();
+  const handleShareProject = async () => {
     try {
       const updatedProject = await shareProject(id, shareUserId);
       setProject(updatedProject);
@@ -644,10 +705,10 @@ const ProjectHome = ({ user, setUser }) => {
     }
   };
 
-  const handleRequestShare = async (e) => {
-    e.preventDefault();
+  const handleRequestShare = async () => {
     try {
-      await requestShare(id, shareUserId);
+      const updatedProject = await requestShare(id, shareUserId);
+      setProject(updatedProject);
       setShareUserId('');
       setShowShareModal(false);
 
@@ -657,10 +718,10 @@ const ProjectHome = ({ user, setUser }) => {
         userId: user?.id || 'Unknown',
         createdAt: new Date().toISOString(),
       };
-      const updatedActivityLog = [...(project?.activityLog || []), newActivity];
+      const updatedActivityLog = [...(updatedProject?.activityLog || []), newActivity];
       await updateProject(id, { activityLog: updatedActivityLog });
 
-      await notifyMembers(project, 'Share request', `A request to share project "${project.title}" with user ${shareUserId} was made by ${user?.username}.`);
+      await notifyMembers(updatedProject, 'Share requested', `A request to share project "${updatedProject.title}" with user ${shareUserId} was made by ${user?.username}.`);
     } catch (err) {
       console.error('Request share error:', err.message);
       setError('Failed to request share. Please try again.');
@@ -670,779 +731,666 @@ const ProjectHome = ({ user, setUser }) => {
   const handleUpdateNotificationPrefs = async () => {
     try {
       await updateNotificationPreferences(notificationPrefs);
-      setUser({ ...user, notificationPreferences: notificationPrefs });
-      localStorage.setItem('user', JSON.stringify({ ...user, notificationPreferences: notificationPrefs }));
       setShowSettingsModal(false);
+      if (typeof setUser === 'function') {
+        setUser(prev => ({ ...prev, notificationPreferences: notificationPrefs }));
+        localStorage.setItem('user', JSON.stringify({ ...user, notificationPreferences: notificationPrefs }));
+      }
     } catch (err) {
       console.error('Update notification preferences error:', err.message);
       setError('Failed to update notification preferences. Please try again.');
     }
   };
 
-  const notifyMembers = async (project, subject, message) => {
-    console.log('Notifying members:', { project, subject, message, notificationPrefs });
+  const notifyMembers = async (project, title, message) => {
+    console.log('Notifying members:', { project, title, message });
   };
 
   const filteredActivityLog = (project?.activityLog || []).filter(activity => {
     if (activityFilter === 'all') return true;
-    if (activityFilter === 'tasks') return activity.action.includes('task');
-    if (activityFilter === 'posts') return activity.action.includes('post');
-    if (activityFilter === 'files') return activity.action.includes('file');
-    if (activityFilter === 'shares') return activity.action.includes('share');
-    if (activityFilter === 'teams') return activity.action.includes('team');
-    return false;
+    return activity.action.includes(activityFilter);
   });
 
-  if (!user) {
-    return <div className="text-white text-center mt-10">User not authenticated. Please log in.</div>;
-  }
+  const handleGrokQuery = async (e) => {
+    e.preventDefault();
+    try {
+      setGrokError('');
+      setGrokResponse('');
+      const context = {
+        projectId: id,
+        posts: project?.posts || [],
+        tasks: project?.tasks || [],
+        metrics: metrics,
+      };
+      const response = await mockGrokApi(grokQuery, context);
+      setGrokResponse(response);
+    } catch (err) {
+      setGrokError('Failed to get a response from Grok. Please try again.');
+      console.error('Grok API error:', err.message);
+    }
+  };
+
+  const mockGrokApi = async (query, context) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(`Mock response from Grok: I analyzed the query "${query}" with context ${JSON.stringify(context)}. Here's a summary...`);
+      }, 1000);
+    });
+  };
+
+  const isAdmin = user?.role === 'admin' || project?.admins?.includes(user?.id);
 
   if (loading) {
-    return <div className="text-white text-center mt-10 animate-shimmer">Loading...</div>;
+    return (
+      <div className="text-white text-center mt-10 flex items-center justify-center space-x-2 animate-shimmer">
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        <span>Loading...</span>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-white text-center mt-10">{error}</div>;
+    return (
+      <div className="text-white text-center mt-10 flex items-center justify-center space-x-2">
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+        <span>{error}</span>
+      </div>
+    );
   }
 
-  const isAdmin = project?.admins?.includes(user?.id) || false;
+  if (!project) {
+    return (
+      <div className="text-white text-center mt-10 flex items-center justify-center space-x-2">
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+        <span>Project not found.</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 px-4 py-8">
-      {/* Debug Header */}
-      <div className="md:col-span-4 mb-4 p-4 bg-dark-navy rounded-lg shadow-inner">
-        <h1 className="text-2xl font-display text-vibrant-pink">Debug: Project Page Updated - May 16, 2025</h1>
-        <button
-          onClick={() => setForceUpdate(prev => prev + 1)}
-          className="btn-primary mt-2"
-        >
-          Force Re-render
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-900">
+      {/* Navbar */}
+      <nav className="bg-dark-navy p-4 flex justify-between items-center shadow-lg">
+        <Link to="/" className="flex items-center space-x-2">
+          <svg className="w-6 h-6 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          <h1 className="text-2xl font-display text-vibrant-pink">ShareSync</h1>
+        </Link>
+        <div className="flex items-center space-x-4">
+          <Link to="/profile" className="text-white hover:text-vibrant-pink transition-colors flex items-center space-x-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            <span>Profile</span>
+          </Link>
+          <button
+            onClick={() => {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              if (typeof setUser === 'function') setUser(null);
+              navigate('/login');
+            }}
+            className="btn-secondary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            <span>Logout</span>
+          </button>
+          <Link to="/profile">
+            <img
+              src={user?.profilePicture || 'https://via.placeholder.com/40'}
+              alt="User Avatar"
+              className="w-10 h-10 rounded-full border-2 border-vibrant-pink"
+              onError={(e) => (e.target.src = 'https://via.placeholder.com/40')}
+            />
+          </Link>
+        </div>
+      </nav>
 
-      {/* Center Content */}
-      <div className="md:col-span-2">
-        <header className="mb-6 animate-fade-in">
-          <h1 className="text-4xl font-display text-vibrant-pink">{project?.title || 'Project'}</h1>
-          <p className="text-white mt-3 text-lg">{project?.description || 'No description'}</p>
-          <p className="text-sm text-gray-300 mt-2">Category: {project?.category || 'N/A'}</p>
-          <div className="flex items-center mt-2">
-            <p className="text-sm text-gray-300">Status: </p>
-            {isAdmin ? (
-              <select
-                value={project?.status || 'Active'}
-                onChange={(e) => handleUpdateProject({ status: e.target.value })}
-                className="ml-2 p-1 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-              >
-                <option value="Active">Active</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-              </select>
-            ) : (
-              <p className="ml-2 text-sm text-gray-300">{project?.status || 'N/A'}</p>
-            )}
-          </div>
-        </header>
-
-        {/* Posts Section - Moved to Top */}
-        <section className="mb-8">
-          <div className="card glassmorphic animate-fade-in">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">[Updated] Project Posts Feed</h2>
-            <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
-              <div className="flex items-center space-x-3">
-                <img
-                  src={user?.profilePicture || 'https://via.placeholder.com/40'}
-                  alt="User Avatar"
-                  className="w-10 h-10 rounded-full"
-                  onError={(e) => (e.target.src = 'https://via.placeholder.com/40')}
-                />
-                <input
-                  type="text"
-                  value={newPost.title}
-                  onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-                  placeholder="What's on your mind?"
-                  className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                />
-              </div>
-              <div className="space-y-4">
-                <textarea
-                  value={newPost.content}
-                  onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-                  placeholder="Add more details..."
-                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
-                />
-                <div className="flex items-center justify-between">
-                  <select
-                    value={newPost.category}
-                    onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}
-                    className="p-2 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  >
-                    <option value="Announcement">Announcement</option>
-                    <option value="Poll">Poll</option>
-                    <option value="Picture">Picture</option>
-                  </select>
-                  <button onClick={handleAddPost} className="btn-primary px-6 py-2 neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                    Post
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {(!project?.posts || project.posts.length === 0) ? (
-              <p className="text-white">No posts yet.</p>
-            ) : (
-              <div className="space-y-6">
-                {project.posts.map(post => (
-                  <div key={post._id} className="card glassmorphic animate-fade-in p-4">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <img
-                        src={'https://via.placeholder.com/40'}
-                        alt="Post Author"
-                        className="w-10 h-10 rounded-full"
-                      />
-                      <div>
-                        <p className="text-white font-medium">{post.userId}</p>
-                        <p className="text-sm text-gray-300">{new Date(post.createdAt).toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <h3 className="text-lg font-display text-vibrant-pink mb-2">{post.title}</h3>
-                    <p className="text-gray-300">{post.content}</p>
-                    {post.category !== 'Announcement' && (
-                      <p className="text-sm text-white mt-2">Category: {post.category}</p>
-                    )}
-                    <div className="flex items-center space-x-4 mt-3 border-t border-gray-600 pt-3">
-                      <button
-                        onClick={() => handleLikePost(post._id)}
-                        className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-1"
-                      >
-                        <span>Like</span>
-                        <span>({post.likes || 0})</span>
-                      </button>
-                      <button
-                        onClick={() => setShowComments(prev => ({ ...prev, [post._id]: !prev[post._id] }))}
-                        className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                      >
-                        Comment
-                      </button>
-                      <button
-                        onClick={() => handleSharePost(post._id)}
-                        className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                      >
-                        Share
-                      </button>
-                    </div>
-                    {showComments[post._id] && (
-                      <div className="mt-4">
-                        <h4 className="text-lg text-vibrant-pink mb-2">Comments</h4>
-                        {(!post.comments || post.comments.length === 0) ? (
-                          <p className="text-white">No comments yet.</p>
-                        ) : (
-                          post.comments.map((comment, idx) => (
-                            <div key={idx} className="flex items-start space-x-3 mb-2">
-                              <img
-                                src={'https://via.placeholder.com/32'}
-                                alt="Comment Author"
-                                className="w-8 h-8 rounded-full"
-                              />
-                              <div className="bg-gray-800 p-2 rounded-lg">
-                                <p className="text-white font-medium">{comment.userId}</p>
-                                <p className="text-gray-300">{comment.content}</p>
-                                <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                        <div className="flex items-center space-x-3 mt-3">
-                          <img
-                            src={user?.profilePicture || 'https://via.placeholder.com/32'}
-                            alt="User Avatar"
-                            className="w-8 h-8 rounded-full"
-                          />
-                          <input
-                            type="text"
-                            value={newComment[post._id] || ''}
-                            onChange={(e) => setNewComment({ ...newComment, [post._id]: e.target.value })}
-                            placeholder="Write a comment..."
-                            className="w-full p-2 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          />
-                          <button
-                            onClick={() => handleAddPostComment(post._id)}
-                            className="btn-primary px-4 py-1 neumorphic hover:scale-105 transition-transform"
-                          >
-                            Post
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Snapshot Section */}
-        <section className="mb-8 animate-fade-in">
-          <div className="card glassmorphic">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Snapshot</h2>
-            <p className="text-white">{project?.snapshot || 'No snapshot'}</p>
-            {isAdmin && (
-              <div className="mt-4">
-                <input
-                  type="text"
-                  value={project?.snapshot || ''}
-                  onChange={(e) => handleUpdateProject({ snapshot: e.target.value })}
-                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  placeholder="Update the project snapshot..."
-                />
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Tasks Section */}
-        <section className="mb-8">
-          <div className="card glassmorphic animate-fade-in">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Tasks</h2>
-            <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
-              <form onSubmit={handleAddTask} className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <img
-                    src={user?.profilePicture || 'https://via.placeholder.com/40'}
-                    alt="User Avatar"
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <input
-                    type="text"
-                    value={newTask.title}
-                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    required
-                    placeholder="Add a new task..."
-                    className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Description (Markdown Supported)</label>
-                  <textarea
-                    value={newTask.description}
-                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    placeholder="Enter task description (e.g., **bold**, *italic*, - list item)"
-                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Attach File</label>
-                  <input
-                    type="file"
-                    onChange={(e) => setNewTask({ ...newTask, file: e.target.files[0] })}
-                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                  {newTask.file && (
-                    <p className="text-gray-300 mt-1">Selected: {newTask.file.name}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Due Date</label>
-                  <input
-                    type="date"
-                    value={newTask.dueDate}
-                    onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Priority</label>
-                  <select
-                    value={newTask.priority}
-                    onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-medium">Assigned To</label>
-                  <select
-                    multiple
-                    value={newTask.assignedTo}
-                    onChange={(e) => setNewTask({ ...newTask, assignedTo: Array.from(e.target.selectedOptions, option => option.value) })}
-                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                  >
-                    {(project?.sharedWith || []).map(userId => (
-                      <option key={userId} value={userId}>{userId}</option>
-                    ))}
-                    {(project?.teams || []).map(team => (
-                      <option key={`team-${team._id}`} value={`team-${team._id}`}>{team.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                  Add Task
+      <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Main Content */}
+        <div className="md:col-span-2">
+          {/* Posts Section - Moved to Top */}
+          <section className="mb-8">
+            <div className="card glassmorphic animate-fade-in">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-display text-vibrant-pink flex items-center space-x-2">
+                  <svg className="w-6 h-6 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0l-1.414-1.414a2 2 0 010-2.828L14.172 4.172z"></path>
+                  </svg>
+                  <span>[Updated] Project Posts Feed</span>
+                </h2>
+                <button
+                  onClick={() => {
+                    setGrokQuery('Summarize the posts in this project');
+                    setShowGrokSidebar(true);
+                  }}
+                  className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                  </svg>
+                  <span>Ask Grok About Posts</span>
                 </button>
-              </form>
-            </div>
-
-            {(!project?.tasks || project.tasks.length === 0) ? (
-              <p className="text-white">No tasks yet.</p>
-            ) : (
-              <>
-                <TaskProgressInfographic tasks={project.tasks} />
-                <div className="space-y-6">
-                  {project.tasks.map(task => (
-                    <div key={task._id} className="card glassmorphic animate-fade-in p-4">
-                      {editTask && editTask._id === task._id ? (
-                        <div className="space-y-4">
-                          <div className="flex items-center space-x-3">
-                            <img
-                              src={user?.profilePicture || 'https://via.placeholder.com/40'}
-                              alt="User Avatar"
-                              className="w-10 h-10 rounded-full"
-                            />
-                            <input
-                              type="text"
-                              value={editTask.title}
-                              onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
-                              className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-white mb-2 font-medium">Description (Markdown Supported)</label>
-                            <textarea
-                              value={editTask.description}
-                              onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
-                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-white mb-2 font-medium">Attach File</label>
-                            <input
-                              type="file"
-                              onChange={(e) => setEditTask({ ...editTask, file: e.target.files[0] })}
-                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                            />
-                            {editTask.file && (
-                              <p className="text-gray-300 mt-1">Selected: {editTask.file.name}</p>
-                            )}
-                          </div>
-                          <div>
-                            <label className="block text-white mb-2 font-medium">Due Date</label>
-                            <input
-                              type="date"
-                              value={editTask.dueDate}
-                              onChange={(e) => setEditTask({ ...editTask, dueDate: e.target.value })}
-                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-white mb-2 font-medium">Priority</label>
-                            <select
-                              value={editTask.priority}
-                              onChange={(e) => setEditTask({ ...editTask, priority: e.target.value })}
-                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                            >
-                              <option value="Low">Low</option>
-                              <option value="Medium">Medium</option>
-                              <option value="High">High</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-white mb-2 font-medium">Assigned To</label>
-                            <select
-                              multiple
-                              value={editTask.assignedTo}
-                              onChange={(e) => setEditTask({ ...editTask, assignedTo: Array.from(e.target.selectedOptions, option => option.value) })}
-                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                            >
-                              {(project?.sharedWith || []).map(userId => (
-                                <option key={userId} value={userId}>{userId}</option>
-                              ))}
-                              {(project?.teams || []).map(team => (
-                                <option key={`team-${team._id}`} value={`team-${team._id}`}>{team.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-white mb-2 font-medium">Status</label>
-                            <select
-                              value={editTask.status}
-                              onChange={(e) => setEditTask({ ...editTask, status: e.target.value })}
-                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                            >
-                              <option value="To Do">To Do</option>
-                              <option value="In Progress">In Progress</option>
-                              <option value="Completed">Completed</option>
-                            </select>
-                          </div>
-                          <div className="flex space-x-3">
-                            <button
-                              onClick={() => handleUpdateTask(task._id, editTask)}
-                              className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={() => setEditTask(null)}
-                              className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center space-x-3 mb-3">
-                            <img
-                              src={'https://via.placeholder.com/40'}
-                              alt="Task Creator"
-                              className="w-10 h-10 rounded-full"
-                            />
-                            <div>
-                              <p className="text-white font-medium">{task.userId}</p>
-                              <p className="text-sm text-gray-300">{new Date(task.createdAt).toLocaleString()}</p>
-                            </div>
-                          </div>
-                          <h3 className="text-lg font-display text-vibrant-pink">{task.title}</h3>
-                          <p className="text-gray-300 mt-2">{task.description}</p>
-                          {task.fileUrl && (
-                            <div className="mt-4">
-                              <a
-                                href={task.fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-vibrant-pink hover:text-neon-blue transition-colors"
-                              >
-                                View Attached File
-                              </a>
-                            </div>
-                          )}
-                          <p className="text-sm text-white mt-2">Status: {task.status}</p>
-                          <p className="text-sm text-white">Due Date: {task.dueDate || 'Not set'}</p>
-                          <p className="text-sm text-white">Priority: {task.priority || 'Medium'}</p>
-                          <p className="text-sm text-white">Assigned To: {task.assignedTo || 'None'}</p>
-                          <p className="text-sm text-white">Likes: {task.likes || 0}</p>
-                          <select
-                            value={task.status}
-                            onChange={(e) => handleUpdateTask(task._id, { status: e.target.value })}
-                            className="w-full mt-3 p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                          >
-                            <option value="To Do">To Do</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Completed">Completed</option>
-                          </select>
-                          <div className="flex space-x-3 mt-3">
-                            <button
-                              onClick={() => handleEditTask(task)}
-                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleLikeTask(task._id)}
-                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                            >
-                              Like
-                            </button>
-                            <button
-                              onClick={() => handleShareTask(task._id)}
-                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                            >
-                              Share
-                            </button>
-                          </div>
-                          <div className="mt-4">
-                            <h4 className="text-lg text-vibrant-pink">Subtasks</h4>
-                            {(!task.subtasks || task.subtasks.length === 0) ? (
-                              <p className="text-white">No subtasks yet.</p>
-                            ) : (
-                              task.subtasks.map((subtask, idx) => (
-                                <div key={idx} className="ml-4 mt-2 card glassmorphic p-3">
-                                  <div className="flex items-center space-x-3 mb-2">
-                                    <img
-                                      src={'https://via.placeholder.com/32'}
-                                      alt="Subtask Creator"
-                                      className="w-8 h-8 rounded-full"
-                                    />
-                                    <div>
-                                      <p className="text-white font-medium">{subtask.userId}</p>
-                                      <p className="text-xs text-gray-300">{new Date(subtask.createdAt).toLocaleString()}</p>
-                                    </div>
-                                  </div>
-                                  <p className="text-gray-300">{subtask.title} - {subtask.status}</p>
-                                  <p className="text-sm text-gray-300">{subtask.description}</p>
-                                  <p className="text-sm text-white mt-1">Likes: {subtask.likes || 0}</p>
-                                  <div className="flex space-x-3 mt-2">
-                                    <button
-                                      onClick={() => handleLikeSubtask(task._id, subtask._id)}
-                                      className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                                    >
-                                      Like
-                                    </button>
-                                  </div>
-                                  <div className="mt-2">
-                                    <h5 className="text-sm text-vibrant-pink">Comments</h5>
-                                    {(!subtask.comments || subtask.comments.length === 0) ? (
-                                      <p className="text-white text-sm">No comments yet.</p>
-                                    ) : (
-                                      subtask.comments.map((comment, cIdx) => (
-                                        <div key={cIdx} className="flex items-start space-x-2 mt-1">
-                                          <img
-                                            src={'https://via.placeholder.com/24'}
-                                            alt="Comment Author"
-                                            className="w-6 h-6 rounded-full"
-                                          />
-                                          <div className="bg-gray-800 p-1 rounded-lg">
-                                            <p className="text-white text-sm font-medium">{comment.userId}</p>
-                                            <p className="text-gray-300 text-sm">{comment.content}</p>
-                                            <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
-                                          </div>
-                                        </div>
-                                      ))
-                                    )}
-                                    <div className="flex items-center space-x-2 mt-2">
-                                      <img
-                                        src={user?.profilePicture || 'https://via.placeholder.com/24'}
-                                        alt="User Avatar"
-                                        className="w-6 h-6 rounded-full"
-                                      />
-                                      <input
-                                        type="text"
-                                        value={subtaskComment[subtask._id] || ''}
-                                        onChange={(e) => setSubtaskComment({ ...subtaskComment, [subtask._id]: e.target.value })}
-                                        placeholder="Add a comment..."
-                                        className="w-full p-1 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                                      />
-                                      <button
-                                        onClick={() => handleAddSubtaskComment(task._id, subtask._id)}
-                                        className="btn-primary text-sm neumorphic hover:scale-105 transition-transform"
-                                      >
-                                        Post
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                            <div className="mt-3 ml-4 space-y-3">
-                              <input
-                                type="text"
-                                placeholder="Subtask Title"
-                                value={newSubtask[task._id]?.title || ''}
-                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], title: e.target.value } })}
-                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                              />
-                              <input
-                                type="text"
-                                placeholder="Description"
-                                value={newSubtask[task._id]?.description || ''}
-                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], description: e.target.value } })}
-                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                              />
-                              <select
-                                value={newSubtask[task._id]?.status || 'To Do'}
-                                onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], status: e.target.value } })}
-                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                              >
-                                <option value="To Do">To Do</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Completed">Completed</option>
-                              </select>
-                              <button
-                                onClick={() => handleAddSubtask(task._id)}
-                                className="btn-primary mt-2 neumorphic hover:scale-105 transition-transform"
-                              >
-                                Add Subtask
-                              </button>
-                            </div>
-                          </div>
-                          <div className="mt-4">
-                            <h4 className="text-lg text-vibrant-pink">Comments</h4>
-                            {(!task.comments || task.comments.length === 0) ? (
-                              <p className="text-white">No comments yet.</p>
-                            ) : (
-                              task.comments.map((comment, idx) => (
-                                <div key={idx} className="flex items-start space-x-3 mb-2">
-                                  <img
-                                    src={'https://via.placeholder.com/32'}
-                                    alt="Comment Author"
-                                    className="w-8 h-8 rounded-full"
-                                  />
-                                  <div className="bg-gray-800 p-2 rounded-lg">
-                                    <p className="text-white font-medium">{comment.userId}</p>
-                                    <p className="text-gray-300">{comment.content}</p>
-                                    <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                            <div className="flex items-center space-x-3 mt-3">
-                              <img
-                                src={user?.profilePicture || 'https://via.placeholder.com/32'}
-                                alt="User Avatar"
-                                className="w-8 h-8 rounded-full"
-                              />
-                              <input
-                                type="text"
-                                value={taskComment[task._id] || ''}
-                                onChange={(e) => setTaskComment({ ...taskComment, [task._id]: e.target.value })}
-                                placeholder="Add a comment..."
-                                className="w-full p-2 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                              />
-                              <button
-                                onClick={() => handleAddTaskComment(task._id)}
-                                className="btn-primary px-4 py-1 neumorphic hover:scale-105 transition-transform"
-                              >
-                                Post
-                              </button>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-
-        {/* Project Members Section */}
-        <section className="mb-8">
-          <div className="card glassmorphic animate-fade-in">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Members</h2>
-            <div className="space-y-4">
-              {[...(project?.admins || []), ...(project?.sharedWith || [])].length === 0 ? (
-                <p className="text-white">No members yet.</p>
-              ) : (
-                [...new Set([...(project?.admins || []), ...(project?.sharedWith || [])])].map(memberId => (
-                  <div key={memberId} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src={'https://via.placeholder.com/40'}
-                        alt="Member Avatar"
-                        className="w-10 h-10 rounded-full"
-                      />
-                      <div>
-                        <h3 className="text-lg font-display text-vibrant-pink">{memberId}</h3>
-                        <p className="text-sm text-white">Role: {project?.admins?.includes(memberId) ? 'Admin' : 'Member'}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Teams Section */}
-        <section className="mb-8">
-          <div className="card glassmorphic animate-fade-in">
-            <h2 className="text-2xl font-display text-vibrant-pink mb-4">Teams</h2>
-            {isAdmin && (
+              </div>
               <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
-                <form onSubmit={handleAddTeam} className="space-y-4">
+                <form onSubmit={handleAddPost} className="space-y-4">
                   <div className="flex items-center space-x-3">
                     <img
                       src={user?.profilePicture || 'https://via.placeholder.com/40'}
                       alt="User Avatar"
                       className="w-10 h-10 rounded-full"
                     />
-                    <input
-                      type="text"
-                      value={newTeam.name}
-                      onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-                      required
-                      placeholder="Team Name"
-                      className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                    />
+                    <div className="w-full">
+                      <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0l-1.414-1.414a2 2 0 010-2.828L14.172 4.172z"></path>
+                        </svg>
+                        <span>Post Title</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newPost.title}
+                        onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
+                        required
+                        placeholder="Enter post title"
+                        className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-white mb-2 font-medium">Description</label>
+                    <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                      </svg>
+                      <span>Post Content</span>
+                    </label>
                     <textarea
-                      value={newTeam.description}
-                      onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
+                      value={newPost.content}
+                      onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
                       required
-                      placeholder="Team Description"
-                      className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                      placeholder="What's on your mind?"
+                      className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                     />
                   </div>
-                  <div>
-                    <label className="block text-white mb-2 font-medium">Members</label>
-                    <select
-                      multiple
-                      value={newTeam.members}
-                      onChange={(e) => setNewTeam({ ...newTeam, members: Array.from(e.target.selectedOptions, option => option.value) })}
-                      className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                    >
-                      {(project?.sharedWith || []).map(userId => (
-                        <option key={userId} value={userId}>{userId}</option>
-                      ))}
-                    </select>
+                  <div className="flex items-center space-x-3">
+                    <div>
+                      <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                        </svg>
+                        <span>Category</span>
+                      </label>
+                      <select
+                        value={newPost.category}
+                        onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}
+                        className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                      >
+                        <option value="Announcement">Announcement</option>
+                        <option value="Question">Question</option>
+                        <option value="Update">Update</option>
+                        <option value="Idea">Idea</option>
+                      </select>
+                    </div>
+                    <button type="submit" className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0l-1.414-1.414a2 2 0 010-2.828L14.172 4.172z"></path>
+                      </svg>
+                      <span>Post</span>
+                    </button>
                   </div>
-                  <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                    Add Team
+                </form>
+              </div>
+
+              {(!project?.posts || project.posts.length === 0) ? (
+                <p className="text-white flex items-center space-x-2">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span>No posts yet.</span>
+                </p>
+              ) : (
+                <div className="space-y-6">
+                  {project.posts.map(post => (
+                    <div key={post._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={'https://via.placeholder.com/32'}
+                          alt="User Avatar"
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div>
+                          <h3 className="text-lg font-display text-vibrant-pink flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0l-1.414-1.414a2 2 0 010-2.828L14.172 4.172z"></path>
+                            </svg>
+                            <span>{post.title}</span>
+                          </h3>
+                          <p className="text-sm text-white flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <span>By: {post.userId}</span>
+                          </p>
+                          <p className="text-sm text-gray-300 flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span>{new Date(post.createdAt).toLocaleString()}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-white mt-2 flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span>{post.content}</span>
+                      </p>
+                      <p className="text-sm text-gray-300 mt-2 flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                        </svg>
+                        <span>Category: {post.category}</span>
+                      </p>
+                      <div className="flex space-x-3 mt-3">
+                        <button
+                          onClick={() => handleLikePost(post._id)}
+                          className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                          </svg>
+                          <span>{post.likes || 0} Likes</span>
+                        </button>
+                        <button
+                          onClick={() => setShowComments(prev => ({ ...prev, [post._id]: !prev[post._id] }))}
+                          className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                          </svg>
+                          <span>{post.comments?.length || 0} Comments</span>
+                        </button>
+                        <button
+                          onClick={() => handleSharePost(post._id)}
+                          className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                          </svg>
+                          <span>Share</span>
+                        </button>
+                      </div>
+                      {showComments[post._id] && (
+                        <div className="mt-4">
+                          {post.comments && post.comments.length > 0 ? (
+                            <div className="space-y-3">
+                              {post.comments.map((comment, idx) => (
+                                <div key={idx} className="flex items-start space-x-3">
+                                  <img
+                                    src={'https://via.placeholder.com/24'}
+                                    alt="Commenter Avatar"
+                                    className="w-6 h-6 rounded-full"
+                                  />
+                                  <div>
+                                    <p className="text-sm text-white flex items-center space-x-2">
+                                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                      </svg>
+                                      <span>{comment.userId}</span>
+                                    </p>
+                                    <p className="text-sm text-gray-300 flex items-center space-x-2">
+                                      <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                      </svg>
+                                      <span>{new Date(comment.createdAt).toLocaleString()}</span>
+                                    </p>
+                                    <p className="text-white mt-1 flex items-center space-x-2">
+                                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                                      </svg>
+                                      <span>{comment.content}</span>
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-white flex items-center space-x-2">
+                              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                              </svg>
+                              <span>No comments yet.</span>
+                            </p>
+                          )}
+                          <div className="mt-4 flex items-center space-x-3">
+                            <img
+                              src={user?.profilePicture || 'https://via.placeholder.com/24'}
+                              alt="User Avatar"
+                              className="w-6 h-6 rounded-full"
+                            />
+                            <div className="w-full">
+                              <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                                </svg>
+                                <span>Add a Comment</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={newComment[post._id] || ''}
+                                onChange={(e) => setNewComment({ ...newComment, [post._id]: e.target.value })}
+                                placeholder="Enter your comment"
+                                className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              />
+                            </div>
+                            <button
+                              onClick={() => handleAddPostComment(post._id)}
+                              className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                              </svg>
+                              <span>Comment</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Tasks Section */}
+          <section className="mb-8">
+            <div className="card glassmorphic animate-fade-in">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-display text-vibrant-pink flex items-center space-x-2">
+                  <svg className="w-6 h-6 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01"></path>
+                  </svg>
+                  <span>Tasks</span>
+                </h2>
+                <button
+                  onClick={() => {
+                    setGrokQuery('Summarize the tasks in this project');
+                    setShowGrokSidebar(true);
+                  }}
+                  className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                  </svg>
+                  <span>Ask Grok About Tasks</span>
+                </button>
+              </div>
+              <TaskProgressInfographic tasks={project.tasks || []} />
+              <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
+                <form onSubmit={handleAddTask} className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                      alt="User Avatar"
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <div className="w-full">
+                      <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01"></path>
+                        </svg>
+                        <span>Task Title</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newTask.title}
+                        onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                        required
+                        placeholder="Enter task title"
+                        className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                      </svg>
+                      <span>Task Description</span>
+                    </label>
+                    <textarea
+                      value={newTask.description}
+                      onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                      required
+                      placeholder="Enter task description"
+                      className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <span>Assigned To</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newTask.assignedTo.join(', ')}
+                        onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value.split(',').map(id => id.trim()) })}
+                        placeholder="User IDs (comma-separated)"
+                        className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>Due Date</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={newTask.dueDate}
+                        onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                        className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Priority</span>
+                      </label>
+                      <select
+                        value={newTask.priority}
+                        onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                        className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                      >
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path>
+                        </svg>
+                        <span>Attach File</span>
+                      </label>
+                      <input
+                        type="file"
+                        onChange={(e) => setNewTask({ ...newTask, file: e.target.files[0] })}
+                        className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                      />
+                    </div>
+                  </div>
+                  <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center justify-center space-x-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    <span>Add Task</span>
                   </button>
                 </form>
               </div>
-            )}
 
-            {(!project?.teams || project.teams.length === 0) ? (
-              <p className="text-white">No teams yet.</p>
-            ) : (
-              <>
-                <TeamContributionInfographic teams={project.teams} />
-                <div className="space-y-4">
-                  {project.teams.map(team => (
-                    <div key={team._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
-                      {editTeam && editTeam._id === team._id ? (
+              {(!project?.tasks || project.tasks.length === 0) ? (
+                <p className="text-white flex items-center space-x-2">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span>No tasks yet.</span>
+                </p>
+              ) : (
+                <div className="space-y-6">
+                  {project.tasks.map(task => (
+                    <div key={task._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
+                      {editTask && editTask._id === task._id ? (
                         <div className="space-y-4">
                           <div className="flex items-center space-x-3">
-                            <img
-                              src={user?.profilePicture || 'https://via.placeholder.com/40'}
-                              alt="User Avatar"
-                              className="w-10 h-10 rounded-full"
-                            />
-                            <input
-                              type="text"
-                              value={editTeam.name}
-                              onChange={(e) => setEditTeam({ ...editTeam, name: e.target.value })}
-                              className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                            />
+                            <div className="w-full">
+                              <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01"></path>
+                                </svg>
+                                <span>Task Title</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={editTask.title}
+                                onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
+                                required
+                                placeholder="Enter task title"
+                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              />
+                            </div>
                           </div>
                           <div>
-                            <label className="block text-white mb-2 font-medium">Description</label>
+                            <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                              </svg>
+                              <span>Task Description</span>
+                            </label>
                             <textarea
-                              value={editTeam.description}
-                              onChange={(e) => setEditTeam({ ...editTeam, description: e.target.value })}
-                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                              value={editTask.description}
+                              onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
+                              required
+                              placeholder="Enter task description"
+                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                             />
                           </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                                <span>Assigned To</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={editTask.assignedTo.join(', ')}
+                                onChange={(e) => setEditTask({ ...editTask, assignedTo: e.target.value.split(',').map(id => id.trim()) })}
+                                placeholder="User IDs (comma-separated)"
+                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span>Due Date</span>
+                              </label>
+                              <input
+                                type="date"
+                                value={editTask.dueDate}
+                                onChange={(e) => setEditTask({ ...editTask, dueDate: e.target.value })}
+                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span>Priority</span>
+                              </label>
+                              <select
+                                value={editTask.priority}
+                                onChange={(e) => setEditTask({ ...editTask, priority: e.target.value })}
+                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              >
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span>Status</span>
+                              </label>
+                              <select
+                                value={editTask.status}
+                                onChange={(e) => setEditTask({ ...editTask, status: e.target.value })}
+                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                              >
+                                <option value="To Do">To Do</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                              </select>
+                            </div>
+                          </div>
                           <div>
-                            <label className="block text-white mb-2 font-medium">Members</label>
-                            <select
-                              multiple
-                              value={editTeam.members}
-                              onChange={(e) => setEditTeam({ ...editTeam, members: Array.from(e.target.selectedOptions, option => option.value) })}
+                            <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path>
+                              </svg>
+                              <span>Attach File</span>
+                            </label>
+                            <input
+                              type="file"
+                              onChange={(e) => setEditTask({ ...editTask, file: e.target.files[0] })}
                               className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                            >
-                              {(project?.sharedWith || []).map(userId => (
-                                <option key={userId} value={userId}>{userId}</option>
-                              ))}
-                            </select>
+                            />
                           </div>
                           <div className="flex space-x-3">
                             <button
-                              onClick={() => handleUpdateTeam(team._id, editTeam)}
-                              className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow"
+                              onClick={() => handleUpdateTask(task._id, editTask)}
+                              className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
                             >
-                              Save
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                              </svg>
+                              <span>Save</span>
                             </button>
                             <button
-                              onClick={() => setEditTeam(null)}
-                              className="btn-secondary neumorphic hover:scale-105 transition-transform"
+                              onClick={() => setEditTask(null)}
+                              className="btn-secondary neumorphic hover:scale-105 transition-transform flex items-center space-x-2"
                             >
-                              Cancel
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                              </svg>
+                              <span>Cancel</span>
                             </button>
                           </div>
                         </div>
@@ -1450,412 +1398,1295 @@ const ProjectHome = ({ user, setUser }) => {
                         <>
                           <div className="flex items-center space-x-3">
                             <img
-                              src={'https://via.placeholder.com/40'}
-                              alt="Team Icon"
-                              className="w-10 h-10 rounded-full"
+                              src={'https://via.placeholder.com/32'}
+                              alt="Task Icon"
+                              className="w-8 h-8 rounded-full"
                             />
                             <div>
-                              <h3 className="text-lg font-display text-vibrant-pink">{team.name}</h3>
-                              <p className="text-gray-300 mt-2">{team.description}</p>
-                              <p className="text-sm text-white mt-2">Members: {team.members?.join(', ') || 'None'}</p>
+                              <h3 className="text-lg font-display text-vibrant-pink flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01"></path>
+                                </svg>
+                                <span>{task.title}</span>
+                              </h3>
+                              <p className="text-sm text-white flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                                <span>By: {task.userId}</span>
+                              </p>
+                              <p className="text-sm text-gray-300 flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span>{new Date(task.createdAt).toLocaleString()}</span>
+                              </p>
                             </div>
                           </div>
-                          {isAdmin && (
-                                                        <button
-                                                        onClick={() => handleEditTeam(team)}
-                                                        className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors mt-3"
-                                                      >
-                                                        Edit Team
-                                                      </button>
-                                                    )}
-                                                  </>
-                                                )}
+                          <p className="text-white mt-2 flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span>{task.description}</span>
+                          </p>
+                          <p className="text-sm text-gray-300 mt-2 flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            <span>Assigned to: {task.assignedTo?.join(', ') || 'None'}</span>
+                          </p>
+                          <p className="text-sm text-gray-300 mt-2 flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span>Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Not set'}</span>
+                          </p>
+                          <p className="text-sm text-gray-300 mt-2 flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>Priority: {task.priority}</span>
+                          </p>
+                          <p className="text-sm text-gray-300 mt-2 flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Status: {task.status}</span>
+                          </p>
+                          <div className="flex space-x-3 mt-3">
+                            <button
+                              onClick={() => handleLikeTask(task._id)}
+                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-2"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                              </svg>
+                              <span>{task.likes || 0} Likes</span>
+                            </button>
+                            <button
+                              onClick={() => setShowComments(prev => ({ ...prev, [task._id]: !prev[task._id] }))}
+                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-2"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                              </svg>
+                              <span>{task.comments?.length || 0} Comments</span>
+                            </button>
+                            <button
+                              onClick={() => handleShareTask(task._id)}
+                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-2"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                              </svg>
+                              <span>Share</span>
+                            </button>
+                            <button
+                              onClick={() => handleEditTask(task)}
+                              className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-2"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path>
+                              </svg>
+                              <span>Edit</span>
+                            </button>
+                          </div>
+                          {task.subtasks && task.subtasks.length > 0 && (
+                            <div className="mt-4">
+                              <h4 className="text-md font-display text-vibrant-pink mb-2 flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                </svg>
+                                <span>Subtasks</span>
+                              </h4>
+                              <div className="space-y-3">
+                                {task.subtasks.map(subtask => (
+                                  <div key={subtask._id} className="pl-6">
+                                    <p className="text-white flex items-center space-x-2">
+                                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                      </svg>
+                                      <span>{subtask.title}</span>
+                                    </p>
+                                    <p className="text-sm text-gray-300 flex items-center space-x-2">
+                                      <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                      </svg>
+                                      <span>{subtask.description}</span>
+                                    </p>
+                                    <p className="text-sm text-gray-300 flex items-center space-x-2">
+                                      <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                      </svg>
+                                      <span>Status: {subtask.status}</span>
+                                    </p>
+                                    <div className="flex space-x-3 mt-2">
+                                      <button
+                                        onClick={() => handleLikeSubtask(task._id, subtask._id)}
+                                        className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-2"
+                                      >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                        </svg>
+                                        <span>{subtask.likes || 0} Likes</span>
+                                      </button>
+                                      <button
+                                        onClick={() => setShowComments(prev => ({ ...prev, [subtask._id]: !prev[subtask._id] }))}
+                                        className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-2"
+                                      >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                                        </svg>
+                                        <span>{subtask.comments?.length || 0} Comments</span>
+                                      </button>
+                                    </div>
+                                    {showComments[subtask._id] && (
+                                      <div className="mt-2">
+                                        {subtask.comments && subtask.comments.length > 0 ? (
+                                          <div className="space-y-2">
+                                            {subtask.comments.map((comment, idx) => (
+                                              <div key={idx} className="flex items-start space-x-2">
+                                                <img
+                                                  src={'https://via.placeholder.com/20'}
+                                                  alt="Commenter Avatar"
+                                                  className="w-5 h-5 rounded-full"
+                                                />
+                                                <div>
+                                                  <p className="text-sm text-white flex items-center space-x-2">
+                                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                    </svg>
+                                                    <span>{comment.userId}</span>
+                                                  </p>
+                                                  <p className="text-sm text-gray-300 flex items-center space-x-2">
+                                                    <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                    <span>{new Date(comment.createdAt).toLocaleString()}</span>
+                                                  </p>
+                                                  <p className="text-white mt-1 flex items-center space-x-2">
+                                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                                                    </svg>
+                                                    <span>{comment.content}</span>
+                                                  </p>
+                                                </div>
                                               </div>
                                             ))}
                                           </div>
-                                        </>
-                                      )}
-                                    </div>
-                                  </section>
-                                </div>
-                          
-                                {/* Right Sidebar with Tabs */}
-                                <div className="md:col-span-2">
-                                  <div className="card glassmorphic animate-fade-in mb-8">
-                                    <div className="flex space-x-4 border-b border-gray-600">
-                                      <button
-                                        onClick={() => setActiveTab('metrics')}
-                                        className={`p-3 ${activeTab === 'metrics' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
-                                      >
-                                        Metrics
-                                      </button>
-                                      <button
-                                        onClick={() => setActiveTab('announcements')}
-                                        className={`p-3 ${activeTab === 'announcements' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
-                                      >
-                                        Announcements
-                                      </button>
-                                      <button
-                                        onClick={() => setActiveTab('activity')}
-                                        className={`p-3 ${activeTab === 'activity' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
-                                      >
-                                        Activity
-                                      </button>
-                                      <button
-                                        onClick={() => setActiveTab('files')}
-                                        className={`p-3 ${activeTab === 'files' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
-                                      >
-                                        Files
-                                      </button>
-                                      <button
-                                        onClick={() => setActiveTab('settings')}
-                                        className={`p-3 ${activeTab === 'settings' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors`}
-                                      >
-                                        Settings
-                                      </button>
-                                    </div>
-                          
-                                    {activeTab === 'metrics' && (
-                                      <div className="pt-4">
-                                        <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Metrics</h2>
-                                        <div className="grid grid-cols-2 gap-4">
-                                          <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                                            <h3 className="text-lg text-white">Total Projects</h3>
-                                            <p className="text-2xl font-bold text-vibrant-pink">{metrics.totalProjects}</p>
-                                          </div>
-                                          <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                                            <h3 className="text-lg text-white">Current Projects</h3>
-                                            <p className="text-2xl font-bold text-vibrant-pink">{metrics.currentProjects}</p>
-                                          </div>
-                                          <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                                            <h3 className="text-lg text-white">Past Projects</h3>
-                                            <p className="text-2xl font-bold text-vibrant-pink">{metrics.pastProjects}</p>
-                                          </div>
-                                          <div className="bg-dark-navy p-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform animate-pulse-glow">
-                                            <h3 className="text-lg text-white">Tasks Completed</h3>
-                                            <p className="text-2xl font-bold text-vibrant-pink">{metrics.tasksCompleted}</p>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-                          
-                                    {activeTab === 'announcements' && (
-                                      <div className="pt-4">
-                                        <h2 className="text-2xl font-display text-vibrant-pink mb-4">Announcements</h2>
-                                        <p className="text-white">{project?.announcement || 'No announcement'}</p>
-                                        {isAdmin && (
-                                          <div className="mt-4">
-                                            <textarea
-                                              value={project?.announcement || ''}
-                                              onChange={(e) => handleUpdateProject({ announcement: e.target.value })}
-                                              className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                                              placeholder="Post an announcement..."
+                                        ) : (
+                                          <p className="text-white flex items-center space-x-2">
+                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            <span>No comments yet.</span>
+                                          </p>
+                                        )}
+                                        <div className="mt-2 flex items-center space-x-2">
+                                          <img
+                                            src={user?.profilePicture || 'https://via.placeholder.com/20'}
+                                            alt="User Avatar"
+                                            className="w-5 h-5 rounded-full"
+                                          />
+                                          <div className="w-full">
+                                            <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                                              </svg>
+                                              <span>Add a Comment</span>
+                                            </label>
+                                            <input
+                                              type="text"
+                                              value={subtaskComment[subtask._id] || ''}
+                                              onChange={(e) => setSubtaskComment({ ...subtaskComment, [subtask._id]: e.target.value })}
+                                              placeholder="Enter your comment"
+                                              className="w-full p-2 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
                                             />
                                           </div>
-                                        )}
-                                      </div>
-                                    )}
-                          
-                                    {activeTab === 'activity' && (
-                                      <div className="pt-4">
-                                        <h2 className="text-2xl font-display text-vibrant-pink mb-4">Activity Log</h2>
-                                        <div className="mb-4">
-                                          <label className="block text-white mb-2 font-medium">Filter Activity</label>
-                                          <select
-                                            value={activityFilter}
-                                            onChange={(e) => setActivityFilter(e.target.value)}
-                                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                          <button
+                                            onClick={() => handleAddSubtaskComment(task._id, subtask._id)}
+                                            className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
                                           >
-                                            <option value="all">All</option>
-                                            <option value="tasks">Tasks</option>
-                                            <option value="posts">Posts</option>
-                                            <option value="files">Files</option>
-                                            <option value="shares">Shares</option>
-                                            <option value="teams">Teams</option>
-                                          </select>
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                            </svg>
+                                            <span>Comment</span>
+                                          </button>
                                         </div>
-                                        {filteredActivityLog.length === 0 ? (
-                                          <p className="text-white">No activity yet.</p>
-                                        ) : (
-                                          <div className="space-y-4">
-                                            {filteredActivityLog.map((activity, idx) => (
-                                              <div key={idx} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
-                                                <div className="flex items-center space-x-3">
-                                                  <img
-                                                    src={'https://via.placeholder.com/32'}
-                                                    alt="Activity Icon"
-                                                    className="w-8 h-8 rounded-full"
-                                                  />
-                                                  <div>
-                                                    <p className="text-white">{activity.details}</p>
-                                                    <p className="text-sm text-gray-300">By: {activity.userId}</p>
-                                                    <p className="text-sm text-gray-300">{new Date(activity.createdAt).toLocaleString()}</p>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                          
-                                    {activeTab === 'files' && (
-                                      <div className="pt-4">
-                                        <h2 className="text-2xl font-display text-vibrant-pink mb-4">Files</h2>
-                                        <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
-                                          <form onSubmit={handleAddFile} className="space-y-4">
-                                            <div className="flex items-center space-x-3">
-                                              <img
-                                                src={user?.profilePicture || 'https://via.placeholder.com/40'}
-                                                alt="User Avatar"
-                                                className="w-10 h-10 rounded-full"
-                                              />
-                                              <input
-                                                type="text"
-                                                value={newFile.name}
-                                                onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
-                                                required
-                                                placeholder="File Name"
-                                                className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                                              />
-                                            </div>
-                                            <div>
-                                              <label className="block text-white mb-2 font-medium">File URL</label>
-                                              <input
-                                                type="text"
-                                                value={newFile.url}
-                                                onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
-                                                required
-                                                placeholder="File URL"
-                                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                                              />
-                                            </div>
-                                            <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                                              Add File
-                                            </button>
-                                          </form>
-                                          <form onSubmit={handleRequestFile} className="space-y-4">
-                                            <div className="flex items-center space-x-3">
-                                              <img
-                                                src={user?.profilePicture || 'https://via.placeholder.com/40'}
-                                                alt="User Avatar"
-                                                className="w-10 h-10 rounded-full"
-                                              />
-                                              <input
-                                                type="text"
-                                                value={newFile.name}
-                                                onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
-                                                required
-                                                placeholder="Request File Name"
-                                                className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                                              />
-                                            </div>
-                                            <div>
-                                              <label className="block text-white mb-2 font-medium">Request File URL</label>
-                                              <input
-                                                type="text"
-                                                value={newFile.url}
-                                                onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
-                                                required
-                                                placeholder="Request File URL"
-                                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                                              />
-                                            </div>
-                                            <button type="submit" className="btn-secondary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                                              Request File
-                                            </button>
-                                          </form>
-                                        </div>
-                          
-                                        {(!project?.files || project.files.length === 0) ? (
-                                          <p className="text-white">No files yet.</p>
-                                        ) : (
-                                          <div className="space-y-4">
-                                            {project.files.map(file => (
-                                              <div key={file._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
-                                                <div className="flex items-center space-x-3">
-                                                  <img
-                                                    src={'https://via.placeholder.com/32'}
-                                                    alt="File Icon"
-                                                    className="w-8 h-8 rounded-full"
-                                                  />
-                                                  <div>
-                                                    <h3 className="text-lg font-display text-vibrant-pink">{file.name}</h3>
-                                                    <a
-                                                      href={file.url}
-                                                      target="_blank"
-                                                      rel="noopener noreferrer"
-                                                      className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors"
-                                                    >
-                                                      Open File
-                                                    </a>
-                                                    <p className="text-sm text-white mt-2">Uploaded by: {file.uploadedBy}</p>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                          
-                                    {activeTab === 'settings' && (
-                                      <div className="pt-4">
-                                        <h2 className="text-2xl font-display text-vibrant-pink mb-4">Project Settings</h2>
-                                        <button
-                                          onClick={() => setShowShareModal(true)}
-                                          className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow mb-4"
-                                        >
-                                          Share Project
-                                        </button>
-                                        <button
-                                          onClick={() => setShowSettingsModal(true)}
-                                          className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow"
-                                        >
-                                          Update Notification Preferences
-                                        </button>
                                       </div>
                                     )}
                                   </div>
-                                </div>
-                          
-                                {/* Share Modal */}
-                                {showShareModal && (
-                                  <>
-                                    <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowShareModal(false)}></div>
-                                    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
-                                      <div className="modal glassmorphic p-6">
-                                        <h2 className="text-2xl font-display text-vibrant-pink mb-6">Share Project</h2>
-                                        <div className="mb-6">
-                                          <label className="block text-white mb-3 font-medium">User ID to Share With</label>
-                                          <input
-                                            type="text"
-                                            value={shareUserId}
-                                            onChange={(e) => setShareUserId(e.target.value)}
-                                            placeholder="Enter user ID"
-                                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
-                                          />
-                                        </div>
-                                        <div className="flex space-x-3">
-                                          <button onClick={handleShareProject} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                                            Share
-                                          </button>
-                                          <button onClick={handleRequestShare} className="btn-secondary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                                            Request Share
-                                          </button>
-                                          <button
-                                            onClick={() => setShowShareModal(false)}
-                                            className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                                          >
-                                            Cancel
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </>
-                                )}
-                          
-                                {/* Settings Modal */}
-                                {showSettingsModal && (
-                                  <>
-                                    <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowSettingsModal(false)}></div>
-                                    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
-                                      <div className="modal glassmorphic p-6">
-                                        <h2 className="text-2xl font-display text-vibrant-pink mb-6">Notification Preferences</h2>
-                                        <div className="space-y-4">
-                                          <div className="flex items-center">
-                                            <input
-                                              type="checkbox"
-                                              checked={notificationPrefs.email}
-                                              onChange={(e) => setNotificationPrefs({ ...notificationPrefs, email: e.target.checked })}
-                                              className="mr-2"
-                                            />
-                                            <label className="text-white">Email Notifications</label>
-                                          </div>
-                                          <div className="flex items-center">
-                                            <input
-                                              type="checkbox"
-                                              checked={notificationPrefs.sms}
-                                              onChange={(e) => setNotificationPrefs({ ...notificationPrefs, sms: e.target.checked })}
-                                              className="mr-2"
-                                            />
-                                            <label className="text-white">SMS Notifications</label>
-                                          </div>
-                                          <div className="flex items-center">
-                                            <input
-                                              type="checkbox"
-                                              checked={notificationPrefs.push}
-                                              onChange={(e) => setNotificationPrefs({ ...notificationPrefs, push: e.target.checked })}
-                                              className="mr-2"
-                                            />
-                                            <label className="text-white">Push Notifications</label>
-                                          </div>
-                                          <div>
-                                            <label className="block text-white mb-2 font-medium">Notify me about:</label>
-                                            <div className="flex items-center">
-                                              <input
-                                                type="checkbox"
-                                                checked={notificationPrefs.tasks}
-                                                onChange={(e) => setNotificationPrefs({ ...notificationPrefs, tasks: e.target.checked })}
-                                                className="mr-2"
-                                              />
-                                              <label className="text-white">Task Updates</label>
-                                            </div>
-                                            <div className="flex items-center">
-                                              <input
-                                                type="checkbox"
-                                                checked={notificationPrefs.posts}
-                                                onChange={(e) => setNotificationPrefs({ ...notificationPrefs, posts: e.target.checked })}
-                                                className="mr-2"
-                                              />
-                                              <label className="text-white">Post Updates</label>
-                                            </div>
-                                            <div className="flex items-center">
-                                              <input
-                                                type="checkbox"
-                                                checked={notificationPrefs.files}
-                                                onChange={(e) => setNotificationPrefs({ ...notificationPrefs, files: e.target.checked })}
-                                                className="mr-2"
-                                              />
-                                              <label className="text-white">File Updates</label>
-                                            </div>
-                                            <div className="flex items-center">
-                                              <input
-                                                type="checkbox"
-                                                checked={notificationPrefs.shares}
-                                                onChange={(e) => setNotificationPrefs({ ...notificationPrefs, shares: e.target.checked })}
-                                                className="mr-2"
-                                              />
-                                              <label className="text-white">Share Requests</label>
-                                            </div>
-                                            <div className="flex items-center">
-                                              <input
-                                                type="checkbox"
-                                                checked={notificationPrefs.teams}
-                                                onChange={(e) => setNotificationPrefs({ ...notificationPrefs, teams: e.target.checked })}
-                                                className="mr-2"
-                                              />
-                                              <label className="text-white">Team Updates</label>
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="flex space-x-3 mt-6">
-                                          <button onClick={handleUpdateNotificationPrefs} className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow">
-                                            Save
-                                          </button>
-                                          <button
-                                            onClick={() => setShowSettingsModal(false)}
-                                            className="btn-secondary neumorphic hover:scale-105 transition-transform"
-                                          >
-                                            Cancel
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </>
-                                )}
+                                ))}
                               </div>
-                            );
-                          };
-                          
-                          export default ProjectHome;
+                            </div>
+                          )}
+                          <div className="mt-4">
+                            <h4 className="text-md font-display text-vibrant-pink mb-2 flex items-center space-x-2">
+                              <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                              </svg>
+                              <span>Add Subtask</span>
+                            </h4>
+                            <div className="space-y-2">
+                              <div>
+                                <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                  </svg>
+                                  <span>Subtask Title</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  value={newSubtask[task._id]?.title || ''}
+                                  onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], title: e.target.value } })}
+                                  placeholder="Enter subtask title"
+                                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                  </svg>
+                                  <span>Subtask Description</span>
+                                </label>
+                                <textarea
+                                  value={newSubtask[task._id]?.description || ''}
+                                  onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], description: e.target.value } })}
+                                  placeholder="Enter subtask description"
+                                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                  </svg>
+                                  <span>Status</span>
+                                </label>
+                                <select
+                                  value={newSubtask[task._id]?.status || 'To Do'}
+                                  onChange={(e) => setNewSubtask({ ...newSubtask, [task._id]: { ...newSubtask[task._id], status: e.target.value } })}
+                                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                >
+                                  <option value="To Do">To Do</option>
+                                  <option value="In Progress">In Progress</option>
+                                  <option value="Completed">Completed</option>
+                                </select>
+                              </div>
+                              <button
+                                onClick={() => handleAddSubtask(task._id)}
+                                className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center justify-center space-x-2"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                <span>Add Subtask</span>
+                              </button>
+                            </div>
+                          </div>
+                          {showComments[task._id] && (
+                            <div className="mt-4">
+                              {task.comments && task.comments.length > 0 ? (
+                                <div className="space-y-3">
+                                  {task.comments.map((comment, idx) => (
+                                    <div key={idx} className="flex items-start space-x-3">
+                                      <img
+                                        src={'https://via.placeholder.com/24'}
+                                        alt="Commenter Avatar"
+                                        className="w-6 h-6 rounded-full"
+                                      />
+                                      <div>
+                                        <p className="text-sm text-white flex items-center space-x-2">
+                                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                          </svg>
+                                          <span>{comment.userId}</span>
+                                        </p>
+                                        <p className="text-sm text-gray-300 flex items-center space-x-2">
+                                          <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                          </svg>
+                                          <span>{new Date(comment.createdAt).toLocaleString()}</span>
+                                        </p>
+                                        <p className="text-white mt-1 flex items-center space-x-2">
+                                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                                          </svg>
+                                          <span>{comment.content}</span>
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-white flex items-center space-x-2">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                  </svg>
+                                  <span>No comments yet.</span>
+                                </p>
+                              )}
+                              <div className="mt-4 flex items-center space-x-3">
+                                <img
+                                  src={user?.profilePicture || 'https://via.placeholder.com/24'}
+                                  alt="User Avatar"
+                                  className="w-6 h-6 rounded-full"
+                                />
+                                <div className="w-full">
+                                  <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                                    </svg>
+                                    <span>Add a Comment</span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={taskComment[task._id] || ''}
+                                    onChange={(e) => setTaskComment({ ...taskComment, [task._id]: e.target.value })}
+                                    placeholder="Enter your comment"
+                                    className="w-full p-3 rounded-full bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                  />
+                                </div>
+                                <button
+                                  onClick={() => handleAddTaskComment(task._id)}
+                                  className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                  </svg>
+                                  <span>Comment</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        {/* Right Sidebar with Tabs */}
+        <div className="md:col-span-1">
+          <div className="card glassmorphic animate-fade-in mb-8">
+            <div className="p-4 border-b border-gray-600">
+              <Link to="/profile">
+                <img
+                  src={user?.profilePicture || 'https://via.placeholder.com/40'}
+                  alt="User Avatar"
+                  className="w-12 h-12 rounded-full border-2 border-vibrant-pink mx-auto"
+                  onError={(e) => (e.target.src = 'https://via.placeholder.com/40')}
+                />
+              </Link>
+            </div>
+            <div className="flex space-x-4 border-b border-gray-600">
+              <button
+                onClick={() => setActiveTab('activity')}
+                className={`p-3 ${activeTab === 'activity' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors flex items-center space-x-2`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Activity</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('metrics')}
+                className={`p-3 ${activeTab === 'metrics' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors flex items-center space-x-2`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 012-2h2a2 2 0 012 2v12a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                <span>Metrics</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('teams-members')}
+                className={`p-3 ${activeTab === 'teams-members' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors flex items-center space-x-2`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <span>Teams & Members</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('files')}
+                className={`p-3 ${activeTab === 'files' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors flex items-center space-x-2`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span>Files</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('grok')}
+                className={`p-3 ${activeTab === 'grok' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors flex items-center space-x-2`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
+                <span>Grok</span>
+              </button>
+            </div>
+
+            {/* Sidebar Content */}
+            {activeTab === 'activity' && (
+              <div className="pt-4">
+                <h2 className="text-2xl font-display text-vibrant-pink mb-4 flex items-center space-x-2">
+                  <svg className="w-6 h-6 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span>Activity Log</span>
+                </h2>
+                <div className="mb-4">
+                  <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    <span>Filter Activity</span>
+                  </label>
+                  <select
+                    value={activityFilter}
+                    onChange={(e) => setActivityFilter(e.target.value)}
+                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  >
+                    <option value="all">All</option>
+                    <option value="post">Posts</option>
+                    <option value="task">Tasks</option>
+                    <option value="team">Teams</option>
+                    <option value="file">Files</option>
+                    <option value="share">Shares</option>
+                  </select>
+                </div>
+                {filteredActivityLog.length === 0 ? (
+                  <p className="text-white flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>No activity yet.</span>
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredActivityLog.map((activity, idx) => (
+                      <div key={idx} className="flex items-start space-x-3">
+                        <img
+                          src={'https://via.placeholder.com/24'}
+                          alt="Activity Icon"
+                          className="w-6 h-6 rounded-full"
+                        />
+                        <div>
+                          <p className="text-white flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <span>{activity.userId}</span>
+                          </p>
+                          <p className="text-sm text-gray-300 flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>{new Date(activity.createdAt).toLocaleString()}</span>
+                          </p>
+                          <p className="text-white mt-1 flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span>{activity.details}</span>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'metrics' && (
+              <div className="pt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-display text-vibrant-pink flex items-center space-x-2">
+                    <svg className="w-6 h-6 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 012-2h2a2 2 0 012 2v12a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    <span>Project Metrics</span>
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setGrokQuery('Analyze the project metrics');
+                      setShowGrokSidebar(true);
+                    }}
+                    className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    <span>Ask Grok About Metrics</span>
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div className="bg-dark-navy p-4 rounded-lg shadow-lg">
+                    <h3 className="text-lg text-white flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                      </svg>
+                      <span>Total Projects</span>
+                    </h3>
+                    <p className="text-2xl font-bold text-vibrant-pink flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                      </svg>
+                      <span>{metrics.totalProjects}</span>
+                    </p>
+                  </div>
+                  <div className="bg-dark-navy p-4 rounded-lg shadow-lg">
+                    <h3 className="text-lg text-white flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01"></path>
+                      </svg>
+                      <span>Current Projects</span>
+                    </h3>
+                    <p className="text-2xl font-bold text-vibrant-pink flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                      </svg>
+                      <span>{metrics.currentProjects}</span>
+                    </p>
+                  </div>
+                  <div className="bg-dark-navy p-4 rounded-lg shadow-lg">
+                    <h3 className="text-lg text-white flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                      </svg>
+                      <span>Past Projects</span>
+                    </h3>
+                    <p className="text-2xl font-bold text-vibrant-pink flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                      </svg>
+                      <span>{metrics.pastProjects}</span>
+                    </p>
+                  </div>
+                  <div className="bg-dark-navy p-4 rounded-lg shadow-lg">
+                    <h3 className="text-lg text-white flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      <span>Tasks Completed</span>
+                    </h3>
+                    <p className="text-2xl font-bold text-vibrant-pink flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                      </svg>
+                      <span>{metrics.tasksCompleted}</span>
+                    </p>
+                  </div>
+                </div>
+                <TeamContributionInfographic teams={project.teams || []} />
+              </div>
+            )}
+
+            {activeTab === 'teams-members' && (
+              <div className="pt-4">
+                {/* Toggle between Teams and Project Members */}
+                <div className="flex space-x-4 border-b border-gray-600 mb-4">
+                  <button
+                    onClick={() => setTeamMemberTab('teams')}
+                    className={`p-2 ${teamMemberTab === 'teams' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors flex items-center space-x-2`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <span>Teams</span>
+                  </button>
+                  <button
+                    onClick={() => setTeamMemberTab('members')}
+                    className={`p-2 ${teamMemberTab === 'members' ? 'text-vibrant-pink border-b-2 border-vibrant-pink' : 'text-white'} hover:text-neon-blue transition-colors flex items-center space-x-2`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <span>Members</span>
+                  </button>
+                </div>
+
+                {teamMemberTab === 'teams' && (
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-2xl font-display text-vibrant-pink flex items-center space-x-2">
+                        <svg className="w-6 h-6 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <span>Teams</span>
+                      </h2>
+                      <button
+                        onClick={() => {
+                          setGrokQuery('Summarize the teams in this project');
+                          setShowGrokSidebar(true);
+                        }}
+                        className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                        <span>Ask Grok About Teams</span>
+                      </button>
+                    </div>
+                    <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
+                      <form onSubmit={handleAddTeam} className="space-y-4">
+                        <div>
+                          <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            <span>Team Name</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={newTeam.name}
+                            onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                            required
+                            placeholder="Enter team name"
+                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span>Team Description</span>
+                          </label>
+                          <textarea
+                            value={newTeam.description}
+                            onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
+                            required
+                            placeholder="Enter team description"
+                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                            <span>Team Members</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={newTeam.members.join(', ')}
+                            onChange={(e) => setNewTeam({ ...newTeam, members: e.target.value.split(',').map(id => id.trim()) })}
+                            placeholder="Member IDs (comma-separated)"
+                            className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                          />
+                        </div>
+                        <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center justify-center space-x-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+                          </svg>
+                          <span>Add Team</span>
+                        </button>
+                      </form>
+                    </div>
+                    {(!project?.teams || project.teams.length === 0) ? (
+                      <p className="text-white flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>No teams yet.</span>
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {project.teams.map(team => (
+                          <div key={team._id} className="card glassmorphic transform hover:scale-105 transition-transform animate-pulse-glow p-4">
+                            {editTeam && editTeam._id === team._id ? (
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
+                                    <span>Team Name</span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editTeam.name}
+                                    onChange={(e) => setEditTeam({ ...editTeam, name: e.target.value })}
+                                    required
+                                    placeholder="Enter team name"
+                                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <span>Team Description</span>
+                                  </label>
+                                  <textarea
+                                    value={editTeam.description}
+                                    onChange={(e) => setEditTeam({ ...editTeam, description: e.target.value })}
+                                    required
+                                    placeholder="Enter team description"
+                                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                    </svg>
+                                    <span>Team Members</span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editTeam.members.join(', ')}
+                                    onChange={(e) => setEditTeam({ ...editTeam, members: e.target.value.split(',').map(id => id.trim()) })}
+                                    placeholder="Member IDs (comma-separated)"
+                                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                                  />
+                                </div>
+                                <div className="flex space-x-3">
+                                  <button
+                                    onClick={() => handleUpdateTeam(team._id)}
+                                    className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                                    </svg>
+                                    <span>Save</span>
+                                  </button>
+                                  <button
+                                    onClick={() => setEditTeam(null)}
+                                    className="btn-secondary neumorphic hover:scale-105 transition-transform flex items-center space-x-2"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                    <span>Cancel</span>
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <h3 className="text-lg font-display text-vibrant-pink flex items-center space-x-2">
+                                  <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                  </svg>
+                                  <span>{team.name}</span>
+                                </h3>
+                                <p className="text-white mt-1 flex items-center space-x-2">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                  </svg>
+                                  <span>{team.description}</span>
+                                </p>
+                                <p className="text-sm text-gray-300 mt-1 flex items-center space-x-2">
+                                  <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                  </svg>
+                                  <span>Members: {team.members?.join(', ') || 'None'}</span>
+                                </p>
+                                <p className="text-sm text-gray-300 mt-1 flex items-center space-x-2">
+                                  <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                  </svg>
+                                  <span>Created: {new Date(team.createdAt).toLocaleString()}</span>
+                                </p>
+                                <div className="flex space-x-3 mt-3">
+                                  <button
+                                    onClick={() => handleEditTeam(team)}
+                                    className="text-vibrant-pink hover:text-neon-blue animate-pulse-glow transition-colors flex items-center space-x-2"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path>
+                                    </svg>
+                                    <span>Edit</span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {teamMemberTab === 'members' && (
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-2xl font-display text-vibrant-pink flex items-center space-x-2">
+                        <svg className="w-6 h-6 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                        <span>Project Members</span>
+                      </h2>
+                      <button
+                        onClick={() => {
+                          setShowShareModal(true);
+                        }}
+                        className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        <span>Add Member</span>
+                      </button>
+                    </div>
+                    {(!project?.members || project.members.length === 0) ? (
+                      <p className="text-white flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>No members yet.</span>
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {project.members.map((member, idx) => (
+                          <div key={idx} className="flex items-center space-x-3">
+                            <img
+                              src={'https://via.placeholder.com/32'}
+                              alt="Member Avatar"
+                              className="w-8 h-8 rounded-full"
+                            />
+                            <div>
+                              <p className="text-white flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                                <span>{member}</span>
+                              </p>
+                              {project.admins?.includes(member) && (
+                                <p className="text-sm text-gray-300 flex items-center space-x-2">
+                                  <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                  </svg>
+                                  <span>Admin</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'files' && (
+              <div className="pt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-display text-vibrant-pink flex items-center space-x-2">
+                    <svg className="w-6 h-6 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span>Files</span>
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setGrokQuery('Summarize the files in this project');
+                      setShowGrokSidebar(true);
+                    }}
+                    className="btn-primary neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    <span>Ask Grok About Files</span>
+                  </button>
+                </div>
+                <div className="mb-6 space-y-4 p-4 bg-dark-navy rounded-lg shadow-inner">
+                  <form onSubmit={handleAddFile} className="space-y-4">
+                    <div>
+                      <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span>File Name</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newFile.name}
+                        onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
+                        required
+                        placeholder="Enter file name"
+                        className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                        <span>File URL</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newFile.url}
+                        onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
+                        required
+                        placeholder="Enter file URL"
+                        className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                      />
+                    </div>
+                    <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center justify-center space-x-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+                      </svg>
+                      <span>Add File</span>
+                    </button>
+                  </form>
+                  <form onSubmit={handleRequestFile} className="space-y-4">
+                    <div>
+                      <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span>Request File Name</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newFile.name}
+                        onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
+                        required
+                        placeholder="Enter file name to request"
+                        className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                        <span>Request File URL (optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newFile.url}
+                        onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
+                        placeholder="Enter file URL (optional)"
+                        className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                      />
+                    </div>
+                    <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center justify-center space-x-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                      </svg>
+                      <span>Request File</span>
+                    </button>
+                  </form>
+                </div>
+                {(!project?.files || project.files.length === 0) ? (
+                  <p className="text-white flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>No files yet.</span>
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {project.files.map((file, idx) => (
+                      <div key={idx} className="flex items-center space-x-3">
+                        <img
+                          src={'https://via.placeholder.com/32'}
+                          alt="File Icon"
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div>
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-vibrant-pink hover:text-neon-blue transition-colors flex items-center space-x-2"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span>{file.name}</span>
+                          </a>
+                          <p className="text-sm text-gray-300 flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <span>Uploaded by: {file.uploadedBy}</span>
+                          </p>
+                          <p className="text-sm text-gray-300 flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span>{new Date(file.createdAt).toLocaleString()}</span>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'grok' && (
+              <div className="pt-4">
+                <h2 className="text-2xl font-display text-vibrant-pink mb-4 flex items-center space-x-2">
+                  <svg className="w-6 h-6 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                  </svg>
+                  <span>Ask Grok</span>
+                </h2>
+                <p className="text-white text-sm mb-4 flex items-center space-x-2">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span>Powered by <a href="https://x.ai" target="_blank" rel="noopener noreferrer" className="text-vibrant-pink hover:text-neon-blue">xAI</a>.</span>
+                </p>
+                <form onSubmit={handleGrokQuery} className="space-y-4">
+                  <div>
+                    <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                      </svg>
+                      <span>Ask Grok</span>
+                    </label>
+                    <textarea
+                      value={grokQuery}
+                      onChange={(e) => setGrokQuery(e.target.value)}
+                      placeholder="e.g., 'Summarize the project progress'"
+                      className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all h-32"
+                    />
+                  </div>
+                  <button type="submit" className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center justify-center space-x-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                    <span>Send to Grok</span>
+                  </button>
+                </form>
+                {grokResponse && (
+                  <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+                    <h3 className="text-lg text-vibrant-pink mb-2 flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                      </svg>
+                      <span>Grok's Response</span>
+                    </h3>
+                    <p className="text-white">{grokResponse}</p>
+                  </div>
+                )}
+                {grokError && (
+                  <div className="mt-4 p-4 bg-red-500 rounded-lg">
+                    <p className="text-white flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                      </svg>
+                      <span>{grokError}</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <>
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowShareModal(false)}></div>
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
+            <div className="modal glassmorphic p-6">
+              <h2 className="text-2xl font-display text-vibrant-pink mb-4 flex items-center space-x-2">
+                <svg className="w-6 h-6 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                </svg>
+                <span>Share Project</span>
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-white mb-2 font-medium flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <span>User ID to Share With</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={shareUserId}
+                    onChange={(e) => setShareUserId(e.target.value)}
+                    placeholder="Enter user ID"
+                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+                  />
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleShareProject}
+                    className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center justify-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                    </svg>
+                    <span>Share</span>
+                  </button>
+                  <button
+                    onClick={handleRequestShare}
+                    className="btn-secondary w-full neumorphic hover:scale-105 transition-transform flex items-center justify-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                    </svg>
+                    <span>Request Share</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <>
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowSettingsModal(false)}></div>
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
+            <div className="modal glassmorphic p-6">
+              <h2 className="text-2xl font-display text-vibrant-pink mb-4 flex items-center space-x-2">
+                <svg className="w-6 h-6 text-vibrant-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <span>Notification Settings</span>
+              </h2>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.email}
+                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, email: e.target.checked })}
+                    className="form-checkbox h-5 w-5 text-vibrant-pink border-vibrant-pink focus:ring-vibrant-pink"
+                  />
+                  <label className="text-white flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>Email Notifications</span>
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.sms}
+                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, sms: e.target.checked })}
+                    className="form-checkbox h-5 w-5 text-vibrant-pink border-vibrant-pink focus:ring-vibrant-pink"
+                  />
+                  <label className="text-white flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>SMS Notifications</span>
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.push}
+                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, push: e.target.checked })}
+                    className="form-checkbox h-5 w-5 text-vibrant-pink border-vibrant-pink focus:ring-vibrant-pink"
+                  />
+                  <label className="text-white flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    </svg>
+                    <span>Push Notifications</span>
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.tasks}
+                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, tasks: e.target.checked })}
+                    className="form-checkbox h-5 w-5 text-vibrant-pink border-vibrant-pink focus:ring-vibrant-pink"
+                  />
+                  <label className="text-white flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01"></path>
+                    </svg>
+                    <span>Task Notifications</span>
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.posts}
+                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, posts: e.target.checked })}
+                    className="form-checkbox h-5 w-5 text-vibrant-pink border-vibrant-pink focus:ring-vibrant-pink"
+                  />
+                  <label className="text-white flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0l-1.414-1.414a2 2 0 010-2.828L14.172 4.172z"></path>
+                    </svg>
+                    <span>Post Notifications</span>
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.files}
+                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, files: e.target.checked })}
+                    className="form-checkbox h-5 w-5 text-vibrant-pink border-vibrant-pink focus:ring-vibrant-pink"
+                  />
+                  <label className="text-white flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span>File Notifications</span>
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.shares}
+                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, shares: e.target.checked })}
+                    className="form-checkbox h-5 w-5 text-vibrant-pink border-vibrant-pink focus:ring-vibrant-pink"
+                  />
+                  <label className="text-white flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                    </svg>
+                    <span>Share Notifications</span>
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.teams}
+                    onChange={(e) => setNotificationPrefs({ ...notificationPrefs, teams: e.target.checked })}
+                    className="form-checkbox h-5 w-5 text-vibrant-pink border-vibrant-pink focus:ring-vibrant-pink"
+                  />
+                  <label className="text-white flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <span>Team Notifications</span>
+                  </label>
+                </div>
+                <button
+                  onClick={handleUpdateNotificationPrefs}
+                  className="btn-primary w-full neumorphic hover:scale-105 transition-transform animate-pulse-glow flex items-center justify-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                  </svg>
+                  <span>Save Settings</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )} 
+    </div>
+  );
+};
+
+export default ProjectHome;
