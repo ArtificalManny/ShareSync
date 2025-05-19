@@ -1,20 +1,17 @@
-.projects {
-    padding: 2rem;
-  }
-  
-  .project-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1rem;
-  }
-  
-  .project-card {
-    text-decoration: none;
-  }
-  
-  .project-card-content {
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    color: #e0e0e0;
-  }
+.projects-container {
+  padding: 40px;
+  min-height: 100vh;
+}
+
+.project-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.project-card {
+  background-color: var(--dark-gray);
+  border: 1px solid var(--border-gray);
+  border-radius: 12px;
+  padding: 16px;
+}
