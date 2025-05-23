@@ -19,7 +19,7 @@ export class AuthController {
   @Post('login')
   async login(@Body() loginDto: { email: string; password: string }) {
     try {
-      return await this.authService.login(loginDto); // Pass single object
+      return await this.authService.login(loginDto);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
     }

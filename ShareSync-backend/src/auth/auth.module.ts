@@ -1,19 +1,21 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { AuthController } from './auth.controller';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
-import { JwtStrategy } from './jwt.strategy';
+import { JwtModule } from '@nestjs/jwt';
+import { RefreshToken, RefreshTokenSchema } from './refresh-token.schema';
 
 @Module({
   imports: [
+    MongooseModule.forFeature([{ name: RefreshToken.name, schema: RefreshTokenSchema }]),
     UserModule,
     JwtModule.register({
-      secret: 'mySecretKey123', // Ensure this matches
+      secret: process.env.JWT_SECRET || 'mySecretKey123',
       signOptions: { expiresIn: '1h' },
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService],
 })
 export class AuthModule {}

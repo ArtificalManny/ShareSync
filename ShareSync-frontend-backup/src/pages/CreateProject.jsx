@@ -1,84 +1,77 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { createProject } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
+import { createProject } from '../services/auth';
+import './CreateProject.css';
 
 const CreateProject = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const initialTitle = location.state?.title || '';
-  const [formData, setFormData] = useState({
-    title: initialTitle,
-    description: '',
-    category: 'School',
-  });
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('School');
+  const [status, setStatus] = useState('In Progress');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    setLoading(true);
     try {
-      console.log('Creating project with data:', formData);
-      const response = await createProject(formData);
-      console.log('Create project response:', response);
+      await createProject(title, description, category, status);
       navigate('/projects');
     } catch (err) {
-      setError(`Failed to create project: ${err.message}`);
-      console.error('Create project error:', err.message);
+      setError('Failed to create project: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto">
-      <div className="card animate-fade-in">
-        <h1 className="text-3xl font-display text-vibrant-pink mb-6 text-center">Create New Project</h1>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-white mb-2">Title</label>
+    <div className="create-project-container">
+      <div className="create-project-card card">
+        <h1>Create a New Project</h1>
+        {error && <p className="text-error">{error}</p>}
+        {loading ? (
+          <p className="text-secondary">Creating project...</p>
+        ) : (
+          <form onSubmit={handleSubmit}>
             <input
               type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
+              placeholder="Project Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               required
               disabled={loading}
             />
-          </div>
-          <div className="mb-4">
-            <label className="block text-white mb-2">Description</label>
             <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
+              placeholder="Project Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               required
               disabled={loading}
             />
-          </div>
-          <div className="mb-4">
-            <label className="block text-white mb-2">Category</label>
             <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
               disabled={loading}
             >
               <option value="School">School</option>
-              <option value="Job">Job</option>
+              <option value="Work">Job</option>
               <option value="Personal">Personal</option>
             </select>
-          </div>
-          <button type="submit" className="btn-primary w-full" disabled={loading}>
-            {loading ? 'Creating...' : 'Create Project'}
-          </button>
-        </form>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              disabled={loading}
+            >
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+            <button type="submit" disabled={loading} className="btn-primary">
+              Create Project
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

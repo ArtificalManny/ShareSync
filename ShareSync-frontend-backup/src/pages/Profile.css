@@ -1,63 +1,79 @@
 .profile-container {
-  padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.banner {
-  height: 200px;
-  background-size: cover;
-  background-position: center;
-  position: relative;
-  border-radius: 12px;
-  border: 1px solid var(--border-gray);
-}
-
-.banner-input {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.7);
-  padding: 10px;
-  border-radius: 8px;
+  padding: 40px;
+  background-color: var(--background);
+  min-height: calc(100vh - 64px);
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
 }
 
-.banner-input input {
-  padding: 5px;
-  border-radius: 5px;
-  border: none;
+.profile-header {
+  width: 100%;
+  max-width: 800px;
+  height: 200px;
+  position: relative;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+}
+
+.banner-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.8);
 }
 
 .profile-pic-container {
-  position: relative;
-  margin-top: -50px;
-  margin-left: 20px;
+  position: absolute;
+  bottom: -60px;
+  left: 40px;
 }
 
 .profile-pic {
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
-  border: 3px solid var(--black);
-  position: relative;
+  object-fit: cover;
+  border: 4px solid var(--background);
+  background-color: var(--background);
+  transition: transform 0.3s ease;
 }
 
-.profile-pic-input {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 10px;
-  border-radius: 8px;
+.profile-pic:hover {
+  transform: scale(1.1);
+}
+
+.profile-content {
+  background: var(--card-bg);
+  backdrop-filter: var(--card-backdrop);
+  border-radius: 0 0 16px 16px;
+  box-shadow: var(--shadow);
+  max-width: 800px;
+  width: 100%;
+  padding: 80px 40px 40px 40px;
+  border: 1px solid var(--border);
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
 }
 
-.profile-pic-input input {
-  padding: 5px;
-  border-radius: 5px;
-  border: none;
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.profile-info h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-info p {
+  font-size: 16px;
+  color: var(--text-secondary);
 }
