@@ -1,10 +1,39 @@
 .error-container {
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    background-color: var(--black);
-    min-height: calc(100vh - 60px);
-  }
+  padding: 40px;
+  background-color: var(--background);
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.error-container h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.error-container p {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.error-container button {
+  padding: 12px 24px;
+  border-radius: 9999px;
+  background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+  background-size: 200% 200%;
+  animation: gradientGlow 8s ease infinite;
+  color: var(--white);
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.error-container button:hover {
+  transform: scale(1.05);
+}

@@ -1,13 +1,10 @@
 import React from 'react';
 
 class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
+  state = { hasError: false, error: null };
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -16,7 +13,13 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return <div className="error-container"><h1 className="text-white">Something went wrong.</h1></div>;
+      return (
+        <div className="error-container">
+          <h2>Something went wrong.</h2>
+          <p>{this.state.error?.message || 'An unexpected error occurred.'}</p>
+          <button onClick={() => window.location.reload()}>Reload Page</button>
+        </div>
+      );
     }
     return this.props.children;
   }
