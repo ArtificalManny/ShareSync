@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getProjectById } from '../services/auth';
+import { CheckCircle } from 'lucide-react';
 import './ProjectHome.css';
 
 const ProjectHome = () => {
@@ -59,6 +60,8 @@ const ProjectHome = () => {
     return <div className="project-home-container"><p className="text-secondary">Project not found.</p></div>;
   }
 
+  const statusProgress = project.status === 'Completed' ? 100 : project.status === 'In Progress' ? 50 : 0;
+
   return (
     <div className="project-home-container">
       <div className="project-home-header">
@@ -66,6 +69,22 @@ const ProjectHome = () => {
       </div>
       <div className="project-details">
         <p className="text-secondary">{project.description || 'No description'}</p>
+        <div className="project-overview">
+          <h2>Project Overview</h2>
+          <div className="overview-infographic">
+            <div className="stat-bar">
+              <span>
+                <CheckCircle className="icon" /> Status: {project.status || 'Unknown'}
+              </span>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill gradient-bg"
+                  style={{ width: `${statusProgress}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
