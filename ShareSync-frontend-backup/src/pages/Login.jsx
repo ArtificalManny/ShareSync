@@ -17,19 +17,20 @@ const Login = ({ setIsAuthenticated }) => {
       console.log('Login - Full response:', response);
       const accessToken = response.access_token;
       const refreshToken = response.refresh_token;
+      const user = response.user;
       if (!accessToken) {
         throw new Error('Access token not received from server');
       }
       localStorage.setItem('access_token', accessToken);
-      if (refreshToken) {
-        localStorage.setItem('refresh_token', refreshToken);
-      }
+      localStorage.setItem('refresh_token', refreshToken || '');
+      localStorage.setItem('user', JSON.stringify(user || {}));
       console.log('Login - Access token set in localStorage:', localStorage.getItem('access_token'));
       console.log('Login - Refresh token set in localStorage:', localStorage.getItem('refresh_token'));
+      console.log('Login - User data set in localStorage:', localStorage.getItem('user'));
       setIsAuthenticated(true);
       navigate('/');
     } catch (err) {
-      console.error('Login - Error:', err.message);
+      console.error('Login - Error:', err.response?.data?.message || err.message);
       setError('Failed to log in: ' + (err.response?.data?.message || err.message || 'Please check your credentials or server connection.'));
     }
   };

@@ -16,10 +16,11 @@ const CreateProject = () => {
     setError('');
     try {
       const accessToken = localStorage.getItem('access_token');
-      console.log('CreateProject - Access token:', accessToken);
+      console.log('CreateProject - Access token before create:', accessToken);
       await createProject(title, description, category, status);
       navigate('/projects');
     } catch (err) {
+      console.error('CreateProject - Error:', err.message);
       setError('Failed to create project: ' + (err.response?.data?.message || err.message));
     }
   };
@@ -31,7 +32,7 @@ const CreateProject = () => {
         {error && (
           <div>
             <p className="text-secondary error">{error}</p>
-            {(error.includes('No access token found') || error.includes('Invalid token')) && (
+            {(error.includes('No access token found') || error.includes('Invalid token') || error.includes('Session expired')) && (
               <p className="text-secondary">
                 Please <Link to="/login">log in</Link> to create a project.
               </p>

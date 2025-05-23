@@ -12,9 +12,10 @@ const Projects = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const accessToken = localStorage.getItem('access_token');
+        let accessToken = localStorage.getItem('access_token');
         console.log('Projects - Access token before fetch:', accessToken);
         if (!accessToken) {
+          console.error('Projects - No access token found in localStorage');
           throw new Error('No access token found');
         }
         const response = await axios.get('http://localhost:3000/api/projects', {
@@ -26,7 +27,7 @@ const Projects = () => {
         console.log('Projects - Fetched projects:', response.data);
         setProjects(response.data || []);
       } catch (err) {
-        console.error('Projects - Error fetching projects:', err.message);
+        console.error('Projects - Error fetching projects:', err.response?.data?.message || err.message);
         setError('Failed to fetch projects: ' + (err.response?.data?.message || err.message));
       } finally {
         setLoading(false);
