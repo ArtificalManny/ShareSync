@@ -13,6 +13,7 @@ const Home = () => {
     const fetchData = async () => {
       try {
         const accessToken = localStorage.getItem('access_token');
+        console.log('Home - Access token before fetch:', accessToken);
         if (!accessToken) {
           throw new Error('No access token found');
         }
@@ -102,7 +103,12 @@ const Home = () => {
           <div className="projects-carousel">
             {recentProjects.map(project => (
               project.id ? (
-                <Link to={`/projects/${project.id}`} key={project.id} className="project-card-link">
+                <Link
+                  to={`/projects/${project.id}`}
+                  key={project.id}
+                  className="project-card-link"
+                  onClick={() => console.log('Navigating to ProjectHome with ID:', project.id, 'Token:', localStorage.getItem('access_token'))}
+                >
                   <div className="project-card card">
                     <h3>{project.title || 'Untitled'}</h3>
                     <p className="text-secondary">{project.description || 'No description'}</p>

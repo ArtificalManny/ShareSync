@@ -16,11 +16,16 @@ const Login = ({ setIsAuthenticated }) => {
       const response = await login(email, password);
       console.log('Login - Full response:', response);
       const accessToken = response.access_token;
+      const refreshToken = response.refresh_token;
       if (!accessToken) {
         throw new Error('Access token not received from server');
       }
       localStorage.setItem('access_token', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('refresh_token', refreshToken);
+      }
       console.log('Login - Access token set in localStorage:', localStorage.getItem('access_token'));
+      console.log('Login - Refresh token set in localStorage:', localStorage.getItem('refresh_token'));
       setIsAuthenticated(true);
       navigate('/');
     } catch (err) {

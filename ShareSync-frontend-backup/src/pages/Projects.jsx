@@ -13,6 +13,7 @@ const Projects = () => {
     const fetchProjects = async () => {
       try {
         const accessToken = localStorage.getItem('access_token');
+        console.log('Projects - Access token before fetch:', accessToken);
         if (!accessToken) {
           throw new Error('No access token found');
         }
@@ -25,6 +26,7 @@ const Projects = () => {
         console.log('Projects - Fetched projects:', response.data);
         setProjects(response.data || []);
       } catch (err) {
+        console.error('Projects - Error fetching projects:', err.message);
         setError('Failed to fetch projects: ' + (err.response?.data?.message || err.message));
       } finally {
         setLoading(false);
@@ -51,7 +53,7 @@ const Projects = () => {
           <h1>Your Projects</h1>
         </div>
         <p className="text-error">{error}</p>
-        {(error.includes('No access token found') || error.includes('Invalid token')) && (
+        {(error.includes('No access token found') || error.includes('Invalid token') || error.includes('Session expired')) && (
           <p className="text-secondary">
             Please <Link to="/login">log in</Link> to view your projects.
           </p>

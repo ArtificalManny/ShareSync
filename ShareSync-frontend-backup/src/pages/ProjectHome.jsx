@@ -18,13 +18,12 @@ const ProjectHome = () => {
           throw new Error('Project ID is missing');
         }
         const accessToken = localStorage.getItem('access_token');
-        if (!accessToken) {
-          throw new Error('No access token found');
-        }
+        console.log('ProjectHome - Access token before fetch:', accessToken);
         const projectData = await getProjectById(id);
         console.log('ProjectHome - Fetched project data:', projectData);
         setProject(projectData);
       } catch (err) {
+        console.error('ProjectHome - Error fetching project:', err.message);
         setError('Failed to load project: ' + (err.response?.data?.message || err.message));
       } finally {
         setLoading(false);
@@ -43,7 +42,7 @@ const ProjectHome = () => {
       <div className="project-home-container">
         <p className="text-error">{error}</p>
         <p className="text-secondary">
-          {(error.includes('No access token found') || error.includes('Invalid token')) ? (
+          {(error.includes('No access token found') || error.includes('Invalid token') || error.includes('Session expired')) ? (
             <>Please <Link to="/login">log in</Link> to view this project.</>
           ) : (
             'The project may not exist or there was a server error.'

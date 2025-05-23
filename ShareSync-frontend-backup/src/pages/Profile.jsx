@@ -16,10 +16,7 @@ const Profile = () => {
     const fetchUserData = async () => {
       try {
         const accessToken = localStorage.getItem('access_token');
-        console.log('Profile - Access token:', accessToken);
-        if (!accessToken) {
-          throw new Error('No access token found');
-        }
+        console.log('Profile - Access token before fetch:', accessToken);
         const userData = await getUserData();
         console.log('Profile - Fetched user data:', userData);
         setUser(userData);
@@ -33,6 +30,7 @@ const Profile = () => {
         console.log('Profile - Fetched projects:', response.data);
         setProjects(response.data || []);
       } catch (err) {
+        console.error('Profile - Error fetching data:', err.message);
         setError('Failed to load profile: ' + (err.response?.data?.message || err.message));
       } finally {
         setLoading(false);
