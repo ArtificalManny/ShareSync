@@ -22,6 +22,32 @@
   color: var(--text-primary);
 }
 
+.project-home-header button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 12px 24px;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.project-home-header button:hover {
+  background: var(--card-bg);
+  transform: scale(1.05);
+}
+
+.project-home-header button .icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
 .project-details {
   max-width: 800px;
   width: 100%;
@@ -30,10 +56,9 @@
   gap: 16px;
 }
 
-.project-overview {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.project-details p {
+  font-size: 16px;
+  color: var(--text-secondary);
 }
 
 .project-overview h2 {
@@ -55,31 +80,723 @@
 }
 
 .stat-bar span {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text-primary);
-  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .stat-bar .icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   stroke-width: 2;
   color: var(--accent-blue);
 }
 
 .progress-bar {
   width: 100%;
-  height: 10px;
-  background: var(--background);
-  border-radius: 5px;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
   overflow: hidden;
-  border: 1px solid var(--border);
 }
 
 .progress-fill {
   height: 100%;
-  transition: width 0.5s ease;
+  background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+  background-size: 200% 200%;
+  animation: gradientGlow 8s ease infinite;
+  transition: width 0.3s ease;
+}
+
+.metrics-section {
+  max-width: 800px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metrics-section h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.metrics-infographic {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.metric-card {
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  color: var(--white);
+  background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+  background-size: 200% 200%;
+  animation: gradientGlow 8s ease infinite;
+  transition: transform 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-5px);
+}
+
+.metric-card span {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.metric-card p {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.posts-section {
+  max-width: 800px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.posts-section h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.post-form {
+  background: var(--card-bg);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.post-form select,
+.post-form textarea {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.post-form textarea {
+  resize: vertical;
+}
+
+.poll-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.poll-options input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.poll-options button {
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.poll-options button:hover {
+  background: var(--card-bg);
+  transform: scale(1.05);
+}
+
+.picture-upload label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+  background-size: 200% 200%;
+  animation: gradientGlow 8s ease infinite;
+  color: var(--white);
+  padding: 12px 24px;
+  border-radius: 9999px;
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.picture-upload label:hover {
+  transform: scale(1.05);
+}
+
+.post-form button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+  background-size: 200% 200%;
+  animation: gradientGlow 8s ease infinite;
+  color: var(--white);
+  padding: 12px 24px;
+  border-radius: 9999px;
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.post-form button:hover {
+  transform: scale(1.05);
+}
+
+.post-form button .icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.post-card {
+  background: var(--card-bg);
+  backdrop-filter: var(--card-backdrop);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.post-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.post-author {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.post-card p {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin: 8px 0;
+}
+
+.post-card .timestamp {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.poll {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.poll-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.poll-option button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.poll-option button:hover {
+  background: var(--accent-blue);
+  color: var(--white);
+}
+
+.poll-option span {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.picture-post img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.post-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.post-actions button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.post-actions button:hover {
+  background: var(--card-bg);
+  transform: scale(1.05);
+}
+
+.post-actions .icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+.team-activity-section,
+.announcements-section,
+.snapshot-section,
+.tasks-section,
+.files-section,
+.teams-section {
+  max-width: 800px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.team-activity-section h2,
+.announcements-section h2,
+.snapshot-section h2,
+.tasks-section h2,
+.files-section h2,
+.teams-section h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team-activity-section h2 .icon,
+.announcements-section h2 .icon,
+.snapshot-section h2 .icon,
+.tasks-section h2 .icon,
+.files-section h2 .icon,
+.teams-section h2 .icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+  color: var(--accent-blue);
+}
+
+.activity-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.activity-filter label {
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.activity-filter select {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.activity-card,
+.announcement-card,
+.snapshot-card,
+.task-card,
+.file-card,
+.team-card,
+.request-card {
+  background: var(--card-bg);
+  backdrop-filter: var(--card-backdrop);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.activity-card:hover,
+.announcement-card:hover,
+.snapshot-card:hover,
+.task-card:hover,
+.file-card:hover,
+.team-card:hover,
+.request-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.activity-item,
+.announcement-card p,
+.snapshot-card p,
+.task-card p,
+.file-card a,
+.team-card p,
+.request-card p {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin: 8px 0;
+}
+
+.activity-item .timestamp,
+.announcement-card .timestamp,
+.request-card .timestamp {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.announcement-form,
+.snapshot-form,
+.task-form,
+.subtask-form,
+.file-upload,
+.file-request,
+.team-form {
+  background: var(--card-bg);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.announcement-form textarea,
+.snapshot-form textarea,
+.task-form textarea,
+.subtask-form textarea {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 16px;
+  resize: vertical;
+}
+
+.task-form input,
+.subtask-form input,
+.file-request input,
+.team-form input,
+.team-form textarea {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.task-form select {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.announcement-form button,
+.snapshot-form button,
+.task-form button,
+.subtask-form button,
+.file-upload button,
+.file-request button,
+.team-form button,
+.request-card button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+  background-size: 200% 200%;
+  animation: gradientGlow 8s ease infinite;
+  color: var(--white);
+  padding: 12px 24px;
+  border-radius: 9999px;
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.announcement-form button:hover,
+.snapshot-form button:hover,
+.task-form button:hover,
+.subtask-form button:hover,
+.file-upload button:hover,
+.file-request button:hover,
+.team-form button:hover,
+.request-card button:hover {
+  transform: scale(1.05);
+}
+
+.announcement-form button .icon,
+.snapshot-form button .icon,
+.task-form button .icon,
+.subtask-form button .icon,
+.file-upload button .icon,
+.file-request button .icon,
+.team-form button .icon,
+.request-card button .icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.team-form button.btn-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.team-form button.btn-secondary:hover {
+  background: var(--card-bg);
+  transform: scale(1.05);
+}
+
+.file-upload label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+  background-size: 200% 200%;
+  animation: gradientGlow 8s ease infinite;
+  color: var(--white);
+  padding: 12px 24px;
+  border-radius: 9999px;
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.file-upload label:hover {
+  transform: scale(1.05);
+}
+
+.file-requests {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.file-requests h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.subtask-item {
+  margin-left: 20px;
+  margin-top: 8px;
+  border-left: 2px solid var(--border);
+  padding-left: 16px;
+}
+
+.subtask-comments,
+.task-comments {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment {
+  background: var(--background);
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.comment p {
+  font-size: 14px;
+}
+
+.comment-form {
+  margin-top: 8px;
+}
+
+.comment-form input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.task-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.task-actions button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.task-actions button:hover {
+  background: var(--card-bg);
+  transform: scale(1.05);
+}
+
+.task-actions .icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: var(--card-bg);
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.modal-content h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal-content input,
+.modal-content select {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+}
+
+.modal-actions button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.modal-actions .btn-primary {
+  background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+  background-size: 200% 200%;
+  animation: gradientGlow 8s ease infinite;
+  color: var(--white);
+  border: none;
+}
+
+.modal-actions .btn-primary:hover {
+  transform: scale(1.05);
+}
+
+.modal-actions .btn-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.modal-actions .btn-secondary:hover {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  transform: scale(1.05);
+}
+
+.settings-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-option label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.settings-option input {
+  width: 20px;
+  height: 20px;
 }
