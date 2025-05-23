@@ -44,6 +44,22 @@ const Projects = () => {
     return <div className="projects-container"><p className="text-secondary">Loading...</p></div>;
   }
 
+  if (error) {
+    return (
+      <div className="projects-container">
+        <div className="projects-header">
+          <h1>Your Projects</h1>
+        </div>
+        <p className="text-error">{error}</p>
+        {(error.includes('No access token found') || error.includes('Invalid token')) && (
+          <p className="text-secondary">
+            Please <Link to="/login">log in</Link> to view your projects.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="projects-container">
       <div className="projects-header">
@@ -54,16 +70,6 @@ const Projects = () => {
           </button>
         </Link>
       </div>
-      {error && (
-        <div>
-          <p className="text-error">{error}</p>
-          {(error.includes('No access token found') || error.includes('Invalid token')) && (
-            <p className="text-secondary">
-              Please <Link to="/login">log in</Link> to view your projects.
-            </p>
-          )}
-        </div>
-      )}
       <div className="project-metrics">
         <h2>Project Metrics</h2>
         <div className="metrics-infographic">
@@ -92,7 +98,7 @@ const Projects = () => {
       </div>
       <div className="projects-section">
         <h2><FolderKanban className="icon" /> All Projects</h2>
-        {projects.length === 0 && !error ? (
+        {projects.length === 0 ? (
           <div className="no-projects-card card">
             <p className="text-secondary">No projects found. Create one to get started!</p>
             <Link to="/projects/create">

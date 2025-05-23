@@ -14,13 +14,18 @@ const Login = ({ setIsAuthenticated }) => {
     setError('');
     try {
       const response = await login(email, password);
+      console.log('Login - Full response:', response);
       const accessToken = response.access_token;
+      if (!accessToken) {
+        throw new Error('Access token not received from server');
+      }
       localStorage.setItem('access_token', accessToken);
-      console.log('Login - Access token set:', accessToken);
+      console.log('Login - Access token set in localStorage:', localStorage.getItem('access_token'));
       setIsAuthenticated(true);
       navigate('/');
     } catch (err) {
-      setError('Failed to log in: ' + (err.response?.data?.message || 'Please check your credentials or server connection.'));
+      console.error('Login - Error:', err.message);
+      setError('Failed to log in: ' + (err.response?.data?.message || err.message || 'Please check your credentials or server connection.'));
     }
   };
 

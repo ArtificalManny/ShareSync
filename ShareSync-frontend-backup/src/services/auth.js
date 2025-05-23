@@ -13,7 +13,6 @@ export const login = async (email, password) => {
       throw new Error('No access token received in response');
     }
     console.log('Login successful, access token:', response.data.access_token);
-    localStorage.setItem('access_token', response.data.access_token);
     localStorage.setItem('refresh_token', response.data.refresh_token || '');
     localStorage.setItem('user', JSON.stringify(response.data.user || {}));
     return response.data;
@@ -202,6 +201,7 @@ export const createProject = async (title, description, category, status) => {
     if (!accessToken) {
       throw new Error('No access token found');
     }
+    console.log('Creating project with access token:', accessToken);
     const response = await axios.post(`${API_URL}/projects`, {
       title,
       description,
@@ -213,9 +213,11 @@ export const createProject = async (title, description, category, status) => {
         'Content-Type': 'application/json',
       },
     });
+    console.log('Project created successfully:', response.data);
     return response.data;
   } catch (error) {
-    throw error;
+    console.error('Failed to create project:', error.message);
+    throw new Error('Failed to create project: ' + (error.response?.data?.message || error.message));
   }
 };
 
