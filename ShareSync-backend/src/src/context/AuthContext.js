@@ -1,88 +1,91 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
+import React, { createContext, useState, useEffect } from 'react';
+import { getAccessToken, setTokens, clearTokens } from './utils/tokenUtils';
+
+export const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  console.log('AuthProvider - Initializing');
+
+  try {
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+      try {
+        const token = getAccessToken();
+        console.log('AuthProvider - Initial token:', token);
+        return !!token;
+      } catch (error) {
+        console.error('AuthProvider - Error checking token:', error.message);
+        return false;
+      }
+    });
+
+    const [user, setUser] = useState(() => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        const parsedUser = storedUser ? JSON.parse(storedUser) : {};
+        console.log('AuthProvider - Initial user:', parsedUser);
+        return parsedUser;
+      } catch (error) {
+        console.error('AuthProvider - Error parsing user:', error.message);
+        return {};
+      }
+    });
+
+    useEffect(() => {
+      console.log('AuthProvider - Syncing auth state');
+      try {
+        const token = getAccessToken();
+        const storedUser = localStorage.getItem('user');
+        const parsedUser = storedUser ? JSON.parse(storedUser) : {};
+        setIsAuthenticated(!!token);
+        setUser(parsedUser);
+        console.log('AuthProvider - Synced state:', { isAuthenticated: !!token, user: parsedUser });
+      } catch (error) {
+        console.error('AuthProvider - Error in useEffect:', error.message);
+        setIsAuthenticated(false);
+        setUser({});
+      }
+    }, []);
+
+    const login = (accessToken, refreshToken, userData) => {
+      console.log('AuthProvider - Logging in:', { accessToken, refreshToken, userData });
+      try {
+        if (!accessToken) throw new Error('Access token is required');
+        setTokens(accessToken, refreshToken, userData);
+        setIsAuthenticated(true);
+        setUser(userData || {});
+        console.log('AuthProvider - Login successful');
+      } catch (error) {
+        console.error('AuthProvider - Login error:', error.message);
+        setIsAuthenticated(false);
+        setUser({});
+        throw error;
+      }
     };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.useAuth = exports.AuthProvider = void 0;
-const react_1 = __importStar(require("react"));
-const AuthContext = (0, react_1.createContext)(undefined);
-const AuthProvider = ({ children }) => {
-    const login = async (username, password) => {
-        const response = await fetch('http://localhost:3000/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password }),
-        });
-        const data = await response.json();
-        if (data.user) {
-            localStorage.setItem('currentUser', JSON.stringify(data.user));
-            window.location.reload();
-        }
-        else {
-            throw new Error('Login failed');
-        }
-    };
-    const register = async (username, password, profilePic) => {
-        const response = await fetch('http://localhost:3000/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, profilePic }),
-        });
-        const data = await response.json();
-        if (data) {
-            localStorage.setItem('currentUser', JSON.stringify(data));
-            window.location.reload();
-        }
-        else {
-            throw new Error('Registration failed');
-        }
-    };
+
     const logout = () => {
-        localStorage.removeItem('currentUser');
-        document.cookie = 'userToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        window.location.reload();
+      console.log('AuthProvider - Logging out');
+      try {
+        clearTokens();
+        setIsAuthenticated(false);
+        setUser({});
+        console.log('AuthProvider - Logout successful');
+      } catch (error) {
+        console.error('AuthProvider - Logout error:', error.message);
+      }
     };
-    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
-    return (<AuthContext.Provider value={{ user, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>);
+
+    const value = { isAuthenticated, user, login, logout, setUser };
+    console.log('AuthProvider - Context value:', value);
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  } catch (error) {
+    console.error('AuthProvider - Fatal error:', error.message, error.stack);
+    return (
+      <div className="error-container">
+        <h2>Authentication Error</h2>
+        <p>{error.message}</p>
+        <button onClick={() => window.location.reload()}>Reload</button>
+      </div>
+    );
+  }
 };
-exports.AuthProvider = AuthProvider;
-const useAuth = () => {
-    const context = (0, react_1.useContext)(AuthContext);
-    if (!context)
-        throw new Error('useAuth must be used within an AuthProvider');
-    return context;
-};
-exports.useAuth = useAuth;
-exports.default = AuthContext;
