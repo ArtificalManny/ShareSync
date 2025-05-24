@@ -1,43 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { login } from '../services/auth';
+import { AuthContext } from '../AuthContext';
 import './Login.css';
 
-const Login = ({ setIsAuthenticated }) => {
+const Login = () => {
+  console.log('Login - Starting render');
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const authContext = useContext(AuthContext);
+
+  console.log('Login - AuthContext:', authContext);
+
+  if (!authContext || !authContext.login) {
+    return (
+      <div className="login-container">
+        <div className="login-card card holographic">
+          <h1>Login to ShareSync</h1>
+          <p className="text-secondary error">Authentication context is not available.</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    console.log('Login - Submitting:', { email, password });
+
     try {
-      const response = await login(email, password);
-      console.log('Login - Full response:', response);
-      const accessToken = response.access_token;
-      const refreshToken = response.refresh_token;
-      const user = response.user;
-      if (!accessToken) {
-        throw new Error('Access token not received from server');
-      }
-      localStorage.setItem('access_token', accessToken);
-      localStorage.setItem('refresh_token', refreshToken || '');
-      localStorage.setItem('user', JSON.stringify(user || {}));
-      console.log('Login - Access token set in localStorage:', localStorage.getItem('access_token'));
-      console.log('Login - Refresh token set in localStorage:', localStorage.getItem('refresh_token'));
-      console.log('Login - User data set in localStorage:', localStorage.getItem('user'));
-      setIsAuthenticated(true);
+      const mockResponse = {
+        access_token: 'mock-access-token',
+        refresh_token: 'mock-refresh-token',
+        user: { email, id: 'user-1', name: 'Test User' },
+      };
+      authContext.login(mockResponse.access_token, mockResponse.refresh_token, mockResponse.user);
+      console.log('Login - Navigation to home');
       navigate('/');
     } catch (err) {
-      console.error('Login - Error:', err.response?.data?.message || err.message);
-      setError('Failed to log in: ' + (err.response?.data?.message || err.message || 'Please check your credentials or server connection.'));
+      const errorMessage = err.message || 'Login failed';
+      console.error('Login - Error:', errorMessage, err.stack);
+      setError(errorMessage);
     }
   };
 
   return (
     <div className="login-container">
-      <div className="login-card card">
+      <div className="login-card card holographic">
         <h1>Login to ShareSync</h1>
         <p className="text-secondary">Join a community of innovators today!</p>
         {error && <p className="text-secondary error">{error}</p>}
@@ -48,6 +59,7 @@ const Login = ({ setIsAuthenticated }) => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className="input-field"
           />
           <input
             type="password"
@@ -55,6 +67,7 @@ const Login = ({ setIsAuthenticated }) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            className="input-field"
           />
           <button type="submit" className="btn-primary">Login</button>
         </form>
