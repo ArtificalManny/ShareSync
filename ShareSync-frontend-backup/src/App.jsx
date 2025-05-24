@@ -7,6 +7,8 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Projects from './pages/Projects';
 import ProjectHome from './pages/ProjectHome';
+import Profile from './pages/Profile';
+import ProjectCreate from './pages/ProjectCreate';
 import './App.css';
 
 const App = () => {
@@ -29,6 +31,8 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:id" element={<ProjectHome />} />
+              <Route path="/profile/:username" element={<Profile />} />
+              <Route path="/projects/create" element={<ProjectCreate />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

@@ -1,141 +1,203 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { getUserData, logout } from '../services/auth';
-import { User, Mail, Folder } from 'lucide-react';
+import React, { useState, useContext, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { AuthContext } from '../AuthContext';
+import { Edit2, FolderKanban } from 'lucide-react';
 import './Profile.css';
 
 const Profile = () => {
-  const [user, setUser] = useState(null);
-  const [projects, setProjects] = useState([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const { username } = useParams();
+  const { user, isAuthenticated, updateUserProfile } = useContext(AuthContext);
+  const [isEditing, setIsEditing] = useState(false);
+  const [profileDetails, setProfileDetails] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    job: user?.job || '',
+    school: user?.school || '',
+    profilePicture: user?.profilePicture || 'https://via.placeholder.com/150',
+    bannerPicture: user?.bannerPicture || 'https://via.placeholder.com/1200x300',
+  });
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const accessToken = localStorage.getItem('access_token');
-        console.log('Profile - Access token before fetch:', accessToken);
-        const userData = await getUserData();
-        console.log('Profile - Fetched user data:', userData);
-        setUser(userData);
+    if (user) {
+      setProfileDetails({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        job: user.job,
+        school: user.school,
+        profilePicture: user.profilePicture,
+        bannerPicture: user.bannerPicture,
+      });
+    }
+  }, [user]);
 
-        const response = await axios.get('http://localhost:3000/api/projects', {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        console.log('Profile - Fetched projects:', response.data);
-        setProjects(response.data || []);
-      } catch (err) {
-        console.error('Profile - Error fetching data:', err.message);
-        setError('Failed to load profile: ' + (err.response?.data?.message || err.message));
-      } finally {
-        setLoading(false);
-      }
-    };
+  const isOwnProfile = isAuthenticated && user?.username === username;
 
-    fetchUserData();
-  }, []);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleEdit = () => {
+    if (isEditing) {
+      updateUserProfile(profileDetails);
+    }
+    setIsEditing(!isEditing);
   };
 
-  const totalProjects = projects.length;
-  const completedProjects = projects.filter(p => p.status === 'Completed').length;
-  const inProgressProjects = projects.filter(p => p.status === 'In Progress').length;
-  const completedPercentage = totalProjects ? (completedProjects / totalProjects) * 100 : 0;
-  const inProgressPercentage = totalProjects ? (inProgressProjects / totalProjects) * 100 : 0;
+  const handleInputChange = (e) => {
+    setProfileDetails({ ...profileDetails, [e.target.name]: e.target.value });
+  };
 
-  if (loading) {
-    return <div className="profile-container"><p className="text-secondary">Loading...</p></div>;
-  }
-
-  if (error) {
-    return (
-      <div className="profile-container">
-        <p className="text-error">{error}</p>
-        {(error.includes('No access token found') || error.includes('Invalid token') || error.includes('Session expired')) && (
-          <div>
-            <p className="text-secondary">Please log in to access your profile.</p>
-            <button onClick={handleLogout} className="btn-primary">Log In</button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <div className="profile-container"><p className="text-secondary">No user data available.</p></div>;
-  }
+  const schoolProjects = user?.projects?.filter((proj) => proj.category === 'School') || [];
+  const jobProjects = user?.projects?.filter((proj) => proj.category === 'Job') || [];
+  const personalProjects = user?.projects?.filter((proj) => proj.category === 'Personal') || [];
 
   return (
     <div className="profile-container">
-      <div className="profile-header gradient-bg">
+      <div className="banner relative">
         <img
-          src={user.banner || 'https://via.placeholder.com/800x200'}
+          src={profileDetails.bannerPicture}
           alt="Banner"
-          className="banner-image"
+          className="w-full h-64 object-cover opacity-70"
         />
-        <div className="profile-pic-container">
-          <img
-            src={user.profilePicture || 'https://via.placeholder.com/150'}
-            alt="Profile"
-            className="profile-pic"
+        {isOwnProfile && isEditing && (
+          <input
+            type="text"
+            name="bannerPicture"
+            value={profileDetails.bannerPicture}
+            onChange={handleInputChange}
+            placeholder="New banner picture URL..."
+            className="absolute top-4 left-4 input-field w-1/2"
           />
-        </div>
-      </div>
-      <div className="profile-content card">
-        <div className="profile-info">
-          <h1>
-            <User className="icon" /> {user.firstName || ''} {user.lastName || ''}
-          </h1>
-          <p className="text-secondary">
-            <Mail className="icon" /> Email: {user.email || 'N/A'}
-          </p>
-        </div>
-        <div className="project-stats">
-          <h2>Project Statistics</h2>
-          <div className="stats-infographic">
-            <div className="stat-bar">
-              <span>Completed Projects: {completedProjects}</span>
-              <div className="progress-bar">
-                <div
-                  className="progress-fill gradient-bg"
-                  style={{ width: `${completedPercentage}%` }}
-                ></div>
-              </div>
-            </div>
-            <div className="stat-bar">
-              <span>In Progress Projects: {inProgressProjects}</span>
-              <div className="progress-bar">
-                <div
-                  className="progress-fill gradient-bg"
-                  style={{ width: `${inProgressPercentage}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="projects-section">
-        <h2><Folder className="icon" /> My Projects</h2>
-        {projects.length === 0 ? (
-          <p className="text-secondary">No projects available.</p>
-        ) : (
-          <div className="projects-list">
-            {projects.map(project => (
-              <div key={project.id || Math.random()} className="project-card card">
-                <h4>{project.title || 'Untitled'}</h4>
-                <p className="text-secondary">{project.description || 'No description'}</p>
-              </div>
-            ))}
-          </div>
         )}
+      </div>
+      <div className="profile-header relative -mt-16 px-8">
+        <img
+          src={profileDetails.profilePicture}
+          alt="Profile"
+          className="w-32 h-32 rounded-full border-4 border-neon-cyan shadow-glow-cyan"
+        />
+        {isOwnProfile && isEditing && (
+          <input
+            type="text"
+            name="profilePicture"
+            value={profileDetails.profilePicture}
+            onChange={handleInputChange}
+            placeholder="New profile picture URL..."
+            className="input-field mt-2 w-1/2"
+          />
+        )}
+        <div className="flex justify-between items-center mt-4">
+          <div>
+            {isEditing ? (
+              <>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={profileDetails.firstName}
+                  onChange={handleInputChange}
+                  placeholder="First Name"
+                  className="input-field mr-2"
+                />
+                <input
+                  type="text"
+                  name="lastName"
+                  value={profileDetails.lastName}
+                  onChange={handleInputChange}
+                  placeholder="Last Name"
+                  className="input-field"
+                />
+              </>
+            ) : (
+              <h1 className="text-4xl font-orbitron text-neon-white">{profileDetails.firstName} {profileDetails.lastName}</h1>
+            )}
+            <p className="text-neon-cyan">@{username}</p>
+          </div>
+          {isOwnProfile && (
+            <button onClick={handleEdit} className="btn-primary">
+              <Edit2 className="icon" /> {isEditing ? 'Save' : 'Edit Profile'}
+            </button>
+          )}
+        </div>
+        <div className="mt-4">
+          {isEditing ? (
+            <>
+              <input
+                type="text"
+                name="job"
+                value={profileDetails.job}
+                onChange={handleInputChange}
+                placeholder="Job"
+                className="input-field mr-2"
+              />
+              <input
+                type="text"
+                name="school"
+                value={profileDetails.school}
+                onChange={handleInputChange}
+                placeholder="School"
+                className="input-field"
+              />
+            </>
+          ) : (
+            <>
+              <p className="text-secondary">Job: {profileDetails.job}</p>
+              <p className="text-secondary">School: {profileDetails.school}</p>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="projects-section px-8 mt-8">
+        <h2 className="text-2xl font-orbitron text-neon-cyan mb-4">Projects</h2>
+        <div className="category-section mb-8">
+          <h3 className="text-xl font-orbitron text-neon-magenta mb-4">School Projects</h3>
+          {schoolProjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {schoolProjects.map((project) => (
+                <div key={project.id} className="project-card holographic">
+                  <Link to={`/projects/${project.id}`} className="project-card-link">
+                    <h4 className="text-neon-white font-bold">{project.title}</h4>
+                    <p className="text-neon-cyan">Category: {project.category}</p>
+                    <p className="text-neon-magenta">Status: {project.status}</p>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-secondary">No school projects yet.</p>
+          )}
+        </div>
+        <div className="category-section mb-8">
+          <h3 className="text-xl font-orbitron text-neon-magenta mb-4">Job Projects</h3>
+          {jobProjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {jobProjects.map((project) => (
+                <div key={project.id} className="project-card holographic">
+                  <Link to={`/projects/${project.id}`} className="project-card-link">
+                    <h4 className="text-neon-white font-bold">{project.title}</h4>
+                    <p className="text-neon-cyan">Category: {project.category}</p>
+                    <p className="text-neon-magenta">Status: {project.status}</p>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-secondary">No job projects yet.</p>
+          )}
+        </div>
+        <div className="category-section">
+          <h3 className="text-xl font-orbitron text-neon-magenta mb-4">Personal Projects</h3>
+          {personalProjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {personalProjects.map((project) => (
+                <div key={project.id} className="project-card holographic">
+                  <Link to={`/projects/${project.id}`} className="project-card-link">
+                    <h4 className="text-neon-white font-bold">{project.title}</h4>
+                    <p className="text-neon-cyan">Category: {project.category}</p>
+                    <p className="text-neon-magenta">Status: {project.status}</p>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-secondary">No personal projects yet.</p>
+          )}
+        </div>
       </div>
     </div>
   );

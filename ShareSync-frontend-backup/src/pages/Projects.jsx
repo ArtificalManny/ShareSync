@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { FolderKanban, Plus, Brain, Award, Workflow, Share2 } from 'lucide-react';
+import { FolderKanban, Plus, Award, Workflow, Edit2, CheckCircle } from 'lucide-react';
 import './Projects.css';
 
 const mockProjects = [
-  { id: '1', title: 'Project Alpha', description: 'A revolutionary project.', status: 'In Progress', tasksCompleted: 5 },
-  { id: '2', title: 'Project Beta', description: 'Building the future.', status: 'Completed', tasksCompleted: 10 },
+  { id: '1', title: 'Project Alpha', description: 'A revolutionary project.', category: 'Job', status: 'In Progress', tasksCompleted: 5, announcements: [], snapshots: [] },
+  { id: '2', title: 'Project Beta', description: 'Building the future.', category: 'School', status: 'Completed', tasksCompleted: 10, announcements: [], snapshots: [] },
 ];
 
 const mockLeaderboard = [
@@ -24,24 +24,14 @@ const mockWorkflowSuggestion = {
   reason: 'Best for small, agile teams with frequent updates.',
 };
 
-const mockAiSuggestions = {
-  '1': { predictedCompletion: '2025-06-01', risks: ['Resource overload'] },
-  '2': { predictedCompletion: '2025-05-15', risks: [] },
-};
-
 const Projects = () => {
-  console.log('Projects - Starting render');
-
   const authContext = useContext(AuthContext);
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [nlpInput, setNlpInput] = useState('');
-  const [aiSuggestions] = useState(mockAiSuggestions);
-  const [leaderboard] = useState(mockLeaderboard);
-  const [achievements] = useState(mockAchievements);
-  const [workflowSuggestion] = useState(mockWorkflowSuggestion);
+  const [announcementInputs, setAnnouncementInputs] = useState({});
+  const [snapshotInputs, setSnapshotInputs] = useState({});
 
   if (!authContext) {
     return (
@@ -77,45 +67,40 @@ const Projects = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleAutoAssignTasks = (projectId) => {
-    console.log('Auto-assigned tasks for project:', projectId);
+  const handlePostAnnouncement = (projectId) => {
+    const announcementText = announcementInputs[projectId];
+    if (!announcementText) return;
+
     setProjects((prev) =>
       prev.map((project) =>
         project.id === projectId
-          ? { ...project, tasks: [{ id: 'task-1', assignee: 'Alice' }] }
+          ? { ...project, announcements: [...(project.announcements || []), { text: announcementText, date: new Date().toISOString() }] }
           : project
       )
     );
+    setAnnouncementInputs((prev) => ({ ...prev, [projectId]: '' }));
   };
 
-  const handleNlpInput = (e) => {
-    e.preventDefault();
-    if (!nlpInput) return;
-    console.log('NLP task created:', nlpInput);
-    setProjects((prev) => [
-      ...prev,
-      {
-        id: `${prev.length + 1}`,
-        title: `Project from NLP ${prev.length + 1}`,
-        description: nlpInput,
-        status: 'Not Started',
-        tasksCompleted: 0,
-      },
-    ]);
-    setNlpInput('');
+  const handleUpdateSnapshot = (projectId) => {
+    const snapshotText = snapshotInputs[projectId];
+    if (!snapshotText) return;
+
+    setProjects((prev) =>
+      prev.map((project) =>
+        project.id === projectId
+          ? { ...project, snapshots: [...(project.snapshots || []), { text: snapshotText, date: new Date().toISOString() }] }
+          : project
+      )
+    );
+    setSnapshotInputs((prev) => ({ ...prev, [projectId]: '' }));
   };
 
-  const handleShare = (project) => {
-    const shareText = `Check out my project "${project.title}" on ShareSync! ${project.description}`;
-    if (navigator.share) {
-      navigator.share({
-        title: project.title,
-        text: shareText,
-        url: window.location.href,
-      }).catch((err) => console.error('Error sharing:', err));
-    } else {
-      alert('Sharing not supported on this device. Copy this: ' + shareText);
-    }
+  const handleStatusChange = (projectId, newStatus) => {
+    setProjects((prev) =>
+      prev.map((project) =>
+        project.id === projectId ? { ...project, status: newStatus } : project
+      )
+    );
   };
 
   if (loading) {
@@ -146,49 +131,36 @@ const Projects = () => {
   return (
     <div className="projects-container">
       <div className="projects-header">
-        <h1>Your Projects</h1>
+        <h1 className="text-4xl font-orbitron text-neon-white">Your Projects</h1>
         <Link to="/projects/create">
           <button className="btn-primary">
             <Plus className="icon" /> Create Project
           </button>
         </Link>
       </div>
-      <div className="nlp-section">
-        <h2><Brain className="icon" /> Smart Task Creation</h2>
-        <form onSubmit={handleNlpInput}>
-          <input
-            type="text"
-            value={nlpInput}
-            onChange={(e) => setNlpInput(e.target.value)}
-            placeholder="e.g., Create a task for designing the logo due next Friday"
-            className="nlp-input"
-          />
-          <button type="submit" className="btn-primary">Create Task</button>
-        </form>
-      </div>
       {workflowSuggestion && (
         <div className="workflow-section">
-          <h2><Workflow className="icon" /> Suggested Workflow</h2>
+          <h2 className="text-2xl font-orbitron text-neon-cyan mb-4 flex items-center"><Workflow className="icon mr-2" /> Suggested Workflow</h2>
           <div className="workflow-suggestion holographic">
-            <p>Workflow: {workflowSuggestion.type}</p>
-            <p>Reason: {workflowSuggestion.reason}</p>
+            <p className="text-neon-white">Workflow: {workflowSuggestion.type}</p>
+            <p className="text-secondary">Reason: {workflowSuggestion.reason}</p>
           </div>
         </div>
       )}
       <div className="gamification-section">
-        <h2><Award className="icon" /> Achievements</h2>
+        <h2 className="text-2xl font-orbitron text-neon-cyan mb-4 flex items-center"><Award className="icon mr-2" /> Achievements</h2>
         <div className="achievements-list">
-          {achievements.map((achievement, index) => (
+          {mockAchievements.map((achievement, index) => (
             <div key={index} className="achievement-card holographic">
-              <span>{achievement.name}</span>
-              <p>{achievement.description}</p>
+              <span className="text-neon-white font-bold">{achievement.name}</span>
+              <p className="text-secondary">{achievement.description}</p>
             </div>
           ))}
         </div>
-        <h2>Team Leaderboard</h2>
+        <h2 className="text-2xl font-orbitron text-neon-cyan mt-8 mb-4">Team Leaderboard</h2>
         <div className="leaderboard-section">
           <ul>
-            {leaderboard.map((member, index) => (
+            {mockLeaderboard.map((member, index) => (
               <li key={index} className="leaderboard-item holographic">
                 {member.name}: {member.points} points
               </li>
@@ -197,30 +169,38 @@ const Projects = () => {
         </div>
       </div>
       <div className="project-metrics">
-        <h2>Project Metrics</h2>
+        <h2 className="text-2xl font-orbitron text-neon-cyan mb-4">Project Metrics</h2>
         <div className="metrics-infographic">
           <div className="metric-card gradient-bg">
-            <span>Total Projects</span>
-            <p>{totalProjects}</p>
+            <span className="text-neon-white">Total Projects</span>
+            <p className="text-3xl font-bold">{totalProjects}</p>
           </div>
           <div className="metric-card gradient-bg">
-            <span>Current Projects</span>
-            <p>{currentProjects}</p>
+            <span className="text-neon-white">Current Projects</span>
+            <p className="text-3xl font-bold">{currentProjects}</p>
           </div>
           <div className="metric-card gradient-bg">
-            <span>Past Projects</span>
-            <p>{pastProjects}</p>
+            <span className="text-neon-white">Past Projects</span>
+            <p className="text-3xl font-bold">{pastProjects}</p>
           </div>
           <div className="metric-card gradient-bg">
-            <span>Tasks Completed</span>
-            <p>{tasksCompleted}</p>
+            <span className="text-neon-white">Tasks Completed</span>
+            <p className="text-3xl font-bold">{tasksCompleted}</p>
           </div>
         </div>
       </div>
+      <div className="notifications-section bg-dark-glass p-6 rounded-xl shadow-glow-cyan mb-8">
+        <h2 className="text-2xl font-orbitron text-neon-cyan mb-4">Notifications</h2>
+        <p className="text-secondary">No notifications yet.</p>
+      </div>
+      <div className="team-activity-section bg-dark-glass p-6 rounded-xl shadow-glow-cyan mb-8">
+        <h2 className="text-2xl font-orbitron text-neon-cyan mb-4">Team Activity</h2>
+        <p className="text-secondary">No recent updates.</p>
+      </div>
       <div className="projects-section">
-        <h2><FolderKanban className="icon" /> All Projects</h2>
+        <h2 className="text-2xl font-orbitron text-neon-cyan mb-4 flex items-center"><FolderKanban className="icon mr-2" /> All Projects</h2>
         {projects.length === 0 ? (
-          <div className="no-projects-card card holographic">
+          <div className="no-projects-card holographic">
             <p className="text-secondary">No projects found. Create one to get started!</p>
             <Link to="/projects/create">
               <button className="btn-primary">
@@ -231,34 +211,81 @@ const Projects = () => {
         ) : (
           <div className="projects-list">
             {projects.map((project) => (
-              <div key={project.id} className="project-card card holographic">
+              <div key={project.id} className="project-card holographic">
                 <Link to={`/projects/${project.id}`} className="project-card-link">
-                  <h3>{project.title || 'Untitled'}</h3>
+                  <h3 className="text-xl font-bold text-neon-white">{project.title || 'Untitled'}</h3>
                   <p className="text-secondary">{project.description || 'No description'}</p>
+                  <p className="text-neon-cyan">Category: {project.category}</p>
+                  <p className="text-neon-magenta">Status: {project.status}</p>
                 </Link>
                 <div className="project-actions">
-                  <button
-                    onClick={() => handleAutoAssignTasks(project.id)}
-                    className="btn-primary ai-button"
+                  <select
+                    value={project.status}
+                    onChange={(e) => handleStatusChange(project.id, e.target.value)}
+                    className="input-field"
                   >
-                    <Brain className="icon" /> Auto-Assign Tasks
-                  </button>
-                  <button
-                    onClick={() => handleShare(project)}
-                    className="btn-primary share-button"
-                  >
-                    <Share2 className="icon" /> Share
-                  </button>
+                    <option value="Not Started">Not Started</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                  <Link to={`/projects/${project.id}`}>
+                    <button className="btn-primary"><CheckCircle className="icon" /> View Details</button>
+                  </Link>
                 </div>
-                {aiSuggestions[project.id] && (
-                  <div className="ai-suggestions">
-                    <h4>AI Suggestions</h4>
-                    <p>Predicted Completion: {aiSuggestions[project.id].predictedCompletion}</p>
-                    {aiSuggestions[project.id].risks && (
-                      <p>Risks: {aiSuggestions[project.id].risks.join(', ')}</p>
-                    )}
+                <div className="announcement-section mt-4">
+                  <h4 className="text-neon-cyan">Announcements</h4>
+                  {project.announcements && project.announcements.length > 0 ? (
+                    project.announcements.map((ann, idx) => (
+                      <p key={idx} className="text-secondary">{ann.text} - {new Date(ann.date).toLocaleString()}</p>
+                    ))
+                  ) : (
+                    <p className="text-secondary">No announcements yet.</p>
+                  )}
+                  <div className="flex mt-2">
+                    <input
+                      type="text"
+                      value={announcementInputs[project.id] || ''}
+                      onChange={(e) =>
+                        setAnnouncementInputs({ ...announcementInputs, [project.id]: e.target.value })
+                      }
+                      placeholder="Post an announcement..."
+                      className="input-field flex-1 mr-2"
+                    />
+                    <button
+                      onClick={() => handlePostAnnouncement(project.id)}
+                      className="btn-primary"
+                    >
+                      Post
+                    </button>
                   </div>
-                )}
+                </div>
+                <div className="snapshot-section mt-4">
+                  <h4 className="text-neon-cyan">Snapshots</h4>
+                  {project.snapshots && project.snapshots.length > 0 ? (
+                    project.snapshots.map((snap, idx) => (
+                      <p key={idx} className="text-secondary">{snap.text} - {new Date(snap.date).toLocaleString()}</p>
+                    ))
+                  ) : (
+                    <p className="text-secondary">No snapshots yet.</p>
+                  )}
+                  <div className="flex mt-2">
+                    <input
+                      type="text"
+                      value={snapshotInputs[project.id] || ''}
+                      onChange={(e) =>
+                        setSnapshotInputs({ ...snapshotInputs, [project.id]: e.target.value })
+                      }
+                      placeholder="Update snapshot..."
+                      className="input-field flex-1 mr-2"
+                    />
+                    <button
+                      onClick={() => handleUpdateSnapshot(project.id)}
+                      className="btn-primary"
+                    >
+                      Update
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

@@ -1,8 +1,9 @@
 .projects-container {
   padding: 40px;
-  background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+  background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
   min-height: 100vh;
-  color: #fff;
+  color: #e0e0e0;
+  position: relative;
 }
 
 .projects-header {
@@ -14,74 +15,21 @@
 
 .projects-header h1 {
   font-size: 32px;
-  font-weight: 600;
-}
-
-.nlp-section {
-  margin-bottom: 40px;
-}
-
-.nlp-input {
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #ff6b6b;
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-  width: 300px;
-  margin-right: 16px;
-  font-size: 16px;
-}
-
-.nlp-input:focus {
-  outline: none;
-  border-color: #feca57;
-  box-shadow: 0 0 10px rgba(254, 202, 87, 0.5);
+  font-weight: 700;
 }
 
 .holographic {
   position: relative;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
-  backdrop-filter: blur(10px);
+  background: rgba(20, 20, 20, 0.8);
+  border: 1px solid rgba(0, 196, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 196, 255, 0.5);
+  backdrop-filter: blur(15px);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .holographic:hover {
   transform: translateY(-5px);
-  box-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
-}
-
-.ai-button {
-  background: linear-gradient(45deg, #00c4ff, #00ff87);
-  margin-right: 8px;
-}
-
-.share-button {
-  background: linear-gradient(45deg, #00ff87, #00c4ff);
-}
-
-.project-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.ai-suggestions {
-  margin-top: 16px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-}
-
-.ai-suggestions h4 {
-  font-size: 16px;
-  margin-bottom: 8px;
-}
-
-.ai-suggestions p {
-  font-size: 14px;
-  color: #ddd;
+  box-shadow: 0 0 30px rgba(0, 196, 255, 0.8);
 }
 
 .workflow-section {
@@ -90,9 +38,9 @@
 
 .workflow-suggestion {
   padding: 16px;
-  background: linear-gradient(45deg, #ff6b6b, #feca57);
+  background: linear-gradient(45deg, #FF00FF, #FECA57);
   border-radius: 8px;
-  box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
 }
 
 .workflow-suggestion p {
@@ -112,7 +60,7 @@
 
 .achievement-card {
   padding: 16px;
-  background: linear-gradient(45deg, #00c4ff, #00ff87);
+  background: linear-gradient(45deg, #00C4FF, #00FF87);
   border-radius: 8px;
   box-shadow: 0 0 20px rgba(0, 196, 255, 0.5);
 }
@@ -124,7 +72,7 @@
 
 .achievement-card p {
   font-size: 14px;
-  color: #ddd;
+  color: #a0a0a0;
   margin-top: 8px;
 }
 
@@ -136,9 +84,9 @@
 .leaderboard-item {
   padding: 12px;
   margin-bottom: 8px;
-  background: linear-gradient(45deg, #ff6b6b, #feca57);
+  background: linear-gradient(45deg, #FF00FF, #FECA57);
   border-radius: 8px;
-  box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
 }
 
 .project-metrics {
@@ -160,8 +108,8 @@
 }
 
 .gradient-bg {
-  background: linear-gradient(45deg, #ff6b6b, #feca57);
-  box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+  background: linear-gradient(45deg, #FF00FF, #FECA57);
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
 }
 
 .metric-card span {
@@ -205,32 +153,59 @@
   margin-bottom: 8px;
 }
 
+.project-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.announcement-section, .snapshot-section {
+  margin-top: 16px;
+}
+
+.input-field {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #00C4FF;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+  font-size: 16px;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #FECA57;
+  box-shadow: 0 0 10px rgba(254, 202, 87, 0.5);
+}
+
+.btn-primary {
+  padding: 12px 24px;
+  border-radius: 9999px;
+  background: linear-gradient(45deg, #FF00FF, #FECA57);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
+}
+
 .text-secondary {
-  color: #ddd;
+  color: #a0a0a0;
 }
 
 .text-error {
-  color: #ff6b6b;
+  color: #FF6B6B;
   margin-bottom: 16px;
 }
 
 .no-projects-card {
   padding: 24px;
   text-align: center;
-}
-
-.btn-primary {
-  padding: 12px 24px;
-  border-radius: 9999px;
-  background: linear-gradient(45deg, #ff6b6b, #feca57);
-  color: #fff;
-  border: none;
-  font-weight: 600;
-  font-size: 16px;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-}
-
-.btn-primary:hover {
-  transform: scale(1.05);
 }

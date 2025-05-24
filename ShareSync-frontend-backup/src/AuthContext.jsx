@@ -20,7 +20,21 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const storedUser = localStorage.getItem('user');
-      const parsedUser = storedUser ? JSON.parse(storedUser) : {};
+      const parsedUser = storedUser
+        ? JSON.parse(storedUser)
+        : {
+            firstName: 'John',
+            lastName: 'Doe',
+            username: 'johndoe',
+            job: 'Software Engineer',
+            school: 'Stanford University',
+            profilePicture: 'https://via.placeholder.com/150',
+            bannerPicture: 'https://via.placeholder.com/1200x300',
+            projects: [
+              { id: '1', title: 'Project Alpha', category: 'Job', status: 'In Progress' },
+              { id: '2', title: 'Project Beta', category: 'School', status: 'Completed' },
+            ],
+          };
       console.log('AuthProvider - Initial user:', parsedUser);
       return parsedUser;
     } catch (error) {
@@ -29,12 +43,29 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    email: { taskCompletion: true, newPost: true, fileUpload: true },
+    sms: { taskCompletion: true, newPost: false, fileUpload: false },
+  });
+
   useEffect(() => {
     console.log('AuthProvider - Syncing auth state');
     try {
       const token = getAccessToken();
       const storedUser = localStorage.getItem('user');
-      const parsedUser = storedUser ? JSON.parse(storedUser) : {};
+      const parsedUser = storedUser ? JSON.parse(storedUser) : {
+        firstName: 'John',
+        lastName: 'Doe',
+        username: 'johndoe',
+        job: 'Software Engineer',
+        school: 'Stanford University',
+        profilePicture: 'https://via.placeholder.com/150',
+        bannerPicture: 'https://via.placeholder.com/1200x300',
+        projects: [
+          { id: '1', title: 'Project Alpha', category: 'Job', status: 'In Progress' },
+          { id: '2', title: 'Project Beta', category: 'School', status: 'Completed' },
+        ],
+      };
       setIsAuthenticated(!!token);
       setUser(parsedUser);
       console.log('AuthProvider - Synced state:', { isAuthenticated: !!token, user: parsedUser });
@@ -73,7 +104,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const value = { isAuthenticated, user, login, logout, setUser };
+  const updateUserProfile = (updatedDetails) => {
+    const updatedUser = { ...user, ...updatedDetails };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
+  const updateNotificationPrefs = (prefs) => {
+    setNotificationPrefs(prefs);
+    // In a real app, save to backend or localStorage
+  };
+
+  const value = { isAuthenticated, user, login, logout, setUser, updateUserProfile, notificationPrefs, updateNotificationPrefs };
   console.log('AuthProvider - Context value:', value);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
