@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { FolderKanban, Plus, Award, Workflow, Edit2, CheckCircle } from 'lucide-react';
+import { Folder, Plus, Award, Workflow, Edit2, CheckCircle } from 'lucide-react';
 import './Projects.css';
 
 const mockProjects = [
@@ -37,9 +37,9 @@ const Projects = () => {
     return (
       <div className="projects-container">
         <div className="projects-header">
-          <h1>Your Projects</h1>
+          <h1 className="text-3xl font-inter text-primary">Your Projects</h1>
         </div>
-        <p className="text-error">Authentication context is not available.</p>
+        <p className="text-red-500">Authentication context is not available.</p>
       </div>
     );
   }
@@ -104,19 +104,19 @@ const Projects = () => {
   };
 
   if (loading) {
-    return <div className="projects-container"><p className="text-secondary">Loading...</p></div>;
+    return <div className="projects-container"><p className="text-gray-400">Loading...</p></div>;
   }
 
   if (error) {
     return (
       <div className="projects-container">
         <div className="projects-header">
-          <h1>Your Projects</h1>
+          <h1 className="text-3xl font-inter text-primary">Your Projects</h1>
         </div>
-        <p className="text-error">{error}</p>
+        <p className="text-red-500">{error}</p>
         {error.includes('token') && (
-          <p className="text-secondary">
-            Please <Link to="/login">log in</Link> to view your projects.
+          <p className="text-gray-400">
+            Please <Link to="/login" className="text-accent-teal hover:underline">log in</Link> to view your projects.
           </p>
         )}
       </div>
@@ -131,37 +131,37 @@ const Projects = () => {
   return (
     <div className="projects-container">
       <div className="projects-header">
-        <h1 className="text-4xl font-orbitron text-neon-white">Your Projects</h1>
+        <h1 className="text-3xl font-inter text-primary">Your Projects</h1>
         <Link to="/projects/create">
-          <button className="btn-primary">
-            <Plus className="icon" /> Create Project
+          <button className="btn-primary flex items-center">
+            <Plus className="w-5 h-5 mr-2" /> Create Project
           </button>
         </Link>
       </div>
-      {workflowSuggestion && (
+      {mockWorkflowSuggestion && (
         <div className="workflow-section">
-          <h2 className="text-2xl font-orbitron text-neon-cyan mb-4 flex items-center"><Workflow className="icon mr-2" /> Suggested Workflow</h2>
-          <div className="workflow-suggestion holographic">
-            <p className="text-neon-white">Workflow: {workflowSuggestion.type}</p>
-            <p className="text-secondary">Reason: {workflowSuggestion.reason}</p>
+          <h2 className="text-xl font-inter text-accent-teal mb-4 flex items-center"><Workflow className="w-5 h-5 mr-2" /> Suggested Workflow</h2>
+          <div className="workflow-suggestion bg-glass p-6 rounded-lg shadow-soft">
+            <p className="text-primary">Workflow: {mockWorkflowSuggestion.type}</p>
+            <p className="text-gray-400">Reason: {mockWorkflowSuggestion.reason}</p>
           </div>
         </div>
       )}
       <div className="gamification-section">
-        <h2 className="text-2xl font-orbitron text-neon-cyan mb-4 flex items-center"><Award className="icon mr-2" /> Achievements</h2>
-        <div className="achievements-list">
+        <h2 className="text-xl font-inter text-accent-teal mb-4 flex items-center"><Award className="w-5 h-5 mr-2" /> Achievements</h2>
+        <div className="achievements-list flex flex-wrap gap-4">
           {mockAchievements.map((achievement, index) => (
-            <div key={index} className="achievement-card holographic">
-              <span className="text-neon-white font-bold">{achievement.name}</span>
-              <p className="text-secondary">{achievement.description}</p>
+            <div key={index} className="achievement-card bg-glass p-4 rounded-lg shadow-soft">
+              <span className="text-primary font-semibold">{achievement.name}</span>
+              <p className="text-gray-400">{achievement.description}</p>
             </div>
           ))}
         </div>
-        <h2 className="text-2xl font-orbitron text-neon-cyan mt-8 mb-4">Team Leaderboard</h2>
+        <h2 className="text-xl font-inter text-accent-teal mt-8 mb-4">Team Leaderboard</h2>
         <div className="leaderboard-section">
           <ul>
             {mockLeaderboard.map((member, index) => (
-              <li key={index} className="leaderboard-item holographic">
+              <li key={index} className="leaderboard-item bg-glass p-4 rounded-lg mb-2 shadow-soft">
                 {member.name}: {member.points} points
               </li>
             ))}
@@ -169,56 +169,56 @@ const Projects = () => {
         </div>
       </div>
       <div className="project-metrics">
-        <h2 className="text-2xl font-orbitron text-neon-cyan mb-4">Project Metrics</h2>
-        <div className="metrics-infographic">
-          <div className="metric-card gradient-bg">
-            <span className="text-neon-white">Total Projects</span>
-            <p className="text-3xl font-bold">{totalProjects}</p>
+        <h2 className="text-xl font-inter text-accent-teal mb-4">Project Metrics</h2>
+        <div className="metrics-infographic flex flex-wrap gap-4">
+          <div className="metric-card bg-glass p-4 rounded-lg shadow-soft">
+            <span className="text-primary">Total Projects</span>
+            <p className="text-2xl font-bold">{totalProjects}</p>
           </div>
-          <div className="metric-card gradient-bg">
-            <span className="text-neon-white">Current Projects</span>
-            <p className="text-3xl font-bold">{currentProjects}</p>
+          <div className="metric-card bg-glass p-4 rounded-lg shadow-soft">
+            <span className="text-primary">Current Projects</span>
+            <p className="text-2xl font-bold">{currentProjects}</p>
           </div>
-          <div className="metric-card gradient-bg">
-            <span className="text-neon-white">Past Projects</span>
-            <p className="text-3xl font-bold">{pastProjects}</p>
+          <div className="metric-card bg-glass p-4 rounded-lg shadow-soft">
+            <span className="text-primary">Past Projects</span>
+            <p className="text-2xl font-bold">{pastProjects}</p>
           </div>
-          <div className="metric-card gradient-bg">
-            <span className="text-neon-white">Tasks Completed</span>
-            <p className="text-3xl font-bold">{tasksCompleted}</p>
+          <div className="metric-card bg-glass p-4 rounded-lg shadow-soft">
+            <span className="text-primary">Tasks Completed</span>
+            <p className="text-2xl font-bold">{tasksCompleted}</p>
           </div>
         </div>
       </div>
-      <div className="notifications-section bg-dark-glass p-6 rounded-xl shadow-glow-cyan mb-8">
-        <h2 className="text-2xl font-orbitron text-neon-cyan mb-4">Notifications</h2>
-        <p className="text-secondary">No notifications yet.</p>
+      <div className="notifications-section bg-glass p-6 rounded-lg shadow-soft mb-8">
+        <h2 className="text-xl font-inter text-accent-teal mb-4">Notifications</h2>
+        <p className="text-gray-400">No notifications yet.</p>
       </div>
-      <div className="team-activity-section bg-dark-glass p-6 rounded-xl shadow-glow-cyan mb-8">
-        <h2 className="text-2xl font-orbitron text-neon-cyan mb-4">Team Activity</h2>
-        <p className="text-secondary">No recent updates.</p>
+      <div className="team-activity-section bg-glass p-6 rounded-lg shadow-soft mb-8">
+        <h2 className="text-xl font-inter text-accent-teal mb-4">Team Activity</h2>
+        <p className="text-gray-400">No recent updates.</p>
       </div>
       <div className="projects-section">
-        <h2 className="text-2xl font-orbitron text-neon-cyan mb-4 flex items-center"><FolderKanban className="icon mr-2" /> All Projects</h2>
+        <h2 className="text-xl font-inter text-accent-teal mb-4 flex items-center"><Folder className="w-5 h-5 mr-2" /> All Projects</h2>
         {projects.length === 0 ? (
-          <div className="no-projects-card holographic">
-            <p className="text-secondary">No projects found. Create one to get started!</p>
+          <div className="no-projects-card bg-glass p-6 rounded-lg shadow-soft text-center">
+            <p className="text-gray-400">No projects found. Create one to get started!</p>
             <Link to="/projects/create">
-              <button className="btn-primary">
-                <Plus className="icon" /> Create Project
+              <button className="btn-primary mt-4 flex items-center mx-auto">
+                <Plus className="w-5 h-5 mr-2" /> Create Project
               </button>
             </Link>
           </div>
         ) : (
-          <div className="projects-list">
+          <div className="projects-list grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project) => (
-              <div key={project.id} className="project-card holographic">
+              <div key={project.id} className="project-card bg-glass p-6 rounded-lg shadow-soft transition-all hover:shadow-lg">
                 <Link to={`/projects/${project.id}`} className="project-card-link">
-                  <h3 className="text-xl font-bold text-neon-white">{project.title || 'Untitled'}</h3>
-                  <p className="text-secondary">{project.description || 'No description'}</p>
-                  <p className="text-neon-cyan">Category: {project.category}</p>
-                  <p className="text-neon-magenta">Status: {project.status}</p>
+                  <h3 className="text-lg font-semibold text-primary">{project.title || 'Untitled'}</h3>
+                  <p className="text-gray-400">{project.description || 'No description'}</p>
+                  <p className="text-accent-teal">Category: {project.category}</p>
+                  <p className="text-accent-gold">Status: {project.status}</p>
                 </Link>
-                <div className="project-actions">
+                <div className="project-actions mt-4 flex flex-wrap gap-2">
                   <select
                     value={project.status}
                     onChange={(e) => handleStatusChange(project.id, e.target.value)}
@@ -229,17 +229,19 @@ const Projects = () => {
                     <option value="Completed">Completed</option>
                   </select>
                   <Link to={`/projects/${project.id}`}>
-                    <button className="btn-primary"><CheckCircle className="icon" /> View Details</button>
+                    <button className="btn-primary flex items-center">
+                      <CheckCircle className="w-5 h-5 mr-2" /> View Details
+                    </button>
                   </Link>
                 </div>
                 <div className="announcement-section mt-4">
-                  <h4 className="text-neon-cyan">Announcements</h4>
+                  <h4 className="text-accent-teal">Announcements</h4>
                   {project.announcements && project.announcements.length > 0 ? (
                     project.announcements.map((ann, idx) => (
-                      <p key={idx} className="text-secondary">{ann.text} - {new Date(ann.date).toLocaleString()}</p>
+                      <p key={idx} className="text-gray-400">{ann.text} - {new Date(ann.date).toLocaleString()}</p>
                     ))
                   ) : (
-                    <p className="text-secondary">No announcements yet.</p>
+                    <p className="text-gray-400">No announcements yet.</p>
                   )}
                   <div className="flex mt-2">
                     <input
@@ -260,13 +262,13 @@ const Projects = () => {
                   </div>
                 </div>
                 <div className="snapshot-section mt-4">
-                  <h4 className="text-neon-cyan">Snapshots</h4>
+                  <h4 className="text-accent-teal">Snapshots</h4>
                   {project.snapshots && project.snapshots.length > 0 ? (
                     project.snapshots.map((snap, idx) => (
-                      <p key={idx} className="text-secondary">{snap.text} - {new Date(snap.date).toLocaleString()}</p>
+                      <p key={idx} className="text-gray-400">{snap.text} - {new Date(snap.date).toLocaleString()}</p>
                     ))
                   ) : (
-                    <p className="text-secondary">No snapshots yet.</p>
+                    <p className="text-gray-400">No snapshots yet.</p>
                   )}
                   <div className="flex mt-2">
                     <input
