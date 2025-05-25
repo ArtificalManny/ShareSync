@@ -70,3 +70,38 @@
   50% { left: 100%; }
   100% { left: 100%; }
 }
+
+.project-tabs {
+  display: flex;
+  gap: 10px;
+}
+
+.tab-button {
+  padding: 10px 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  color: #F5F6FA;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.3s ease, color 0.3s ease;
+  white-space: nowrap;
+}
+
+.tab-button:hover {
+  color: #26C6DA;
+}
+
+.tab-button.active {
+  border-bottom: 2px solid #FF6F61;
+  color: #FF6F61;
+}
+
+.tab-content {
+  min-height: 300px;
+}
+
+.members-sidebar {
+  background: rgba(138, 154, 91, 0.1);
+}

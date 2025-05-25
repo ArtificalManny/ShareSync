@@ -52,3 +52,8 @@
   background: #26C6DA;
   color: #0A1A2F;
 }
+.projects-create-container {
+  padding: 0;
+  min-height: 100vh;
+  background: #3C2F5D;
+}

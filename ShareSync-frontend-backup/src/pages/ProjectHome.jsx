@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { CheckCircle, MessageSquare, ThumbsUp, Share2, Award, ChevronDown, PlusCircle, FileText, Settings, Users, Filter, Image as ImageIcon, Vote, Edit, Mail, Smartphone, UserPlus } from 'lucide-react';
+import { CheckCircle, MessageSquare, ThumbsUp, Share2, Award, ChevronDown, PlusCircle, FileText, Settings, Users, Filter, Image as ImageIcon, Vote, Edit, Mail, Smartphone, UserPlus, Calendar } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import Chart from 'chart.js/auto';
 import './ProjectHome.css';
@@ -12,6 +12,7 @@ const mockProject = {
   description: 'A revolutionary project to change the world.',
   category: 'Job',
   status: 'In Progress',
+  privacy: 'private',
   tasksCompleted: 5,
   totalTasks: 10,
   comments: [],
@@ -21,13 +22,25 @@ const mockProject = {
     { id: 'a2', name: 'On-Time Hero', description: 'Completed a task on time', earned: false },
   ],
   teams: [
-    { id: 't1', name: 'Design Team', description: 'Working on UI/UX', members: ['Alice', 'Bob'] },
-    { id: 't2', name: 'Dev Team', description: 'Backend development', members: ['Charlie', 'Dave'] },
+    { id: 't1', name: 'Design Team', description: 'Working on UI/UX', members: [
+      { email: 'alice@example.com', role: 'member', profilePicture: 'https://via.placeholder.com/150' },
+      { email: 'bob@example.com', role: 'member', profilePicture: 'https://via.placeholder.com/150' },
+    ]},
+    { id: 't2', name: 'Dev Team', description: 'Backend development', members: [
+      { email: 'charlie@example.com', role: 'admin', profilePicture: 'https://via.placeholder.com/150' },
+      { email: 'dave@example.com', role: 'viewer', profilePicture: 'https://via.placeholder.com/150' },
+    ]},
   ],
   files: [],
   tasks: [],
   activityLog: [],
   admin: 'user@example.com',
+  members: [
+    { email: 'alice@example.com', role: 'member' },
+    { email: 'bob@example.com', role: 'member' },
+    { email: 'charlie@example.com', role: 'admin' },
+    { email: 'dave@example.com', role: 'viewer' },
+  ],
 };
 
 const chartOptions = {
@@ -94,6 +107,7 @@ const ProjectHome = () => {
   const [editSuggestions, setEditSuggestions] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [suggestedDeadline, setSuggestedDeadline] = useState(null);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -102,6 +116,7 @@ const ProjectHome = () => {
         console.log('ProjectHome - Fetching project');
         const updatedProject = {
           ...mockProject,
+          id,
           posts: [],
           comments: [],
           activityLog: [],
@@ -110,7 +125,10 @@ const ProjectHome = () => {
         };
         setProject(updatedProject);
         setComments(updatedProject.comments || []);
-        setIsAdmin(user?.email === updatedProject.admin);
+        setIsAdmin(user?.email === updatedProject.admin || updatedProject.members.some(m => m.email === user?.email && m.role === 'admin'));
+        if (updatedProject.privacy === 'private' && !isAdmin && !updatedProject.members.some(m => m.email === user?.email)) {
+          throw new Error('You do not have access to this project.');
+        }
       } catch (err) {
         console.error('ProjectHome - Error fetching project:', err.message, err.stack);
         setError('Failed to load project: ' + err.message);
@@ -120,7 +138,6 @@ const ProjectHome = () => {
     };
 
     const predictDeadline = async () => {
-      // Mock AI deadline prediction
       const deadline = new Date();
       deadline.setDate(deadline.getDate() + 7);
       setSuggestedDeadline(deadline.toISOString().split('T')[0]);
@@ -217,6 +234,19 @@ const ProjectHome = () => {
         }));
         notifyUsers(`${file.uploadedBy} uploaded file: ${file.name}`);
       });
+
+      socket.on('member-update', (updatedMembers) => {
+        setProject((prev) => ({
+          ...prev,
+          members: updatedMembers,
+          activityLog: [...(prev.activityLog || []), {
+            id: `act-${Date.now()}`,
+            user: user?.email || 'System',
+            action: 'Updated project members',
+            timestamp: new Date().toISOString(),
+          }],
+        }));
+      });
     }
 
     if (isAuthenticated) {
@@ -234,6 +264,7 @@ const ProjectHome = () => {
         socket.off('metric-update');
         socket.off('task-update');
         socket.off('file-update');
+        socket.off('member-update');
       }
     };
   }, [id, isAuthenticated, navigate, socket, user]);
@@ -462,7 +493,11 @@ const ProjectHome = () => {
       id: `team-${project.teams?.length + 1 || 1}`,
       name: newTeam.name,
       description: newTeam.description,
-      members: newTeam.members,
+      members: newTeam.members.map(email => ({
+        email,
+        role: 'member',
+        profilePicture: 'https://via.placeholder.com/150',
+      })),
     };
     setProject((prev) => ({
       ...prev,
@@ -480,8 +515,10 @@ const ProjectHome = () => {
   };
 
   const inviteUser = () => {
+    const updatedMembers = [...(project.members || []), { email: inviteEmail, role: 'member', profilePicture: 'https://via.placeholder.com/150' }];
     setProject((prev) => ({
       ...prev,
+      members: updatedMembers,
       activityLog: [...(prev.activityLog || []), {
         id: `act-${Date.now()}`,
         user: user.email,
@@ -489,6 +526,7 @@ const ProjectHome = () => {
         timestamp: new Date().toISOString(),
       }],
     }));
+    socket.emit('member-update', updatedMembers);
     notifyUsers(`${user.email} invited ${inviteEmail} to the project`);
     setInviteEmail('');
     setShowInviteModal(false);
@@ -557,6 +595,14 @@ const ProjectHome = () => {
     return true;
   }) || [];
 
+  const allMembers = [
+    { email: project.admin, role: 'admin', profilePicture: 'https://via.placeholder.com/150' },
+    ...project.members,
+    ...project.teams.flatMap(team => team.members),
+  ].reduce((unique, member) => {
+    return unique.some(m => m.email === member.email) ? unique : [...unique, member];
+  }, []);
+
   return (
     <div className="project-home-container">
       {/* Header Section */}
@@ -582,491 +628,619 @@ const ProjectHome = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Main Content */}
-          <div className="col-span-1 lg:col-span-3 space-y-6">
-            {/* Project Overview */}
-            <div className="project-overview card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-playfair text-accent-teal">Project Overview</h2>
-                <button onClick={() => setShowDetails(!showDetails)} className="text-accent-teal hover:text-accent-coral">
-                  <ChevronDown className={`w-6 h-6 transform transition-transform ${showDetails ? 'rotate-180' : ''}`} />
-                </button>
-              </div>
-              {showDetails && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="chart-container">
-                    <Bar data={taskProgressData} options={chartOptions} />
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <span className="text-primary flex items-center gap-2">
-                        <CheckCircle className="w-5 h-5 text-accent-teal" /> Status: {project.status || 'Unknown'}
-                      </span>
-                      <div className="progress-bar mt-2">
-                        <div className="progress-fill" style={{ width: `${statusProgress}%` }}></div>
-                      </div>
-                    </div>
-                    <p className="text-primary">Category: <span className="text-accent-gold">{project.category}</span></p>
-                    <p className="text-primary">
-                      Progress: <span className="text-accent-gold">{project.tasksCompleted}/{project.totalTasks} tasks</span>
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex">
+        {/* Main Content with Tabs */}
+        <div className="flex-1 mr-6">
+          {/* Tabs */}
+          <div className="project-tabs flex border-b border-gray-700 mb-6 overflow-x-auto">
+            <button
+              className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              Overview
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'feed' ? 'active' : ''}`}
+              onClick={() => setActiveTab('feed')}
+            >
+              Feed
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'comments' ? 'active' : ''}`}
+              onClick={() => setActiveTab('comments')}
+            >
+              Comments
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'activity' ? 'active' : ''}`}
+              onClick={() => setActiveTab('activity')}
+            >
+              Activity Log
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`}
+              onClick={() => setActiveTab('tasks')}
+            >
+              Tasks
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'files' ? 'active' : ''}`}
+              onClick={() => setActiveTab('files')}
+            >
+              Files
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'teams' ? 'active' : ''}`}
+              onClick={() => setActiveTab('teams')}
+            >
+              Teams
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'chat' ? 'active' : ''}`}
+              onClick={() => setActiveTab('chat')}
+            >
+              Chat
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'achievements' ? 'active' : ''}`}
+              onClick={() => setActiveTab('achievements')}
+            >
+              Achievements
+            </button>
+          </div>
 
-            {/* Social Feed */}
-            <div className="social-feed card p-6">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4">Project Feed</h2>
-              <div className="post-input card p-4 mb-4">
-                <div className="flex items-center mb-2">
-                  <img
-                    src={user?.profilePicture}
-                    alt="User"
-                    className="w-8 h-8 rounded-full mr-2 object-cover"
-                  />
-                  <select
-                    value={postType}
-                    onChange={(e) => setPostType(e.target.value)}
-                    className="input-field mr-2"
-                  >
-                    <option value="text">Text Post</option>
-                    <option value="image">Image Post</option>
-                    <option value="poll">Poll</option>
-                  </select>
+          {/* Tab Content */}
+          <div className="tab-content">
+            {activeTab === 'overview' && (
+              <div className="project-overview card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-playfair text-accent-teal">Project Overview</h2>
+                  <button onClick={() => setShowDetails(!showDetails)} className="text-accent-teal hover:text-accent-coral">
+                    <ChevronDown className={`w-6 h-6 transform transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+                  </button>
                 </div>
-                {postType === 'poll' ? (
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={newPost}
-                      onChange={(e) => setNewPost(e.target.value)}
-                      placeholder="Poll question..."
-                      className="input-field w-full"
+                {showDetails && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="chart-container">
+                      <Bar data={taskProgressData} options={chartOptions} />
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <span className="text-primary flex items-center gap-2">
+                          <CheckCircle className="w-5 h-5 text-accent-teal" /> Status: {project.status || 'Unknown'}
+                        </span>
+                        <div className="progress-bar mt-2">
+                          <div className="progress-fill" style={{ width: `${statusProgress}%` }}></div>
+                        </div>
+                      </div>
+                      <p className="text-primary">Category: <span className="text-accent-gold">{project.category}</span></p>
+                      <p className="text-primary">
+                        Progress: <span className="text-accent-gold">{project.tasksCompleted}/{project.totalTasks} tasks</span>
+                      </p>
+                      <p className="text-primary">Privacy: <span className="text-accent-gold">{project.privacy}</span></p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'feed' && (
+              <div className="social-feed card p-6">
+                <h2 className="text-2xl font-playfair text-accent-teal mb-4">Project Feed</h2>
+                <div className="post-input card p-4 mb-4">
+                  <div className="flex items-center mb-2">
+                    <img
+                      src={user?.profilePicture}
+                      alt="User"
+                      className="w-8 h-8 rounded-full mr-2 object-cover"
                     />
-                    {pollOptions.map((opt, idx) => (
+                    <select
+                      value={postType}
+                      onChange={(e) => setPostType(e.target.value)}
+                      className="input-field mr-2"
+                    >
+                      <option value="text">Text Post</option>
+                      <option value="image">Image Post</option>
+                      <option value="poll">Poll</option>
+                    </select>
+                  </div>
+                  {postType === 'poll' ? (
+                    <div className="space-y-2">
                       <input
-                        key={idx}
                         type="text"
-                        value={opt}
-                        onChange={(e) => {
-                          const newOptions = [...pollOptions];
-                          newOptions[idx] = e.target.value;
-                          setPollOptions(newOptions);
-                        }}
-                        placeholder={`Option ${idx + 1}`}
+                        value={newPost}
+                        onChange={(e) => setNewPost(e.target.value)}
+                        placeholder="Poll question..."
                         className="input-field w-full"
                       />
-                    ))}
-                    <button
-                      onClick={() => setPollOptions([...pollOptions, ''])}
-                      className="text-accent-teal hover:text-accent-coral transition-all"
-                    >
-                      + Add Option
-                    </button>
-                  </div>
-                ) : (
-                  <textarea
-                    value={newPost}
-                    onChange={(e) => setNewPost(e.target.value)}
-                    placeholder="Share an update..."
-                    className="input-field w-full mb-2 h-24"
-                  />
-                )}
-                {postType === 'image' && (
-                  <div className="mb-2">
-                    <label className="flex items-center text-accent-teal hover:text-accent-coral cursor-pointer">
-                      <ImageIcon className="w-5 h-5 mr-2" /> Upload Image
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                    </label>
-                    {postImage && (
-                      <img src={postImage} alt="Preview" className="mt-2 max-w-full h-40 object-cover rounded-lg" />
-                    )}
-                  </div>
-                )}
-                <button onClick={addPost} className="btn-primary rounded-full">Post</button>
-              </div>
-              {project.posts?.length === 0 ? (
-                <p className="text-gray-400 text-center">No posts yet. Be the first to share an update!</p>
-              ) : (
-                project.posts.map((post) => (
-                  <div key={post.id} className="post-item card p-4 mb-4 holographic-effect">
-                    <div className="flex items-center mb-2">
-                      <img
-                        src={post.profilePicture}
-                        alt="User"
-                        className="w-8 h-8 rounded-full mr-2 object-cover"
-                      />
-                      <div>
-                        <span className="text-primary font-semibold">{post.user}</span>
-                        <span className="text-gray-400 text-sm ml-2">{new Date(post.timestamp).toLocaleString()}</span>
-                      </div>
-                    </div>
-                    {post.type === 'text' && <p className="text-primary">{post.content}</p>}
-                    {post.type === 'image' && (
-                      <div>
-                        {post.content && <p className="text-primary mb-2">{post.content}</p>}
-                        <img src={post.image} alt="Post" className="max-w-full h-40 object-cover rounded-lg" />
-                      </div>
-                    )}
-                    {post.type === 'poll' && (
-                      <div>
-                        <p className="text-primary font-semibold mb-2">{post.question}</p>
-                        {post.options.map((opt) => (
-                          <button
-                            key={opt.id}
-                            onClick={() => handleVote(post.id, opt.id)}
-                            className="block w-full text-left p-2 mb-1 bg-accent-sage rounded-lg text-primary hover:bg-teal-900 transition-all"
-                          >
-                            {opt.text} ({opt.votes || 0} votes)
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex items-center mt-2 gap-4">
+                      {pollOptions.map((opt, idx) => (
+                        <input
+                          key={idx}
+                          type="text"
+                          value={opt}
+                          onChange={(e) => {
+                            const newOptions = [...pollOptions];
+                            newOptions[idx] = e.target.value;
+                            setPollOptions(newOptions);
+                          }}
+                          placeholder={`Option ${idx + 1}`}
+                          className="input-field w-full"
+                        />
+                      ))}
                       <button
-                        onClick={() => handleLike(post.id, 'post')}
-                        className="flex items-center text-accent-teal hover:text-accent-coral transition-all"
+                        onClick={() => setPollOptions([...pollOptions, ''])}
+                        className="text-accent-teal hover:text-accent-coral transition-all"
                       >
-                        <ThumbsUp className="w-5 h-5 mr-1" /> {post.likes || 0}
-                      </button>
-                      <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
-                        <MessageSquare className="w-5 h-5 mr-1" /> {post.comments?.length || 0}
-                      </button>
-                      <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
-                        <Share2 className="w-5 h-5 mr-1" /> Share
+                        + Add Option
                       </button>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Comments Section */}
-            <div className="comments-section card p-6">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4">Comments</h2>
-              <div className="comments-list">
-                {comments.length === 0 ? (
-                  <p className="text-gray-400 text-center">No comments yet. Start the conversation!</p>
+                  ) : (
+                    <textarea
+                      value={newPost}
+                      onChange={(e) => setNewPost(e.target.value)}
+                      placeholder="Share an update..."
+                      className="input-field w-full mb-2 h-24"
+                    />
+                  )}
+                  {postType === 'image' && (
+                    <div className="mb-2">
+                      <label className="flex items-center text-accent-teal hover:text-accent-coral cursor-pointer">
+                        <ImageIcon className="w-5 h-5 mr-2" /> Upload Image
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </label>
+                      {postImage && (
+                        <img src={postImage} alt="Preview" className="mt-2 max-w-full h-40 object-cover rounded-lg" />
+                      )}
+                    </div>
+                  )}
+                  <button onClick={addPost} className="btn-primary rounded-full">Post</button>
+                </div>
+                {project.posts?.length === 0 ? (
+                  <p className="text-gray-400 text-center">No posts yet. Be the first to share an update!</p>
                 ) : (
-                  comments.map((comment) => (
-                    <div key={comment.id} className="comment-item card p-4 mb-4">
+                  project.posts.map((post) => (
+                    <div key={post.id} className="post-item card p-4 mb-4 holographic-effect">
                       <div className="flex items-center mb-2">
                         <img
-                          src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                          src={post.profilePicture}
                           alt="User"
                           className="w-8 h-8 rounded-full mr-2 object-cover"
                         />
                         <div>
-                          <span className="text-primary font-semibold">{comment.user}</span>
-                          <span className="text-gray-400 text-sm ml-2">{new Date(comment.timestamp).toLocaleString()}</span>
+                          <span className="text-primary font-semibold">{post.user}</span>
+                          <span className="text-gray-400 text-sm ml-2">{new Date(post.timestamp).toLocaleString()}</span>
                         </div>
                       </div>
-                      <p className="text-primary">{comment.text}</p>
+                      {post.type === 'text' && <p className="text-primary">{post.content}</p>}
+                      {post.type === 'image' && (
+                        <div>
+                          {post.content && <p className="text-primary mb-2">{post.content}</p>}
+                          <img src={post.image} alt="Post" className="max-w-full h-40 object-cover rounded-lg" />
+                        </div>
+                      )}
+                      {post.type === 'poll' && (
+                        <div>
+                          <p className="text-primary font-semibold mb-2">{post.question}</p>
+                          {post.options.map((opt) => (
+                            <button
+                              key={opt.id}
+                              onClick={() => handleVote(post.id, opt.id)}
+                              className="block w-full text-left p-2 mb-1 bg-accent-sage rounded-lg text-primary hover:bg-teal-900 transition-all"
+                            >
+                              {opt.text} ({opt.votes || 0} votes)
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex items-center mt-2 gap-4">
                         <button
-                          onClick={() => handleLike(comment.id, 'comment')}
+                          onClick={() => handleLike(post.id, 'post')}
                           className="flex items-center text-accent-teal hover:text-accent-coral transition-all"
                         >
-                          <ThumbsUp className="w-5 h-5 mr-1" /> {comment.likes || 0}
+                          <ThumbsUp className="w-5 h-5 mr-1" /> {post.likes || 0}
                         </button>
                         <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
-                          <MessageSquare className="w-5 h-5 mr-1" /> Reply
+                          <MessageSquare className="w-5 h-5 mr-1" /> {post.comments?.length || 0}
+                        </button>
+                        <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
+                          <Share2 className="w-5 h-5 mr-1" /> Share
                         </button>
                       </div>
                     </div>
                   ))
                 )}
               </div>
-              <div className="comment-input flex gap-4 mt-4">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Add a comment..."
-                  className="input-field flex-1 rounded-full"
-                />
-                <button onClick={addComment} className="btn-primary rounded-full">Post</button>
-              </div>
-            </div>
+            )}
 
-            {/* Activity Log */}
-            <div className="activity-log card p-6">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                <Calendar className="w-5 h-5 mr-2" /> Activity Log
-              </h2>
-              <div className="flex items-center gap-2 mb-4">
-                <Filter className="w-5 h-5 text-accent-teal" />
-                <select
-                  value={activityFilter}
-                  onChange={(e) => setActivityFilter(e.target.value)}
-                  className="input-field"
-                >
-                  <option value="all">All Activity</option>
-                  <option value="posts">Posts</option>
-                  <option value="tasks">Tasks</option>
-                  <option value="files">Files</option>
-                </select>
-              </div>
-              {filteredActivityLog.length === 0 ? (
-                <p className="text-gray-400 text-center">No activity yet.</p>
-              ) : (
-                filteredActivityLog.map((log) => (
-                  <div key={log.id} className="activity-item card p-2 mb-2">
-                    <p className="text-primary">{log.user} {log.action}</p>
-                    <p className="text-gray-400 text-sm">{new Date(log.timestamp).toLocaleString()}</p>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Tasks Section */}
-            <div className="tasks-section card p-6">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4">Tasks</h2>
-              {isAdmin && (
-                <div className="task-input card p-4 mb-4">
-                  <h3 className="text-lg font-playfair text-primary mb-2">Create Task</h3>
-                  <input
-                    type="text"
-                    value={newTask.title}
-                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    placeholder="Task title..."
-                    className="input-field w-full mb-2"
-                  />
-                  <textarea
-                    value={newTask.description}
-                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    placeholder="Task description..."
-                    className="input-field w-full mb-2 h-16"
-                  />
-                  <input
-                    type="text"
-                    value={newTask.assignedTo.join(', ')}
-                    onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value.split(',').map(s => s.trim()) })}
-                    placeholder="Assigned to (comma-separated)..."
-                    className="input-field w-full mb-2"
-                  />
-                  {suggestedDeadline && (
-                    <p className="text-gray-400 mb-2">AI Suggested Deadline: {suggestedDeadline}</p>
-                  )}
-                  {newTask.subtasks.map((sub, idx) => (
-                    <input
-                      key={idx}
-                      type="text"
-                      value={sub}
-                      onChange={(e) => {
-                        const newSubtasks = [...newTask.subtasks];
-                        newSubtasks[idx] = e.target.value;
-                        setNewTask({ ...newTask, subtasks: newSubtasks });
-                      }}
-                      placeholder={`Subtask ${idx + 1}`}
-                      className="input-field w-full mb-2"
-                    />
-                  ))}
-                  <button
-                    onClick={() => setNewTask({ ...newTask, subtasks: [...newTask.subtasks, ''] })}
-                    className="text-accent-teal hover:text-accent-coral transition-all mb-2"
-                  >
-                    + Add Subtask
-                  </button>
-                  <button onClick={addTask} className="btn-primary rounded-full">Create Task</button>
-                </div>
-              )}
-              {project.tasks?.length === 0 ? (
-                <p className="text-gray-400 text-center">No tasks yet.</p>
-              ) : (
-                project.tasks.map((task) => (
-                  <div key={task.id} className="task-item card p-4 mb-4">
-                    <h3 className="text-lg font-playfair text-accent-gold">{task.title}</h3>
-                    <p className="text-gray-400">{task.description}</p>
-                    <p className="text-gray-400">Assigned to: {task.assignedTo.join(', ')}</p>
-                    <p className="text-gray-400">Due Date: {task.dueDate}</p>
-                    <p className="text-accent-teal">Status: {task.status}</p>
-                    {task.subtasks?.length > 0 && (
-                      <div className="subtasks mt-2">
-                        <h4 className="text-primary">Subtasks:</h4>
-                        {task.subtasks.map((sub) => (
-                          <div key={sub.id} className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={sub.completed}
-                              onChange={() => {
-                                setProject((prev) => ({
-                                  ...prev,
-                                  tasks: prev.tasks.map((t) =>
-                                    t.id === task.id
-                                      ? {
-                                          ...t,
-                                          subtasks: t.subtasks.map((s) =>
-                                            s.id === sub.id ? { ...s, completed: !s.completed } : s
-                                          ),
-                                        }
-                                      : t
-                                  ),
-                                }));
-                              }}
-                            />
-                            <p className={`text-primary ${sub.completed ? 'line-through' : ''}`}>{sub.title}</p>
+            {activeTab === 'comments' && (
+              <div className="comments-section card p-6">
+                <h2 className="text-2xl font-playfair text-accent-teal mb-4">Comments</h2>
+                <div className="comments-list">
+                  {comments.length === 0 ? (
+                    <p className="text-gray-400 text-center">No comments yet. Start the conversation!</p>
+                  ) : (
+                    comments.map((comment) => (
+                      <div key={comment.id} className="comment-item card p-4 mb-4">
+                        <div className="flex items-center mb-2">
+                          <img
+                            src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                            alt="User"
+                            className="w-8 h-8 rounded-full mr-2 object-cover"
+                          />
+                          <div>
+                            <span className="text-primary font-semibold">{comment.user}</span>
+                            <span className="text-gray-400 text-sm ml-2">{new Date(comment.timestamp).toLocaleString()}</span>
                           </div>
-                        ))}
+                        </div>
+                        <p className="text-primary">{comment.text}</p>
+                        <div className="flex items-center mt-2 gap-4">
+                          <button
+                            onClick={() => handleLike(comment.id, 'comment')}
+                            className="flex items-center text-accent-teal hover:text-accent-coral transition-all"
+                          >
+                            <ThumbsUp className="w-5 h-5 mr-1" /> {comment.likes || 0}
+                          </button>
+                          <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
+                            <MessageSquare className="w-5 h-5 mr-1" /> Reply
+                          </button>
+                        </div>
                       </div>
-                    )}
-                    <button
-                      onClick={() => completeTask(task.id)}
-                      className="btn-primary rounded-full mt-2"
-                      disabled={task.status === 'Completed'}
-                    >
-                      Mark as Completed
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Files Section */}
-            <div className="files-section card p-6">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4">Files</h2>
-              {isAdmin ? (
-                <div className="file-input card p-4 mb-4">
-                  <label className="flex items-center text-accent-teal hover:text-accent-coral cursor-pointer mb-2">
-                    <FileText className="w-5 h-5 mr-2" /> Upload File
-                    <input
-                      type="file"
-                      onChange={(e) => setNewFile(e.target.files[0])}
-                      className="hidden"
-                    />
-                  </label>
-                  {newFile && (
-                    <p className="text-gray-400 mb-2">Selected: {newFile.name}</p>
+                    ))
                   )}
-                  <button onClick={uploadFile} className="btn-primary rounded-full">Upload</button>
                 </div>
-              ) : (
-                <div className="file-request card p-4 mb-4">
+                <div className="comment-input flex gap-4 mt-4">
+                  <img
+                    src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                    alt="User"
+                    className="w-8 h-8 rounded-full"
+                  />
                   <input
                     type="text"
-                    value={fileRequest}
-                    onChange={(e) => setFileRequest(e.target.value)}
-                    placeholder="Request a file to add..."
-                    className="input-field w-full mb-2"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a comment..."
+                    className="input-field flex-1 rounded-full"
                   />
-                  <button onClick={requestFile} className="btn-primary rounded-full">Request</button>
+                  <button onClick={addComment} className="btn-primary rounded-full">Post</button>
                 </div>
-              )}
-              {project.files?.length === 0 ? (
-                <p className="text-gray-400 text-center">No files yet.</p>
-              ) : (
-                project.files.map((file) => (
-                  <div key={file.id} className="file-item card p-2 mb-2 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-accent-teal" />
-                    <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      {file.name}
-                    </a>
-                    <p className="text-gray-400 text-sm">Uploaded by {file.uploadedBy} on {new Date(file.timestamp).toLocaleString()}</p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+              </div>
+            )}
 
-          {/* Sidebar */}
-          <div className="col-span-1 space-y-6">
-            {/* Project Chat */}
-            <div className="chat-section card p-6">
-              <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
-                <MessageSquare className="w-5 h-5 mr-2" /> Project Chat
-              </h2>
-              <div className="messages bg-accent-sage p-4 rounded-lg h-64 overflow-y-auto">
-                {messages.length === 0 ? (
-                  <p className="text-gray-400 text-center">No messages yet. Say hello!</p>
+            {activeTab === 'activity' && (
+              <div className="activity-log card p-6">
+                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                  <Calendar className="w-5 h-5 mr-2" /> Activity Log
+                </h2>
+                <div className="flex items-center gap-2 mb-4">
+                  <Filter className="w-5 h-5 text-accent-teal" />
+                  <select
+                    value={activityFilter}
+                    onChange={(e) => setActivityFilter(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="all">All Activity</option>
+                    <option value="posts">Posts</option>
+                    <option value="tasks">Tasks</option>
+                    <option value="files">Files</option>
+                  </select>
+                </div>
+                {filteredActivityLog.length === 0 ? (
+                  <p className="text-gray-400 text-center">No activity yet.</p>
                 ) : (
-                  messages.map((msg, index) => (
-                    <div key={index} className="message-item mb-2">
-                      <strong className="text-primary">{msg.user}:</strong> {msg.text}
-                      <span className="text-gray-400 text-sm ml-2">{new Date(msg.timestamp).toLocaleString()}</span>
+                  filteredActivityLog.map((log) => (
+                    <div key={log.id} className="activity-item card p-2 mb-2">
+                      <p className="text-primary">{log.user} {log.action}</p>
+                      <p className="text-gray-400 text-sm">{new Date(log.timestamp).toLocaleString()}</p>
                     </div>
                   ))
                 )}
               </div>
-              <div className="chat-input flex gap-4 mt-4">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="input-field flex-1 rounded-full"
-                />
-                <button onClick={sendMessage} className="btn-primary rounded-full">Send</button>
-              </div>
-            </div>
+            )}
 
-            {/* Achievements */}
-            <div className="achievements-section card p-6">
-              <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
-                <Award className="w-5 h-5 mr-2" /> Achievements
-              </h2>
-              {project.achievements.length === 0 ? (
-                <p className="text-gray-400">No achievements yet. Keep working to earn some!</p>
-              ) : (
-                project.achievements.map((achievement) => (
-                  <div key={achievement.id} className={`achievement-item card p-4 mb-4 ${achievement.earned ? 'bg-teal-900' : 'bg-gray-700'} bg-opacity-20`}>
-                    <div className="flex items-center gap-3">
-                      <Award className={`w-6 h-6 ${achievement.earned ? 'text-accent-gold' : 'text-gray-400'}`} />
+            {activeTab === 'tasks' && (
+              <div className="tasks-section card p-6">
+                <h2 className="text-2xl font-playfair text-accent-teal mb-4">Tasks</h2>
+                {isAdmin && (
+                  <div className="task-input card p-4 mb-4">
+                    <h3 className="text-lg font-playfair text-primary mb-2">Create Task</h3>
+                    <div className="flex items-center mb-2">
+                      <img
+                        src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                        alt="User"
+                        className="w-8 h-8 rounded-full mr-2 object-cover"
+                      />
+                      <input
+                        type="text"
+                        value={newTask.title}
+                        onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                        placeholder="Task title..."
+                        className="input-field w-full"
+                      />
+                    </div>
+                    <textarea
+                      value={newTask.description}
+                      onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                      placeholder="Task description..."
+                      className="input-field w-full mb-2 h-16"
+                    />
+                    <input
+                      type="text"
+                      value={newTask.assignedTo.join(', ')}
+                      onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value.split(',').map(s => s.trim()) })}
+                      placeholder="Assigned to (comma-separated)..."
+                      className="input-field w-full mb-2"
+                    />
+                    {suggestedDeadline && (
+                      <p className="text-gray-400 mb-2">AI Suggested Deadline: {suggestedDeadline}</p>
+                    )}
+                    {newTask.subtasks.map((sub, idx) => (
+                      <input
+                        key={idx}
+                        type="text"
+                        value={sub}
+                        onChange={(e) => {
+                          const newSubtasks = [...newTask.subtasks];
+                          newSubtasks[idx] = e.target.value;
+                          setNewTask({ ...newTask, subtasks: newSubtasks });
+                        }}
+                        placeholder={`Subtask ${idx + 1}`}
+                        className="input-field w-full mb-2"
+                      />
+                    ))}
+                    <button
+                      onClick={() => setNewTask({ ...newTask, subtasks: [...newTask.subtasks, ''] })}
+                      className="text-accent-teal hover:text-accent-coral transition-all mb-2"
+                    >
+                      + Add Subtask
+                    </button>
+                    <button onClick={addTask} className="btn-primary rounded-full">Create Task</button>
+                  </div>
+                )}
+                {project.tasks?.length === 0 ? (
+                  <p className="text-gray-400 text-center">No tasks yet.</p>
+                ) : (
+                  project.tasks.map((task) => (
+                    <div key={task.id} className="task-item card p-4 mb-4">
+                      <h3 className="text-lg font-playfair text-accent-gold">{task.title}</h3>
+                      <p className="text-gray-400">{task.description}</p>
+                      <p className="text-gray-400">Assigned to: {task.assignedTo.join(', ')}</p>
+                      <p className="text-gray-400">Due Date: {task.dueDate}</p>
+                      <p className="text-accent-teal">Status: {task.status}</p>
+                      {task.subtasks?.length > 0 && (
+                        <div className="subtasks mt-2">
+                          <h4 className="text-primary">Subtasks:</h4>
+                          {task.subtasks.map((sub) => (
+                            <div key={sub.id} className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={sub.completed}
+                                onChange={() => {
+                                  setProject((prev) => ({
+                                    ...prev,
+                                    tasks: prev.tasks.map((t) =>
+                                      t.id === task.id
+                                        ? {
+                                            ...t,
+                                            subtasks: t.subtasks.map((s) =>
+                                              s.id === sub.id ? { ...s, completed: !s.completed } : s
+                                            ),
+                                          }
+                                        : t
+                                    ),
+                                  }));
+                                }}
+                              />
+                              <p className={`text-primary ${sub.completed ? 'line-through' : ''}`}>{sub.title}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => completeTask(task.id)}
+                        className="btn-primary rounded-full mt-2"
+                        disabled={task.status === 'Completed'}
+                      >
+                        Mark as Completed
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {activeTab === 'files' && (
+              <div className="files-section card p-6">
+                <h2 className="text-2xl font-playfair text-accent-teal mb-4">Files</h2>
+                {isAdmin ? (
+                  <div className="file-input card p-4 mb-4">
+                    <div className="flex items-center mb-2">
+                      <img
+                        src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                        alt="User"
+                        className="w-8 h-8 rounded-full mr-2 object-cover"
+                      />
+                      <label className="flex items-center text-accent-teal hover:text-accent-coral cursor-pointer flex-1">
+                        <FileText className="w-5 h-5 mr-2" /> Upload File
+                        <input
+                          type="file"
+                          onChange={(e) => setNewFile(e.target.files[0])}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                    {newFile && (
+                      <p className="text-gray-400 mb-2">Selected: {newFile.name}</p>
+                    )}
+                    <button onClick={uploadFile} className="btn-primary rounded-full">Upload</button>
+                  </div>
+                ) : (
+                  <div className="file-request card p-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                        alt="User"
+                        className="w-8 h-8 rounded-full"
+                      />
+                      <input
+                        type="text"
+                        value={fileRequest}
+                        onChange={(e) => setFileRequest(e.target.value)}
+                        placeholder="Request a file to add..."
+                        className="input-field w-full mb-2"
+                      />
+                    </div>
+                    <button onClick={requestFile} className="btn-primary rounded-full">Request</button>
+                  </div>
+                )}
+                {project.files?.length === 0 ? (
+                  <p className="text-gray-400 text-center">No files yet.</p>
+                ) : (
+                  project.files.map((file) => (
+                    <div key={file.id} className="file-item card p-2 mb-2 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-accent-teal" />
+                      <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        {file.name}
+                      </a>
+                      <p className="text-gray-400 text-sm">Uploaded by {file.uploadedBy} on {new Date(file.timestamp).toLocaleString()}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {activeTab === 'teams' && (
+              <div className="teams-section card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-playfair text-accent-teal flex items-center">
+                    <Users className="w-5 h-5 mr-2" /> Teams
+                  </h2>
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="text-accent-teal hover:text-accent-coral transition-all flex items-center"
+                  >
+                    <UserPlus className="w-5 h-5 mr-2" /> Invite
+                  </button>
+                </div>
+                {isAdmin && (
+                  <button
+                    onClick={() => setShowTeamModal(true)}
+                    className="btn-primary rounded-full mb-4 flex items-center"
+                  >
+                    <PlusCircle className="w-5 h-5 mr-2" /> Create Team
+                  </button>
+                )}
+                {project.teams?.length === 0 ? (
+                  <p className="text-gray-400">No teams yet.</p>
+                ) : (
+                  project.teams.map((team) => (
+                    <div key={team.id} className="team-item card p-4 mb-4 flex items-center gap-4">
+                      <Users className="w-6 h-6 text-accent-teal" />
                       <div>
-                        <p className="text-primary font-semibold">{achievement.name}</p>
-                        <p className="text-gray-400 text-sm">{achievement.description}</p>
-                        <p className={`text-sm ${achievement.earned ? 'text-accent-teal' : 'text-gray-500'}`}>
-                          {achievement.earned ? 'Earned' : 'Not Earned'}
-                        </p>
+                        <p className="text-primary font-semibold">{team.name}</p>
+                        <p className="text-gray-400 text-sm">{team.description}</p>
+                        <p className="text-gray-400 text-sm">Members: {team.members.map(m => m.email).join(', ')}</p>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Teams */}
-            <div className="teams-section card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-playfair text-accent-teal flex items-center">
-                  <Users className="w-5 h-5 mr-2" /> Teams
-                </h2>
-                <button
-                  onClick={() => setShowInviteModal(true)}
-                  className="text-accent-teal hover:text-accent-coral transition-all flex items-center"
-                >
-                  <UserPlus className="w-5 h-5 mr-2" /> Invite
-                </button>
+                  ))
+                )}
               </div>
-              {isAdmin && (
-                <button
-                  onClick={() => setShowTeamModal(true)}
-                  className="btn-primary rounded-full mb-4 flex items-center"
-                >
-                  <PlusCircle className="w-5 h-5 mr-2" /> Create Team
-                </button>
-              )}
-              {project.teams?.length === 0 ? (
-                <p className="text-gray-400">No teams yet.</p>
-              ) : (
-                project.teams.map((team) => (
-                  <div key={team.id} className="team-item card p-4 mb-4 flex items-center gap-4">
-                    <Users className="w-6 h-6 text-accent-teal" />
-                    <div>
-                      <p className="text-primary font-semibold">{team.name}</p>
-                      <p className="text-gray-400 text-sm">{team.description}</p>
-                      <p className="text-gray-400 text-sm">Members: {team.members.join(', ')}</p>
+            )}
+
+            {activeTab === 'chat' && (
+              <div className="chat-section card p-6">
+                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                  <MessageSquare className="w-5 h-5 mr-2" /> Project Chat
+                </h2>
+                <div className="messages bg-accent-sage p-4 rounded-lg h-64 overflow-y-auto">
+                  {messages.length === 0 ? (
+                    <p className="text-gray-400 text-center">No messages yet. Say hello!</p>
+                  ) : (
+                    messages.map((msg, index) => (
+                      <div key={index} className="message-item mb-2 flex items-start gap-2">
+                        <img
+                          src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                          alt="User"
+                          className="w-6 h-6 rounded-full"
+                        />
+                        <div>
+                          <strong className="text-primary">{msg.user}:</strong> {msg.text}
+                          <span className="text-gray-400 text-sm ml-2">{new Date(msg.timestamp).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="chat-input flex gap-4 mt-4">
+                  <img
+                    src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                    alt="User"
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type a message..."
+                    className="input-field flex-1 rounded-full"
+                  />
+                  <button onClick={sendMessage} className="btn-primary rounded-full">Send</button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'achievements' && (
+              <div className="achievements-section card p-6">
+                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                  <Award className="w-5 h-5 mr-2" /> Achievements
+                </h2>
+                {project.achievements.length === 0 ? (
+                  <p className="text-gray-400">No achievements yet. Keep working to earn some!</p>
+                ) : (
+                  project.achievements.map((achievement) => (
+                    <div key={achievement.id} className={`achievement-item card p-4 mb-4 ${achievement.earned ? 'bg-teal-900' : 'bg-gray-700'} bg-opacity-20`}>
+                      <div className="flex items-center gap-3">
+                        <Award className={`w-6 h-6 ${achievement.earned ? 'text-accent-gold' : 'text-gray-400'}`} />
+                        <div>
+                          <p className="text-primary font-semibold">{achievement.name}</p>
+                          <p className="text-gray-400 text-sm">{achievement.description}</p>
+                          <p className={`text-sm ${achievement.earned ? 'text-accent-teal' : 'text-gray-500'}`}>
+                            {achievement.earned ? 'Earned' : 'Not Earned'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Persistent Sidebar */}
+        <div className="w-64 hidden lg:block">
+          <div className="members-sidebar card p-6 sticky top-20">
+            <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2" /> Project Members
+            </h2>
+            <div className="space-y-4">
+              {allMembers.map((member, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <img
+                    src={member.profilePicture}
+                    alt={member.email}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="text-primary font-semibold">{member.email}</p>
+                    <p className="text-gray-400 text-sm capitalize">{member.role}</p>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           </div>
         </div>

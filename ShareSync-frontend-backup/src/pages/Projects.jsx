@@ -35,7 +35,7 @@ const chartOptions = {
 };
 
 const Projects = () => {
-  const { user, isAuthenticated, socket } = useContext(AuthContext);
+  const { user, isAuthenticated, socket, addProject } = useContext(AuthContext);
   const navigate = useNavigate();
   const [projects, setProjects] = useState(user?.projects || []);
   const [error, setError] = useState('');
@@ -52,13 +52,11 @@ const Projects = () => {
       try {
         console.log('Projects - Fetching projects');
         setProjects(user?.projects || []);
-        // Mock leaderboard data
         setLeaderboard([
           { name: 'Alice', points: 150 },
           { name: 'Bob', points: 120 },
           { name: 'Charlie', points: 100 },
         ]);
-        // Mock team activity
         setTeamActivity([
           { id: '1', user: 'Alice', action: 'Posted an announcement in Project Alpha', timestamp: new Date().toISOString() },
           { id: '2', user: 'Bob', action: 'Completed a task in Project Beta', timestamp: new Date().toISOString() },
@@ -72,7 +70,6 @@ const Projects = () => {
     };
 
     const suggestWorkflow = async () => {
-      // Mock AI workflow suggestion
       setSuggestedWorkflow({
         type: 'Kanban',
         reason: 'Recommended for small teams with iterative workflows.',
@@ -97,6 +94,13 @@ const Projects = () => {
           )
         );
       });
+
+      socket.on('project-create', (newProject) => {
+        if (newProject.admin === user?.email || newProject.members.some(m => m.email === user?.email)) {
+          setProjects((prev) => [...prev, newProject]);
+          addProject(newProject);
+        }
+      });
     }
 
     if (isAuthenticated) {
@@ -110,12 +114,12 @@ const Projects = () => {
       if (socket) {
         socket.off('notification');
         socket.off('metric-update');
+        socket.off('project-create');
       }
     };
-  }, [isAuthenticated, navigate, socket, user]);
+  }, [isAuthenticated, navigate, socket, user, addProject]);
 
   const autoAssignTasks = async (projectId) => {
-    // Mock AI task assignment
     console.log('Auto-assigning tasks for project:', projectId);
     setProjects((prev) =>
       prev.map((proj) =>
@@ -224,7 +228,6 @@ const Projects = () => {
 
   return (
     <div className="projects-container">
-      {/* Header Section */}
       <div className="projects-header bg-glass py-8 px-6 rounded-b-3xl text-center">
         <h1 className="text-4xl font-playfair text-accent-gold mb-4">Your Projects</h1>
         <Link to="/projects/create">
@@ -242,7 +245,6 @@ const Projects = () => {
           </div>
         ) : (
           <>
-            {/* Metrics Section */}
             <div className="metrics-section mb-8">
               <h2 className="text-2xl font-playfair text-accent-teal mb-4 text-center">Project Metrics</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -279,7 +281,6 @@ const Projects = () => {
               </div>
             </div>
 
-            {/* AI Workflow Suggestion */}
             {suggestedWorkflow && (
               <div className="workflow-suggestion card p-6 mb-8">
                 <h2 className="text-2xl font-playfair text-accent-teal mb-4">AI Workflow Suggestion</h2>
@@ -288,7 +289,6 @@ const Projects = () => {
               </div>
             )}
 
-            {/* Leaderboard */}
             <div className="leaderboard-section card p-6 mb-8">
               <h2 className="text-2xl font-playfair text-accent-teal mb-4">Team Leaderboard</h2>
               {leaderboard.length > 0 ? (
@@ -307,7 +307,6 @@ const Projects = () => {
               )}
             </div>
 
-            {/* Projects Grid */}
             <div className="projects-grid">
               <h2 className="text-2xl font-playfair text-accent-teal mb-4">Your Projects</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -337,6 +336,7 @@ const Projects = () => {
                         <option value="Completed">Completed</option>
                       </select>
                     </div>
+                    <p className="text-gray-400 mb-2">Privacy: {project.privacy}</p>
                     <div className="progress-bar mt-4">
                       <div
                         className="progress-fill"
@@ -359,7 +359,6 @@ const Projects = () => {
                     >
                       Auto-Assign Tasks
                     </button>
-                    {/* Announcements */}
                     {project.announcements?.length > 0 && (
                       <div className="announcements mt-4">
                         <h3 className="text-lg font-playfair text-primary mb-2">Announcements</h3>
@@ -396,7 +395,6 @@ const Projects = () => {
               </div>
             </div>
 
-            {/* Announcement Input Modal */}
             {selectedProjectId && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="card p-6 w-full max-w-md">
@@ -425,7 +423,6 @@ const Projects = () => {
               </div>
             )}
 
-            {/* Notifications */}
             <div className="notifications-section card p-6 mt-8">
               <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
                 <Bell className="w-5 h-5 mr-2" /> Notifications
@@ -442,7 +439,6 @@ const Projects = () => {
               )}
             </div>
 
-            {/* Team Activity */}
             <div className="team-activity-section card p-6 mt-8">
               <h2 className="text-2xl font-playfair text-accent-teal mb-4">Team Activity</h2>
               {teamActivity.length > 0 ? (

@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Home, Folder, LogOut, User, Search, Bell } from 'lucide-react';
+import { Home, Folder, LogOut, User, Search, Bell, Settings } from 'lucide-react';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -22,17 +22,21 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+          {/* Left Section (Empty for now, can add menu icon for mobile) */}
           <div className="flex-shrink-0">
+            {/* Placeholder for potential menu icon */}
+          </div>
+
+          {/* Right Section: Logo, Search Bar, and Icons */}
+          <div className="flex items-center space-x-4">
+            {/* ShareSync Logo */}
             <Link to="/" className="text-2xl font-playfair text-accent-gold">
               ShareSync
             </Link>
-          </div>
 
-          {/* Search Bar (Centered) */}
-          <div className="flex-1 mx-6">
-            <form onSubmit={handleSearch} className="flex items-center justify-center">
-              <div className="relative w-full max-w-md">
+            {/* Search Bar */}
+            <form onSubmit={handleSearch} className="flex items-center">
+              <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-accent-teal" />
                 <input
                   type="text"
@@ -41,27 +45,25 @@ const Navbar = () => {
                 />
               </div>
             </form>
-          </div>
 
-          {/* Navigation Links */}
-          <div className="flex items-center space-x-6">
+            {/* Navigation Icons */}
             {isAuthenticated ? (
               <>
                 <Link to="/" className="nav-link">
                   <Home className="w-5 h-5 text-accent-teal" />
-                  <span className="ml-1">Home</span>
                 </Link>
                 <Link to="/projects" className="nav-link">
                   <Folder className="w-5 h-5 text-accent-teal" />
-                  <span className="ml-1">Projects</span>
                 </Link>
                 <Link to={`/profile/${user?.username || 'johndoe'}`} className="nav-link flex items-center">
                   <img
                     src={user?.profilePicture || 'https://via.placeholder.com/150'}
                     alt="Profile"
-                    className="w-6 h-6 rounded-full mr-1 object-cover border border-accent-gold"
+                    className="w-6 h-6 rounded-full object-cover"
                   />
-                  <span>Profile</span>
+                </Link>
+                <Link to="/settings" className="nav-link">
+                  <Settings className="w-5 h-5 text-accent-teal" />
                 </Link>
                 <div className="relative">
                   <Bell className="w-5 h-5 text-accent-teal cursor-pointer" />
@@ -73,18 +75,15 @@ const Navbar = () => {
                 </div>
                 <button onClick={handleLogout} className="nav-link">
                   <LogOut className="w-5 h-5 text-accent-coral" />
-                  <span className="ml-1">Logout</span>
                 </button>
               </>
             ) : (
               <>
                 <Link to="/login" className="nav-link">
                   <User className="w-5 h-5 text-accent-teal" />
-                  <span className="ml-1">Login</span>
                 </Link>
                 <Link to="/register" className="nav-link">
                   <User className="w-5 h-5 text-accent-teal" />
-                  <span className="ml-1">Register</span>
                 </Link>
               </>
             )}

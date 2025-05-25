@@ -55,14 +55,19 @@ const Home = () => {
           ]);
         }
       });
-    } else {
-      console.warn('Socket is not initialized');
+
+      socket.on('project-create', (newProject) => {
+        if (newProject.admin === user?.email || newProject.members.some(m => m.email === user?.email)) {
+          user.projects = [...(user.projects || []), newProject];
+        }
+      });
     }
 
     return () => {
       if (socket) {
         socket.off('notification');
         socket.off('post');
+        socket.off('project-create');
       }
     };
   }, [socket, user, selectedProject]);
@@ -141,7 +146,6 @@ const Home = () => {
 
   return (
     <div className="home-container">
-      {/* Hero Section */}
       <div className="hero-section bg-glass py-12 px-6 text-center rounded-b-3xl">
         <h1 className="text-4xl font-playfair text-accent-gold mb-4">Welcome, {user?.firstName || 'User'}!</h1>
         <p className="text-gray-400 text-lg mb-6">Collaborate, track, and succeed with ShareSync.</p>
@@ -154,7 +158,6 @@ const Home = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Left Sidebar */}
           <div className="col-span-1 hidden lg:block">
             <div className="sidebar bg-glass p-6 rounded-lg shadow-soft sticky top-20">
               <h2 className="text-xl font-playfair text-accent-teal mb-4">Your Projects</h2>
@@ -191,7 +194,6 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Main Feed */}
           <div className="col-span-1 lg:col-span-2">
             <div className="feed card p-6">
               <h2 className="text-2xl font-playfair text-accent-teal mb-4">Project Feed</h2>
@@ -257,7 +259,6 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Right Sidebar */}
           <div className="col-span-1 hidden lg:block">
             <div className="insights card p-6 sticky top-20">
               <h2 className="text-xl font-playfair text-accent-teal mb-4">Your Insights</h2>
