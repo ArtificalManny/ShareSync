@@ -1,15 +1,77 @@
 .home-container {
   padding: 40px;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
   background: #0A1A2F;
-}
-
-.feed {
-  max-width: 100%;
 }
 
 .feed-item {
   border-left: 3px solid #26C6DA;
+}
+
+.input-field {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #26C6DA;
+  background: rgba(255, 255, 255, 0.05);
+  color: #F5F6FA;
+  font-size: 16px;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #FFD700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.btn-primary {
+  padding: 10px 20px;
+  border-radius: 9999px;
+  background: linear-gradient(45deg, #26C6DA, #FFD700);
+  color: #0A1A2F;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(38, 198, 218, 0.5);
+}
+
+.sidebar, .trending {
+  position: sticky;
+  top: 80px;
+}
+
+.notifications-dropdown {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  width: 300px;
+  z-index: 10;
+  scrollbar-width: thin;
+  scrollbar-color: #26C6DA #0A1A2F;
+}
+
+.notifications-dropdown::-webkit-scrollbar {
+  width: 8px;
+}
+
+.notifications-dropdown::-webkit-scrollbar-track {
+  background: #0A1A2F;
+}
+
+.notifications-dropdown::-webkit-scrollbar-thumb {
+  background: #26C6DA;
+  border-radius: 4px;
+}
+
+.notifications-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #FFD700;
+}
+
+.notification-item:hover {
+  background: rgba(38, 198, 218, 0.1);
 }

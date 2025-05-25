@@ -1,122 +1,127 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { getAccessToken, setTokens, clearTokens } from './utils/tokenUtils';
+import io from 'socket.io-client';
+
+// Initialize socket with error handling
+let socket;
+try {
+  socket = io('http://localhost:3000', { autoConnect: false });
+} catch (error) {
+  console.error('Failed to initialize socket:', error.message);
+  socket = null;
+}
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  console.log('AuthProvider - Initializing');
-
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    try {
-      const token = getAccessToken();
-      console.log('AuthProvider - Initial token:', token);
-      return !!token;
-    } catch (error) {
-      console.error('AuthProvider - Error checking token:', error.message);
-      return false;
-    }
-  });
-
-  const [user, setUser] = useState(() => {
-    try {
-      const storedUser = localStorage.getItem('user');
-      const parsedUser = storedUser
-        ? JSON.parse(storedUser)
-        : {
-            firstName: 'John',
-            lastName: 'Doe',
-            username: 'johndoe',
-            job: 'Software Engineer',
-            school: 'Stanford University',
-            profilePicture: 'https://via.placeholder.com/150',
-            bannerPicture: 'https://via.placeholder.com/1200x300',
-            projects: [
-              { id: '1', title: 'Project Alpha', category: 'Job', status: 'In Progress' },
-              { id: '2', title: 'Project Beta', category: 'School', status: 'Completed' },
-            ],
-          };
-      console.log('AuthProvider - Initial user:', parsedUser);
-      return parsedUser;
-    } catch (error) {
-      console.error('AuthProvider - Error parsing user:', error.message);
-      return {};
-    }
-  });
-
-  const [notificationPrefs, setNotificationPrefs] = useState({
-    email: { taskCompletion: true, newPost: true, fileUpload: true },
-    sms: { taskCompletion: true, newPost: false, fileUpload: false },
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [globalMetrics, setGlobalMetrics] = useState({
+    totalProjects: 0,
+    tasksCompleted: 0,
+    notifications: 0,
   });
 
   useEffect(() => {
-    console.log('AuthProvider - Syncing auth state');
-    try {
-      const token = getAccessToken();
-      const storedUser = localStorage.getItem('user');
-      const parsedUser = storedUser ? JSON.parse(storedUser) : {
+    // Mock authentication check
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsAuthenticated(true);
+      setUser({
+        email: 'user@example.com',
+        username: 'johndoe',
         firstName: 'John',
         lastName: 'Doe',
-        username: 'johndoe',
-        job: 'Software Engineer',
-        school: 'Stanford University',
+        job: 'Developer',
+        school: 'University of Example',
         profilePicture: 'https://via.placeholder.com/150',
         bannerPicture: 'https://via.placeholder.com/1200x300',
         projects: [
           { id: '1', title: 'Project Alpha', category: 'Job', status: 'In Progress' },
-          { id: '2', title: 'Project Beta', category: 'School', status: 'Completed' },
+          { id: '2', title: 'Project Beta', category: 'Personal', status: 'Completed' },
         ],
+      });
+      setGlobalMetrics({
+        totalProjects: 2,
+        tasksCompleted: 13,
+        notifications: 0,
+      });
+    }
+
+    // Attempt to connect socket if it exists
+    if (socket) {
+      socket.connect();
+      socket.on('connect', () => console.log('Socket connected'));
+      socket.on('connect_error', (error) => console.error('Socket connection error:', error.message));
+      socket.on('notification', (notification) => {
+        setGlobalMetrics((prev) => ({
+          ...prev,
+          notifications: prev.notifications + 1,
+        }));
+      });
+
+      return () => {
+        socket.off('connect');
+        socket.off('connect_error');
+        socket.off('notification');
+        socket.disconnect();
       };
-      setIsAuthenticated(!!token);
-      setUser(parsedUser);
-      console.log('AuthProvider - Synced state:', { isAuthenticated: !!token, user: parsedUser });
-    } catch (error) {
-      console.error('AuthProvider - Error in useEffect:', error.message);
-      setIsAuthenticated(false);
-      setUser({});
     }
   }, []);
 
-  const login = (accessToken, refreshToken, userData) => {
-    console.log('AuthProvider - Logging in:', { accessToken, refreshToken, userData });
-    try {
-      if (!accessToken) throw new Error('Access token is required');
-      setTokens(accessToken, refreshToken, userData);
-      setIsAuthenticated(true);
-      setUser(userData || {});
-      console.log('AuthProvider - Login successful');
-    } catch (error) {
-      console.error('AuthProvider - Login error:', error.message);
-      setIsAuthenticated(false);
-      setUser({});
-      throw error;
-    }
+  const login = async (email, password) => {
+    localStorage.setItem('token', 'mock-token');
+    setIsAuthenticated(true);
+    setUser({
+      email,
+      username: 'johndoe',
+      firstName: 'John',
+      lastName: 'Doe',
+      job: 'Developer',
+      school: 'University of Example',
+      profilePicture: 'https://via.placeholder.com/150',
+      bannerPicture: 'https://via.placeholder.com/1200x300',
+      projects: [
+        { id: '1', title: 'Project Alpha', category: 'Job', status: 'In Progress' },
+        { id: '2', title: 'Project Beta', category: 'Personal', status: 'Completed' },
+      ],
+    });
+    setGlobalMetrics({
+      totalProjects: 2,
+      tasksCompleted: 13,
+      notifications: 0,
+    });
   };
 
   const logout = () => {
-    console.log('AuthProvider - Logging out');
-    try {
-      clearTokens();
-      setIsAuthenticated(false);
-      setUser({});
-      console.log('AuthProvider - Logout successful');
-    } catch (error) {
-      console.error('AuthProvider - Logout error:', error.message);
-    }
+    localStorage.removeItem('token');
+    setIsAuthenticated(false);
+    setUser(null);
+    setGlobalMetrics({ totalProjects: 0, tasksCompleted: 0, notifications: 0 });
+    if (socket) socket.disconnect();
   };
 
-  const updateUserProfile = (updatedDetails) => {
-    const updatedUser = { ...user, ...updatedDetails };
-    setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+  const createProject = async (projectData) => {
+    console.log('Creating project:', projectData);
   };
 
-  const updateNotificationPrefs = (prefs) => {
-    setNotificationPrefs(prefs);
-    // In a real app, save to backend or localStorage
+  const updateUserProfile = (updatedProfile) => {
+    setUser((prev) => ({ ...prev, ...updatedProfile }));
   };
 
-  const value = { isAuthenticated, user, login, logout, setUser, updateUserProfile, notificationPrefs, updateNotificationPrefs };
-  console.log('AuthProvider - Context value:', value);
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        user,
+        login,
+        logout,
+        createProject,
+        updateUserProfile,
+        globalMetrics,
+        socket,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
