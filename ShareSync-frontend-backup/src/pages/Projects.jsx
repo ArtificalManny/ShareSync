@@ -15,7 +15,7 @@ const chartOptions = {
       labels: {
         color: '#F5F6FA',
         font: {
-          family: 'Inter, sans-serif',
+          family: 'Inter',
           size: 14,
         },
       },

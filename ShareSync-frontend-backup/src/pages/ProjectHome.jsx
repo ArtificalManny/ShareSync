@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { CheckCircle, MessageSquare, ThumbsUp, Share2, Award, ChevronDown, PlusCircle, FileText, Settings, Users, Filter, Image as ImageIcon, Vote, Edit, Mail, Smartphone, UserPlus, Calendar } from 'lucide-react';
+import { CheckCircle, MessageSquare, ThumbsUp, Share2, Award, ChevronDown, PlusCircle, FileText, Settings, Users, Filter, Image as ImageIcon, Vote, Edit, Mail, Smartphone, UserPlus, Calendar, Eye } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import Chart from 'chart.js/auto';
 import './ProjectHome.css';
@@ -36,10 +36,10 @@ const mockProject = {
   activityLog: [],
   admin: 'user@example.com',
   members: [
-    { email: 'alice@example.com', role: 'member' },
-    { email: 'bob@example.com', role: 'member' },
-    { email: 'charlie@example.com', role: 'admin' },
-    { email: 'dave@example.com', role: 'viewer' },
+    { email: 'alice@example.com', role: 'member', profilePicture: 'https://via.placeholder.com/150' },
+    { email: 'bob@example.com', role: 'member', profilePicture: 'https://via.placeholder.com/150' },
+    { email: 'charlie@example.com', role: 'admin', profilePicture: 'https://via.placeholder.com/150' },
+    { email: 'dave@example.com', role: 'viewer', profilePicture: 'https://via.placeholder.com/150' },
   ],
 };
 
@@ -52,7 +52,7 @@ const chartOptions = {
       labels: {
         color: '#F5F6FA',
         font: {
-          family: 'Inter, sans-serif',
+          family: 'Inter',
           size: 14,
         },
       },
@@ -1138,12 +1138,25 @@ const ProjectHome = () => {
                   <p className="text-gray-400">No teams yet.</p>
                 ) : (
                   project.teams.map((team) => (
-                    <div key={team.id} className="team-item card p-4 mb-4 flex items-center gap-4">
-                      <Users className="w-6 h-6 text-accent-teal" />
-                      <div>
-                        <p className="text-primary font-semibold">{team.name}</p>
-                        <p className="text-gray-400 text-sm">{team.description}</p>
-                        <p className="text-gray-400 text-sm">Members: {team.members.map(m => m.email).join(', ')}</p>
+                    <div key={team.id} className="team-item card p-4 mb-4">
+                      <div className="flex items-center gap-4 mb-2">
+                        <Users className="w-6 h-6 text-accent-teal" />
+                        <div>
+                          <p className="text-primary font-semibold">{team.name}</p>
+                          <p className="text-gray-400 text-sm">{team.description}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {team.members.map((member, index) => (
+                          <div key={index} className="flex items-center gap-3">
+                            <img
+                              src={member.profilePicture}
+                              alt={member.email}
+                              className="w-6 h-6 rounded-full object-cover"
+                            />
+                            <p className="text-primary">{member.email} - <span className="text-accent-gold">{member.role}</span></p>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))
@@ -1250,8 +1263,47 @@ const ProjectHome = () => {
       {showSettings && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-full max-w-md">
-            <h2 className="text-xl font-playfair text-accent-teal mb-4">Notification Settings</h2>
+            <h2 className="text-xl font-playfair text-accent-teal mb-4">Project Settings</h2>
             <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Eye className="w-5 h-5 text-accent-teal" />
+                <label className="text-primary">Project Privacy:</label>
+                <select
+                  value={project.privacy}
+                  onChange={(e) => setProject({ ...project, privacy: e.target.value })}
+                  className="input-field flex-1 rounded-full"
+                >
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                </select>
+              </div>
+              <h3 className="text-lg font-playfair text-accent-teal mt-4">Manage Members</h3>
+              {project.members.map((member, index) => (
+                <div key={index} className="flex items-center gap-2 mb-2">
+                  <img
+                    src={member.profilePicture}
+                    alt={member.email}
+                    className="w-6 h-6 rounded-full"
+                  />
+                  <span className="text-primary">{member.email}</span>
+                  <select
+                    value={member.role}
+                    onChange={(e) => {
+                      const updatedMembers = [...project.members];
+                      updatedMembers[index] = { ...member, role: e.target.value };
+                      setProject({ ...project, members: updatedMembers });
+                      socket.emit('member-update', updatedMembers);
+                    }}
+                    className="input-field rounded-full"
+                    disabled={!isAdmin}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="member">Member</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                </div>
+              ))}
+              <h3 className="text-lg font-playfair text-accent-teal mt-4">Notification Preferences</h3>
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -1325,7 +1377,7 @@ const ProjectHome = () => {
               type="text"
               value={newTeam.members.join(', ')}
               onChange={(e) => setNewTeam({ ...newTeam, members: e.target.value.split(',').map(s => s.trim()) })}
-              placeholder="Members (comma-separated)..."
+              placeholder="Members (comma-separated emails)..."
               className="input-field w-full mb-2"
             />
             <div className="flex gap-4">

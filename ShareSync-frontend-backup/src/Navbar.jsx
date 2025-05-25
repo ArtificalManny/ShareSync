@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../AuthContext';
+import { AuthContext } from './AuthContext';
 import { Home, Folder, LogOut, User, Search, Bell, Settings } from 'lucide-react';
 import './Navbar.css';
 
@@ -21,20 +21,11 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Left Section (Empty for now, can add menu icon for mobile) */}
-          <div className="flex-shrink-0">
-            {/* Placeholder for potential menu icon */}
-          </div>
-
-          {/* Right Section: Logo, Search Bar, and Icons */}
+        <div className="flex items-center justify-end h-16">
           <div className="flex items-center space-x-4">
-            {/* ShareSync Logo */}
             <Link to="/" className="text-2xl font-playfair text-accent-gold">
               ShareSync
             </Link>
-
-            {/* Search Bar */}
             <form onSubmit={handleSearch} className="flex items-center">
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-accent-teal" />
@@ -45,8 +36,6 @@ const Navbar = () => {
                 />
               </div>
             </form>
-
-            {/* Navigation Icons */}
             {isAuthenticated ? (
               <>
                 <Link to="/" className="nav-link">

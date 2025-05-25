@@ -15,7 +15,7 @@ const chartOptions = {
       labels: {
         color: '#F5F6FA',
         font: {
-          family: 'Inter, sans-serif',
+          family: 'Inter',
           size: 14,
         },
       },
@@ -205,23 +205,27 @@ const Home = () => {
               ) : selectedProject ? (
                 <>
                   <div className="post-input card p-4 mb-4">
-                    <textarea
-                      value={newPost}
-                      onChange={(e) => setNewPost(e.target.value)}
-                      placeholder={`Share an update in ${selectedProject.title}...`}
-                      className="input-field w-full mb-2 h-24"
-                    />
-                    <button onClick={handlePost} className="btn-primary">Post</button>
+                    <div className="flex items-center mb-2">
+                      <img
+                        src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                        alt="User"
+                        className="w-8 h-8 rounded-full mr-2 object-cover"
+                      />
+                      <textarea
+                        value={newPost}
+                        onChange={(e) => setNewPost(e.target.value)}
+                        placeholder={`Share an update in ${selectedProject.title}...`}
+                        className="input-field w-full h-16"
+                      />
+                    </div>
+                    <button onClick={handlePost} className="btn-primary rounded-full">Post</button>
                   </div>
                   {projectFeed.length === 0 ? (
                     <p className="text-gray-400 text-center">No updates yet. Be the first to post!</p>
                   ) : (
                     <div className="space-y-4">
                       {projectFeed.map((item) => (
-                        <div
-                          key={item.id}
-                          className="feed-item card p-4"
-                        >
+                        <div key={item.id} className="feed-item card p-4">
                           <div className="flex items-center mb-2">
                             <img
                               src={user?.profilePicture || 'https://via.placeholder.com/150'}
@@ -230,7 +234,7 @@ const Home = () => {
                             />
                             <div>
                               <span className="text-primary font-semibold">{item.user}</span>
-                              <span className="text-gray-400 text-sm ml-2">{item.timestamp}</span>
+                              <span className="text-gray-400 text-sm ml-2">{new Date(item.timestamp).toLocaleString()}</span>
                             </div>
                           </div>
                           <p className="text-primary">{item.content}</p>

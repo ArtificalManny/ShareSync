@@ -1,46 +1,32 @@
 .home-container {
-  padding: 0;
+  padding: 40px;
+  text-align: center;
   min-height: 100vh;
-  background: #3C2F5D;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
 }
 
-.hero-section {
-  background: linear-gradient(45deg, #0A1A2F, #3C2F5D);
-  border-bottom: 3px solid #26C6DA;
+.holographic-text {
+  font-size: 48px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 0 10px #ff6b6b, 0 0 20px #feca57;
+  animation: glow 2s ease-in-out infinite alternate;
 }
 
-.feed-item {
-  border-left: 3px solid #26C6DA;
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #ff6b6b, 0 0 20px #feca57, 0 0 30px #ff6b6b;
+  }
+  to {
+    text-shadow: 0 0 20px #ff6b6b, 0 0 30px #feca57, 0 0 40px #ff6b6b;
+  }
 }
 
-.sidebar, .insights {
-  background: rgba(138, 154, 91, 0.1);
-}
-
-.notifications-list {
-  max-height: 300px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #26C6DA #0A1A2F;
-}
-
-.notifications-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.notifications-list::-webkit-scrollbar-track {
-  background: #0A1A2F;
-}
-
-.notifications-list::-webkit-scrollbar-thumb {
-  background: #26C6DA;
-  border-radius: 4px;
-}
-
-.notifications-list::-webkit-scrollbar-thumb:hover {
-  background: #FF6F61;
-}
-
-.notification-item:hover {
-  background: rgba(255, 111, 97, 0.1);
+.text-secondary {
+  font-size: 18px;
+  color: #ddd;
+  margin-top: 16px;
 }
