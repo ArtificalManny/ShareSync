@@ -1,27 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { ThumbsUp, MessageSquare, Share2, Bell, Folder, PlusCircle } from 'lucide-react';
-import { Doughnut } from 'react-chartjs-2';
-import Chart from 'chart.js/auto';
+import { ThumbsUp, MessageSquare, Share2, Bell, Folder, PlusCircle, Users } from 'lucide-react';
 import './Home.css';
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'bottom',
-      labels: {
-        color: '#F5F6FA',
-        font: {
-          family: 'Inter',
-          size: 14,
-        },
-      },
-    },
-  },
-};
 
 const Home = () => {
   const { user, isAuthenticated, globalMetrics, socket, joinProject } = useContext(AuthContext);
@@ -32,9 +13,9 @@ const Home = () => {
   const [selectedProject, setSelectedProject] = useState(null);
 
   const availableProjects = [
-    { id: '1', title: 'Project Alpha', posts: [] },
-    { id: '2', title: 'Project Beta', posts: [] },
-    { id: '3', title: 'Project Gamma', posts: [] },
+    { id: '1', title: 'Project Alpha', description: 'A tech innovation project', members: [{ email: 'john@example.com', profilePicture: 'https://via.placeholder.com/150' }, { email: 'jane@example.com', profilePicture: 'https://via.placeholder.com/150' }], posts: [] },
+    { id: '2', title: 'Project Beta', description: 'Marketing campaign', members: [{ email: 'alice@example.com', profilePicture: 'https://via.placeholder.com/150' }], posts: [] },
+    { id: '3', title: 'Project Gamma', description: 'Design overhaul', members: [{ email: 'bob@example.com', profilePicture: 'https://via.placeholder.com/150' }, { email: 'charlie@example.com', profilePicture: 'https://via.placeholder.com/150' }, { email: 'dave@example.com', profilePicture: 'https://via.placeholder.com/150' }], posts: [] },
   ];
 
   useEffect(() => {
@@ -91,6 +72,7 @@ const Home = () => {
       projectId: selectedProject.id,
       type: 'post',
       user: user?.email || 'Guest',
+      profilePicture: user?.profilePicture,
       content: newPost,
       timestamp: new Date().toISOString(),
       likes: 0,
@@ -111,23 +93,6 @@ const Home = () => {
     socket.emit('notification', { message: `${user?.email || 'Guest'} liked a post in ${selectedProject?.title || 'a project'}`, userId: user?.username });
   };
 
-  const totalProjects = globalMetrics?.totalProjects ?? 0;
-  const tasksCompleted = globalMetrics?.tasksCompleted ?? 0;
-  const notificationsCount = globalMetrics?.notifications ?? 0;
-
-  const metricsData = {
-    labels: ['Total Projects', 'Tasks Completed'],
-    datasets: [
-      {
-        label: 'Metrics',
-        data: [totalProjects, tasksCompleted],
-        backgroundColor: ['#26C6DA', '#FF6F61'],
-        borderColor: ['#0A1A2F', '#0A1A2F'],
-        borderWidth: 1,
-      },
-    ],
-  };
-
   if (!isAuthenticated) {
     return (
       <div className="home-container">
@@ -143,6 +108,7 @@ const Home = () => {
   }
 
   const userProjects = user?.projects || [];
+  const notificationsCount = notifications.length;
 
   return (
     <div className="home-container">
@@ -156,53 +122,60 @@ const Home = () => {
         </Link>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="col-span-1 hidden lg:block">
-            <div className="sidebar bg-glass p-6 rounded-lg shadow-soft sticky top-20">
-              <h2 className="text-xl font-playfair text-accent-teal mb-4">Your Projects</h2>
-              {userProjects.length === 0 ? (
-                <p className="text-gray-400 mb-4">Join a project to get started!</p>
-              ) : (
-                <select
-                  value={selectedProject?.id || ''}
-                  onChange={(e) => {
-                    const proj = userProjects.find((p) => p.id === e.target.value);
-                    handleProjectSelect(proj || null);
-                  }}
-                  className="input-field w-full mb-4"
-                >
-                  <option value="">Select a project</option>
-                  {userProjects.map((proj) => (
-                    <option key={proj.id} value={proj.id}>{proj.title}</option>
-                  ))}
-                </select>
-              )}
-              <h2 className="text-xl font-playfair text-accent-teal mb-4">Join a Project</h2>
-              <ul className="space-y-2">
-                {availableProjects.map((proj) => (
-                  <li key={proj.id}>
-                    <button
-                      onClick={() => handleJoinProject(proj)}
-                      className="text-primary hover:text-accent-coral transition-all flex items-center"
-                    >
-                      <Folder className="w-5 h-5 mr-2" /> {proj.title}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="col-span-1 lg:col-span-2">
-            <div className="feed card p-6">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4">Project Feed</h2>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Main Content: Projects and Feed */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Projects Section */}
+            <div className="projects-section card p-6">
+              <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                <Folder className="w-5 h-5 mr-2" /> Your Projects
+              </h2>
               {userProjects.length === 0 ? (
                 <div className="text-center">
                   <p className="text-gray-400 mb-4">You haven’t joined any projects yet.</p>
-                  <p className="text-gray-400">Join a project from the sidebar to start seeing updates!</p>
+                  <Link to="/projects">
+                    <p className="text-accent-teal hover:text-accent-coral transition-all">Explore projects to join!</p>
+                  </Link>
                 </div>
-              ) : selectedProject ? (
+              ) : (
+                <div className="space-y-4">
+                  {userProjects.map((proj) => (
+                    <Link to={`/projects/${proj.id}`} key={proj.id} className="project-card card p-4 flex items-center gap-4 hover:bg-teal-900 transition-all">
+                      <Folder className="w-8 h-8 text-accent-teal" />
+                      <div className="flex-1">
+                        <h3 className="text-lg font-playfair text-accent-gold">{proj.title}</h3>
+                        <p className="text-gray-400 text-sm">{proj.description || 'No description'}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Project Feed Section */}
+            <div className="feed-section card p-6">
+              <h2 className="text-2xl font-playfair text-accent-teal mb-4">Project Feed</h2>
+              {userProjects.length === 0 ? (
+                <p className="text-gray-400 text-center">Join a project to see updates!</p>
+              ) : !selectedProject ? (
+                <div className="text-center">
+                  <p className="text-gray-400 mb-4">Select a project to view its feed.</p>
+                  <select
+                    value={selectedProject?.id || ''}
+                    onChange={(e) => {
+                      const proj = userProjects.find((p) => p.id === e.target.value);
+                      handleProjectSelect(proj || null);
+                    }}
+                    className="input-field w-full max-w-xs mx-auto"
+                  >
+                    <option value="">Select a project</option>
+                    {userProjects.map((proj) => (
+                      <option key={proj.id} value={proj.id}>{proj.title}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
                 <>
                   <div className="post-input card p-4 mb-4">
                     <div className="flex items-center mb-2">
@@ -225,10 +198,10 @@ const Home = () => {
                   ) : (
                     <div className="space-y-4">
                       {projectFeed.map((item) => (
-                        <div key={item.id} className="feed-item card p-4">
+                        <div key={item.id} className="feed-item card p-4 holographic-effect">
                           <div className="flex items-center mb-2">
                             <img
-                              src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                              src={item.profilePicture || 'https://via.placeholder.com/150'}
                               alt="User"
                               className="w-8 h-8 rounded-full mr-2 object-cover"
                             />
@@ -257,40 +230,55 @@ const Home = () => {
                     </div>
                   )}
                 </>
-              ) : (
-                <p className="text-gray-400 text-center">Select a project to view its feed.</p>
               )}
             </div>
           </div>
 
-          <div className="col-span-1 hidden lg:block">
-            <div className="insights card p-6 sticky top-20">
-              <h2 className="text-xl font-playfair text-accent-teal mb-4">Your Insights</h2>
-              {totalProjects > 0 || tasksCompleted > 0 ? (
-                <div className="chart-container mb-6">
-                  <Doughnut data={metricsData} options={chartOptions} />
-                </div>
-              ) : (
-                <p className="text-gray-400 mb-4">No metrics available. Join a project to see your stats!</p>
-              )}
-              <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
-                <Bell className="w-5 h-5 mr-2 cursor-pointer" onClick={() => setShowNotifications(!showNotifications)} />
-                Notifications ({notificationsCount})
-              </h2>
-              {showNotifications && (
-                <div className="notifications-list space-y-2">
-                  {notifications.length > 0 ? (
-                    notifications.map((notif, index) => (
-                      <div key={index} className="notification-item card p-2">
-                        <p className="text-gray-400 text-sm">{notif.message}</p>
-                        <p className="text-gray-500 text-xs">{new Date().toLocaleTimeString()}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-400">No notifications yet.</p>
-                  )}
-                </div>
-              )}
+          {/* Sidebar: Notifications and Available Projects */}
+          <div className="md:col-span-1">
+            <div className="sidebar card p-6 sticky top-20 space-y-6">
+              <div className="notifications-section">
+                <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
+                  <Bell className="w-5 h-5 mr-2 cursor-pointer" onClick={() => setShowNotifications(!showNotifications)} />
+                  Notifications ({notificationsCount})
+                </h2>
+                {showNotifications && (
+                  <div className="notifications-list space-y-2">
+                    {notifications.length > 0 ? (
+                      notifications.map((notif, index) => (
+                        <div key={index} className="notification-item card p-2">
+                          <p className="text-gray-400 text-sm">{notif.message}</p>
+                          <p className="text-gray-500 text-xs">{new Date().toLocaleTimeString()}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-400">No notifications yet.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="available-projects-section">
+                <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
+                  <Folder className="w-5 h-5 mr-2" /> Join a Project
+                </h2>
+                <ul className="space-y-2">
+                  {availableProjects.map((proj) => (
+                    <li key={proj.id}>
+                      <button
+                        onClick={() => handleJoinProject(proj)}
+                        className="text-primary hover:text-accent-coral transition-all flex items-center gap-2 w-full text-left"
+                      >
+                        <Folder className="w-5 h-5" />
+                        <div>
+                          <p className="font-semibold">{proj.title}</p>
+                          <p className="text-gray-400 text-sm">{proj.description}</p>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </div>

@@ -1,38 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Pie, Bar } from 'react-chartjs-2';
-import Chart from 'chart.js/auto';
 import { Folder, PlusCircle, ThumbsUp, MessageSquare, Bell, Users } from 'lucide-react';
 import './Projects.css';
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'bottom',
-      labels: {
-        color: '#F5F6FA',
-        font: {
-          family: 'Inter',
-          size: 14,
-        },
-      },
-    },
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      ticks: { color: '#F5F6FA' },
-      grid: { color: 'rgba(255, 255, 255, 0.1)' },
-    },
-    x: {
-      ticks: { color: '#F5F6FA' },
-      grid: { color: 'rgba(255, 255, 255, 0.1)' },
-    },
-  },
-};
 
 const Projects = () => {
   const { user, isAuthenticated, socket, addProject } = useContext(AuthContext);
@@ -40,40 +10,21 @@ const Projects = () => {
   const [projects, setProjects] = useState(user?.projects || []);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [leaderboard, setLeaderboard] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  const [teamActivity, setTeamActivity] = useState([]);
   const [newAnnouncement, setNewAnnouncement] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [suggestedWorkflow, setSuggestedWorkflow] = useState(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         console.log('Projects - Fetching projects');
         setProjects(user?.projects || []);
-        setLeaderboard([
-          { name: 'Alice', points: 150 },
-          { name: 'Bob', points: 120 },
-          { name: 'Charlie', points: 100 },
-        ]);
-        setTeamActivity([
-          { id: '1', user: 'Alice', action: 'Posted an announcement in Project Alpha', timestamp: new Date().toISOString() },
-          { id: '2', user: 'Bob', action: 'Completed a task in Project Beta', timestamp: new Date().toISOString() },
-        ]);
       } catch (err) {
         console.error('Projects - Error fetching projects:', err.message, err.stack);
         setError('Failed to load projects: ' + err.message);
       } finally {
         setLoading(false);
       }
-    };
-
-    const suggestWorkflow = async () => {
-      setSuggestedWorkflow({
-        type: 'Kanban',
-        reason: 'Recommended for small teams with iterative workflows.',
-      });
     };
 
     if (socket) {
@@ -105,7 +56,6 @@ const Projects = () => {
 
     if (isAuthenticated) {
       fetchProjects();
-      suggestWorkflow();
     } else {
       navigate('/login', { replace: true });
     }
@@ -118,17 +68,6 @@ const Projects = () => {
       }
     };
   }, [isAuthenticated, navigate, socket, user, addProject]);
-
-  const autoAssignTasks = async (projectId) => {
-    console.log('Auto-assigning tasks for project:', projectId);
-    setProjects((prev) =>
-      prev.map((proj) =>
-        proj.id === projectId
-          ? { ...proj, tasksAssigned: true, assignedTo: ['Alice', 'Bob'] }
-          : proj
-      )
-    );
-  };
 
   const handlePostAnnouncement = (projectId) => {
     if (!newAnnouncement) return;
@@ -148,10 +87,6 @@ const Projects = () => {
           : proj
       )
     );
-    setTeamActivity((prev) => [
-      { id: `act-${Date.now()}`, user: user.email, action: `Posted an announcement in ${projects.find(p => p.id === projectId).title}`, timestamp: new Date().toISOString() },
-      ...prev,
-    ]);
     setNewAnnouncement('');
     setSelectedProjectId(null);
     socket.emit('notification', { message: `${user.email} posted an announcement in ${projects.find(p => p.id === projectId).title}`, userId: user.username });
@@ -181,51 +116,6 @@ const Projects = () => {
     );
   }
 
-  const categoryBreakdown = projects.reduce((acc, proj) => {
-    acc[proj.category] = (acc[proj.category] || 0) + 1;
-    return acc;
-  }, {});
-
-  const categoryData = {
-    labels: Object.keys(categoryBreakdown),
-    datasets: [
-      {
-        label: 'Projects by Category',
-        data: Object.values(categoryBreakdown),
-        backgroundColor: ['#26C6DA', '#FF6F61', '#8A9A5B'],
-        borderColor: ['#0A1A2F', '#0A1A2F', '#0A1A2F'],
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const taskCompletionData = {
-    labels: projects.map((proj) => proj.title),
-    datasets: [
-      {
-        label: 'Tasks Completed',
-        data: projects.map((proj) => proj.tasksCompleted || 0),
-        backgroundColor: '#26C6DA',
-        borderColor: '#0A1A2F',
-        borderWidth: 1,
-      },
-      {
-        label: 'Total Tasks',
-        data: projects.map((proj) => proj.totalTasks || 0),
-        backgroundColor: '#8A9A5B',
-        borderColor: '#0A1A2F',
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const metrics = {
-    totalProjects: projects.length,
-    currentProjects: projects.filter(p => p.status === 'In Progress').length,
-    pastProjects: projects.filter(p => p.status === 'Completed').length,
-    tasksCompleted: projects.reduce((sum, proj) => sum + (proj.tasksCompleted || 0), 0),
-  };
-
   return (
     <div className="projects-container">
       <div className="projects-header bg-glass py-8 px-6 rounded-b-3xl text-center">
@@ -237,7 +127,7 @@ const Projects = () => {
         </Link>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {projects.length === 0 ? (
           <div className="text-center">
             <p className="text-gray-400 mb-4">You haven’t joined any projects yet.</p>
@@ -245,124 +135,68 @@ const Projects = () => {
           </div>
         ) : (
           <>
-            <div className="metrics-section mb-8">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4 text-center">Project Metrics</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="card p-4 text-center">
-                  <p className="text-gray-400">Total Projects</p>
-                  <p className="text-2xl font-playfair text-accent-gold">{metrics.totalProjects}</p>
-                </div>
-                <div className="card p-4 text-center">
-                  <p className="text-gray-400">Current Projects</p>
-                  <p className="text-2xl font-playfair text-accent-gold">{metrics.currentProjects}</p>
-                </div>
-                <div className="card p-4 text-center">
-                  <p className="text-gray-400">Past Projects</p>
-                  <p className="text-2xl font-playfair text-accent-gold">{metrics.pastProjects}</p>
-                </div>
-                <div className="card p-4 text-center">
-                  <p className="text-gray-400">Tasks Completed</p>
-                  <p className="text-2xl font-playfair text-accent-gold">{metrics.tasksCompleted}</p>
-                </div>
-              </div>
+            <div className="projects-grid mb-8">
+              <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                <Folder className="w-5 h-5 mr-2" /> Your Projects
+              </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="card p-6">
-                  <h3 className="text-lg font-playfair text-primary mb-4">Category Breakdown</h3>
-                  <div className="chart-container">
-                    <Pie data={categoryData} options={chartOptions} />
-                  </div>
-                </div>
-                <div className="card p-6">
-                  <h3 className="text-lg font-playfair text-primary mb-4">Task Completion</h3>
-                  <div className="chart-container">
-                    <Bar data={taskCompletionData} options={chartOptions} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {suggestedWorkflow && (
-              <div className="workflow-suggestion card p-6 mb-8">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4">AI Workflow Suggestion</h2>
-                <p className="text-primary">Suggested Workflow: <span className="text-accent-gold">{suggestedWorkflow.type}</span></p>
-                <p className="text-gray-400">{suggestedWorkflow.reason}</p>
-              </div>
-            )}
-
-            <div className="leaderboard-section card p-6 mb-8">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4">Team Leaderboard</h2>
-              {leaderboard.length > 0 ? (
-                <ul className="space-y-2">
-                  {leaderboard.map((member, index) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <span className="text-accent-gold font-semibold">{index + 1}.</span>
-                      <Users className="w-5 h-5 text-accent-teal" />
-                      <span className="text-primary">{member.name}</span>
-                      <span className="text-gray-400">{member.points} points</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-400">No leaderboard data available.</p>
-              )}
-            </div>
-
-            <div className="projects-grid">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4">Your Projects</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.map((project) => (
-                  <div key={project.id} className="project-card card p-6">
+                  <Link to={`/projects/${project.id}`} key={project.id} className="project-card card p-6 hover:bg-teal-900 transition-all">
                     <div className="flex items-center justify-between mb-2">
-                      <Link to={`/projects/${project.id}`}>
-                        <h2 className="text-xl font-playfair text-accent-gold hover:underline">{project.title}</h2>
-                      </Link>
+                      <h2 className="text-xl font-playfair text-accent-gold">{project.title}</h2>
                       <button
-                        onClick={() => setSelectedProjectId(project.id)}
-                        className="text-accent-teal hover:text-accent-coral transition-all"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setSelectedProjectId(project.id);
+                        }}
+                        className="text-accent-teal hover:text-accent-coral transition-all text-sm"
                       >
                         Post Announcement
                       </button>
                     </div>
-                    <p className="text-gray-400 mb-1">Category: {project.category}</p>
-                    <div className="flex items-center gap-2 mb-2">
+                    <p className="text-gray-400 mb-2">{project.description || 'No description'}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex">
+                        {project.members.slice(0, 3).map((member, index) => (
+                          <img
+                            key={index}
+                            src={member.profilePicture}
+                            alt={member.email}
+                            className="w-8 h-8 rounded-full object-cover border-2 border-accent-gold"
+                            style={{ marginLeft: index > 0 ? '-12px' : '0' }}
+                          />
+                        ))}
+                        {project.members.length > 3 && (
+                          <span className="w-8 h-8 rounded-full bg-accent-sage text-primary flex items-center justify-center text-xs border-2 border-accent-gold" style={{ marginLeft: '-12px' }}>
+                            +{project.members.length - 3}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-400 text-sm">
+                        {project.members.slice(0, 2).map(m => m.email.split('@')[0]).join(', ')}
+                        {project.members.length > 2 ? `, and ${project.members.length - 2} more` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
                       <p className="text-gray-400">Status:</p>
                       <select
                         value={project.status}
-                        onChange={(e) => handleStatusChange(project.id, e.target.value)}
-                        className="input-field"
+                        onChange={(e) => {
+                          e.preventDefault();
+                          handleStatusChange(project.id, e.target.value);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="input-field text-sm"
                       >
                         <option value="Not Started">Not Started</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
                       </select>
                     </div>
-                    <p className="text-gray-400 mb-2">Privacy: {project.privacy}</p>
-                    <div className="progress-bar mt-4">
-                      <div
-                        className="progress-fill"
-                        style={{
-                          width: `${(project.tasksCompleted / project.totalTasks) * 100}%`,
-                        }}
-                      ></div>
-                    </div>
-                    <p className="text-gray-400 mt-2">
-                      {project.tasksCompleted}/{project.totalTasks} tasks completed
-                    </p>
-                    {project.tasksAssigned && (
-                      <p className="text-gray-400 mt-2">
-                        Assigned to: {project.assignedTo.join(', ')}
-                      </p>
-                    )}
-                    <button
-                      onClick={() => autoAssignTasks(project.id)}
-                      className="btn-primary mt-2 rounded-full"
-                    >
-                      Auto-Assign Tasks
-                    </button>
                     {project.announcements?.length > 0 && (
                       <div className="announcements mt-4">
-                        <h3 className="text-lg font-playfair text-primary mb-2">Announcements</h3>
-                        {project.announcements.map((ann) => (
+                        <h3 className="text-lg font-playfair text-primary mb-2">Recent Announcements</h3>
+                        {project.announcements.slice(-1).map((ann) => (
                           <div key={ann.id} className="announcement-item card p-3 mb-2">
                             <div className="flex items-center mb-2">
                               <img
@@ -390,7 +224,7 @@ const Projects = () => {
                         ))}
                       </div>
                     )}
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -423,7 +257,7 @@ const Projects = () => {
               </div>
             )}
 
-            <div className="notifications-section card p-6 mt-8">
+            <div className="notifications-section card p-6">
               <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
                 <Bell className="w-5 h-5 mr-2" /> Notifications
               </h2>
@@ -436,20 +270,6 @@ const Projects = () => {
                 ))
               ) : (
                 <p className="text-gray-400">No notifications yet.</p>
-              )}
-            </div>
-
-            <div className="team-activity-section card p-6 mt-8">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4">Team Activity</h2>
-              {teamActivity.length > 0 ? (
-                teamActivity.map((activity) => (
-                  <div key={activity.id} className="activity-item card p-2 mb-2">
-                    <p className="text-primary">{activity.user} {activity.action}</p>
-                    <p className="text-gray-400 text-sm">{new Date(activity.timestamp).toLocaleString()}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-400">No recent updates.</p>
               )}
             </div>
           </>

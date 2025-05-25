@@ -1,32 +1,48 @@
 .home-container {
-  padding: 40px;
-  text-align: center;
+  padding: 0;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+  background: #3C2F5D;
 }
 
-.holographic-text {
-  font-size: 48px;
-  font-weight: 600;
-  color: #fff;
-  text-shadow: 0 0 10px #ff6b6b, 0 0 20px #feca57;
-  animation: glow 2s ease-in-out infinite alternate;
+.hero-section {
+  background: linear-gradient(45deg, #0A1A2F, #3C2F5D);
+  border-bottom: 3px solid #26C6DA;
 }
 
-@keyframes glow {
-  from {
-    text-shadow: 0 0 10px #ff6b6b, 0 0 20px #feca57, 0 0 30px #ff6b6b;
-  }
-  to {
-    text-shadow: 0 0 20px #ff6b6b, 0 0 30px #feca57, 0 0 40px #ff6b6b;
-  }
+.project-card {
+  border-left: 3px solid #26C6DA;
 }
 
-.text-secondary {
-  font-size: 18px;
-  color: #ddd;
-  margin-top: 16px;
+.feed-item {
+  border-left: 3px solid #26C6DA;
+}
+
+.holographic-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.holographic-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 111, 97, 0.3), transparent);
+  animation: holographic 3s infinite;
+}
+
+@keyframes holographic {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+.sidebar {
+  background: rgba(138, 154, 91, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }

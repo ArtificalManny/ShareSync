@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
-import { Home, Folder, LogOut, User, Search, Bell, Settings } from 'lucide-react';
+import { Home, Folder, LogOut, Search, Bell, Settings } from 'lucide-react';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -21,21 +21,23 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-end h-16">
-          <div className="flex items-center space-x-4">
-            <Link to="/" className="text-2xl font-playfair text-accent-gold">
-              ShareSync
-            </Link>
-            <form onSubmit={handleSearch} className="flex items-center">
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-accent-teal" />
-                <input
-                  type="text"
-                  placeholder="Search projects, users..."
-                  className="input-field w-full pl-10 pr-4 py-2 rounded-full"
-                />
-              </div>
-            </form>
+        <div className="flex items-center justify-between h-12">
+          <Link to="/" className="text-xl font-playfair text-accent-gold">
+            ShareSync
+          </Link>
+          <div className="flex items-center space-x-3">
+            {isAuthenticated && (
+              <form onSubmit={handleSearch} className="flex items-center">
+                <div className="relative w-40">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-accent-teal" />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="input-field w-full pl-8 pr-2 py-1 text-sm rounded-full"
+                  />
+                </div>
+              </form>
+            )}
             {isAuthenticated ? (
               <>
                 <Link to="/" className="nav-link">
@@ -57,7 +59,7 @@ const Navbar = () => {
                 <div className="relative">
                   <Bell className="w-5 h-5 text-accent-teal cursor-pointer" />
                   {globalMetrics?.notifications > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-accent-coral text-primary text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-accent-coral text-primary text-xs rounded-full h-4 w-4 flex items-center justify-center">
                       {globalMetrics.notifications}
                     </span>
                   )}
@@ -68,11 +70,11 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <Link to="/login" className="nav-link">
-                  <User className="w-5 h-5 text-accent-teal" />
+                <Link to="/login" className="nav-link text-sm text-accent-teal hover:text-accent-coral">
+                  Log In
                 </Link>
-                <Link to="/register" className="nav-link">
-                  <User className="w-5 h-5 text-accent-teal" />
+                <Link to="/register" className="nav-link text-sm text-accent-teal hover:text-accent-coral">
+                  Sign Up
                 </Link>
               </>
             )}

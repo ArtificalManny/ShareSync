@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   color: #F5F6FA;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   transition: color 0.3s ease, transform 0.3s ease;
 }

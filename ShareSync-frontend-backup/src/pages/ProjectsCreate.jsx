@@ -1,11 +1,11 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { PlusCircle, UserPlus } from 'lucide-react';
+import { PlusCircle, UserPlus, CheckCircle } from 'lucide-react';
 import './ProjectsCreate.css';
 
 const ProjectsCreate = () => {
-  const { user, socket } = useContext(AuthContext);
+  const { user, socket, addProject } = useContext(AuthContext);
   const navigate = useNavigate();
   const [projectDetails, setProjectDetails] = useState({
     title: '',
@@ -16,6 +16,8 @@ const ProjectsCreate = () => {
   });
   const [members, setMembers] = useState([]);
   const [newMember, setNewMember] = useState({ email: '', role: 'member' });
+  const [addToProfile, setAddToProfile] = useState(true);
+  const [created, setCreated] = useState(false);
 
   const handleInputChange = (e) => {
     setProjectDetails({ ...projectDetails, [e.target.name]: e.target.value });
@@ -42,6 +44,13 @@ const ProjectsCreate = () => {
       members: members.map(m => ({ email: m.email, role: m.role, profilePicture: 'https://via.placeholder.com/150' })),
     };
     socket.emit('project-create', newProject);
+    if (addToProfile) {
+      addProject(newProject);
+    }
+    setCreated(true);
+  };
+
+  const goToProjects = () => {
     navigate('/projects');
   };
 
@@ -50,89 +59,110 @@ const ProjectsCreate = () => {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <h1 className="text-4xl font-playfair text-accent-gold mb-6 text-center">Create New Project</h1>
         <div className="card p-6">
-          <div className="space-y-4">
-            <input
-              type="text"
-              name="title"
-              value={projectDetails.title}
-              onChange={handleInputChange}
-              placeholder="Project Title"
-              className="input-field w-full rounded-full"
-            />
-            <textarea
-              name="description"
-              value={projectDetails.description}
-              onChange={handleInputChange}
-              placeholder="Project Description"
-              className="input-field w-full h-24"
-            />
-            <input
-              type="text"
-              name="category"
-              value={projectDetails.category}
-              onChange={handleInputChange}
-              placeholder="Category"
-              className="input-field w-full rounded-full"
-            />
-            <select
-              name="status"
-              value={projectDetails.status}
-              onChange={handleInputChange}
-              className="input-field w-full rounded-full"
-            >
-              <option value="Not Started">Not Started</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-            </select>
-            <div className="flex items-center gap-2">
-              <label className="text-primary">Privacy:</label>
-              <select
-                name="privacy"
-                value={projectDetails.privacy}
+          {created ? (
+            <div className="text-center">
+              <CheckCircle className="w-12 h-12 text-accent-teal mx-auto mb-4" />
+              <p className="text-primary text-lg mb-4">Project created successfully!</p>
+              <button onClick={goToProjects} className="btn-primary rounded-full">Go to Projects</button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <input
+                type="text"
+                name="title"
+                value={projectDetails.title}
                 onChange={handleInputChange}
-                className="input-field flex-1 rounded-full"
+                placeholder="Project Title"
+                className="input-field w-full rounded-full"
+              />
+              <textarea
+                name="description"
+                value={projectDetails.description}
+                onChange={handleInputChange}
+                placeholder="Project Description"
+                className="input-field w-full h-24"
+              />
+              <input
+                type="text"
+                name="category"
+                value={projectDetails.category}
+                onChange={handleInputChange}
+                placeholder="Category"
+                className="input-field w-full rounded-full"
+              />
+              <select
+                name="status"
+                value={projectDetails.status}
+                onChange={handleInputChange}
+                className="input-field w-full rounded-full"
               >
-                <option value="public">Public</option>
-                <option value="private">Private</option>
+                <option value="Not Started">Not Started</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
               </select>
-            </div>
-            <div className="members-section">
-              <h2 className="text-xl font-playfair text-accent-teal mb-2">Add Members</h2>
-              <div className="flex items-center gap-2 mb-2">
-                <input
-                  type="email"
-                  value={newMember.email}
-                  onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                  placeholder="Member email..."
-                  className="input-field flex-1 rounded-full"
-                />
+              <div className="flex items-center gap-2">
+                <label className="text-primary">Privacy:</label>
                 <select
-                  value={newMember.role}
-                  onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
-                  className="input-field rounded-full"
+                  name="privacy"
+                  value={projectDetails.privacy}
+                  onChange={handleInputChange}
+                  className="input-field flex-1 rounded-full"
                 >
-                  <option value="admin">Admin</option>
-                  <option value="member">Member</option>
-                  <option value="viewer">Viewer</option>
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
                 </select>
-                <button onClick={addMember} className="btn-primary rounded-full flex items-center">
-                  <UserPlus className="w-5 h-5 mr-2" /> Add
-                </button>
               </div>
-              {members.length > 0 && (
-                <ul className="space-y-2">
-                  {members.map((member, index) => (
-                    <li key={index} className="flex items-center gap-2 text-primary">
-                      <span>{member.email}</span> - <span className="text-accent-gold">{member.role}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <div className="members-section">
+                <h2 className="text-xl font-playfair text-accent-teal mb-2">Add Members</h2>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="email"
+                    value={newMember.email}
+                    onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                    placeholder="Member email..."
+                    className="input-field flex-1 rounded-full"
+                  />
+                  <select
+                    value={newMember.role}
+                    onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+                    className="input-field rounded-full"
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="member">Member</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                  <button onClick={addMember} className="btn-primary rounded-full flex items-center">
+                    <UserPlus className="w-5 h-5 mr-2" /> Add
+                  </button>
+                </div>
+                {members.length > 0 && (
+                  <ul className="space-y-2">
+                    {members.map((member, index) => (
+                      <li key={index} className="flex items-center gap-2 text-primary">
+                        <img
+                          src={member.profilePicture}
+                          alt={member.email}
+                          className="w-6 h-6 rounded-full"
+                        />
+                        <span>{member.email}</span> - <span className="text-accent-gold">{member.role}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <label className="flex items-center gap-2 text-primary">
+                <input
+                  type="checkbox"
+                  checked={addToProfile}
+                  onChange={(e) => setAddToProfile(e.target.checked)}
+                />
+                Add to my profile
+              </label>
+              <button onClick={createProject} className="btn-primary rounded-full flex items-center w-full justify-center mt-4">
+                <PlusCircle className="w-5 h-5 mr-2" /> Create Project
+              </button>
             </div>
-            <button onClick={createProject} className="btn-primary rounded-full flex items-center w-full justify-center mt-4">
-              <PlusCircle className="w-5 h-5 mr-2" /> Create Project
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </div>
