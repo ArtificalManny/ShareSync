@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { ThumbsUp, MessageSquare, Share2, Bell, Folder, PlusCircle, Users } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Share2, Bell, Folder, PlusCircle, Users, AlertCircle, List } from 'lucide-react';
 import './Home.css';
 
 const Home = () => {
@@ -97,7 +97,9 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="max-w-4xl mx-auto p-6 text-center">
-          <h2 className="text-3xl font-playfair text-accent-gold mb-4">Welcome to ShareSync!</h2>
+          <h2 className="text-3xl font-playfair text-accent-gold mb-4 flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 mr-2" /> Welcome to ShareSync!
+          </h2>
           <p className="text-gray-400 mb-6">Please log in to start collaborating on projects.</p>
           <Link to="/login">
             <button className="btn-primary">Log In</button>
@@ -133,7 +135,9 @@ const Home = () => {
               </h2>
               {userProjects.length === 0 ? (
                 <div className="text-center">
-                  <p className="text-gray-400 mb-4">You haven’t joined any projects yet.</p>
+                  <p className="text-gray-400 mb-4 flex items-center justify-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-accent-teal" /> You haven’t joined any projects yet.
+                  </p>
                   <Link to="/projects">
                     <p className="text-accent-teal hover:text-accent-coral transition-all">Explore projects to join!</p>
                   </Link>
@@ -145,7 +149,9 @@ const Home = () => {
                       <Folder className="w-8 h-8 text-accent-teal" />
                       <div className="flex-1">
                         <h3 className="text-lg font-playfair text-accent-gold">{proj.title}</h3>
-                        <p className="text-gray-400 text-sm">{proj.description || 'No description'}</p>
+                        <p className="text-gray-400 text-sm flex items-center gap-2">
+                          <List className="w-4 h-4 text-accent-teal" /> {proj.description || 'No description'}
+                        </p>
                       </div>
                     </Link>
                   ))}
@@ -155,12 +161,18 @@ const Home = () => {
 
             {/* Project Feed Section */}
             <div className="feed-section card p-6">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4">Project Feed</h2>
+              <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2" /> Project Feed
+              </h2>
               {userProjects.length === 0 ? (
-                <p className="text-gray-400 text-center">Join a project to see updates!</p>
+                <p className="text-gray-400 text-center flex items-center justify-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-accent-teal" /> Join a project to see updates!
+                </p>
               ) : !selectedProject ? (
                 <div className="text-center">
-                  <p className="text-gray-400 mb-4">Select a project to view its feed.</p>
+                  <p className="text-gray-400 mb-4 flex items-center justify-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-accent-teal" /> Select a project to view its feed.
+                  </p>
                   <select
                     value={selectedProject?.id || ''}
                     onChange={(e) => {
@@ -194,7 +206,9 @@ const Home = () => {
                     <button onClick={handlePost} className="btn-primary rounded-full">Post</button>
                   </div>
                   {projectFeed.length === 0 ? (
-                    <p className="text-gray-400 text-center">No updates yet. Be the first to post!</p>
+                    <p className="text-gray-400 text-center flex items-center justify-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-accent-teal" /> No updates yet. Be the first to post!
+                    </p>
                   ) : (
                     <div className="space-y-4">
                       {projectFeed.map((item) => (
@@ -252,7 +266,9 @@ const Home = () => {
                         </div>
                       ))
                     ) : (
-                      <p className="text-gray-400">No notifications yet.</p>
+                      <p className="text-gray-400 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-accent-teal" /> No notifications yet.
+                      </p>
                     )}
                   </div>
                 )}
@@ -272,7 +288,9 @@ const Home = () => {
                         <Folder className="w-5 h-5" />
                         <div>
                           <p className="font-semibold">{proj.title}</p>
-                          <p className="text-gray-400 text-sm">{proj.description}</p>
+                          <p className="text-gray-400 text-sm flex items-center gap-2">
+                            <List className="w-4 h-4 text-accent-teal" /> {proj.description}
+                          </p>
                         </div>
                       </button>
                     </li>

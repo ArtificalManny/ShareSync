@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
-import { Home, Folder, LogOut, Search, Bell, Settings } from 'lucide-react';
+import { Home, Folder, LogOut, Search, Bell, Settings, User } from 'lucide-react';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -25,10 +25,10 @@ const Navbar = () => {
           <Link to="/" className="text-xl font-playfair text-accent-gold">
             ShareSync
           </Link>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             {isAuthenticated && (
               <form onSubmit={handleSearch} className="flex items-center">
-                <div className="relative w-40">
+                <div className="relative w-32">
                   <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-accent-teal" />
                   <input
                     type="text"
@@ -39,14 +39,14 @@ const Navbar = () => {
               </form>
             )}
             {isAuthenticated ? (
-              <>
+              <div className="flex items-center space-x-2">
                 <Link to="/" className="nav-link">
                   <Home className="w-5 h-5 text-accent-teal" />
                 </Link>
                 <Link to="/projects" className="nav-link">
                   <Folder className="w-5 h-5 text-accent-teal" />
                 </Link>
-                <Link to={`/profile/${user?.username || 'johndoe'}`} className="nav-link flex items-center">
+                <Link to={`/profile/${user?.username || 'johndoe'}`} className="nav-link">
                   <img
                     src={user?.profilePicture || 'https://via.placeholder.com/150'}
                     alt="Profile"
@@ -56,7 +56,7 @@ const Navbar = () => {
                 <Link to="/settings" className="nav-link">
                   <Settings className="w-5 h-5 text-accent-teal" />
                 </Link>
-                <div className="relative">
+                <div className="relative nav-link">
                   <Bell className="w-5 h-5 text-accent-teal cursor-pointer" />
                   {globalMetrics?.notifications > 0 && (
                     <span className="absolute -top-1 -right-1 bg-accent-coral text-primary text-xs rounded-full h-4 w-4 flex items-center justify-center">
@@ -67,16 +67,16 @@ const Navbar = () => {
                 <button onClick={handleLogout} className="nav-link">
                   <LogOut className="w-5 h-5 text-accent-coral" />
                 </button>
-              </>
+              </div>
             ) : (
-              <>
-                <Link to="/login" className="nav-link text-sm text-accent-teal hover:text-accent-coral">
-                  Log In
+              <div className="flex items-center space-x-2">
+                <Link to="/login" className="nav-link flex items-center">
+                  <User className="w-5 h-5 text-accent-teal mr-1" /> Log In
                 </Link>
-                <Link to="/register" className="nav-link text-sm text-accent-teal hover:text-accent-coral">
-                  Sign Up
+                <Link to="/register" className="nav-link flex items-center">
+                  <User className="w-5 h-5 text-accent-teal mr-1" /> Sign Up
                 </Link>
-              </>
+              </div>
             )}
           </div>
         </div>

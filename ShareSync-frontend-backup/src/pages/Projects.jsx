@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, PlusCircle, ThumbsUp, MessageSquare, Bell, Users } from 'lucide-react';
+import { Folder, PlusCircle, ThumbsUp, MessageSquare, Bell, Users, AlertCircle, List } from 'lucide-react';
 import './Projects.css';
 
 const Projects = () => {
@@ -119,7 +119,9 @@ const Projects = () => {
   return (
     <div className="projects-container">
       <div className="projects-header bg-glass py-8 px-6 rounded-b-3xl text-center">
-        <h1 className="text-4xl font-playfair text-accent-gold mb-4">Your Projects</h1>
+        <h1 className="text-4xl font-playfair text-accent-gold mb-4 flex items-center justify-center">
+          <Folder className="w-6 h-6 mr-2" /> Your Projects
+        </h1>
         <Link to="/projects/create">
           <button className="btn-primary flex items-center mx-auto">
             <PlusCircle className="w-5 h-5 mr-2" /> Create New Project
@@ -130,7 +132,9 @@ const Projects = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {projects.length === 0 ? (
           <div className="text-center">
-            <p className="text-gray-400 mb-4">You haven’t joined any projects yet.</p>
+            <p className="text-gray-400 mb-4 flex items-center justify-center gap-2">
+              <AlertCircle className="w-5 h-5 text-accent-teal" /> You haven’t joined any projects yet.
+            </p>
             <Link to="/"><p className="text-accent-teal hover:text-accent-coral transition-all">Go to Home to join a project!</p></Link>
           </div>
         ) : (
@@ -154,7 +158,9 @@ const Projects = () => {
                         Post Announcement
                       </button>
                     </div>
-                    <p className="text-gray-400 mb-2">{project.description || 'No description'}</p>
+                    <p className="text-gray-400 mb-2 flex items-center gap-2">
+                      <List className="w-4 h-4 text-accent-teal" /> {project.description || 'No description'}
+                    </p>
                     <div className="flex items-center gap-2">
                       <div className="relative flex">
                         {project.members.slice(0, 3).map((member, index) => (
@@ -172,7 +178,8 @@ const Projects = () => {
                           </span>
                         )}
                       </div>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-gray-400 text-sm flex items-center gap-2">
+                        <Users className="w-4 h-4 text-accent-teal" />
                         {project.members.slice(0, 2).map(m => m.email.split('@')[0]).join(', ')}
                         {project.members.length > 2 ? `, and ${project.members.length - 2} more` : ''}
                       </p>
@@ -195,7 +202,9 @@ const Projects = () => {
                     </div>
                     {project.announcements?.length > 0 && (
                       <div className="announcements mt-4">
-                        <h3 className="text-lg font-playfair text-primary mb-2">Recent Announcements</h3>
+                        <h3 className="text-lg font-playfair text-primary mb-2 flex items-center">
+                          <Bell className="w-4 h-4 text-accent-teal mr-2" /> Recent Announcements
+                        </h3>
                         {project.announcements.slice(-1).map((ann) => (
                           <div key={ann.id} className="announcement-item card p-3 mb-2">
                             <div className="flex items-center mb-2">
@@ -232,7 +241,9 @@ const Projects = () => {
             {selectedProjectId && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="card p-6 w-full max-w-md">
-                  <h2 className="text-xl font-playfair text-accent-teal mb-4">Post Announcement</h2>
+                  <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
+                    <Bell className="w-5 h-5 mr-2" /> Post Announcement
+                  </h2>
                   <textarea
                     value={newAnnouncement}
                     onChange={(e) => setNewAnnouncement(e.target.value)}
@@ -269,7 +280,9 @@ const Projects = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-400">No notifications yet.</p>
+                <p className="text-gray-400 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-accent-teal" /> No notifications yet.
+                </p>
               )}
             </div>
           </>

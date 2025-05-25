@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Edit, Camera, PlusCircle, Folder } from 'lucide-react';
+import { Edit, Camera, PlusCircle, Folder, Mail as MailIcon, User as UserIcon } from 'lucide-react';
 import './Profile.css';
 
 const Profile = () => {
@@ -14,20 +14,30 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({});
   const [bannerImage, setBannerImage] = useState('https://via.placeholder.com/1200x300');
-  const [profileImage, setProfileImage] = useState(user?.profilePicture || 'https://via.placeholder.com/150');
+  const [profileImage, setProfileImage] = useState('https://via.placeholder.com/150');
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        if (!username) throw new Error('Username is missing');
+        if (!isAuthenticated || !user) {
+          throw new Error('User not authenticated');
+        }
+        if (!username) {
+          throw new Error('Username is missing');
+        }
         console.log('Profile - Fetching profile for:', username);
-        setProfile({
-          username: user?.username || 'johndoe',
-          firstName: user?.firstName || 'John',
-          lastName: user?.lastName || 'Doe',
-          email: user?.email || 'johndoe@example.com',
-          projects: user?.projects || [],
-        });
+        if (user.username !== username) {
+          throw new Error('You can only view your own profile');
+        }
+        const userProfile = {
+          username: user.username || 'johndoe',
+          firstName: user.firstName || 'John',
+          lastName: user.lastName || 'Doe',
+          email: user.email || 'johndoe@example.com',
+          projects: user.projects || [],
+        };
+        setProfile(userProfile);
+        setProfileImage(user.profilePicture || 'https://via.placeholder.com/150');
       } catch (err) {
         console.error('Profile - Error fetching profile:', err.message, err.stack);
         setError('Failed to load profile: ' + err.message);
@@ -36,11 +46,7 @@ const Profile = () => {
       }
     };
 
-    if (isAuthenticated) {
-      fetchProfile();
-    } else {
-      navigate('/login', { replace: true });
-    }
+    fetchProfile();
   }, [username, navigate, isAuthenticated, user]);
 
   const handleEdit = () => {
@@ -86,10 +92,10 @@ const Profile = () => {
 
   if (loading) return <div className="profile-container"><p className="text-gray-400">Loading...</p></div>;
 
-  if (error) {
+  if (error || !profile) {
     return (
       <div className="profile-container">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500">{error || 'Profile not found'}</p>
         {error.includes('token') && (
           <p className="text-gray-400">
             Please <Link to="/login" className="text-accent-teal hover:underline">log in</Link> to view this profile.
@@ -98,8 +104,6 @@ const Profile = () => {
       </div>
     );
   }
-
-  if (!profile) return <div className="profile-container"><p className="text-gray-400">Profile not found.</p></div>;
 
   const isOwnProfile = user?.username === username;
 
@@ -165,29 +169,40 @@ const Profile = () => {
 
         {isEditing ? (
           <div className="card p-6 mb-6">
-            <h2 className="text-2xl font-playfair text-accent-teal mb-4">Edit Profile</h2>
+            <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+              <Edit className="w-5 h-5 mr-2" /> Edit Profile
+            </h2>
             <div className="space-y-4">
-              <input
-                type="text"
-                value={editedProfile.firstName}
-                onChange={(e) => setEditedProfile({ ...editedProfile, firstName: e.target.value })}
-                placeholder="First Name"
-                className="input-field w-full rounded-full"
-              />
-              <input
-                type="text"
-                value={editedProfile.lastName}
-                onChange={(e) => setEditedProfile({ ...editedProfile, lastName: e.target.value })}
-                placeholder="Last Name"
-                className="input-field w-full rounded-full"
-              />
-              <input
-                type="email"
-                value={editedProfile.email}
-                onChange={(e) => setEditedProfile({ ...editedProfile, email: e.target.value })}
-                placeholder="Email"
-                className="input-field w-full rounded-full"
-              />
+              <div className="flex items-center gap-2">
+                <UserIcon className="w-5 h-5 text-accent-teal" />
+                <input
+                  type="text"
+                  value={editedProfile.firstName}
+                  onChange={(e) => setEditedProfile({ ...editedProfile, firstName: e.target.value })}
+                  placeholder="First Name"
+                  className="input-field w-full rounded-full"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <UserIcon className="w-5 h-5 text-accent-teal" />
+                <input
+                  type="text"
+                  value={editedProfile.lastName}
+                  onChange={(e) => setEditedProfile({ ...editedProfile, lastName: e.target.value })}
+                  placeholder="Last Name"
+                  className="input-field w-full rounded-full"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <MailIcon className="w-5 h-5 text-accent-teal" />
+                <input
+                  type="email"
+                  value={editedProfile.email}
+                  onChange={(e) => setEditedProfile({ ...editedProfile, email: e.target.value })}
+                  placeholder="Email"
+                  className="input-field w-full rounded-full"
+                />
+              </div>
               <div className="flex gap-4">
                 <button onClick={handleSave} className="btn-primary rounded-full flex-1">Save</button>
                 <button onClick={() => setIsEditing(false)} className="btn-primary bg-gray-700 rounded-full flex-1">Cancel</button>
@@ -196,9 +211,15 @@ const Profile = () => {
           </div>
         ) : (
           <div className="card p-6 mb-6">
-            <h2 className="text-2xl font-playfair text-accent-teal mb-4">About</h2>
-            <p className="text-primary">Username: <span className="text-accent-gold">{profile.username}</span></p>
-            <p className="text-primary">Email: <span className="text-accent-gold">{profile.email}</span></p>
+            <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+              <UserIcon className="w-5 h-5 mr-2" /> About
+            </h2>
+            <p className="text-primary flex items-center gap-2">
+              <UserIcon className="w-4 h-4 text-accent-teal" /> Username: <span className="text-accent-gold">{profile.username}</span>
+            </p>
+            <p className="text-primary flex items-center gap-2 mt-2">
+              <MailIcon className="w-4 h-4 text-accent-teal" /> Email: <span className="text-accent-gold">{profile.email}</span>
+            </p>
           </div>
         )}
 

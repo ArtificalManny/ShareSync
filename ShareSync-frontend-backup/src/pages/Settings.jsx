@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../AuthContext';
-import { User, Mail, Smartphone, Eye, EyeOff, Palette, Lock } from 'lucide-react';
+import { User, Mail, Smartphone, Eye, EyeOff, Palette, Lock, Bell } from 'lucide-react';
 import './Settings.css';
 
 const Settings = () => {
@@ -38,7 +38,9 @@ const Settings = () => {
   return (
     <div className="settings-container">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <h1 className="text-4xl font-playfair text-accent-gold mb-6 text-center">Settings</h1>
+        <h1 className="text-4xl font-playfair text-accent-gold mb-6 text-center flex items-center justify-center">
+          <Settings className="w-6 h-6 mr-2" /> Settings
+        </h1>
         <div className="card p-6">
           <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
             <User className="w-5 h-5 mr-2" /> Profile Settings
@@ -60,7 +62,7 @@ const Settings = () => {
           </div>
 
           <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-            <Mail className="w-5 h-5 mr-2" /> Notification Preferences
+            <Bell className="w-5 h-5 mr-2" /> Notification Preferences
           </h2>
           <div className="space-y-4 mb-6">
             <label className="flex items-center gap-2">

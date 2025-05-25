@@ -1,47 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { CheckCircle, MessageSquare, ThumbsUp, Share2, Award, ChevronDown, PlusCircle, FileText, Settings, Users, Filter, Image as ImageIcon, Vote, Edit, Mail, Smartphone, UserPlus, Calendar, Eye } from 'lucide-react';
+import { CheckCircle, MessageSquare, ThumbsUp, Share2, Award, ChevronDown, PlusCircle, FileText, Settings, Users, Filter, Image as ImageIcon, Vote, Edit, Mail, Smartphone, UserPlus, Calendar, Eye, BarChart, List, File, MessageCircle } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import Chart from 'chart.js/auto';
 import './ProjectHome.css';
-
-const mockProject = {
-  id: '1',
-  title: 'Project Alpha',
-  description: 'A revolutionary project to change the world.',
-  category: 'Job',
-  status: 'In Progress',
-  privacy: 'private',
-  tasksCompleted: 5,
-  totalTasks: 10,
-  comments: [],
-  posts: [],
-  achievements: [
-    { id: 'a1', name: 'Task Master', description: 'Completed 5 tasks', earned: true },
-    { id: 'a2', name: 'On-Time Hero', description: 'Completed a task on time', earned: false },
-  ],
-  teams: [
-    { id: 't1', name: 'Design Team', description: 'Working on UI/UX', members: [
-      { email: 'alice@example.com', role: 'member', profilePicture: 'https://via.placeholder.com/150' },
-      { email: 'bob@example.com', role: 'member', profilePicture: 'https://via.placeholder.com/150' },
-    ]},
-    { id: 't2', name: 'Dev Team', description: 'Backend development', members: [
-      { email: 'charlie@example.com', role: 'admin', profilePicture: 'https://via.placeholder.com/150' },
-      { email: 'dave@example.com', role: 'viewer', profilePicture: 'https://via.placeholder.com/150' },
-    ]},
-  ],
-  files: [],
-  tasks: [],
-  activityLog: [],
-  admin: 'user@example.com',
-  members: [
-    { email: 'alice@example.com', role: 'member', profilePicture: 'https://via.placeholder.com/150' },
-    { email: 'bob@example.com', role: 'member', profilePicture: 'https://via.placeholder.com/150' },
-    { email: 'charlie@example.com', role: 'admin', profilePicture: 'https://via.placeholder.com/150' },
-    { email: 'dave@example.com', role: 'viewer', profilePicture: 'https://via.placeholder.com/150' },
-  ],
-};
 
 const chartOptions = {
   responsive: true,
@@ -112,21 +75,32 @@ const ProjectHome = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
+        if (!isAuthenticated || !user) {
+          throw new Error('User not authenticated');
+        }
         if (!id) throw new Error('Project ID is missing');
-        console.log('ProjectHome - Fetching project');
+        console.log('ProjectHome - Fetching project with ID:', id);
+        const projectData = user.projects?.find((proj) => proj.id === id);
+        if (!projectData) {
+          throw new Error('Project not found');
+        }
         const updatedProject = {
-          ...mockProject,
-          id,
-          posts: [],
-          comments: [],
-          activityLog: [],
-          files: [],
-          tasks: [],
+          ...projectData,
+          posts: projectData.posts || [],
+          comments: projectData.comments || [],
+          activityLog: projectData.activityLog || [],
+          files: projectData.files || [],
+          tasks: projectData.tasks || [],
+          teams: projectData.teams || [],
+          achievements: projectData.achievements || [
+            { id: 'a1', name: 'Task Master', description: 'Completed 5 tasks', earned: projectData.tasksCompleted >= 5 },
+            { id: 'a2', name: 'On-Time Hero', description: 'Completed a task on time', earned: false },
+          ],
         };
         setProject(updatedProject);
         setComments(updatedProject.comments || []);
-        setIsAdmin(user?.email === updatedProject.admin || updatedProject.members.some(m => m.email === user?.email && m.role === 'admin'));
-        if (updatedProject.privacy === 'private' && !isAdmin && !updatedProject.members.some(m => m.email === user?.email)) {
+        setIsAdmin(user.email === updatedProject.admin || updatedProject.members.some(m => m.email === user.email && m.role === 'admin'));
+        if (updatedProject.privacy === 'private' && !isAdmin && !updatedProject.members.some(m => m.email === user.email)) {
           throw new Error('You do not have access to this project.');
         }
       } catch (err) {
@@ -143,56 +117,68 @@ const ProjectHome = () => {
       setSuggestedDeadline(deadline.toISOString().split('T')[0]);
     };
 
-    if (socket) {
-      socket.on('message', (message) => {
-        if (message.projectId === id) {
-          setMessages((prev) => [...prev, message]);
-          setProject((prev) => ({
-            ...prev,
-            activityLog: [...(prev.activityLog || []), {
-              id: `act-${Date.now()}`,
-              user: message.user,
-              action: 'Sent a message in chat',
-              timestamp: new Date().toISOString(),
-            }],
-          }));
-          notifyUsers(`${message.user} sent a message in chat`);
-        }
-      });
+    if (isAuthenticated && user) {
+      fetchProject();
+      predictDeadline();
+    } else {
+      navigate('/login', { replace: true });
+    }
+  }, [id, isAuthenticated, navigate, user]);
 
-      socket.on('comment', (comment) => {
-        if (comment.projectId === id) {
-          setComments((prev) => [...prev, comment]);
-          setProject((prev) => ({
-            ...prev,
-            activityLog: [...(prev.activityLog || []), {
-              id: `act-${Date.now()}`,
-              user: comment.user,
-              action: 'Posted a comment',
-              timestamp: new Date().toISOString(),
-            }],
-          }));
-          notifyUsers(`${comment.user} posted a comment`);
-        }
-      });
+  useEffect(() => {
+    if (!socket || !project) return;
 
-      socket.on('post', (post) => {
-        if (post.projectId === id) {
-          setProject((prev) => ({
-            ...prev,
-            posts: [...(prev.posts || []), post],
-            activityLog: [...(prev.activityLog || []), {
-              id: `act-${Date.now()}`,
-              user: post.user,
-              action: `Posted a ${post.type}`,
-              timestamp: new Date().toISOString(),
-            }],
-          }));
-          notifyUsers(`${post.user} posted a ${post.type}`);
-        }
-      });
+    socket.on('message', (message) => {
+      if (message.projectId === id) {
+        setMessages((prev) => [...prev, message]);
+        setProject((prev) => ({
+          ...prev,
+          activityLog: [...(prev.activityLog || []), {
+            id: `act-${Date.now()}`,
+            user: message.user,
+            action: 'Sent a message in chat',
+            timestamp: new Date().toISOString(),
+          }],
+        }));
+        notifyUsers(`${message.user} sent a message in chat`);
+      }
+    });
 
-      socket.on('metric-update', (update) => {
+    socket.on('comment', (comment) => {
+      if (comment.projectId === id) {
+        setComments((prev) => [...prev, comment]);
+        setProject((prev) => ({
+          ...prev,
+          comments: [...(prev.comments || []), comment],
+          activityLog: [...(prev.activityLog || []), {
+            id: `act-${Date.now()}`,
+            user: comment.user,
+            action: 'Posted a comment',
+            timestamp: new Date().toISOString(),
+          }],
+        }));
+        notifyUsers(`${comment.user} posted a comment`);
+      }
+    });
+
+    socket.on('post', (post) => {
+      if (post.projectId === id) {
+        setProject((prev) => ({
+          ...prev,
+          posts: [...(prev.posts || []), post],
+          activityLog: [...(prev.activityLog || []), {
+            id: `act-${Date.now()}`,
+            user: post.user,
+            action: `Posted a ${post.type}`,
+            timestamp: new Date().toISOString(),
+          }],
+        }));
+        notifyUsers(`${post.user} posted a ${post.type}`);
+      }
+    });
+
+    socket.on('metric-update', (update) => {
+      if (update.projectId === id) {
         setProject((prev) => ({
           ...prev,
           tasksCompleted: update.tasksCompleted || prev.tasksCompleted,
@@ -205,9 +191,11 @@ const ProjectHome = () => {
           }],
         }));
         notifyUsers(`${update.user || 'System'} updated project metrics`);
-      });
+      }
+    });
 
-      socket.on('task-update', (task) => {
+    socket.on('task-update', (task) => {
+      if (task.projectId === id) {
         setProject((prev) => ({
           ...prev,
           tasks: prev.tasks.map(t => t.id === task.id ? task : t),
@@ -219,9 +207,11 @@ const ProjectHome = () => {
           }],
         }));
         notifyUsers(`${task.updatedBy} updated task: ${task.title}`);
-      });
+      }
+    });
 
-      socket.on('file-update', (file) => {
+    socket.on('file-update', (file) => {
+      if (file.projectId === id) {
         setProject((prev) => ({
           ...prev,
           files: [...(prev.files || []), file],
@@ -233,41 +223,32 @@ const ProjectHome = () => {
           }],
         }));
         notifyUsers(`${file.uploadedBy} uploaded file: ${file.name}`);
-      });
+      }
+    });
 
-      socket.on('member-update', (updatedMembers) => {
-        setProject((prev) => ({
-          ...prev,
-          members: updatedMembers,
-          activityLog: [...(prev.activityLog || []), {
-            id: `act-${Date.now()}`,
-            user: user?.email || 'System',
-            action: 'Updated project members',
-            timestamp: new Date().toISOString(),
-          }],
-        }));
-      });
-    }
-
-    if (isAuthenticated) {
-      fetchProject();
-      predictDeadline();
-    } else {
-      navigate('/login', { replace: true });
-    }
+    socket.on('member-update', (updatedMembers) => {
+      setProject((prev) => ({
+        ...prev,
+        members: updatedMembers,
+        activityLog: [...(prev.activityLog || []), {
+          id: `act-${Date.now()}`,
+          user: user?.email || 'System',
+          action: 'Updated project members',
+          timestamp: new Date().toISOString(),
+        }],
+      }));
+    });
 
     return () => {
-      if (socket) {
-        socket.off('message');
-        socket.off('comment');
-        socket.off('post');
-        socket.off('metric-update');
-        socket.off('task-update');
-        socket.off('file-update');
-        socket.off('member-update');
-      }
+      socket.off('message');
+      socket.off('comment');
+      socket.off('post');
+      socket.off('metric-update');
+      socket.off('task-update');
+      socket.off('file-update');
+      socket.off('member-update');
     };
-  }, [id, isAuthenticated, navigate, socket, user]);
+  }, [socket, project, id, user, navigate]);
 
   const sendMessage = () => {
     if (!newMessage || !socket) return;
@@ -425,8 +406,7 @@ const ProjectHome = () => {
         timestamp: new Date().toISOString(),
       }],
     }));
-    socket.emit('task-update', { ...task, updatedBy: user.email });
-    setNewTask({ title: '', description: '', assignedTo: [], subtasks: [] });
+    socket.emit('task-update', { ...task, updatedBy: user.email, projectId: id });
   };
 
   const completeTask = (taskId) => {
@@ -458,7 +438,7 @@ const ProjectHome = () => {
       uploadedBy: user.email,
       timestamp: new Date().toISOString(),
     };
-    socket.emit('file-update', file);
+    socket.emit('file-update', { ...file, projectId: id });
     setNewFile(null);
   };
 
@@ -556,10 +536,10 @@ const ProjectHome = () => {
 
   if (loading) return <div className="project-home-container"><p className="text-gray-400">Loading...</p></div>;
 
-  if (error) {
+  if (error || !project) {
     return (
       <div className="project-home-container">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500">{error || 'Project not found'}</p>
         {error.includes('token') && (
           <p className="text-gray-400">
             Please <Link to="/login" className="text-accent-teal hover:underline">log in</Link> to view this project.
@@ -569,8 +549,6 @@ const ProjectHome = () => {
       </div>
     );
   }
-
-  if (!project) return <div className="project-home-container"><p className="text-gray-400">Project not found.</p></div>;
 
   const statusProgress = project.status === 'Completed' ? 100 : project.status === 'In Progress' ? 50 : 0;
 
@@ -598,7 +576,7 @@ const ProjectHome = () => {
   const allMembers = [
     { email: project.admin, role: 'admin', profilePicture: 'https://via.placeholder.com/150' },
     ...project.members,
-    ...project.teams.flatMap(team => team.members),
+    ...(project.teams?.flatMap(team => team.members) || []),
   ].reduce((unique, member) => {
     return unique.some(m => m.email === member.email) ? unique : [...unique, member];
   }, []);
@@ -694,7 +672,9 @@ const ProjectHome = () => {
             {activeTab === 'overview' && (
               <div className="project-overview card p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-playfair text-accent-teal">Project Overview</h2>
+                  <h2 className="text-2xl font-playfair text-accent-teal flex items-center">
+                    <BarChart className="w-5 h-5 mr-2" /> Project Overview
+                  </h2>
                   <button onClick={() => setShowDetails(!showDetails)} className="text-accent-teal hover:text-accent-coral">
                     <ChevronDown className={`w-6 h-6 transform transition-transform ${showDetails ? 'rotate-180' : ''}`} />
                   </button>
@@ -713,11 +693,15 @@ const ProjectHome = () => {
                           <div className="progress-fill" style={{ width: `${statusProgress}%` }}></div>
                         </div>
                       </div>
-                      <p className="text-primary">Category: <span className="text-accent-gold">{project.category}</span></p>
-                      <p className="text-primary">
-                        Progress: <span className="text-accent-gold">{project.tasksCompleted}/{project.totalTasks} tasks</span>
+                      <p className="text-primary flex items-center gap-2">
+                        <List className="w-4 h-4 text-accent-teal" /> Category: <span className="text-accent-gold">{project.category}</span>
                       </p>
-                      <p className="text-primary">Privacy: <span className="text-accent-gold">{project.privacy}</span></p>
+                      <p className="text-primary flex items-center gap-2">
+                        <BarChart className="w-4 h-4 text-accent-teal" /> Progress: <span className="text-accent-gold">{project.tasksCompleted}/{project.totalTasks} tasks</span>
+                      </p>
+                      <p className="text-primary flex items-center gap-2">
+                        <Eye className="w-4 h-4 text-accent-teal" /> Privacy: <span className="text-accent-gold">{project.privacy}</span>
+                      </p>
                     </div>
                   </div>
                 )}
@@ -726,11 +710,13 @@ const ProjectHome = () => {
 
             {activeTab === 'feed' && (
               <div className="social-feed card p-6">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4">Project Feed</h2>
+                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                  <MessageSquare className="w-5 h-5 mr-2" /> Project Feed
+                </h2>
                 <div className="post-input card p-4 mb-4">
                   <div className="flex items-center mb-2">
                     <img
-                      src={user?.profilePicture}
+                      src={user?.profilePicture || 'https://via.placeholder.com/150'}
                       alt="User"
                       className="w-8 h-8 rounded-full mr-2 object-cover"
                     />
@@ -807,7 +793,7 @@ const ProjectHome = () => {
                     <div key={post.id} className="post-item card p-4 mb-4 holographic-effect">
                       <div className="flex items-center mb-2">
                         <img
-                          src={post.profilePicture}
+                          src={post.profilePicture || 'https://via.placeholder.com/150'}
                           alt="User"
                           className="w-8 h-8 rounded-full mr-2 object-cover"
                         />
@@ -859,7 +845,9 @@ const ProjectHome = () => {
 
             {activeTab === 'comments' && (
               <div className="comments-section card p-6">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4">Comments</h2>
+                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                  <MessageSquare className="w-5 h-5 mr-2" /> Comments
+                </h2>
                 <div className="comments-list">
                   {comments.length === 0 ? (
                     <p className="text-gray-400 text-center">No comments yet. Start the conversation!</p>
@@ -944,10 +932,14 @@ const ProjectHome = () => {
 
             {activeTab === 'tasks' && (
               <div className="tasks-section card p-6">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4">Tasks</h2>
+                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                  <List className="w-5 h-5 mr-2" /> Tasks
+                </h2>
                 {isAdmin && (
                   <div className="task-input card p-4 mb-4">
-                    <h3 className="text-lg font-playfair text-primary mb-2">Create Task</h3>
+                    <h3 className="text-lg font-playfair text-primary mb-2 flex items-center">
+                      <PlusCircle className="w-5 h-5 mr-2 text-accent-teal" /> Create Task
+                    </h3>
                     <div className="flex items-center mb-2">
                       <img
                         src={user?.profilePicture || 'https://via.placeholder.com/150'}
@@ -972,11 +964,13 @@ const ProjectHome = () => {
                       type="text"
                       value={newTask.assignedTo.join(', ')}
                       onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value.split(',').map(s => s.trim()) })}
-                      placeholder="Assigned to (comma-separated)..."
+                      placeholder="Assigned to (comma-separated emails)..."
                       className="input-field w-full mb-2"
                     />
                     {suggestedDeadline && (
-                      <p className="text-gray-400 mb-2">AI Suggested Deadline: {suggestedDeadline}</p>
+                      <p className="text-gray-400 mb-2 flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-accent-teal" /> AI Suggested Deadline: {suggestedDeadline}
+                      </p>
                     )}
                     {newTask.subtasks.map((sub, idx) => (
                       <input
@@ -1008,12 +1002,20 @@ const ProjectHome = () => {
                     <div key={task.id} className="task-item card p-4 mb-4">
                       <h3 className="text-lg font-playfair text-accent-gold">{task.title}</h3>
                       <p className="text-gray-400">{task.description}</p>
-                      <p className="text-gray-400">Assigned to: {task.assignedTo.join(', ')}</p>
-                      <p className="text-gray-400">Due Date: {task.dueDate}</p>
-                      <p className="text-accent-teal">Status: {task.status}</p>
+                      <p className="text-gray-400 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-accent-teal" /> Assigned to: {task.assignedTo.join(', ')}
+                      </p>
+                      <p className="text-gray-400 flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-accent-teal" /> Due Date: {task.dueDate}
+                      </p>
+                      <p className="text-accent-teal flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" /> Status: {task.status}
+                      </p>
                       {task.subtasks?.length > 0 && (
                         <div className="subtasks mt-2">
-                          <h4 className="text-primary">Subtasks:</h4>
+                          <h4 className="text-primary flex items-center gap-2">
+                            <List className="w-4 h-4 text-accent-teal" /> Subtasks:
+                          </h4>
                           {task.subtasks.map((sub) => (
                             <div key={sub.id} className="flex items-center gap-2">
                               <input
@@ -1055,7 +1057,9 @@ const ProjectHome = () => {
 
             {activeTab === 'files' && (
               <div className="files-section card p-6">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4">Files</h2>
+                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                  <File className="w-5 h-5 mr-2" /> Files
+                </h2>
                 {isAdmin ? (
                   <div className="file-input card p-4 mb-4">
                     <div className="flex items-center mb-2">
@@ -1074,7 +1078,9 @@ const ProjectHome = () => {
                       </label>
                     </div>
                     {newFile && (
-                      <p className="text-gray-400 mb-2">Selected: {newFile.name}</p>
+                      <p className="text-gray-400 mb-2 flex items-center gap-2">
+                        <File className="w-4 h-4 text-accent-teal" /> Selected: {newFile.name}
+                      </p>
                     )}
                     <button onClick={uploadFile} className="btn-primary rounded-full">Upload</button>
                   </div>
@@ -1102,7 +1108,7 @@ const ProjectHome = () => {
                 ) : (
                   project.files.map((file) => (
                     <div key={file.id} className="file-item card p-2 mb-2 flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-accent-teal" />
+                      <File className="w-5 h-5 text-accent-teal" />
                       <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                         {file.name}
                       </a>
@@ -1167,7 +1173,7 @@ const ProjectHome = () => {
             {activeTab === 'chat' && (
               <div className="chat-section card p-6">
                 <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                  <MessageSquare className="w-5 h-5 mr-2" /> Project Chat
+                  <MessageCircle className="w-5 h-5 mr-2" /> Project Chat
                 </h2>
                 <div className="messages bg-accent-sage p-4 rounded-lg h-64 overflow-y-auto">
                   {messages.length === 0 ? (
@@ -1263,7 +1269,9 @@ const ProjectHome = () => {
       {showSettings && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-full max-w-md">
-            <h2 className="text-xl font-playfair text-accent-teal mb-4">Project Settings</h2>
+            <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
+              <Settings className="w-5 h-5 mr-2" /> Project Settings
+            </h2>
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Eye className="w-5 h-5 text-accent-teal" />
@@ -1277,7 +1285,9 @@ const ProjectHome = () => {
                   <option value="private">Private</option>
                 </select>
               </div>
-              <h3 className="text-lg font-playfair text-accent-teal mt-4">Manage Members</h3>
+              <h3 className="text-lg font-playfair text-accent-teal mt-4 flex items-center">
+                <Users className="w-5 h-5 mr-2" /> Manage Members
+              </h3>
               {project.members.map((member, index) => (
                 <div key={index} className="flex items-center gap-2 mb-2">
                   <img
@@ -1303,7 +1313,9 @@ const ProjectHome = () => {
                   </select>
                 </div>
               ))}
-              <h3 className="text-lg font-playfair text-accent-teal mt-4">Notification Preferences</h3>
+              <h3 className="text-lg font-playfair text-accent-teal mt-4 flex items-center">
+                <Bell className="w-5 h-5 mr-2" /> Notification Preferences
+              </h3>
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -1359,35 +1371,39 @@ const ProjectHome = () => {
       {showTeamModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-full max-w-md">
-            <h2 className="text-xl font-playfair text-accent-teal mb-4">Create Team</h2>
-            <input
-              type="text"
-              value={newTeam.name}
-              onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-              placeholder="Team name..."
-              className="input-field w-full mb-2"
-            />
-            <textarea
-              value={newTeam.description}
-              onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
-              placeholder="Team description..."
-              className="input-field w-full mb-2 h-16"
-            />
-            <input
-              type="text"
-              value={newTeam.members.join(', ')}
-              onChange={(e) => setNewTeam({ ...newTeam, members: e.target.value.split(',').map(s => s.trim()) })}
-              placeholder="Members (comma-separated emails)..."
-              className="input-field w-full mb-2"
-            />
-            <div className="flex gap-4">
-              <button onClick={addTeam} className="btn-primary rounded-full flex-1">Create</button>
-              <button
-                onClick={() => setShowTeamModal(false)}
-                className="btn-primary bg-gray-700 rounded-full flex-1"
-              >
-                Cancel
-              </button>
+            <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2" /> Create Team
+            </h2>
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={newTeam.name}
+                onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                placeholder="Team name..."
+                className="input-field w-full"
+              />
+              <textarea
+                value={newTeam.description}
+                onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
+                placeholder="Team description..."
+                className="input-field w-full h-16"
+              />
+              <input
+                type="text"
+                value={newTeam.members.join(', ')}
+                onChange={(e) => setNewTeam({ ...newTeam, members: e.target.value.split(',').map(s => s.trim()) })}
+                placeholder="Members (comma-separated emails)..."
+                className="input-field w-full"
+              />
+              <div className="flex gap-4">
+                <button onClick={addTeam} className="btn-primary rounded-full flex-1">Create</button>
+                <button
+                  onClick={() => setShowTeamModal(false)}
+                  className="btn-primary bg-gray-700 rounded-full flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1397,22 +1413,26 @@ const ProjectHome = () => {
       {showInviteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-full max-w-md">
-            <h2 className="text-xl font-playfair text-accent-teal mb-4">Invite to Project</h2>
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="Enter email to invite..."
-              className="input-field w-full mb-4"
-            />
-            <div className="flex gap-4">
-              <button onClick={inviteUser} className="btn-primary rounded-full flex-1">Invite</button>
-              <button
-                onClick={() => setShowInviteModal(false)}
-                className="btn-primary bg-gray-700 rounded-full flex-1"
-              >
-                Cancel
-              </button>
+            <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
+              <UserPlus className="w-5 h-5 mr-2" /> Invite to Project
+            </h2>
+            <div className="space-y-4">
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="Enter email to invite..."
+                className="input-field w-full"
+              />
+              <div className="flex gap-4">
+                <button onClick={inviteUser} className="btn-primary rounded-full flex-1">Invite</button>
+                <button
+                  onClick={() => setShowInviteModal(false)}
+                  className="btn-primary bg-gray-700 rounded-full flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1422,23 +1442,27 @@ const ProjectHome = () => {
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-full max-w-md">
-            <h2 className="text-xl font-playfair text-accent-teal mb-4">{isAdmin ? 'Edit Project' : 'Suggest Edits'}</h2>
-            <textarea
-              value={editSuggestions}
-              onChange={(e) => setEditSuggestions(e.target.value)}
-              placeholder={isAdmin ? 'Edit project details...\nTitle: New Title\nDescription: New Description' : 'Suggest changes...'}
-              className="input-field w-full h-24 mb-4"
-            />
-            <div className="flex gap-4">
-              <button onClick={submitEditSuggestion} className="btn-primary rounded-full flex-1">
-                {isAdmin ? 'Save' : 'Submit'}
-              </button>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="btn-primary bg-gray-700 rounded-full flex-1"
-              >
-                Cancel
-              </button>
+            <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
+              <Edit className="w-5 h-5 mr-2" /> {isAdmin ? 'Edit Project' : 'Suggest Edits'}
+            </h2>
+            <div className="space-y-4">
+              <textarea
+                value={editSuggestions}
+                onChange={(e) => setEditSuggestions(e.target.value)}
+                placeholder={isAdmin ? 'Edit project details...\nTitle: New Title\nDescription: New Description' : 'Suggest changes...'}
+                className="input-field w-full h-24"
+              />
+              <div className="flex gap-4">
+                <button onClick={submitEditSuggestion} className="btn-primary rounded-full flex-1">
+                  {isAdmin ? 'Save' : 'Submit'}
+                </button>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="btn-primary bg-gray-700 rounded-full flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -13,6 +13,7 @@
   color: #F5F6FA;
   font-size: 14px;
   font-weight: 500;
+  padding: 0 4px;
   transition: color 0.3s ease, transform 0.3s ease;
 }
 
