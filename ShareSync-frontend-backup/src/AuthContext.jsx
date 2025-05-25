@@ -22,7 +22,6 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    // Mock authentication check
     const token = localStorage.getItem('token');
     if (token) {
       setIsAuthenticated(true);
@@ -35,19 +34,15 @@ export const AuthProvider = ({ children }) => {
         school: 'University of Example',
         profilePicture: 'https://via.placeholder.com/150',
         bannerPicture: 'https://via.placeholder.com/1200x300',
-        projects: [
-          { id: '1', title: 'Project Alpha', category: 'Job', status: 'In Progress' },
-          { id: '2', title: 'Project Beta', category: 'Personal', status: 'Completed' },
-        ],
+        projects: [], // Start with no projects
       });
       setGlobalMetrics({
-        totalProjects: 2,
-        tasksCompleted: 13,
+        totalProjects: 0,
+        tasksCompleted: 0,
         notifications: 0,
       });
     }
 
-    // Attempt to connect socket if it exists
     if (socket) {
       socket.connect();
       socket.on('connect', () => console.log('Socket connected'));
@@ -80,14 +75,11 @@ export const AuthProvider = ({ children }) => {
       school: 'University of Example',
       profilePicture: 'https://via.placeholder.com/150',
       bannerPicture: 'https://via.placeholder.com/1200x300',
-      projects: [
-        { id: '1', title: 'Project Alpha', category: 'Job', status: 'In Progress' },
-        { id: '2', title: 'Project Beta', category: 'Personal', status: 'Completed' },
-      ],
+      projects: [],
     });
     setGlobalMetrics({
-      totalProjects: 2,
-      tasksCompleted: 13,
+      totalProjects: 0,
+      tasksCompleted: 0,
       notifications: 0,
     });
   };
@@ -101,7 +93,29 @@ export const AuthProvider = ({ children }) => {
   };
 
   const createProject = async (projectData) => {
-    console.log('Creating project:', projectData);
+    const newProject = {
+      id: `proj${Date.now()}`,
+      ...projectData,
+    };
+    setUser((prev) => ({
+      ...prev,
+      projects: [...(prev.projects || []), newProject],
+    }));
+    setGlobalMetrics((prev) => ({
+      ...prev,
+      totalProjects: prev.totalProjects + 1,
+    }));
+  };
+
+  const joinProject = (project) => {
+    setUser((prev) => ({
+      ...prev,
+      projects: [...(prev.projects || []), project],
+    }));
+    setGlobalMetrics((prev) => ({
+      ...prev,
+      totalProjects: prev.totalProjects + 1,
+    }));
   };
 
   const updateUserProfile = (updatedProfile) => {
@@ -116,6 +130,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         createProject,
+        joinProject,
         updateUserProfile,
         globalMetrics,
         socket,

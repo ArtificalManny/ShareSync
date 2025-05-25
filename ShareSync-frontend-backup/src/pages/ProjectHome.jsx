@@ -14,12 +14,8 @@ const mockProject = {
   status: 'In Progress',
   tasksCompleted: 5,
   totalTasks: 10,
-  comments: [
-    { id: 'c1', text: 'Great progress so far!', user: 'Alice', timestamp: new Date().toISOString(), likes: 3 },
-  ],
-  posts: [
-    { id: 'p1', text: 'Just finished the UI design!', user: 'Bob', timestamp: new Date().toISOString(), likes: 5 },
-  ],
+  comments: [],
+  posts: [],
   achievements: [
     { id: 'a1', name: 'Task Master', description: 'Completed 5 tasks', earned: true },
     { id: 'a2', name: 'On-Time Hero', description: 'Completed a task on time', earned: false },
@@ -287,55 +283,63 @@ const ProjectHome = () => {
               />
               <button onClick={addPost} className="btn-primary">Post Update</button>
             </div>
-            {project.posts?.map((post) => (
-              <div key={post.id} className="post-item bg-glass p-4 rounded-lg shadow-soft mb-4">
-                <div className="flex items-center mb-2">
-                  <span className="text-primary font-semibold">{post.user}</span>
-                  <span className="text-gray-400 text-sm ml-2">{new Date(post.timestamp).toLocaleString()}</span>
+            {project.posts?.length === 0 ? (
+              <p className="text-gray-400">No posts yet. Be the first to share an update!</p>
+            ) : (
+              project.posts.map((post) => (
+                <div key={post.id} className="post-item bg-glass p-4 rounded-lg shadow-soft mb-4">
+                  <div className="flex items-center mb-2">
+                    <span className="text-primary font-semibold">{post.user}</span>
+                    <span className="text-gray-400 text-sm ml-2">{new Date(post.timestamp).toLocaleString()}</span>
+                  </div>
+                  <p className="text-primary">{post.text}</p>
+                  <div className="flex items-center mt-2 gap-4">
+                    <button
+                      onClick={() => handleLike(post.id, 'post')}
+                      className="flex items-center text-accent-teal hover:text-accent-gold transition-all"
+                    >
+                      <ThumbsUp className="w-5 h-5 mr-1" /> {post.likes || 0} Likes
+                    </button>
+                    <button className="flex items-center text-accent-teal hover:text-accent-gold transition-all">
+                      <MessageSquare className="w-5 h-5 mr-1" /> Comment
+                    </button>
+                    <button className="flex items-center text-accent-teal hover:text-accent-gold transition-all">
+                      <Share2 className="w-5 h-5 mr-1" /> Share
+                    </button>
+                  </div>
                 </div>
-                <p className="text-primary">{post.text}</p>
-                <div className="flex items-center mt-2 gap-4">
-                  <button
-                    onClick={() => handleLike(post.id, 'post')}
-                    className="flex items-center text-accent-teal hover:text-accent-gold transition-all"
-                  >
-                    <ThumbsUp className="w-5 h-5 mr-1" /> {post.likes || 0} Likes
-                  </button>
-                  <button className="flex items-center text-accent-teal hover:text-accent-gold transition-all">
-                    <MessageSquare className="w-5 h-5 mr-1" /> Comment
-                  </button>
-                  <button className="flex items-center text-accent-teal hover:text-accent-gold transition-all">
-                    <Share2 className="w-5 h-5 mr-1" /> Share
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* Comments Section */}
           <div className="comments-section">
             <h2 className="text-xl font-inter text-accent-teal mb-4">Comments</h2>
             <div className="comments-list">
-              {comments.map((comment) => (
-                <div key={comment.id} className="comment-item bg-glass p-4 rounded-lg mb-4 shadow-soft">
-                  <div className="flex items-center mb-2">
-                    <span className="text-primary font-semibold">{comment.user}</span>
-                    <span className="text-gray-400 text-sm ml-2">{new Date(comment.timestamp).toLocaleString()}</span>
+              {comments.length === 0 ? (
+                <p className="text-gray-400">No comments yet. Start the conversation!</p>
+              ) : (
+                comments.map((comment) => (
+                  <div key={comment.id} className="comment-item bg-glass p-4 rounded-lg mb-4 shadow-soft">
+                    <div className="flex items-center mb-2">
+                      <span className="text-primary font-semibold">{comment.user}</span>
+                      <span className="text-gray-400 text-sm ml-2">{new Date(comment.timestamp).toLocaleString()}</span>
+                    </div>
+                    <p className="text-primary">{comment.text}</p>
+                    <div className="flex items-center mt-2 gap-4">
+                      <button
+                        onClick={() => handleLike(comment.id, 'comment')}
+                        className="flex items-center text-accent-teal hover:text-accent-gold transition-all"
+                      >
+                        <ThumbsUp className="w-5 h-5 mr-1" /> {comment.likes || 0} Likes
+                      </button>
+                      <button className="flex items-center text-accent-teal hover:text-accent-gold transition-all">
+                        <MessageSquare className="w-5 h-5 mr-1" /> Reply
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-primary">{comment.text}</p>
-                  <div className="flex items-center mt-2 gap-4">
-                    <button
-                      onClick={() => handleLike(comment.id, 'comment')}
-                      className="flex items-center text-accent-teal hover:text-accent-gold transition-all"
-                    >
-                      <ThumbsUp className="w-5 h-5 mr-1" /> {post.likes || 0} Likes
-                    </button>
-                    <button className="flex items-center text-accent-teal hover:text-accent-gold transition-all">
-                      <MessageSquare className="w-5 h-5 mr-1" /> Reply
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             <div className="comment-input flex gap-4 mt-4">
               <input
@@ -358,12 +362,16 @@ const ProjectHome = () => {
               <MessageSquare className="w-5 h-5 mr-2" /> Project Chat
             </h2>
             <div className="messages bg-glass p-4 rounded-lg shadow-soft h-64 overflow-y-auto">
-              {messages.map((msg, index) => (
-                <div key={index} className="message-item mb-2">
-                  <strong className="text-primary">{msg.user}:</strong> {msg.text}
-                  <span className="text-gray-400 text-sm ml-2">{new Date(msg.timestamp).toLocaleString()}</span>
-                </div>
-              ))}
+              {messages.length === 0 ? (
+                <p className="text-gray-400">No messages yet. Say hello!</p>
+              ) : (
+                messages.map((msg, index) => (
+                  <div key={index} className="message-item mb-2">
+                    <strong className="text-primary">{msg.user}:</strong> {msg.text}
+                    <span className="text-gray-400 text-sm ml-2">{new Date(msg.timestamp).toLocaleString()}</span>
+                  </div>
+                ))
+              )}
             </div>
             <div className="chat-input flex gap-4 mt-4">
               <input
@@ -382,20 +390,24 @@ const ProjectHome = () => {
             <h2 className="text-xl font-inter text-accent-teal mb-4 flex items-center">
               <Award className="w-5 h-5 mr-2" /> Achievements
             </h2>
-            {project.achievements.map((achievement) => (
-              <div key={achievement.id} className={`achievement-item p-4 rounded-lg mb-4 ${achievement.earned ? 'bg-teal-900' : 'bg-gray-700'} bg-opacity-20`}>
-                <div className="flex items-center gap-3">
-                  <Award className={`w-6 h-6 ${achievement.earned ? 'text-accent-gold' : 'text-gray-400'}`} />
-                  <div>
-                    <p className="text-primary font-semibold">{achievement.name}</p>
-                    <p className="text-gray-400 text-sm">{achievement.description}</p>
-                    <p className={`text-sm ${achievement.earned ? 'text-accent-teal' : 'text-gray-500'}`}>
-                      {achievement.earned ? 'Earned' : 'Not Earned'}
-                    </p>
+            {project.achievements.length === 0 ? (
+              <p className="text-gray-400">No achievements yet. Keep working to earn some!</p>
+            ) : (
+              project.achievements.map((achievement) => (
+                <div key={achievement.id} className={`achievement-item p-4 rounded-lg mb-4 ${achievement.earned ? 'bg-teal-900' : 'bg-gray-700'} bg-opacity-20`}>
+                  <div className="flex items-center gap-3">
+                    <Award className={`w-6 h-6 ${achievement.earned ? 'text-accent-gold' : 'text-gray-400'}`} />
+                    <div>
+                      <p className="text-primary font-semibold">{achievement.name}</p>
+                      <p className="text-gray-400 text-sm">{achievement.description}</p>
+                      <p className={`text-sm ${achievement.earned ? 'text-accent-teal' : 'text-gray-500'}`}>
+                        {achievement.earned ? 'Earned' : 'Not Earned'}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
