@@ -1,7 +1,7 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Edit2, Folder, Briefcase, GraduationCap, Camera, Users, Calendar } from 'lucide-react';
+import { Edit2, Folder, Briefcase, GraduationCap, Camera, Users, Calendar, ThumbsUp, MessageSquare, Share2, Users as TeamIcon } from 'lucide-react';
 import { Pie } from 'react-chartjs-2';
 import Chart from 'chart.js/auto';
 import './Profile.css';
@@ -27,6 +27,7 @@ const Profile = () => {
   const { username } = useParams();
   const { user, isAuthenticated, updateUserProfile } = useContext(AuthContext);
   const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState('about');
   const [profileDetails, setProfileDetails] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -37,6 +38,8 @@ const Profile = () => {
     bio: user?.bio || '',
     location: user?.location || '',
   });
+  const [activityPosts, setActivityPosts] = useState([]);
+  const [newPost, setNewPost] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -50,6 +53,18 @@ const Profile = () => {
         bio: user.bio,
         location: user.location,
       });
+      // Mock activity posts for the user
+      setActivityPosts([
+        {
+          id: '1',
+          user: user.email,
+          profilePicture: user.profilePicture,
+          content: 'Just started a new project on ShareSync!',
+          timestamp: new Date().toISOString(),
+          likes: 3,
+          comments: [],
+        },
+      ]);
     }
   }, [user]);
 
@@ -79,7 +94,28 @@ const Profile = () => {
     }
   };
 
-  const recentActivity = [];
+  const handlePost = () => {
+    if (!newPost) return;
+    const post = {
+      id: `post-${activityPosts.length + 1}`,
+      user: user.email,
+      profilePicture: user.profilePicture,
+      content: newPost,
+      timestamp: new Date().toISOString(),
+      likes: 0,
+      comments: [],
+    };
+    setActivityPosts((prev) => [post, ...prev]);
+    setNewPost('');
+  };
+
+  const handleLike = (postId) => {
+    setActivityPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId ? { ...post, likes: (post.likes || 0) + 1 } : post
+      )
+    );
+  };
 
   const projectCategories = (user?.projects || []).reduce((acc, proj) => {
     acc[proj.category] = (acc[proj.category] || 0) + 1;
@@ -92,7 +128,7 @@ const Profile = () => {
       {
         label: 'Projects by Category',
         data: Object.values(projectCategories),
-        backgroundColor: ['#26C6DA', '#FFD700', '#A0A0A0'],
+        backgroundColor: ['#26C6DA', '#FF6F61', '#8A9A5B'],
         borderColor: ['#0A1A2F', '#0A1A2F', '#0A1A2F'],
         borderWidth: 1,
       },
@@ -103,7 +139,7 @@ const Profile = () => {
     return (
       <div className="profile-container">
         <div className="max-w-4xl mx-auto p-6 text-center">
-          <h2 className="text-2xl font-inter text-primary mb-4">Welcome to ShareSync!</h2>
+          <h2 className="text-3xl font-playfair text-accent-gold mb-4">Welcome to ShareSync!</h2>
           <p className="text-gray-400 mb-6">Please log in to view your profile.</p>
           <Link to="/login">
             <button className="btn-primary">Log In</button>
@@ -112,6 +148,11 @@ const Profile = () => {
       </div>
     );
   }
+
+  const mockTeams = [
+    { id: 't1', name: 'Design Team', role: 'Member', description: 'Working on UI/UX for Project Alpha' },
+    { id: 't2', name: 'Dev Team', role: 'Lead', description: 'Backend development for Project Beta' },
+  ];
 
   return (
     <div className="profile-container">
@@ -130,7 +171,7 @@ const Profile = () => {
             value={profileDetails.bannerPicture}
             onChange={handleInputChange}
             placeholder="New banner picture URL..."
-            className="absolute top-4 left-4 input-field w-1/2"
+            className="absolute top-4 left-4 input-field w-1/2 rounded-full"
           />
         )}
       </div>
@@ -142,7 +183,7 @@ const Profile = () => {
             <img
               src={profileDetails.profilePicture}
               alt="Profile"
-              className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-accent-teal shadow-soft object-cover"
+              className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-accent-gold shadow-soft object-cover"
             />
             {isOwnProfile && (
               <label className="absolute bottom-0 right-0 bg-accent-teal p-2 rounded-full cursor-pointer">
@@ -165,7 +206,7 @@ const Profile = () => {
                   value={profileDetails.firstName}
                   onChange={handleInputChange}
                   placeholder="First Name"
-                  className="input-field"
+                  className="input-field rounded-full"
                 />
                 <input
                   type="text"
@@ -173,33 +214,63 @@ const Profile = () => {
                   value={profileDetails.lastName}
                   onChange={handleInputChange}
                   placeholder="Last Name"
-                  className="input-field"
+                  className="input-field rounded-full"
                 />
               </div>
             ) : (
-              <h1 className="text-2xl sm:text-3xl font-inter text-primary">{profileDetails.firstName} {profileDetails.lastName}</h1>
+              <h1 className="text-3xl font-playfair text-accent-gold">{profileDetails.firstName} {profileDetails.lastName}</h1>
             )}
             <p className="text-gray-400 mt-1">@{username}</p>
             <p className="text-gray-400 mt-1 flex items-center justify-center sm:justify-start">
-              <Briefcase className="w-4 h-4 mr-2" /> {profileDetails.job || 'Not specified'}
+              <Briefcase className="w-4 h-4 mr-2 text-accent-teal" /> {profileDetails.job || 'Not specified'}
             </p>
             <p className="text-gray-400 mt-1 flex items-center justify-center sm:justify-start">
-              <Users className="w-4 h-4 mr-2" /> 150 connections
+              <Users className="w-4 h-4 mr-2 text-accent-teal" /> 150 connections
+            </p>
+            <p className="text-gray-400 mt-1 flex items-center justify-center sm:justify-start">
+              <Folder className="w-4 h-4 mr-2 text-accent-teal" /> {user?.projects?.length || 0} projects
             </p>
           </div>
           {isOwnProfile && (
-            <button onClick={handleEdit} className="btn-primary flex items-center mt-2 sm:mt-0">
+            <button onClick={handleEdit} className="btn-primary flex items-center mt-2 sm:mt-0 rounded-full">
               <Edit2 className="w-5 h-5 mr-2" /> {isEditing ? 'Save' : 'Edit Profile'}
             </button>
           )}
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column (About, Stats) */}
-          <div className="col-span-1 space-y-6">
-            <div className="about-section bg-glass p-6 rounded-lg shadow-soft">
-              <h2 className="text-xl font-inter text-accent-teal mb-4">About</h2>
+        {/* Tabs */}
+        <div className="profile-tabs flex border-b border-gray-700 mb-6">
+          <button
+            className={`tab-button ${activeTab === 'about' ? 'active' : ''}`}
+            onClick={() => setActiveTab('about')}
+          >
+            About
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'activity' ? 'active' : ''}`}
+            onClick={() => setActiveTab('activity')}
+          >
+            Activity
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'projects' ? 'active' : ''}`}
+            onClick={() => setActiveTab('projects')}
+          >
+            Projects
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'teams' ? 'active' : ''}`}
+            onClick={() => setActiveTab('teams')}
+          >
+            Teams
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="tab-content">
+          {activeTab === 'about' && (
+            <div className="about-section card p-6">
+              <h2 className="text-2xl font-playfair text-accent-teal mb-4">About</h2>
               {isEditing ? (
                 <div className="space-y-4">
                   <textarea
@@ -215,7 +286,7 @@ const Profile = () => {
                     value={profileDetails.job}
                     onChange={handleInputChange}
                     placeholder="Job"
-                    className="input-field w-full"
+                    className="input-field w-full rounded-full"
                   />
                   <input
                     type="text"
@@ -223,7 +294,7 @@ const Profile = () => {
                     value={profileDetails.school}
                     onChange={handleInputChange}
                     placeholder="School"
-                    className="input-field w-full"
+                    className="input-field w-full rounded-full"
                   />
                   <input
                     type="text"
@@ -231,75 +302,142 @@ const Profile = () => {
                     value={profileDetails.location}
                     onChange={handleInputChange}
                     placeholder="Location"
-                    className="input-field w-full"
+                    className="input-field w-full rounded-full"
                   />
                 </div>
               ) : (
                 <div className="space-y-2">
                   <p className="text-gray-400">{profileDetails.bio || 'No bio available.'}</p>
                   <p className="text-gray-400 flex items-center">
-                    <Briefcase className="w-5 h-5 mr-2" /> {profileDetails.job || 'Not specified'}
+                    <Briefcase className="w-5 h-5 mr-2 text-accent-teal" /> {profileDetails.job || 'Not specified'}
                   </p>
                   <p className="text-gray-400 flex items-center">
-                    <GraduationCap className="w-5 h-5 mr-2" /> {profileDetails.school || 'Not specified'}
+                    <GraduationCap className="w-5 h-5 mr-2 text-accent-teal" /> {profileDetails.school || 'Not specified'}
                   </p>
                   <p className="text-gray-400 flex items-center">
-                    <Users className="w-5 h-5 mr-2" /> {profileDetails.location || 'Not specified'}
+                    <Users className="w-5 h-5 mr-2 text-accent-teal" /> {profileDetails.location || 'Not specified'}
                   </p>
+                  <div className="stats-section mt-4">
+                    <h3 className="text-xl font-playfair text-accent-teal mb-4">Project Stats</h3>
+                    {Object.keys(projectCategories).length > 0 ? (
+                      <div className="chart-container mx-auto">
+                        <Pie data={projectStatsData} options={chartOptions} />
+                      </div>
+                    ) : (
+                      <p className="text-gray-400">No project stats available. Join a project to see your stats!</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-            <div className="stats-section bg-glass p-6 rounded-lg shadow-soft">
-              <h2 className="text-xl font-inter text-accent-teal mb-4">Project Stats</h2>
-              {Object.keys(projectCategories).length > 0 ? (
-                <div className="chart-container">
-                  <Pie data={projectStatsData} options={chartOptions} />
-                </div>
-              ) : (
-                <p className="text-gray-400">No project stats available. Join a project to see your stats!</p>
-              )}
-            </div>
-          </div>
+          )}
 
-          {/* Right Column (Activity, Projects) */}
-          <div className="col-span-1 lg:col-span-2 space-y-6">
-            {/* Activity Section */}
-            <div className="activity-section bg-glass p-6 rounded-lg shadow-soft">
-              <h2 className="text-xl font-inter text-accent-teal mb-4 flex items-center">
-                <Calendar className="w-5 h-5 mr-2" /> Recent Activity
+          {activeTab === 'activity' && (
+            <div className="activity-section card p-6">
+              <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                <Calendar className="w-5 h-5 mr-2" /> Activity Feed
               </h2>
-              {recentActivity.length > 0 ? (
-                recentActivity.map((activity) => (
-                  <div key={activity.id} className="mb-4">
-                    <p className="text-primary">{activity.action}</p>
-                    <p className="text-gray-400 text-sm">{activity.timestamp}</p>
+              {isOwnProfile && (
+                <div className="post-input card p-4 mb-4">
+                  <div className="flex items-center mb-2">
+                    <img
+                      src={user.profilePicture}
+                      alt="Profile"
+                      className="w-8 h-8 rounded-full mr-2 object-cover"
+                    />
+                    <textarea
+                      value={newPost}
+                      onChange={(e) => setNewPost(e.target.value)}
+                      placeholder="Share an update..."
+                      className="input-field w-full h-16"
+                    />
+                  </div>
+                  <button onClick={handlePost} className="btn-primary rounded-full">Post</button>
+                </div>
+              )}
+              {activityPosts.length > 0 ? (
+                activityPosts.map((post) => (
+                  <div key={post.id} className="post-item card p-4 mb-4">
+                    <div className="flex items-center mb-2">
+                      <img
+                        src={post.profilePicture}
+                        alt="User"
+                        className="w-8 h-8 rounded-full mr-2 object-cover"
+                      />
+                      <div>
+                        <span className="text-primary font-semibold">{post.user}</span>
+                        <span className="text-gray-400 text-sm ml-2">{new Date(post.timestamp).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <p className="text-primary">{post.content}</p>
+                    <div className="flex items-center mt-3 gap-4">
+                      <button
+                        onClick={() => handleLike(post.id)}
+                        className="flex items-center text-accent-teal hover:text-accent-coral transition-all"
+                      >
+                        <ThumbsUp className="w-5 h-5 mr-1" /> {post.likes || 0}
+                      </button>
+                      <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
+                        <MessageSquare className="w-5 h-5 mr-1" /> {post.comments?.length || 0}
+                      </button>
+                      <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
+                        <Share2 className="w-5 h-5 mr-1" /> Share
+                      </button>
+                    </div>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-400">No recent activity. Start collaborating on projects to see updates!</p>
+                <p className="text-gray-400">No recent activity. Share an update to get started!</p>
               )}
             </div>
+          )}
 
-            {/* Projects Section */}
-            <div className="projects-section bg-glass p-6 rounded-lg shadow-soft">
-              <h2 className="text-xl font-inter text-accent-teal mb-4 flex items-center">
+          {activeTab === 'projects' && (
+            <div className="projects-section card p-6">
+              <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
                 <Folder className="w-5 h-5 mr-2" /> Projects
               </h2>
               {user?.projects?.length > 0 ? (
-                user.projects.map((project) => (
-                  <div key={project.id} className="project-item bg-glass p-4 rounded-lg mb-4 shadow-soft transition-all hover:shadow-lg">
-                    <Link to={`/projects/${project.id}`} className="text-primary hover:underline">
-                      <h3 className="text-lg font-semibold">{project.title}</h3>
-                    </Link>
-                    <p className="text-gray-400">Category: {project.category}</p>
-                    <p className="text-accent-gold">Status: {project.status}</p>
-                  </div>
-                ))
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {user.projects.map((project) => (
+                    <div key={project.id} className="project-item card p-4">
+                      <Link to={`/projects/${project.id}`} className="text-primary hover:underline">
+                        <h3 className="text-lg font-playfair text-accent-gold">{project.title}</h3>
+                      </Link>
+                      <p className="text-gray-400">Category: {project.category}</p>
+                      <p className="text-accent-teal">Status: {project.status}</p>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <p className="text-gray-400">No projects yet. Join a project from the Home page to get started!</p>
               )}
             </div>
-          </div>
+          )}
+
+          {activeTab === 'teams' && (
+            <div className="teams-section card p-6">
+              <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
+                <TeamIcon className="w-5 h-5 mr-2" /> Teams
+              </h2>
+              {mockTeams.length > 0 ? (
+                <div className="space-y-4">
+                  {mockTeams.map((team) => (
+                    <div key={team.id} className="team-item card p-4 flex items-center gap-4">
+                      <TeamIcon className="w-6 h-6 text-accent-teal" />
+                      <div>
+                        <p className="text-primary font-semibold">{team.name}</p>
+                        <p className="text-gray-400 text-sm">Role: {team.role}</p>
+                        <p className="text-gray-400 text-sm">{team.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-400">Not a member of any teams yet.</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

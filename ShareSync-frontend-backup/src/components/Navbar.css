@@ -1,9 +1,10 @@
 .navbar {
-  background: #0A1A2F;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, #3C2F5D, #0A1A2F);
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
   position: sticky;
   top: 0;
   z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .nav-link {
@@ -21,16 +22,14 @@
 }
 
 .input-field {
-  padding: 12px;
-  border-radius: 8px;
+  border-radius: 9999px;
   border: 1px solid #26C6DA;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.1);
   color: #F5F6FA;
-  font-size: 16px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .input-field:focus {
-  outline: none;
-  border-color: #FFD700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+  border-color: #FF6F61;
+  box-shadow: 0 0 10px rgba(255, 111, 97, 0.3);
 }
