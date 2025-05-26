@@ -37,7 +37,7 @@ const chartOptions = {
 const ProjectHome = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user, socket } = useContext(AuthContext);
+  const { isAuthenticated, user, socket, updateProject } = useContext(AuthContext);
   const [project, setProject] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -76,7 +76,8 @@ const ProjectHome = () => {
     const fetchProject = async () => {
       try {
         if (!isAuthenticated || !user) {
-          throw new Error('User not authenticated');
+          navigate('/login', { replace: true });
+          return;
         }
         if (!id) throw new Error('Project ID is missing');
         console.log('ProjectHome - Fetching project with ID:', id);
@@ -92,6 +93,7 @@ const ProjectHome = () => {
           files: projectData.files || [],
           tasks: projectData.tasks || [],
           teams: projectData.teams || [],
+          messages: projectData.messages || [],
           achievements: projectData.achievements || [
             { id: 'a1', name: 'Task Master', description: 'Completed 5 tasks', earned: projectData.tasksCompleted >= 5 },
             { id: 'a2', name: 'On-Time Hero', description: 'Completed a task on time', earned: false },
@@ -99,6 +101,7 @@ const ProjectHome = () => {
         };
         setProject(updatedProject);
         setComments(updatedProject.comments || []);
+        setMessages(updatedProject.messages || []);
         setIsAdmin(user.email === updatedProject.admin || updatedProject.members.some(m => m.email === user.email && m.role === 'admin'));
         if (updatedProject.privacy === 'private' && !isAdmin && !updatedProject.members.some(m => m.email === user.email)) {
           throw new Error('You do not have access to this project.');
@@ -120,10 +123,8 @@ const ProjectHome = () => {
     if (isAuthenticated && user) {
       fetchProject();
       predictDeadline();
-    } else {
-      navigate('/login', { replace: true });
     }
-  }, [id, isAuthenticated, navigate, user]);
+  }, [id, isAuthenticated, user, navigate]);
 
   useEffect(() => {
     if (!socket || !project) return;
@@ -131,15 +132,20 @@ const ProjectHome = () => {
     socket.on('message', (message) => {
       if (message.projectId === id) {
         setMessages((prev) => [...prev, message]);
-        setProject((prev) => ({
-          ...prev,
-          activityLog: [...(prev.activityLog || []), {
-            id: `act-${Date.now()}`,
-            user: message.user,
-            action: 'Sent a message in chat',
-            timestamp: new Date().toISOString(),
-          }],
-        }));
+        setProject((prev) => {
+          const updatedProject = {
+            ...prev,
+            messages: [...(prev.messages || []), message],
+            activityLog: [...(prev.activityLog || []), {
+              id: `act-${Date.now()}`,
+              user: message.user,
+              action: 'Sent a message in chat',
+              timestamp: new Date().toISOString(),
+            }],
+          };
+          updateProject(id, updatedProject);
+          return updatedProject;
+        });
         notifyUsers(`${message.user} sent a message in chat`);
       }
     });
@@ -147,96 +153,120 @@ const ProjectHome = () => {
     socket.on('comment', (comment) => {
       if (comment.projectId === id) {
         setComments((prev) => [...prev, comment]);
-        setProject((prev) => ({
-          ...prev,
-          comments: [...(prev.comments || []), comment],
-          activityLog: [...(prev.activityLog || []), {
-            id: `act-${Date.now()}`,
-            user: comment.user,
-            action: 'Posted a comment',
-            timestamp: new Date().toISOString(),
-          }],
-        }));
+        setProject((prev) => {
+          const updatedProject = {
+            ...prev,
+            comments: [...(prev.comments || []), comment],
+            activityLog: [...(prev.activityLog || []), {
+              id: `act-${Date.now()}`,
+              user: comment.user,
+              action: 'Posted a comment',
+              timestamp: new Date().toISOString(),
+            }],
+          };
+          updateProject(id, updatedProject);
+          return updatedProject;
+        });
         notifyUsers(`${comment.user} posted a comment`);
       }
     });
 
     socket.on('post', (post) => {
       if (post.projectId === id) {
-        setProject((prev) => ({
-          ...prev,
-          posts: [...(prev.posts || []), post],
-          activityLog: [...(prev.activityLog || []), {
-            id: `act-${Date.now()}`,
-            user: post.user,
-            action: `Posted a ${post.type}`,
-            timestamp: new Date().toISOString(),
-          }],
-        }));
+        setProject((prev) => {
+          const updatedProject = {
+            ...prev,
+            posts: [...(prev.posts || []), post],
+            activityLog: [...(prev.activityLog || []), {
+              id: `act-${Date.now()}`,
+              user: post.user,
+              action: `Posted a ${post.type}`,
+              timestamp: new Date().toISOString(),
+            }],
+          };
+          updateProject(id, updatedProject);
+          return updatedProject;
+        });
         notifyUsers(`${post.user} posted a ${post.type}`);
       }
     });
 
     socket.on('metric-update', (update) => {
       if (update.projectId === id) {
-        setProject((prev) => ({
-          ...prev,
-          tasksCompleted: update.tasksCompleted || prev.tasksCompleted,
-          totalTasks: update.totalTasks || prev.totalTasks,
-          activityLog: [...(prev.activityLog || []), {
-            id: `act-${Date.now()}`,
-            user: update.user || 'System',
-            action: 'Updated project metrics',
-            timestamp: new Date().toISOString(),
-          }],
-        }));
+        setProject((prev) => {
+          const updatedProject = {
+            ...prev,
+            tasksCompleted: update.tasksCompleted || prev.tasksCompleted,
+            totalTasks: update.totalTasks || prev.totalTasks,
+            activityLog: [...(prev.activityLog || []), {
+              id: `act-${Date.now()}`,
+              user: update.user || 'System',
+              action: 'Updated project metrics',
+              timestamp: new Date().toISOString(),
+            }],
+          };
+          updateProject(id, updatedProject);
+          return updatedProject;
+        });
         notifyUsers(`${update.user || 'System'} updated project metrics`);
       }
     });
 
     socket.on('task-update', (task) => {
       if (task.projectId === id) {
-        setProject((prev) => ({
-          ...prev,
-          tasks: prev.tasks.map(t => t.id === task.id ? task : t),
-          activityLog: [...(prev.activityLog || []), {
-            id: `act-${Date.now()}`,
-            user: task.updatedBy,
-            action: `Updated task: ${task.title}`,
-            timestamp: new Date().toISOString(),
-          }],
-        }));
+        setProject((prev) => {
+          const updatedProject = {
+            ...prev,
+            tasks: prev.tasks.map(t => t.id === task.id ? task : t),
+            activityLog: [...(prev.activityLog || []), {
+              id: `act-${Date.now()}`,
+              user: task.updatedBy,
+              action: `Updated task: ${task.title}`,
+              timestamp: new Date().toISOString(),
+            }],
+          };
+          updateProject(id, updatedProject);
+          return updatedProject;
+        });
         notifyUsers(`${task.updatedBy} updated task: ${task.title}`);
       }
     });
 
     socket.on('file-update', (file) => {
       if (file.projectId === id) {
-        setProject((prev) => ({
-          ...prev,
-          files: [...(prev.files || []), file],
-          activityLog: [...(prev.activityLog || []), {
-            id: `act-${Date.now()}`,
-            user: file.uploadedBy,
-            action: `Uploaded file: ${file.name}`,
-            timestamp: new Date().toISOString(),
-          }],
-        }));
+        setProject((prev) => {
+          const updatedProject = {
+            ...prev,
+            files: [...(prev.files || []), file],
+            activityLog: [...(prev.activityLog || []), {
+              id: `act-${Date.now()}`,
+              user: file.uploadedBy,
+              action: `Uploaded file: ${file.name}`,
+              timestamp: new Date().toISOString(),
+            }],
+          };
+          updateProject(id, updatedProject);
+          return updatedProject;
+        });
         notifyUsers(`${file.uploadedBy} uploaded file: ${file.name}`);
       }
     });
 
     socket.on('member-update', (updatedMembers) => {
-      setProject((prev) => ({
-        ...prev,
-        members: updatedMembers,
-        activityLog: [...(prev.activityLog || []), {
-          id: `act-${Date.now()}`,
-          user: user?.email || 'System',
-          action: 'Updated project members',
-          timestamp: new Date().toISOString(),
-        }],
-      }));
+      setProject((prev) => {
+        const updatedProject = {
+          ...prev,
+          members: updatedMembers,
+          activityLog: [...(prev.activityLog || []), {
+            id: `act-${Date.now()}`,
+            user: user?.email || 'System',
+            action: 'Updated project members',
+            timestamp: new Date().toISOString(),
+          }],
+        };
+        updateProject(id, updatedProject);
+        return updatedProject;
+      });
     });
 
     return () => {
@@ -248,7 +278,7 @@ const ProjectHome = () => {
       socket.off('file-update');
       socket.off('member-update');
     };
-  }, [socket, project, id, user, navigate]);
+  }, [socket, project, id, user, updateProject]);
 
   const sendMessage = () => {
     if (!newMessage || !socket) return;
@@ -297,10 +327,6 @@ const ProjectHome = () => {
     }
 
     socket.emit('post', post);
-    setProject((prev) => ({
-      ...prev,
-      posts: [...(prev.posts || []), post],
-    }));
     setNewPost('');
     setPostImage(null);
     setPollOptions(['', '']);
@@ -315,38 +341,49 @@ const ProjectHome = () => {
           item.id === itemId ? { ...item, likes: (item.likes || 0) + 1 } : item
         )
       );
-      socket.emit('comment', {
-        ...comments.find((c) => c.id === itemId),
-        likes: (comments.find((c) => c.id === itemId).likes || 0) + 1,
+      const updatedComment = comments.find((c) => c.id === itemId);
+      updatedComment.likes = (updatedComment.likes || 0) + 1;
+      socket.emit('comment', updatedComment);
+      setProject((prev) => {
+        const updatedProject = {
+          ...prev,
+          comments: comments.map((c) => (c.id === itemId ? updatedComment : c)),
+          activityLog: [...(prev.activityLog || []), {
+            id: `act-${Date.now()}`,
+            user: user.email,
+            action: `Liked a ${type}`,
+            timestamp: new Date().toISOString(),
+          }],
+        };
+        updateProject(id, updatedProject);
+        return updatedProject;
       });
     } else if (type === 'post') {
-      setProject((prev) => ({
-        ...prev,
-        posts: prev.posts.map((item) =>
+      setProject((prev) => {
+        const updatedPosts = prev.posts.map((item) =>
           item.id === itemId ? { ...item, likes: (item.likes || 0) + 1 } : item
-        ),
-      }));
-      socket.emit('post', {
-        ...project.posts.find((p) => p.id === itemId),
-        likes: (project.posts.find((p) => p.id === itemId).likes || 0) + 1,
+        );
+        const updatedProject = {
+          ...prev,
+          posts: updatedPosts,
+          activityLog: [...(prev.activityLog || []), {
+            id: `act-${Date.now()}`,
+            user: user.email,
+            action: `Liked a ${type}`,
+            timestamp: new Date().toISOString(),
+          }],
+        };
+        updateProject(id, updatedProject);
+        socket.emit('post', updatedPosts.find((p) => p.id === itemId));
+        return updatedProject;
       });
     }
-    setProject((prev) => ({
-      ...prev,
-      activityLog: [...(prev.activityLog || []), {
-        id: `act-${Date.now()}`,
-        user: user.email,
-        action: `Liked a ${type}`,
-        timestamp: new Date().toISOString(),
-      }],
-    }));
     notifyUsers(`${user.email} liked a ${type}`);
   };
 
   const handleVote = (postId, optionId) => {
-    setProject((prev) => ({
-      ...prev,
-      posts: prev.posts.map((post) =>
+    setProject((prev) => {
+      const updatedPosts = prev.posts.map((post) =>
         post.id === postId
           ? {
               ...post,
@@ -355,15 +392,21 @@ const ProjectHome = () => {
               ),
             }
           : post
-      ),
-      activityLog: [...(prev.activityLog || []), {
-        id: `act-${Date.now()}`,
-        user: user.email,
-        action: 'Voted in a poll',
-        timestamp: new Date().toISOString(),
-      }],
-    }));
-    socket.emit('post', project.posts.find((p) => p.id === postId));
+      );
+      const updatedProject = {
+        ...prev,
+        posts: updatedPosts,
+        activityLog: [...(prev.activityLog || []), {
+          id: `act-${Date.now()}`,
+          user: user.email,
+          action: 'Voted in a poll',
+          timestamp: new Date().toISOString(),
+        }],
+      };
+      updateProject(id, updatedProject);
+      socket.emit('post', updatedPosts.find((p) => p.id === postId));
+      return updatedProject;
+    });
     notifyUsers(`${user.email} voted in a poll`);
   };
 
@@ -395,38 +438,47 @@ const ProjectHome = () => {
       status: 'Not Started',
       dueDate: suggestedDeadline,
     };
-    setProject((prev) => ({
-      ...prev,
-      tasks: [...(prev.tasks || []), task],
-      totalTasks: prev.totalTasks + 1,
-      activityLog: [...(prev.activityLog || []), {
-        id: `act-${Date.now()}`,
-        user: user.email,
-        action: `Created task: ${task.title}`,
-        timestamp: new Date().toISOString(),
-      }],
-    }));
-    socket.emit('task-update', { ...task, updatedBy: user.email, projectId: id });
+    setProject((prev) => {
+      const updatedProject = {
+        ...prev,
+        tasks: [...(prev.tasks || []), task],
+        totalTasks: prev.totalTasks + 1,
+        activityLog: [...(prev.activityLog || []), {
+          id: `act-${Date.now()}`,
+          user: user.email,
+          action: `Created task: ${task.title}`,
+          timestamp: new Date().toISOString(),
+        }],
+      };
+      updateProject(id, updatedProject);
+      socket.emit('task-update', { ...task, updatedBy: user.email, projectId: id });
+      return updatedProject;
+    });
   };
 
   const completeTask = (taskId) => {
-    setProject((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((task) =>
+    setProject((prev) => {
+      const updatedTasks = prev.tasks.map((task) =>
         task.id === taskId ? { ...task, status: 'Completed' } : task
-      ),
-      tasksCompleted: prev.tasksCompleted + 1,
-      activityLog: [...(prev.activityLog || []), {
-        id: `act-${Date.now()}`,
-        user: user.email,
-        action: `Completed task: ${prev.tasks.find(t => t.id === taskId).title}`,
-        timestamp: new Date().toISOString(),
-      }],
-      achievements: prev.achievements.map((ach) =>
-        ach.id === 'a2' && !ach.earned ? { ...ach, earned: true } : ach
-      ),
-    }));
-    socket.emit('metric-update', { projectId: id, tasksCompleted: project.tasksCompleted + 1, user: user.email });
+      );
+      const updatedProject = {
+        ...prev,
+        tasks: updatedTasks,
+        tasksCompleted: prev.tasksCompleted + 1,
+        activityLog: [...(prev.activityLog || []), {
+          id: `act-${Date.now()}`,
+          user: user.email,
+          action: `Completed task: ${prev.tasks.find(t => t.id === taskId).title}`,
+          timestamp: new Date().toISOString(),
+        }],
+        achievements: prev.achievements.map((ach) =>
+          ach.id === 'a2' && !ach.earned ? { ...ach, earned: true } : ach
+        ),
+      };
+      updateProject(id, updatedProject);
+      socket.emit('metric-update', { projectId: id, tasksCompleted: updatedProject.tasksCompleted, user: user.email });
+      return updatedProject;
+    });
   };
 
   const uploadFile = () => {
@@ -444,15 +496,19 @@ const ProjectHome = () => {
 
   const requestFile = () => {
     if (!fileRequest) return;
-    setProject((prev) => ({
-      ...prev,
-      activityLog: [...(prev.activityLog || []), {
-        id: `act-${Date.now()}`,
-        user: user.email,
-        action: `Requested to add file: ${fileRequest}`,
-        timestamp: new Date().toISOString(),
-      }],
-    }));
+    setProject((prev) => {
+      const updatedProject = {
+        ...prev,
+        activityLog: [...(prev.activityLog || []), {
+          id: `act-${Date.now()}`,
+          user: user.email,
+          action: `Requested to add file: ${fileRequest}`,
+          timestamp: new Date().toISOString(),
+        }],
+      };
+      updateProject(id, updatedProject);
+      return updatedProject;
+    });
     notifyUsers(`${user.email} requested to add file: ${fileRequest}`);
     setFileRequest('');
   };
@@ -479,16 +535,20 @@ const ProjectHome = () => {
         profilePicture: 'https://via.placeholder.com/150',
       })),
     };
-    setProject((prev) => ({
-      ...prev,
-      teams: [...(prev.teams || []), team],
-      activityLog: [...(prev.activityLog || []), {
-        id: `act-${Date.now()}`,
-        user: user.email,
-        action: `Created team: ${team.name}`,
-        timestamp: new Date().toISOString(),
-      }],
-    }));
+    setProject((prev) => {
+      const updatedProject = {
+        ...prev,
+        teams: [...(prev.teams || []), team],
+        activityLog: [...(prev.activityLog || []), {
+          id: `act-${Date.now()}`,
+          user: user.email,
+          action: `Created team: ${team.name}`,
+          timestamp: new Date().toISOString(),
+        }],
+      };
+      updateProject(id, updatedProject);
+      return updatedProject;
+    });
     notifyUsers(`${user.email} created team: ${team.name}`);
     setShowTeamModal(false);
     setNewTeam({ name: '', description: '', members: [] });
@@ -496,39 +556,44 @@ const ProjectHome = () => {
 
   const inviteUser = () => {
     const updatedMembers = [...(project.members || []), { email: inviteEmail, role: 'member', profilePicture: 'https://via.placeholder.com/150' }];
-    setProject((prev) => ({
-      ...prev,
-      members: updatedMembers,
-      activityLog: [...(prev.activityLog || []), {
-        id: `act-${Date.now()}`,
-        user: user.email,
-        action: `Invited ${inviteEmail} to the project`,
-        timestamp: new Date().toISOString(),
-      }],
-    }));
-    socket.emit('member-update', updatedMembers);
+    setProject((prev) => {
+      const updatedProject = {
+        ...prev,
+        members: updatedMembers,
+        activityLog: [...(prev.activityLog || []), {
+          id: `act-${Date.now()}`,
+          user: user.email,
+          action: `Invited ${inviteEmail} to the project`,
+          timestamp: new Date().toISOString(),
+        }],
+      };
+      updateProject(id, updatedProject);
+      socket.emit('member-update', updatedMembers);
+      return updatedProject;
+    });
     notifyUsers(`${user.email} invited ${inviteEmail} to the project`);
     setInviteEmail('');
     setShowInviteModal(false);
   };
 
   const submitEditSuggestion = () => {
-    setProject((prev) => ({
-      ...prev,
-      activityLog: [...(prev.activityLog || []), {
-        id: `act-${Date.now()}`,
-        user: user.email,
-        action: isAdmin ? 'Edited project details' : 'Submitted an edit suggestion',
-        timestamp: new Date().toISOString(),
-      }],
-    }));
-    if (isAdmin) {
-      setProject((prev) => ({
+    setProject((prev) => {
+      const updatedProject = {
         ...prev,
-        title: editSuggestions.includes('Title:') ? editSuggestions.split('Title:')[1].split('\n')[0].trim() : prev.title,
-        description: editSuggestions.includes('Description:') ? editSuggestions.split('Description:')[1].trim() : prev.description,
-      }));
-    }
+        activityLog: [...(prev.activityLog || []), {
+          id: `act-${Date.now()}`,
+          user: user.email,
+          action: isAdmin ? 'Edited project details' : 'Submitted an edit suggestion',
+          timestamp: new Date().toISOString(),
+        }],
+      };
+      if (isAdmin) {
+        updatedProject.title = editSuggestions.includes('Title:') ? editSuggestions.split('Title:')[1].split('\n')[0].trim() : prev.title;
+        updatedProject.description = editSuggestions.includes('Description:') ? editSuggestions.split('Description:')[1].trim() : prev.description;
+      }
+      updateProject(id, updatedProject);
+      return updatedProject;
+    });
     notifyUsers(`${user.email} ${isAdmin ? 'edited project details' : 'submitted an edit suggestion'}`);
     setEditSuggestions('');
     setShowEditModal(false);
@@ -1022,9 +1087,8 @@ const ProjectHome = () => {
                                 type="checkbox"
                                 checked={sub.completed}
                                 onChange={() => {
-                                  setProject((prev) => ({
-                                    ...prev,
-                                    tasks: prev.tasks.map((t) =>
+                                  setProject((prev) => {
+                                    const updatedTasks = prev.tasks.map((t) =>
                                       t.id === task.id
                                         ? {
                                             ...t,
@@ -1033,8 +1097,11 @@ const ProjectHome = () => {
                                             ),
                                           }
                                         : t
-                                    ),
-                                  }));
+                                    );
+                                    const updatedProject = { ...prev, tasks: updatedTasks };
+                                    updateProject(id, updatedProject);
+                                    return updatedProject;
+                                  });
                                 }}
                               />
                               <p className={`text-primary ${sub.completed ? 'line-through' : ''}`}>{sub.title}</p>
@@ -1278,7 +1345,11 @@ const ProjectHome = () => {
                 <label className="text-primary">Project Privacy:</label>
                 <select
                   value={project.privacy}
-                  onChange={(e) => setProject({ ...project, privacy: e.target.value })}
+                  onChange={(e) => setProject((prev) => {
+                    const updatedProject = { ...prev, privacy: e.target.value };
+                    updateProject(id, updatedProject);
+                    return updatedProject;
+                  })}
                   className="input-field flex-1 rounded-full"
                 >
                   <option value="public">Public</option>
@@ -1301,8 +1372,12 @@ const ProjectHome = () => {
                     onChange={(e) => {
                       const updatedMembers = [...project.members];
                       updatedMembers[index] = { ...member, role: e.target.value };
-                      setProject({ ...project, members: updatedMembers });
-                      socket.emit('member-update', updatedMembers);
+                      setProject((prev) => {
+                        const updatedProject = { ...prev, members: updatedMembers };
+                        updateProject(id, updatedProject);
+                        socket.emit('member-update', updatedMembers);
+                        return updatedProject;
+                      });
                     }}
                     className="input-field rounded-full"
                     disabled={!isAdmin}

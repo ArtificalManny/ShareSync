@@ -22,24 +22,26 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-12">
+          {/* Logo on the Left */}
           <Link to="/" className="text-xl font-playfair text-accent-gold">
             ShareSync
           </Link>
-          <div className="flex items-center space-x-2">
+          {/* Right Side: Search and Icons */}
+          <div className="flex items-center gap-3">
             {isAuthenticated && (
               <form onSubmit={handleSearch} className="flex items-center">
-                <div className="relative w-32">
-                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-accent-teal" />
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-accent-teal" />
                   <input
                     type="text"
                     placeholder="Search..."
-                    className="input-field w-full pl-8 pr-2 py-1 text-sm rounded-full"
+                    className="input-field pl-9 pr-3 py-1 text-sm rounded-full w-36 md:w-48"
                   />
                 </div>
               </form>
             )}
             {isAuthenticated ? (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-3">
                 <Link to="/" className="nav-link">
                   <Home className="w-5 h-5 text-accent-teal" />
                 </Link>
@@ -69,7 +71,7 @@ const Navbar = () => {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-3">
                 <Link to="/login" className="nav-link flex items-center">
                   <User className="w-5 h-5 text-accent-teal mr-1" /> Log In
                 </Link>

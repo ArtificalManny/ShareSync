@@ -5,7 +5,7 @@ import { ThumbsUp, MessageSquare, Share2, Bell, Folder, PlusCircle, Users, Alert
 import './Home.css';
 
 const Home = () => {
-  const { user, isAuthenticated, globalMetrics, socket, joinProject } = useContext(AuthContext);
+  const { user, isAuthenticated, globalMetrics, socket, joinProject, updateProject } = useContext(AuthContext);
   const [projectFeed, setProjectFeed] = useState([]);
   const [newPost, setNewPost] = useState('');
   const [notifications, setNotifications] = useState([]);
@@ -35,6 +35,10 @@ const Home = () => {
             ...prev,
           ]);
         }
+        // Update the project in user.projects to persist the new post
+        updateProject(post.projectId, {
+          posts: [...(user.projects.find(p => p.id === post.projectId)?.posts || []), post],
+        });
       });
 
       socket.on('project-create', (newProject) => {
@@ -51,7 +55,7 @@ const Home = () => {
         socket.off('project-create');
       }
     };
-  }, [socket, user, selectedProject]);
+  }, [socket, user, selectedProject, updateProject]);
 
   const handleJoinProject = (project) => {
     joinProject(project);
@@ -84,12 +88,17 @@ const Home = () => {
   };
 
   const handleLike = (itemId) => {
-    if (!socket) return;
+    if (!socket || !selectedProject) return;
     setProjectFeed((prev) =>
       prev.map((item) =>
         item.id === itemId ? { ...item, likes: (item.likes || 0) + 1 } : item
       )
     );
+    // Update the project in user.projects to persist the like
+    const updatedPosts = projectFeed.map((item) =>
+      item.id === itemId ? { ...item, likes: (item.likes || 0) + 1 } : item
+    );
+    updateProject(selectedProject.id, { posts: updatedPosts });
     socket.emit('notification', { message: `${user?.email || 'Guest'} liked a post in ${selectedProject?.title || 'a project'}`, userId: user?.username });
   };
 

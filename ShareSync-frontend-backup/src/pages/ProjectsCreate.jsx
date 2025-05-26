@@ -42,6 +42,13 @@ const ProjectsCreate = () => {
       totalTasks: 0,
       admin: user.email,
       members: members.map(m => ({ email: m.email, role: m.role, profilePicture: 'https://via.placeholder.com/150' })),
+      posts: [],
+      comments: [],
+      activityLog: [],
+      files: [],
+      tasks: [],
+      teams: [],
+      announcements: [],
     };
     socket.emit('project-create', newProject);
     if (addToProfile) {
@@ -57,7 +64,9 @@ const ProjectsCreate = () => {
   return (
     <div className="projects-create-container">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <h1 className="text-4xl font-playfair text-accent-gold mb-6 text-center">Create New Project</h1>
+        <h1 className="text-4xl font-playfair text-accent-gold mb-6 text-center flex items-center justify-center">
+          <PlusCircle className="w-6 h-6 mr-2" /> Create New Project
+        </h1>
         <div className="card p-6">
           {created ? (
             <div className="text-center">
@@ -113,7 +122,9 @@ const ProjectsCreate = () => {
                 </select>
               </div>
               <div className="members-section">
-                <h2 className="text-xl font-playfair text-accent-teal mb-2">Add Members</h2>
+                <h2 className="text-xl font-playfair text-accent-teal mb-2 flex items-center">
+                  <UserPlus className="w-5 h-5 mr-2" /> Add Members
+                </h2>
                 <div className="flex items-center gap-2 mb-2">
                   <input
                     type="email"

@@ -26,6 +26,11 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
+      setGlobalMetrics((prev) => ({
+        ...prev,
+        totalProjects: user.projects?.length || 0,
+        notifications: user.notifications?.length || 0,
+      }));
     } else {
       localStorage.removeItem('user');
     }
@@ -43,21 +48,40 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUserProfile = (updatedDetails) => {
-    setUser((prev) => ({ ...prev, ...updatedDetails }));
+    setUser((prev) => {
+      const updatedUser = { ...prev, ...updatedDetails };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
   };
 
   const joinProject = (project) => {
-    setUser((prev) => ({
-      ...prev,
-      projects: [...(prev.projects || []), project],
-    }));
+    setUser((prev) => {
+      const updatedProjects = [...(prev.projects || []), project];
+      const updatedUser = { ...prev, projects: updatedProjects };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
   };
 
   const addProject = (project) => {
-    setUser((prev) => ({
-      ...prev,
-      projects: [...(prev.projects || []), project],
-    }));
+    setUser((prev) => {
+      const updatedProjects = [...(prev.projects || []), project];
+      const updatedUser = { ...prev, projects: updatedProjects };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  };
+
+  const updateProject = (projectId, updates) => {
+    setUser((prev) => {
+      const updatedProjects = prev.projects.map((proj) =>
+        proj.id === projectId ? { ...proj, ...updates } : proj
+      );
+      const updatedUser = { ...prev, projects: updatedProjects };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
   };
 
   return (
@@ -72,6 +96,7 @@ export const AuthProvider = ({ children }) => {
         socket,
         joinProject,
         addProject,
+        updateProject,
       }}
     >
       {children}

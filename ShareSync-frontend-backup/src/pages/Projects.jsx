@@ -5,7 +5,7 @@ import { Folder, PlusCircle, ThumbsUp, MessageSquare, Bell, Users, AlertCircle, 
 import './Projects.css';
 
 const Projects = () => {
-  const { user, isAuthenticated, socket, addProject } = useContext(AuthContext);
+  const { user, isAuthenticated, socket, addProject, updateProject } = useContext(AuthContext);
   const navigate = useNavigate();
   const [projects, setProjects] = useState(user?.projects || []);
   const [error, setError] = useState('');
@@ -44,6 +44,10 @@ const Projects = () => {
               : proj
           )
         );
+        updateProject(update.projectId, {
+          tasksCompleted: update.tasksCompleted,
+          totalTasks: update.totalTasks,
+        });
       });
 
       socket.on('project-create', (newProject) => {
@@ -67,7 +71,7 @@ const Projects = () => {
         socket.off('project-create');
       }
     };
-  }, [isAuthenticated, navigate, socket, user, addProject]);
+  }, [isAuthenticated, navigate, socket, user, addProject, updateProject]);
 
   const handlePostAnnouncement = (projectId) => {
     if (!newAnnouncement) return;
@@ -87,6 +91,9 @@ const Projects = () => {
           : proj
       )
     );
+    updateProject(projectId, {
+      announcements: [...(projects.find(p => p.id === projectId).announcements || []), announcement],
+    });
     setNewAnnouncement('');
     setSelectedProjectId(null);
     socket.emit('notification', { message: `${user.email} posted an announcement in ${projects.find(p => p.id === projectId).title}`, userId: user.username });
@@ -98,6 +105,7 @@ const Projects = () => {
         proj.id === projectId ? { ...proj, status: newStatus } : proj
       )
     );
+    updateProject(projectId, { status: newStatus });
     socket.emit('metric-update', { projectId, status: newStatus });
   };
 

@@ -20,7 +20,8 @@ const Profile = () => {
     const fetchProfile = async () => {
       try {
         if (!isAuthenticated || !user) {
-          throw new Error('User not authenticated');
+          navigate('/login', { replace: true });
+          return;
         }
         if (!username) {
           throw new Error('Username is missing');
@@ -47,7 +48,7 @@ const Profile = () => {
     };
 
     fetchProfile();
-  }, [username, navigate, isAuthenticated, user]);
+  }, [username, isAuthenticated, user, navigate]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -73,6 +74,7 @@ const Profile = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setBannerImage(reader.result);
+        updateUserProfile({ bannerImage: reader.result });
       };
       reader.readAsDataURL(file);
     }
