@@ -30,7 +30,7 @@ const Login = () => {
         <h2 className="text-3xl font-inter text-holo-blue mb-6 text-center animate-text-glow">Login to ShareSync</h2>
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
         <div className="card p-6">
-          <div className="space-y-4">
+          <div className="space-y-6"> {/* Increased from space-y-4 to space-y-6 */}
             <div className="flex items-center gap-2">
               <input
                 type="email"

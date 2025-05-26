@@ -135,7 +135,7 @@ const Home = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
-            <div className="projects-section card p-6 animate-tilt">
+            <div className="projects-section card p-6"> {/* Removed animate-tilt */}
               <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
                 <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Your Projects
               </h2>
@@ -154,7 +154,7 @@ const Home = () => {
                     <Link
                       to={`/projects/${proj.id}`}
                       key={proj.id}
-                      className="project-card card p-4 flex items-center gap-4 hover:bg-holo-bg-dark transition-all animate-tilt"
+                      className="project-card card p-4 flex items-center gap-4 hover:bg-holo-bg-dark transition-all" // Removed animate-tilt
                     >
                       <Folder className="w-8 h-8 text-holo-pink" />
                       <div className="flex-1">
@@ -169,7 +169,7 @@ const Home = () => {
               )}
             </div>
 
-            <div className="feed-section card p-6 animate-tilt">
+            <div className="feed-section card p-6"> {/* Removed animate-tilt */}
               <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
                 <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Project Feed
               </h2>
@@ -221,7 +221,7 @@ const Home = () => {
                   ) : (
                     <div className="space-y-4">
                       {projectFeed.map((item) => (
-                        <div key={item.id} className="feed-item card p-4 holographic-effect animate-tilt">
+                        <div key={item.id} className="feed-item card p-4 holographic-effect"> {/* Removed animate-tilt */}
                           <div className="flex items-center mb-2">
                             <img
                               src={item.profilePicture || 'https://via.placeholder.com/150'}
@@ -258,7 +258,7 @@ const Home = () => {
           </div>
 
           <div className="md:col-span-1">
-            <div className="sidebar card p-6 sticky top-20 space-y-6 animate-tilt">
+            <div className="sidebar card p-6 sticky top-20 space-y-6"> {/* Removed animate-tilt */}
               <div className="notifications-section">
                 <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
                   <Bell className="w-5 h-5 mr-2 cursor-pointer text-holo-pink animate-pulse" onClick={() => setShowNotifications(!showNotifications)} />
@@ -291,7 +291,7 @@ const Home = () => {
                   {availableProjects.map((proj) => (
                     <li key={proj.id} className="relative">
                       <div
-                        className="project-card card p-4 flex items-center gap-3 hover:bg-holo-bg-dark transition-all cursor-pointer animate-tilt"
+                        className="project-card card p-4 flex items-center gap-3 hover:bg-holo-bg-dark transition-all cursor-pointer" // Removed animate-tilt
                         onClick={() => handleJoinProject(proj)}
                         onMouseEnter={() => setTooltip(proj.id)}
                         onMouseLeave={() => setTooltip(null)}

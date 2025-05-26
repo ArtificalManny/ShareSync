@@ -19,8 +19,14 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        if (!isAuthenticated || !user) {
+        if (!isAuthenticated) {
           console.log('Profile - User not authenticated, redirecting to login');
+          navigate('/login', { replace: true });
+          return;
+        }
+        if (!user || !user.username) {
+          console.log('Profile - User data not available');
+          setError('User data not available. Please log in again.');
           navigate('/login', { replace: true });
           return;
         }
@@ -28,11 +34,13 @@ const Profile = () => {
           throw new Error('Username is missing in URL');
         }
         console.log('Profile - Fetching profile for:', username, 'Authenticated user:', user.username);
-        if (user.username !== username) {
+        const cleanUsername = username.trim(); // Clean up the username from URL
+        const userUsername = user.username?.trim();
+        if (userUsername !== cleanUsername) {
           throw new Error('You can only view your own profile');
         }
         const userProfile = {
-          username: user.username || 'johndoe',
+          username: userUsername || 'johndoe',
           firstName: user.firstName || 'John',
           lastName: user.lastName || 'Doe',
           email: user.email || 'johndoe@example.com',
@@ -100,11 +108,11 @@ const Profile = () => {
     return (
       <div className="profile-container">
         <p className="text-red-500">{error || 'Profile not found'}</p>
-        {error.includes('token') && (
+        {error.includes('token') || error.includes('User data not available') ? (
           <p className="text-holo-gray">
             Please <Link to="/login" className="text-holo-blue hover:underline">log in</Link> to view this profile.
           </p>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -169,7 +177,7 @@ const Profile = () => {
         )}
 
         {isEditing ? (
-          <div className="card p-6 mb-6 animate-tilt">
+          <div className="card p-6 mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
               <Edit className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Edit Profile
             </h2>
@@ -211,7 +219,7 @@ const Profile = () => {
             </div>
           </div>
         ) : (
-          <div className="card p-6 mb-6 animate-tilt">
+          <div className="card p-6 mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
               <UserIcon className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> About
             </h2>
@@ -224,7 +232,7 @@ const Profile = () => {
           </div>
         )}
 
-        <div className="projects-section card p-6 animate-tilt">
+        <div className="projects-section card p-6">
           <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
             <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Projects
           </h2>
@@ -236,7 +244,7 @@ const Profile = () => {
                 <Link
                   to={`/projects/${project.id}`}
                   key={project.id}
-                  className="project-card card p-4 hover:bg-holo-bg-dark transition-all animate-tilt"
+                  className="project-card card p-4 hover:bg-holo-bg-dark transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <Folder className="w-6 h-6 text-holo-pink" />

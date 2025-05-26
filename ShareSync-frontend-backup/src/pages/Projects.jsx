@@ -17,12 +17,18 @@ const Projects = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        if (!isAuthenticated || !user) {
+        if (!isAuthenticated) {
+          console.log('Projects - User not authenticated, redirecting to login');
+          navigate('/login', { replace: true });
+          return;
+        }
+        if (!user || !user.email) {
+          console.log('Projects - User data not available');
+          setError('User data not available. Please log in again.');
           navigate('/login', { replace: true });
           return;
         }
         console.log('Projects - Fetching projects for user:', user.email);
-        // Ensure user.projects is an array
         const userProjects = Array.isArray(user.projects) ? user.projects : [];
         setProjects(userProjects);
         if (userProjects.length === 0) {
@@ -123,11 +129,11 @@ const Projects = () => {
     return (
       <div className="projects-container">
         <p className="text-red-500">{error}</p>
-        {error.includes('token') && (
+        {error.includes('token') || error.includes('User data not available') ? (
           <p className="text-holo-gray">
             Please <Link to="/login" className="text-holo-blue hover:underline">log in</Link> to view projects.
           </p>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -166,7 +172,7 @@ const Projects = () => {
                   <Link
                     to={`/projects/${project.id}`}
                     key={project.id}
-                    className="project-card card p-6 hover:bg-holo-bg-dark transition-all animate-tilt"
+                    className="project-card card p-6 hover:bg-holo-bg-dark transition-all"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <h2 className="text-xl font-inter text-holo-blue animate-text-glow">{project.title}</h2>

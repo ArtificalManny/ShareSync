@@ -17,18 +17,24 @@ const AuthProvider = ({ children }) => {
       if (token) {
         try {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          console.log('AuthContext - Attempting to fetch user data with token:', token);
           const response = await axios.get('http://localhost:3000/api/auth/me');
           const userData = response.data;
+          console.log('AuthContext - User data fetched successfully:', userData);
           setUser(userData);
           setIsAuthenticated(true);
           setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
         } catch (err) {
-          console.error('Failed to fetch user data:', err);
+          console.error('AuthContext - Failed to fetch user data:', err.message, err.response?.data);
           localStorage.removeItem('token');
           delete axios.defaults.headers.common['Authorization'];
           setIsAuthenticated(false);
           setUser(null);
         }
+      } else {
+        console.log('AuthContext - No token found in localStorage');
+        setIsAuthenticated(false);
+        setUser(null);
       }
     };
 
