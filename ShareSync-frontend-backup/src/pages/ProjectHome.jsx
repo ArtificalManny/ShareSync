@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
+import axios from 'axios';
 import { CheckCircle, MessageSquare, ThumbsUp, Share2, Award, ChevronDown, PlusCircle, FileText, Settings, Users, Filter, Image as ImageIcon, Vote, Edit, Mail, Smartphone, UserPlus, Calendar, Eye, BarChart, List, File, MessageCircle } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import Chart from 'chart.js/auto';
@@ -13,7 +14,7 @@ const chartOptions = {
     legend: {
       position: 'bottom',
       labels: {
-        color: '#F5F6FA',
+        color: '#A1B5FF',
         font: {
           family: 'Inter',
           size: 14,
@@ -24,12 +25,12 @@ const chartOptions = {
   scales: {
     y: {
       beginAtZero: true,
-      ticks: { color: '#F5F6FA' },
-      grid: { color: 'rgba(255, 255, 255, 0.1)' },
+      ticks: { color: '#A1B5FF' },
+      grid: { color: 'rgba(161, 181, 255, 0.1)' },
     },
     x: {
-      ticks: { color: '#F5F6FA' },
-      grid: { color: 'rgba(255, 255, 255, 0.1)' },
+      ticks: { color: '#A1B5FF' },
+      grid: { color: 'rgba(161, 181, 255, 0.1)' },
     },
   },
 };
@@ -81,10 +82,13 @@ const ProjectHome = () => {
         }
         if (!id) throw new Error('Project ID is missing');
         console.log('ProjectHome - Fetching project with ID:', id);
-        const projectData = user.projects?.find((proj) => proj.id === id);
-        if (!projectData) {
-          throw new Error('Project not found');
-        }
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`http://localhost:3000/api/projects/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const projectData = response.data;
+
+        // Ensure all fields are initialized
         const updatedProject = {
           ...projectData,
           posts: projectData.posts || [],
@@ -94,6 +98,7 @@ const ProjectHome = () => {
           tasks: projectData.tasks || [],
           teams: projectData.teams || [],
           messages: projectData.messages || [],
+          announcements: projectData.announcements || [],
           achievements: projectData.achievements || [
             { id: 'a1', name: 'Task Master', description: 'Completed 5 tasks', earned: projectData.tasksCompleted >= 5 },
             { id: 'a2', name: 'On-Time Hero', description: 'Completed a task on time', earned: false },
@@ -599,15 +604,15 @@ const ProjectHome = () => {
     setShowEditModal(false);
   };
 
-  if (loading) return <div className="project-home-container"><p className="text-gray-400">Loading...</p></div>;
+  if (loading) return <div className="project-home-container"><p className="text-holo-gray">Loading...</p></div>;
 
   if (error || !project) {
     return (
       <div className="project-home-container">
         <p className="text-red-500">{error || 'Project not found'}</p>
         {error.includes('token') && (
-          <p className="text-gray-400">
-            Please <Link to="/login" className="text-accent-teal hover:underline">log in</Link> to view this project.
+          <p className="text-holo-gray">
+            Please <Link to="/login" className="text-holo-blue hover:underline">log in</Link> to view this project.
           </p>
         )}
         <Link to="/projects"><button className="btn-primary">Back to Projects</button></Link>
@@ -623,8 +628,8 @@ const ProjectHome = () => {
       {
         label: 'Tasks',
         data: [project.tasksCompleted, project.totalTasks - project.tasksCompleted],
-        backgroundColor: ['#26C6DA', '#8A9A5B'],
-        borderColor: ['#0A1A2F', '#0A1A2F'],
+        backgroundColor: ['#A1B5FF', '#2E3555'],
+        borderColor: ['#1A1F36', '#1A1F36'],
         borderWidth: 1,
       },
     ],
@@ -649,22 +654,22 @@ const ProjectHome = () => {
   return (
     <div className="project-home-container">
       {/* Header Section */}
-      <div className="project-header bg-glass py-8 px-6 rounded-b-3xl text-center">
-        <h1 className="text-4xl font-playfair text-accent-gold mb-2">{project.title || 'Untitled'}</h1>
-        <p className="text-gray-400">{project.description || 'No description'}</p>
+      <div className="project-header bg-holo-bg-dark py-8 px-6 rounded-b-3xl text-center">
+        <h1 className="text-4xl font-inter text-holo-blue mb-2">{project.title || 'Untitled'}</h1>
+        <p className="text-holo-gray">{project.description || 'No description'}</p>
         <div className="flex justify-center gap-4 mt-4">
-          <Link to="/projects" className="text-accent-teal hover:text-accent-coral transition-all">
+          <Link to="/projects" className="text-holo-blue hover:text-holo-pink transition-all">
             ← Back to Projects
           </Link>
           <button
             onClick={() => setShowSettings(true)}
-            className="text-accent-teal hover:text-accent-coral transition-all flex items-center"
+            className="text-holo-blue hover:text-holo-pink transition-all flex items-center"
           >
             <Settings className="w-5 h-5 mr-2" /> Settings
           </button>
           <button
             onClick={() => setShowEditModal(true)}
-            className="text-accent-teal hover:text-accent-coral transition-all flex items-center"
+            className="text-holo-blue hover:text-holo-pink transition-all flex items-center"
           >
             <Edit className="w-5 h-5 mr-2" /> {isAdmin ? 'Edit Project' : 'Suggest Edits'}
           </button>
@@ -675,7 +680,7 @@ const ProjectHome = () => {
         {/* Main Content with Tabs */}
         <div className="flex-1 mr-6">
           {/* Tabs */}
-          <div className="project-tabs flex border-b border-gray-700 mb-6 overflow-x-auto">
+          <div className="project-tabs flex border-b border-holo-gray-dark mb-6 overflow-x-auto">
             <button
               className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
               onClick={() => setActiveTab('overview')}
@@ -737,10 +742,10 @@ const ProjectHome = () => {
             {activeTab === 'overview' && (
               <div className="project-overview card p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-playfair text-accent-teal flex items-center">
-                    <BarChart className="w-5 h-5 mr-2" /> Project Overview
+                  <h2 className="text-2xl font-inter text-holo-blue flex items-center">
+                    <BarChart className="w-5 h-5 mr-2 text-holo-pink" /> Project Overview
                   </h2>
-                  <button onClick={() => setShowDetails(!showDetails)} className="text-accent-teal hover:text-accent-coral">
+                  <button onClick={() => setShowDetails(!showDetails)} className="text-holo-blue hover:text-holo-pink">
                     <ChevronDown className={`w-6 h-6 transform transition-transform ${showDetails ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
@@ -752,20 +757,20 @@ const ProjectHome = () => {
                     <div className="space-y-4">
                       <div>
                         <span className="text-primary flex items-center gap-2">
-                          <CheckCircle className="w-5 h-5 text-accent-teal" /> Status: {project.status || 'Unknown'}
+                          <CheckCircle className="w-5 h-5 text-holo-pink" /> Status: {project.status || 'Unknown'}
                         </span>
                         <div className="progress-bar mt-2">
                           <div className="progress-fill" style={{ width: `${statusProgress}%` }}></div>
                         </div>
                       </div>
                       <p className="text-primary flex items-center gap-2">
-                        <List className="w-4 h-4 text-accent-teal" /> Category: <span className="text-accent-gold">{project.category}</span>
+                        <List className="w-4 h-4 text-holo-pink" /> Category: <span className="text-holo-blue">{project.category}</span>
                       </p>
                       <p className="text-primary flex items-center gap-2">
-                        <BarChart className="w-4 h-4 text-accent-teal" /> Progress: <span className="text-accent-gold">{project.tasksCompleted}/{project.totalTasks} tasks</span>
+                        <BarChart className="w-4 h-4 text-holo-pink" /> Progress: <span className="text-holo-blue">{project.tasksCompleted}/{project.totalTasks} tasks</span>
                       </p>
                       <p className="text-primary flex items-center gap-2">
-                        <Eye className="w-4 h-4 text-accent-teal" /> Privacy: <span className="text-accent-gold">{project.privacy}</span>
+                        <Eye className="w-4 h-4 text-holo-pink" /> Privacy: <span className="text-holo-blue">{project.privacy}</span>
                       </p>
                     </div>
                   </div>
@@ -775,8 +780,8 @@ const ProjectHome = () => {
 
             {activeTab === 'feed' && (
               <div className="social-feed card p-6">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                  <MessageSquare className="w-5 h-5 mr-2" /> Project Feed
+                <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                  <MessageSquare className="w-5 h-5 mr-2 text-holo-pink" /> Project Feed
                 </h2>
                 <div className="post-input card p-4 mb-4">
                   <div className="flex items-center mb-2">
@@ -820,7 +825,7 @@ const ProjectHome = () => {
                       ))}
                       <button
                         onClick={() => setPollOptions([...pollOptions, ''])}
-                        className="text-accent-teal hover:text-accent-coral transition-all"
+                        className="text-holo-blue hover:text-holo-pink transition-all"
                       >
                         + Add Option
                       </button>
@@ -835,7 +840,7 @@ const ProjectHome = () => {
                   )}
                   {postType === 'image' && (
                     <div className="mb-2">
-                      <label className="flex items-center text-accent-teal hover:text-accent-coral cursor-pointer">
+                      <label className="flex items-center text-holo-blue hover:text-holo-pink cursor-pointer">
                         <ImageIcon className="w-5 h-5 mr-2" /> Upload Image
                         <input
                           type="file"
@@ -852,7 +857,7 @@ const ProjectHome = () => {
                   <button onClick={addPost} className="btn-primary rounded-full">Post</button>
                 </div>
                 {project.posts?.length === 0 ? (
-                  <p className="text-gray-400 text-center">No posts yet. Be the first to share an update!</p>
+                  <p className="text-holo-gray text-center">No posts yet. Be the first to share an update!</p>
                 ) : (
                   project.posts.map((post) => (
                     <div key={post.id} className="post-item card p-4 mb-4 holographic-effect">
@@ -864,7 +869,7 @@ const ProjectHome = () => {
                         />
                         <div>
                           <span className="text-primary font-semibold">{post.user}</span>
-                          <span className="text-gray-400 text-sm ml-2">{new Date(post.timestamp).toLocaleString()}</span>
+                          <span className="text-holo-gray text-sm ml-2">{new Date(post.timestamp).toLocaleString()}</span>
                         </div>
                       </div>
                       {post.type === 'text' && <p className="text-primary">{post.content}</p>}
@@ -881,7 +886,7 @@ const ProjectHome = () => {
                             <button
                               key={opt.id}
                               onClick={() => handleVote(post.id, opt.id)}
-                              className="block w-full text-left p-2 mb-1 bg-accent-sage rounded-lg text-primary hover:bg-teal-900 transition-all"
+                              className="block w-full text-left p-2 mb-1 bg-holo-bg-light rounded-lg text-primary hover:bg-holo-bg-dark transition-all"
                             >
                               {opt.text} ({opt.votes || 0} votes)
                             </button>
@@ -891,14 +896,14 @@ const ProjectHome = () => {
                       <div className="flex items-center mt-2 gap-4">
                         <button
                           onClick={() => handleLike(post.id, 'post')}
-                          className="flex items-center text-accent-teal hover:text-accent-coral transition-all"
+                          className="flex items-center text-holo-blue hover:text-holo-pink transition-all"
                         >
                           <ThumbsUp className="w-5 h-5 mr-1" /> {post.likes || 0}
                         </button>
-                        <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
+                        <button className="flex items-center text-holo-blue hover:text-holo-pink transition-all">
                           <MessageSquare className="w-5 h-5 mr-1" /> {post.comments?.length || 0}
                         </button>
-                        <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
+                        <button className="flex items-center text-holo-blue hover:text-holo-pink transition-all">
                           <Share2 className="w-5 h-5 mr-1" /> Share
                         </button>
                       </div>
@@ -910,12 +915,12 @@ const ProjectHome = () => {
 
             {activeTab === 'comments' && (
               <div className="comments-section card p-6">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                  <MessageSquare className="w-5 h-5 mr-2" /> Comments
+                <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                  <MessageSquare className="w-5 h-5 mr-2 text-holo-pink" /> Comments
                 </h2>
                 <div className="comments-list">
                   {comments.length === 0 ? (
-                    <p className="text-gray-400 text-center">No comments yet. Start the conversation!</p>
+                    <p className="text-holo-gray text-center">No comments yet. Start the conversation!</p>
                   ) : (
                     comments.map((comment) => (
                       <div key={comment.id} className="comment-item card p-4 mb-4">
@@ -927,18 +932,18 @@ const ProjectHome = () => {
                           />
                           <div>
                             <span className="text-primary font-semibold">{comment.user}</span>
-                            <span className="text-gray-400 text-sm ml-2">{new Date(comment.timestamp).toLocaleString()}</span>
+                            <span className="text-holo-gray text-sm ml-2">{new Date(comment.timestamp).toLocaleString()}</span>
                           </div>
                         </div>
                         <p className="text-primary">{comment.text}</p>
                         <div className="flex items-center mt-2 gap-4">
                           <button
                             onClick={() => handleLike(comment.id, 'comment')}
-                            className="flex items-center text-accent-teal hover:text-accent-coral transition-all"
+                            className="flex items-center text-holo-blue hover:text-holo-pink transition-all"
                           >
                             <ThumbsUp className="w-5 h-5 mr-1" /> {comment.likes || 0}
                           </button>
-                          <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
+                          <button className="flex items-center text-holo-blue hover:text-holo-pink transition-all">
                             <MessageSquare className="w-5 h-5 mr-1" /> Reply
                           </button>
                         </div>
@@ -966,11 +971,11 @@ const ProjectHome = () => {
 
             {activeTab === 'activity' && (
               <div className="activity-log card p-6">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                  <Calendar className="w-5 h-5 mr-2" /> Activity Log
+                <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                  <Calendar className="w-5 h-5 mr-2 text-holo-pink" /> Activity Log
                 </h2>
                 <div className="flex items-center gap-2 mb-4">
-                  <Filter className="w-5 h-5 text-accent-teal" />
+                  <Filter className="w-5 h-5 text-holo-pink" />
                   <select
                     value={activityFilter}
                     onChange={(e) => setActivityFilter(e.target.value)}
@@ -983,12 +988,12 @@ const ProjectHome = () => {
                   </select>
                 </div>
                 {filteredActivityLog.length === 0 ? (
-                  <p className="text-gray-400 text-center">No activity yet.</p>
+                  <p className="text-holo-gray text-center">No activity yet.</p>
                 ) : (
                   filteredActivityLog.map((log) => (
                     <div key={log.id} className="activity-item card p-2 mb-2">
                       <p className="text-primary">{log.user} {log.action}</p>
-                      <p className="text-gray-400 text-sm">{new Date(log.timestamp).toLocaleString()}</p>
+                      <p className="text-holo-gray text-sm">{new Date(log.timestamp).toLocaleString()}</p>
                     </div>
                   ))
                 )}
@@ -997,13 +1002,13 @@ const ProjectHome = () => {
 
             {activeTab === 'tasks' && (
               <div className="tasks-section card p-6">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                  <List className="w-5 h-5 mr-2" /> Tasks
+                <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                  <List className="w-5 h-5 mr-2 text-holo-pink" /> Tasks
                 </h2>
                 {isAdmin && (
                   <div className="task-input card p-4 mb-4">
-                    <h3 className="text-lg font-playfair text-primary mb-2 flex items-center">
-                      <PlusCircle className="w-5 h-5 mr-2 text-accent-teal" /> Create Task
+                    <h3 className="text-lg font-inter text-primary mb-2 flex items-center">
+                      <PlusCircle className="w-5 h-5 mr-2 text-holo-pink" /> Create Task
                     </h3>
                     <div className="flex items-center mb-2">
                       <img
@@ -1033,8 +1038,8 @@ const ProjectHome = () => {
                       className="input-field w-full mb-2"
                     />
                     {suggestedDeadline && (
-                      <p className="text-gray-400 mb-2 flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-accent-teal" /> AI Suggested Deadline: {suggestedDeadline}
+                      <p className="text-holo-gray mb-2 flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-holo-pink" /> AI Suggested Deadline: {suggestedDeadline}
                       </p>
                     )}
                     {newTask.subtasks.map((sub, idx) => (
@@ -1053,7 +1058,7 @@ const ProjectHome = () => {
                     ))}
                     <button
                       onClick={() => setNewTask({ ...newTask, subtasks: [...newTask.subtasks, ''] })}
-                      className="text-accent-teal hover:text-accent-coral transition-all mb-2"
+                      className="text-holo-blue hover:text-holo-pink transition-all mb-2"
                     >
                       + Add Subtask
                     </button>
@@ -1061,25 +1066,25 @@ const ProjectHome = () => {
                   </div>
                 )}
                 {project.tasks?.length === 0 ? (
-                  <p className="text-gray-400 text-center">No tasks yet.</p>
+                  <p className="text-holo-gray text-center">No tasks yet.</p>
                 ) : (
                   project.tasks.map((task) => (
                     <div key={task.id} className="task-item card p-4 mb-4">
-                      <h3 className="text-lg font-playfair text-accent-gold">{task.title}</h3>
-                      <p className="text-gray-400">{task.description}</p>
-                      <p className="text-gray-400 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-accent-teal" /> Assigned to: {task.assignedTo.join(', ')}
+                      <h3 className="text-lg font-inter text-holo-blue">{task.title}</h3>
+                      <p className="text-holo-gray">{task.description}</p>
+                      <p className="text-holo-gray flex items-center gap-2">
+                        <Users className="w-4 h-4 text-holo-pink" /> Assigned to: {task.assignedTo.join(', ')}
                       </p>
-                      <p className="text-gray-400 flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-accent-teal" /> Due Date: {task.dueDate}
+                      <p className="text-holo-gray flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-holo-pink" /> Due Date: {task.dueDate}
                       </p>
-                      <p className="text-accent-teal flex items-center gap-2">
+                      <p className="text-holo-blue flex items-center gap-2">
                         <CheckCircle className="w-4 h-4" /> Status: {task.status}
                       </p>
                       {task.subtasks?.length > 0 && (
                         <div className="subtasks mt-2">
                           <h4 className="text-primary flex items-center gap-2">
-                            <List className="w-4 h-4 text-accent-teal" /> Subtasks:
+                            <List className="w-4 h-4 text-holo-pink" /> Subtasks:
                           </h4>
                           {task.subtasks.map((sub) => (
                             <div key={sub.id} className="flex items-center gap-2">
@@ -1124,8 +1129,8 @@ const ProjectHome = () => {
 
             {activeTab === 'files' && (
               <div className="files-section card p-6">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                  <File className="w-5 h-5 mr-2" /> Files
+                <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                  <File className="w-5 h-5 mr-2 text-holo-pink" /> Files
                 </h2>
                 {isAdmin ? (
                   <div className="file-input card p-4 mb-4">
@@ -1135,7 +1140,7 @@ const ProjectHome = () => {
                         alt="User"
                         className="w-8 h-8 rounded-full mr-2 object-cover"
                       />
-                      <label className="flex items-center text-accent-teal hover:text-accent-coral cursor-pointer flex-1">
+                      <label className="flex items-center text-holo-blue hover:text-holo-pink cursor-pointer flex-1">
                         <FileText className="w-5 h-5 mr-2" /> Upload File
                         <input
                           type="file"
@@ -1145,8 +1150,8 @@ const ProjectHome = () => {
                       </label>
                     </div>
                     {newFile && (
-                      <p className="text-gray-400 mb-2 flex items-center gap-2">
-                        <File className="w-4 h-4 text-accent-teal" /> Selected: {newFile.name}
+                      <p className="text-holo-gray mb-2 flex items-center gap-2">
+                        <File className="w-4 h-4 text-holo-pink" /> Selected: {newFile.name}
                       </p>
                     )}
                     <button onClick={uploadFile} className="btn-primary rounded-full">Upload</button>
@@ -1171,15 +1176,15 @@ const ProjectHome = () => {
                   </div>
                 )}
                 {project.files?.length === 0 ? (
-                  <p className="text-gray-400 text-center">No files yet.</p>
+                  <p className="text-holo-gray text-center">No files yet.</p>
                 ) : (
                   project.files.map((file) => (
                     <div key={file.id} className="file-item card p-2 mb-2 flex items-center gap-2">
-                      <File className="w-5 h-5 text-accent-teal" />
+                      <File className="w-5 h-5 text-holo-pink" />
                       <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                         {file.name}
                       </a>
-                      <p className="text-gray-400 text-sm">Uploaded by {file.uploadedBy} on {new Date(file.timestamp).toLocaleString()}</p>
+                      <p className="text-holo-gray text-sm">Uploaded by {file.uploadedBy} on {new Date(file.timestamp).toLocaleString()}</p>
                     </div>
                   ))
                 )}
@@ -1189,12 +1194,12 @@ const ProjectHome = () => {
             {activeTab === 'teams' && (
               <div className="teams-section card p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-playfair text-accent-teal flex items-center">
-                    <Users className="w-5 h-5 mr-2" /> Teams
+                  <h2 className="text-2xl font-inter text-holo-blue flex items-center">
+                    <Users className="w-5 h-5 mr-2 text-holo-pink" /> Teams
                   </h2>
                   <button
                     onClick={() => setShowInviteModal(true)}
-                    className="text-accent-teal hover:text-accent-coral transition-all flex items-center"
+                    className="text-holo-blue hover:text-holo-pink transition-all flex items-center"
                   >
                     <UserPlus className="w-5 h-5 mr-2" /> Invite
                   </button>
@@ -1208,15 +1213,15 @@ const ProjectHome = () => {
                   </button>
                 )}
                 {project.teams?.length === 0 ? (
-                  <p className="text-gray-400">No teams yet.</p>
+                  <p className="text-holo-gray">No teams yet.</p>
                 ) : (
                   project.teams.map((team) => (
                     <div key={team.id} className="team-item card p-4 mb-4">
                       <div className="flex items-center gap-4 mb-2">
-                        <Users className="w-6 h-6 text-accent-teal" />
+                        <Users className="w-6 h-6 text-holo-pink" />
                         <div>
                           <p className="text-primary font-semibold">{team.name}</p>
-                          <p className="text-gray-400 text-sm">{team.description}</p>
+                          <p className="text-holo-gray text-sm">{team.description}</p>
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -1227,7 +1232,7 @@ const ProjectHome = () => {
                               alt={member.email}
                               className="w-6 h-6 rounded-full object-cover"
                             />
-                            <p className="text-primary">{member.email} - <span className="text-accent-gold">{member.role}</span></p>
+                            <p className="text-primary">{member.email} - <span className="text-holo-blue">{member.role}</span></p>
                           </div>
                         ))}
                       </div>
@@ -1239,12 +1244,12 @@ const ProjectHome = () => {
 
             {activeTab === 'chat' && (
               <div className="chat-section card p-6">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                  <MessageCircle className="w-5 h-5 mr-2" /> Project Chat
+                <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                  <MessageCircle className="w-5 h-5 mr-2 text-holo-pink" /> Project Chat
                 </h2>
-                <div className="messages bg-accent-sage p-4 rounded-lg h-64 overflow-y-auto">
+                <div className="messages bg-holo-bg-light p-4 rounded-lg h-64 overflow-y-auto">
                   {messages.length === 0 ? (
-                    <p className="text-gray-400 text-center">No messages yet. Say hello!</p>
+                    <p className="text-holo-gray text-center">No messages yet. Say hello!</p>
                   ) : (
                     messages.map((msg, index) => (
                       <div key={index} className="message-item mb-2 flex items-start gap-2">
@@ -1255,7 +1260,7 @@ const ProjectHome = () => {
                         />
                         <div>
                           <strong className="text-primary">{msg.user}:</strong> {msg.text}
-                          <span className="text-gray-400 text-sm ml-2">{new Date(msg.timestamp).toLocaleString()}</span>
+                          <span className="text-holo-gray text-sm ml-2">{new Date(msg.timestamp).toLocaleString()}</span>
                         </div>
                       </div>
                     ))
@@ -1281,20 +1286,20 @@ const ProjectHome = () => {
 
             {activeTab === 'achievements' && (
               <div className="achievements-section card p-6">
-                <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                  <Award className="w-5 h-5 mr-2" /> Achievements
+                <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                  <Award className="w-5 h-5 mr-2 text-holo-pink" /> Achievements
                 </h2>
                 {project.achievements.length === 0 ? (
-                  <p className="text-gray-400">No achievements yet. Keep working to earn some!</p>
+                  <p className="text-holo-gray">No achievements yet. Keep working to earn some!</p>
                 ) : (
                   project.achievements.map((achievement) => (
-                    <div key={achievement.id} className={`achievement-item card p-4 mb-4 ${achievement.earned ? 'bg-teal-900' : 'bg-gray-700'} bg-opacity-20`}>
+                    <div key={achievement.id} className={`achievement-item card p-4 mb-4 ${achievement.earned ? 'bg-holo-bg-dark' : 'bg-holo-bg-light'} bg-opacity-20`}>
                       <div className="flex items-center gap-3">
-                        <Award className={`w-6 h-6 ${achievement.earned ? 'text-accent-gold' : 'text-gray-400'}`} />
+                        <Award className={`w-6 h-6 ${achievement.earned ? 'text-holo-blue' : 'text-holo-gray'}`} />
                         <div>
                           <p className="text-primary font-semibold">{achievement.name}</p>
-                          <p className="text-gray-400 text-sm">{achievement.description}</p>
-                          <p className={`text-sm ${achievement.earned ? 'text-accent-teal' : 'text-gray-500'}`}>
+                          <p className="text-holo-gray text-sm">{achievement.description}</p>
+                          <p className={`text-sm ${achievement.earned ? 'text-holo-blue' : 'text-holo-gray-dark'}`}>
                             {achievement.earned ? 'Earned' : 'Not Earned'}
                           </p>
                         </div>
@@ -1310,8 +1315,8 @@ const ProjectHome = () => {
         {/* Persistent Sidebar */}
         <div className="w-64 hidden lg:block">
           <div className="members-sidebar card p-6 sticky top-20">
-            <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2" /> Project Members
+            <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2 text-holo-pink" /> Project Members
             </h2>
             <div className="space-y-4">
               {allMembers.map((member, index) => (
@@ -1323,7 +1328,7 @@ const ProjectHome = () => {
                   />
                   <div>
                     <p className="text-primary font-semibold">{member.email}</p>
-                    <p className="text-gray-400 text-sm capitalize">{member.role}</p>
+                    <p className="text-holo-gray text-sm capitalize">{member.role}</p>
                   </div>
                 </div>
               ))}
@@ -1336,12 +1341,12 @@ const ProjectHome = () => {
       {showSettings && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-full max-w-md">
-            <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
-              <Settings className="w-5 h-5 mr-2" /> Project Settings
+            <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
+              <Settings className="w-5 h-5 mr-2 text-holo-pink" /> Project Settings
             </h2>
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Eye className="w-5 h-5 text-accent-teal" />
+                <Eye className="w-5 h-5 text-holo-pink" />
                 <label className="text-primary">Project Privacy:</label>
                 <select
                   value={project.privacy}
@@ -1356,8 +1361,8 @@ const ProjectHome = () => {
                   <option value="private">Private</option>
                 </select>
               </div>
-              <h3 className="text-lg font-playfair text-accent-teal mt-4 flex items-center">
-                <Users className="w-5 h-5 mr-2" /> Manage Members
+              <h3 className="text-lg font-inter text-holo-blue mt-4 flex items-center">
+                <Users className="w-5 h-5 mr-2 text-holo-pink" /> Manage Members
               </h3>
               {project.members.map((member, index) => (
                 <div key={index} className="flex items-center gap-2 mb-2">
@@ -1388,8 +1393,8 @@ const ProjectHome = () => {
                   </select>
                 </div>
               ))}
-              <h3 className="text-lg font-playfair text-accent-teal mt-4 flex items-center">
-                <Bell className="w-5 h-5 mr-2" /> Notification Preferences
+              <h3 className="text-lg font-inter text-holo-blue mt-4 flex items-center">
+                <Bell className="w-5 h-5 mr-2 text-holo-pink" /> Notification Preferences
               </h3>
               <label className="flex items-center gap-2">
                 <input
@@ -1397,7 +1402,7 @@ const ProjectHome = () => {
                   checked={notificationSettings.email}
                   onChange={(e) => setNotificationSettings({ ...notificationSettings, email: e.target.checked })}
                 />
-                <Mail className="w-5 h-5 text-accent-teal" /> Email Notifications
+                <Mail className="w-5 h-5 text-holo-pink" /> Email Notifications
               </label>
               <label className="flex items-center gap-2">
                 <input
@@ -1405,7 +1410,7 @@ const ProjectHome = () => {
                   checked={notificationSettings.sms}
                   onChange={(e) => setNotificationSettings({ ...notificationSettings, sms: e.target.checked })}
                 />
-                <Smartphone className="w-5 h-5 text-accent-teal" /> SMS Notifications
+                <Smartphone className="w-5 h-5 text-holo-pink" /> SMS Notifications
               </label>
               <label className="flex items-center gap-2">
                 <input
@@ -1446,8 +1451,8 @@ const ProjectHome = () => {
       {showTeamModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-full max-w-md">
-            <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2" /> Create Team
+            <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2 text-holo-pink" /> Create Team
             </h2>
             <div className="space-y-4">
               <input
@@ -1474,7 +1479,7 @@ const ProjectHome = () => {
                 <button onClick={addTeam} className="btn-primary rounded-full flex-1">Create</button>
                 <button
                   onClick={() => setShowTeamModal(false)}
-                  className="btn-primary bg-gray-700 rounded-full flex-1"
+                  className="btn-primary bg-holo-bg-light rounded-full flex-1"
                 >
                   Cancel
                 </button>
@@ -1488,8 +1493,8 @@ const ProjectHome = () => {
       {showInviteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-full max-w-md">
-            <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
-              <UserPlus className="w-5 h-5 mr-2" /> Invite to Project
+            <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
+              <UserPlus className="w-5 h-5 mr-2 text-holo-pink" /> Invite to Project
             </h2>
             <div className="space-y-4">
               <input
@@ -1503,7 +1508,7 @@ const ProjectHome = () => {
                 <button onClick={inviteUser} className="btn-primary rounded-full flex-1">Invite</button>
                 <button
                   onClick={() => setShowInviteModal(false)}
-                  className="btn-primary bg-gray-700 rounded-full flex-1"
+                  className="btn-primary bg-holo-bg-light rounded-full flex-1"
                 >
                   Cancel
                 </button>
@@ -1517,8 +1522,8 @@ const ProjectHome = () => {
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="card p-6 w-full max-w-md">
-            <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
-              <Edit className="w-5 h-5 mr-2" /> {isAdmin ? 'Edit Project' : 'Suggest Edits'}
+            <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
+              <Edit className="w-5 h-5 mr-2 text-holo-pink" /> {isAdmin ? 'Edit Project' : 'Suggest Edits'}
             </h2>
             <div className="space-y-4">
               <textarea
@@ -1533,7 +1538,7 @@ const ProjectHome = () => {
                 </button>
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="btn-primary bg-gray-700 rounded-full flex-1"
+                  className="btn-primary bg-holo-bg-light rounded-full flex-1"
                 >
                   Cancel
                 </button>

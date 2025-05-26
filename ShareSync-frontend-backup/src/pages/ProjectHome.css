@@ -1,12 +1,13 @@
 .project-home-container {
   padding: 0;
   min-height: 100vh;
-  background: #3C2F5D;
+  background: linear-gradient(135deg, #1A1F36, #2E3555);
 }
 
 .project-header {
-  background: linear-gradient(45deg, #0A1A2F, #3C2F5D);
-  border-bottom: 3px solid #26C6DA;
+  background: linear-gradient(45deg, #1A1F36, #2E3555);
+  border-bottom: 3px solid #A1B5FF;
+  box-shadow: 0 4px 20px rgba(161, 181, 255, 0.2);
 }
 
 .project-tabs {
@@ -18,18 +19,19 @@
   padding: 8px 16px;
   font-size: 16px;
   font-weight: 500;
-  color: #F5F6FA;
+  color: #A1B5FF;
   border-bottom: 2px solid transparent;
-  transition: color 0.3s ease, border-bottom 0.3s ease;
+  transition: color 0.3s ease, border-bottom 0.3s ease, transform 0.3s ease;
 }
 
 .tab-button:hover {
-  color: #26C6DA;
+  color: #FF6F91;
+  transform: translateY(-2px);
 }
 
 .tab-button.active {
-  color: #26C6DA;
-  border-bottom: 2px solid #26C6DA;
+  color: #FF6F91;
+  border-bottom: 2px solid #FF6F91;
 }
 
 .tab-content {
@@ -43,19 +45,25 @@
 .progress-bar {
   width: 100%;
   height: 8px;
-  background: #8A9A5B;
+  background: #2E3555;
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: #26C6DA;
+  background: linear-gradient(90deg, #A1B5FF, #FF6F91);
   transition: width 0.3s ease;
 }
 
 .post-item {
-  border-left: 3px solid #26C6DA;
+  border-left: 3px solid #A1B5FF;
+  transform: translateZ(0);
+  transition: transform 0.3s ease;
+}
+
+.post-item:hover {
+  transform: translateZ(10px);
 }
 
 .holographic-effect {
@@ -70,7 +78,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 111, 97, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 111, 145, 0.3), transparent);
   animation: holographic 3s infinite;
 }
 
@@ -81,21 +89,21 @@
 }
 
 .members-sidebar {
-  background: rgba(138, 154, 91, 0.1);
+  background: rgba(46, 53, 85, 0.1);
   border-radius: 12px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.2), inset -5px -5px 10px rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
 }
 
 .btn-primary {
-  background: linear-gradient(45deg, #26C6DA, #FF6F61);
-  color: #F5F6FA;
+  background: linear-gradient(45deg, #A1B5FF, #FF6F91);
+  color: #1A1F36;
   padding: 8px 16px;
   border-radius: 9999px;
   font-weight: 500;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 4px 15px rgba(38, 198, 218, 0.3);
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   border: none;
@@ -105,28 +113,28 @@
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(38, 198, 218, 0.5);
+  transform: translateY(-2px) translateZ(5px);
+  box-shadow: 8px 8px 15px rgba(0, 0, 0, 0.3), -8px -8px 15px rgba(255, 255, 255, 0.1);
 }
 
 .btn-primary:disabled {
-  background: #8A9A5B;
+  background: #2E3555;
   cursor: not-allowed;
   box-shadow: none;
 }
 
 .input-field {
   border-radius: 8px;
-  border: 1px solid #26C6DA;
-  background: rgba(255, 255, 255, 0.1);
-  color: #F5F6FA;
+  border: none;
+  background: rgba(46, 53, 85, 0.3);
+  box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.2), inset -5px -5px 10px rgba(255, 255, 255, 0.05);
+  color: #A1B5FF;
   padding: 8px 12px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease;
 }
 
 .input-field:focus {
-  border-color: #FF6F61;
-  box-shadow: 0 0 10px rgba(255, 111, 97, 0.3);
+  box-shadow: inset 3px 3px 8px rgba(0, 0, 0, 0.3), inset -3px -3px 8px rgba(255, 255, 255, 0.1);
   outline: none;
 }
 
@@ -135,10 +143,16 @@
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(46, 53, 85, 0.1);
   border-radius: 12px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: none;
+  transform: translateZ(0);
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateZ(10px);
 }

@@ -7,7 +7,7 @@ import './Profile.css';
 const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, updateUserProfile } = useContext(AuthContext);
+  const { isAuthenticated, user, updateUserProfile } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -39,6 +39,7 @@ const Profile = () => {
         };
         setProfile(userProfile);
         setProfileImage(user.profilePicture || 'https://via.placeholder.com/150');
+        setBannerImage(user.bannerImage || 'https://via.placeholder.com/1200x300');
       } catch (err) {
         console.error('Profile - Error fetching profile:', err.message, err.stack);
         setError('Failed to load profile: ' + err.message);

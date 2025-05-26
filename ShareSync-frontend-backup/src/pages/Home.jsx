@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { ThumbsUp, MessageSquare, Share2, Bell, Folder, PlusCircle, Users, AlertCircle, List } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Share2, Bell, Folder, PlusCircle, Users, AlertCircle, List, Info } from 'lucide-react';
 import './Home.css';
 
 const Home = () => {
@@ -11,6 +11,7 @@ const Home = () => {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [tooltip, setTooltip] = useState(null);
 
   const availableProjects = [
     { id: '1', title: 'Project Alpha', description: 'A tech innovation project', members: [{ email: 'john@example.com', profilePicture: 'https://via.placeholder.com/150' }, { email: 'jane@example.com', profilePicture: 'https://via.placeholder.com/150' }], posts: [] },
@@ -35,7 +36,6 @@ const Home = () => {
             ...prev,
           ]);
         }
-        // Update the project in user.projects to persist the new post
         updateProject(post.projectId, {
           posts: [...(user.projects.find(p => p.id === post.projectId)?.posts || []), post],
         });
@@ -94,7 +94,6 @@ const Home = () => {
         item.id === itemId ? { ...item, likes: (item.likes || 0) + 1 } : item
       )
     );
-    // Update the project in user.projects to persist the like
     const updatedPosts = projectFeed.map((item) =>
       item.id === itemId ? { ...item, likes: (item.likes || 0) + 1 } : item
     );
@@ -106,10 +105,10 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="max-w-4xl mx-auto p-6 text-center">
-          <h2 className="text-3xl font-playfair text-accent-gold mb-4 flex items-center justify-center">
-            <AlertCircle className="w-6 h-6 mr-2" /> Welcome to ShareSync!
+          <h2 className="text-3xl font-inter text-holo-blue mb-4 flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 mr-2 text-holo-pink" /> Welcome to ShareSync!
           </h2>
-          <p className="text-gray-400 mb-6">Please log in to start collaborating on projects.</p>
+          <p className="text-holo-gray mb-6">Please log in to start collaborating on projects.</p>
           <Link to="/login">
             <button className="btn-primary">Log In</button>
           </Link>
@@ -123,9 +122,9 @@ const Home = () => {
 
   return (
     <div className="home-container">
-      <div className="hero-section bg-glass py-12 px-6 text-center rounded-b-3xl">
-        <h1 className="text-4xl font-playfair text-accent-gold mb-4">Welcome, {user?.firstName || 'User'}!</h1>
-        <p className="text-gray-400 text-lg mb-6">Collaborate, track, and succeed with ShareSync.</p>
+      <div className="hero-section bg-holo-bg-dark py-12 px-6 text-center rounded-b-3xl">
+        <h1 className="text-4xl font-inter text-holo-blue mb-4">Welcome, {user?.firstName || 'User'}!</h1>
+        <p className="text-holo-gray text-lg mb-6">Collaborate, track, and succeed with ShareSync.</p>
         <Link to="/projects/create">
           <button className="btn-primary flex items-center mx-auto">
             <PlusCircle className="w-5 h-5 mr-2" /> Create a New Project
@@ -139,27 +138,27 @@ const Home = () => {
           <div className="md:col-span-2 space-y-6">
             {/* Projects Section */}
             <div className="projects-section card p-6">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                <Folder className="w-5 h-5 mr-2" /> Your Projects
+              <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                <Folder className="w-5 h-5 mr-2 text-holo-pink" /> Your Projects
               </h2>
               {userProjects.length === 0 ? (
                 <div className="text-center">
-                  <p className="text-gray-400 mb-4 flex items-center justify-center gap-2">
-                    <AlertCircle className="w-5 h-5 text-accent-teal" /> You haven’t joined any projects yet.
+                  <p className="text-holo-gray mb-4 flex items-center justify-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-holo-pink" /> You haven’t joined any projects yet.
                   </p>
                   <Link to="/projects">
-                    <p className="text-accent-teal hover:text-accent-coral transition-all">Explore projects to join!</p>
+                    <p className="text-holo-blue hover:text-holo-pink transition-all">Explore projects to join!</p>
                   </Link>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {userProjects.map((proj) => (
-                    <Link to={`/projects/${proj.id}`} key={proj.id} className="project-card card p-4 flex items-center gap-4 hover:bg-teal-900 transition-all">
-                      <Folder className="w-8 h-8 text-accent-teal" />
+                    <Link to={`/projects/${proj.id}`} key={proj.id} className="project-card card p-4 flex items-center gap-4 hover:bg-holo-bg-dark transition-all">
+                      <Folder className="w-8 h-8 text-holo-pink" />
                       <div className="flex-1">
-                        <h3 className="text-lg font-playfair text-accent-gold">{proj.title}</h3>
-                        <p className="text-gray-400 text-sm flex items-center gap-2">
-                          <List className="w-4 h-4 text-accent-teal" /> {proj.description || 'No description'}
+                        <h3 className="text-lg font-inter text-holo-blue">{proj.title}</h3>
+                        <p className="text-holo-gray text-sm flex items-center gap-2">
+                          <List className="w-4 h-4 text-holo-pink" /> {proj.description || 'No description'}
                         </p>
                       </div>
                     </Link>
@@ -170,17 +169,17 @@ const Home = () => {
 
             {/* Project Feed Section */}
             <div className="feed-section card p-6">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                <MessageSquare className="w-5 h-5 mr-2" /> Project Feed
+              <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2 text-holo-pink" /> Project Feed
               </h2>
               {userProjects.length === 0 ? (
-                <p className="text-gray-400 text-center flex items-center justify-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-accent-teal" /> Join a project to see updates!
+                <p className="text-holo-gray text-center flex items-center justify-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-holo-pink" /> Join a project to see updates!
                 </p>
               ) : !selectedProject ? (
                 <div className="text-center">
-                  <p className="text-gray-400 mb-4 flex items-center justify-center gap-2">
-                    <AlertCircle className="w-5 h-5 text-accent-teal" /> Select a project to view its feed.
+                  <p className="text-holo-gray mb-4 flex items-center justify-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-holo-pink" /> Select a project to view its feed.
                   </p>
                   <select
                     value={selectedProject?.id || ''}
@@ -215,8 +214,8 @@ const Home = () => {
                     <button onClick={handlePost} className="btn-primary rounded-full">Post</button>
                   </div>
                   {projectFeed.length === 0 ? (
-                    <p className="text-gray-400 text-center flex items-center justify-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-accent-teal" /> No updates yet. Be the first to post!
+                    <p className="text-holo-gray text-center flex items-center justify-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-holo-pink" /> No updates yet. Be the first to post!
                     </p>
                   ) : (
                     <div className="space-y-4">
@@ -230,21 +229,21 @@ const Home = () => {
                             />
                             <div>
                               <span className="text-primary font-semibold">{item.user}</span>
-                              <span className="text-gray-400 text-sm ml-2">{new Date(item.timestamp).toLocaleString()}</span>
+                              <span className="text-holo-gray text-sm ml-2">{new Date(item.timestamp).toLocaleString()}</span>
                             </div>
                           </div>
                           <p className="text-primary">{item.content}</p>
                           <div className="flex items-center mt-3 gap-4">
                             <button
                               onClick={() => handleLike(item.id)}
-                              className="flex items-center text-accent-teal hover:text-accent-coral transition-all"
+                              className="flex items-center text-holo-blue hover:text-holo-pink transition-all"
                             >
                               <ThumbsUp className="w-5 h-5 mr-1" /> {item.likes || 0}
                             </button>
-                            <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
+                            <button className="flex items-center text-holo-blue hover:text-holo-pink transition-all">
                               <MessageSquare className="w-5 h-5 mr-1" /> Comment
                             </button>
-                            <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
+                            <button className="flex items-center text-holo-blue hover:text-holo-pink transition-all">
                               <Share2 className="w-5 h-5 mr-1" /> Share
                             </button>
                           </div>
@@ -261,8 +260,8 @@ const Home = () => {
           <div className="md:col-span-1">
             <div className="sidebar card p-6 sticky top-20 space-y-6">
               <div className="notifications-section">
-                <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
-                  <Bell className="w-5 h-5 mr-2 cursor-pointer" onClick={() => setShowNotifications(!showNotifications)} />
+                <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
+                  <Bell className="w-5 h-5 mr-2 cursor-pointer text-holo-pink" onClick={() => setShowNotifications(!showNotifications)} />
                   Notifications ({notificationsCount})
                 </h2>
                 {showNotifications && (
@@ -270,13 +269,13 @@ const Home = () => {
                     {notifications.length > 0 ? (
                       notifications.map((notif, index) => (
                         <div key={index} className="notification-item card p-2">
-                          <p className="text-gray-400 text-sm">{notif.message}</p>
-                          <p className="text-gray-500 text-xs">{new Date().toLocaleTimeString()}</p>
+                          <p className="text-holo-gray text-sm">{notif.message}</p>
+                          <p className="text-holo-gray-dark text-xs">{new Date().toLocaleTimeString()}</p>
                         </div>
                       ))
                     ) : (
-                      <p className="text-gray-400 flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-accent-teal" /> No notifications yet.
+                      <p className="text-holo-gray flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-holo-pink" /> No notifications yet.
                       </p>
                     )}
                   </div>
@@ -284,24 +283,36 @@ const Home = () => {
               </div>
 
               <div className="available-projects-section">
-                <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
-                  <Folder className="w-5 h-5 mr-2" /> Join a Project
+                <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
+                  <Folder className="w-5 h-5 mr-2 text-holo-pink" /> Join a Project
                 </h2>
-                <ul className="space-y-2">
+                <p className="text-holo-gray text-sm mb-4">Discover and join public projects to collaborate with others.</p>
+                <ul className="space-y-3">
                   {availableProjects.map((proj) => (
-                    <li key={proj.id}>
-                      <button
+                    <li key={proj.id} className="relative">
+                      <div
+                        className="project-card card p-4 flex items-center gap-3 hover:bg-holo-bg-dark transition-all cursor-pointer"
                         onClick={() => handleJoinProject(proj)}
-                        className="text-primary hover:text-accent-coral transition-all flex items-center gap-2 w-full text-left"
+                        onMouseEnter={() => setTooltip(proj.id)}
+                        onMouseLeave={() => setTooltip(null)}
                       >
-                        <Folder className="w-5 h-5" />
-                        <div>
-                          <p className="font-semibold">{proj.title}</p>
-                          <p className="text-gray-400 text-sm flex items-center gap-2">
-                            <List className="w-4 h-4 text-accent-teal" /> {proj.description}
+                        <Folder className="w-6 h-6 text-holo-pink" />
+                        <div className="flex-1">
+                          <p className="font-semibold text-holo-blue">{proj.title}</p>
+                          <p className="text-holo-gray text-sm flex items-center gap-2">
+                            <List className="w-4 h-4 text-holo-pink" /> {proj.description}
+                          </p>
+                          <p className="text-holo-gray text-sm flex items-center gap-2 mt-1">
+                            <Users className="w-4 h-4 text-holo-pink" /> {proj.members.length} Members
                           </p>
                         </div>
-                      </button>
+                        <button className="btn-primary rounded-full text-sm px-3 py-1">Join</button>
+                      </div>
+                      {tooltip === proj.id && (
+                        <div className="absolute top-0 left-0 mt-12 w-full bg-holo-bg-dark text-holo-gray text-sm p-2 rounded-lg shadow-lg z-10">
+                          Click to join {proj.title} and start collaborating with {proj.members.length} members!
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
