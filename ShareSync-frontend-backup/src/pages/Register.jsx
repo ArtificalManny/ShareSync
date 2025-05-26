@@ -35,7 +35,7 @@ const Register = () => {
 
   return (
     <div className="register-container">
-      <div className="max-w-md mx-auto p-6">
+      <div className="register-content">
         <h2 className="text-3xl font-inter text-holo-blue mb-6 text-center animate-text-glow">Create an Account</h2>
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
         <div className="card p-6">
@@ -48,6 +48,7 @@ const Register = () => {
                 placeholder="First Name"
                 className="input-field w-full rounded-full"
                 required
+                tabIndex={1}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -58,6 +59,7 @@ const Register = () => {
                 placeholder="Last Name"
                 className="input-field w-full rounded-full"
                 required
+                tabIndex={2}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -68,6 +70,7 @@ const Register = () => {
                 placeholder="Username"
                 className="input-field w-full rounded-full"
                 required
+                tabIndex={3}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -78,6 +81,7 @@ const Register = () => {
                 placeholder="Email"
                 className="input-field w-full rounded-full"
                 required
+                tabIndex={4}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -88,12 +92,13 @@ const Register = () => {
                 placeholder="Password"
                 className="input-field w-full rounded-full"
                 required
+                tabIndex={5}
               />
             </div>
-            <button onClick={handleSubmit} className="btn-primary rounded-full w-full animate-glow">Register</button>
+            <button onClick={handleSubmit} className="btn-primary rounded-full w-full animate-glow" tabIndex={6}>Register</button>
             <p className="text-holo-gray text-center">
               Already have an account?{' '}
-              <Link to="/login" className="text-holo-blue hover:text-holo-pink transition-all">
+              <Link to="/login" className="text-holo-blue hover:text-holo-pink transition-all" tabIndex={7}>
                 Log In
               </Link>
             </p>

@@ -4,6 +4,9 @@
   background: linear-gradient(135deg, #1A1F36, #2E3555);
   position: relative;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .login-container::before {
@@ -30,6 +33,13 @@
   opacity: 0.05;
   z-index: 0;
   animation: particle-float 30s infinite linear reverse;
+}
+
+.login-content {
+  max-width: 24rem; /* 384px, equivalent to max-w-md */
+  width: 100%;
+  padding: 1.5rem; /* 24px, equivalent to p-6 */
+  z-index: 1;
 }
 
 .card {
@@ -60,6 +70,8 @@
   background: radial-gradient(circle at 30% 30%, rgba(161, 181, 255, 0.2), transparent 70%);
   opacity: 0;
   transition: opacity 0.3s ease;
+  pointer-events: none; /* Prevent the pseudo-element from capturing click events */
+  z-index: 0;
 }
 
 .card:hover::after {
