@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import axios from 'axios';
-import { CheckCircle, MessageSquare, ThumbsUp, Share2, Award, ChevronDown, PlusCircle, FileText, Settings, Users, Filter, Image as ImageIcon, Vote, Edit, Mail, Smartphone, UserPlus, Calendar, Eye, BarChart, List, File, MessageCircle } from 'lucide-react';
+import { CheckCircle, MessageSquare, ThumbsUp, Share2, Award, ChevronDown, PlusCircle, FileText, Settings as SettingsIcon, Users, Filter, Image as ImageIcon, Vote, Edit, Mail, Smartphone, UserPlus, Calendar, Eye, BarChart, List, File, MessageCircle } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import Chart from 'chart.js/auto';
 import './ProjectHome.css';
@@ -77,10 +77,13 @@ const ProjectHome = () => {
     const fetchProject = async () => {
       try {
         if (!isAuthenticated || !user) {
+          console.log('ProjectHome - User not authenticated, redirecting to login');
           navigate('/login', { replace: true });
           return;
         }
-        if (!id) throw new Error('Project ID is missing');
+        if (!id) {
+          throw new Error('Project ID is missing');
+        }
         console.log('ProjectHome - Fetching project with ID:', id);
         const token = localStorage.getItem('token');
         const response = await axios.get(`http://localhost:3000/api/projects/${id}`, {
@@ -604,7 +607,7 @@ const ProjectHome = () => {
     setShowEditModal(false);
   };
 
-  if (loading) return <div className="project-home-container"><p className="text-holo-gray">Loading...</p></div>;
+  if (loading) return <div className="project-home-container"><p className="text-holo-gray">Loading project...</p></div>;
 
   if (error || !project) {
     return (
@@ -615,7 +618,7 @@ const ProjectHome = () => {
             Please <Link to="/login" className="text-holo-blue hover:underline">log in</Link> to view this project.
           </p>
         )}
-        <Link to="/projects"><button className="btn-primary">Back to Projects</button></Link>
+        <Link to="/projects"><button className="btn-primary animate-glow">Back to Projects</button></Link>
       </div>
     );
   }
@@ -653,9 +656,8 @@ const ProjectHome = () => {
 
   return (
     <div className="project-home-container">
-      {/* Header Section */}
       <div className="project-header bg-holo-bg-dark py-8 px-6 rounded-b-3xl text-center">
-        <h1 className="text-4xl font-inter text-holo-blue mb-2">{project.title || 'Untitled'}</h1>
+        <h1 className="text-4xl font-inter text-holo-blue mb-2 animate-text-glow">{project.title || 'Untitled'}</h1>
         <p className="text-holo-gray">{project.description || 'No description'}</p>
         <div className="flex justify-center gap-4 mt-4">
           <Link to="/projects" className="text-holo-blue hover:text-holo-pink transition-all">
@@ -665,7 +667,7 @@ const ProjectHome = () => {
             onClick={() => setShowSettings(true)}
             className="text-holo-blue hover:text-holo-pink transition-all flex items-center"
           >
-            <Settings className="w-5 h-5 mr-2" /> Settings
+            <SettingsIcon className="w-5 h-5 mr-2" /> Settings
           </button>
           <button
             onClick={() => setShowEditModal(true)}
@@ -677,9 +679,7 @@ const ProjectHome = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex">
-        {/* Main Content with Tabs */}
         <div className="flex-1 mr-6">
-          {/* Tabs */}
           <div className="project-tabs flex border-b border-holo-gray-dark mb-6 overflow-x-auto">
             <button
               className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
@@ -737,13 +737,12 @@ const ProjectHome = () => {
             </button>
           </div>
 
-          {/* Tab Content */}
           <div className="tab-content">
             {activeTab === 'overview' && (
-              <div className="project-overview card p-6">
+              <div className="project-overview card p-6 animate-tilt">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-inter text-holo-blue flex items-center">
-                    <BarChart className="w-5 h-5 mr-2 text-holo-pink" /> Project Overview
+                    <BarChart className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Project Overview
                   </h2>
                   <button onClick={() => setShowDetails(!showDetails)} className="text-holo-blue hover:text-holo-pink">
                     <ChevronDown className={`w-6 h-6 transform transition-transform ${showDetails ? 'rotate-180' : ''}`} />
@@ -779,16 +778,16 @@ const ProjectHome = () => {
             )}
 
             {activeTab === 'feed' && (
-              <div className="social-feed card p-6">
+              <div className="social-feed card p-6 animate-tilt">
                 <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-                  <MessageSquare className="w-5 h-5 mr-2 text-holo-pink" /> Project Feed
+                  <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Project Feed
                 </h2>
                 <div className="post-input card p-4 mb-4">
                   <div className="flex items-center mb-2">
                     <img
                       src={user?.profilePicture || 'https://via.placeholder.com/150'}
                       alt="User"
-                      className="w-8 h-8 rounded-full mr-2 object-cover"
+                      className="w-8 h-8 rounded-full mr-2 object-cover animate-glow"
                     />
                     <select
                       value={postType}
@@ -850,22 +849,22 @@ const ProjectHome = () => {
                         />
                       </label>
                       {postImage && (
-                        <img src={postImage} alt="Preview" className="mt-2 max-w-full h-40 object-cover rounded-lg" />
+                        <img src={postImage} alt="Preview" className="mt-2 max-w-full h-40 object-cover rounded-lg animate-glow" />
                       )}
                     </div>
                   )}
-                  <button onClick={addPost} className="btn-primary rounded-full">Post</button>
+                  <button onClick={addPost} className="btn-primary rounded-full animate-glow">Post</button>
                 </div>
                 {project.posts?.length === 0 ? (
                   <p className="text-holo-gray text-center">No posts yet. Be the first to share an update!</p>
                 ) : (
                   project.posts.map((post) => (
-                    <div key={post.id} className="post-item card p-4 mb-4 holographic-effect">
+                    <div key={post.id} className="post-item card p-4 mb-4 holographic-effect animate-tilt">
                       <div className="flex items-center mb-2">
                         <img
                           src={post.profilePicture || 'https://via.placeholder.com/150'}
                           alt="User"
-                          className="w-8 h-8 rounded-full mr-2 object-cover"
+                          className="w-8 h-8 rounded-full mr-2 object-cover animate-glow"
                         />
                         <div>
                           <span className="text-primary font-semibold">{post.user}</span>
@@ -876,7 +875,7 @@ const ProjectHome = () => {
                       {post.type === 'image' && (
                         <div>
                           {post.content && <p className="text-primary mb-2">{post.content}</p>}
-                          <img src={post.image} alt="Post" className="max-w-full h-40 object-cover rounded-lg" />
+                          <img src={post.image} alt="Post" className="max-w-full h-40 object-cover rounded-lg animate-glow" />
                         </div>
                       )}
                       {post.type === 'poll' && (
@@ -914,9 +913,9 @@ const ProjectHome = () => {
             )}
 
             {activeTab === 'comments' && (
-              <div className="comments-section card p-6">
+              <div className="comments-section card p-6 animate-tilt">
                 <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-                  <MessageSquare className="w-5 h-5 mr-2 text-holo-pink" /> Comments
+                  <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Comments
                 </h2>
                 <div className="comments-list">
                   {comments.length === 0 ? (
@@ -928,7 +927,7 @@ const ProjectHome = () => {
                           <img
                             src={user?.profilePicture || 'https://via.placeholder.com/150'}
                             alt="User"
-                            className="w-8 h-8 rounded-full mr-2 object-cover"
+                            className="w-8 h-8 rounded-full mr-2 object-cover animate-glow"
                           />
                           <div>
                             <span className="text-primary font-semibold">{comment.user}</span>
@@ -955,7 +954,7 @@ const ProjectHome = () => {
                   <img
                     src={user?.profilePicture || 'https://via.placeholder.com/150'}
                     alt="User"
-                    className="w-8 h-8 rounded-full"
+                    className="w-8 h-8 rounded-full animate-glow"
                   />
                   <input
                     type="text"
@@ -964,15 +963,15 @@ const ProjectHome = () => {
                     placeholder="Add a comment..."
                     className="input-field flex-1 rounded-full"
                   />
-                  <button onClick={addComment} className="btn-primary rounded-full">Post</button>
+                  <button onClick={addComment} className="btn-primary rounded-full animate-glow">Post</button>
                 </div>
               </div>
             )}
 
             {activeTab === 'activity' && (
-              <div className="activity-log card p-6">
+              <div className="activity-log card p-6 animate-tilt">
                 <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-                  <Calendar className="w-5 h-5 mr-2 text-holo-pink" /> Activity Log
+                  <Calendar className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Activity Log
                 </h2>
                 <div className="flex items-center gap-2 mb-4">
                   <Filter className="w-5 h-5 text-holo-pink" />
@@ -1001,9 +1000,9 @@ const ProjectHome = () => {
             )}
 
             {activeTab === 'tasks' && (
-              <div className="tasks-section card p-6">
+              <div className="tasks-section card p-6 animate-tilt">
                 <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-                  <List className="w-5 h-5 mr-2 text-holo-pink" /> Tasks
+                  <List className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Tasks
                 </h2>
                 {isAdmin && (
                   <div className="task-input card p-4 mb-4">
@@ -1014,7 +1013,7 @@ const ProjectHome = () => {
                       <img
                         src={user?.profilePicture || 'https://via.placeholder.com/150'}
                         alt="User"
-                        className="w-8 h-8 rounded-full mr-2 object-cover"
+                        className="w-8 h-8 rounded-full mr-2 object-cover animate-glow"
                       />
                       <input
                         type="text"
@@ -1062,7 +1061,7 @@ const ProjectHome = () => {
                     >
                       + Add Subtask
                     </button>
-                    <button onClick={addTask} className="btn-primary rounded-full">Create Task</button>
+                    <button onClick={addTask} className="btn-primary rounded-full animate-glow">Create Task</button>
                   </div>
                 )}
                 {project.tasks?.length === 0 ? (
@@ -1070,7 +1069,7 @@ const ProjectHome = () => {
                 ) : (
                   project.tasks.map((task) => (
                     <div key={task.id} className="task-item card p-4 mb-4">
-                      <h3 className="text-lg font-inter text-holo-blue">{task.title}</h3>
+                      <h3 className="text-lg font-inter text-holo-blue animate-text-glow">{task.title}</h3>
                       <p className="text-holo-gray">{task.description}</p>
                       <p className="text-holo-gray flex items-center gap-2">
                         <Users className="w-4 h-4 text-holo-pink" /> Assigned to: {task.assignedTo.join(', ')}
@@ -1116,7 +1115,7 @@ const ProjectHome = () => {
                       )}
                       <button
                         onClick={() => completeTask(task.id)}
-                        className="btn-primary rounded-full mt-2"
+                        className="btn-primary rounded-full mt-2 animate-glow"
                         disabled={task.status === 'Completed'}
                       >
                         Mark as Completed
@@ -1128,9 +1127,9 @@ const ProjectHome = () => {
             )}
 
             {activeTab === 'files' && (
-              <div className="files-section card p-6">
+              <div className="files-section card p-6 animate-tilt">
                 <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-                  <File className="w-5 h-5 mr-2 text-holo-pink" /> Files
+                  <File className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Files
                 </h2>
                 {isAdmin ? (
                   <div className="file-input card p-4 mb-4">
@@ -1138,7 +1137,7 @@ const ProjectHome = () => {
                       <img
                         src={user?.profilePicture || 'https://via.placeholder.com/150'}
                         alt="User"
-                        className="w-8 h-8 rounded-full mr-2 object-cover"
+                        className="w-8 h-8 rounded-full mr-2 object-cover animate-glow"
                       />
                       <label className="flex items-center text-holo-blue hover:text-holo-pink cursor-pointer flex-1">
                         <FileText className="w-5 h-5 mr-2" /> Upload File
@@ -1154,7 +1153,7 @@ const ProjectHome = () => {
                         <File className="w-4 h-4 text-holo-pink" /> Selected: {newFile.name}
                       </p>
                     )}
-                    <button onClick={uploadFile} className="btn-primary rounded-full">Upload</button>
+                    <button onClick={uploadFile} className="btn-primary rounded-full animate-glow">Upload</button>
                   </div>
                 ) : (
                   <div className="file-request card p-4 mb-4">
@@ -1162,7 +1161,7 @@ const ProjectHome = () => {
                       <img
                         src={user?.profilePicture || 'https://via.placeholder.com/150'}
                         alt="User"
-                        className="w-8 h-8 rounded-full"
+                        className="w-8 h-8 rounded-full animate-glow"
                       />
                       <input
                         type="text"
@@ -1172,7 +1171,7 @@ const ProjectHome = () => {
                         className="input-field w-full mb-2"
                       />
                     </div>
-                    <button onClick={requestFile} className="btn-primary rounded-full">Request</button>
+                    <button onClick={requestFile} className="btn-primary rounded-full animate-glow">Request</button>
                   </div>
                 )}
                 {project.files?.length === 0 ? (
@@ -1192,10 +1191,10 @@ const ProjectHome = () => {
             )}
 
             {activeTab === 'teams' && (
-              <div className="teams-section card p-6">
+              <div className="teams-section card p-6 animate-tilt">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-inter text-holo-blue flex items-center">
-                    <Users className="w-5 h-5 mr-2 text-holo-pink" /> Teams
+                    <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Teams
                   </h2>
                   <button
                     onClick={() => setShowInviteModal(true)}
@@ -1207,7 +1206,7 @@ const ProjectHome = () => {
                 {isAdmin && (
                   <button
                     onClick={() => setShowTeamModal(true)}
-                    className="btn-primary rounded-full mb-4 flex items-center"
+                    className="btn-primary rounded-full mb-4 flex items-center animate-glow"
                   >
                     <PlusCircle className="w-5 h-5 mr-2" /> Create Team
                   </button>
@@ -1230,7 +1229,7 @@ const ProjectHome = () => {
                             <img
                               src={member.profilePicture}
                               alt={member.email}
-                              className="w-6 h-6 rounded-full object-cover"
+                              className="w-6 h-6 rounded-full object-cover animate-glow"
                             />
                             <p className="text-primary">{member.email} - <span className="text-holo-blue">{member.role}</span></p>
                           </div>
@@ -1243,9 +1242,9 @@ const ProjectHome = () => {
             )}
 
             {activeTab === 'chat' && (
-              <div className="chat-section card p-6">
+              <div className="chat-section card p-6 animate-tilt">
                 <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-                  <MessageCircle className="w-5 h-5 mr-2 text-holo-pink" /> Project Chat
+                  <MessageCircle className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Project Chat
                 </h2>
                 <div className="messages bg-holo-bg-light p-4 rounded-lg h-64 overflow-y-auto">
                   {messages.length === 0 ? (
@@ -1256,7 +1255,7 @@ const ProjectHome = () => {
                         <img
                           src={user?.profilePicture || 'https://via.placeholder.com/150'}
                           alt="User"
-                          className="w-6 h-6 rounded-full"
+                          className="w-6 h-6 rounded-full animate-glow"
                         />
                         <div>
                           <strong className="text-primary">{msg.user}:</strong> {msg.text}
@@ -1270,7 +1269,7 @@ const ProjectHome = () => {
                   <img
                     src={user?.profilePicture || 'https://via.placeholder.com/150'}
                     alt="User"
-                    className="w-8 h-8 rounded-full"
+                    className="w-8 h-8 rounded-full animate-glow"
                   />
                   <input
                     type="text"
@@ -1279,15 +1278,15 @@ const ProjectHome = () => {
                     placeholder="Type a message..."
                     className="input-field flex-1 rounded-full"
                   />
-                  <button onClick={sendMessage} className="btn-primary rounded-full">Send</button>
+                  <button onClick={sendMessage} className="btn-primary rounded-full animate-glow">Send</button>
                 </div>
               </div>
             )}
 
             {activeTab === 'achievements' && (
-              <div className="achievements-section card p-6">
+              <div className="achievements-section card p-6 animate-tilt">
                 <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-                  <Award className="w-5 h-5 mr-2 text-holo-pink" /> Achievements
+                  <Award className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Achievements
                 </h2>
                 {project.achievements.length === 0 ? (
                   <p className="text-holo-gray">No achievements yet. Keep working to earn some!</p>
@@ -1295,7 +1294,7 @@ const ProjectHome = () => {
                   project.achievements.map((achievement) => (
                     <div key={achievement.id} className={`achievement-item card p-4 mb-4 ${achievement.earned ? 'bg-holo-bg-dark' : 'bg-holo-bg-light'} bg-opacity-20`}>
                       <div className="flex items-center gap-3">
-                        <Award className={`w-6 h-6 ${achievement.earned ? 'text-holo-blue' : 'text-holo-gray'}`} />
+                        <Award className={`w-6 h-6 ${achievement.earned ? 'text-holo-blue' : 'text-holo-gray'} animate-glow`} />
                         <div>
                           <p className="text-primary font-semibold">{achievement.name}</p>
                           <p className="text-holo-gray text-sm">{achievement.description}</p>
@@ -1312,11 +1311,10 @@ const ProjectHome = () => {
           </div>
         </div>
 
-        {/* Persistent Sidebar */}
         <div className="w-64 hidden lg:block">
-          <div className="members-sidebar card p-6 sticky top-20">
+          <div className="members-sidebar card p-6 sticky top-20 animate-tilt">
             <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-holo-pink" /> Project Members
+              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Project Members
             </h2>
             <div className="space-y-4">
               {allMembers.map((member, index) => (
@@ -1324,7 +1322,7 @@ const ProjectHome = () => {
                   <img
                     src={member.profilePicture}
                     alt={member.email}
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-8 h-8 rounded-full object-cover animate-glow"
                   />
                   <div>
                     <p className="text-primary font-semibold">{member.email}</p>
@@ -1337,12 +1335,11 @@ const ProjectHome = () => {
         </div>
       </div>
 
-      {/* Notification Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="card p-6 w-full max-w-md">
+          <div className="card p-6 w-full max-w-md animate-tilt">
             <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
-              <Settings className="w-5 h-5 mr-2 text-holo-pink" /> Project Settings
+              <SettingsIcon className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Project Settings
             </h2>
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -1369,7 +1366,7 @@ const ProjectHome = () => {
                   <img
                     src={member.profilePicture}
                     alt={member.email}
-                    className="w-6 h-6 rounded-full"
+                    className="w-6 h-6 rounded-full animate-glow"
                   />
                   <span className="text-primary">{member.email}</span>
                   <select
@@ -1439,7 +1436,7 @@ const ProjectHome = () => {
             </div>
             <button
               onClick={() => setShowSettings(false)}
-              className="btn-primary rounded-full mt-4 w-full"
+              className="btn-primary rounded-full mt-4 w-full animate-glow"
             >
               Save
             </button>
@@ -1447,12 +1444,11 @@ const ProjectHome = () => {
         </div>
       )}
 
-      {/* Team Creation Modal */}
       {showTeamModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="card p-6 w-full max-w-md">
+          <div className="card p-6 w-full max-w-md animate-tilt">
             <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-holo-pink" /> Create Team
+              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Create Team
             </h2>
             <div className="space-y-4">
               <input
@@ -1476,7 +1472,7 @@ const ProjectHome = () => {
                 className="input-field w-full"
               />
               <div className="flex gap-4">
-                <button onClick={addTeam} className="btn-primary rounded-full flex-1">Create</button>
+                <button onClick={addTeam} className="btn-primary rounded-full flex-1 animate-glow">Create</button>
                 <button
                   onClick={() => setShowTeamModal(false)}
                   className="btn-primary bg-holo-bg-light rounded-full flex-1"
@@ -1489,12 +1485,11 @@ const ProjectHome = () => {
         </div>
       )}
 
-      {/* Invite Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="card p-6 w-full max-w-md">
+          <div className="card p-6 w-full max-w-md animate-tilt">
             <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
-              <UserPlus className="w-5 h-5 mr-2 text-holo-pink" /> Invite to Project
+              <UserPlus className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Invite to Project
             </h2>
             <div className="space-y-4">
               <input
@@ -1505,7 +1500,7 @@ const ProjectHome = () => {
                 className="input-field w-full"
               />
               <div className="flex gap-4">
-                <button onClick={inviteUser} className="btn-primary rounded-full flex-1">Invite</button>
+                <button onClick={inviteUser} className="btn-primary rounded-full flex-1 animate-glow">Invite</button>
                 <button
                   onClick={() => setShowInviteModal(false)}
                   className="btn-primary bg-holo-bg-light rounded-full flex-1"
@@ -1518,12 +1513,11 @@ const ProjectHome = () => {
         </div>
       )}
 
-      {/* Edit/Suggest Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="card p-6 w-full max-w-md">
+          <div className="card p-6 w-full max-w-md animate-tilt">
             <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
-              <Edit className="w-5 h-5 mr-2 text-holo-pink" /> {isAdmin ? 'Edit Project' : 'Suggest Edits'}
+              <Edit className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> {isAdmin ? 'Edit Project' : 'Suggest Edits'}
             </h2>
             <div className="space-y-4">
               <textarea
@@ -1533,7 +1527,7 @@ const ProjectHome = () => {
                 className="input-field w-full h-24"
               />
               <div className="flex gap-4">
-                <button onClick={submitEditSuggestion} className="btn-primary rounded-full flex-1">
+                <button onClick={submitEditSuggestion} className="btn-primary rounded-full flex-1 animate-glow">
                   {isAdmin ? 'Save' : 'Submit'}
                 </button>
                 <button

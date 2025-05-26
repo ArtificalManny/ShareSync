@@ -20,13 +20,14 @@ const Profile = () => {
     const fetchProfile = async () => {
       try {
         if (!isAuthenticated || !user) {
+          console.log('Profile - User not authenticated, redirecting to login');
           navigate('/login', { replace: true });
           return;
         }
         if (!username) {
-          throw new Error('Username is missing');
+          throw new Error('Username is missing in URL');
         }
-        console.log('Profile - Fetching profile for:', username);
+        console.log('Profile - Fetching profile for:', username, 'Authenticated user:', user.username);
         if (user.username !== username) {
           throw new Error('You can only view your own profile');
         }
@@ -35,7 +36,7 @@ const Profile = () => {
           firstName: user.firstName || 'John',
           lastName: user.lastName || 'Doe',
           email: user.email || 'johndoe@example.com',
-          projects: user.projects || [],
+          projects: Array.isArray(user.projects) ? user.projects : [],
         };
         setProfile(userProfile);
         setProfileImage(user.profilePicture || 'https://via.placeholder.com/150');
@@ -93,7 +94,7 @@ const Profile = () => {
     }
   };
 
-  if (loading) return <div className="profile-container"><p className="text-holo-gray">Loading...</p></div>;
+  if (loading) return <div className="profile-container"><p className="text-holo-gray">Loading profile...</p></div>;
 
   if (error || !profile) {
     return (
@@ -112,16 +113,15 @@ const Profile = () => {
 
   return (
     <div className="profile-container">
-      {/* Banner */}
       <div className="banner-section relative">
         <img
           src={bannerImage}
           alt="Banner"
-          className="w-full h-48 object-cover"
+          className="w-full h-48 object-cover animate-glow"
         />
         {isOwnProfile && (
-          <label className="absolute top-4 right-4 flex items-center text-holo-blue hover:text-holo-pink cursor-pointer">
-            <Camera className="w-5 h-5 mr-2" /> Change Banner
+          <label className="absolute top-4 right-4 flex items-center text-holo-blue hover:text-holo-pink cursor-pointer transition-all">
+            <Camera className="w-5 h-5 mr-2 animate-pulse" /> Change Banner
             <input
               type="file"
               accept="image/*"
@@ -132,16 +132,15 @@ const Profile = () => {
         )}
       </div>
 
-      {/* Profile Picture and Name */}
       <div className="profile-header text-center mt-[-80px] mb-6">
         <div className="relative inline-block">
           <img
             src={profileImage}
             alt="Profile"
-            className="w-40 h-40 rounded-full object-cover border-4 border-holo-blue mx-auto"
+            className="w-40 h-40 rounded-full object-cover border-4 border-holo-blue mx-auto animate-glow"
           />
           {isOwnProfile && (
-            <label className="absolute bottom-2 right-2 bg-holo-blue p-2 rounded-full cursor-pointer">
+            <label className="absolute bottom-2 right-2 bg-holo-blue p-2 rounded-full cursor-pointer animate-pulse">
               <Camera className="w-5 h-5 text-primary" />
               <input
                 type="file"
@@ -152,18 +151,17 @@ const Profile = () => {
             </label>
           )}
         </div>
-        <h1 className="text-3xl font-inter text-holo-blue mt-4">
+        <h1 className="text-3xl font-inter text-holo-blue mt-4 animate-text-glow">
           {profile.firstName} {profile.lastName}
         </h1>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         {isOwnProfile && (
           <div className="flex justify-end mb-4">
             <button
               onClick={handleEdit}
-              className="btn-primary rounded-full flex items-center"
+              className="btn-primary rounded-full flex items-center animate-glow"
             >
               <Edit className="w-5 h-5 mr-2" /> Edit Profile
             </button>
@@ -171,9 +169,9 @@ const Profile = () => {
         )}
 
         {isEditing ? (
-          <div className="card p-6 mb-6">
+          <div className="card p-6 mb-6 animate-tilt">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Edit className="w-5 h-5 mr-2 text-holo-pink" /> Edit Profile
+              <Edit className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Edit Profile
             </h2>
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -207,15 +205,15 @@ const Profile = () => {
                 />
               </div>
               <div className="flex gap-4">
-                <button onClick={handleSave} className="btn-primary rounded-full flex-1">Save</button>
+                <button onClick={handleSave} className="btn-primary rounded-full flex-1 animate-glow">Save</button>
                 <button onClick={() => setIsEditing(false)} className="btn-primary bg-holo-bg-light rounded-full flex-1">Cancel</button>
               </div>
             </div>
           </div>
         ) : (
-          <div className="card p-6 mb-6">
+          <div className="card p-6 mb-6 animate-tilt">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <UserIcon className="w-5 h-5 mr-2 text-holo-pink" /> About
+              <UserIcon className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> About
             </h2>
             <p className="text-primary flex items-center gap-2">
               <UserIcon className="w-4 h-4 text-holo-pink" /> Username: <span className="text-holo-blue">{profile.username}</span>
@@ -226,20 +224,24 @@ const Profile = () => {
           </div>
         )}
 
-        <div className="projects-section card p-6">
+        <div className="projects-section card p-6 animate-tilt">
           <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-            <Folder className="w-5 h-5 mr-2 text-holo-pink" /> Projects
+            <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Projects
           </h2>
           {profile.projects?.length === 0 ? (
             <p className="text-holo-gray">No projects yet.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {profile.projects.map((project) => (
-                <Link to={`/projects/${project.id}`} key={project.id} className="project-card card p-4 hover:bg-holo-bg-dark transition-all">
+                <Link
+                  to={`/projects/${project.id}`}
+                  key={project.id}
+                  className="project-card card p-4 hover:bg-holo-bg-dark transition-all animate-tilt"
+                >
                   <div className="flex items-center gap-3">
                     <Folder className="w-6 h-6 text-holo-pink" />
                     <div>
-                      <h3 className="text-lg font-inter text-holo-blue">{project.title}</h3>
+                      <h3 className="text-lg font-inter text-holo-blue animate-text-glow">{project.title}</h3>
                       <p className="text-holo-gray text-sm">{project.description || 'No description'}</p>
                     </div>
                   </div>

@@ -1,28 +1,152 @@
-.projects-container {
+.profile-container {
   padding: 0;
   min-height: 100vh;
-  background: #3C2F5D;
-}
-
-.projects-header {
-  background: linear-gradient(45deg, #0A1A2F, #3C2F5D);
-  border-bottom: 3px solid #26C6DA;
-}
-
-.project-card {
-  border-left: 3px solid #26C6DA;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 10px;
-  background: #A0A0A0;
-  border-radius: 5px;
+  background: linear-gradient(135deg, #1A1F36, #2E3555);
+  position: relative;
   overflow: hidden;
 }
 
-.progress-fill {
+.profile-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, #26C6DA, #FF6F61);
-  transition: width 0.5s ease;
+  background: url('https://www.transparenttextures.com/patterns/stardust.png');
+  opacity: 0.1;
+  z-index: 0;
+}
+
+.banner-section {
+  position: relative;
+  z-index: 1;
+}
+
+.project-card {
+  border-left: 3px solid #A1B5FF;
+  transform: translateZ(0);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.project-card:hover {
+  transform: translateZ(20px);
+  box-shadow: 0 8px 20px rgba(161, 181, 255, 0.3);
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #A1B5FF, #FF6F91, #7BFFAF);
+  color: #1A1F36;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-weight: 500;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.5s ease;
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-primary:hover::before {
+  left: 100%;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) translateZ(5px);
+  box-shadow: 8px 8px 15px rgba(0, 0, 0, 0.3), -8px -8px 15px rgba(255, 255, 255, 0.1);
+}
+
+.btn-primary:disabled {
+  background: #2E3555;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.input-field {
+  border-radius: 8px;
+  border: none;
+  background: rgba(46, 53, 85, 0.3);
+  box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.2), inset -5px -5px 10px rgba(255, 255, 255, 0.05);
+  color: #A1B5FF;
+  padding: 8px 12px;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.input-field:focus {
+  box-shadow: inset 3px 3px 8px rgba(0, 0, 0, 0.3), inset -3px -3px 8px rgba(255, 255, 255, 0.1);
+  transform: scale(1.02);
+  outline: none;
+}
+
+.input-field.rounded-full {
+  border-radius: 9999px;
+}
+
+.card {
+  background: rgba(46, 53, 85, 0.1);
+  border-radius: 12px;
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: none;
+  transform: translateZ(0);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateZ(15px);
+  box-shadow: 0 8px 20px rgba(123, 255, 175, 0.3);
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 30%, rgba(161, 181, 255, 0.2), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card:hover::after {
+  opacity: 1;
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px rgba(161, 181, 255, 0.5); }
+  50% { box-shadow: 0 0 15px rgba(255, 111, 145, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(161, 181, 255, 0.5); }
+}
+
+.animate-glow {
+  animation: glow 2s infinite;
+}
+
+@keyframes text-glow {
+  0% { text-shadow: 0 0 2px rgba(161, 181, 255, 0.5); }
+  50% { text-shadow: 0 0 8px rgba(255, 111, 145, 0.8); }
+  100% { text-shadow: 0 0 2px rgba(161, 181, 255, 0.5); }
+}
+
+.animate-text-glow {
+  animation: text-glow 2s infinite;
 }
