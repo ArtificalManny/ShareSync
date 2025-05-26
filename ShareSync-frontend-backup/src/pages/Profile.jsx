@@ -93,15 +93,15 @@ const Profile = () => {
     }
   };
 
-  if (loading) return <div className="profile-container"><p className="text-gray-400">Loading...</p></div>;
+  if (loading) return <div className="profile-container"><p className="text-holo-gray">Loading...</p></div>;
 
   if (error || !profile) {
     return (
       <div className="profile-container">
         <p className="text-red-500">{error || 'Profile not found'}</p>
         {error.includes('token') && (
-          <p className="text-gray-400">
-            Please <Link to="/login" className="text-accent-teal hover:underline">log in</Link> to view this profile.
+          <p className="text-holo-gray">
+            Please <Link to="/login" className="text-holo-blue hover:underline">log in</Link> to view this profile.
           </p>
         )}
       </div>
@@ -120,7 +120,7 @@ const Profile = () => {
           className="w-full h-48 object-cover"
         />
         {isOwnProfile && (
-          <label className="absolute top-4 right-4 flex items-center text-accent-teal hover:text-accent-coral cursor-pointer">
+          <label className="absolute top-4 right-4 flex items-center text-holo-blue hover:text-holo-pink cursor-pointer">
             <Camera className="w-5 h-5 mr-2" /> Change Banner
             <input
               type="file"
@@ -138,10 +138,10 @@ const Profile = () => {
           <img
             src={profileImage}
             alt="Profile"
-            className="w-40 h-40 rounded-full object-cover border-4 border-accent-gold mx-auto"
+            className="w-40 h-40 rounded-full object-cover border-4 border-holo-blue mx-auto"
           />
           {isOwnProfile && (
-            <label className="absolute bottom-2 right-2 bg-accent-teal p-2 rounded-full cursor-pointer">
+            <label className="absolute bottom-2 right-2 bg-holo-blue p-2 rounded-full cursor-pointer">
               <Camera className="w-5 h-5 text-primary" />
               <input
                 type="file"
@@ -152,7 +152,7 @@ const Profile = () => {
             </label>
           )}
         </div>
-        <h1 className="text-3xl font-playfair text-accent-gold mt-4">
+        <h1 className="text-3xl font-inter text-holo-blue mt-4">
           {profile.firstName} {profile.lastName}
         </h1>
       </div>
@@ -172,12 +172,12 @@ const Profile = () => {
 
         {isEditing ? (
           <div className="card p-6 mb-6">
-            <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-              <Edit className="w-5 h-5 mr-2" /> Edit Profile
+            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+              <Edit className="w-5 h-5 mr-2 text-holo-pink" /> Edit Profile
             </h2>
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <UserIcon className="w-5 h-5 text-accent-teal" />
+                <UserIcon className="w-5 h-5 text-holo-pink" />
                 <input
                   type="text"
                   value={editedProfile.firstName}
@@ -187,7 +187,7 @@ const Profile = () => {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <UserIcon className="w-5 h-5 text-accent-teal" />
+                <UserIcon className="w-5 h-5 text-holo-pink" />
                 <input
                   type="text"
                   value={editedProfile.lastName}
@@ -197,7 +197,7 @@ const Profile = () => {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <MailIcon className="w-5 h-5 text-accent-teal" />
+                <MailIcon className="w-5 h-5 text-holo-pink" />
                 <input
                   type="email"
                   value={editedProfile.email}
@@ -208,39 +208,39 @@ const Profile = () => {
               </div>
               <div className="flex gap-4">
                 <button onClick={handleSave} className="btn-primary rounded-full flex-1">Save</button>
-                <button onClick={() => setIsEditing(false)} className="btn-primary bg-gray-700 rounded-full flex-1">Cancel</button>
+                <button onClick={() => setIsEditing(false)} className="btn-primary bg-holo-bg-light rounded-full flex-1">Cancel</button>
               </div>
             </div>
           </div>
         ) : (
           <div className="card p-6 mb-6">
-            <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-              <UserIcon className="w-5 h-5 mr-2" /> About
+            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+              <UserIcon className="w-5 h-5 mr-2 text-holo-pink" /> About
             </h2>
             <p className="text-primary flex items-center gap-2">
-              <UserIcon className="w-4 h-4 text-accent-teal" /> Username: <span className="text-accent-gold">{profile.username}</span>
+              <UserIcon className="w-4 h-4 text-holo-pink" /> Username: <span className="text-holo-blue">{profile.username}</span>
             </p>
             <p className="text-primary flex items-center gap-2 mt-2">
-              <MailIcon className="w-4 h-4 text-accent-teal" /> Email: <span className="text-accent-gold">{profile.email}</span>
+              <MailIcon className="w-4 h-4 text-holo-pink" /> Email: <span className="text-holo-blue">{profile.email}</span>
             </p>
           </div>
         )}
 
         <div className="projects-section card p-6">
-          <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-            <Folder className="w-5 h-5 mr-2" /> Projects
+          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+            <Folder className="w-5 h-5 mr-2 text-holo-pink" /> Projects
           </h2>
           {profile.projects?.length === 0 ? (
-            <p className="text-gray-400">No projects yet.</p>
+            <p className="text-holo-gray">No projects yet.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {profile.projects.map((project) => (
-                <Link to={`/projects/${project.id}`} key={project.id} className="project-card card p-4 hover:bg-teal-900 transition-all">
+                <Link to={`/projects/${project.id}`} key={project.id} className="project-card card p-4 hover:bg-holo-bg-dark transition-all">
                   <div className="flex items-center gap-3">
-                    <Folder className="w-6 h-6 text-accent-teal" />
+                    <Folder className="w-6 h-6 text-holo-pink" />
                     <div>
-                      <h3 className="text-lg font-playfair text-accent-gold">{project.title}</h3>
-                      <p className="text-gray-400 text-sm">{project.description || 'No description'}</p>
+                      <h3 className="text-lg font-inter text-holo-blue">{project.title}</h3>
+                      <p className="text-holo-gray text-sm">{project.description || 'No description'}</p>
                     </div>
                   </div>
                 </Link>

@@ -1,19 +1,33 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { User, Mail, Smartphone, Eye, EyeOff, Palette, Lock, Bell } from 'lucide-react';
+import { User, Mail, Smartphone, Eye, EyeOff, Palette, Lock, Bell, Settings as SettingsIcon } from 'lucide-react';
 import './Settings.css';
 
 const Settings = () => {
-  const { user, updateUserProfile } = useContext(AuthContext);
+  const { user, isAuthenticated, updateUserProfile } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [settings, setSettings] = useState({
-    notifications: {
-      email: true,
-      sms: true,
-    },
+    notifications: { email: true, sms: true },
     profileVisibility: 'public',
     theme: 'dark',
     password: '',
   });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      navigate('/login', { replace: true });
+    } else {
+      setSettings({
+        notifications: user.notifications || { email: true, sms: true },
+        profileVisibility: user.profileVisibility || 'public',
+        theme: user.theme || 'dark',
+        password: '',
+      });
+      setLoading(false);
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -31,23 +45,28 @@ const Settings = () => {
     updateUserProfile({
       profileVisibility: settings.profileVisibility,
       theme: settings.theme,
+      notifications: settings.notifications,
     });
-    console.log('Settings saved:', settings);
+    if (settings.password) {
+      console.log('Password update not implemented in this example');
+    }
   };
+
+  if (loading) return <div className="settings-container"><p className="text-holo-gray">Loading...</p></div>;
 
   return (
     <div className="settings-container">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <h1 className="text-4xl font-playfair text-accent-gold mb-6 text-center flex items-center justify-center">
-          <Settings className="w-6 h-6 mr-2" /> Settings
+        <h1 className="text-4xl font-inter text-holo-blue mb-6 text-center flex items-center justify-center">
+          <SettingsIcon className="w-6 h-6 mr-2 text-holo-pink" /> Settings
         </h1>
         <div className="card p-6">
-          <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-            <User className="w-5 h-5 mr-2" /> Profile Settings
+          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+            <User className="w-5 h-5 mr-2 text-holo-pink" /> Profile Settings
           </h2>
           <div className="space-y-4 mb-6">
             <div className="flex items-center gap-2">
-              <Eye className="w-5 h-5 text-accent-teal" />
+              <Eye className="w-5 h-5 text-holo-pink" />
               <label className="text-primary">Profile Visibility:</label>
               <select
                 name="profileVisibility"
@@ -61,8 +80,8 @@ const Settings = () => {
             </div>
           </div>
 
-          <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-            <Bell className="w-5 h-5 mr-2" /> Notification Preferences
+          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+            <Bell className="w-5 h-5 mr-2 text-holo-pink" /> Notification Preferences
           </h2>
           <div className="space-y-4 mb-6">
             <label className="flex items-center gap-2">
@@ -72,7 +91,7 @@ const Settings = () => {
                 checked={settings.notifications.email}
                 onChange={handleInputChange}
               />
-              <Mail className="w-5 h-5 text-accent-teal" /> Email Notifications
+              <Mail className="w-5 h-5 text-holo-pink" /> Email Notifications
             </label>
             <label className="flex items-center gap-2">
               <input
@@ -81,12 +100,12 @@ const Settings = () => {
                 checked={settings.notifications.sms}
                 onChange={handleInputChange}
               />
-              <Smartphone className="w-5 h-5 text-accent-teal" /> SMS Notifications
+              <Smartphone className="w-5 h-5 text-holo-pink" /> SMS Notifications
             </label>
           </div>
 
-          <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-            <Palette className="w-5 h-5 mr-2" /> Appearance
+          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+            <Palette className="w-5 h-5 mr-2 text-holo-pink" /> Appearance
           </h2>
           <div className="space-y-4 mb-6">
             <div className="flex items-center gap-2">
@@ -103,8 +122,8 @@ const Settings = () => {
             </div>
           </div>
 
-          <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-            <Lock className="w-5 h-5 mr-2" /> Account Security
+          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+            <Lock className="w-5 h-5 mr-2 text-holo-pink" /> Account Security
           </h2>
           <div className="space-y-4 mb-6">
             <input

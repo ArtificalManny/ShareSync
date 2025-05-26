@@ -7,7 +7,7 @@ import './Projects.css';
 const Projects = () => {
   const { user, isAuthenticated, socket, addProject, updateProject } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [projects, setProjects] = useState(user?.projects || []);
+  const [projects, setProjects] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
@@ -17,6 +17,10 @@ const Projects = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
+        if (!isAuthenticated || !user) {
+          navigate('/login', { replace: true });
+          return;
+        }
         console.log('Projects - Fetching projects');
         setProjects(user?.projects || []);
       } catch (err) {
@@ -58,11 +62,7 @@ const Projects = () => {
       });
     }
 
-    if (isAuthenticated) {
-      fetchProjects();
-    } else {
-      navigate('/login', { replace: true });
-    }
+    fetchProjects();
 
     return () => {
       if (socket) {
@@ -109,15 +109,15 @@ const Projects = () => {
     socket.emit('metric-update', { projectId, status: newStatus });
   };
 
-  if (loading) return <div className="projects-container"><p className="text-gray-400">Loading...</p></div>;
+  if (loading) return <div className="projects-container"><p className="text-holo-gray">Loading...</p></div>;
 
   if (error) {
     return (
       <div className="projects-container">
         <p className="text-red-500">{error}</p>
         {error.includes('token') && (
-          <p className="text-gray-400">
-            Please <Link to="/login" className="text-accent-teal hover:underline">log in</Link> to view projects.
+          <p className="text-holo-gray">
+            Please <Link to="/login" className="text-holo-blue hover:underline">log in</Link> to view projects.
           </p>
         )}
       </div>
@@ -126,9 +126,9 @@ const Projects = () => {
 
   return (
     <div className="projects-container">
-      <div className="projects-header bg-glass py-8 px-6 rounded-b-3xl text-center">
-        <h1 className="text-4xl font-playfair text-accent-gold mb-4 flex items-center justify-center">
-          <Folder className="w-6 h-6 mr-2" /> Your Projects
+      <div className="projects-header bg-holo-bg-dark py-8 px-6 rounded-b-3xl text-center">
+        <h1 className="text-4xl font-inter text-holo-blue mb-4 flex items-center justify-center">
+          <Folder className="w-6 h-6 mr-2 text-holo-pink" /> Your Projects
         </h1>
         <Link to="/projects/create">
           <button className="btn-primary flex items-center mx-auto">
@@ -140,34 +140,34 @@ const Projects = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {projects.length === 0 ? (
           <div className="text-center">
-            <p className="text-gray-400 mb-4 flex items-center justify-center gap-2">
-              <AlertCircle className="w-5 h-5 text-accent-teal" /> You haven’t joined any projects yet.
+            <p className="text-holo-gray mb-4 flex items-center justify-center gap-2">
+              <AlertCircle className="w-5 h-5 text-holo-pink" /> You haven’t joined any projects yet.
             </p>
-            <Link to="/"><p className="text-accent-teal hover:text-accent-coral transition-all">Go to Home to join a project!</p></Link>
+            <Link to="/"><p className="text-holo-blue hover:text-holo-pink transition-all">Go to Home to join a project!</p></Link>
           </div>
         ) : (
           <>
             <div className="projects-grid mb-8">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                <Folder className="w-5 h-5 mr-2" /> Your Projects
+              <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                <Folder className="w-5 h-5 mr-2 text-holo-pink" /> Your Projects
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {projects.map((project) => (
-                  <Link to={`/projects/${project.id}`} key={project.id} className="project-card card p-6 hover:bg-teal-900 transition-all">
+                  <Link to={`/projects/${project.id}`} key={project.id} className="project-card card p-6 hover:bg-holo-bg-dark transition-all">
                     <div className="flex items-center justify-between mb-2">
-                      <h2 className="text-xl font-playfair text-accent-gold">{project.title}</h2>
+                      <h2 className="text-xl font-inter text-holo-blue">{project.title}</h2>
                       <button
                         onClick={(e) => {
                           e.preventDefault();
                           setSelectedProjectId(project.id);
                         }}
-                        className="text-accent-teal hover:text-accent-coral transition-all text-sm"
+                        className="text-holo-blue hover:text-holo-pink transition-all text-sm"
                       >
                         Post Announcement
                       </button>
                     </div>
-                    <p className="text-gray-400 mb-2 flex items-center gap-2">
-                      <List className="w-4 h-4 text-accent-teal" /> {project.description || 'No description'}
+                    <p className="text-holo-gray mb-2 flex items-center gap-2">
+                      <List className="w-4 h-4 text-holo-pink" /> {project.description || 'No description'}
                     </p>
                     <div className="flex items-center gap-2">
                       <div className="relative flex">
@@ -176,24 +176,24 @@ const Projects = () => {
                             key={index}
                             src={member.profilePicture}
                             alt={member.email}
-                            className="w-8 h-8 rounded-full object-cover border-2 border-accent-gold"
+                            className="w-8 h-8 rounded-full object-cover border-2 border-holo-blue"
                             style={{ marginLeft: index > 0 ? '-12px' : '0' }}
                           />
                         ))}
                         {project.members.length > 3 && (
-                          <span className="w-8 h-8 rounded-full bg-accent-sage text-primary flex items-center justify-center text-xs border-2 border-accent-gold" style={{ marginLeft: '-12px' }}>
+                          <span className="w-8 h-8 rounded-full bg-holo-bg-light text-primary flex items-center justify-center text-xs border-2 border-holo-blue" style={{ marginLeft: '-12px' }}>
                             +{project.members.length - 3}
                           </span>
                         )}
                       </div>
-                      <p className="text-gray-400 text-sm flex items-center gap-2">
-                        <Users className="w-4 h-4 text-accent-teal" />
+                      <p className="text-holo-gray text-sm flex items-center gap-2">
+                        <Users className="w-4 h-4 text-holo-pink" />
                         {project.members.slice(0, 2).map(m => m.email.split('@')[0]).join(', ')}
                         {project.members.length > 2 ? `, and ${project.members.length - 2} more` : ''}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
-                      <p className="text-gray-400">Status:</p>
+                      <p className="text-holo-gray">Status:</p>
                       <select
                         value={project.status}
                         onChange={(e) => {
@@ -210,8 +210,8 @@ const Projects = () => {
                     </div>
                     {project.announcements?.length > 0 && (
                       <div className="announcements mt-4">
-                        <h3 className="text-lg font-playfair text-primary mb-2 flex items-center">
-                          <Bell className="w-4 h-4 text-accent-teal mr-2" /> Recent Announcements
+                        <h3 className="text-lg font-inter text-primary mb-2 flex items-center">
+                          <Bell className="w-4 h-4 text-holo-pink mr-2" /> Recent Announcements
                         </h3>
                         {project.announcements.slice(-1).map((ann) => (
                           <div key={ann.id} className="announcement-item card p-3 mb-2">
@@ -223,17 +223,17 @@ const Projects = () => {
                               />
                               <div>
                                 <span className="text-primary font-semibold">{ann.user}</span>
-                                <span className="text-gray-400 text-sm ml-2">{new Date(ann.timestamp).toLocaleString()}</span>
+                                <span className="text-holo-gray text-sm ml-2">{new Date(ann.timestamp).toLocaleString()}</span>
                               </div>
                             </div>
                             <p className="text-primary">{ann.content}</p>
                             <div className="flex items-center mt-2 gap-4">
                               <button
-                                className="flex items-center text-accent-teal hover:text-accent-coral transition-all"
+                                className="flex items-center text-holo-blue hover:text-holo-pink transition-all"
                               >
                                 <ThumbsUp className="w-4 h-4 mr-1" /> {ann.likes || 0}
                               </button>
-                              <button className="flex items-center text-accent-teal hover:text-accent-coral transition-all">
+                              <button className="flex items-center text-holo-blue hover:text-holo-pink transition-all">
                                 <MessageSquare className="w-4 h-4 mr-1" /> {ann.comments?.length || 0}
                               </button>
                             </div>
@@ -249,8 +249,8 @@ const Projects = () => {
             {selectedProjectId && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="card p-6 w-full max-w-md">
-                  <h2 className="text-xl font-playfair text-accent-teal mb-4 flex items-center">
-                    <Bell className="w-5 h-5 mr-2" /> Post Announcement
+                  <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
+                    <Bell className="w-5 h-5 mr-2 text-holo-pink" /> Post Announcement
                   </h2>
                   <textarea
                     value={newAnnouncement}
@@ -267,7 +267,7 @@ const Projects = () => {
                     </button>
                     <button
                       onClick={() => setSelectedProjectId(null)}
-                      className="btn-primary bg-gray-700 rounded-full flex-1"
+                      className="btn-primary bg-holo-bg-light rounded-full flex-1"
                     >
                       Cancel
                     </button>
@@ -277,19 +277,19 @@ const Projects = () => {
             )}
 
             <div className="notifications-section card p-6">
-              <h2 className="text-2xl font-playfair text-accent-teal mb-4 flex items-center">
-                <Bell className="w-5 h-5 mr-2" /> Notifications
+              <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                <Bell className="w-5 h-5 mr-2 text-holo-pink" /> Notifications
               </h2>
               {notifications.length > 0 ? (
                 notifications.map((notif, index) => (
                   <div key={index} className="notification-item card p-2 mb-2">
-                    <p className="text-gray-400 text-sm">{notif.message}</p>
-                    <p className="text-gray-500 text-xs">{new Date().toLocaleTimeString()}</p>
+                    <p className="text-holo-gray text-sm">{notif.message}</p>
+                    <p className="text-holo-gray-dark text-xs">{new Date().toLocaleTimeString()}</p>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-400 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-accent-teal" /> No notifications yet.
+                <p className="text-holo-gray flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-holo-pink" /> No notifications yet.
                 </p>
               )}
             </div>
