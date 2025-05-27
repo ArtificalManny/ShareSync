@@ -1,20 +1,28 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Home, Folder, User, LogOut, Sun, Moon, PlusCircle, Bell } from 'lucide-react';
+import { Home, Folder, User, LogOut, Sun, Moon, PlusCircle, Bell, Search } from 'lucide-react';
 import './Navigation.css';
 
 const Navigation = () => {
   const { user, isAuthenticated, logout, theme, toggleTheme } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/projects?search=${searchQuery}`);
+    }
+  };
+
   return (
-    <nav className="navigation-container">
+    <nav className="navigation-container holographic-effect">
       <div className="navigation-content">
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2 text-holo-blue hover:text-holo-pink transition-all">
@@ -38,6 +46,20 @@ const Navigation = () => {
           )}
         </div>
         <div className="flex items-center gap-4">
+          {isAuthenticated && (
+            <div className="search-bar flex items-center gap-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search projects..."
+                className="input-field rounded-full"
+              />
+              <button onClick={handleSearch} className="btn-primary rounded-full">
+                <Search className="w-5 h-5" />
+              </button>
+            </div>
+          )}
           <button
             onClick={toggleTheme}
             className="p-2 rounded-full bg-holo-bg-light text-holo-blue hover:text-holo-pink transition-all"
@@ -45,12 +67,19 @@ const Navigation = () => {
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
           {isAuthenticated ? (
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-holo-blue hover:text-holo-pink transition-all"
-            >
-              <LogOut className="w-5 h-5" /> Logout
-            </button>
+            <>
+              <img
+                src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                alt="User Avatar"
+                className="w-8 h-8 rounded-full object-cover border-2 border-holo-blue animate-glow"
+              />
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-holo-blue hover:text-holo-pink transition-all"
+              >
+                <LogOut className="w-5 h-5" /> Logout
+              </button>
+            </>
           ) : (
             <Link to="/login" className="flex items-center gap-2 text-holo-blue hover:text-holo-pink transition-all">
               <User className="w-5 h-5" /> Login

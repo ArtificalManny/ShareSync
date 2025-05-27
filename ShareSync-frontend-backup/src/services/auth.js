@@ -1,207 +1,64 @@
-import axiosInstance from '../utils/axiosConfig';
-import { setTokens, getAccessToken, clearTokens } from '../utils/tokenUtils';
+import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:3000/api/auth';
 
-export const login = async (email, password) => {
+const register = async (username, email, password) => {
   try {
-    const response = await axiosInstance.post('/auth/login', { email, password });
-    console.log('auth.js login - Full response:', response.data);
-    if (!response.data.access_token) {
-      console.error('auth.js login - No access token received in response');
-      throw new Error('No access token received in response');
+    const response = await axios.post(`${API_URL}/register`, { username, email, password });
+    console.log('Auth Service - Register success:', response.data);
+    return response.data;
+  } catch (err) {
+    console.error('Auth Service - Register error:', err.response?.data || err.message);
+    throw err.response?.data || err.message;
+  }
+};
+
+const login = async (email, password) => {
+  try {
+    const response = await axios.post(`${API_URL}/login`, { email, password });
+    console.log('Auth Service - Login success:', response.data);
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
     }
     return response.data;
-  } catch (error) {
-    console.error('auth.js login - Login failed:', error.response?.data?.message || error.message);
-    throw error;
+  } catch (err) {
+    console.error('Auth Service - Login error:', err.response?.data || err.message);
+    throw err.response?.data || err.message;
   }
 };
 
-export const register = async (firstName, lastName, email, password) => {
+const getCurrentUser = async () => {
   try {
-    const response = await axiosInstance.post('/auth/register', { firstName, lastName, email, password });
-    if (!response.data.access_token) {
-      throw new Error('No access token received in response');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log('Auth Service - No token found for getCurrentUser');
+      throw new Error('No token found');
     }
-    console.log('auth.js register - Register successful, access token:', response.data.access_token);
+    const response = await axios.get(`${API_URL}/me`);
+    console.log('Auth Service - getCurrentUser success:', response.data);
     return response.data;
-  } catch (error) {
-    console.error('auth.js register - Register failed:', error.message);
-    throw error;
+  } catch (err) {
+    console.error('Auth Service - getCurrentUser error:', err.response?.data || err.message);
+    throw err.response?.data || err.message;
   }
 };
 
-export const forgotPassword = async (email) => {
+const updateUserProfile = async (updates) => {
   try {
-    const response = await axiosInstance.post('/auth/forgot-password', { email });
+    const response = await axios.put(`${API_URL}/me`, updates);
+    console.log('Auth Service - updateUserProfile success:', response.data);
     return response.data;
-  } catch (error) {
-    throw error;
+  } catch (err) {
+    console.error('Auth Service - updateUserProfile error:', err.response?.data || err.message);
+    throw err.response?.data || err.message;
   }
 };
 
-export const resetPassword = async (token, password) => {
-  try {
-    const response = await axiosInstance.post(`/auth/reset-password/${token}`, { password });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+const logout = () => {
+  localStorage.removeItem('token');
+  delete axios.defaults.headers.common['Authorization'];
+  console.log('Auth Service - Logged out');
 };
 
-export const logout = () => {
-  clearTokens();
-};
-
-export const getUserData = async () => {
-  try {
-    const response = await axiosInstance.get('/users/me');
-    if (!response.data) {
-      throw new Error('No user data received');
-    }
-    console.log('auth.js getUserData - User data fetched:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('auth.js getUserData - Final error:', error.message);
-    throw error;
-  }
-};
-
-export const getProjectById = async (projectId) => {
-  try {
-    if (!projectId) {
-      throw new Error('Project ID is required');
-    }
-    const response = await axiosInstance.get(`/projects/${projectId}`);
-    if (!response.data) {
-      throw new Error('No project data received');
-    }
-    console.log('auth.js getProjectById - Project data fetched:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error(`auth.js getProjectById - Final error for ID ${projectId}:`, error.message);
-    throw error;
-  }
-};
-
-export const createProject = async (title, description, category, status) => {
-  try {
-    const response = await axiosInstance.post('/projects', { title, description, category, status });
-    console.log('auth.js createProject - Project created successfully:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('auth.js createProject - Final error:', error.message);
-    throw new Error('Failed to create project: ' + (error.response?.data?.message || error.message));
-  }
-};
-
-export const updateProjectStatus = async (projectId, status) => {
-  try {
-    const response = await axiosInstance.put(`/projects/${projectId}/status`, { status });
-    console.log('auth.js updateProjectStatus - Project status updated:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('auth.js updateProjectStatus - Error:', error.message);
-    throw error;
-  }
-};
-
-export const getProjects = async () => {
-  try {
-    const response = await axiosInstance.get('/projects');
-    console.log('auth.js getProjects - Fetched projects:', response.data);
-    return response.data || [];
-  } catch (error) {
-    console.error('auth.js getProjects - Error:', error.message);
-    throw error;
-  }
-};
-
-export const postAnnouncement = async (projectId, content) => {
-  try {
-    const response = await axiosInstance.post(`/projects/${projectId}/announcements`, { content });
-    console.log('auth.js postAnnouncement - Announcement posted:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('auth.js postAnnouncement - Error:', error.message);
-    throw error;
-  }
-};
-
-export const updateSnapshot = async (projectId, snapshot) => {
-  try {
-    const response = await axiosInstance.put(`/projects/${projectId}/snapshot`, { snapshot });
-    console.log('auth.js updateSnapshot - Snapshot updated:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('auth.js updateSnapshot - Error:', error.message);
-    throw error;
-  }
-};
-
-export const createTask = async (projectId, taskData) => {
-  try {
-    const response = await axiosInstance.post(`/projects/${projectId}/tasks`, taskData);
-    console.log('auth.js createTask - Task created:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('auth.js createTask - Error:', error.message);
-    throw error;
-  }
-};
-
-export const createSubtask = async (projectId, taskId, subtaskData) => {
-  try {
-    const response = await axiosInstance.post(`/projects/${projectId}/tasks/${taskId}/subtasks`, subtaskData);
-    console.log('auth.js createSubtask - Subtask created:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('auth.js createSubtask - Error:', error.message);
-    throw error;
-  }
-};
-
-export const uploadFile = async (projectId, fileData) => {
-  try {
-    const response = await axiosInstance.post(`/projects/${projectId}/files`, fileData);
-    console.log('auth.js uploadFile - File uploaded:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('auth.js uploadFile - Error:', error.message);
-    throw error;
-  }
-};
-
-export const createTeam = async (projectId, teamData) => {
-  try {
-    const response = await axiosInstance.post(`/projects/${projectId}/teams`, teamData);
-    console.log('auth.js createTeam - Team created:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('auth.js createTeam - Error:', error.message);
-    throw error;
-  }
-};
-
-export const inviteUser = async (projectId, userId, role) => {
-  try {
-    const response = await axiosInstance.post(`/projects/${projectId}/invite`, { userId, role });
-    console.log('auth.js inviteUser - User invited:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('auth.js inviteUser - Error:', error.message);
-    throw error;
-  }
-};
-
-export const updateNotificationSettings = async (projectId, settings) => {
-  try {
-    const response = await axiosInstance.put(`/projects/${projectId}/notification-settings`, settings);
-    console.log('auth.js updateNotificationSettings - Settings updated:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('auth.js updateNotificationSettings - Error:', error.message);
-    throw error;
-  }
-};
+export default { register, login, getCurrentUser, updateUserProfile, logout };

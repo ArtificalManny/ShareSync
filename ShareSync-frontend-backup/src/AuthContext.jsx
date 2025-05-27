@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import io from 'socket.io-client';
+import authService from './services/auth';
 
 const AuthContext = createContext();
 
@@ -18,56 +19,60 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          console.log('AuthContext - Initializing with token:', token);
-          const response = await axios.get('http://localhost:3000/api/auth/me');
-          const userData = response.data;
-          console.log('AuthContext - User data fetched successfully:', userData);
-          setUser(userData);
-          setIsAuthenticated(true);
-          setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
-        } catch (err) {
-          console.error('AuthContext - Failed to fetch user data:', err.message, err.response?.data);
-          setAuthError('Failed to authenticate user: ' + (err.response?.data?.message || err.message));
-          localStorage.removeItem('token');
-          delete axios.defaults.headers.common['Authorization'];
-          setIsAuthenticated(false);
-          setUser(null);
-        }
-      } else {
+      if (!token) {
         console.log('AuthContext - No token found in localStorage');
         setIsAuthenticated(false);
         setUser(null);
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
+
+      try {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        console.log('AuthContext - Initializing with token:', token);
+        const userData = await authService.getCurrentUser();
+        console.log('AuthContext - User data fetched successfully:', userData);
+        setUser(userData);
+        setIsAuthenticated(true);
+        setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
+      } catch (err) {
+        console.error('AuthContext - Failed to fetch user data:', err.message);
+        setAuthError('Failed to authenticate user: ' + (err.message || 'Unknown error'));
+        localStorage.removeItem('token');
+        delete axios.defaults.headers.common['Authorization'];
+        setIsAuthenticated(false);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     initializeAuth();
   }, []);
 
-  const login = (userData, redirectTo = '/') => {
-    setUser(userData);
-    setIsAuthenticated(true);
-    setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
-    setIntendedRoute(null);
-    console.log('AuthContext - User logged in:', userData, 'Redirecting to:', redirectTo);
-    const token = localStorage.getItem('token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  const login = async (email, password, redirectTo = '/') => {
+    try {
+      const data = await authService.login(email, password);
+      setUser(data.user);
+      setIsAuthenticated(true);
+      setGlobalMetrics({ notifications: data.user.notifications?.length || 0 });
+      setIntendedRoute(null);
+      console.log('AuthContext - User logged in:', data.user, 'Redirecting to:', redirectTo);
+      return redirectTo;
+    } catch (err) {
+      setAuthError('Login failed: ' + (err.message || 'Unknown error'));
+      throw err;
     }
-    return redirectTo;
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
+    authService.logout();
     setUser(null);
     setIsAuthenticated(false);
     setGlobalMetrics({ notifications: 0 });
     setIntendedRoute(null);
     socket.disconnect();
+    console.log('AuthContext - User logged out');
   };
 
   const joinProject = (project) => {
@@ -88,22 +93,27 @@ const AuthProvider = ({ children }) => {
 
   const updateProject = async (projectId, updates) => {
     try {
-      await axios.put(`http://localhost:3000/api/projects/${projectId}`, updates);
+      const response = await axios.put(`http://localhost:3000/api/projects/${projectId}`, updates);
       const updatedProjects = user.projects.map((proj) =>
         proj.id === projectId ? { ...proj, ...updates } : proj
       );
       setUser({ ...user, projects: updatedProjects });
+      console.log('AuthContext - Project updated:', projectId);
+      return response.data;
     } catch (err) {
-      console.error('Failed to update project:', err);
+      console.error('AuthContext - Failed to update project:', err.message);
+      throw err;
     }
   };
 
   const updateUserProfile = async (updates) => {
     try {
-      await axios.put('http://localhost:3000/api/auth/me', updates);
-      setUser({ ...user, ...updates });
+      const updatedUser = await authService.updateUserProfile(updates);
+      setUser(updatedUser);
+      console.log('AuthContext - User profile updated:', updatedUser);
     } catch (err) {
-      console.error('Failed to update user profile:', err);
+      console.error('AuthContext - Failed to update user profile:', err.message);
+      throw err;
     }
   };
 
@@ -119,17 +129,11 @@ const AuthProvider = ({ children }) => {
         assignedTo: members[index % members.length]?.email || 'Unassigned',
       }));
 
-      await axios.put(`http://localhost:3000/api/projects/${projectId}`, {
-        tasks: updatedTasks,
-      });
-
-      const updatedProjects = user.projects.map((proj) =>
-        proj.id === projectId ? { ...proj, tasks: updatedTasks } : proj
-      );
-      setUser({ ...user, projects: updatedProjects });
-      console.log('Tasks auto-assigned:', updatedTasks);
+      await updateProject(projectId, { tasks: updatedTasks });
+      console.log('AuthContext - Tasks auto-assigned:', updatedTasks);
     } catch (err) {
-      console.error('Error auto-assigning tasks:', err.message);
+      console.error('AuthContext - Error auto-assigning tasks:', err.message);
+      throw err;
     }
   };
 

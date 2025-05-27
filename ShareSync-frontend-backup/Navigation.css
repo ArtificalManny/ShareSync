@@ -1,103 +1,154 @@
 /* Base styles for dark theme */
 :root[data-theme="dark"] {
-    --background: linear-gradient(135deg, #1A1F36, #2E3555);
-    --card-bg: rgba(46, 53, 85, 0.1);
-    --text-primary: #A1B5FF;
-    --text-secondary: #7BFFAF;
-    --text-accent: #FF6F91;
-    --shadow-dark: rgba(0, 0, 0, 0.2);
-    --shadow-light: rgba(255, 255, 255, 0.05);
-  }
-  
-  /* Light theme styles */
-  :root[data-theme="light"] {
-    --background: linear-gradient(135deg, #E6F0FA, #F5F7FA);
-    --card-bg: rgba(255, 255, 255, 0.7);
-    --text-primary: #1A1F36;
-    --text-secondary: #2E3555;
-    --text-accent: #FF6F91;
-    --shadow-dark: rgba(0, 0, 0, 0.1);
-    --shadow-light: rgba(255, 255, 255, 0.3);
-  }
-  
-  .navigation-container {
-    background: var(--background);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 20px rgba(161, 181, 255, 0.2);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-  }
-  
-  .navigation-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .navigation-content a, .navigation-content button {
-    font-size: 1rem;
-    font-weight: 500;
-    transition: color 0.3s ease, transform 0.3s ease;
-  }
-  
-  .navigation-content a:hover, .navigation-content button:hover {
-    transform: translateY(-2px);
-  }
-  
-  .holographic-effect {
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .holographic-effect::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 111, 145, 0.3), transparent);
-    animation: holographic 3s infinite;
-  }
-  
-  .holographic-effect:hover::before {
-    animation: holographic-hover 1.5s infinite;
-  }
-  
-  @keyframes holographic {
-    0% { left: -100%; }
-    50% { left: 100%; }
-    100% { left: 100%; }
-  }
-  
-  @keyframes holographic-hover {
-    0% { left: -100%; opacity: 0.3; }
-    50% { left: 100%; opacity: 0.6; }
-    100% { left: 100%; opacity: 0.3; }
-  }
-  
-  @keyframes glow {
-    0% { box-shadow: 0 0 5px rgba(161, 181, 255, 0.5); }
-    50% { box-shadow: 0 0 15px rgba(255, 111, 145, 0.8); }
-    100% { box-shadow: 0 0 5px rgba(161, 181, 255, 0.5); }
-  }
-  
-  .animate-glow {
-    animation: glow 2s infinite;
-  }
-  
-  @keyframes text-glow {
-    0% { text-shadow: 0 0 2px rgba(161, 181, 255, 0.5); }
-    50% { text-shadow: 0 0 8px rgba(255, 111, 145, 0.8); }
-    100% { text-shadow: 0 0 2px rgba(161, 181, 255, 0.5); }
-  }
-  
-  .animate-text-glow {
-    animation: text-glow 2s infinite;
-  }
+  --background: linear-gradient(135deg, #1A1F36, #2E3555);
+  --card-bg: rgba(46, 53, 85, 0.1);
+  --text-primary: #A1B5FF;
+  --text-secondary: #7BFFAF;
+  --text-accent: #FF6F91;
+  --shadow-dark: rgba(0, 0, 0, 0.2);
+  --shadow-light: rgba(255, 255, 255, 0.05);
+}
+
+/* Light theme styles */
+:root[data-theme="light"] {
+  --background: linear-gradient(135deg, #E6F0FA, #F5F7FA);
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --text-primary: #1A1F36;
+  --text-secondary: #2E3555;
+  --text-accent: #FF6F91;
+  --shadow-dark: rgba(0, 0, 0, 0.1);
+  --shadow-light: rgba(255, 255, 255, 0.3);
+}
+
+.navigation-container {
+  background: var(--background);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(161, 181, 255, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
+
+.navigation-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.navigation-content a, .navigation-content button {
+  font-size: 1rem;
+  font-weight: 500;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.navigation-content a:hover, .navigation-content button:hover {
+  transform: translateY(-2px);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-field {
+  border-radius: 8px;
+  border: none;
+  background: var(--card-bg);
+  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.input-field:focus {
+  box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
+  transform: scale(1.02);
+  outline: none;
+}
+
+.input-field.rounded-full {
+  border-radius: 9999px;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #A1B5FF, #FF6F91, #7BFFAF);
+  color: var(--text-primary);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-weight: 500;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.5s ease;
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) translateZ(5px);
+  box-shadow: 8px 8px 15px var(--shadow-dark), -8px -8px 15px var(--shadow-light);
+}
+
+.holographic-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.holographic-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 111, 145, 0.3), transparent);
+  animation: holographic 3s infinite;
+}
+
+.holographic-effect:hover::before {
+  animation: holographic-hover 1.5s infinite;
+}
+
+@keyframes holographic {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+@keyframes holographic-hover {
+  0% { left: -100%; opacity: 0.3; }
+  50% { left: 100%; opacity: 0.6; }
+  100% { left: 100%; opacity: 0.3; }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px rgba(161, 181, 255, 0.5); }
+  50% { box-shadow: 0 0 15px rgba(255, 111, 145, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(161, 181, 255, 0.5); }
+}
+
+.animate-glow {
+  animation: glow 2s infinite;
+}
+
+@keyframes text-glow {
+  0% { text-shadow: 0 0 2px rgba(161, 181, 255, 0.5); }
+  50% { text-shadow: 0 0 8px rgba(255, 111, 145, 0.8); }
+  100% { text-shadow: 0 0 2px rgba(161, 181, 255, 0.5); }
+}
+
+.animate-text-glow {
+  animation: text-glow 2s infinite;
+}

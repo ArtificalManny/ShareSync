@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Edit, Camera, PlusCircle, Folder, Mail as MailIcon, User as UserIcon, Sun, Moon } from 'lucide-react';
+import { Edit, Camera, PlusCircle, Folder, Mail as MailIcon, User as UserIcon, Sun, Moon, Award } from 'lucide-react';
 import './Profile.css';
 
 const Profile = () => {
@@ -15,6 +15,7 @@ const Profile = () => {
   const [editedProfile, setEditedProfile] = useState({});
   const [bannerImage, setBannerImage] = useState('https://via.placeholder.com/1200x300');
   const [profileImage, setProfileImage] = useState('https://via.placeholder.com/150');
+  const [achievements, setAchievements] = useState([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -56,6 +57,13 @@ const Profile = () => {
         setProfile(userProfile);
         setProfileImage(user.profilePicture || 'https://via.placeholder.com/150');
         setBannerImage(user.bannerImage || 'https://via.placeholder.com/1200x300');
+
+        // Mock achievements (can be fetched from backend)
+        const userAchievements = [
+          { id: 1, title: 'Project Master', description: 'Created 5+ projects', icon: '🏆' },
+          { id: 2, title: 'Team Leader', description: 'Managed a team of 3+ members', icon: '👑' },
+        ];
+        setAchievements(userAchievements);
       } catch (err) {
         console.error('Profile - Error fetching profile:', err.message, err.stack);
         setError('Failed to load profile: ' + err.message);
@@ -76,13 +84,17 @@ const Profile = () => {
     });
   };
 
-  const handleSave = () => {
-    updateUserProfile(editedProfile);
-    setProfile((prev) => ({
-      ...prev,
-      ...editedProfile,
-    }));
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      await updateUserProfile(editedProfile);
+      setProfile((prev) => ({
+        ...prev,
+        ...editedProfile,
+      }));
+      setIsEditing(false);
+    } catch (err) {
+      setError('Failed to save profile: ' + err.message);
+    }
   };
 
   const handleBannerUpload = (e) => {
@@ -90,8 +102,9 @@ const Profile = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setBannerImage(reader.result);
-        updateUserProfile({ bannerImage: reader.result });
+        const bannerDataUrl = reader.result;
+        setBannerImage(bannerDataUrl);
+        updateUserProfile({ bannerImage: bannerDataUrl });
       };
       reader.readAsDataURL(file);
     }
@@ -102,8 +115,9 @@ const Profile = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileImage(reader.result);
-        updateUserProfile({ profilePicture: reader.result });
+        const pictureDataUrl = reader.result;
+        setProfileImage(pictureDataUrl);
+        updateUserProfile({ profilePicture: pictureDataUrl });
       };
       reader.readAsDataURL(file);
     }
@@ -157,7 +171,7 @@ const Profile = () => {
       </div>
 
       <div className="profile-header text-center mt-[-80px] mb-6">
-        <div className="relative inline-block">
+        <div className="relative inline-block holographic-effect">
           <img
             src={profileImage}
             alt="Profile"
@@ -235,7 +249,7 @@ const Profile = () => {
             </div>
           </div>
         ) : (
-          <div className="card p-6 mb-6 glassmorphic">
+          <div className="card p-6 mb-6 glassmorphic holographic-effect">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
               <UserIcon className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> About
             </h2>
@@ -247,6 +261,29 @@ const Profile = () => {
             </p>
           </div>
         )}
+
+        <div className="achievements-section card p-6 mb-6 glassmorphic">
+          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+            <Award className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Achievements
+          </h2>
+          {achievements.length === 0 ? (
+            <p className="text-holo-gray">No achievements yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {achievements.map((achievement) => (
+                <div key={achievement.id} className="achievement-card card p-4 holographic-effect glassmorphic">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{achievement.icon}</span>
+                    <div>
+                      <h3 className="text-lg font-inter text-holo-blue animate-text-glow">{achievement.title}</h3>
+                      <p className="text-holo-gray text-sm">{achievement.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="projects-section card p-6 glassmorphic">
           <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
@@ -260,7 +297,7 @@ const Profile = () => {
                 <Link
                   to={`/projects/${project.id}`}
                   key={project.id}
-                  className="project-card card p-4 hover:bg-holo-bg-dark transition-all glassmorphic"
+                  className="project-card card p-4 hover:bg-holo-bg-dark transition-all glassmorphic holographic-effect"
                 >
                   <div className="flex items-center gap-3">
                     <Folder className="w-6 h-6 text-holo-pink" />
