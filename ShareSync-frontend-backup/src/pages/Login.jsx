@@ -8,7 +8,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useContext(AuthContext);
+  const { login, intendedRoute } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -17,8 +17,8 @@ const Login = () => {
       const response = await axios.post('http://localhost:3000/api/auth/login', { email, password });
       const { token, user } = response.data;
       localStorage.setItem('token', token);
-      login(user);
-      navigate('/');
+      const redirectTo = login(user, intendedRoute || '/');
+      navigate(redirectTo);
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     }
@@ -30,7 +30,7 @@ const Login = () => {
         <h2 className="text-3xl font-inter text-holo-blue mb-6 text-center animate-text-glow">Login to ShareSync</h2>
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
         <div className="card p-6">
-          <div className="space-y-6"> {/* Increased from space-y-4 to space-y-6 */}
+          <div className="space-y-6">
             <div className="flex items-center gap-2">
               <input
                 type="email"

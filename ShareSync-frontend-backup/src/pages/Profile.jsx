@@ -7,7 +7,7 @@ import './Profile.css';
 const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user, updateUserProfile } = useContext(AuthContext);
+  const { isAuthenticated, user, updateUserProfile, isLoading, setIntendedRoute } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -19,26 +19,38 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
+        // Wait for AuthContext to finish loading
+        if (isLoading) {
+          console.log('Profile - Waiting for AuthContext to finish loading');
+          return;
+        }
+
         if (!isAuthenticated) {
           console.log('Profile - User not authenticated, redirecting to login');
+          setIntendedRoute(`/profile/${username}`); // Store intended route
           navigate('/login', { replace: true });
           return;
         }
+
         if (!user || !user.username) {
           console.log('Profile - User data not available');
           setError('User data not available. Please log in again.');
+          setIntendedRoute(`/profile/${username}`);
           navigate('/login', { replace: true });
           return;
         }
+
         if (!username) {
           throw new Error('Username is missing in URL');
         }
+
         console.log('Profile - Fetching profile for:', username, 'Authenticated user:', user.username);
-        const cleanUsername = username.trim(); // Clean up the username from URL
+        const cleanUsername = username.trim();
         const userUsername = user.username?.trim();
         if (userUsername !== cleanUsername) {
           throw new Error('You can only view your own profile');
         }
+
         const userProfile = {
           username: userUsername || 'johndoe',
           firstName: user.firstName || 'John',
@@ -58,7 +70,7 @@ const Profile = () => {
     };
 
     fetchProfile();
-  }, [username, isAuthenticated, user, navigate]);
+  }, [username, isAuthenticated, user, navigate, isLoading, setIntendedRoute]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -102,17 +114,17 @@ const Profile = () => {
     }
   };
 
-  if (loading) return <div className="profile-container"><p className="text-holo-gray">Loading profile...</p></div>;
+  if (loading || isLoading) return <div className="profile-container"><p className="text-holo-gray">Loading profile...</p></div>;
 
   if (error || !profile) {
     return (
       <div className="profile-container">
         <p className="text-red-500">{error || 'Profile not found'}</p>
-        {error.includes('token') || error.includes('User data not available') ? (
+        {(error.includes('token') || error.includes('User data not available')) && (
           <p className="text-holo-gray">
             Please <Link to="/login" className="text-holo-blue hover:underline">log in</Link> to view this profile.
           </p>
-        ) : null}
+        )}
       </div>
     );
   }

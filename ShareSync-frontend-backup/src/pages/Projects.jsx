@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import { Folder, PlusCircle, ThumbsUp, MessageSquare, Bell, Users, AlertCircle, List } from 'lucide-react';
 import './Projects.css';
 
 const Projects = () => {
-  const { user, isAuthenticated, socket, addProject, updateProject } = useContext(AuthContext);
+  const { user, isAuthenticated, socket, addProject, updateProject, isLoading: authLoading, setIntendedRoute } = useContext(AuthContext);
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState('');
@@ -14,20 +14,39 @@ const Projects = () => {
   const [newAnnouncement, setNewAnnouncement] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState(null);
 
+  // Memoize functions to prevent unnecessary re-renders
+  const handleAddProject = useCallback((newProject) => {
+    addProject(newProject);
+  }, [addProject]);
+
+  const handleUpdateProject = useCallback((projectId, updates) => {
+    updateProject(projectId, updates);
+  }, [updateProject]);
+
+  // Fetch projects
   useEffect(() => {
     const fetchProjects = async () => {
       try {
+        if (authLoading) {
+          console.log('Projects - Waiting for AuthContext to finish loading');
+          return;
+        }
+
         if (!isAuthenticated) {
           console.log('Projects - User not authenticated, redirecting to login');
+          setIntendedRoute('/projects');
           navigate('/login', { replace: true });
           return;
         }
+
         if (!user || !user.email) {
           console.log('Projects - User data not available');
           setError('User data not available. Please log in again.');
+          setIntendedRoute('/projects');
           navigate('/login', { replace: true });
           return;
         }
+
         console.log('Projects - Fetching projects for user:', user.email);
         const userProjects = Array.isArray(user.projects) ? user.projects : [];
         setProjects(userProjects);
@@ -42,47 +61,64 @@ const Projects = () => {
       }
     };
 
-    if (socket) {
-      socket.on('notification', (notification) => {
-        if (notification.userId !== user?.username) {
-          setNotifications((prev) => [...prev, notification].slice(-5));
-        }
-      });
-
-      socket.on('metric-update', (update) => {
-        setProjects((prev) =>
-          prev.map((proj) =>
-            proj.id === update.projectId
-              ? {
-                  ...proj,
-                  tasksCompleted: update.tasksCompleted || proj.tasksCompleted,
-                  totalTasks: update.totalTasks || proj.totalTasks,
-                }
-              : proj
-          )
-        );
-        updateProject(update.projectId, {
-          tasksCompleted: update.tasksCompleted,
-          totalTasks: update.totalTasks,
-        });
-      });
-
-      socket.on('project-create', (newProject) => {
-        if (newProject.admin === user?.email || newProject.members.some(m => m.email === user?.email)) {
-          setProjects((prev) => [...prev, newProject]);
-          addProject(newProject);
-        }
-      });
-
-      return () => {
-        socket.off('notification');
-        socket.off('metric-update');
-        socket.off('project-create');
-      };
-    }
-
     fetchProjects();
-  }, [isAuthenticated, navigate, socket, user, addProject, updateProject]);
+
+    // Timeout to detect if loading takes too long
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setError('Loading projects timed out. Please try again.');
+        setLoading(false);
+      }
+    }, 10000); // 10 seconds timeout
+
+    return () => clearTimeout(timeout);
+  }, [isAuthenticated, user, authLoading, navigate, setIntendedRoute]);
+
+  // Separate useEffect for socket events
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNotification = (notification) => {
+      if (notification.userId !== user?.username) {
+        setNotifications((prev) => [...prev, notification].slice(-5));
+      }
+    };
+
+    const handleMetricUpdate = (update) => {
+      setProjects((prev) =>
+        prev.map((proj) =>
+          proj.id === update.projectId
+            ? {
+                ...proj,
+                tasksCompleted: update.tasksCompleted || proj.tasksCompleted,
+                totalTasks: update.totalTasks || proj.totalTasks,
+              }
+            : proj
+        )
+      );
+      handleUpdateProject(update.projectId, {
+        tasksCompleted: update.tasksCompleted,
+        totalTasks: update.totalTasks,
+      });
+    };
+
+    const handleProjectCreate = (newProject) => {
+      if (newProject.admin === user?.email || newProject.members.some(m => m.email === user?.email)) {
+        setProjects((prev) => [...prev, newProject]);
+        handleAddProject(newProject);
+      }
+    };
+
+    socket.on('notification', handleNotification);
+    socket.on('metric-update', handleMetricUpdate);
+    socket.on('project-create', handleProjectCreate);
+
+    return () => {
+      socket.off('notification', handleNotification);
+      socket.off('metric-update', handleMetricUpdate);
+      socket.off('project-create', handleProjectCreate);
+    };
+  }, [socket, user, handleAddProject, handleUpdateProject]);
 
   const handlePostAnnouncement = (projectId) => {
     if (!newAnnouncement) return;
@@ -102,7 +138,7 @@ const Projects = () => {
           : proj
       )
     );
-    updateProject(projectId, {
+    handleUpdateProject(projectId, {
       announcements: [...(projects.find(p => p.id === projectId)?.announcements || []), announcement],
     });
     setNewAnnouncement('');
@@ -119,7 +155,7 @@ const Projects = () => {
         proj.id === projectId ? { ...proj, status: newStatus } : proj
       )
     );
-    updateProject(projectId, { status: newStatus });
+    handleUpdateProject(projectId, { status: newStatus });
     socket.emit('metric-update', { projectId, status: newStatus });
   };
 
@@ -129,11 +165,11 @@ const Projects = () => {
     return (
       <div className="projects-container">
         <p className="text-red-500">{error}</p>
-        {error.includes('token') || error.includes('User data not available') ? (
+        {(error.includes('token') || error.includes('User data not available')) && (
           <p className="text-holo-gray">
             Please <Link to="/login" className="text-holo-blue hover:underline">log in</Link> to view projects.
           </p>
-        ) : null}
+        )}
       </div>
     );
   }

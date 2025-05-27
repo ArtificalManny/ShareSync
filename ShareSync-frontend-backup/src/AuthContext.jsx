@@ -10,6 +10,8 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [globalMetrics, setGlobalMetrics] = useState({ notifications: 0 });
+  const [isLoading, setIsLoading] = useState(true); // Track loading state
+  const [intendedRoute, setIntendedRoute] = useState(null); // Store intended route
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -36,15 +38,18 @@ const AuthProvider = ({ children }) => {
         setIsAuthenticated(false);
         setUser(null);
       }
+      setIsLoading(false); // Mark loading as complete
     };
 
     initializeAuth();
   }, []);
 
-  const login = (userData) => {
+  const login = (userData, redirectTo = '/') => {
     setUser(userData);
     setIsAuthenticated(true);
     setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
+    setIntendedRoute(null); // Clear intended route after login
+    return redirectTo; // Return the route to redirect to
   };
 
   const logout = () => {
@@ -53,6 +58,7 @@ const AuthProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
     setGlobalMetrics({ notifications: 0 });
+    setIntendedRoute(null);
     socket.disconnect();
   };
 
@@ -106,6 +112,9 @@ const AuthProvider = ({ children }) => {
         addProject,
         updateProject,
         updateUserProfile,
+        isLoading,
+        setIntendedRoute,
+        intendedRoute,
       }}
     >
       {children}
