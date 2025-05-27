@@ -1,59 +1,62 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 const Project = require('../models/Project');
+const User = require('../models/User');
 
 const authenticateToken = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided' });
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Access denied' });
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Invalid token' });
-    req.userId = user.userId;
+  try {
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = verified;
     next();
-  });
+  } catch (err) {
+    res.status(400).json({ message: 'Invalid token' });
+  }
 };
 
-router.get('/projects', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.userId).populate('projects');
-    res.json(user.projects);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-router.post('/projects', authenticateToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    const project = new Project({ ...req.body, admin: user.email });
+    const projectData = req.body;
+    const project = new Project({
+      ...projectData,
+      id: `proj-${Date.now()}`,
+    });
     await project.save();
+
+    const user = await User.findById(req.user.id);
     user.projects.push(project._id);
     await user.save();
-    res.json(project);
+
+    res.status(201).json(project);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ message: err.message });
   }
 });
 
-router.get('/projects/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
+    const project = await Project.findOne({ id: req.params.id });
     if (!project) return res.status(404).json({ message: 'Project not found' });
     res.json(project);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ message: err.message });
   }
 });
 
-router.put('/projects/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const project = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const project = await Project.findOneAndUpdate(
+      { id: req.params.id },
+      req.body,
+      { new: true }
+    );
     if (!project) return res.status(404).json({ message: 'Project not found' });
     res.json(project);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ message: err.message });
   }
 });
 

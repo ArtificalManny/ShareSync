@@ -11,7 +11,6 @@ const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({});
   const [bannerImage, setBannerImage] = useState('https://via.placeholder.com/1200x300');

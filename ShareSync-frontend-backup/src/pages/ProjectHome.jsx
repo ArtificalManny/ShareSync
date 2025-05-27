@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, List, MessageSquare, Users, Bell, AlertCircle, ThumbsUp, Share2, AlertTriangle, Vr } from 'lucide-react';
+import { Folder, List, MessageSquare, Users, Bell, AlertCircle, ThumbsUp, Share2 } from 'lucide-react';
 import './ProjectHome.css';
 
 const ProjectHome = () => {
@@ -15,10 +15,8 @@ const ProjectHome = () => {
   const [newPost, setNewPost] = useState('');
   const [newComment, setNewComment] = useState('');
   const [onlineMembers, setOnlineMembers] = useState([]);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([]); // Real-time chat messages
   const [newMessage, setNewMessage] = useState('');
-  const [risks, setRisks] = useState([]);
-  const [vrMode, setVrMode] = useState(false);
 
   const fetchProject = useCallback(async () => {
     try {
@@ -54,19 +52,8 @@ const ProjectHome = () => {
         comments: Array.isArray(proj.comments) ? proj.comments : [],
         activityLog: Array.isArray(proj.activityLog) ? proj.activityLog : [],
         members: Array.isArray(proj.members) ? proj.members : [],
-        tasksCompleted: proj.tasksCompleted || 0,
-        totalTasks: proj.totalTasks || 0,
       };
       setProject(initializedProject);
-
-      const detectedRisks = [];
-      if (initializedProject.tasksCompleted / (initializedProject.totalTasks || 1) < 0.3 && initializedProject.status === 'In Progress') {
-        detectedRisks.push('Low progress: Project may be at risk of delay.');
-      }
-      if (initializedProject.members.length < 2) {
-        detectedRisks.push('Limited team size: Consider adding more members.');
-      }
-      setRisks(detectedRisks);
     } catch (err) {
       console.error('ProjectHome - Error fetching project:', err.message, err.stack);
       setError('Failed to load project: ' + err.message);
@@ -167,29 +154,6 @@ const ProjectHome = () => {
     setNewMessage('');
   };
 
-  const enterVRMode = async () => {
-    try {
-      if (!navigator.xr) {
-        throw new Error('WebXR not supported on this device.');
-      }
-
-      const session = await navigator.xr.requestSession('immersive-vr');
-      console.log('Entering VR mode:', session);
-      setVrMode(true);
-
-      // Mock 3D project room logic (requires WebXR and Three.js for full implementation)
-      alert('VR Mode: Imagine a 3D project room where tasks are floating orbs you can interact with!');
-
-      session.addEventListener('end', () => {
-        setVrMode(false);
-        console.log('VR session ended');
-      });
-    } catch (err) {
-      console.error('Failed to enter VR mode:', err.message);
-      alert('VR Mode is not supported on this device or browser.');
-    }
-  };
-
   if (loading) return <div className="project-home-container"><p className="text-holo-gray">Loading project...</p></div>;
 
   if (error || !project) {
@@ -218,7 +182,7 @@ const ProjectHome = () => {
               {onlineMembers.slice(0, 3).map((member, index) => (
                 <img
                   key={index}
-                  src={member.profilePicture || 'https://via.placeholder.com/150'}
+                  src={member.profilePicture}
                   alt={member.email}
                   className="w-8 h-8 rounded-full object-cover border-2 border-holo-blue"
                 />
@@ -233,12 +197,6 @@ const ProjectHome = () => {
             <span className="text-holo-gray">No members online</span>
           )}
         </div>
-        <button
-          onClick={enterVRMode}
-          className="btn-primary rounded-full flex items-center mx-auto animate-glow"
-        >
-          <Vr className="w-5 h-5 mr-2" /> Enter VR Mode
-        </button>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
@@ -267,70 +225,9 @@ const ProjectHome = () => {
                   style={{ width: `${(project.tasksCompleted / (project.totalTasks || 1)) * 100}%` }}
                 />
               </div>
-              <p className="text-holo-gray mb-4">
+              <p className="text-holo-gray">
                 Progress: {project.tasksCompleted} / {project.totalTasks || 0} tasks completed
               </p>
-
-              <div className="progress-galaxy mb-6">
-                <h3 className="text-lg font-inter text-holo-blue mb-2">Progress Galaxy</h3>
-                <p className="text-holo-gray text-sm mb-2">Each star represents a completed task.</p>
-                ```
-                chartjs
-                {
-                  "type": "scatter",
-                  "data": {
-                    "datasets": [
-                      {
-                        "label": "Completed Tasks",
-                        "data": Array.from({ length: project.tasksCompleted }, () => ({
-                          x: Math.random() * 100 - 50,
-                          y: Math.random() * 100 - 50,
-                          r: Math.random() * 5 + 3
-                        })),
-                        "backgroundColor": "rgba(161, 181, 255, 0.8)",
-                        "borderColor": "#A1B5FF",
-                        "borderWidth": 1
-                      },
-                      {
-                        "label": "Remaining Tasks",
-                        "data": Array.from({ length: (project.totalTasks || 0) - project.tasksCompleted }, () => ({
-                          x: Math.random() * 100 - 50,
-                          y: Math.random() * 100 - 50,
-                          r: Math.random() * 3 + 2
-                        })),
-                        "backgroundColor": "rgba(255, 111, 145, 0.5)",
-                        "borderColor": "#FF6F91",
-                        "borderWidth": 1
-                      }
-                    ]
-                  },
-                  "options": {
-                    "scales": {
-                      "x": { "display": false },
-                      "y": { "display": false }
-                    },
-                    "plugins": {
-                      "legend": { "position": "top" }
-                    }
-                  }
-                }
-                ```
-              </div>
-
-              {risks.length > 0 && (
-                <div className="risk-detection mb-4">
-                  <h3 className="text-lg font-inter text-holo-blue mb-2 flex items-center">
-                    <AlertTriangle className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Potential Risks
-                  </h3>
-                  <ul className="space-y-2">
-                    {risks.map((risk, index) => (
-                      <li key={index} className="text-red-500 flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4" /> {risk}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
           )}
 
@@ -349,6 +246,7 @@ const ProjectHome = () => {
                 <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Discussion
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Posts Section */}
                 <div className="posts-section">
                   <div className="post-input card p-4 mb-4 glassmorphic">
                     <div className="flex items-center mb-2">
@@ -437,6 +335,7 @@ const ProjectHome = () => {
                   )}
                 </div>
 
+                {/* Chat Section */}
                 <div className="chat-section card p-4 glassmorphic holographic-effect">
                   <h3 className="text-lg font-inter text-holo-blue mb-4 flex items-center">
                     <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Project Chat
@@ -483,7 +382,7 @@ const ProjectHome = () => {
                   <div key={index} className="member-item card p-4 glassmorphic">
                     <div className="flex items-center gap-3">
                       <img
-                        src={member.profilePicture || 'https://via.placeholder.com/150'}
+                        src={member.profilePicture}
                         alt={member.email}
                         className="w-10 h-10 rounded-full object-cover animate-glow"
                       />

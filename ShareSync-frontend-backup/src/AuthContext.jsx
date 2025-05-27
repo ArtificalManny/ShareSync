@@ -13,14 +13,13 @@ const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [intendedRoute, setIntendedRoute] = useState(null);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
-  const [authError, setAuthError] = useState(''); // Track authentication errors
+  const [authError, setAuthError] = useState('');
 
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          // Set the Authorization header immediately
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           console.log('AuthContext - Initializing with token:', token);
           const response = await axios.get('http://localhost:3000/api/auth/me');
@@ -54,7 +53,6 @@ const AuthProvider = ({ children }) => {
     setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
     setIntendedRoute(null);
     console.log('AuthContext - User logged in:', userData, 'Redirecting to:', redirectTo);
-    // Ensure the token is set immediately for subsequent requests
     const token = localStorage.getItem('token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -109,13 +107,11 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  // AI-driven task assignment
   const autoAssignTasks = async (projectId) => {
     try {
       const project = user.projects.find((p) => p.id === projectId);
       if (!project || !project.tasks) return;
 
-      // Mock AI logic: Assign tasks based on member count (simplified)
       const members = project.members || [];
       const tasks = project.tasks || [];
       const updatedTasks = tasks.map((task, index) => ({

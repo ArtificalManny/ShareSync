@@ -1,89 +1,97 @@
 const mongoose = require('mongoose');
 
 const projectSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String },
-  category: { type: String },
-  status: { type: String, default: 'Not Started' },
-  privacy: { type: String, default: 'private' },
-  tasksCompleted: { type: Number, default: 0 },
-  totalTasks: { type: Number, default: 0 },
-  admin: { type: String, required: true },
-  members: [{
-    email: String,
-    role: String,
-    profilePicture: String,
-  }],
-  posts: [{
-    id: String,
+  title: {
     type: String,
-    user: String,
-    profilePicture: String,
-    content: String,
-    image: String,
-    question: String,
-    options: [{ id: String, text: String, votes: Number }],
-    timestamp: String,
-    likes: Number,
-    comments: Array,
-  }],
-  comments: [{
-    id: String,
-    text: String,
-    user: String,
-    timestamp: String,
-    likes: Number,
-  }],
-  activityLog: [{
-    id: String,
-    user: String,
-    action: String,
-    timestamp: String,
-  }],
-  files: [{
-    id: String,
-    name: String,
-    url: String,
-    uploadedBy: String,
-    timestamp: String,
-  }],
-  tasks: [{
-    id: String,
-    title: String,
-    description: String,
-    assignedTo: [String],
-    subtasks: [{ id: String, title: String, completed: Boolean }],
-    comments: Array,
-    status: String,
-    dueDate: String,
-  }],
-  teams: [{
-    id: String,
-    name: String,
-    description: String,
-    members: [{ email: String, role: String, profilePicture: String }],
-  }],
-  messages: [{
-    projectId: String,
-    text: String,
-    user: String,
-    timestamp: String,
-  }],
-  announcements: [{
-    id: String,
-    user: String,
-    profilePicture: String,
-    content: String,
-    timestamp: String,
-    likes: Number,
-    comments: Array,
-  }],
-  achievements: [{
-    id: String,
-    name: String,
-    description: String,
-    earned: Boolean,
-  }],
-});
+    required: true,
+  },
+  description: {
+    type: String,
+  },
+  category: {
+    type: String,
+    required: true,
+  },
+  admin: {
+    type: String,
+    required: true,
+  },
+  members: [
+    {
+      email: String,
+      role: { type: String, default: 'member' },
+      profilePicture: { type: String, default: 'https://via.placeholder.com/150' },
+    },
+  ],
+  privacy: {
+    type: String,
+    enum: ['public', 'private'],
+    default: 'public',
+  },
+  status: {
+    type: String,
+    enum: ['Not Started', 'In Progress', 'Completed'],
+    default: 'Not Started',
+  },
+  tasksCompleted: {
+    type: Number,
+    default: 0,
+  },
+  totalTasks: {
+    type: Number,
+    default: 0,
+  },
+  tasks: [
+    {
+      title: String,
+      description: String,
+      assignedTo: String,
+      status: { type: String, default: 'Not Started' },
+    },
+  ],
+  announcements: [
+    {
+      id: String,
+      user: String,
+      profilePicture: String,
+      content: String,
+      timestamp: Date,
+      likes: { type: Number, default: 0 },
+      comments: [
+        {
+          id: String,
+          user: String,
+          content: String,
+          timestamp: Date,
+        },
+      ],
+    },
+  ],
+  posts: [
+    {
+      id: String,
+      user: String,
+      profilePicture: String,
+      content: String,
+      timestamp: Date,
+      likes: { type: Number, default: 0 },
+    },
+  ],
+  comments: [
+    {
+      id: String,
+      postId: String,
+      user: String,
+      content: String,
+      timestamp: Date,
+    },
+  ],
+  activityLog: [
+    {
+      message: String,
+      timestamp: Date,
+    },
+  ],
+}, { timestamps: true });
 
 module.exports = mongoose.model('Project', projectSchema);
