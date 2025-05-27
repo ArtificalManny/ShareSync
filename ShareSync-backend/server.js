@@ -1,78 +1,40 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const http = require('http');
-const { Server } = require('socket.io');
+const authRoutes = require('./routes/auth');
+const projectRoutes = require('./routes/projects');
 require('dotenv').config();
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'],
-  },
-});
 
-app.use(cors());
+// Middleware
+app.use(cors({
+  origin: 'http://localhost:54693',
+  credentials: true,
+}));
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
 
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/projects', require('./routes/projects'));
-
+// Mock leaderboard endpoint
 app.get('/api/leaderboard', (req, res) => {
-  // Mock leaderboard data
+  console.log('Server - Fetching leaderboard');
   res.json([
-    { email: 'john@example.com', points: 150 },
-    { email: 'jane@example.com', points: 120 },
-    { email: 'bob@example.com', points: 90 },
+    { email: 'test@example.com', points: 100 },
+    { email: 'user2@example.com', points: 80 },
   ]);
 });
 
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.log('MongoDB connection error:', err));
 
-  socket.on('joinProject', ({ projectId, user }) => {
-    socket.join(projectId);
-    io.to(projectId).emit('memberStatus', { email: user.email, profilePicture: user.profilePicture, status: 'online' });
-  });
-
-  socket.on('leaveProject', ({ projectId, user }) => {
-    io.to(projectId).emit('memberStatus', { email: user.email, status: 'offline' });
-  });
-
-  socket.on('post', (post) => {
-    io.to(post.projectId).emit('post', post);
-  });
-
-  socket.on('message', (message) => {
-    io.to(message.projectId).emit('message', message);
-  });
-
-  socket.on('project-create', (project) => {
-    io.emit('project-create', project);
-  });
-
-  socket.on('notification', (notification) => {
-    io.emit('notification', notification);
-  });
-
-  socket.on('metric-update', (update) => {
-    io.emit('metric-update', update);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
-
+// Start server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
