@@ -1,7 +1,29 @@
+/* Base styles for dark theme */
+:root[data-theme="dark"] {
+  --background: linear-gradient(135deg, #1A1F36, #2E3555);
+  --card-bg: rgba(46, 53, 85, 0.1);
+  --text-primary: #A1B5FF;
+  --text-secondary: #7BFFAF;
+  --text-accent: #FF6F91;
+  --shadow-dark: rgba(0, 0, 0, 0.2);
+  --shadow-light: rgba(255, 255, 255, 0.05);
+}
+
+/* Light theme styles */
+:root[data-theme="light"] {
+  --background: linear-gradient(135deg, #E6F0FA, #F5F7FA);
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --text-primary: #1A1F36;
+  --text-secondary: #2E3555;
+  --text-accent: #FF6F91;
+  --shadow-dark: rgba(0, 0, 0, 0.1);
+  --shadow-light: rgba(255, 255, 255, 0.3);
+}
+
 .project-home-container {
   padding: 0;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1A1F36, #2E3555);
+  background: var(--background);
   position: relative;
   overflow: hidden;
 }
@@ -99,6 +121,10 @@
   transition: width 0.3s ease;
 }
 
+.progress-galaxy {
+  text-align: center;
+}
+
 .post-item {
   border-left: 3px solid #A1B5FF;
   transform: translateZ(0);
@@ -108,6 +134,28 @@
 .post-item:hover {
   transform: translateZ(20px);
   box-shadow: 0 8px 20px rgba(161, 181, 255, 0.3);
+}
+
+.chat-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.messages {
+  flex-grow: 1;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.message-item {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-input {
+  margin-top: 8px;
 }
 
 .holographic-effect {
@@ -144,12 +192,12 @@
 
 .btn-primary {
   background: linear-gradient(45deg, #A1B5FF, #FF6F91, #7BFFAF);
-  color: #1A1F36;
+  color: var(--text-primary);
   padding: 8px 16px;
   border-radius: 9999px;
   font-weight: 500;
   transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.5s ease;
-  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05);
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   border: none;
@@ -177,7 +225,7 @@
 
 .btn-primary:hover {
   transform: translateY(-2px) translateZ(5px);
-  box-shadow: 8px 8px 15px rgba(0, 0, 0, 0.3), -8px -8px 15px rgba(255, 255, 255, 0.1);
+  box-shadow: 8px 8px 15px var(--shadow-dark), -8px -8px 15px var(--shadow-light);
 }
 
 .btn-primary:disabled {
@@ -189,15 +237,15 @@
 .input-field {
   border-radius: 8px;
   border: none;
-  background: rgba(46, 53, 85, 0.3);
-  box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.2), inset -5px -5px 10px rgba(255, 255, 255, 0.05);
-  color: #A1B5FF;
+  background: var(--card-bg);
+  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+  color: var(--text-primary);
   padding: 8px 12px;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .input-field:focus {
-  box-shadow: inset 3px 3px 8px rgba(0, 0, 0, 0.3), inset -3px -3px 8px rgba(255, 255, 255, 0.1);
+  box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
   transform: scale(1.02);
   outline: none;
 }
@@ -207,9 +255,9 @@
 }
 
 .card {
-  background: rgba(46, 53, 85, 0.1);
+  background: var(--card-bg);
   border-radius: 12px;
-  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05);
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   border: none;
@@ -239,20 +287,20 @@
   opacity: 1;
 }
 
-/* Glassmorphism effect for Meta 2025 aesthetic */
+/* Glassmorphism effect */
 .glassmorphic {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px var(--shadow-dark), inset 0 0 10px var(--shadow-light);
   transform: translateZ(0) rotateX(5deg) rotateY(5deg);
   transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
 
 .glassmorphic:hover {
   transform: translateZ(20px) rotateX(0deg) rotateY(0deg);
-  box-shadow: 0 12px 40px rgba(123, 255, 175, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 40px rgba(123, 255, 175, 0.4), inset 0 0 15px var(--shadow-light);
   background: rgba(255, 255, 255, 0.1);
 }
 

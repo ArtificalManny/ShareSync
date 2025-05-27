@@ -7,10 +7,11 @@ import './Profile.css';
 const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user, updateUserProfile, isLoading, setIntendedRoute, theme, toggleTheme } = useContext(AuthContext);
+  const { isAuthenticated, user, updateUserProfile, isLoading, setIntendedRoute, theme, toggleTheme, authError } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({});
   const [bannerImage, setBannerImage] = useState('https://via.placeholder.com/1200x300');
@@ -115,10 +116,13 @@ const Profile = () => {
     return (
       <div className="profile-container">
         <p className="text-red-500">{error || 'Profile not found'}</p>
-        {(error.includes('token') || error.includes('User data not available')) && (
-          <p className="text-holo-gray">
-            Please <Link to="/login" className="text-holo-blue hover:underline">log in</Link> to view this profile.
-          </p>
+        {(error.includes('token') || error.includes('User data not available') || authError) && (
+          <div>
+            <p className="text-red-500">{authError}</p>
+            <p className="text-holo-gray">
+              Please <Link to="/login" className="text-holo-blue hover:underline">log in</Link> to view this profile.
+            </p>
+          </div>
         )}
       </div>
     );

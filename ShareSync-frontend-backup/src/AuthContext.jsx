@@ -12,13 +12,15 @@ const AuthProvider = ({ children }) => {
   const [globalMetrics, setGlobalMetrics] = useState({ notifications: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [intendedRoute, setIntendedRoute] = useState(null);
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark'); // Theme toggle
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  const [authError, setAuthError] = useState(''); // Track authentication errors
 
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
+          // Set the Authorization header immediately
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           console.log('AuthContext - Initializing with token:', token);
           const response = await axios.get('http://localhost:3000/api/auth/me');
@@ -29,6 +31,7 @@ const AuthProvider = ({ children }) => {
           setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
         } catch (err) {
           console.error('AuthContext - Failed to fetch user data:', err.message, err.response?.data);
+          setAuthError('Failed to authenticate user: ' + (err.response?.data?.message || err.message));
           localStorage.removeItem('token');
           delete axios.defaults.headers.common['Authorization'];
           setIsAuthenticated(false);
@@ -43,7 +46,7 @@ const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, []); // Empty dependency array to run only once on mount
+  }, []);
 
   const login = (userData, redirectTo = '/') => {
     setUser(userData);
@@ -51,6 +54,11 @@ const AuthProvider = ({ children }) => {
     setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
     setIntendedRoute(null);
     console.log('AuthContext - User logged in:', userData, 'Redirecting to:', redirectTo);
+    // Ensure the token is set immediately for subsequent requests
+    const token = localStorage.getItem('token');
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
     return redirectTo;
   };
 
@@ -101,6 +109,34 @@ const AuthProvider = ({ children }) => {
     }
   };
 
+  // AI-driven task assignment
+  const autoAssignTasks = async (projectId) => {
+    try {
+      const project = user.projects.find((p) => p.id === projectId);
+      if (!project || !project.tasks) return;
+
+      // Mock AI logic: Assign tasks based on member count (simplified)
+      const members = project.members || [];
+      const tasks = project.tasks || [];
+      const updatedTasks = tasks.map((task, index) => ({
+        ...task,
+        assignedTo: members[index % members.length]?.email || 'Unassigned',
+      }));
+
+      await axios.put(`http://localhost:3000/api/projects/${projectId}`, {
+        tasks: updatedTasks,
+      });
+
+      const updatedProjects = user.projects.map((proj) =>
+        proj.id === projectId ? { ...proj, tasks: updatedTasks } : proj
+      );
+      setUser({ ...user, projects: updatedProjects });
+      console.log('Tasks auto-assigned:', updatedTasks);
+    } catch (err) {
+      console.error('Error auto-assigning tasks:', err.message);
+    }
+  };
+
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
@@ -108,7 +144,6 @@ const AuthProvider = ({ children }) => {
     document.documentElement.setAttribute('data-theme', newTheme);
   };
 
-  // Apply theme on mount
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
@@ -131,6 +166,8 @@ const AuthProvider = ({ children }) => {
         intendedRoute,
         theme,
         toggleTheme,
+        autoAssignTasks,
+        authError,
       }}
     >
       {children}

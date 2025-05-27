@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, PlusCircle, ThumbsUp, MessageSquare, Bell, Users, AlertCircle, List } from 'lucide-react';
+import { Folder, PlusCircle, ThumbsUp, MessageSquare, Bell, Users, AlertCircle, List, Award } from 'lucide-react';
 import './Projects.css';
 
 const Projects = () => {
-  const { user, isAuthenticated, socket, addProject, updateProject, isLoading: authLoading, setIntendedRoute } = useContext(AuthContext);
+  const { user, isAuthenticated, socket, addProject, updateProject, isLoading: authLoading, setIntendedRoute, autoAssignTasks } = useContext(AuthContext);
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState('');
@@ -13,6 +13,7 @@ const Projects = () => {
   const [notifications, setNotifications] = useState([]);
   const [newAnnouncement, setNewAnnouncement] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]); // Gamification: Leaderboard
 
   // Memoize functions to prevent unnecessary re-renders
   const handleAddProject = useCallback((newProject) => {
@@ -69,12 +70,29 @@ const Projects = () => {
         setError('Loading projects timed out. Please try again.');
         setLoading(false);
       }
-    }, 10000); // 10 seconds timeout
+    }, 10000);
 
     return () => clearTimeout(timeout);
   }, [isAuthenticated, user, authLoading, navigate, setIntendedRoute]);
 
-  // Separate useEffect for socket events
+  // Fetch leaderboard for gamification
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        // Mock leaderboard data (replace with real API call)
+        const response = await axios.get('http://localhost:3000/api/leaderboard');
+        setLeaderboard(response.data || []);
+      } catch (err) {
+        console.error('Error fetching leaderboard:', err.message);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchLeaderboard();
+    }
+  }, [isAuthenticated]);
+
+  // Socket events for real-time updates
   useEffect(() => {
     if (!socket) return;
 
@@ -159,6 +177,10 @@ const Projects = () => {
     socket.emit('metric-update', { projectId, status: newStatus });
   };
 
+  const handleAutoAssignTasks = async (projectId) => {
+    await autoAssignTasks(projectId);
+  };
+
   if (loading) return <div className="projects-container"><p className="text-holo-gray">Loading projects...</p></div>;
 
   if (error) {
@@ -208,19 +230,30 @@ const Projects = () => {
                   <Link
                     to={`/projects/${project.id}`}
                     key={project.id}
-                    className="project-card card p-6 hover:bg-holo-bg-dark transition-all"
+                    className="project-card card p-6 hover:bg-holo-bg-dark transition-all glassmorphic"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <h2 className="text-xl font-inter text-holo-blue animate-text-glow">{project.title}</h2>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setSelectedProjectId(project.id);
-                        }}
-                        className="text-holo-blue hover:text-holo-pink transition-all text-sm"
-                      >
-                        Post Announcement
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setSelectedProjectId(project.id);
+                          }}
+                          className="text-holo-blue hover:text-holo-pink transition-all text-sm"
+                        >
+                          Post Announcement
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleAutoAssignTasks(project.id);
+                          }}
+                          className="text-holo-blue hover:text-holo-pink transition-all text-sm"
+                        >
+                          Auto-Assign Tasks
+                        </button>
+                      </div>
                     </div>
                     <p className="text-holo-gray mb-2 flex items-center gap-2">
                       <List className="w-4 h-4 text-holo-pink" /> {project.description || 'No description'}
@@ -273,7 +306,7 @@ const Projects = () => {
                           <Bell className="w-4 h-4 text-holo-pink mr-2 animate-pulse" /> Recent Announcements
                         </h3>
                         {project.announcements.slice(-1).map((ann) => (
-                          <div key={ann.id} className="announcement-item card p-3 mb-2">
+                          <div key={ann.id} className="announcement-item card p-3 mb-2 glassmorphic">
                             <div className="flex items-center mb-2">
                               <img
                                 src={ann.profilePicture}
@@ -305,7 +338,7 @@ const Projects = () => {
 
             {selectedProjectId && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="card p-6 w-full max-w-md">
+                <div className="card p-6 w-full max-w-md glassmorphic">
                   <h2 className="text-xl font-inter text-holo-blue mb-4 flex items-center">
                     <Bell className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Post Announcement
                   </h2>
@@ -333,13 +366,35 @@ const Projects = () => {
               </div>
             )}
 
-            <div className="notifications-section card p-6">
+            {/* Leaderboard Section for Gamification */}
+            <div className="leaderboard-section card p-6 mb-8 glassmorphic">
+              <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+                <Award className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Team Leaderboard
+              </h2>
+              {leaderboard.length > 0 ? (
+                <ul className="space-y-2">
+                  {leaderboard.map((member, index) => (
+                    <li key={index} className="flex items-center gap-2 text-primary">
+                      <span className="text-holo-blue font-semibold">{index + 1}.</span>
+                      <span>{member.name || member.email}</span>
+                      <span className="text-holo-gray">({member.points || 0} points)</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-holo-gray flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-holo-pink animate-pulse" /> No leaderboard data available.
+                </p>
+              )}
+            </div>
+
+            <div className="notifications-section card p-6 glassmorphic">
               <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
                 <Bell className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Notifications
               </h2>
               {notifications.length > 0 ? (
                 notifications.map((notif, index) => (
-                  <div key={index} className="notification-item card p-2 mb-2">
+                  <div key={index} className="notification-item card p-2 mb-2 glassmorphic">
                     <p className="text-holo-gray text-sm">{notif.message}</p>
                     <p className="text-holo-gray-dark text-xs">{new Date().toLocaleTimeString()}</p>
                   </div>
