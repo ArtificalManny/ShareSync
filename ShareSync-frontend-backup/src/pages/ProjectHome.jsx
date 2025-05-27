@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, List, MessageSquare, Users, Bell, AlertCircle, ThumbsUp, Share2, AlertTriangle, Vr, Mic, UserPlus } from 'lucide-react';
+import { Folder, List, MessageSquare, Users, Bell, AlertCircle, ThumbsUp, Share2, AlertTriangle, Vr, Mic, UserPlus, Smile, TrendingUp } from 'lucide-react';
 import { Scatter } from 'react-chartjs-2';
 import { Chart as ChartJS, ScatterController, PointElement, LinearScale, Title, Tooltip, Legend } from 'chart.js';
 import './ProjectHome.css';
@@ -28,6 +28,8 @@ const ProjectHome = () => {
   const [newTask, setNewTask] = useState('');
   const [gestureMode, setGestureMode] = useState(false);
   const [suggestedCollaborators, setSuggestedCollaborators] = useState([]);
+  const [teamMorale, setTeamMorale] = useState('Neutral');
+  const [prioritizedTasks, setPrioritizedTasks] = useState([]);
 
   const fetchProject = useCallback(async () => {
     try {
@@ -52,7 +54,7 @@ const ProjectHome = () => {
       }
 
       console.log('ProjectHome - Fetching project with ID:', id);
-      const proj = user.projects?.find((p) => p.id === id);
+      const proj = user.projects?.find((p) => p?.id === id);
       if (!proj) {
         throw new Error('Project not found');
       }
@@ -84,6 +86,15 @@ const ProjectHome = () => {
         { email: 'bob@example.com', skills: ['Development', 'Backend'], matchScore: 0.85 },
       ];
       setSuggestedCollaborators(mockCollaborators);
+
+      // Mock AI-powered task prioritization
+      const prioritized = initializedProject.tasks.map((task, index) => {
+        const urgency = task.description?.toLowerCase().includes('due') ? 0.8 : 0.5;
+        const workload = (index % 2) + 1; // Mock workload score
+        const priorityScore = urgency * 0.6 + workload * 0.4;
+        return { ...task, priorityScore };
+      }).sort((a, b) => b.priorityScore - a.priorityScore);
+      setPrioritizedTasks(prioritized);
     } catch (err) {
       console.error('ProjectHome - Error fetching project:', err.message, err.stack);
       setError('Failed to load project: ' + err.message);
@@ -101,7 +112,7 @@ const ProjectHome = () => {
       setOnlineMembers((prev) => {
         const updatedMembers = prev.filter((m) => m.email !== statusUpdate.email);
         if (statusUpdate.status === 'online') {
-          updatedMembers.push({ email: statusUpdate.email, profilePicture: statusUpdate.profilePicture });
+          updatedMembers.push({ email: statusUpdate.email, profilePicture: statusUpdate.profilePicture || 'https://via.placeholder.com/150' });
         }
         return updatedMembers;
       });
@@ -109,7 +120,23 @@ const ProjectHome = () => {
 
     const handleMessage = (message) => {
       if (message.projectId === id) {
-        setMessages((prev) => [...prev, message]);
+        setMessages((prev) => {
+          const updatedMessages = [...prev, message];
+          // Mock emotion detection
+          const positiveWords = ['great', 'awesome', 'good', 'happy', 'excellent'];
+          const negativeWords = ['bad', 'terrible', 'sad', 'frustrating', 'problem'];
+          const text = message.text?.toLowerCase() || '';
+          const hasPositive = positiveWords.some(word => text.includes(word));
+          const hasNegative = negativeWords.some(word => text.includes(word));
+          if (hasPositive) {
+            setTeamMorale('Positive');
+          } else if (hasNegative) {
+            setTeamMorale('Negative');
+          } else {
+            setTeamMorale('Neutral');
+          }
+          return updatedMessages;
+        });
       }
     };
 
@@ -133,8 +160,8 @@ const ProjectHome = () => {
     if (!newPost || !project) return;
     const post = {
       id: `post-${project.posts.length + 1}`,
-      user: user.email,
-      profilePicture: user.profilePicture,
+      user: user?.email || 'Unknown',
+      profilePicture: user?.profilePicture || 'https://via.placeholder.com/150',
       content: newPost,
       timestamp: new Date().toISOString(),
       likes: 0,
@@ -152,7 +179,7 @@ const ProjectHome = () => {
     const comment = {
       id: `comment-${project.comments.length + 1}`,
       postId,
-      user: user.email,
+      user: user?.email || 'Unknown',
       content: newComment,
       timestamp: new Date().toISOString(),
     };
@@ -177,7 +204,7 @@ const ProjectHome = () => {
     const message = {
       projectId: id,
       text: newMessage,
-      user: user.email,
+      user: user?.email || 'Unknown',
       timestamp: new Date().toISOString(),
     };
     socket.emit('message', message);
@@ -291,6 +318,15 @@ const ProjectHome = () => {
       }));
       setNewTask('');
       alert(`Task created: ${title} (Due: ${dueDate})`);
+
+      // Re-prioritize tasks after adding a new one
+      const prioritized = updatedTasks.map((task, index) => {
+        const urgency = task.description?.toLowerCase().includes('due') ? 0.8 : 0.5;
+        const workload = (index % 2) + 1; // Mock workload score
+        const priorityScore = urgency * 0.6 + workload * 0.4;
+        return { ...task, priorityScore };
+      }).sort((a, b) => b.priorityScore - a.priorityScore);
+      setPrioritizedTasks(prioritized);
     } catch (err) {
       alert('Failed to create task: ' + err.message);
     }
@@ -317,9 +353,18 @@ const ProjectHome = () => {
     console.log('ProjectHome - Gesture detected:', direction, 'New tab:', tabs[newIndex]);
   };
 
-  const inviteCollaborator = (collaboratorEmail) => {
-    alert(`Invited ${collaboratorEmail} to the project! (Mock implementation)`);
-    // Implement actual invitation logic here (e.g., send an email or update project members)
+  const inviteCollaborator = async (collaboratorEmail) => {
+    try {
+      const updatedMembers = [...(project.members || []), { email: collaboratorEmail, role: 'Member', profilePicture: 'https://via.placeholder.com/150' }];
+      await updateProject(project.id, { members: updatedMembers });
+      setProject((prev) => ({
+        ...prev,
+        members: updatedMembers,
+      }));
+      alert(`Invited ${collaboratorEmail} to the project!`);
+    } catch (err) {
+      alert('Failed to invite collaborator: ' + err.message);
+    }
   };
 
   if (loading) return <div className="project-home-container"><p className="text-holo-gray">Loading project...</p></div>;
@@ -341,7 +386,7 @@ const ProjectHome = () => {
     datasets: [
       {
         label: 'Completed Tasks',
-        data: Array.from({ length: project.tasksCompleted }, () => ({
+        data: Array.from({ length: project.tasksCompleted || 0 }, () => ({
           x: Math.random() * 100 - 50,
           y: Math.random() * 100 - 50,
           r: Math.random() * 5 + 3,
@@ -352,7 +397,7 @@ const ProjectHome = () => {
       },
       {
         label: 'Remaining Tasks',
-        data: Array.from({ length: (project.totalTasks || 0) - project.tasksCompleted }, () => ({
+        data: Array.from({ length: (project.totalTasks || 0) - (project.tasksCompleted || 0) }, () => ({
           x: Math.random() * 100 - 50,
           y: Math.random() * 100 - 50,
           r: Math.random() * 3 + 2,
@@ -378,7 +423,7 @@ const ProjectHome = () => {
   return (
     <div className="project-home-container">
       <div className="project-header py-8 px-6 rounded-b-3xl text-center">
-        <h1 className="text-4xl font-inter text-holo-blue mb-4 animate-text-glow">{project.title}</h1>
+        <h1 className="text-4xl font-inter text-holo-blue mb-4 animate-text-glow">{project.title || 'Untitled Project'}</h1>
         <p className="text-holo-gray mb-4">{project.description || 'No description'}</p>
         <div className="flex justify-center items-center gap-3 mb-4">
           <Users className="w-5 h-5 text-holo-pink animate-pulse" />
@@ -389,7 +434,7 @@ const ProjectHome = () => {
                 <img
                   key={index}
                   src={member.profilePicture || 'https://via.placeholder.com/150'}
-                  alt={member.email}
+                  alt={member.email || 'Member'}
                   className="w-8 h-8 rounded-full object-cover border-2 border-holo-blue"
                 />
               ))}
@@ -445,7 +490,7 @@ const ProjectHome = () => {
               <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
                 <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Overview
               </h2>
-              <p className="text-holo-gray mb-4">Status: {project.status}</p>
+              <p className="text-holo-gray mb-4">Status: {project.status || 'Not Started'}</p>
               <div className="progress-bar mb-4">
                 <div
                   className="progress-fill"
@@ -453,7 +498,7 @@ const ProjectHome = () => {
                 />
               </div>
               <p className="text-holo-gray mb-4">
-                Progress: {project.tasksCompleted} / {project.totalTasks || 0} tasks completed
+                Progress: {project.tasksCompleted || 0} / {project.totalTasks || 0} tasks completed
               </p>
 
               <div className="progress-galaxy mb-6">
@@ -508,19 +553,29 @@ const ProjectHome = () => {
                   <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No tasks yet.
                 </p>
               ) : (
-                <div className="task-board grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {project.tasks.map((task, index) => (
-                    <div key={index} className="task-card card p-4 holographic-effect glassmorphic">
-                      <h3 className="text-lg font-inter text-holo-blue mb-2">{task.title || 'Untitled Task'}</h3>
-                      <p className="text-holo-gray text-sm mb-2">{task.description || 'No description'}</p>
-                      <p className="text-holo-gray text-sm">
-                        Assigned to: {task.assignedTo || 'Unassigned'}
-                      </p>
-                      <p className="text-holo-gray text-sm">
-                        Status: {task.status || 'Not Started'}
-                      </p>
-                    </div>
-                  ))}
+                <div className="task-board">
+                  <h3 className="text-lg font-inter text-holo-blue mb-2 flex items-center">
+                    <TrendingUp className="w-5 h-5 mr-2 text-holo-pink" /> Prioritized Tasks
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {prioritizedTasks.map((task, index) => (
+                      <div key={index} className="task-card card p-4 holographic-effect glassmorphic">
+                        <h3 className="text-lg font-inter text-holo-blue mb-2">{task.title || 'Untitled Task'}</h3>
+                        <p className="text-holo-gray text-sm mb-2">{task.description || 'No description'}</p>
+                        <p className="text-holo-gray text-sm">
+                          Assigned to: {task.assignedTo || 'Unassigned'}
+                        </p>
+                        <p className="text-holo-gray text-sm">
+                          Status: {task.status || 'Not Started'}
+                        </p>
+                        <p className="text-holo-gray text-sm mt-2">
+                          Priority: <span className={task.priorityScore > 0.7 ? 'text-red-500' : task.priorityScore > 0.5 ? 'text-yellow-500' : 'text-green-500'}>
+                            {(task.priorityScore * 100).toFixed(0)}%
+                          </span>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -624,6 +679,17 @@ const ProjectHome = () => {
                   <h3 className="text-lg font-inter text-holo-blue mb-4 flex items-center">
                     <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Project Chat
                   </h3>
+                  <div className="team-morale mb-4">
+                    <h4 className="text-holo-gray flex items-center gap-2">
+                      <Smile className="w-5 h-5 text-holo-pink" /> Team Morale: 
+                      <span className={teamMorale === 'Positive' ? 'text-green-500' : teamMorale === 'Negative' ? 'text-red-500' : 'text-holo-gray'}>
+                        {teamMorale}
+                      </span>
+                    </h4>
+                    {teamMorale === 'Negative' && (
+                      <p className="text-holo-gray text-sm mt-1">Consider addressing concerns in the chat to boost team morale.</p>
+                    )}
+                  </div>
                   <div className="messages overflow-y-auto h-64 mb-4">
                     {messages.length === 0 ? (
                       <p className="text-holo-gray flex items-center gap-2">

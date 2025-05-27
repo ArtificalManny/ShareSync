@@ -5,7 +5,7 @@ import { Home, Folder, User, LogOut, Sun, Moon, PlusCircle, Bell, Search } from 
 import './Navigation.css';
 
 const Navigation = () => {
-  const { user, isAuthenticated, logout, theme, toggleTheme } = useContext(AuthContext);
+  const { user, isAuthenticated, logout, theme, toggleTheme, isLoading } = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -20,6 +20,10 @@ const Navigation = () => {
       navigate(`/projects?search=${searchQuery}`);
     }
   };
+
+  if (isLoading) {
+    return <nav className="navigation-container holographic-effect"><div className="navigation-content"><p>Loading...</p></div></nav>;
+  }
 
   return (
     <nav className="navigation-container holographic-effect">
@@ -36,7 +40,10 @@ const Navigation = () => {
               <Link to="/projects/create" className="flex items-center gap-2 text-holo-blue hover:text-holo-pink transition-all">
                 <PlusCircle className="w-5 h-5" /> Create Project
               </Link>
-              <Link to={`/profile/${user?.username}`} className="flex items-center gap-2 text-holo-blue hover:text-holo-pink transition-all">
+              <Link
+                to={user?.username ? `/profile/${user.username}` : '/login'}
+                className="flex items-center gap-2 text-holo-blue hover:text-holo-pink transition-all"
+              >
                 <User className="w-5 h-5" /> Profile
               </Link>
               <Link to="/notifications" className="flex items-center gap-2 text-holo-blue hover:text-holo-pink transition-all">

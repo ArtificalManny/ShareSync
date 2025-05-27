@@ -52,6 +52,7 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, password, redirectTo = '/') => {
     try {
+      console.log('AuthContext - Attempting login with email:', email);
       const data = await authService.login(email, password);
       setUser(data.user);
       setIsAuthenticated(true);
@@ -60,12 +61,14 @@ const AuthProvider = ({ children }) => {
       console.log('AuthContext - User logged in:', data.user, 'Redirecting to:', redirectTo);
       return redirectTo;
     } catch (err) {
+      console.error('AuthContext - Login failed:', err.message);
       setAuthError('Login failed: ' + (err.message || 'Unknown error'));
       throw err;
     }
   };
 
   const logout = () => {
+    console.log('AuthContext - Logging out user');
     authService.logout();
     setUser(null);
     setIsAuthenticated(false);
@@ -76,25 +79,28 @@ const AuthProvider = ({ children }) => {
   };
 
   const joinProject = (project) => {
+    console.log('AuthContext - Joining project:', project.id);
     const updatedUser = {
       ...user,
-      projects: [...(user.projects || []), project],
+      projects: [...(user?.projects || []), project],
     };
     setUser(updatedUser);
   };
 
   const addProject = (project) => {
+    console.log('AuthContext - Adding project:', project.id);
     const updatedUser = {
       ...user,
-      projects: [...(user.projects || []), project],
+      projects: [...(user?.projects || []), project],
     };
     setUser(updatedUser);
   };
 
   const updateProject = async (projectId, updates) => {
     try {
+      console.log('AuthContext - Updating project:', projectId);
       const response = await axios.put(`http://localhost:3000/api/projects/${projectId}`, updates);
-      const updatedProjects = user.projects.map((proj) =>
+      const updatedProjects = (user?.projects || []).map((proj) =>
         proj.id === projectId ? { ...proj, ...updates } : proj
       );
       setUser({ ...user, projects: updatedProjects });
@@ -108,6 +114,7 @@ const AuthProvider = ({ children }) => {
 
   const updateUserProfile = async (updates) => {
     try {
+      console.log('AuthContext - Updating user profile');
       const updatedUser = await authService.updateUserProfile(updates);
       setUser(updatedUser);
       console.log('AuthContext - User profile updated:', updatedUser);
@@ -119,8 +126,12 @@ const AuthProvider = ({ children }) => {
 
   const autoAssignTasks = async (projectId) => {
     try {
-      const project = user.projects.find((p) => p.id === projectId);
-      if (!project || !project.tasks) return;
+      console.log('AuthContext - Auto-assigning tasks for project:', projectId);
+      const project = (user?.projects || []).find((p) => p.id === projectId);
+      if (!project || !project.tasks) {
+        console.log('AuthContext - Project or tasks not found for auto-assign:', projectId);
+        return;
+      }
 
       const members = project.members || [];
       const tasks = project.tasks || [];
@@ -139,6 +150,7 @@ const AuthProvider = ({ children }) => {
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
+    console.log('AuthContext - Toggling theme to:', newTheme);
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);

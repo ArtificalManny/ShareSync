@@ -1,78 +1,182 @@
+/* Base styles for dark theme */
+:root[data-theme="dark"] {
+  --background: linear-gradient(135deg, #1A1F36, #2E3555);
+  --card-bg: rgba(46, 53, 85, 0.1);
+  --text-primary: #A1B5FF;
+  --text-secondary: #7BFFAF;
+  --text-accent: #FF6F91;
+  --shadow-dark: rgba(0, 0, 0, 0.2);
+  --shadow-light: rgba(255, 255, 255, 0.05);
+}
+
+/* Light theme styles */
+:root[data-theme="light"] {
+  --background: linear-gradient(135deg, #E6F0FA, #F5F7FA);
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --text-primary: #1A1F36;
+  --text-secondary: #2E3555;
+  --text-accent: #FF6F91;
+  --shadow-dark: rgba(0, 0, 0, 0.1);
+  --shadow-light: rgba(255, 255, 255, 0.3);
+}
+
 .create-project-container {
-    padding: 40px;
-    background-color: var(--background);
-    min-height: calc(100vh - 64px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .create-project-card {
-    background: var(--card-bg);
-    backdrop-filter: var(--card-backdrop);
-    padding: 32px;
-    border-radius: 16px;
-    box-shadow: var(--shadow);
-    max-width: 600px;
-    width: 100%;
-    border: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-  
-  .create-project-card h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--text-primary);
-    text-align: center;
-  }
-  
-  .create-project-card p.text-error {
-    font-size: 16px;
-    color: var(--error);
-    text-align: center;
-  }
-  
-  .create-project-card form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  
-  .create-project-card input,
-  .create-project-card textarea,
-  .create-project-card select {
-    background: var(--background);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 16px;
-    color: var(--text-primary);
-    font-size: 16px;
-    outline: none;
-    transition: border-color 0.3s ease;
-  }
-  
-  .create-project-card textarea {
-    min-height: 100px;
-    resize: vertical;
-  }
-  
-  .create-project-card input:focus,
-  .create-project-card textarea:focus,
-  .create-project-card select:focus {
-    border-color: var(--accent-blue);
-  }
-  
-  .create-project-card button {
-    background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
-    background-size: 200% 200%;
-    animation: gradientGlow 8s ease infinite;
-    color: var(--white);
-    padding: 12px 24px;
-    border-radius: 9999px;
-    border: none;
-    font-weight: 600;
-    font-size: 16px;
-    cursor: pointer;
-  }
+  padding: 0;
+  min-height: 100vh;
+  background: var(--background);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.create-project-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('https://www.transparenttextures.com/patterns/stardust.png');
+  opacity: 0.1;
+  z-index: 0;
+  animation: particle-float 20s infinite linear;
+}
+
+.create-project-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('https://www.transparenttextures.com/patterns/stardust.png');
+  opacity: 0.05;
+  z-index: 0;
+  animation: particle-float 30s infinite linear reverse;
+}
+
+.create-project-card {
+  max-width: 400px;
+  width: 100%;
+  z-index: 1;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #A1B5FF, #FF6F91, #7BFFAF);
+  color: var(--text-primary);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-weight: 500;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.5s ease;
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) translateZ(5px);
+  box-shadow: 8px 8px 15px var(--shadow-dark), -8px -8px 15px var(--shadow-light);
+}
+
+.input-field {
+  border-radius: 8px;
+  border: none;
+  background: var(--card-bg);
+  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.input-field:focus {
+  box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
+  transform: scale(1.02);
+  outline: none;
+}
+
+.input-field.rounded-full {
+  border-radius: 9999px;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: none;
+  transform: translateZ(0);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateZ(15px);
+  box-shadow: 0 8px 20px rgba(123, 255, 175, 0.3);
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 30%, rgba(161, 181, 255, 0.2), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card:hover::after {
+  opacity: 1;
+}
+
+/* Glassmorphism effect */
+.glassmorphic {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px var(--shadow-dark), inset 0 0 10px var(--shadow-light);
+  transform: translateZ(0) rotateX(5deg) rotateY(5deg);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.glassmorphic:hover {
+  transform: translateZ(20px) rotateX(0deg) rotateY(0deg);
+  box-shadow: 0 12px 40px rgba(123, 255, 175, 0.4), inset 0 0 15px var(--shadow-light);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px rgba(161, 181, 255, 0.5); }
+  50% { box-shadow: 0 0 15px rgba(255, 111, 145, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(161, 181, 255, 0.5); }
+}
+
+.animate-glow {
+  animation: glow 2s infinite;
+}
+
+@keyframes text-glow {
+  0% { text-shadow: 0 0 2px rgba(161, 181, 255, 0.5); }
+  50% { text-shadow: 0 0 8px rgba(255, 111, 145, 0.8); }
+  100% { text-shadow: 0 0 2px rgba(161, 181, 255, 0.5); }
+}
+
+.animate-text-glow {
+  animation: text-glow 2s infinite;
+}
+
+@keyframes particle-float {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(100px, 100px); }
+}

@@ -41,6 +41,7 @@ const Projects = () => {
       setProjects(userProjects);
 
       const response = await axios.get('http://localhost:3000/api/leaderboard');
+      console.log('Projects - Leaderboard fetched:', response.data);
       setLeaderboard(response.data);
     } catch (err) {
       console.error('Projects - Error fetching projects:', err.message, err.stack);
@@ -56,6 +57,7 @@ const Projects = () => {
     if (!socket) return;
 
     socket.on('project-create', (project) => {
+      console.log('Projects - New project created:', project);
       setProjects((prev) => [...prev, project]);
     });
 
@@ -76,6 +78,7 @@ const Projects = () => {
 
   const handleAutoAssign = async (projectId) => {
     try {
+      console.log('Projects - Auto-assigning tasks for project:', projectId);
       await autoAssignTasks(projectId);
       console.log('Projects - Tasks auto-assigned for project:', projectId);
     } catch (err) {
@@ -86,14 +89,21 @@ const Projects = () => {
 
   const toggleArMode = () => {
     if (!arMode) {
+      console.log('Projects - Entering AR mode');
       alert('AR Mode: Imagine viewing project details in an augmented reality environment! (Requires WebAR support)');
+    } else {
+      console.log('Projects - Exiting AR mode');
     }
     setArMode(!arMode);
   };
 
-  if (loading) return <div className="projects-container"><p className="text-holo-gray">Loading projects...</p></div>;
+  if (loading) {
+    console.log('Projects - Rendering loading state');
+    return <div className="projects-container"><p className="text-holo-gray">Loading projects...</p></div>;
+  }
 
   if (error) {
+    console.log('Projects - Rendering error state:', error);
     return (
       <div className="projects-container">
         <p className="text-red-500">{error}</p>
@@ -135,7 +145,7 @@ const Projects = () => {
                     <Folder className="w-6 h-6 text-holo-pink" />
                     <div className="flex-1">
                       <Link to={`/projects/${project.id}`}>
-                        <h3 className="text-lg font-inter text-holo-blue animate-text-glow">{project.title}</h3>
+                        <h3 className="text-lg font-inter text-holo-blue animate-text-glow">{project.title || 'Untitled Project'}</h3>
                       </Link>
                       <p className="text-holo-gray text-sm">{project.description || 'No description'}</p>
                       <div className="flex items-center gap-2 mt-2">
@@ -167,8 +177,8 @@ const Projects = () => {
               {leaderboard.map((entry, index) => (
                 <li key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-holo-bg-dark transition-all">
                   <span className="text-holo-blue font-semibold">{index + 1}.</span>
-                  <span className="text-primary">{entry.email}</span>
-                  <span className="text-holo-gray ml-auto">{entry.points} points</span>
+                  <span className="text-primary">{entry.email || 'Unknown'}</span>
+                  <span className="text-holo-gray ml-auto">{entry.points || 0} points</span>
                 </li>
               ))}
             </ul>

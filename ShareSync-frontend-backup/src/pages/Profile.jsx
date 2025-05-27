@@ -41,7 +41,7 @@ const Profile = () => {
         }
 
         console.log('Profile - Fetching profile for:', username, 'Authenticated user:', user.username);
-        const cleanUsername = username.trim();
+        const cleanUsername = username?.trim();
         const userUsername = user.username?.trim();
         if (userUsername !== cleanUsername) {
           throw new Error('You can only view your own profile');
@@ -78,9 +78,9 @@ const Profile = () => {
   const handleEdit = () => {
     setIsEditing(true);
     setEditedProfile({
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-      email: profile.email,
+      firstName: profile?.firstName || '',
+      lastName: profile?.lastName || '',
+      email: profile?.email || '',
     });
   };
 

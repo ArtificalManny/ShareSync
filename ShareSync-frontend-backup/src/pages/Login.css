@@ -24,11 +24,11 @@
   padding: 0;
   min-height: 100vh;
   background: var(--background);
-  position: relative;
-  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+  overflow: hidden;
 }
 
 .login-container::before {
@@ -57,73 +57,10 @@
   animation: particle-float 30s infinite linear reverse;
 }
 
-.login-content {
-  max-width: 24rem;
+.login-card {
+  max-width: 400px;
   width: 100%;
-  padding: 1.5rem;
   z-index: 1;
-}
-
-.card {
-  background: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  border: none;
-  transform: translateZ(0);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  position: relative;
-  z-index: 1;
-}
-
-.card:hover {
-  transform: translateZ(15px);
-  box-shadow: 0 8px 20px rgba(123, 255, 175, 0.3);
-}
-
-.card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at 30% 30%, rgba(161, 181, 255, 0.2), transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.card:hover::after {
-  opacity: 1;
-}
-
-.input-field {
-  border-radius: 8px;
-  border: none;
-  background: var(--card-bg);
-  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
-  color: var(--text-primary);
-  padding: 8px 12px;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
-  pointer-events: auto;
-  z-index: 2;
-}
-
-.input-field:focus {
-  box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
-  transform: scale(1.02);
-  outline: none;
-}
-
-.input-field.rounded-full {
-  border-radius: 9999px;
-}
-
-.input-field:hover {
-  box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
 }
 
 .btn-primary {
@@ -142,23 +79,6 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
-  pointer-events: auto;
-  z-index: 2;
-}
-
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s ease;
-}
-
-.btn-primary:hover::before {
-  left: 100%;
 }
 
 .btn-primary:hover {
@@ -166,19 +86,57 @@
   box-shadow: 8px 8px 15px var(--shadow-dark), -8px -8px 15px var(--shadow-light);
 }
 
-.btn-primary:disabled {
-  background: #2E3555;
-  cursor: not-allowed;
-  box-shadow: none;
+.input-field {
+  border-radius: 8px;
+  border: none;
+  background: var(--card-bg);
+  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
-a {
-  pointer-events: auto;
-  z-index: 2;
+.input-field:focus {
+  box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
+  transform: scale(1.02);
+  outline: none;
 }
 
-a:hover {
-  text-decoration: underline;
+.input-field.rounded-full {
+  border-radius: 9999px;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: none;
+  transform: translateZ(0);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateZ(15px);
+  box-shadow: 0 8px 20px rgba(123, 255, 175, 0.3);
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 30%, rgba(161, 181, 255, 0.2), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card:hover::after {
+  opacity: 1;
 }
 
 /* Glassmorphism effect */
@@ -196,11 +154,6 @@ a:hover {
   transform: translateZ(20px) rotateX(0deg) rotateY(0deg);
   box-shadow: 0 12px 40px rgba(123, 255, 175, 0.4), inset 0 0 15px var(--shadow-light);
   background: rgba(255, 255, 255, 0.1);
-}
-
-@keyframes particle-float {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(100px, 100px); }
 }
 
 @keyframes glow {
@@ -221,4 +174,9 @@ a:hover {
 
 .animate-text-glow {
   animation: text-glow 2s infinite;
+}
+
+@keyframes particle-float {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(100px, 100px); }
 }
