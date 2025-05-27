@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Edit, Camera, PlusCircle, Folder, Mail as MailIcon, User as UserIcon } from 'lucide-react';
+import { Edit, Camera, PlusCircle, Folder, Mail as MailIcon, User as UserIcon, Sun, Moon } from 'lucide-react';
 import './Profile.css';
 
 const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user, updateUserProfile, isLoading, setIntendedRoute } = useContext(AuthContext);
+  const { isAuthenticated, user, updateUserProfile, isLoading, setIntendedRoute, theme, toggleTheme } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -19,7 +19,6 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // Wait for AuthContext to finish loading
         if (isLoading) {
           console.log('Profile - Waiting for AuthContext to finish loading');
           return;
@@ -27,7 +26,7 @@ const Profile = () => {
 
         if (!isAuthenticated) {
           console.log('Profile - User not authenticated, redirecting to login');
-          setIntendedRoute(`/profile/${username}`); // Store intended route
+          setIntendedRoute(`/profile/${username}`);
           navigate('/login', { replace: true });
           return;
         }
@@ -38,10 +37,6 @@ const Profile = () => {
           setIntendedRoute(`/profile/${username}`);
           navigate('/login', { replace: true });
           return;
-        }
-
-        if (!username) {
-          throw new Error('Username is missing in URL');
         }
 
         console.log('Profile - Fetching profile for:', username, 'Authenticated user:', user.username);
@@ -133,6 +128,12 @@ const Profile = () => {
 
   return (
     <div className="profile-container">
+      <button
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 p-2 rounded-full bg-holo-bg-light text-holo-blue hover:text-holo-pink transition-all"
+      >
+        {theme === 'dark' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+      </button>
       <div className="banner-section relative">
         <img
           src={bannerImage}
@@ -140,7 +141,7 @@ const Profile = () => {
           className="w-full h-48 object-cover animate-glow"
         />
         {isOwnProfile && (
-          <label className="absolute top-4 right-4 flex items-center text-holo-blue hover:text-holo-pink cursor-pointer transition-all">
+          <label className="absolute top-4 right-12 flex items-center text-holo-blue hover:text-holo-pink cursor-pointer transition-all">
             <Camera className="w-5 h-5 mr-2 animate-pulse" /> Change Banner
             <input
               type="file"
@@ -189,7 +190,7 @@ const Profile = () => {
         )}
 
         {isEditing ? (
-          <div className="card p-6 mb-6">
+          <div className="card p-6 mb-6 glassmorphic">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
               <Edit className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Edit Profile
             </h2>
@@ -231,7 +232,7 @@ const Profile = () => {
             </div>
           </div>
         ) : (
-          <div className="card p-6 mb-6">
+          <div className="card p-6 mb-6 glassmorphic">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
               <UserIcon className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> About
             </h2>
@@ -244,7 +245,7 @@ const Profile = () => {
           </div>
         )}
 
-        <div className="projects-section card p-6">
+        <div className="projects-section card p-6 glassmorphic">
           <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
             <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Projects
           </h2>
@@ -256,7 +257,7 @@ const Profile = () => {
                 <Link
                   to={`/projects/${project.id}`}
                   key={project.id}
-                  className="project-card card p-4 hover:bg-holo-bg-dark transition-all"
+                  className="project-card card p-4 hover:bg-holo-bg-dark transition-all glassmorphic"
                 >
                   <div className="flex items-center gap-3">
                     <Folder className="w-6 h-6 text-holo-pink" />

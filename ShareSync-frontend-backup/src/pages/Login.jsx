@@ -2,13 +2,14 @@ import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import axios from 'axios';
+import { Sun, Moon } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login, intendedRoute } = useContext(AuthContext);
+  const { login, intendedRoute, theme, toggleTheme } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -18,6 +19,7 @@ const Login = () => {
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       const redirectTo = login(user, intendedRoute || '/');
+      console.log('Login - Redirecting to:', redirectTo);
       navigate(redirectTo);
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
@@ -26,10 +28,16 @@ const Login = () => {
 
   return (
     <div className="login-container">
+      <button
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 p-2 rounded-full bg-holo-bg-light text-holo-blue hover:text-holo-pink transition-all"
+      >
+        {theme === 'dark' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+      </button>
       <div className="login-content">
         <h2 className="text-3xl font-inter text-holo-blue mb-6 text-center animate-text-glow">Login to ShareSync</h2>
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-        <div className="card p-6">
+        <div className="card p-6 glassmorphic">
           <div className="space-y-6">
             <div className="flex items-center gap-2">
               <input

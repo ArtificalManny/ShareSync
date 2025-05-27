@@ -10,8 +10,9 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [globalMetrics, setGlobalMetrics] = useState({ notifications: 0 });
-  const [isLoading, setIsLoading] = useState(true); // Track loading state
-  const [intendedRoute, setIntendedRoute] = useState(null); // Store intended route
+  const [isLoading, setIsLoading] = useState(true);
+  const [intendedRoute, setIntendedRoute] = useState(null);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark'); // Theme toggle
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -19,7 +20,7 @@ const AuthProvider = ({ children }) => {
       if (token) {
         try {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          console.log('AuthContext - Attempting to fetch user data with token:', token);
+          console.log('AuthContext - Initializing with token:', token);
           const response = await axios.get('http://localhost:3000/api/auth/me');
           const userData = response.data;
           console.log('AuthContext - User data fetched successfully:', userData);
@@ -38,18 +39,19 @@ const AuthProvider = ({ children }) => {
         setIsAuthenticated(false);
         setUser(null);
       }
-      setIsLoading(false); // Mark loading as complete
+      setIsLoading(false);
     };
 
     initializeAuth();
-  }, []);
+  }, []); // Empty dependency array to run only once on mount
 
   const login = (userData, redirectTo = '/') => {
     setUser(userData);
     setIsAuthenticated(true);
     setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
-    setIntendedRoute(null); // Clear intended route after login
-    return redirectTo; // Return the route to redirect to
+    setIntendedRoute(null);
+    console.log('AuthContext - User logged in:', userData, 'Redirecting to:', redirectTo);
+    return redirectTo;
   };
 
   const logout = () => {
@@ -99,6 +101,18 @@ const AuthProvider = ({ children }) => {
     }
   };
 
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+  };
+
+  // Apply theme on mount
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -115,6 +129,8 @@ const AuthProvider = ({ children }) => {
         isLoading,
         setIntendedRoute,
         intendedRoute,
+        theme,
+        toggleTheme,
       }}
     >
       {children}
