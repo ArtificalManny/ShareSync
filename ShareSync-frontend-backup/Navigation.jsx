@@ -5,11 +5,12 @@ import { Home, Folder, User, LogOut, Sun, Moon, PlusCircle, Bell, Search } from 
 import './Navigation.css';
 
 const Navigation = () => {
-  const { user, isAuthenticated, logout, theme, toggleTheme, isLoading } = useContext(AuthContext);
+  const { user, isAuthenticated, logout, theme, toggleTheme, isLoading, authError } = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = () => {
+    console.log('Navigation - Handling logout');
     logout();
     navigate('/login');
   };
@@ -17,12 +18,26 @@ const Navigation = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      console.log('Navigation - Performing search with query:', searchQuery);
       navigate(`/projects?search=${searchQuery}`);
     }
   };
 
   if (isLoading) {
+    console.log('Navigation - Rendering loading state');
     return <nav className="navigation-container holographic-effect"><div className="navigation-content"><p>Loading...</p></div></nav>;
+  }
+
+  if (authError) {
+    console.log('Navigation - Rendering auth error state:', authError);
+    return (
+      <nav className="navigation-container holographic-effect">
+        <div className="navigation-content">
+          <p className="text-red-500">{authError}</p>
+          <Link to="/login" className="text-holo-blue hover:text-holo-pink">Login</Link>
+        </div>
+      </nav>
+    );
   }
 
   return (

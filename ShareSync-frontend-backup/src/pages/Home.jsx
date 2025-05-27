@@ -5,7 +5,7 @@ import { Folder, LogIn, BarChart, Activity, Info } from 'lucide-react';
 import './Home.css';
 
 const Home = () => {
-  const { user, isAuthenticated, isLoading } = useContext(AuthContext);
+  const { user, isAuthenticated, isLoading, authError } = useContext(AuthContext);
   const [dashboardStats, setDashboardStats] = useState({ projects: 0, tasksCompleted: 0, recentActivity: [] });
   const [showTour, setShowTour] = useState(false);
   const [tourStep, setTourStep] = useState(0);
@@ -61,7 +61,18 @@ const Home = () => {
   };
 
   if (isLoading) {
+    console.log('Home - Rendering loading state');
     return <div className="home-container"><p className="text-holo-gray">Loading...</p></div>;
+  }
+
+  if (authError) {
+    console.log('Home - Rendering auth error state:', authError);
+    return (
+      <div className="home-container">
+        <p className="text-red-500">{authError}</p>
+        <Link to="/login" className="text-holo-blue hover:underline">Login</Link>
+      </div>
+    );
   }
 
   return (

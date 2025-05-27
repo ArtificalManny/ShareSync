@@ -19,8 +19,9 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
+      console.log('AuthContext - Checking for token in localStorage:', token);
       if (!token) {
-        console.log('AuthContext - No token found in localStorage');
+        console.log('AuthContext - No token found, user is not authenticated');
         setIsAuthenticated(false);
         setUser(null);
         setIsLoading(false);
@@ -29,12 +30,13 @@ const AuthProvider = ({ children }) => {
 
       try {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        console.log('AuthContext - Initializing with token:', token);
+        console.log('AuthContext - Fetching user data with token:', token);
         const userData = await authService.getCurrentUser();
         console.log('AuthContext - User data fetched successfully:', userData);
         setUser(userData);
         setIsAuthenticated(true);
         setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
+        setAuthError(''); // Clear any previous errors
       } catch (err) {
         console.error('AuthContext - Failed to fetch user data:', err.message);
         setAuthError('Failed to authenticate user: ' + (err.message || 'Unknown error'));
@@ -44,6 +46,7 @@ const AuthProvider = ({ children }) => {
         setUser(null);
       } finally {
         setIsLoading(false);
+        console.log('AuthContext - Initialization complete. isAuthenticated:', isAuthenticated, 'isLoading:', false);
       }
     };
 
@@ -58,6 +61,7 @@ const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setGlobalMetrics({ notifications: data.user.notifications?.length || 0 });
       setIntendedRoute(null);
+      setAuthError('');
       console.log('AuthContext - User logged in:', data.user, 'Redirecting to:', redirectTo);
       return redirectTo;
     } catch (err) {
@@ -75,6 +79,7 @@ const AuthProvider = ({ children }) => {
     setGlobalMetrics({ notifications: 0 });
     setIntendedRoute(null);
     socket.disconnect();
+    setAuthError('');
     console.log('AuthContext - User logged out');
   };
 
