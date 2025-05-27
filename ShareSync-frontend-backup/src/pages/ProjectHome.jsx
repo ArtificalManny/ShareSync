@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, List, MessageSquare, Users, Bell, AlertCircle, ThumbsUp, Share2, AlertTriangle, Vr, Mic } from 'lucide-react';
+import { Folder, List, MessageSquare, Users, Bell, AlertCircle, ThumbsUp, Share2, AlertTriangle, Vr, Mic, UserPlus } from 'lucide-react';
 import { Scatter } from 'react-chartjs-2';
 import { Chart as ChartJS, ScatterController, PointElement, LinearScale, Title, Tooltip, Legend } from 'chart.js';
 import './ProjectHome.css';
@@ -27,6 +27,7 @@ const ProjectHome = () => {
   const [listening, setListening] = useState(false);
   const [newTask, setNewTask] = useState('');
   const [gestureMode, setGestureMode] = useState(false);
+  const [suggestedCollaborators, setSuggestedCollaborators] = useState([]);
 
   const fetchProject = useCallback(async () => {
     try {
@@ -76,6 +77,13 @@ const ProjectHome = () => {
         detectedRisks.push('Limited team size: Consider adding more members.');
       }
       setRisks(detectedRisks);
+
+      // Mock AI-powered collaborator suggestions
+      const mockCollaborators = [
+        { email: 'alice@example.com', skills: ['Design', 'UI/UX'], matchScore: 0.9 },
+        { email: 'bob@example.com', skills: ['Development', 'Backend'], matchScore: 0.85 },
+      ];
+      setSuggestedCollaborators(mockCollaborators);
     } catch (err) {
       console.error('ProjectHome - Error fetching project:', err.message, err.stack);
       setError('Failed to load project: ' + err.message);
@@ -307,6 +315,11 @@ const ProjectHome = () => {
 
     setActiveTab(tabs[newIndex]);
     console.log('ProjectHome - Gesture detected:', direction, 'New tab:', tabs[newIndex]);
+  };
+
+  const inviteCollaborator = (collaboratorEmail) => {
+    alert(`Invited ${collaboratorEmail} to the project! (Mock implementation)`);
+    // Implement actual invitation logic here (e.g., send an email or update project members)
   };
 
   if (loading) return <div className="project-home-container"><p className="text-holo-gray">Loading project...</p></div>;
@@ -664,6 +677,35 @@ const ProjectHome = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+              <div className="suggested-collaborators mt-6">
+                <h3 className="text-lg font-inter text-holo-blue mb-4 flex items-center">
+                  <UserPlus className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Suggested Collaborators
+                </h3>
+                {suggestedCollaborators.length === 0 ? (
+                  <p className="text-holo-gray">No suggestions available.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {suggestedCollaborators.map((collaborator, index) => (
+                      <div key={index} className="collaborator-card card p-4 glassmorphic holographic-effect">
+                        <div className="flex items-center gap-3">
+                          <User className="w-6 h-6 text-holo-pink" />
+                          <div className="flex-1">
+                            <p className="text-primary font-semibold">{collaborator.email}</p>
+                            <p className="text-holo-gray text-sm">Skills: {collaborator.skills.join(', ')}</p>
+                            <p className="text-holo-gray text-sm">Match Score: {(collaborator.matchScore * 100).toFixed(0)}%</p>
+                          </div>
+                          <button
+                            onClick={() => inviteCollaborator(collaborator.email)}
+                            className="btn-primary rounded-full flex items-center animate-glow"
+                          >
+                            Invite
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

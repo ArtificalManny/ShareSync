@@ -63,14 +63,13 @@
 }
 
 .project-card {
-  border-left: 3px solid #A1B5FF;
-  transform: translateZ(0);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.project-card:hover {
-  transform: translateZ(20px);
-  box-shadow: 0 8px 20px rgba(161, 181, 255, 0.3);
+.project-card.ar-preview {
+  transform: translateZ(30px) scale(1.05);
+  box-shadow: 0 12px 40px rgba(255, 111, 145, 0.5);
+  background: rgba(255, 111, 145, 0.1);
 }
 
 .holographic-effect {
@@ -123,50 +122,9 @@
   overflow: hidden;
 }
 
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s ease;
-}
-
-.btn-primary:hover::before {
-  left: 100%;
-}
-
 .btn-primary:hover {
   transform: translateY(-2px) translateZ(5px);
   box-shadow: 8px 8px 15px var(--shadow-dark), -8px -8px 15px var(--shadow-light);
-}
-
-.btn-primary:disabled {
-  background: #2E3555;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.input-field {
-  border-radius: 8px;
-  border: none;
-  background: var(--card-bg);
-  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
-  color: var(--text-primary);
-  padding: 8px 12px;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
-}
-
-.input-field:focus {
-  box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
-  transform: scale(1.02);
-  outline: none;
-}
-
-.input-field.rounded-full {
-  border-radius: 9999px;
 }
 
 .card {
@@ -242,14 +200,4 @@
 @keyframes particle-float {
   0% { transform: translate(0, 0); }
   100% { transform: translate(100px, 100px); }
-}
-
-@keyframes pulse-light {
-  0% { box-shadow: 0 0 5px rgba(123, 255, 175, 0.3); }
-  50% { box-shadow: 0 0 15px rgba(123, 255, 175, 0.6); }
-  100% { box-shadow: 0 0 5px rgba(123, 255, 175, 0.3); }
-}
-
-.animate-pulse-light {
-  animation: pulse-light 3s infinite;
 }

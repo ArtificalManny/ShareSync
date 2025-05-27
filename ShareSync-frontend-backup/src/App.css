@@ -1,125 +1,39 @@
 .app-container {
-  font-family: 'Inter', sans-serif;
-  background: #3C2F5D; /* Deep Indigo */
-  color: #F5F6FA; /* Soft White */
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1A1F36, #2E3555);
 }
 
-.dark {
-  background: #3C2F5D;
-  color: #F5F6FA;
+.error-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #1A1F36;
+  color: #A1B5FF;
+  text-align: center;
 }
 
-/* Color Palette */
-.text-primary {
-  color: #F5F6FA;
+.error-boundary h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
 }
 
-.text-accent-teal {
-  color: #26C6DA;
+.error-boundary p {
+  font-size: 1rem;
+  margin-bottom: 1rem;
 }
 
-.text-accent-gold {
-  color: #FFD700;
-}
-
-.text-accent-coral {
-  color: #FF6F61; /* Coral */
-}
-
-.bg-accent-sage {
-  background: #8A9A5B; /* Sage Green */
-}
-
-.bg-glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-}
-
-.shadow-soft {
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
-}
-
-/* Typography */
-.font-inter {
-  font-family: 'Inter', sans-serif;
-}
-
-.font-playfair {
-  font-family: 'Playfair Display', serif;
-}
-
-/* Headings */
-h1, h2, h3 {
-  font-family: 'Playfair Display', serif;
-  color: #FFD700;
-}
-
-/* Chart Container */
-.chart-container {
-  position: relative;
-  width: 100%;
-  max-width: 350px;
-  height: 280px;
-  margin: 0 auto;
-  padding: 16px;
-  background: rgba(138, 154, 91, 0.1); /* Sage Green tint */
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 215, 0, 0.2);
-  border-radius: 12px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.chart-container:hover {
-  transform: scale(1.03);
-  box-shadow: 0 8px 40px rgba(255, 111, 97, 0.2); /* Coral glow */
-}
-
-/* Buttons */
-.btn-primary {
-  padding: 10px 20px;
-  border-radius: 9999px;
-  background: linear-gradient(45deg, #26C6DA, #FF6F61);
-  color: #0A1A2F;
+.error-boundary button {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(45deg, #A1B5FF, #FF6F91);
+  color: #1A1F36;
   border: none;
-  font-weight: 600;
-  font-size: 14px;
+  border-radius: 9999px;
   cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
-.btn-primary:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(255, 111, 97, 0.5);
-}
-
-/* Input Fields */
-.input-field {
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #26C6DA;
-  background: rgba(255, 255, 255, 0.05);
-  color: #F5F6FA;
-  font-size: 16px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.input-field:focus {
-  outline: none;
-  border-color: #FFD700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-}
-
-/* Cards */
-.card {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(255, 111, 97, 0.2);
+.error-boundary button:hover {
+  transform: translateY(-2px);
 }
