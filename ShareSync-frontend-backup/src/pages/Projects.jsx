@@ -1,192 +1,119 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../AuthContext';
-import { Folder, PlusCircle, Users, BarChart, Eye } from 'lucide-react';
-import axios from 'axios';
-import './Projects.css';
+import React, { useState, useEffect, useContext } from 'react';
+   import { Link, useNavigate } from 'react-router-dom';
+   import { AuthContext } from '../AuthContext';
+   import { FolderPlus, Folder, AlertCircle } from 'lucide-react';
+   import './Projects.css';
 
-const Projects = () => {
-  const navigate = useNavigate();
-  const { user, isAuthenticated, socket, isLoading: authLoading, setIntendedRoute, autoAssignTasks } = useContext(AuthContext);
-  const [projects, setProjects] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [arMode, setArMode] = useState(false);
+   const Projects = () => {
+     const navigate = useNavigate();
+     const { user, isAuthenticated, isLoading, authError, addProject, setIntendedRoute } = useContext(AuthContext);
+     const [projects, setProjects] = useState([]);
+     const [error, setError] = useState('');
 
-  const fetchProjects = useCallback(async () => {
-    try {
-      if (authLoading) {
-        console.log('Projects - Waiting for AuthContext to finish loading');
-        return;
-      }
+     useEffect(() => {
+       if (isLoading) {
+         console.log('Projects - Waiting for AuthContext to finish loading');
+         return;
+       }
 
-      if (!isAuthenticated) {
-        console.log('Projects - User not authenticated, redirecting to login');
-        setIntendedRoute('/projects');
-        navigate('/login', { replace: true });
-        return;
-      }
+       if (!isAuthenticated) {
+         console.log('Projects - User not authenticated, redirecting to login');
+         setIntendedRoute('/projects');
+         navigate('/login', { replace: true });
+         return;
+       }
 
-      if (!user || !user.email) {
-        console.log('Projects - User data not available');
-        setError('User data not available. Please log in again.');
-        setIntendedRoute('/projects');
-        navigate('/login', { replace: true });
-        return;
-      }
+       if (!user || !user.email) {
+         console.log('Projects - User data not available');
+         setError('User data not available. Please log in again.');
+         setIntendedRoute('/projects');
+         navigate('/login', { replace: true });
+         return;
+       }
 
-      console.log('Projects - Fetching projects for user:', user.email);
-      const userProjects = Array.isArray(user.projects) ? user.projects : [];
-      setProjects(userProjects);
+       console.log('Projects - Fetching user projects:', user.projects);
+       if (user.projects && Array.isArray(user.projects)) {
+         setProjects(user.projects);
+       } else {
+         console.log('Projects - No projects found for user');
+         setProjects([]);
+       }
+     }, [isAuthenticated, user, isLoading, navigate, setIntendedRoute]);
 
-      const response = await axios.get('http://localhost:3000/api/leaderboard');
-      console.log('Projects - Leaderboard fetched:', response.data);
-      setLeaderboard(response.data);
-    } catch (err) {
-      console.error('Projects - Error fetching projects:', err.message, err.stack);
-      setError('Failed to load projects: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated, user, authLoading, navigate, setIntendedRoute]);
+     const handleCreateProject = () => {
+       const newProject = {
+         id: `proj-${projects.length + 1}`,
+         title: `Project ${projects.length + 1}`,
+         description: 'A new project',
+         status: 'Not Started',
+         posts: [],
+         comments: [],
+         activityLog: [],
+         members: [{ email: user.email, role: 'Owner', profilePicture: user.profilePicture }],
+         tasks: [],
+         tasksCompleted: 0,
+         totalTasks: 0,
+       };
 
-  useEffect(() => {
-    fetchProjects();
+       addProject(newProject);
+       setProjects([...projects, newProject]);
+       navigate(`/projects/${newProject.id}`);
+     };
 
-    if (!socket) return;
+     if (isLoading) {
+       console.log('Projects - Rendering loading state');
+       return <div className="projects-container"><p className="text-holo-gray">Loading...</p></div>;
+     }
 
-    socket.on('project-create', (project) => {
-      console.log('Projects - New project created:', project);
-      setProjects((prev) => [...prev, project]);
-    });
+     if (authError) {
+       console.log('Projects - Rendering auth error state:', authError);
+       return (
+         <div className="projects-container">
+           <p className="text-red-500">{authError}</p>
+           <Link to="/login" className="text-holo-blue hover:underline">Login</Link>
+         </div>
+       );
+     }
 
-    socket.on('notification', (notification) => {
-      console.log('Projects - Received notification:', notification);
-    });
+     return (
+       <div className="projects-container">
+         <div className="projects-header py-8 px-6 rounded-b-3xl text-center">
+           <h1 className="text-4xl font-inter text-holo-blue mb-4 animate-text-glow">Your Projects</h1>
+           <p className="text-holo-gray mb-4">Manage your projects with ease.</p>
+           <button
+             onClick={handleCreateProject}
+             className="btn-primary rounded-full flex items-center mx-auto animate-glow"
+           >
+             <FolderPlus className="w-5 h-5 mr-2" /> Create New Project
+           </button>
+         </div>
 
-    socket.on('metric-update', (update) => {
-      console.log('Projects - Metric update:', update);
-    });
+         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+           {error && <p className="text-red-500 mb-4">{error}</p>}
+           {projects.length === 0 ? (
+             <p className="text-holo-gray flex items-center gap-2">
+               <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No projects yet. Create one to get started!
+             </p>
+           ) : (
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               {projects.map((project) => (
+                 <Link
+                   key={project.id}
+                   to={`/projects/${project.id}`}
+                   className="project-card card p-6 glassmorphic holographic-effect"
+                 >
+                   <h2 className="text-xl font-inter text-holo-blue mb-2 flex items-center">
+                     <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> {project.title || 'Untitled Project'}
+                   </h2>
+                   <p className="text-holo-gray text-sm mb-2">{project.description || 'No description'}</p>
+                   <p className="text-holo-gray text-sm">Status: {project.status || 'Not Started'}</p>
+                 </Link>
+               ))}
+             </div>
+           )}
+         </div>
+       </div>
+     );
+   };
 
-    return () => {
-      socket.off('project-create');
-      socket.off('notification');
-      socket.off('metric-update');
-    };
-  }, [socket, fetchProjects]);
-
-  const handleAutoAssign = async (projectId) => {
-    try {
-      console.log('Projects - Auto-assigning tasks for project:', projectId);
-      await autoAssignTasks(projectId);
-      console.log('Projects - Tasks auto-assigned for project:', projectId);
-    } catch (err) {
-      console.error('Projects - Error auto-assigning tasks:', err.message);
-      setError('Failed to auto-assign tasks: ' + err.message);
-    }
-  };
-
-  const toggleArMode = () => {
-    if (!arMode) {
-      console.log('Projects - Entering AR mode');
-      alert('AR Mode: Imagine viewing project details in an augmented reality environment! (Requires WebAR support)');
-    } else {
-      console.log('Projects - Exiting AR mode');
-    }
-    setArMode(!arMode);
-  };
-
-  if (loading) {
-    console.log('Projects - Rendering loading state');
-    return <div className="projects-container"><p className="text-holo-gray">Loading projects...</p></div>;
-  }
-
-  if (error) {
-    console.log('Projects - Rendering error state:', error);
-    return (
-      <div className="projects-container">
-        <p className="text-red-500">{error}</p>
-        {(error.includes('token') || error.includes('User data not available')) && (
-          <p className="text-holo-gray">
-            Please <Link to="/login" className="text-holo-blue hover:underline">log in</Link> to view projects.
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="projects-container">
-      <div className="projects-header py-8 px-6 rounded-b-3xl text-center">
-        <h1 className="text-4xl font-inter text-holo-blue mb-4 animate-text-glow">Projects</h1>
-        <div className="flex justify-center gap-4">
-          <Link to="/projects/create" className="btn-primary rounded-full flex items-center animate-glow">
-            <PlusCircle className="w-5 h-5 mr-2" /> Create New Project
-          </Link>
-          <button onClick={toggleArMode} className="btn-primary rounded-full flex items-center animate-glow">
-            <Eye className="w-5 h-5 mr-2" /> {arMode ? 'Exit AR Mode' : 'Enter AR Mode'}
-          </button>
-        </div>
-      </div>
-
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <div className="projects-list card p-6 mb-6 glassmorphic">
-          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-            <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Your Projects
-          </h2>
-          {projects.length === 0 ? (
-            <p className="text-holo-gray">No projects yet.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {projects.map((project) => (
-                <div key={project.id} className={`project-card card p-4 glassmorphic holographic-effect ${arMode ? 'ar-preview' : ''}`}>
-                  <div className="flex items-center gap-3">
-                    <Folder className="w-6 h-6 text-holo-pink" />
-                    <div className="flex-1">
-                      <Link to={`/projects/${project.id}`}>
-                        <h3 className="text-lg font-inter text-holo-blue animate-text-glow">{project.title || 'Untitled Project'}</h3>
-                      </Link>
-                      <p className="text-holo-gray text-sm">{project.description || 'No description'}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Users className="w-4 h-4 text-holo-pink" />
-                        <span className="text-holo-gray text-sm">{project.members?.length || 0} members</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleAutoAssign(project.id)}
-                      className="btn-primary rounded-full flex items-center animate-glow"
-                    >
-                      Auto-Assign Tasks
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="leaderboard card p-6 glassmorphic">
-          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-            <BarChart className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Leaderboard
-          </h2>
-          {leaderboard.length === 0 ? (
-            <p className="text-holo-gray">No leaderboard data available.</p>
-          ) : (
-            <ul className="space-y-2">
-              {leaderboard.map((entry, index) => (
-                <li key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-holo-bg-dark transition-all">
-                  <span className="text-holo-blue font-semibold">{index + 1}.</span>
-                  <span className="text-primary">{entry.email || 'Unknown'}</span>
-                  <span className="text-holo-gray ml-auto">{entry.points || 0} points</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Projects;
+   export default Projects;
