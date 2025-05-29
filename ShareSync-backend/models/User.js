@@ -27,63 +27,66 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  profilePicture: {
+    type: String,
+    default: 'https://via.placeholder.com/150',
+  },
   projects: [
     {
-      id: String,
-      title: String,
-      description: String,
-      status: String,
+      id: { type: String, required: true },
+      title: { type: String, required: true },
+      description: { type: String, default: 'No description' },
+      status: { type: String, default: 'Not Started' },
       posts: [
         {
-          id: String,
-          user: String,
-          profilePicture: String,
-          content: String,
-          timestamp: String,
-          likes: Number,
+          id: { type: String, required: true },
+          user: { type: String, required: true },
+          profilePicture: { type: String, default: 'https://via.placeholder.com/150' },
+          content: { type: String, required: true },
+          timestamp: { type: String, required: true },
+          likes: { type: Number, default: 0 },
         },
       ],
       comments: [
         {
-          id: String,
-          postId: String,
-          user: String,
-          content: String,
-          timestamp: String,
+          id: { type: String, required: true },
+          postId: { type: String, required: true },
+          user: { type: String, required: true },
+          content: { type: String, required: true },
+          timestamp: { type: String, required: true },
         },
       ],
       activityLog: [
         {
-          message: String,
-          timestamp: String,
+          message: { type: String, required: true },
+          timestamp: { type: String, required: true },
         },
       ],
       members: [
         {
-          email: String,
-          role: String,
-          profilePicture: String,
+          email: { type: String, required: true },
+          role: { type: String, default: 'Member' },
+          profilePicture: { type: String, default: 'https://via.placeholder.com/150' },
         },
       ],
       tasks: [
         {
-          title: String,
-          description: String,
-          assignedTo: String,
-          status: String,
+          title: { type: String, required: true },
+          description: { type: String, default: 'No description' },
+          assignedTo: { type: String, default: 'Unassigned' },
+          status: { type: String, default: 'Not Started' },
         },
       ],
-      tasksCompleted: Number,
-      totalTasks: Number,
+      tasksCompleted: { type: Number, default: 0 },
+      totalTasks: { type: Number, default: 0 },
     },
   ],
   notifications: [
     {
-      message: String,
-      timestamp: String,
+      message: { type: String, required: true },
+      timestamp: { type: String, required: true },
     },
   ],
-  profilePicture: String,
 });
 
 module.exports = mongoose.model('User', userSchema);

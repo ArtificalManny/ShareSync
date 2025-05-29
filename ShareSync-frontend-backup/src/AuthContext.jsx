@@ -83,22 +83,16 @@ const AuthProvider = ({ children }) => {
     console.log('AuthContext - User logged out');
   };
 
-  const joinProject = (project) => {
-    console.log('AuthContext - Joining project:', project.id);
-    const updatedUser = {
-      ...user,
-      projects: [...(user?.projects || []), project],
-    };
-    setUser(updatedUser);
-  };
-
-  const addProject = (project) => {
-    console.log('AuthContext - Adding project:', project.id);
-    const updatedUser = {
-      ...user,
-      projects: [...(user?.projects || []), project],
-    };
-    setUser(updatedUser);
+  const addProject = async (project) => {
+    try {
+      console.log('AuthContext - Adding project:', project.id);
+      const response = await axios.post('http://localhost:3000/api/projects', project);
+      setUser({ ...user, projects: [...(user?.projects || []), response.data] });
+      console.log('AuthContext - Project added:', response.data);
+    } catch (err) {
+      console.error('AuthContext - Failed to add project:', err.message);
+      throw err;
+    }
   };
 
   const updateProject = async (projectId, updates) => {
@@ -106,13 +100,29 @@ const AuthProvider = ({ children }) => {
       console.log('AuthContext - Updating project:', projectId);
       const response = await axios.put(`http://localhost:3000/api/projects/${projectId}`, updates);
       const updatedProjects = (user?.projects || []).map((proj) =>
-        proj.id === projectId ? { ...proj, ...updates } : proj
+        proj.id === projectId ? { ...proj, ...response.data } : proj
       );
       setUser({ ...user, projects: updatedProjects });
       console.log('AuthContext - Project updated:', projectId);
       return response.data;
     } catch (err) {
       console.error('AuthContext - Failed to update project:', err.message);
+      throw err;
+    }
+  };
+
+  const inviteToProject = async (projectId, email) => {
+    try {
+      console.log('AuthContext - Sending invite for project:', projectId, 'to:', email);
+      const response = await axios.post(`http://localhost:3000/api/projects/${projectId}/invite`, { email });
+      const updatedProjects = (user?.projects || []).map((proj) =>
+        proj.id === projectId ? { ...proj, members: [...proj.members, { email, role: 'Member', profilePicture: 'https://via.placeholder.com/150' }] } : proj
+      );
+      setUser({ ...user, projects: updatedProjects });
+      console.log('AuthContext - Invite sent:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('AuthContext - Failed to send invite:', err.message);
       throw err;
     }
   };
@@ -174,9 +184,9 @@ const AuthProvider = ({ children }) => {
         socket,
         login,
         logout,
-        joinProject,
         addProject,
         updateProject,
+        inviteToProject,
         updateUserProfile,
         isLoading,
         setIntendedRoute,

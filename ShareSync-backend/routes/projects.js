@@ -1,62 +1,128 @@
 const express = require('express');
 const router = express.Router();
-const Project = require('../models/Project');
 const User = require('../models/User');
+const auth = require('../middleware/auth');
 
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Access denied' });
-
+// Create a new project
+router.post('/', auth, async (req, res) => {
   try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = verified;
-    next();
-  } catch (err) {
-    res.status(400).json({ message: 'Invalid token' });
-  }
-};
-
-router.post('/', authenticateToken, async (req, res) => {
-  try {
-    const projectData = req.body;
-    const project = new Project({
-      ...projectData,
-      id: `proj-${Date.now()}`,
-    });
-    await project.save();
-
+    console.log('Projects Route - Creating new project for user:', req.user.id);
+    const { title, description } = req.body;
     const user = await User.findById(req.user.id);
-    user.projects.push(project._id);
+
+    if (!user) {
+      console.log('Projects Route - User not found:', req.user.id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const newProject = {
+      id: `proj-${user.projects.length + 1}`,
+      title: title || `Project ${user.projects.length + 1}`,
+      description: description || 'A new project',
+      status: 'Not Started',
+      posts: [],
+      comments: [],
+      activityLog: [{ message: `${user.email} created the project`, timestamp: new Date().toISOString() }],
+      members: [{ email: user.email, role: 'Owner', profilePicture: user.profilePicture }],
+      tasks: [],
+      tasksCompleted: 0,
+      totalTasks: 0,
+    };
+
+    user.projects.push(newProject);
     await user.save();
-
-    res.status(201).json(project);
+    console.log('Projects Route - Project created:', newProject.id);
+    res.status(201).json(newProject);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error('Projects Route - Error creating project:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-router.get('/:id', authenticateToken, async (req, res) => {
+// Update a project
+router.put('/:projectId', auth, async (req, res) => {
   try {
-    const project = await Project.findOne({ id: req.params.id });
-    if (!project) return res.status(404).json({ message: 'Project not found' });
-    res.json(project);
+    console.log('Projects Route - Updating project:', req.params.projectId);
+    const { projectId } = req.params;
+    const updates = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      console.log('Projects Route - User not found:', req.user.id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const projectIndex = user.projects.findIndex((p) => p.id === projectId);
+    if (projectIndex === -1) {
+      console.log('Projects Route - Project not found:', projectId);
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    user.projects[projectIndex] = { ...user.projects[projectIndex], ...updates };
+    await user.save();
+    console.log('Projects Route - Project updated:', projectId);
+    res.json(user.projects[projectIndex]);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error('Projects Route - Error updating project:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-router.put('/:id', authenticateToken, async (req, res) => {
+// Send an invite to join a project
+router.post('/:projectId/invite', auth, async (req, res) => {
   try {
-    const project = await Project.findOneAndUpdate(
-      { id: req.params.id },
-      req.body,
-      { new: true }
-    );
-    if (!project) return res.status(404).json({ message: 'Project not found' });
-    res.json(project);
+    console.log('Projects Route - Sending invite for project:', req.params.projectId);
+    const { projectId } = req.params;
+    const { email } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      console.log('Projects Route - User not found:', req.user.id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const projectIndex = user.projects.findIndex((p) => p.id === projectId);
+    if (projectIndex === -1) {
+      console.log('Projects Route - Project not found:', projectId);
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const project = user.projects[projectIndex];
+    const isOwner = project.members.some((m) => m.email === user.email && m.role === 'Owner');
+    if (!isOwner) {
+      console.log('Projects Route - User is not an owner:', user.email);
+      return res.status(403).json({ message: 'Only project owners can send invites' });
+    }
+
+    const invitedUser = await User.findOne({ email });
+    if (!invitedUser) {
+      console.log('Projects Route - Invited user not found:', email);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (project.members.some((m) => m.email === email)) {
+      console.log('Projects Route - User already a member:', email);
+      return res.status(400).json({ message: 'User is already a member of this project' });
+    }
+
+    project.members.push({
+      email: invitedUser.email,
+      role: 'Member',
+      profilePicture: invitedUser.profilePicture,
+    });
+
+    invitedUser.notifications.push({
+      message: `You have been invited to join project: ${project.title}`,
+      timestamp: new Date().toISOString(),
+    });
+
+    await user.save();
+    await invitedUser.save();
+    console.log('Projects Route - Invite sent to:', email);
+    res.json({ message: 'Invite sent successfully' });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error('Projects Route - Error sending invite:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

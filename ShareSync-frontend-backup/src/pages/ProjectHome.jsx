@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, List, MessageSquare, Users, Bell, AlertCircle, ThumbsUp, Share2, AlertTriangle, Headset, Mic, UserPlus, Smile, TrendingUp } from 'lucide-react';
+import { Folder, List, MessageSquare, Users, Bell, AlertCircle, ThumbsUp, Share2, AlertTriangle, Headset, Mic, UserPlus, Smile, TrendingUp, Edit2, Send } from 'lucide-react';
 import { Scatter } from 'react-chartjs-2';
 import { Chart as ChartJS, ScatterController, PointElement, LinearScale, Title, Tooltip, Legend } from 'chart.js';
 import './ProjectHome.css';
@@ -12,7 +12,7 @@ ChartJS.register(ScatterController, PointElement, LinearScale, Title, Tooltip, L
 const ProjectHome = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, socket, isLoading: authLoading, setIntendedRoute, updateProject } = useContext(AuthContext);
+  const { user, isAuthenticated, socket, isLoading: authLoading, setIntendedRoute, updateProject, inviteToProject } = useContext(AuthContext);
   const [project, setProject] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -30,6 +30,9 @@ const ProjectHome = () => {
   const [suggestedCollaborators, setSuggestedCollaborators] = useState([]);
   const [teamMorale, setTeamMorale] = useState('Neutral');
   const [prioritizedTasks, setPrioritizedTasks] = useState([]);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [projectTitle, setProjectTitle] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
 
   const fetchProject = useCallback(async () => {
     try {
@@ -70,6 +73,7 @@ const ProjectHome = () => {
         totalTasks: proj.totalTasks || 0,
       };
       setProject(initializedProject);
+      setProjectTitle(initializedProject.title);
 
       const detectedRisks = [];
       if (initializedProject.tasksCompleted / (initializedProject.totalTasks || 1) < 0.3 && initializedProject.status === 'In Progress') {
@@ -87,7 +91,7 @@ const ProjectHome = () => {
       ];
       setSuggestedCollaborators(mockCollaborators);
 
-      // Mock AI-powered task prioritization
+      // AI-powered task prioritization
       const prioritized = initializedProject.tasks.map((task, index) => {
         const urgency = task.description?.toLowerCase().includes('due') ? 0.8 : 0.5;
         const workload = (index % 2) + 1; // Mock workload score
@@ -156,7 +160,7 @@ const ProjectHome = () => {
     setActiveTab(tab);
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!newPost || !project) return;
     const post = {
       id: `post-${project.posts.length + 1}`,
@@ -166,15 +170,21 @@ const ProjectHome = () => {
       timestamp: new Date().toISOString(),
       likes: 0,
     };
-    setProject((prev) => ({
-      ...prev,
-      posts: [...prev.posts, post],
-    }));
-    setNewPost('');
-    socket.emit('post', { projectId: id, ...post });
+    try {
+      const updatedPosts = [...project.posts, post];
+      await updateProject(project.id, { posts: updatedPosts });
+      setProject((prev) => ({
+        ...prev,
+        posts: updatedPosts,
+      }));
+      setNewPost('');
+      socket.emit('post', { projectId: id, ...post });
+    } catch (err) {
+      setError('Failed to create post: ' + err.message);
+    }
   };
 
-  const handleComment = (postId) => {
+  const handleComment = async (postId) => {
     if (!newComment) return;
     const comment = {
       id: `comment-${project.comments.length + 1}`,
@@ -183,20 +193,32 @@ const ProjectHome = () => {
       content: newComment,
       timestamp: new Date().toISOString(),
     };
-    setProject((prev) => ({
-      ...prev,
-      comments: [...prev.comments, comment],
-    }));
-    setNewComment('');
+    try {
+      const updatedComments = [...project.comments, comment];
+      await updateProject(project.id, { comments: updatedComments });
+      setProject((prev) => ({
+        ...prev,
+        comments: updatedComments,
+      }));
+      setNewComment('');
+    } catch (err) {
+      setError('Failed to add comment: ' + err.message);
+    }
   };
 
-  const handleLike = (postId) => {
-    setProject((prev) => ({
-      ...prev,
-      posts: prev.posts.map((post) =>
+  const handleLike = async (postId) => {
+    try {
+      const updatedPosts = project.posts.map((post) =>
         post.id === postId ? { ...post, likes: (post.likes || 0) + 1 } : post
-      ),
-    }));
+      );
+      await updateProject(project.id, { posts: updatedPosts });
+      setProject((prev) => ({
+        ...prev,
+        posts: updatedPosts,
+      }));
+    } catch (err) {
+      setError('Failed to like post: ' + err.message);
+    }
   };
 
   const sendMessage = () => {
@@ -353,15 +375,38 @@ const ProjectHome = () => {
     console.log('ProjectHome - Gesture detected:', direction, 'New tab:', tabs[newIndex]);
   };
 
+  const handleEditTitle = async () => {
+    if (!projectTitle || projectTitle === project.title) {
+      setIsEditingTitle(false);
+      return;
+    }
+    try {
+      await updateProject(project.id, { title: projectTitle });
+      setProject((prev) => ({ ...prev, title: projectTitle }));
+      setIsEditingTitle(false);
+      alert('Project title updated successfully!');
+    } catch (err) {
+      setError('Failed to update project title: ' + err.message);
+    }
+  };
+
+  const handleSendInvite = async () => {
+    if (!inviteEmail) return;
+    try {
+      await inviteToProject(project.id, inviteEmail);
+      setInviteEmail('');
+      alert(`Invite sent to ${inviteEmail}!`);
+      fetchProject(); // Refresh project data to include new member
+    } catch (err) {
+      setError('Failed to send invite: ' + err.message);
+    }
+  };
+
   const inviteCollaborator = async (collaboratorEmail) => {
     try {
-      const updatedMembers = [...(project.members || []), { email: collaboratorEmail, role: 'Member', profilePicture: 'https://via.placeholder.com/150' }];
-      await updateProject(project.id, { members: updatedMembers });
-      setProject((prev) => ({
-        ...prev,
-        members: updatedMembers,
-      }));
+      await inviteToProject(project.id, collaboratorEmail);
       alert(`Invited ${collaboratorEmail} to the project!`);
+      fetchProject(); // Refresh project data to include new member
     } catch (err) {
       alert('Failed to invite collaborator: ' + err.message);
     }
@@ -381,6 +426,8 @@ const ProjectHome = () => {
       </div>
     );
   }
+
+  const isOwner = project.members.some((m) => m.email === user.email && m.role === 'Owner');
 
   const chartData = {
     datasets: [
@@ -423,7 +470,43 @@ const ProjectHome = () => {
   return (
     <div className="project-home-container">
       <div className="project-header py-8 px-6 rounded-b-3xl text-center">
-        <h1 className="text-4xl font-inter text-holo-blue mb-4 animate-text-glow">{project.title || 'Untitled Project'}</h1>
+        {isEditingTitle ? (
+          <div className="flex items-center justify-center gap-2">
+            <input
+              type="text"
+              value={projectTitle}
+              onChange={(e) => setProjectTitle(e.target.value)}
+              className="input-field text-4xl font-inter text-holo-blue mb-4 rounded-full"
+            />
+            <button
+              onClick={handleEditTitle}
+              className="btn-primary rounded-full animate-glow"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => {
+                setIsEditingTitle(false);
+                setProjectTitle(project.title);
+              }}
+              className="btn-primary rounded-full bg-holo-bg-light"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <h1 className="text-4xl font-inter text-holo-blue mb-4 animate-text-glow flex items-center justify-center gap-2">
+            {project.title || 'Untitled Project'}
+            {isOwner && (
+              <button
+                onClick={() => setIsEditingTitle(true)}
+                className="text-holo-gray hover:text-holo-blue"
+              >
+                <Edit2 className="w-5 h-5" />
+              </button>
+            )}
+          </h1>
+        )}
         <p className="text-holo-gray mb-4">{project.description || 'No description'}</p>
         <div className="flex justify-center items-center gap-3 mb-4">
           <Users className="w-5 h-5 text-holo-pink animate-pulse" />
@@ -715,7 +798,9 @@ const ProjectHome = () => {
                       placeholder="Type a message..."
                       className="input-field w-full rounded-full"
                     />
-                    <button onClick={sendMessage} className="btn-primary rounded-full">Send</button>
+                    <button onClick={sendMessage} className="btn-primary rounded-full flex items-center">
+                      <Send className="w-5 h-5 mr-2" /> Send
+                    </button>
                   </div>
                 </div>
               </div>
@@ -744,6 +829,28 @@ const ProjectHome = () => {
                   </div>
                 ))}
               </div>
+              {isOwner && (
+                <div className="invite-section mt-6">
+                  <h3 className="text-lg font-inter text-holo-blue mb-4 flex items-center">
+                    <UserPlus className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Invite Members
+                  </h3>
+                  <div className="flex items-center gap-2 mb-4">
+                    <input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder="Enter email to invite"
+                      className="input-field w-full rounded-full"
+                    />
+                    <button
+                      onClick={handleSendInvite}
+                      className="btn-primary rounded-full flex items-center animate-glow"
+                    >
+                      <Send className="w-5 h-5 mr-2" /> Send Invite
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="suggested-collaborators mt-6">
                 <h3 className="text-lg font-inter text-holo-blue mb-4 flex items-center">
                   <UserPlus className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Suggested Collaborators
@@ -761,12 +868,14 @@ const ProjectHome = () => {
                             <p className="text-holo-gray text-sm">Skills: {collaborator.skills.join(', ')}</p>
                             <p className="text-holo-gray text-sm">Match Score: {(collaborator.matchScore * 100).toFixed(0)}%</p>
                           </div>
-                          <button
-                            onClick={() => inviteCollaborator(collaborator.email)}
-                            className="btn-primary rounded-full flex items-center animate-glow"
-                          >
-                            Invite
-                          </button>
+                          {isOwner && (
+                            <button
+                              onClick={() => inviteCollaborator(collaborator.email)}
+                              className="btn-primary rounded-full flex items-center animate-glow"
+                            >
+                              Invite
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}

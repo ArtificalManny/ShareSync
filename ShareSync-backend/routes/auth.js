@@ -49,6 +49,7 @@ router.post('/register', async (req, res) => {
         lastName: user.lastName,
         age: user.age,
         projects: user.projects,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (err) {
@@ -92,6 +93,7 @@ router.post('/login', async (req, res) => {
         lastName: user.lastName,
         age: user.age,
         projects: user.projects,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (err) {
@@ -104,7 +106,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get user data
+// Get current user data
 router.get('/me', auth, async (req, res) => {
   try {
     console.log('Auth Route - Fetching user data for ID:', req.user.id);
@@ -119,6 +121,23 @@ router.get('/me', auth, async (req, res) => {
     console.error('Auth Route - Error fetching user data:', err.message);
     // Mock response if MongoDB is down
     res.status(200).json(mockUser);
+  }
+});
+
+// Get user profile by username
+router.get('/profile/:username', auth, async (req, res) => {
+  try {
+    console.log('Auth Route - Fetching user profile for username:', req.params.username);
+    const user = await User.findOne({ username: req.params.username }).select('-password');
+    if (!user) {
+      console.log('Auth Route - User not found for username:', req.params.username);
+      return res.status(404).json({ message: 'User not found' });
+    }
+    console.log('Auth Route - User profile fetched:', user.email);
+    res.json(user);
+  } catch (err) {
+    console.error('Auth Route - Error fetching user profile:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
