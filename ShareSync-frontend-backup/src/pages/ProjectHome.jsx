@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, List, MessageSquare, Users, Bell, AlertCircle, ThumbsUp, Share2, AlertTriangle, Vr, Mic, UserPlus, Smile, TrendingUp } from 'lucide-react';
+import { Folder, List, MessageSquare, Users, Bell, AlertCircle, ThumbsUp, Share2, AlertTriangle, Headset, Mic, UserPlus, Smile, TrendingUp } from 'lucide-react';
 import { Scatter } from 'react-chartjs-2';
 import { Chart as ChartJS, ScatterController, PointElement, LinearScale, Title, Tooltip, Legend } from 'chart.js';
 import './ProjectHome.css';
@@ -453,7 +453,7 @@ const ProjectHome = () => {
             onClick={enterVRMode}
             className="btn-primary rounded-full flex items-center animate-glow"
           >
-            <Vr className="w-5 h-5 mr-2" /> Enter VR Mode
+            <Headset className="w-5 h-5 mr-2" /> Enter VR Mode
           </button>
           <button
             onClick={handleVoiceCommand}
