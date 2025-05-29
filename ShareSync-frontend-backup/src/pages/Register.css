@@ -1,182 +1,55 @@
-/* Base styles for dark theme */
-:root[data-theme="dark"] {
-  --background: linear-gradient(135deg, #1A1F36, #2E3555);
-  --card-bg: rgba(46, 53, 85, 0.1);
-  --text-primary: #A1B5FF;
-  --text-secondary: #7BFFAF;
-  --text-accent: #FF6F91;
-  --shadow-dark: rgba(0, 0, 0, 0.2);
-  --shadow-light: rgba(255, 255, 255, 0.05);
-}
-
-/* Light theme styles */
-:root[data-theme="light"] {
-  --background: linear-gradient(135deg, #E6F0FA, #F5F7FA);
-  --card-bg: rgba(255, 255, 255, 0.7);
-  --text-primary: #1A1F36;
-  --text-secondary: #2E3555;
-  --text-accent: #FF6F91;
-  --shadow-dark: rgba(0, 0, 0, 0.1);
-  --shadow-light: rgba(255, 255, 255, 0.3);
-}
-
 .register-container {
-  padding: 0;
-  min-height: 100vh;
-  background: var(--background);
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.register-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: url('https://www.transparenttextures.com/patterns/stardust.png');
-  opacity: 0.1;
-  z-index: 0;
-  animation: particle-float 20s infinite linear;
-}
-
-.register-container::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: url('https://www.transparenttextures.com/patterns/stardust.png');
-  opacity: 0.05;
-  z-index: 0;
-  animation: particle-float 30s infinite linear reverse;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e1e2f 0%, #2a2a4a 100%);
+  pointer-events: auto; /* Ensure container is interactive */
 }
 
 .register-card {
-  max-width: 400px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   width: 100%;
-  z-index: 1;
-}
-
-.btn-primary {
-  background: linear-gradient(45deg, #A1B5FF, #FF6F91, #7BFFAF);
-  color: var(--text-primary);
-  padding: 8px 16px;
-  border-radius: 9999px;
-  font-weight: 500;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.5s ease;
-  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px) translateZ(5px);
-  box-shadow: 8px 8px 15px var(--shadow-dark), -8px -8px 15px var(--shadow-light);
+  max-width: 400px;
+  pointer-events: auto; /* Ensure card is interactive */
+  z-index: 2; /* Ensure card is above any potential overlays */
 }
 
 .input-field {
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
-  background: var(--card-bg);
-  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
-  color: var(--text-primary);
-  padding: 8px 12px;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  border-radius: 9999px;
+  padding: 0.75rem 1rem;
+  color: #e0e0ff;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s ease;
+  pointer-events: auto !important; /* Ensure inputs are clickable */
+  z-index: 3; /* Ensure inputs are above other elements */
 }
 
 .input-field:focus {
-  box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
-  transform: scale(1.02);
-  outline: none;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 10px rgba(161, 181, 255, 0.5);
 }
 
-.input-field.rounded-full {
+.btn-primary {
+  background: linear-gradient(90deg, #a1b5ff 0%, #ff6f91 100%);
+  color: #1e1e2f;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
   border-radius: 9999px;
+  transition: all 0.3s ease;
+  pointer-events: auto !important; /* Ensure buttons are clickable */
+  z-index: 3; /* Ensure buttons are above other elements */
 }
 
-.card {
-  background: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  border: none;
-  transform: translateZ(0);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  position: relative;
-}
-
-.card:hover {
-  transform: translateZ(15px);
-  box-shadow: 0 8px 20px rgba(123, 255, 175, 0.3);
-}
-
-.card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at 30% 30%, rgba(161, 181, 255, 0.2), transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.card:hover::after {
-  opacity: 1;
-}
-
-/* Glassmorphism effect */
-.glassmorphic {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px var(--shadow-dark), inset 0 0 10px var(--shadow-light);
-  transform: translateZ(0) rotateX(5deg) rotateY(5deg);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
-}
-
-.glassmorphic:hover {
-  transform: translateZ(20px) rotateX(0deg) rotateY(0deg);
-  box-shadow: 0 12px 40px rgba(123, 255, 175, 0.4), inset 0 0 15px var(--shadow-light);
-  background: rgba(255, 255, 255, 0.1);
-}
-
-@keyframes glow {
-  0% { box-shadow: 0 0 5px rgba(161, 181, 255, 0.5); }
-  50% { box-shadow: 0 0 15px rgba(255, 111, 145, 0.8); }
-  100% { box-shadow: 0 0 5px rgba(161, 181, 255, 0.5); }
-}
-
-.animate-glow {
-  animation: glow 2s infinite;
-}
-
-@keyframes text-glow {
-  0% { text-shadow: 0 0 2px rgba(161, 181, 255, 0.5); }
-  50% { text-shadow: 0 0 8px rgba(255, 111, 145, 0.8); }
-  100% { text-shadow: 0 0 2px rgba(161, 181, 255, 0.5); }
-}
-
-.animate-text-glow {
-  animation: text-glow 2s infinite;
-}
-
-@keyframes particle-float {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(100px, 100px); }
+.btn-primary:hover {
+  background: linear-gradient(90deg, #ff6f91 0%, #a1b5ff 100%);
+  box-shadow: 0 0 15px rgba(161, 181, 255, 0.7);
 }
