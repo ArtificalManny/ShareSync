@@ -36,7 +36,7 @@ const AuthProvider = ({ children }) => {
         setUser(userData);
         setIsAuthenticated(true);
         setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
-        setAuthError(''); // Clear any previous errors
+        setAuthError('');
       } catch (err) {
         console.error('AuthContext - Failed to fetch user data:', err.message);
         setAuthError('Failed to authenticate user: ' + (err.message || 'Unknown error'));
