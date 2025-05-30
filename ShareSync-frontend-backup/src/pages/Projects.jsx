@@ -40,24 +40,20 @@ import React, { useState, useEffect, useContext } from 'react';
        }
      }, [isAuthenticated, user, isLoading, navigate, setIntendedRoute]);
 
-     const handleCreateProject = () => {
+     const handleCreateProject = async () => {
        const newProject = {
-         id: `proj-${projects.length + 1}`,
          title: `Project ${projects.length + 1}`,
          description: 'A new project',
-         status: 'Not Started',
-         posts: [],
-         comments: [],
-         activityLog: [],
-         members: [{ email: user.email, role: 'Owner', profilePicture: user.profilePicture }],
-         tasks: [],
-         tasksCompleted: 0,
-         totalTasks: 0,
        };
 
-       addProject(newProject);
-       setProjects([...projects, newProject]);
-       navigate(`/projects/${newProject.id}`);
+       try {
+         const createdProject = await addProject(newProject);
+         setProjects([...projects, createdProject]);
+         navigate(`/projects/${createdProject.id}`);
+       } catch (err) {
+         console.error('Projects - Failed to create project:', err.message);
+         setError('Failed to create project: ' + err.message);
+       }
      };
 
      if (isLoading) {
