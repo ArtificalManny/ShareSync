@@ -61,6 +61,22 @@ const express = require('express');
 
        user.projects[projectIndex] = { ...user.projects[projectIndex], ...updates };
        await user.save();
+
+       // Update the project for all members
+       const project = user.projects[projectIndex];
+       for (const member of project.members) {
+         if (member.email !== user.email) {
+           const memberUser = await User.findOne({ email: member.email });
+           if (memberUser) {
+             const memberProjectIndex = memberUser.projects.findIndex((p) => p.id === projectId);
+             if (memberProjectIndex !== -1) {
+               memberUser.projects[memberProjectIndex] = { ...memberUser.projects[memberProjectIndex], ...updates };
+               await memberUser.save();
+             }
+           }
+         }
+       }
+
        console.log('Projects Route - Project updated:', projectId);
        res.json(user.projects[projectIndex]);
      } catch (err) {
@@ -106,11 +122,16 @@ const express = require('express');
          return res.status(400).json({ message: 'User is already a member of this project' });
        }
 
+       // Add the user to the project's members
        project.members.push({
          email: invitedUser.email,
          role: 'Member',
          profilePicture: invitedUser.profilePicture,
        });
+
+       // Add the project to the invited user's projects array
+       const projectCopy = { ...project, members: project.members };
+       invitedUser.projects.push(projectCopy);
 
        invitedUser.notifications.push({
          message: `You have been invited to join project: ${project.title}`,
