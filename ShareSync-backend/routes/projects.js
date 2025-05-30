@@ -8,8 +8,13 @@ const express = require('express');
      try {
        console.log('Projects Route - Creating new project for user:', req.user.id);
        const { title, description } = req.body;
-       const user = await User.findById(req.user.id);
 
+       if (!title) {
+         console.log('Projects Route - Title is required');
+         return res.status(400).json({ message: 'Project title is required' });
+       }
+
+       const user = await User.findById(req.user.id);
        if (!user) {
          console.log('Projects Route - User not found:', req.user.id);
          return res.status(404).json({ message: 'User not found' });
@@ -17,7 +22,7 @@ const express = require('express');
 
        const newProject = {
          id: `proj-${user.projects.length + 1}`,
-         title: title || `Project ${user.projects.length + 1}`,
+         title: title,
          description: description || 'A new project',
          status: 'Not Started',
          posts: [],
@@ -62,7 +67,6 @@ const express = require('express');
        user.projects[projectIndex] = { ...user.projects[projectIndex], ...updates };
        await user.save();
 
-       // Update the project for all members
        const project = user.projects[projectIndex];
        for (const member of project.members) {
          if (member.email !== user.email) {
@@ -122,14 +126,12 @@ const express = require('express');
          return res.status(400).json({ message: 'User is already a member of this project' });
        }
 
-       // Add the user to the project's members
        project.members.push({
          email: invitedUser.email,
          role: 'Member',
          profilePicture: invitedUser.profilePicture,
        });
 
-       // Add the project to the invited user's projects array
        const projectCopy = { ...project, members: project.members };
        invitedUser.projects.push(projectCopy);
 

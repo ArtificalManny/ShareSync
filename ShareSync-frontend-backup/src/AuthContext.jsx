@@ -30,7 +30,7 @@ import React, { createContext, useState, useEffect } from 'react';
 
          try {
            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-           console.log('AuthContext - Fetching user data with token:', token);
+           console.log('AuthContext - Setting Authorization header with token:', token);
            const userData = await authService.getCurrentUser();
            console.log('AuthContext - User data fetched successfully:', userData);
            setUser(userData);
@@ -38,10 +38,10 @@ import React, { createContext, useState, useEffect } from 'react';
            setGlobalMetrics({ notifications: userData.notifications?.length || 0 });
            setAuthError('');
          } catch (err) {
-           console.error('AuthContext - Failed to fetch user data:', err.message);
+           console.error('AuthContext - Failed to fetch user data:', err.message, err.response?.data);
            setAuthError('Failed to authenticate user: ' + (err.message || 'Unknown error'));
-           // Only clear token if the error indicates an invalid token
            if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+             console.log('AuthContext - Invalid token, clearing local storage');
              localStorage.removeItem('token');
              delete axios.defaults.headers.common['Authorization'];
            }
@@ -91,7 +91,7 @@ import React, { createContext, useState, useEffect } from 'react';
          console.log('AuthContext - Adding project:', project);
          const response = await axios.post('http://localhost:3000/api/projects', project);
          const newProject = response.data;
-         const updatedUser = await authService.getCurrentUser(); // Refresh user data
+         const updatedUser = await authService.getCurrentUser();
          setUser(updatedUser);
          console.log('AuthContext - Project added:', newProject);
          return newProject;
@@ -105,7 +105,7 @@ import React, { createContext, useState, useEffect } from 'react';
        try {
          console.log('AuthContext - Updating project:', projectId);
          const response = await axios.put(`http://localhost:3000/api/projects/${projectId}`, updates);
-         const updatedUser = await authService.getCurrentUser(); // Refresh user data
+         const updatedUser = await authService.getCurrentUser();
          setUser(updatedUser);
          console.log('AuthContext - Project updated:', projectId);
          return response.data;
@@ -119,7 +119,7 @@ import React, { createContext, useState, useEffect } from 'react';
        try {
          console.log('AuthContext - Sending invite for project:', projectId, 'to:', email);
          const response = await axios.post(`http://localhost:3000/api/projects/${projectId}/invite`, { email });
-         const updatedUser = await authService.getCurrentUser(); // Refresh user data
+         const updatedUser = await authService.getCurrentUser();
          setUser(updatedUser);
          console.log('AuthContext - Invite sent:', response.data);
          return response.data;

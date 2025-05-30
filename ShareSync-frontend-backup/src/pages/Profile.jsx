@@ -26,14 +26,14 @@ import React, { useState, useEffect, useContext } from 'react';
 
          if (!isAuthenticated) {
            console.log('Profile - User not authenticated, redirecting to login');
-           navigate('/login', { replace: true });
+           navigate('/login', { replace: true, state: { from: `/profile/${username}` } });
            return;
          }
 
          if (!currentUser || !currentUser.email) {
            console.log('Profile - Current user data not available');
            setError('User data not available. Please log in again.');
-           navigate('/login', { replace: true });
+           navigate('/login', { replace: true, state: { from: `/profile/${username}` } });
            return;
          }
 
@@ -53,9 +53,9 @@ import React, { useState, useEffect, useContext } from 'react';
            console.error('Profile - Failed to fetch profile:', err.message, err.response?.data);
            if (err.response && err.response.status === 404) {
              setError('Profile not found. Please check the username or try again later.');
-           } else if (err.response && err.response.status === 401) {
+           } else if (err.response && (err.response.status === 401 || err.response.status === 403)) {
              setError('Authentication failed. Please log in again.');
-             navigate('/login', { replace: true });
+             navigate('/login', { replace: true, state: { from: `/profile/${username}` } });
            } else {
              setError('Failed to load profile: ' + (err.message || 'An unexpected error occurred.'));
            }
