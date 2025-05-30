@@ -90,7 +90,8 @@ const Projects = () => {
       navigate(`/projects/${createdProject.id}`, { replace: true });
     } catch (err) {
       console.error('Projects - Failed to create project:', err.message, err.response?.data);
-      setError('Failed to create project: ' + (err.message || 'An unexpected error occurred.'));
+      const errorMessage = err.response?.data?.message || err.message || 'An unexpected error occurred.';
+      setError(`Failed to create project: ${errorMessage}`);
     } finally {
       setIsCreating(false);
     }
