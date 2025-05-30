@@ -38,7 +38,7 @@ const express = require('express');
        console.log('Auth Route - User registered:', user);
 
        const payload = { user: { id: user.id } };
-       const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+       const token = jwt.sign(payload, process.env.JWT_SECRET); // No expiration
 
        res.json({
          token,
@@ -81,7 +81,7 @@ const express = require('express');
        }
 
        const payload = { user: { id: user.id } };
-       const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+       const token = jwt.sign(payload, process.env.JWT_SECRET); // No expiration
 
        console.log('Auth Route - User logged in:', user.email);
        res.json({
