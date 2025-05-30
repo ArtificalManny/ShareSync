@@ -45,6 +45,7 @@ const Projects = () => {
     console.log('Projects - Fetching user projects:', user.projects);
     if (user.projects && Array.isArray(user.projects)) {
       setProjects(user.projects);
+      console.log('Projects - Projects state updated:', user.projects.map(p => p.id));
     } else {
       console.log('Projects - No projects found for user');
       setProjects([]);
@@ -83,7 +84,9 @@ const Projects = () => {
       console.log('Projects - Creating new project:', newProject);
       const createdProject = await addProject(newProject);
       console.log('Projects - Project created successfully:', createdProject);
-      setProjects([...projects, createdProject]);
+      const updatedProjects = [...projects, createdProject];
+      setProjects(updatedProjects);
+      console.log('Projects - Updated projects state after creation:', updatedProjects.map(p => p.id));
       setShowCreateForm(false);
       setNewProjectTitle('');
       setNewProjectDescription('');
