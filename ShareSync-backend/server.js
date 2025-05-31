@@ -30,10 +30,12 @@ mongoose.connect('mongodb://localhost:27017/sharesync', {
 // Routes
 const authRoutes = require('./routes/auth');
 const projectsRoutes = require('./routes/projects');
+const notificationsRoutes = require('./routes/notifications');
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
-// Socket.io for real-time chat
+// WebSocket for real-time notifications
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
@@ -44,8 +46,16 @@ io.on('connection', (socket) => {
 
   socket.on('message', (data) => {
     const { projectId, text, user } = data;
-    io.to(projectId).emit('message', { user, text, timestamp: new Date().toISOString() });
+    const message = { user, text, timestamp: new Date().toISOString() };
+    io.to(projectId).emit('message', message);
+    io.to(projectId).emit('notification', { message: `${user} sent a new message: ${text}`, timestamp: message.timestamp });
     console.log(`Message sent in project ${projectId}: ${text} by ${user}`);
+  });
+
+  socket.on('project_activity', (data) => {
+    const { projectId, message, user } = data;
+    io.to(projectId).emit('notification', { message: `${user} ${message}`, timestamp: new Date().toISOString() });
+    console.log(`Activity in project ${projectId}: ${message} by ${user}`);
   });
 
   socket.on('disconnect', () => {

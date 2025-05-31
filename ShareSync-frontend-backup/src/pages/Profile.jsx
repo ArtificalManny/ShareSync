@@ -21,7 +21,9 @@ const Profile = () => {
     bannerPicture: '',
   });
   const [retryCount, setRetryCount] = useState(0);
+  const [hasTimedOut, setHasTimedOut] = useState(false);
   const maxRetries = 3;
+  const timeoutDuration = 5000; // 5 seconds
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -36,11 +38,20 @@ const Profile = () => {
         return;
       }
 
+      const timeout = setTimeout(() => {
+        if (!profile) {
+          console.log('Profile - Fetch timed out after', timeoutDuration, 'ms');
+          setHasTimedOut(true);
+          setError('Profile loading timed out. Using available data.');
+        }
+      }, timeoutDuration);
+
       try {
         console.log('Profile - Fetching profile for username:', username);
         const response = await axios.get(`http://localhost:3000/api/auth/profile/${username}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
+        clearTimeout(timeout);
         setProfile(response.data);
         setFormData({
           firstName: response.data.firstName || '',
@@ -53,22 +64,27 @@ const Profile = () => {
         console.log('Profile - Profile fetched:', response.data.email);
       } catch (err) {
         console.error('Profile - Failed to fetch profile:', err.message);
+        clearTimeout(timeout);
         if (retryCount < maxRetries) {
           console.log('Profile - Retrying fetch, attempt:', retryCount + 1);
           setTimeout(() => setRetryCount(retryCount + 1), 1000);
-        } else if (user && user.username.toLowerCase() === username.toLowerCase()) {
-          console.log('Profile - Using authenticated user data as fallback');
-          setProfile(user);
-          setFormData({
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
-            job: user.job || '',
-            school: user.school || '',
-            profilePicture: user.profilePicture || 'https://via.placeholder.com/150',
-            bannerPicture: user.bannerPicture || 'https://via.placeholder.com/1200x300',
-          });
         } else {
-          setError('Failed to load profile after multiple attempts. Please try again later.');
+          console.log('Profile - Max retries reached. Using fallback data.');
+          if (user && user.username.toLowerCase() === username.toLowerCase()) {
+            console.log('Profile - Using authenticated user data as fallback');
+            setProfile(user);
+            setFormData({
+              firstName: user.firstName || '',
+              lastName: user.lastName || '',
+              job: user.job || '',
+              school: user.school || '',
+              profilePicture: user.profilePicture || 'https://via.placeholder.com/150',
+              bannerPicture: user.bannerPicture || 'https://via.placeholder.com/1200x300',
+            });
+          } else {
+            setError('Failed to load profile after multiple attempts. Please try again later.');
+            setHasTimedOut(true);
+          }
         }
       }
     };
@@ -113,7 +129,7 @@ const Profile = () => {
     return <div className="profile-container"><p className="text-holo-gray">Loading...</p></div>;
   }
 
-  if (authError || error) {
+  if (authError || (error && hasTimedOut)) {
     return (
       <div className="profile-container">
         <p className="text-red-500">{authError || error}</p>

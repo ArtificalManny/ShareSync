@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import axios from 'axios';
 import { io } from 'socket.io-client';
-import { Folder, AlertCircle, Users, Edit, Send, CheckSquare, Square, FileText, MessageSquare, Settings, X, Image, BarChart, PieChart } from 'lucide-react';
+import { Folder, AlertCircle, Users, Edit, Send, CheckSquare, Square, FileText, MessageSquare, Settings, X, Image, BarChart, PieChart, Clock, Lightbulb, Bell } from 'lucide-react';
 import './ProjectHome.css';
 
 const ProjectHome = () => {
@@ -31,6 +31,8 @@ const ProjectHome = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({ email: true, sms: true, inApp: true });
   const [contributions, setContributions] = useState({});
+  const [notifications, setNotifications] = useState([]);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -86,8 +88,20 @@ const ProjectHome = () => {
       }
     };
 
+    const fetchAiSuggestions = () => {
+      // Mock AI suggestions for task prioritization
+      const mockSuggestions = project?.tasks?.map((task, index) => ({
+        taskId: task.id,
+        title: task.title,
+        priority: index % 2 === 0 ? 'High' : 'Medium',
+        reason: index % 2 === 0 ? 'Due soon' : 'High impact',
+      })) || [];
+      setAiSuggestions(mockSuggestions);
+    };
+
     fetchProject();
     fetchContributions();
+    fetchAiSuggestions();
 
     const socket = io('http://localhost:3000');
     socket.on('connect', () => {
@@ -99,11 +113,16 @@ const ProjectHome = () => {
       setMessages((prev) => [...prev, message]);
     });
 
+    socket.on('notification', (notification) => {
+      setNotifications((prev) => [...prev, notification].slice(-5)); // Keep last 5 notifications
+    });
+
     return () => {
       socket.off('message');
+      socket.off('notification');
       socket.disconnect();
     };
-  }, [id, user, isAuthenticated, isLoading, navigate]);
+  }, [id, user, isAuthenticated, isLoading, navigate, project]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -315,6 +334,7 @@ const ProjectHome = () => {
 
   const isOwner = project.members.some((m) => m.email === user.email && m.role === 'Owner');
   const filteredActivityLog = activityFilter === 'All' ? project.activityLog : project.activityLog.filter(log => log.action === activityFilter.toLowerCase());
+  const timelineEvents = project.activityLog.filter(log => ['create', 'task-create', 'task-update', 'post'].includes(log.action)).slice(-5);
 
   return (
     <div className="project-home-container">
@@ -347,6 +367,71 @@ const ProjectHome = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
         <div className="project-details card p-6 glassmorphic">
+          <div className="notifications-section mb-6">
+            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+              <Bell className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Real-Time Notifications
+            </h2>
+            {notifications.length === 0 ? (
+              <p className="text-holo-gray flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No recent notifications.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {notifications.map((notification, index) => (
+                  <div key={index} className="p-2 rounded bg-holo-pink bg-opacity-20">
+                    <p className="text-holo-gray text-sm">{notification.message}</p>
+                    <p className="text-holo-gray text-xs">{new Date(notification.timestamp).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="transparency-dashboard mb-6">
+            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+              <PieChart className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Transparency Dashboard
+            </h2>
+            {Object.keys(contributions).length === 0 ? (
+              <p className="text-holo-gray flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No contributions yet.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(contributions).map(([email, stats]) => (
+                  <div key={email} className="contribution-item card p-4 glassmorphic">
+                    <p className="text-holo-blue">{email}</p>
+                    <p className="text-holo-gray text-sm">Tasks Completed: {stats.tasksCompleted} (Mock: {stats.tasksCompleted * 10}% of total)</p>
+                    <p className="text-holo-gray text-sm">Posts Created: {stats.postsCreated}</p>
+                    <p className="text-holo-gray text-sm">Comments Made: {stats.commentsMade}</p>
+                    <p className="text-holo-gray text-sm">Files Uploaded: {stats.filesUploaded}</p>
+                    <p className="text-holo-gray text-sm">Suggestions Made: {stats.suggestionsMade}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="timeline-section mb-6">
+            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+              <Clock className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Project Timeline
+            </h2>
+            {timelineEvents.length === 0 ? (
+              <p className="text-holo-gray flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No timeline events yet.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {timelineEvents.map((event, index) => (
+                  <div key={index} className="timeline-item card p-4 glassmorphic">
+                    <p className="text-holo-gray">{event.message}</p>
+                    <p className="text-holo-gray text-sm">By: {event.user}</p>
+                    <p className="text-holo-gray text-sm">{new Date(event.timestamp).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
               <Folder className="w-5 h-5 text-holo-pink" />
@@ -420,30 +505,6 @@ const ProjectHome = () => {
             </div>
           </div>
 
-          <div className="transparency-dashboard mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <PieChart className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Transparency Dashboard
-            </h2>
-            {Object.keys(contributions).length === 0 ? (
-              <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No contributions yet.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(contributions).map(([email, stats]) => (
-                  <div key={email} className="contribution-item card p-4 glassmorphic">
-                    <p className="text-holo-blue">{email}</p>
-                    <p className="text-holo-gray text-sm">Tasks Completed: {stats.tasksCompleted}</p>
-                    <p className="text-holo-gray text-sm">Posts Created: {stats.postsCreated}</p>
-                    <p className="text-holo-gray text-sm">Comments Made: {stats.commentsMade}</p>
-                    <p className="text-holo-gray text-sm">Files Uploaded: {stats.filesUploaded}</p>
-                    <p className="text-holo-gray text-sm">Suggestions Made: {stats.suggestionsMade}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           <div className="members-section mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
               <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Members
@@ -488,6 +549,27 @@ const ProjectHome = () => {
                   )}
                 </button>
               </form>
+            )}
+          </div>
+
+          <div className="ai-suggestions-section mb-6">
+            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+              <Lightbulb className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> AI Task Prioritization
+            </h2>
+            {aiSuggestions.length === 0 ? (
+              <p className="text-holo-gray flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No tasks to prioritize.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {aiSuggestions.map((suggestion, index) => (
+                  <div key={index} className="ai-suggestion-item card p-4 glassmorphic">
+                    <p className="text-holo-blue">{suggestion.title}</p>
+                    <p className="text-holo-gray text-sm">Priority: {suggestion.priority}</p>
+                    <p className="text-holo-gray text-sm">Reason: {suggestion.reason}</p>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 

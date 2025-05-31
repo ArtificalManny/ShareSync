@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import { FolderPlus, Folder, AlertCircle, X, Lightbulb, Users } from 'lucide-react';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import './Projects.css';
 
 const Projects = () => {
@@ -20,6 +21,7 @@ const Projects = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
   const titleInputRef = useRef(null);
+  const socket = io('http://localhost:3000');
 
   useEffect(() => {
     if (isLoading) {
