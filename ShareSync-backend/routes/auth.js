@@ -39,6 +39,7 @@ router.post('/register', async (req, res) => {
 
     const payload = { user: { id: user.id } };
     const token = jwt.sign(payload, process.env.JWT_SECRET);
+    console.log('Auth Route - Generated token for registration:', token);
 
     res.json({
       token,
@@ -81,8 +82,8 @@ router.post('/login', async (req, res) => {
 
     const payload = { user: { id: user.id } };
     const token = jwt.sign(payload, process.env.JWT_SECRET);
+    console.log('Auth Route - Generated token for login:', token);
 
-    console.log('Auth Route - User logged in:', user.email);
     res.json({
       token,
       user: {

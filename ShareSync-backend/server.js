@@ -1,40 +1,59 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const authRoutes = require('./routes/auth');
-const projectRoutes = require('./routes/projects');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
-
-// Middleware
-app.use(cors({
-  origin: 'http://localhost:54693',
-  credentials: true,
-}));
-app.use(express.json());
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', projectRoutes);
-
-// Mock leaderboard endpoint
-app.get('/api/leaderboard', (req, res) => {
-  console.log('Server - Fetching leaderboard');
-  res.json([
-    { email: 'test@example.com', points: 100 },
-    { email: 'user2@example.com', points: 80 },
-  ]);
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:54693',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  },
 });
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI, {
+app.use(cors());
+app.use(express.json());
+
+// MongoDB Connection
+mongoose.connect('mongodb://localhost:27017/sharesync', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-})
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log('MongoDB connection error:', err));
+}).then(() => {
+  console.log('Connected to MongoDB');
+}).catch((err) => {
+  console.error('MongoDB connection error:', err.message);
+});
 
-// Start server
+// Routes
+const authRoutes = require('./routes/auth');
+const projectsRoutes = require('./routes/projects');
+app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectsRoutes);
+
+// Socket.io for real-time chat
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('join_project', (projectId) => {
+    socket.join(projectId);
+    console.log(`User ${socket.id} joined project: ${projectId}`);
+  });
+
+  socket.on('message', (data) => {
+    const { projectId, text, user } = data;
+    io.to(projectId).emit('message', { user, text, timestamp: new Date().toISOString() });
+    console.log(`Message sent in project ${projectId}: ${text} by ${user}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

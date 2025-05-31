@@ -1,25 +1,25 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { FolderPlus, Folder, AlertCircle, X, Lightbulb } from 'lucide-react';
+import { FolderPlus, Folder, AlertCircle, X, Lightbulb, Users } from 'lucide-react';
+import axios from 'axios';
 import './Projects.css';
 
 const Projects = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading, authError, addProject, setIntendedRoute } = useContext(AuthContext);
   const [projects, setProjects] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [newProjectCategory, setNewProjectCategory] = useState('Personal');
   const [isCreating, setIsCreating] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [arMode, setArMode] = useState(false);
+  const [leaderboard, setLeaderboard] = useState([]);
   const titleInputRef = useRef(null);
-  const createButtonRef = useRef(null);
-  const suggestionButtonRef = useRef(null);
-  const arButtonRef = useRef(null);
 
   useEffect(() => {
     if (isLoading) {
@@ -51,12 +51,32 @@ const Projects = () => {
       setProjects([]);
     }
 
+    const fetchNotifications = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/notifications', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        setNotifications(response.data);
+      } catch (err) {
+        console.error('Projects - Failed to fetch notifications:', err.message);
+        setError('Failed to load notifications.');
+      }
+    };
+    fetchNotifications();
+
     const mockSuggestions = [
       { title: "Virtual Reality Campaign", description: "Launch a VR-based marketing campaign", matchScore: 0.92 },
       { title: "AI Workflow Automation", description: "Automate team workflows with AI", matchScore: 0.87 },
       { title: "Augmented Reality Training", description: "Develop AR training modules", matchScore: 0.85 },
     ];
     setAiSuggestions(mockSuggestions);
+
+    const mockLeaderboard = [
+      { name: user.firstName, points: tasksCompleted * 10 },
+      { name: "Alex Smith", points: 150 },
+      { name: "Jamie Doe", points: 120 },
+    ];
+    setLeaderboard(mockLeaderboard.sort((a, b) => b.points - a.points));
   }, [isAuthenticated, user, isLoading, navigate, setIntendedRoute]);
 
   useEffect(() => {
@@ -78,6 +98,7 @@ const Projects = () => {
     const newProject = {
       title: newProjectTitle,
       description: newProjectDescription || 'A new project',
+      category: newProjectCategory,
     };
 
     try {
@@ -90,6 +111,7 @@ const Projects = () => {
       setShowCreateForm(false);
       setNewProjectTitle('');
       setNewProjectDescription('');
+      setNewProjectCategory('Personal');
       navigate(`/projects/${createdProject.id}`, { replace: true });
     } catch (err) {
       console.error('Projects - Failed to create project:', err.message, err.response?.data);
@@ -107,19 +129,17 @@ const Projects = () => {
     setShowCreateForm(true);
   };
 
-  const toggleArMode = () => {
-    setArMode(!arMode);
-    if (!arMode) {
-      alert('AR Mode: Imagine viewing your projects in augmented reality! (Mock implementation)');
-    }
-  };
-
   const handleKeyDown = (e, action) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       action();
     }
   };
+
+  const totalProjects = projects.length;
+  const currentProjects = projects.filter(p => p.status !== 'Completed').length;
+  const pastProjects = projects.filter(p => p.status === 'Completed').length;
+  const tasksCompleted = projects.reduce((sum, p) => sum + (p.tasksCompleted || 0), 0);
 
   if (isLoading) {
     console.log('Projects - Rendering loading state');
@@ -143,7 +163,6 @@ const Projects = () => {
         <p className="text-holo-gray mb-4">Manage your projects with ease.</p>
         <div className="flex justify-center gap-4">
           <button
-            ref={createButtonRef}
             onClick={() => setShowCreateForm(true)}
             onKeyDown={(e) => handleKeyDown(e, () => setShowCreateForm(true))}
             className="btn-primary rounded-full flex items-center mx-auto animate-glow z-20"
@@ -152,7 +171,6 @@ const Projects = () => {
             <FolderPlus className="w-5 h-5 mr-2" /> Create New Project
           </button>
           <button
-            ref={suggestionButtonRef}
             onClick={() => setShowSuggestions(true)}
             onKeyDown={(e) => handleKeyDown(e, () => setShowSuggestions(true))}
             className="btn-primary rounded-full flex items-center mx-auto animate-glow z-20"
@@ -160,26 +178,82 @@ const Projects = () => {
           >
             <Lightbulb className="w-5 h-5 mr-2" /> AI Suggestions
           </button>
-          <button
-            ref={arButtonRef}
-            onClick={toggleArMode}
-            onKeyDown={(e) => handleKeyDown(e, toggleArMode)}
-            className="btn-primary rounded-full flex items-center mx-auto animate-glow z-20"
-            aria-label="Toggle AR Mode"
-          >
-            <span role="img" aria-label="AR">🕶️</span> {arMode ? 'Exit AR Mode' : 'Enter AR Mode'}
-          </button>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
+
+        <div className="metrics-dashboard grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="metric-card card p-6 glassmorphic holographic-effect">
+            <h2 className="text-xl font-inter text-holo-blue mb-2">Total Projects</h2>
+            <p className="text-3xl font-bold text-holo-pink">{totalProjects}</p>
+          </div>
+          <div className="metric-card card p-6 glassmorphic holographic-effect">
+            <h2 className="text-xl font-inter text-holo-blue mb-2">Current Projects</h2>
+            <p className="text-3xl font-bold text-holo-pink">{currentProjects}</p>
+          </div>
+          <div className="metric-card card p-6 glassmorphic holographic-effect">
+            <h2 className="text-xl font-inter text-holo-blue mb-2">Past Projects</h2>
+            <p className="text-3xl font-bold text-holo-pink">{pastProjects}</p>
+          </div>
+          <div className="metric-card card p-6 glassmorphic holographic-effect">
+            <h2 className="text-xl font-inter text-holo-blue mb-2">Tasks Completed</h2>
+            <p className="text-3xl font-bold text-holo-pink">{tasksCompleted}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="notifications-section card p-6 glassmorphic">
+            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+              <AlertCircle className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Notifications
+            </h2>
+            {notifications.length === 0 ? (
+              <p className="text-holo-gray">No notifications yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {notifications.slice(0, 5).map((notification, index) => (
+                  <div key={index} className={`p-2 rounded ${notification.read ? 'bg-holo-bg-light' : 'bg-holo-pink bg-opacity-20'}`}>
+                    <p className="text-holo-gray text-sm">{notification.message}</p>
+                    <p className="text-holo-gray text-xs">{new Date(notification.timestamp).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="team-activity-section card p-6 glassmorphic">
+            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Team Activity
+            </h2>
+            <p className="text-holo-gray">Recent updates will appear here (mock).</p>
+          </div>
+
+          <div className="leaderboard-section card p-6 glassmorphic">
+            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Leaderboard
+            </h2>
+            {leaderboard.length === 0 ? (
+              <p className="text-holo-gray">No leaderboard data yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {leaderboard.map((member, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 rounded bg-holo-bg-light">
+                    <span className="text-holo-gray">{index + 1}. {member.name}</span>
+                    <span className="text-holo-pink font-bold">{member.points} points</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {projects.length === 0 ? (
           <p className="text-holo-gray flex items-center gap-2 justify-center">
             <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No projects yet. Create one to get started!
           </p>
         ) : (
-          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ${arMode ? 'ar-mode' : ''}`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project) => (
               <Link
                 key={project.id}
@@ -191,6 +265,7 @@ const Projects = () => {
                   <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> {project.title || 'Untitled Project'}
                 </h2>
                 <p className="text-holo-gray text-sm mb-2">{project.description || 'No description'}</p>
+                <p className="text-holo-gray text-sm">Category: {project.category}</p>
                 <p className="text-holo-gray text-sm">Status: {project.status || 'Not Started'}</p>
               </Link>
             ))}
@@ -231,6 +306,19 @@ const Projects = () => {
                   placeholder="Enter project description (optional)"
                   className="input-field w-full h-24 rounded-lg z-70"
                 />
+              </div>
+              <div>
+                <label className="text-holo-gray text-sm" htmlFor="project-category">Category</label>
+                <select
+                  id="project-category"
+                  value={newProjectCategory}
+                  onChange={(e) => setNewProjectCategory(e.target.value)}
+                  className="input-field w-full rounded-full z-70"
+                >
+                  <option value="School">School</option>
+                  <option value="Job">Job</option>
+                  <option value="Personal">Personal</option>
+                </select>
               </div>
               <button
                 type="submit"
