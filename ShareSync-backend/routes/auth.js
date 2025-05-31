@@ -121,7 +121,7 @@ router.get('/me', auth, async (req, res) => {
     let user = await User.findById(req.user.id).select('-password');
     if (!user) {
       console.log('Auth Route - User not found for ID:', req.user.id);
-      user = mockUser; // Fallback to mock user data
+      return res.status(404).json({ message: 'User not found' });
     }
     console.log('Auth Route - User data fetched:', user.email);
     res.json({

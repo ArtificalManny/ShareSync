@@ -90,8 +90,17 @@ const AuthProvider = ({ children }) => {
   const addProject = async (projectData) => {
     try {
       const response = await axios.post('http://localhost:3000/api/projects', projectData);
-      const updatedUser = await axios.get('http://localhost:3000/api/auth/me');
-      setUser(updatedUser.data);
+      try {
+        const updatedUser = await axios.get('http://localhost:3000/api/auth/me');
+        setUser(updatedUser.data);
+      } catch (err) {
+        console.warn('AuthContext - Failed to fetch updated user data after project creation:', err.message);
+        // Continue even if /me fails, using the response from the project creation
+        setUser(prevUser => ({
+          ...prevUser,
+          projects: [...(prevUser.projects || []), response.data],
+        }));
+      }
       socket.emit('project_activity', {
         projectId: response.data.id,
         message: `created project: ${response.data.title}`,
