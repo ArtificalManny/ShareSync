@@ -20,6 +20,8 @@ const Profile = () => {
     profilePicture: '',
     bannerPicture: '',
   });
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -51,12 +53,28 @@ const Profile = () => {
         console.log('Profile - Profile fetched:', response.data.email);
       } catch (err) {
         console.error('Profile - Failed to fetch profile:', err.message);
-        setError('Failed to load profile: ' + (err.message || 'An unexpected error occurred.'));
+        if (retryCount < maxRetries) {
+          console.log('Profile - Retrying fetch, attempt:', retryCount + 1);
+          setTimeout(() => setRetryCount(retryCount + 1), 1000);
+        } else if (user && user.username.toLowerCase() === username.toLowerCase()) {
+          console.log('Profile - Using authenticated user data as fallback');
+          setProfile(user);
+          setFormData({
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            job: user.job || '',
+            school: user.school || '',
+            profilePicture: user.profilePicture || 'https://via.placeholder.com/150',
+            bannerPicture: user.bannerPicture || 'https://via.placeholder.com/1200x300',
+          });
+        } else {
+          setError('Failed to load profile after multiple attempts. Please try again later.');
+        }
       }
     };
 
     fetchProfile();
-  }, [username, isAuthenticated, isLoading, navigate]);
+  }, [username, isAuthenticated, isLoading, navigate, user, retryCount]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -107,8 +125,7 @@ const Profile = () => {
   if (!profile) {
     return (
       <div className="profile-container">
-        <p className="text-red-500">Profile not found.</p>
-        <Link to="/" className="text-holo-blue hover:underline">Return to Home</Link>
+        <p className="text-holo-gray">Loading profile...</p>
       </div>
     );
   }

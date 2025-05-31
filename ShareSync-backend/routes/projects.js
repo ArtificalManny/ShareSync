@@ -95,9 +95,10 @@ router.put('/:projectId', auth, async (req, res) => {
       return res.status(403).json({ message: 'Only project owners can update project details' });
     }
 
-    user.projects[projectIndex] = { ...project, ...updates };
+    const oldProject = { ...user.projects[projectIndex] };
+    user.projects[projectIndex] = { ...user.projects[projectIndex], ...updates };
     user.projects[projectIndex].activityLog.push({
-      message: `${user.email} updated the project`,
+      message: `${user.email} updated the project: ${JSON.stringify(updates)}`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'update',
@@ -271,7 +272,7 @@ router.post('/:projectId/posts', auth, async (req, res) => {
 
     project.posts.push(newPost);
     project.activityLog.push({
-      message: `${user.email} created a ${type} post`,
+      message: `${user.email} created a ${type} post: ${content}`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'post',
@@ -337,7 +338,7 @@ router.post('/:projectId/posts/:postIndex/comments', auth, async (req, res) => {
 
     project.posts[postIndex].comments.push(newComment);
     project.activityLog.push({
-      message: `${user.email} commented on a post`,
+      message: `${user.email} commented on a post: ${content}`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'comment',
@@ -543,7 +544,7 @@ router.post('/:projectId/posts/:postIndex/vote', auth, async (req, res) => {
     }
 
     project.activityLog.push({
-      message: `${user.email} voted on a poll`,
+      message: `${user.email} voted on a poll: ${option}`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'vote',
@@ -743,10 +744,8 @@ router.put('/:projectId/tasks/:taskId', auth, async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    const task = project.tasks[taskIndex];
     const isOwner = project.members.some((m) => m.email === user.email && m.role === 'Owner');
-
-    if (status && !isOwner && task.assignedTo !== user.email) {
+    if (status && !isOwner && project.tasks[taskIndex].assignedTo !== user.email) {
       console.log('Projects Route - User not authorized to update task status:', user.email);
       return res.status(403).json({ message: 'Not authorized to update this task status' });
     }
@@ -756,13 +755,14 @@ router.put('/:projectId/tasks/:taskId', auth, async (req, res) => {
       return res.status(403).json({ message: 'Only project owners can assign tasks' });
     }
 
+    const task = project.tasks[taskIndex];
     const wasCompleted = task.status === 'Completed';
     const willBeCompleted = status === 'Completed';
 
     if (status) task.status = status;
     if (assignedTo) task.assignedTo = assignedTo;
     project.activityLog.push({
-      message: `${user.email} updated task: ${task.title}${assignedTo ? ` (Assigned to ${assignedTo})` : ''}`,
+      message: `${user.email} updated task: ${task.title}${assignedTo ? ` (Assigned to ${assignedTo})` : ''} (Status: ${status || task.status})`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'task-update',
@@ -841,7 +841,7 @@ router.put('/:projectId/tasks/:taskId/subtasks/:subtaskId', auth, async (req, re
     const subtask = project.tasks[taskIndex].subtasks[subtaskIndex];
     subtask.status = status;
     project.activityLog.push({
-      message: `${user.email} updated subtask: ${subtask.title} under task: ${project.tasks[taskIndex].title}`,
+      message: `${user.email} updated subtask: ${subtask.title} under task: ${project.tasks[taskIndex].title} (Status: ${status})`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'subtask-update',
@@ -908,7 +908,7 @@ router.post('/:projectId/tasks/:taskId/comments', auth, async (req, res) => {
 
     project.tasks[taskIndex].comments.push(newComment);
     project.activityLog.push({
-      message: `${user.email} commented on task: ${project.tasks[taskIndex].title}`,
+      message: `${user.email} commented on task: ${project.tasks[taskIndex].title} - ${content}`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'task-comment',
@@ -981,7 +981,7 @@ router.post('/:projectId/tasks/:taskId/subtasks/:subtaskId/comments', auth, asyn
 
     project.tasks[taskIndex].subtasks[subtaskIndex].comments.push(newComment);
     project.activityLog.push({
-      message: `${user.email} commented on subtask: ${project.tasks[taskIndex].subtasks[subtaskIndex].title}`,
+      message: `${user.email} commented on subtask: ${project.tasks[taskIndex].subtasks[subtaskIndex].title} - ${content}`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'subtask-comment',
@@ -1415,16 +1415,21 @@ router.put('/:projectId/files/:fileIndex', auth, async (req, res) => {
 
     if (status === 'Rejected') {
       project.files.splice(fileIndex, 1);
+      project.activityLog.push({
+        message: `${user.email} rejected file: ${file.name}`,
+        timestamp: new Date().toISOString(),
+        user: user.email,
+        action: 'file-reject',
+      });
     } else {
       file.status = status;
+      project.activityLog.push({
+        message: `${user.email} approved file: ${file.name}`,
+        timestamp: new Date().toISOString(),
+        user: user.email,
+        action: 'file-approve',
+      });
     }
-
-    project.activityLog.push({
-      message: `${user.email} ${status.toLowerCase()} file: ${file.name}`,
-      timestamp: new Date().toISOString(),
-      user: user.email,
-      action: `file-${status.toLowerCase()}`,
-    });
 
     await user.save();
 
@@ -1500,7 +1505,7 @@ router.post('/:projectId/teams', auth, async (req, res) => {
 
     project.teams.push(newTeam);
     project.activityLog.push({
-      message: `${user.email} created a new team: ${name}`,
+      message: `${user.email} created a new team: ${name} with members: ${teamMembers.map(m => m.email).join(', ')}`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'team-create',
@@ -1567,6 +1572,7 @@ router.put('/:projectId/teams/:teamIndex', auth, async (req, res) => {
       return { email, role: member ? member.role : 'Member' };
     });
 
+    const oldTeam = { ...project.teams[teamIndex] };
     project.teams[teamIndex] = {
       name: name || project.teams[teamIndex].name,
       description: description || project.teams[teamIndex].description,
@@ -1574,7 +1580,7 @@ router.put('/:projectId/teams/:teamIndex', auth, async (req, res) => {
     };
 
     project.activityLog.push({
-      message: `${user.email} updated team: ${project.teams[teamIndex].name}`,
+      message: `${user.email} updated team: ${project.teams[teamIndex].name} (Previous: ${JSON.stringify(oldTeam)})`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'team-update',
@@ -1697,7 +1703,7 @@ router.post('/:projectId/suggestions', auth, async (req, res) => {
 
     project.suggestions.push(newSuggestion);
     project.activityLog.push({
-      message: `${user.email} submitted a suggestion`,
+      message: `${user.email} submitted a suggestion: ${content}`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'suggestion-submit',
@@ -1748,6 +1754,7 @@ router.put('/:projectId/settings/notifications', auth, async (req, res) => {
     }
 
     const project = user.projects[projectIndex];
+    const oldSettings = { ...project.settings.notifications };
     project.settings.notifications = {
       email: email !== undefined ? email : project.settings.notifications.email,
       sms: sms !== undefined ? sms : project.settings.notifications.sms,
@@ -1755,7 +1762,7 @@ router.put('/:projectId/settings/notifications', auth, async (req, res) => {
     };
 
     project.activityLog.push({
-      message: `${user.email} updated notification settings`,
+      message: `${user.email} updated notification settings: ${JSON.stringify(oldSettings)} to ${JSON.stringify(project.settings.notifications)}`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'settings-update',
@@ -1819,12 +1826,15 @@ router.post('/:projectId/tasks/auto-assign', auth, async (req, res) => {
       return res.status(400).json({ message: 'No members or tasks available for auto-assignment' });
     }
 
+    const assignmentDetails = [];
     tasks.forEach((task, index) => {
-      task.assignedTo = members[index % members.length].email;
+      const assignedTo = members[index % members.length].email;
+      task.assignedTo = assignedTo;
+      assignmentDetails.push(`${task.title} assigned to ${assignedTo}`);
     });
 
     project.activityLog.push({
-      message: `${user.email} auto-assigned tasks to team members`,
+      message: `${user.email} auto-assigned tasks: ${assignmentDetails.join('; ')}`,
       timestamp: new Date().toISOString(),
       user: user.email,
       action: 'task-auto-assign',
@@ -1902,6 +1912,66 @@ router.delete('/:projectId', auth, async (req, res) => {
     res.json({ message: 'Project deleted successfully' });
   } catch (err) {
     console.error('Projects Route - Error deleting project:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get project contribution stats for transparency dashboard
+router.get('/:projectId/contributions', auth, async (req, res) => {
+  try {
+    console.log('Projects Route - Fetching contribution stats for project:', req.params.projectId);
+    const { projectId } = req.params;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      console.log('Projects Route - User not found:', req.user.id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const projectIndex = user.projects.findIndex((p) => p.id === projectId);
+    if (projectIndex === -1) {
+      console.log('Projects Route - Project not found:', projectId);
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const project = user.projects[projectIndex];
+    const contributions = {};
+
+    // Initialize contributions for each member
+    project.members.forEach(member => {
+      contributions[member.email] = {
+        tasksCompleted: 0,
+        postsCreated: 0,
+        commentsMade: 0,
+        filesUploaded: 0,
+        suggestionsMade: 0,
+      };
+    });
+
+    // Calculate contributions from activity log
+    project.activityLog.forEach(log => {
+      const email = log.user;
+      if (!contributions[email]) return;
+
+      if (log.action === 'task-update') {
+        if (log.message.includes('Completed')) {
+          contributions[email].tasksCompleted += 1;
+        }
+      } else if (log.action === 'post') {
+        contributions[email].postsCreated += 1;
+      } else if (log.action === 'comment' || log.action === 'task-comment' || log.action === 'subtask-comment') {
+        contributions[email].commentsMade += 1;
+      } else if (log.action === 'file-upload') {
+        contributions[email].filesUploaded += 1;
+      } else if (log.action === 'suggestion-submit') {
+        contributions[email].suggestionsMade += 1;
+      }
+    });
+
+    console.log('Projects Route - Contribution stats:', contributions);
+    res.json(contributions);
+  } catch (err) {
+    console.error('Projects Route - Error fetching contribution stats:', err.message);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -59,7 +59,7 @@ const Projects = () => {
         setNotifications(response.data);
       } catch (err) {
         console.error('Projects - Failed to fetch notifications:', err.message);
-        setError('Failed to load notifications.');
+        setError('Failed to load notifications. Please try again.');
       }
     };
     fetchNotifications();
@@ -71,13 +71,14 @@ const Projects = () => {
     ];
     setAiSuggestions(mockSuggestions);
 
+    const tasksCompleted = projects.reduce((sum, p) => sum + (p.tasksCompleted || 0), 0);
     const mockLeaderboard = [
       { name: user.firstName, points: tasksCompleted * 10 },
       { name: "Alex Smith", points: 150 },
       { name: "Jamie Doe", points: 120 },
     ];
     setLeaderboard(mockLeaderboard.sort((a, b) => b.points - a.points));
-  }, [isAuthenticated, user, isLoading, navigate, setIntendedRoute]);
+  }, [isAuthenticated, user, isLoading, navigate, setIntendedRoute, projects]);
 
   useEffect(() => {
     if (showCreateForm && titleInputRef.current) {
@@ -260,6 +261,10 @@ const Projects = () => {
                 to={`/projects/${project.id}`}
                 className="project-card card p-6 glassmorphic holographic-effect z-10"
                 aria-label={`View project ${project.title}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(`/projects/${project.id}`);
+                }}
               >
                 <h2 className="text-xl font-inter text-holo-blue mb-2 flex items-center">
                   <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> {project.title || 'Untitled Project'}

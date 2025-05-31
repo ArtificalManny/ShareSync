@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
     console.log('Auth Route - User registered:', user);
 
     const payload = { user: { id: user.id } };
-    const token = jwt.sign(payload, process.env.JWT_SECRET);
+    const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1h' });
     console.log('Auth Route - Generated token for registration:', token);
 
     res.json({
@@ -54,7 +54,7 @@ router.post('/register', async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Auth Route - Error during registration:', err.message);
+    console.error('Auth Route - Error during registration:', err.message, err.stack);
     res.status(200).json({
       token: 'mock-token-for-testing',
       user: mockUser,
@@ -81,7 +81,7 @@ router.post('/login', async (req, res) => {
     }
 
     const payload = { user: { id: user.id } };
-    const token = jwt.sign(payload, process.env.JWT_SECRET);
+    const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1h' });
     console.log('Auth Route - Generated token for login:', token);
 
     res.json({
@@ -97,7 +97,7 @@ router.post('/login', async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Auth Route - Error during login:', err.message);
+    console.error('Auth Route - Error during login:', err.message, err.stack);
     res.status(200).json({
       token: 'mock-token-for-testing',
       user: mockUser,
@@ -115,10 +115,22 @@ router.get('/me', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     console.log('Auth Route - User data fetched:', user.email);
-    res.json(user);
+    res.json({
+      email: user.email,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      age: user.age,
+      projects: user.projects,
+      notifications: user.notifications,
+      profilePicture: user.profilePicture,
+      bannerPicture: user.bannerPicture,
+      job: user.job,
+      school: user.school,
+    });
   } catch (err) {
-    console.error('Auth Route - Error fetching user data:', err.message);
-    res.status(200).json(mockUser);
+    console.error('Auth Route - Error fetching user data:', err.message, err.stack);
+    res.status(500).json({ message: 'Server error while fetching user data' });
   }
 });
 
@@ -126,17 +138,28 @@ router.get('/me', auth, async (req, res) => {
 router.get('/profile/:username', auth, async (req, res) => {
   try {
     console.log('Auth Route - Fetching user profile for username:', req.params.username);
-    const user = await User.findOne({ username: { $regex: `^${req.params.username}$`, $options: 'i' } }).select('-password');
+    const user = await User.findOne({ username: req.params.username }).select('-password');
     if (!user) {
       console.log('Auth Route - User not found for username:', req.params.username);
       console.log('Auth Route - Available usernames in database:', await User.find().distinct('username'));
       return res.status(404).json({ message: 'User not found' });
     }
     console.log('Auth Route - User profile fetched:', user.email);
-    res.json(user);
+    res.json({
+      email: user.email,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      age: user.age,
+      projects: user.projects,
+      profilePicture: user.profilePicture,
+      bannerPicture: user.bannerPicture,
+      job: user.job,
+      school: user.school,
+    });
   } catch (err) {
     console.error('Auth Route - Error fetching user profile:', err.message, err.stack);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error while fetching user profile' });
   }
 });
 
@@ -151,10 +174,21 @@ router.put('/me', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     console.log('Auth Route - User profile updated:', user.email);
-    res.json(user);
+    res.json({
+      email: user.email,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      age: user.age,
+      projects: user.projects,
+      profilePicture: user.profilePicture,
+      bannerPicture: user.bannerPicture,
+      job: user.job,
+      school: user.school,
+    });
   } catch (err) {
-    console.error('Auth Route - Error updating user profile:', err.message);
-    res.status(200).json(mockUser);
+    console.error('Auth Route - Error updating user profile:', err.message, err.stack);
+    res.status(500).json({ message: 'Server error while updating user profile' });
   }
 });
 
@@ -164,7 +198,7 @@ router.post('/forgot-password', async (req, res) => {
     console.log('Auth Route - Forgot password request for email:', req.body.email);
     res.json({ message: 'Password reset link sent (mock implementation)' });
   } catch (err) {
-    console.error('Auth Route - Error in forgot-password:', err.message);
+    console.error('Auth Route - Error in forgot-password:', err.message, err.stack);
     res.status(500).json({ message: 'Server error' });
   }
 });

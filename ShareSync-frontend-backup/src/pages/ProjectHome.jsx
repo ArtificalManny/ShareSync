@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import axios from 'axios';
 import { io } from 'socket.io-client';
-import { Folder, AlertCircle, Users, Edit, Send, CheckSquare, Square, FileText, MessageSquare, Settings, X, Image, BarChart } from 'lucide-react';
+import { Folder, AlertCircle, Users, Edit, Send, CheckSquare, Square, FileText, MessageSquare, Settings, X, Image, BarChart, PieChart } from 'lucide-react';
 import './ProjectHome.css';
 
 const ProjectHome = () => {
@@ -30,6 +30,7 @@ const ProjectHome = () => {
   const [activityFilter, setActivityFilter] = useState('All');
   const [showSettings, setShowSettings] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({ email: true, sms: true, inApp: true });
+  const [contributions, setContributions] = useState({});
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -73,7 +74,20 @@ const ProjectHome = () => {
       }
     };
 
+    const fetchContributions = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3000/api/projects/${id}/contributions`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        setContributions(response.data);
+      } catch (err) {
+        console.error('ProjectHome - Failed to fetch contributions:', err.message);
+        setError('Failed to load contributions: ' + (err.message || 'Please try again.'));
+      }
+    };
+
     fetchProject();
+    fetchContributions();
 
     const socket = io('http://localhost:3000');
     socket.on('connect', () => {
@@ -404,6 +418,30 @@ const ProjectHome = () => {
                 <Settings className="w-5 h-5 mr-2" /> Settings
               </button>
             </div>
+          </div>
+
+          <div className="transparency-dashboard mb-6">
+            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+              <PieChart className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Transparency Dashboard
+            </h2>
+            {Object.keys(contributions).length === 0 ? (
+              <p className="text-holo-gray flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No contributions yet.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(contributions).map(([email, stats]) => (
+                  <div key={email} className="contribution-item card p-4 glassmorphic">
+                    <p className="text-holo-blue">{email}</p>
+                    <p className="text-holo-gray text-sm">Tasks Completed: {stats.tasksCompleted}</p>
+                    <p className="text-holo-gray text-sm">Posts Created: {stats.postsCreated}</p>
+                    <p className="text-holo-gray text-sm">Comments Made: {stats.commentsMade}</p>
+                    <p className="text-holo-gray text-sm">Files Uploaded: {stats.filesUploaded}</p>
+                    <p className="text-holo-gray text-sm">Suggestions Made: {stats.suggestionsMade}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="members-section mb-6">
@@ -764,6 +802,7 @@ const ProjectHome = () => {
                 {filteredActivityLog.map((log, index) => (
                   <div key={index} className="log-item card p-4 glassmorphic">
                     <p className="text-holo-gray">{log.message}</p>
+                    <p className="text-holo-gray text-sm">By: {log.user}</p>
                     <p className="text-holo-gray text-sm">{new Date(log.timestamp).toLocaleString()}</p>
                   </div>
                 ))}
