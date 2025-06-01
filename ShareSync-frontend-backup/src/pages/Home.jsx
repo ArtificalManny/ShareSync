@@ -11,80 +11,101 @@ const Home = () => {
   const [newComment, setNewComment] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
 
+  console.log('Home.jsx - Component rendering started, isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'user:', user, 'authError:', authError);
+
   useEffect(() => {
+    console.log('Home.jsx - useEffect triggered');
     if (isLoading) {
       console.log('Home - Waiting for AuthContext to finish loading');
       return;
     }
 
+    console.log('Home - isLoading is false, checking authentication');
     if (!isAuthenticated) {
       console.log('Home - User not authenticated, redirecting to login');
       navigate('/login', { replace: true });
       return;
     }
 
+    console.log('Home - Checking user data');
     if (!user || !user.email) {
-      console.log('Home - User data not available');
+      console.log('Home - User data not available, redirecting to login');
       navigate('/login', { replace: true });
       return;
     }
 
-    // Compile feed items from all active projects
-    const activeProjects = user.projects.filter(project => project.status !== 'Completed');
-    const allFeedItems = activeProjects.flatMap(project => {
-      const activityLogs = (project.activityLog || []).map(log => ({
-        projectId: project.id,
-        projectTitle: project.title,
-        type: 'activity',
-        message: log.message,
-        user: log.user,
-        timestamp: log.timestamp,
-      }));
+    console.log('Home - User authenticated, compiling feed items for user:', user.email);
+    // Compile feed items from all active projects with error handling
+    try {
+      const activeProjects = (user.projects || []).filter(project => {
+        if (!project || !project.status) {
+          console.warn('Home - Invalid project data:', project);
+          return false;
+        }
+        return project.status !== 'Completed';
+      });
+      console.log('Home - Active projects:', activeProjects);
 
-      const posts = (project.posts || []).map(post => ({
-        projectId: project.id,
-        projectTitle: project.title,
-        type: post.type,
-        content: post.content,
-        author: post.author,
-        timestamp: post.timestamp,
-        votes: post.votes || [],
-        options: post.options || [],
-      }));
+      const allFeedItems = activeProjects.flatMap(project => {
+        const activityLogs = (project.activityLog || []).map(log => ({
+          projectId: project.id,
+          projectTitle: project.title,
+          type: 'activity',
+          message: log.message || 'Unknown activity',
+          user: log.user || 'Unknown user',
+          timestamp: log.timestamp || new Date().toISOString(),
+        }));
 
-      const tasks = (project.tasks || []).filter(task => task.status === 'Completed').map(task => ({
-        projectId: project.id,
-        projectTitle: project.title,
-        type: 'task-complete',
-        message: `${task.title} completed`,
-        user: task.assignedTo,
-        timestamp: task.updatedAt || new Date().toISOString(),
-      }));
+        const posts = (project.posts || []).map(post => ({
+          projectId: project.id,
+          projectTitle: project.title,
+          type: post.type || 'announcement',
+          content: post.content || 'No content',
+          author: post.author || 'Unknown author',
+          timestamp: post.timestamp || new Date().toISOString(),
+          votes: post.votes || [],
+          options: post.options || [],
+        }));
 
-      const files = (project.files || []).map(file => ({
-        projectId: project.id,
-        projectTitle: project.title,
-        type: 'file',
-        message: `Shared file: ${file.name}`,
-        user: file.uploadedBy,
-        timestamp: file.uploadedAt || new Date().toISOString(),
-        url: file.url,
-      }));
+        const tasks = (project.tasks || []).filter(task => task.status === 'Completed').map(task => ({
+          projectId: project.id,
+          projectTitle: project.title,
+          type: 'task-complete',
+          message: `${task.title || 'Unnamed task'} completed`,
+          user: task.assignedTo || 'Unassigned',
+          timestamp: task.updatedAt || new Date().toISOString(),
+        }));
 
-      return [...activityLogs, ...posts, ...tasks, ...files].map(item => ({
-        ...item,
-        likes: 0,
-        comments: [],
-        shares: 0,
-      }));
-    });
+        const files = (project.files || []).map(file => ({
+          projectId: project.id,
+          projectTitle: project.title,
+          type: 'file',
+          message: `Shared file: ${file.name || 'Unnamed file'}`,
+          user: file.uploadedBy || 'Unknown user',
+          timestamp: file.uploadedAt || new Date().toISOString(),
+          url: file.url || '#',
+        }));
 
-    // Sort feed items by timestamp (most recent first)
-    allFeedItems.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    setFeedItems(allFeedItems);
+        return [...activityLogs, ...posts, ...tasks, ...files].map(item => ({
+          ...item,
+          likes: 0,
+          comments: [],
+          shares: 0,
+        }));
+      });
+
+      // Sort feed items by timestamp (most recent first)
+      allFeedItems.sort((a, b) => new Date(b.timestamp || new Date()) - new Date(a.timestamp || new Date()));
+      setFeedItems(allFeedItems);
+      console.log('Home - Feed items set:', allFeedItems);
+    } catch (err) {
+      console.error('Home - Error compiling feed items:', err.message);
+      setFeedItems([]);
+    }
   }, [isAuthenticated, isLoading, navigate, user]);
 
   const handleLike = (index) => {
+    console.log('Home - Liking feed item at index:', index);
     setFeedItems(prevItems =>
       prevItems.map((item, i) =>
         i === index ? { ...item, likes: item.likes + 1 } : item
@@ -97,10 +118,11 @@ const Home = () => {
     const commentText = newComment[index] || '';
     if (!commentText.trim()) return;
 
+    console.log('Home - Submitting comment for feed item at index:', index, 'comment:', commentText);
     setFeedItems(prevItems =>
       prevItems.map((item, i) =>
         i === index
-          ? { ...item, comments: [...item.comments, { text: commentText, user: user.email, timestamp: new Date().toISOString() }] }
+          ? { ...item, comments: [...item.comments, { text: commentText, user: user.email || 'Anonymous', timestamp: new Date().toISOString() }] }
           : item
       )
     );
@@ -109,6 +131,7 @@ const Home = () => {
   };
 
   const handleShare = (index) => {
+    console.log('Home - Sharing feed item at index:', index);
     setFeedItems(prevItems =>
       prevItems.map((item, i) =>
         i === index ? { ...item, shares: item.shares + 1 } : item
@@ -118,26 +141,50 @@ const Home = () => {
   };
 
   const toggleComments = (index) => {
+    console.log('Home - Toggling comments for feed item at index:', index);
     setExpandedComments(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
   if (isLoading) {
+    console.log('Home - Rendering loading state');
     return (
-      <div className="home-container flex items-center justify-center min-h-screen">
-        <div className="loader" aria-label="Loading home page"></div>
-        <span className="text-holo-blue text-xl font-inter ml-4">Loading...</span>
+      <div className="home-container">
+        <div className="loading-message flex items-center justify-center min-h-screen">
+          <div className="loader" aria-label="Loading home page"></div>
+          <span className="text-holo-blue text-xl font-inter ml-4">Loading...</span>
+        </div>
       </div>
     );
   }
 
   if (authError) {
+    console.log('Home - Rendering auth error state:', authError);
     return (
-      <div className="home-container flex items-center justify-center min-h-screen">
-        <p className="text-red-500 text-lg font-inter">{authError}</p>
+      <div className="home-container">
+        <div className="error-message flex items-center justify-center min-h-screen">
+          <p className="text-red-500 text-lg font-inter">{authError}</p>
+        </div>
       </div>
     );
   }
 
+  if (!isAuthenticated) {
+    console.log('Home - Not authenticated, should have redirected');
+    return null; // Should have redirected to /login
+  }
+
+  if (!user) {
+    console.log('Home - No user data, rendering fallback');
+    return (
+      <div className="home-container">
+        <div className="error-message flex items-center justify-center min-h-screen">
+          <p className="text-holo-gray text-lg font-inter">Unable to load user data. Please try logging in again.</p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('Home - Rendering main content for user:', user.firstName);
   return (
     <div className="home-container">
       <div className="home-header py-8 px-6 rounded-b-3xl text-center">

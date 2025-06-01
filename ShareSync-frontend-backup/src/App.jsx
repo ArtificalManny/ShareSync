@@ -12,12 +12,13 @@ import ForgotPassword from './pages/ForgotPassword';
 import './App.css';
 
 const App = () => {
+  console.log('App.jsx - Rendering App component');
   return (
     <Router>
       <AuthProvider>
         <div className="app-container">
           <Navbar />
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<div className="text-holo-gray">Loading page...</div>}>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -26,6 +27,7 @@ const App = () => {
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:id" element={<ProjectHome />} />
               <Route path="/profile/:username" element={<Profile />} />
+              <Route path="*" element={<div className="text-holo-gray text-center mt-8">404 - Page Not Found</div>} />
             </Routes>
           </Suspense>
         </div>

@@ -1,18 +1,19 @@
 /* Home.css */
 .home-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  background: #1a1a1a; /* Explicit background color to override any browser defaults */
+  background-image: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
 }
 
 .home-header {
-  background: linear-gradient(180deg, #2d2d2d, #1a1a1a);
+  background: linear-gradient(180deg, var(--secondary-background), var(--background-color));
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card-bg);
   border-radius: 0.75rem;
-  border: 1px solid rgba(59, 130, 246, 0.1);
+  border: 1px solid var(--card-border);
 }
 
 .feed-item {
@@ -25,19 +26,19 @@
 }
 
 .text-holo-blue {
-  color: #3b82f6;
+  color: var(--text-accent);
 }
 
 .text-holo-gray {
-  color: #d1d5db;
+  color: var(--text-primary);
 }
 
 .text-holo-pink {
-  color: #ff6b6b;
+  color: var(--highlight);
 }
 
 .bg-holo-bg-light {
-  background-color: #2d2d2d;
+  background-color: var(--secondary-background);
 }
 
 .animate-text-glow {
@@ -66,19 +67,19 @@
 
 @keyframes textGlow {
   from {
-    text-shadow: 0 0 5px #3b82f6, 0 0 10px #3b82f6;
+    text-shadow: 0 0 5px var(--text-accent), 0 0 10px var(--text-accent);
   }
   to {
-    text-shadow: 0 0 10px #3b82f6, 0 0 20px #3b82f6;
+    text-shadow: 0 0 10px var(--text-accent), 0 0 20px var(--text-accent);
   }
 }
 
 @keyframes glow {
   from {
-    box-shadow: 0 0 5px #3b82f6;
+    box-shadow: 0 0 5px var(--text-accent);
   }
   to {
-    box-shadow: 0 0 10px #3b82f6;
+    box-shadow: 0 0 10px var(--text-accent);
   }
 }
 
@@ -99,10 +100,10 @@
 }
 
 .input-field {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--input-bg);
   border: none;
   padding: 0.5rem 1rem;
-  color: #d1d5db;
+  color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   font-size: 1rem;
   line-height: 1.5;
@@ -111,11 +112,11 @@
 
 .input-field:focus {
   outline: none;
-  box-shadow: 0 0 0 2px #3b82f6;
+  box-shadow: 0 0 0 2px var(--text-accent);
 }
 
 .btn-primary {
-  background-color: #3b82f6;
+  background-color: var(--text-accent);
   color: #ffffff;
   padding: 0.5rem 1rem;
   border: none;
@@ -123,7 +124,7 @@
 }
 
 .btn-primary:hover {
-  background-color: #2563eb;
+  background-color: var(--highlight);
   transform: scale(1.05);
 }
 
@@ -135,7 +136,7 @@
 }
 
 .loader {
-  border: 4px solid #3b82f6;
+  border: 4px solid var(--text-accent);
   border-top: 4px solid transparent;
   border-radius: 50%;
   width: 36px;
@@ -149,7 +150,7 @@
 }
 
 .feed-item {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card-bg);
   border-radius: 0.75rem;
   padding: 1.5rem;
 }
@@ -162,4 +163,9 @@
 
 .comment:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+.loading-message,
+.error-message {
+  background-color: var(--background-color);
 }

@@ -30,6 +30,7 @@ body {
 
 .app-container {
   min-height: 100vh;
+  background-color: var(--background-color); /* Ensure a neutral background */
 }
 
 .text-holo-blue {
