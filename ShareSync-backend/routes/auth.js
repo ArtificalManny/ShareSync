@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const NodeCache = require('node-cache');
+const cache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
 // Mock user data for testing if MongoDB is down
 const mockUser = {
@@ -26,7 +28,7 @@ router.post('/register', async (req, res) => {
     console.log('Auth Route - Register request:', req.body);
     const { username, firstName, lastName, email, age, password } = req.body;
 
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email }).lean();
     if (user) {
       console.log('Auth Route - User already exists:', email);
       return res.status(400).json({ message: 'User already exists' });
@@ -44,20 +46,25 @@ router.post('/register', async (req, res) => {
     const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1h' });
     console.log('Auth Route - Generated token for registration:', token);
 
+    const userData = {
+      email: user.email,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      age: user.age,
+      projects: user.projects,
+      profilePicture: user.profilePicture,
+      bannerPicture: user.bannerPicture,
+      job: user.job,
+      school: user.school,
+    };
+
+    cache.set(`user_${user.id}`, userData);
+    cache.set(`profile_${user.username.toLowerCase()}`, userData);
+
     res.json({
       token,
-      user: {
-        email: user.email,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        age: user.age,
-        projects: user.projects,
-        profilePicture: user.profilePicture,
-        bannerPicture: user.bannerPicture,
-        job: user.job,
-        school: user.school,
-      },
+      user: userData,
     });
   } catch (err) {
     console.error('Auth Route - Error during registration:', err.message, err.stack);
@@ -74,7 +81,7 @@ router.post('/login', async (req, res) => {
     console.log('Auth Route - Login request:', req.body);
     const { email, password } = req.body;
 
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email }).select('+password').lean();
     if (!user) {
       console.log('Auth Route - Invalid credentials for email:', email);
       return res.status(400).json({ message: 'Invalid Credentials' });
@@ -90,20 +97,25 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1h' });
     console.log('Auth Route - Generated token for login:', token);
 
+    const userData = {
+      email: user.email,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      age: user.age,
+      projects: user.projects,
+      profilePicture: user.profilePicture,
+      bannerPicture: user.bannerPicture,
+      job: user.job,
+      school: user.school,
+    };
+
+    cache.set(`user_${user.id}`, userData);
+    cache.set(`profile_${user.username.toLowerCase()}`, userData);
+
     res.json({
       token,
-      user: {
-        email: user.email,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        age: user.age,
-        projects: user.projects,
-        profilePicture: user.profilePicture,
-        bannerPicture: user.bannerPicture,
-        job: user.job,
-        school: user.school,
-      },
+      user: userData,
     });
   } catch (err) {
     console.error('Auth Route - Error during login:', err.message, err.stack);
@@ -117,14 +129,22 @@ router.post('/login', async (req, res) => {
 // Get current user data
 router.get('/me', auth, async (req, res) => {
   try {
+    const cacheKey = `user_${req.user.id}`;
+    const cachedUser = cache.get(cacheKey);
+    if (cachedUser) {
+      console.log('Auth Route - Serving user data from cache:', req.user.id);
+      return res.json(cachedUser);
+    }
+
     console.log('Auth Route - Fetching user data for ID:', req.user.id);
-    let user = await User.findById(req.user.id).select('-password');
+    let user = await User.findById(req.user.id).select('-password').lean();
     if (!user) {
       console.log('Auth Route - User not found for ID:', req.user.id);
       return res.status(404).json({ message: 'User not found' });
     }
+
     console.log('Auth Route - User data fetched:', user.email);
-    res.json({
+    const userData = {
       email: user.email,
       username: user.username,
       firstName: user.firstName,
@@ -136,7 +156,10 @@ router.get('/me', auth, async (req, res) => {
       bannerPicture: user.bannerPicture,
       job: user.job,
       school: user.school,
-    });
+    };
+
+    cache.set(cacheKey, userData);
+    res.json(userData);
   } catch (err) {
     console.error('Auth Route - Error fetching user data:', err.message, err.stack);
     res.status(200).json({
@@ -158,16 +181,24 @@ router.get('/me', auth, async (req, res) => {
 // Get user profile by username
 router.get('/profile/:username', auth, async (req, res) => {
   try {
+    const cacheKey = `profile_${req.params.username.toLowerCase()}`;
+    const cachedProfile = cache.get(cacheKey);
+    if (cachedProfile) {
+      console.log('Auth Route - Serving profile from cache:', req.params.username);
+      return res.json(cachedProfile);
+    }
+
     console.log('Auth Route - Fetching user profile for username:', req.params.username);
     const usernameLower = req.params.username.toLowerCase();
-    const user = await User.findOne({ username: { $regex: new RegExp('^' + usernameLower + '$', 'i') } }).select('-password');
+    const user = await User.findOne({ username: { $regex: new RegExp('^' + usernameLower + '$', 'i') } }).select('-password').lean();
     if (!user) {
       console.log('Auth Route - User not found for username:', req.params.username);
       console.log('Auth Route - Available usernames in database:', await User.find().distinct('username'));
       return res.status(404).json({ message: 'User not found' });
     }
+
     console.log('Auth Route - User profile fetched:', user.email);
-    res.json({
+    const profileData = {
       email: user.email,
       username: user.username,
       firstName: user.firstName,
@@ -178,7 +209,10 @@ router.get('/profile/:username', auth, async (req, res) => {
       bannerPicture: user.bannerPicture,
       job: user.job,
       school: user.school,
-    });
+    };
+
+    cache.set(cacheKey, profileData);
+    res.json(profileData);
   } catch (err) {
     console.error('Auth Route - Error fetching user profile:', err.message, err.stack);
     res.status(200).json(mockUser);
@@ -190,13 +224,14 @@ router.put('/me', auth, async (req, res) => {
   try {
     console.log('Auth Route - Updating user profile for ID:', req.user.id);
     const updates = req.body;
-    const user = await User.findByIdAndUpdate(req.user.id, updates, { new: true }).select('-password');
+    const user = await User.findByIdAndUpdate(req.user.id, updates, { new: true }).select('-password').lean();
     if (!user) {
       console.log('Auth Route - User not found for update:', req.user.id);
       return res.status(404).json({ message: 'User not found' });
     }
+
     console.log('Auth Route - User profile updated:', user.email);
-    res.json({
+    const userData = {
       email: user.email,
       username: user.username,
       firstName: user.firstName,
@@ -207,7 +242,14 @@ router.put('/me', auth, async (req, res) => {
       bannerPicture: user.bannerPicture,
       job: user.job,
       school: user.school,
-    });
+    };
+
+    cache.del(`user_${req.user.id}`);
+    cache.del(`profile_${user.username.toLowerCase()}`);
+    cache.set(`user_${user.id}`, userData);
+    cache.set(`profile_${user.username.toLowerCase()}`, userData);
+
+    res.json(userData);
   } catch (err) {
     console.error('Auth Route - Error updating user profile:', err.message, err.stack);
     res.status(500).json({ message: 'Server error while updating user profile' });

@@ -89,7 +89,6 @@ const ProjectHome = () => {
     };
 
     const fetchAiSuggestions = () => {
-      // Mock AI suggestions for task prioritization
       const mockSuggestions = project?.tasks?.map((task, index) => ({
         taskId: task.id,
         title: task.title,
@@ -114,7 +113,9 @@ const ProjectHome = () => {
     });
 
     socket.on('notification', (notification) => {
-      setNotifications((prev) => [...prev, notification].slice(-5)); // Keep last 5 notifications
+      // Prioritize notifications (mock logic: prioritize messages and task updates)
+      const priority = notification.message.includes('message') || notification.message.includes('task') ? 'high' : 'normal';
+      setNotifications((prev) => [...prev, { ...notification, priority }].slice(-5));
     });
 
     return () => {
@@ -318,7 +319,7 @@ const ProjectHome = () => {
     return (
       <div className="project-home-container">
         <p className="text-red-500">{authError || error}</p>
-        <Link to="/projects" className="text-holo-blue hover:underline">Return to Projects</Link>
+        <Link to="/projects" className="text-holo-blue hover:underline focus:outline-none focus:ring-2 focus:ring-holo-blue">Return to Projects</Link>
       </div>
     );
   }
@@ -327,7 +328,7 @@ const ProjectHome = () => {
     return (
       <div className="project-home-container">
         <p className="text-red-500">Project not found.</p>
-        <Link to="/projects" className="text-holo-blue hover:underline">Return to Projects</Link>
+        <Link to="/projects" className="text-holo-blue hover:underline focus:outline-none focus:ring-2 focus:ring-holo-blue">Return to Projects</Link>
       </div>
     );
   }
@@ -345,7 +346,8 @@ const ProjectHome = () => {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="input-field w-full rounded-full text-center"
+              className="input-field w-full rounded-full text-center focus:outline-none focus:ring-2 focus:ring-holo-blue"
+              aria-label="Edit project title"
             />
           ) : (
             project.title
@@ -356,7 +358,8 @@ const ProjectHome = () => {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="input-field w-full h-24 rounded-lg"
+              className="input-field w-full h-24 rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
+              aria-label="Edit project description"
             />
           ) : (
             project.description
@@ -369,18 +372,21 @@ const ProjectHome = () => {
         <div className="project-details card p-6 glassmorphic">
           <div className="notifications-section mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Bell className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Real-Time Notifications
+              <Bell className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Real-Time Notifications
             </h2>
             {notifications.length === 0 ? (
               <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No recent notifications.
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No recent notifications.
               </p>
             ) : (
               <div className="space-y-2">
-                {notifications.map((notification, index) => (
-                  <div key={index} className="p-2 rounded bg-holo-pink bg-opacity-20">
+                {notifications.sort((a, b) => (b.priority === 'high' ? 1 : -1)).map((notification, index) => (
+                  <div key={index} className={`p-2 rounded ${notification.priority === 'high' ? 'bg-holo-pink bg-opacity-30' : 'bg-holo-pink bg-opacity-20'}`}>
                     <p className="text-holo-gray text-sm">{notification.message}</p>
                     <p className="text-holo-gray text-xs">{new Date(notification.timestamp).toLocaleString()}</p>
+                    {notification.priority === 'high' && (
+                      <p className="text-holo-pink text-xs font-bold">Priority: High</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -389,11 +395,11 @@ const ProjectHome = () => {
 
           <div className="transparency-dashboard mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <PieChart className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Transparency Dashboard
+              <PieChart className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Transparency Dashboard
             </h2>
             {Object.keys(contributions).length === 0 ? (
               <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No contributions yet.
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No contributions yet.
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -413,11 +419,11 @@ const ProjectHome = () => {
 
           <div className="timeline-section mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Clock className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Project Timeline
+              <Clock className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Project Timeline
             </h2>
             {timelineEvents.length === 0 ? (
               <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No timeline events yet.
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No timeline events yet.
               </p>
             ) : (
               <div className="space-y-4">
@@ -434,14 +440,15 @@ const ProjectHome = () => {
 
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
-              <Folder className="w-5 h-5 text-holo-pink" />
+              <Folder className="w-5 h-5 text-holo-pink" aria-hidden="true" />
               <span className="text-holo-gray">
                 Category:{' '}
                 {isEditing ? (
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="input-field rounded-full"
+                    className="input-field rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    aria-label="Select project category"
                   >
                     <option value="School">School</option>
                     <option value="Job">Job</option>
@@ -457,7 +464,8 @@ const ProjectHome = () => {
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    className="input-field rounded-full"
+                    className="input-field rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    aria-label="Select project status"
                   >
                     <option value="Not Started">Not Started</option>
                     <option value="In Progress">In Progress</option>
@@ -475,13 +483,15 @@ const ProjectHome = () => {
                     <>
                       <button
                         onClick={handleSave}
-                        className="btn-primary rounded-full animate-glow"
+                        className="btn-primary rounded-full animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                        aria-label="Save project changes"
                       >
                         Save
                       </button>
                       <button
                         onClick={() => setIsEditing(false)}
-                        className="btn-primary rounded-full bg-holo-bg-light"
+                        className="btn-primary rounded-full bg-holo-bg-light focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                        aria-label="Cancel editing"
                       >
                         Cancel
                       </button>
@@ -489,25 +499,27 @@ const ProjectHome = () => {
                   ) : (
                     <button
                       onClick={handleEdit}
-                      className="btn-primary rounded-full animate-glow flex items-center"
+                      className="btn-primary rounded-full animate-glow flex items-center focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                      aria-label="Edit project"
                     >
-                      <Edit className="w-5 h-5 mr-2" /> Edit Project
+                      <Edit className="w-5 h-5 mr-2" aria-hidden="true" /> Edit Project
                     </button>
                   )}
                 </>
               )}
               <button
                 onClick={() => setShowSettings(true)}
-                className="btn-primary rounded-full animate-glow flex items-center"
+                className="btn-primary rounded-full animate-glow flex items-center focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                aria-label="Open project settings"
               >
-                <Settings className="w-5 h-5 mr-2" /> Settings
+                <Settings className="w-5 h-5 mr-2" aria-hidden="true" /> Settings
               </button>
             </div>
           </div>
 
           <div className="members-section mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Members
+              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Members
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {project.members.map((member, index) => (
@@ -515,7 +527,7 @@ const ProjectHome = () => {
                   <div className="flex items-center gap-2">
                     <img
                       src={member.profilePicture}
-                      alt={member.email}
+                      alt={`${member.email}'s profile picture`}
                       className="w-8 h-8 rounded-full"
                     />
                     <div>
@@ -533,18 +545,21 @@ const ProjectHome = () => {
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="Enter email to invite"
-                  className="input-field w-full rounded-full"
+                  className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  disabled={isInviting}
+                  aria-label="Email address to invite"
                 />
                 <button
                   type="submit"
                   disabled={isInviting}
-                  className="btn-primary rounded-full flex items-center animate-glow"
+                  className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label={isInviting ? "Sending invitation" : "Send invitation"}
                 >
                   {isInviting ? (
                     <span>Sending...</span>
                   ) : (
                     <>
-                      <Send className="w-5 h-5 mr-2" /> Invite
+                      <Send className="w-5 h-5 mr-2" aria-hidden="true" /> Invite
                     </>
                   )}
                 </button>
@@ -554,11 +569,11 @@ const ProjectHome = () => {
 
           <div className="ai-suggestions-section mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Lightbulb className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> AI Task Prioritization
+              <Lightbulb className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> AI Task Prioritization
             </h2>
             {aiSuggestions.length === 0 ? (
               <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No tasks to prioritize.
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No tasks to prioritize.
               </p>
             ) : (
               <div className="space-y-4">
@@ -575,14 +590,15 @@ const ProjectHome = () => {
 
           <div className="posts-section mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Posts
+              <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Posts
             </h2>
             <form onSubmit={handleCreatePost} className="mb-4">
               <div className="flex items-center gap-2 mb-2">
                 <select
                   value={newPost.type}
                   onChange={(e) => setNewPost({ ...newPost, type: e.target.value })}
-                  className="input-field rounded-full"
+                  className="input-field rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label="Select post type"
                 >
                   <option value="announcement">Announcement</option>
                   <option value="poll">Poll</option>
@@ -593,10 +609,11 @@ const ProjectHome = () => {
                   value={newPost.content}
                   onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
                   placeholder={newPost.type === 'picture' ? 'Image URL' : 'Post content'}
-                  className="input-field w-full rounded-full"
+                  className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label={newPost.type === 'picture' ? 'Enter image URL' : 'Enter post content'}
                 />
-                <button type="submit" className="btn-primary rounded-full flex items-center animate-glow">
-                  <Send className="w-5 h-5 mr-2" /> Post
+                <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Create post">
+                  <Send className="w-5 h-5 mr-2" aria-hidden="true" /> Post
                 </button>
               </div>
               {newPost.type === 'poll' && (
@@ -612,7 +629,8 @@ const ProjectHome = () => {
                         setNewPost({ ...newPost, options: newOptions });
                       }}
                       placeholder={`Option ${index + 1}`}
-                      className="input-field w-full rounded-full"
+                      className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                      aria-label={`Poll option ${index + 1}`}
                     />
                   ))}
                 </div>
@@ -620,7 +638,7 @@ const ProjectHome = () => {
             </form>
             {project.posts.length === 0 ? (
               <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No posts yet.
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No posts yet.
               </p>
             ) : (
               <div className="space-y-4">
@@ -631,7 +649,7 @@ const ProjectHome = () => {
                       <p className="text-holo-gray text-sm">{new Date(post.timestamp).toLocaleString()}</p>
                     </div>
                     {post.type === 'picture' ? (
-                      <img src={post.content} alt="Post" className="w-full h-48 object-cover rounded-lg mb-2" />
+                      <img src={post.content} alt="Post content" className="w-full h-48 object-cover rounded-lg mb-2" />
                     ) : (
                       <p className="text-holo-gray">{post.content}</p>
                     )}
@@ -639,7 +657,7 @@ const ProjectHome = () => {
                       <div className="mt-2">
                         {post.options.map((option, optIndex) => (
                           <div key={optIndex} className="flex items-center gap-2">
-                            <button className="btn-primary rounded-full px-2 py-1 text-sm">Vote</button>
+                            <button className="btn-primary rounded-full px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label={`Vote for ${option}`}>Vote</button>
                             <span>{option}</span>
                             <span>({post.votes.filter(v => v.option === option).length} votes)</span>
                           </div>
@@ -655,14 +673,15 @@ const ProjectHome = () => {
           <div className="tasks-section mb-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-inter text-holo-blue flex items-center">
-                <CheckSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Tasks
+                <CheckSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Tasks
               </h2>
               {isOwner && (
                 <button
                   onClick={handleAutoAssign}
-                  className="btn-primary rounded-full flex items-center animate-glow"
+                  className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label="Auto-assign tasks"
                 >
-                  <Square className="w-5 h-5 mr-2" /> Auto-Assign Tasks
+                  <Square className="w-5 h-5 mr-2" aria-hidden="true" /> Auto-Assign Tasks
                 </button>
               )}
             </div>
@@ -674,24 +693,26 @@ const ProjectHome = () => {
                     value={newTask.title}
                     onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                     placeholder="Task title"
-                    className="input-field w-full rounded-full"
+                    className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    aria-label="Task title"
                   />
                   <input
                     type="text"
                     value={newTask.description}
                     onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                     placeholder="Description (optional)"
-                    className="input-field w-full rounded-full"
+                    className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    aria-label="Task description"
                   />
-                  <button type="submit" className="btn-primary rounded-full flex items-center animate-glow">
-                    <CheckSquare className="w-5 h-5 mr-2" /> Add Task
+                  <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Add task">
+                    <CheckSquare className="w-5 h-5 mr-2" aria-hidden="true" /> Add Task
                   </button>
                 </div>
               </form>
             )}
             {project.tasks.length === 0 ? (
               <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No tasks yet.
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No tasks yet.
               </p>
             ) : (
               <div className="space-y-4">
@@ -711,9 +732,10 @@ const ProjectHome = () => {
                           value={newSubtask.taskId === task.id ? newSubtask.title : ''}
                           onChange={(e) => setNewSubtask({ taskId: task.id, title: e.target.value })}
                           placeholder="Subtask title"
-                          className="input-field w-full rounded-full"
+                          className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                          aria-label={`Add subtask for ${task.title}`}
                         />
-                        <button type="submit" className="btn-primary rounded-full flex items-center animate-glow">
+                        <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Add subtask">
                           Add Subtask
                         </button>
                       </form>
@@ -736,7 +758,7 @@ const ProjectHome = () => {
 
           <div className="files-section mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <FileText className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Files
+              <FileText className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Files
             </h2>
             <form onSubmit={handleUploadFile} className="mb-4">
               <div className="flex items-center gap-2">
@@ -745,23 +767,25 @@ const ProjectHome = () => {
                   value={newFile.name}
                   onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
                   placeholder="File name"
-                  className="input-field w-full rounded-full"
+                  className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label="File name"
                 />
                 <input
                   type="text"
                   value={newFile.url}
                   onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
                   placeholder="File URL"
-                  className="input-field w-full rounded-full"
+                  className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label="File URL"
                 />
-                <button type="submit" className="btn-primary rounded-full flex items-center animate-glow">
-                  <FileText className="w-5 h-5 mr-2" /> {isOwner ? 'Upload' : 'Request Upload'}
+                <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label={isOwner ? "Upload file" : "Request file upload"}>
+                  <FileText className="w-5 h-5 mr-2" aria-hidden="true" /> {isOwner ? 'Upload' : 'Request Upload'}
                 </button>
               </div>
             </form>
             {project.files.length === 0 ? (
               <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No files yet.
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No files yet.
               </p>
             ) : (
               <div className="space-y-4">
@@ -770,7 +794,7 @@ const ProjectHome = () => {
                     <p className="text-holo-blue">{file.name}</p>
                     <p className="text-holo-gray text-sm">Uploaded by: {file.uploadedBy}</p>
                     <p className="text-holo-gray text-sm">Status: {file.status}</p>
-                    <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-holo-blue hover:underline">View File</a>
+                    <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-holo-blue hover:underline focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label={`View file ${file.name}`}>View File</a>
                   </div>
                 ))}
               </div>
@@ -779,7 +803,7 @@ const ProjectHome = () => {
 
           <div className="teams-section mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Teams
+              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Teams
             </h2>
             {isOwner && (
               <form onSubmit={handleCreateTeam} className="mb-4">
@@ -789,24 +813,27 @@ const ProjectHome = () => {
                     value={newTeam.name}
                     onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
                     placeholder="Team name"
-                    className="input-field w-full rounded-full"
+                    className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    aria-label="Team name"
                   />
                   <input
                     type="text"
                     value={newTeam.description}
                     onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
                     placeholder="Description"
-                    className="input-field w-full rounded-full"
+                    className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    aria-label="Team description"
                   />
-                  <button type="submit" className="btn-primary rounded-full flex items-center animate-glow">
-                    <Users className="w-5 h-5 mr-2" /> Create Team
+                  <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Create team">
+                    <Users className="w-5 h-5 mr-2" aria-hidden="true" /> Create Team
                   </button>
                 </div>
                 <select
                   multiple
                   value={newTeam.members}
                   onChange={(e) => setNewTeam({ ...newTeam, members: Array.from(e.target.selectedOptions, option => option.value) })}
-                  className="input-field w-full rounded-lg"
+                  className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label="Select team members"
                 >
                   {project.members.map((member, index) => (
                     <option key={index} value={member.email}>{member.email}</option>
@@ -816,7 +843,7 @@ const ProjectHome = () => {
             )}
             {project.teams.length === 0 ? (
               <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No teams yet.
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No teams yet.
               </p>
             ) : (
               <div className="space-y-4">
@@ -833,7 +860,7 @@ const ProjectHome = () => {
 
           <div className="chat-section mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Project Chat
+              <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Project Chat
             </h2>
             <div className="messages card p-4 glassmorphic max-h-60 overflow-y-auto">
               {messages.map((msg, index) => (
@@ -849,27 +876,30 @@ const ProjectHome = () => {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type a message..."
-                className="input-field w-full rounded-full"
+                className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                aria-label="Type a message"
               />
               <button
                 onClick={handleSendMessage}
-                className="btn-primary rounded-full flex items-center animate-glow"
+                className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                aria-label="Send message"
               >
-                <Send className="w-5 h-5 mr-2" /> Send
+                <Send className="w-5 h-5 mr-2" aria-hidden="true" /> Send
               </button>
             </div>
           </div>
 
           <div className="activity-log-section mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <BarChart className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Activity Log
+              <BarChart className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Activity Log
             </h2>
             <div className="flex gap-2 mb-4">
               {['All', 'Create', 'Update', 'Invite', 'Post', 'Comment', 'Task-Create', 'Task-Update'].map(filter => (
                 <button
                   key={filter}
                   onClick={() => setActivityFilter(filter)}
-                  className={`btn-primary rounded-full px-3 py-1 ${activityFilter === filter ? 'bg-holo-pink' : ''}`}
+                  className={`btn-primary rounded-full px-3 py-1 ${activityFilter === filter ? 'bg-holo-pink' : ''} focus:outline-none focus:ring-2 focus:ring-holo-blue`}
+                  aria-label={`Filter activity by ${filter}`}
                 >
                   {filter}
                 </button>
@@ -877,7 +907,7 @@ const ProjectHome = () => {
             </div>
             {filteredActivityLog.length === 0 ? (
               <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No activity yet.
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No activity yet.
               </p>
             ) : (
               <div className="space-y-4">
@@ -894,7 +924,7 @@ const ProjectHome = () => {
 
           <div className="suggestions-section mb-6">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Lightbulb className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Suggestions
+              <Lightbulb className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Suggestions
             </h2>
             <form onSubmit={handleSubmitSuggestion} className="mb-4">
               <div className="flex items-center gap-2">
@@ -903,16 +933,17 @@ const ProjectHome = () => {
                   value={newSuggestion}
                   onChange={(e) => setNewSuggestion(e.target.value)}
                   placeholder="Suggest a change..."
-                  className="input-field w-full rounded-full"
+                  className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label="Suggest a change"
                 />
-                <button type="submit" className="btn-primary rounded-full flex items-center animate-glow">
-                  <Send className="w-5 h-5 mr-2" /> Submit
+                <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Submit suggestion">
+                  <Send className="w-5 h-5 mr-2" aria-hidden="true" /> Submit
                 </button>
               </div>
             </form>
             {project.suggestions.length === 0 ? (
               <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No suggestions yet.
+                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No suggestions yet.
               </p>
             ) : (
               <div className="space-y-4">
@@ -934,8 +965,8 @@ const ProjectHome = () => {
           <div className="bg-holo-bg-light p-6 rounded-lg max-w-md w-full glassmorphic relative z-[60]">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-inter text-holo-blue">Notification Settings</h2>
-              <button onClick={() => setShowSettings(false)} className="text-holo-gray hover:text-holo-blue z-70">
-                <X className="w-6 h-6" />
+              <button onClick={() => setShowSettings(false)} className="text-holo-gray hover:text-holo-blue z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Close settings">
+                <X className="w-6 h-6" aria-hidden="true" />
               </button>
             </div>
             <div className="space-y-4">
@@ -944,7 +975,8 @@ const ProjectHome = () => {
                   type="checkbox"
                   checked={notificationSettings.email}
                   onChange={(e) => setNotificationSettings({ ...notificationSettings, email: e.target.checked })}
-                  className="form-checkbox"
+                  className="form-checkbox focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label="Enable email notifications"
                 />
                 <span className="text-holo-gray">Email Notifications</span>
               </label>
@@ -953,7 +985,8 @@ const ProjectHome = () => {
                   type="checkbox"
                   checked={notificationSettings.sms}
                   onChange={(e) => setNotificationSettings({ ...notificationSettings, sms: e.target.checked })}
-                  className="form-checkbox"
+                  className="form-checkbox focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label="Enable SMS notifications"
                 />
                 <span className="text-holo-gray">SMS Notifications</span>
               </label>
@@ -962,13 +995,15 @@ const ProjectHome = () => {
                   type="checkbox"
                   checked={notificationSettings.inApp}
                   onChange={(e) => setNotificationSettings({ ...notificationSettings, inApp: e.target.checked })}
-                  className="form-checkbox"
+                  className="form-checkbox focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label="Enable in-app notifications"
                 />
                 <span className="text-holo-gray">In-App Notifications</span>
               </label>
               <button
                 onClick={handleUpdateNotificationSettings}
-                className="btn-primary rounded-full w-full animate-glow"
+                className="btn-primary rounded-full w-full animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                aria-label="Save notification settings"
               >
                 Save Settings
               </button>

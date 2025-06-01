@@ -66,12 +66,28 @@ const Projects = () => {
     };
     fetchNotifications();
 
-    const mockSuggestions = [
-      { title: "Virtual Reality Campaign", description: "Launch a VR-based marketing campaign", matchScore: 0.92 },
-      { title: "AI Workflow Automation", description: "Automate team workflows with AI", matchScore: 0.87 },
-      { title: "Augmented Reality Training", description: "Develop AR training modules", matchScore: 0.85 },
+    // Enhanced AI suggestions based on user context
+    const suggestions = [
+      { 
+        title: "Team Collaboration Hub", 
+        description: "Create a centralized hub for team communication", 
+        matchScore: 0.95,
+        reason: user.job ? `Tailored for your role as a ${user.job}` : "Ideal for team collaboration"
+      },
+      { 
+        title: "Product Launch Timeline", 
+        description: "Plan your next product launch with milestones", 
+        matchScore: 0.90,
+        reason: totalProjects > 0 ? "Based on your experience with previous projects" : "Great for starting new initiatives"
+      },
+      { 
+        title: "Event Planning Checklist", 
+        description: "Organize an event with a detailed checklist", 
+        matchScore: 0.85,
+        reason: user.school ? `Perfect for ${user.school} events` : "Useful for personal or professional events"
+      },
     ];
-    setAiSuggestions(mockSuggestions);
+    setAiSuggestions(suggestions);
 
     const tasksCompleted = projects.reduce((sum, p) => sum + (p.tasksCompleted || 0), 0);
     const mockLeaderboard = [
@@ -168,15 +184,16 @@ const Projects = () => {
           <button
             onClick={() => setShowCreateForm(true)}
             onKeyDown={(e) => handleKeyDown(e, () => setShowCreateForm(true))}
-            className="btn-primary rounded-full flex items-center mx-auto animate-glow z-20"
+            className="btn-primary rounded-full flex items-center mx-auto animate-glow z-20 focus:outline-none focus:ring-2 focus:ring-holo-blue"
             aria-label="Create New Project"
+            disabled={isCreating}
           >
             <FolderPlus className="w-5 h-5 mr-2" /> Create New Project
           </button>
           <button
             onClick={() => setShowSuggestions(true)}
             onKeyDown={(e) => handleKeyDown(e, () => setShowSuggestions(true))}
-            className="btn-primary rounded-full flex items-center mx-auto animate-glow z-20"
+            className="btn-primary rounded-full flex items-center mx-auto animate-glow z-20 focus:outline-none focus:ring-2 focus:ring-holo-blue"
             aria-label="View AI Suggestions"
           >
             <Lightbulb className="w-5 h-5 mr-2" /> AI Suggestions
@@ -261,7 +278,7 @@ const Projects = () => {
               <Link
                 key={project.id}
                 to={`/projects/${project.id}`}
-                className="project-card card p-6 glassmorphic holographic-effect z-10"
+                className="project-card card p-6 glassmorphic holographic-effect z-10 focus:outline-none focus:ring-2 focus:ring-holo-blue"
                 aria-label={`View project ${project.title}`}
                 onClick={(e) => {
                   e.preventDefault();
@@ -285,10 +302,15 @@ const Projects = () => {
           <div className="bg-holo-bg-light p-6 rounded-lg max-w-md w-full glassmorphic relative z-[60]">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-inter text-holo-blue">Create a New Project</h2>
-              <button onClick={() => setShowCreateForm(false)} className="text-holo-gray hover:text-holo-blue z-70" aria-label="Close Create Project Form">
+              <button onClick={() => setShowCreateForm(false)} className="text-holo-gray hover:text-holo-blue z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Close Create Project Form">
                 <X className="w-6 h-6" />
               </button>
             </div>
+            {isCreating && (
+              <div className="flex justify-center mb-4">
+                <p className="text-holo-blue text-lg font-inter animate-pulse">Creating project...</p>
+              </div>
+            )}
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div>
                 <label className="text-holo-gray text-sm" htmlFor="project-title">Project Title</label>
@@ -299,9 +321,10 @@ const Projects = () => {
                   value={newProjectTitle}
                   onChange={(e) => setNewProjectTitle(e.target.value)}
                   placeholder="Enter project title"
-                  className="input-field w-full rounded-full z-70"
+                  className="input-field w-full rounded-full z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue"
                   required
                   aria-required="true"
+                  disabled={isCreating}
                 />
               </div>
               <div>
@@ -311,7 +334,8 @@ const Projects = () => {
                   value={newProjectDescription}
                   onChange={(e) => setNewProjectDescription(e.target.value)}
                   placeholder="Enter project description (optional)"
-                  className="input-field w-full h-24 rounded-lg z-70"
+                  className="input-field w-full h-24 rounded-lg z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  disabled={isCreating}
                 />
               </div>
               <div>
@@ -320,7 +344,8 @@ const Projects = () => {
                   id="project-category"
                   value={newProjectCategory}
                   onChange={(e) => setNewProjectCategory(e.target.value)}
-                  className="input-field w-full rounded-full z-70"
+                  className="input-field w-full rounded-full z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  disabled={isCreating}
                 >
                   <option value="School">School</option>
                   <option value="Job">Job</option>
@@ -330,7 +355,7 @@ const Projects = () => {
               <button
                 type="submit"
                 disabled={isCreating}
-                className="btn-primary rounded-full w-full animate-glow flex items-center justify-center z-70"
+                className="btn-primary rounded-full w-full animate-glow flex items-center justify-center z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue"
                 aria-label="Create Project"
               >
                 {isCreating ? (
@@ -351,7 +376,7 @@ const Projects = () => {
           <div className="bg-holo-bg-light p-6 rounded-lg max-w-md w-full glassmorphic relative z-[60]">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-inter text-holo-blue">AI Project Suggestions</h2>
-              <button onClick={() => setShowSuggestions(false)} className="text-holo-gray hover:text-holo-blue z-70" aria-label="Close AI Suggestions">
+              <button onClick={() => setShowSuggestions(false)} className="text-holo-gray hover:text-holo-blue z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Close AI Suggestions">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -361,10 +386,11 @@ const Projects = () => {
                   <h3 className="text-lg font-inter text-holo-blue">{suggestion.title}</h3>
                   <p className="text-holo-gray text-sm mb-2">{suggestion.description}</p>
                   <p className="text-holo-gray text-sm">Match Score: {(suggestion.matchScore * 100).toFixed(0)}%</p>
+                  <p className="text-holo-gray text-sm mb-2">Why: {suggestion.reason}</p>
                   <button
                     onClick={() => handleUseSuggestion(suggestion)}
                     onKeyDown={(e) => handleKeyDown(e, () => handleUseSuggestion(suggestion))}
-                    className="btn-primary rounded-full mt-2 animate-glow"
+                    className="btn-primary rounded-full mt-2 animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
                     aria-label={`Use suggestion ${suggestion.title}`}
                   >
                     Use This Idea
