@@ -57,22 +57,30 @@ const ProjectHome = () => {
         return;
       }
 
+      // Check user projects first (cached data)
+      let projectData = user.projects.find((p) => p.id === id);
+      if (projectData) {
+        console.log('ProjectHome - Project found in user data:', projectData);
+        setProject(projectData);
+        setTitle(projectData.title);
+        setDescription(projectData.description);
+        setCategory(projectData.category);
+        setStatus(projectData.status);
+        setNotificationSettings(projectData.settings?.notifications || { email: true, sms: true, inApp: true });
+        return;
+      }
+
+      // Fetch from backend if not found in user data
       try {
         console.log('ProjectHome - Fetching project with ID:', id);
-        let projectData = user.projects.find((p) => p.id === id);
-        if (!projectData) {
-          console.log('ProjectHome - Project not found in user data, fetching directly');
-          const response = await axios.get(`http://localhost:3000/api/projects/${id}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-          });
-          projectData = response.data;
-        }
-
+        const response = await axios.get(`http://localhost:3000/api/projects/${id}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        projectData = response.data;
         if (!projectData) {
           throw new Error('Project not found');
         }
-
-        console.log('ProjectHome - Project fetched:', projectData);
+        console.log('ProjectHome - Project fetched from backend:', projectData);
         setProject(projectData);
         setTitle(projectData.title);
         setDescription(projectData.description);
@@ -136,7 +144,7 @@ const ProjectHome = () => {
       socket.off('notification');
       socket.disconnect();
     };
-  }, [id, user, isAuthenticated, isLoading, navigate, project, retryCount]);
+  }, [id, user, isAuthenticated, isLoading, navigate, retryCount]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -730,8 +738,8 @@ const ProjectHome = () => {
             ) : (
               <div className="space-y-4">
                 {project.tasks.map((task, index) => (
-                  <div key={index} className="task-item card p-4 glassmorphic">
-                    <p className="text-holo-blue">{task.title}</p>
+                  <div key={index} className="task-item card p-4 glassmorphic animate-fade-in">
+                    <p className="text-holo-blue font-bold">{task.title}</p>
                     <p className="text-holo-gray text-sm">Description: {task.description || 'None'}</p>
                     <p className="text-holo-gray text-sm">Assigned to: {task.assignedTo}</p>
                     <p className="text-holo-gray text-sm">Status: {task.status}</p>
@@ -803,7 +811,7 @@ const ProjectHome = () => {
             ) : (
               <div className="space-y-4">
                 {project.files.map((file, index) => (
-                  <div key={index} className="file-item card p-4 glassmorphic">
+                  <div key={index} className="file-item card p-4 glassmorphic animate-fade-in">
                     <p className="text-holo-blue">{file.name}</p>
                     <p className="text-holo-gray text-sm">Uploaded by: {file.uploadedBy}</p>
                     <p className="text-holo-gray text-sm">Status: {file.status}</p>
@@ -861,7 +869,7 @@ const ProjectHome = () => {
             ) : (
               <div className="space-y-4">
                 {project.teams.map((team, index) => (
-                  <div key={index} className="team-item card p-4 glassmorphic">
+                  <div key={index} className="team-item card p-4 glassmorphic animate-fade-in">
                     <p className="text-holo-blue">{team.name}</p>
                     <p className="text-holo-gray text-sm">Description: {team.description}</p>
                     <p className="text-holo-gray text-sm">Members: {team.members.map(m => m.email).join(', ')}</p>
@@ -925,7 +933,7 @@ const ProjectHome = () => {
             ) : (
               <div className="space-y-4">
                 {filteredActivityLog.map((log, index) => (
-                  <div key={index} className="log-item card p-4 glassmorphic">
+                  <div key={index} className="log-item card p-4 glassmorphic animate-fade-in">
                     <p className="text-holo-gray">{log.message}</p>
                     <p className="text-holo-gray text-sm">By: {log.user}</p>
                     <p className="text-holo-gray text-sm">{new Date(log.timestamp).toLocaleString()}</p>
@@ -961,7 +969,7 @@ const ProjectHome = () => {
             ) : (
               <div className="space-y-4">
                 {project.suggestions.map((suggestion, index) => (
-                  <div key={index} className="suggestion-item card p-4 glassmorphic">
+                  <div key={index} className="suggestion-item card p-4 glassmorphic animate-fade-in">
                     <p className="text-holo-gray">{suggestion.content}</p>
                     <p className="text-holo-gray text-sm">By: {suggestion.author}</p>
                     <p className="text-holo-gray text-sm">{new Date(suggestion.timestamp).toLocaleString()}</p>

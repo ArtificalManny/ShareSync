@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import { Home, Folder, User, LogOut, Sun, Moon } from 'lucide-react';
@@ -7,6 +7,11 @@ import './Navbar.css';
 const Navbar = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout, theme, toggleTheme } = useContext(AuthContext);
+
+  useEffect(() => {
+    // Apply the theme to the document root
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const handleLogout = () => {
     logout();
@@ -51,15 +56,14 @@ const Navbar = () => {
           )}
           <button
             onClick={toggleTheme}
-            className="navbar-link flex items-center gap-2"
-            aria-label="Toggle Theme"
+            className="navbar-theme-toggle flex items-center gap-2"
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           >
             {theme === 'dark' ? (
               <Sun className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" />
             ) : (
               <Moon className="w-5 h-5 text-holo-blue animate-pulse" aria-hidden="true" />
             )}
-            {theme === 'dark' ? 'Light' : 'Dark'} Mode
           </button>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, Plus } from 'lucide-react';
+import { Folder, Plus, AlertCircle } from 'lucide-react';
 import './Projects.css';
 
 const Projects = () => {
@@ -29,6 +29,9 @@ const Projects = () => {
         status: 'Not Started',
       };
       const newProject = await addProject(projectData);
+      if (!newProject || !newProject.id) {
+        throw new Error('Project creation failed: No project ID returned.');
+      }
       setTitle('');
       setDescription('');
       setCategory('Personal');
@@ -70,7 +73,7 @@ const Projects = () => {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
-        <form onSubmit={handleCreateProject} className="mb-8">
+        <form onSubmit={handleCreateProject} className="mb-8 card p-6 glassmorphic">
           <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
             <Plus className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Create New Project
           </h2>
@@ -137,10 +140,10 @@ const Projects = () => {
                 <Link
                   key={project.id}
                   to={`/projects/${project.id}`}
-                  className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-holo-blue animate-fade-in"
                   aria-label={`View project ${project.title}`}
                 >
-                  <h3 className="text-lg font-inter text-holo-blue">{project.title}</h3>
+                  <h3 className="text-lg font-inter text-holo-blue font-bold">{project.title}</h3>
                   <p className="text-holo-gray text-sm mb-1">{project.description}</p>
                   <p className="text-holo-gray text-sm">Category: {project.category}</p>
                   <p className="text-holo-gray text-sm">Status: {project.status}</p>

@@ -1,50 +1,66 @@
 /* App.css */
-.app-container {
+:root[data-theme="dark"] {
+  --background-color: #1a1a1a;
+  --secondary-background: #2d2d2d;
+  --text-primary: #d1d5db;
+  --text-accent: #3b82f6;
+  --highlight: #ff6b6b;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-border: rgba(59, 130, 246, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme="light"] {
+  --background-color: #f5f5f5;
+  --secondary-background: #e0e0e0;
+  --text-primary: #333333;
+  --text-accent: #1e90ff;
+  --highlight: #ff4040;
+  --card-bg: rgba(0, 0, 0, 0.05);
+  --card-border: rgba(30, 144, 255, 0.1);
+  --input-bg: rgba(0, 0, 0, 0.05);
+}
+
+body {
+  margin: 0;
   font-family: 'Inter', sans-serif;
-  line-height: 1.6;
-  background-color: #1a1a1a;
-  color: #d1d5db;
+  background-color: var(--background-color);
+  color: var(--text-primary);
+}
+
+.app-container {
   min-height: 100vh;
-}
-
-.app-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: #1a1a1a;
-}
-
-.app-error {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-h-screen: 100vh;
-  background-color: #1a1a1a;
-}
-
-.loader {
-  border: 4px solid #3b82f6;
-  border-top: 4px solid transparent;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 .text-holo-blue {
-  color: #3b82f6;
+  color: var(--text-accent);
 }
 
 .text-holo-gray {
-  color: #d1d5db;
+  color: var(--text-primary);
+}
+
+.text-holo-pink {
+  color: var(--highlight);
 }
 
 .bg-holo-bg-light {
-  background-color: #2d2d2d;
+  background-color: var(--secondary-background);
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+}
+
+.input-field {
+  background: var(--input-bg);
+}
+
+.btn-primary {
+  background-color: var(--text-accent);
+}
+
+.btn-primary:hover {
+  background-color: var(--highlight);
 }

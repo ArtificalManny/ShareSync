@@ -1,24 +1,27 @@
 /* Home.css */
 .home-container {
   min-height: 100vh;
-  background-color: #1a1a1a;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
 }
 
 .home-header {
   background: linear-gradient(180deg, #2d2d2d, #1a1a1a);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .card {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 0.75rem;
+  border: 1px solid rgba(59, 130, 246, 0.1);
 }
 
 .feed-item {
-  transition: box-shadow 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
 }
 
 .feed-item:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.2);
 }
 
 .text-holo-blue {
@@ -45,6 +48,22 @@
   animation: glow 1.5s ease-in-out infinite alternate;
 }
 
+.animate-pulse {
+  animation: pulse 1.5s infinite;
+}
+
+.animate-pulse-on-hover:hover {
+  animation: pulse 1s infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
 @keyframes textGlow {
   from {
     text-shadow: 0 0 5px #3b82f6, 0 0 10px #3b82f6;
@@ -63,23 +82,20 @@
   }
 }
 
-.animate-pulse {
-  animation: pulse 1.5s infinite;
-}
-
 @keyframes pulse {
   0% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50% { opacity: 0.7; }
   100% { opacity: 1; }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-in;
 }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 500px; }
 }
 
 .input-field {
@@ -90,6 +106,7 @@
   font-family: 'Inter', sans-serif;
   font-size: 1rem;
   line-height: 1.5;
+  transition: box-shadow 0.2s ease;
 }
 
 .input-field:focus {
@@ -102,11 +119,12 @@
   color: #ffffff;
   padding: 0.5rem 1rem;
   border: none;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.1s;
 }
 
 .btn-primary:hover {
   background-color: #2563eb;
+  transform: scale(1.05);
 }
 
 .glassmorphic {
@@ -139,4 +157,9 @@
 .comment {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.comment:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
