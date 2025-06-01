@@ -33,6 +33,9 @@ const ProjectHome = () => {
   const [contributions, setContributions] = useState({});
   const [notifications, setNotifications] = useState([]);
   const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+  const retryDelay = 1000;
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -66,9 +69,7 @@ const ProjectHome = () => {
         }
 
         if (!projectData) {
-          console.log('ProjectHome - Project not found for ID:', id);
-          setError('Project not found or you do not have access to this project.');
-          return;
+          throw new Error('Project not found');
         }
 
         console.log('ProjectHome - Project fetched:', projectData);
@@ -80,7 +81,12 @@ const ProjectHome = () => {
         setNotificationSettings(projectData.settings?.notifications || { email: true, sms: true, inApp: true });
       } catch (err) {
         console.error('ProjectHome - Failed to fetch project:', err.message);
-        setError('Failed to load project: ' + (err.message || 'An unexpected error occurred.'));
+        if (retryCount < maxRetries) {
+          console.log('ProjectHome - Retrying fetch, attempt:', retryCount + 1);
+          setTimeout(() => setRetryCount(retryCount + 1), retryDelay);
+        } else {
+          setError('Failed to load project after multiple attempts: ' + (err.message || 'An unexpected error occurred.'));
+        }
       }
     };
 
@@ -130,7 +136,7 @@ const ProjectHome = () => {
       socket.off('notification');
       socket.disconnect();
     };
-  }, [id, user, isAuthenticated, isLoading, navigate, project]);
+  }, [id, user, isAuthenticated, isLoading, navigate, project, retryCount]);
 
   const handleEdit = () => {
     setIsEditing(true);

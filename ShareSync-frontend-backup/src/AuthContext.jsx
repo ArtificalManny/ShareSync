@@ -91,7 +91,7 @@ const AuthProvider = ({ children }) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
-    }, 10000); // 10-second timeout
+    }, 10000);
 
     try {
       const response = await axios.post('http://localhost:3000/api/projects', projectData, {

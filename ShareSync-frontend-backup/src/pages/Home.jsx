@@ -1,12 +1,14 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, Users } from 'lucide-react';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send } from 'lucide-react';
 import './Home.css';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user, isLoading, authError } = useContext(AuthContext);
+  const { user, isAuthenticated, isLoading, authError } = useContext(AuthContext);
+  const [feedItems, setFeedItems] = useState([]);
+  const [newComment, setNewComment] = useState({});
 
   useEffect(() => {
     if (isLoading) {
@@ -17,120 +19,186 @@ const Home = () => {
     if (!isAuthenticated) {
       console.log('Home - User not authenticated, redirecting to login');
       navigate('/login', { replace: true });
+      return;
     }
-  }, [isAuthenticated, isLoading, navigate]);
+
+    if (!user || !user.email) {
+      console.log('Home - User data not available');
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    // Compile feed items from all active projects
+    const activeProjects = user.projects.filter(project => project.status !== 'Completed');
+    const allFeedItems = activeProjects.flatMap(project => {
+      const activityLogs = (project.activityLog || []).map(log => ({
+        projectId: project.id,
+        projectTitle: project.title,
+        type: 'activity',
+        message: log.message,
+        user: log.user,
+        timestamp: log.timestamp,
+      }));
+
+      const posts = (project.posts || []).map(post => ({
+        projectId: project.id,
+        projectTitle: project.title,
+        type: post.type,
+        content: post.content,
+        author: post.author,
+        timestamp: post.timestamp,
+        votes: post.votes || [],
+        options: post.options || [],
+      }));
+
+      return [...activityLogs, ...posts].map(item => ({
+        ...item,
+        likes: 0,
+        comments: [],
+      }));
+    });
+
+    // Sort feed items by timestamp (most recent first)
+    allFeedItems.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    setFeedItems(allFeedItems);
+  }, [isAuthenticated, isLoading, navigate, user]);
+
+  const handleLike = (index) => {
+    setFeedItems(prevItems =>
+      prevItems.map((item, i) =>
+        i === index ? { ...item, likes: item.likes + 1 } : item
+      )
+    );
+  };
+
+  const handleCommentSubmit = (index, e) => {
+    e.preventDefault();
+    const commentText = newComment[index] || '';
+    if (!commentText.trim()) return;
+
+    setFeedItems(prevItems =>
+      prevItems.map((item, i) =>
+        i === index
+          ? { ...item, comments: [...item.comments, { text: commentText, user: user.email, timestamp: new Date().toISOString() }] }
+          : item
+      )
+    );
+    setNewComment(prev => ({ ...prev, [index]: '' }));
+  };
 
   if (isLoading) {
-    return <div className="home-container"><p className="text-holo-gray">Loading...</p></div>;
-  }
-
-  if (authError) {
     return (
-      <div className="home-container">
-        <p className="text-red-500">{authError}</p>
-        <Link to="/login" className="text-holo-blue hover:underline">Login</Link>
+      <div className="home-container flex items-center justify-center min-h-screen">
+        <div className="loader" aria-label="Loading home page"></div>
+        <span className="text-holo-blue text-xl font-inter ml-4">Loading...</span>
       </div>
     );
   }
 
-  if (!user) {
-    return <div className="home-container"><p className="text-holo-gray">Please log in to continue.</p></div>;
+  if (authError) {
+    return (
+      <div className="home-container flex items-center justify-center min-h-screen">
+        <p className="text-red-500 text-lg font-inter">{authError}</p>
+      </div>
+    );
   }
-
-  const totalProjects = user.projects?.length || 0;
-  const currentProjects = user.projects?.filter(p => p.status !== 'Completed').length || 0;
-  const pastProjects = user.projects?.filter(p => p.status === 'Completed').length || 0;
-  const tasksCompleted = user.projects?.reduce((sum, p) => sum + (p.tasksCompleted || 0), 0) || 0;
-  const recentActivity = user.projects?.flatMap(p => p.activityLog || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 5) || [];
 
   return (
     <div className="home-container">
       <div className="home-header py-8 px-6 rounded-b-3xl text-center">
         <h1 className="text-4xl font-inter text-holo-blue mb-4 animate-text-glow">
-          Welcome, {user.firstName}!
+          Welcome to ShareSync, {user.firstName}!
         </h1>
-        <p className="text-holo-gray mb-4">Your hub for collaboration and productivity.</p>
-        <Link
-          to="/projects"
-          className="btn-primary rounded-full inline-flex items-center px-4 py-2 animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
-          aria-label="Go to Projects"
-        >
-          <Folder className="w-5 h-5 mr-2" /> View Your Projects
-        </Link>
+        <p className="text-holo-gray text-lg font-inter mb-4">
+          Stay updated with all your active projects in one place.
+        </p>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <div className="dashboard grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="dashboard-card card p-6 glassmorphic hover:shadow-lg transition-shadow">
-            <h2 className="text-xl font-inter text-holo-blue mb-2">Total Projects</h2>
-            <p className="text-3xl font-bold text-holo-pink">{totalProjects}</p>
-          </div>
-          <div className="dashboard-card card p-6 glassmorphic hover:shadow-lg transition-shadow">
-            <h2 className="text-xl font-inter text-holo-blue mb-2">Current Projects</h2>
-            <p className="text-3xl font-bold text-holo-pink">{currentProjects}</p>
-          </div>
-          <div className="dashboard-card card p-6 glassmorphic hover:shadow-lg transition-shadow">
-            <h2 className="text-xl font-inter text-holo-blue mb-2">Past Projects</h2>
-            <p className="text-3xl font-bold text-holo-pink">{pastProjects}</p>
-          </div>
-          <div className="dashboard-card card p-6 glassmorphic hover:shadow-lg transition-shadow">
-            <h2 className="text-xl font-inter text-holo-blue mb-2">Tasks Completed</h2>
-            <p className="text-3xl font-bold text-holo-pink">{tasksCompleted}</p>
-          </div>
-        </div>
-
-        <div className="recent-activity-section card p-6 glassmorphic mb-8">
-          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-            <AlertCircle className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Recent Activity
-          </h2>
-          {recentActivity.length === 0 ? (
-            <p className="text-holo-gray flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No recent activity.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="activity-item p-3 rounded bg-holo-bg-light">
-                  <p className="text-holo-gray">{activity.message}</p>
-                  <p className="text-holo-gray text-sm">By: {activity.user}</p>
-                  <p className="text-holo-gray text-sm">{new Date(activity.timestamp).toLocaleString()}</p>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        <h2 className="text-2xl font-inter text-holo-blue mb-6 flex items-center">
+          <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Project Activity Feed
+        </h2>
+        {feedItems.length === 0 ? (
+          <p className="text-holo-gray flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No recent activity in your active projects.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {feedItems.map((item, index) => (
+              <div key={index} className="feed-item card p-4 glassmorphic animate-fade-in">
+                <div className="flex justify-between items-center mb-2">
+                  <Link to={`/projects/${item.projectId}`} className="text-holo-blue font-inter font-bold text-lg hover:underline">
+                    {item.projectTitle}
+                  </Link>
+                  <p className="text-holo-gray text-sm">{new Date(item.timestamp).toLocaleString()}</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="quick-links card p-6 glassmorphic">
-          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-            <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Quick Links
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link
-              to="/projects"
-              className="quick-link card p-4 glassmorphic hover:shadow-lg transition-shadow text-center"
-              aria-label="Create a New Project"
-            >
-              <Folder className="w-6 h-6 mx-auto mb-2 text-holo-blue" />
-              <p className="text-holo-gray">Create a New Project</p>
-            </Link>
-            <Link
-              to={`/profile/${user.username}`}
-              className="quick-link card p-4 glassmorphic hover:shadow-lg transition-shadow text-center"
-              aria-label="View Your Profile"
-            >
-              <Users className="w-6 h-6 mx-auto mb-2 text-holo-blue" />
-              <p className="text-holo-gray">View Your Profile</p>
-            </Link>
-            <Link
-              to="/projects"
-              className="quick-link card p-4 glassmorphic hover:shadow-lg transition-shadow text-center"
-              aria-label="Collaborate with Team"
-            >
-              <Users className="w-6 h-6 mx-auto mb-2 text-holo-blue" />
-              <p className="text-holo-gray">Collaborate with Team</p>
-            </Link>
+                {item.type === 'activity' ? (
+                  <p className="text-holo-gray">{item.message} by {item.user}</p>
+                ) : (
+                  <>
+                    <p className="text-holo-gray">{item.content}</p>
+                    {item.type === 'picture' && (
+                      <img src={item.content} alt="Post content" className="w-full h-48 object-cover rounded-lg mt-2" />
+                    )}
+                    {item.type === 'poll' && (
+                      <div className="mt-2 space-y-2">
+                        {item.options.map((option, optIndex) => (
+                          <div key={optIndex} className="flex items-center gap-2">
+                            <button className="btn-primary rounded-full px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label={`Vote for ${option}`}>Vote</button>
+                            <span>{option}</span>
+                            <span>({item.votes.filter(v => v.option === option).length} votes)</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-holo-gray text-sm mt-1">Posted by {item.author}</p>
+                  </>
+                )}
+                <div className="flex gap-4 mt-4">
+                  <button
+                    onClick={() => handleLike(index)}
+                    className="flex items-center gap-1 text-holo-blue hover:text-holo-pink transition-colors focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    aria-label={`Like this update (${item.likes} likes)`}
+                  >
+                    <ThumbsUp className="w-5 h-5" aria-hidden="true" /> {item.likes} Likes
+                  </button>
+                  <button
+                    onClick={() => setNewComment(prev => ({ ...prev, [index]: prev[index] || '' }))}
+                    className="flex items-center gap-1 text-holo-blue hover:text-holo-pink transition-colors focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    aria-label="Comment on this update"
+                  >
+                    <MessageSquare className="w-5 h-5" aria-hidden="true" /> {item.comments.length} Comments
+                  </button>
+                </div>
+                {item.comments.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {item.comments.map((comment, cIndex) => (
+                      <div key={cIndex} className="comment p-2 bg-holo-bg-light rounded">
+                        <p className="text-holo-gray text-sm">
+                          <strong>{comment.user}:</strong> {comment.text}
+                        </p>
+                        <p className="text-holo-gray text-xs">{new Date(comment.timestamp).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <form onSubmit={(e) => handleCommentSubmit(index, e)} className="mt-2 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newComment[index] || ''}
+                    onChange={(e) => setNewComment(prev => ({ ...prev, [index]: e.target.value }))}
+                    placeholder="Add a comment..."
+                    className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    aria-label="Add a comment"
+                  />
+                  <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Submit comment">
+                    <Send className="w-5 h-5" aria-hidden="true" />
+                  </button>
+                </form>
+              </div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

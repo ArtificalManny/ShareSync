@@ -1,36 +1,36 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './AuthContext';
-import Navbar from './Navbar';
+import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
-import ProjectsCreate from './pages/ProjectsCreate';
 import ProjectHome from './pages/ProjectHome';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Settings from './pages/Settings';
+import ForgotPassword from './pages/ForgotPassword';
 import './App.css';
 
 const App = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="app-container dark">
+    <Router>
+      <AuthProvider>
+        <div className="app-container">
           <Navbar />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/projects/create" element={<ProjectsCreate />} />
-            <Route path="/projects/:id" element={<ProjectHome />} />
-            <Route path="/profile/:username" element={<Profile />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
+          <Suspense fallback={<div>Loading...</div>}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/:id" element={<ProjectHome />} />
+              <Route path="/profile/:username" element={<Profile />} />
+            </Routes>
+          </Suspense>
         </div>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 };
 

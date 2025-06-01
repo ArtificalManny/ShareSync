@@ -23,7 +23,7 @@ const Profile = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [hasFailed, setHasFailed] = useState(false);
   const maxRetries = 2;
-  const timeoutDuration = 3000; // Reduced to 3 seconds
+  const timeoutDuration = 3000;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -35,6 +35,13 @@ const Profile = () => {
       if (!isAuthenticated) {
         console.log('Profile - User not authenticated, redirecting to login');
         navigate('/login', { replace: true });
+        return;
+      }
+
+      if (!username) {
+        console.log('Profile - No username provided');
+        setError('No username provided.');
+        setHasFailed(true);
         return;
       }
 
@@ -130,16 +137,16 @@ const Profile = () => {
 
   if (isLoading) {
     return (
-      <div className="profile-container flex items-center justify-center min-h-screen bg-holo-bg-dark">
+      <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="loader" aria-label="Loading profile"></div>
-        <span className="text-holo-blue text-2xl font-inter ml-4">Loading...</span>
+        <span className="text-holo-blue text-xl font-inter ml-4">Loading...</span>
       </div>
     );
   }
 
   if (authError || hasFailed) {
     return (
-      <div className="profile-container flex items-center justify-center min-h-screen bg-holo-bg-dark">
+      <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-500 text-lg font-inter mb-4">{authError || error}</p>
           <Link to="/" className="text-holo-blue hover:underline text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-blue">Return to Home</Link>
@@ -150,9 +157,9 @@ const Profile = () => {
 
   if (!profile) {
     return (
-      <div className="profile-container flex items-center justify-center min-h-screen bg-holo-bg-dark">
+      <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="loader" aria-label="Loading profile"></div>
-        <span className="text-holo-gray text-2xl font-inter ml-4">Loading profile...</span>
+        <span className="text-holo-gray text-xl font-inter ml-4">Loading profile...</span>
       </div>
     );
   }
