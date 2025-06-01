@@ -56,7 +56,15 @@ const ProjectHome = () => {
 
       try {
         console.log('ProjectHome - Fetching project with ID:', id);
-        const projectData = user.projects.find((p) => p.id === id);
+        let projectData = user.projects.find((p) => p.id === id);
+        if (!projectData) {
+          console.log('ProjectHome - Project not found in user data, fetching directly');
+          const response = await axios.get(`http://localhost:3000/api/projects/${id}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          });
+          projectData = response.data;
+        }
+
         if (!projectData) {
           console.log('ProjectHome - Project not found for ID:', id);
           setError('Project not found or you do not have access to this project.');
@@ -113,7 +121,6 @@ const ProjectHome = () => {
     });
 
     socket.on('notification', (notification) => {
-      // Prioritize notifications (mock logic: prioritize messages and task updates)
       const priority = notification.message.includes('message') || notification.message.includes('task') ? 'high' : 'normal';
       setNotifications((prev) => [...prev, { ...notification, priority }].slice(-5));
     });

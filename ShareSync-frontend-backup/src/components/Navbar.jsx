@@ -1,11 +1,12 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { LogOut, Home, Folder, User } from 'lucide-react';
+import { Home, Folder, User, LogOut, Sun, Moon } from 'lucide-react';
+import './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user, logout } = useContext(AuthContext);
+  const { isAuthenticated, user, logout, theme, toggleTheme } = useContext(AuthContext);
 
   const handleLogout = () => {
     logout();
@@ -13,43 +14,53 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar bg-holo-bg-dark text-holo-gray p-4 shadow-lg">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <Link to="/" className="text-2xl font-inter text-holo-blue font-bold">
+    <nav className="navbar glassmorphic">
+      <div className="navbar-container">
+        <Link to="/" className="navbar-logo text-holo-blue font-inter text-2xl font-bold animate-text-glow">
           ShareSync
         </Link>
-        <div className="flex items-center gap-6">
+        <div className="navbar-links">
           {isAuthenticated ? (
             <>
-              <Link to="/" className="flex items-center gap-2 text-holo-gray hover:text-holo-blue">
-                <Home className="w-5 h-5" /> Home
+              <Link to="/" className="navbar-link flex items-center gap-2" aria-label="Home">
+                <Home className="w-5 h-5 text-holo-blue animate-pulse" aria-hidden="true" /> Home
               </Link>
-              <Link to="/projects" className="flex items-center gap-2 text-holo-gray hover:text-holo-blue">
-                <Folder className="w-5 h-5" /> Projects
+              <Link to="/projects" className="navbar-link flex items-center gap-2" aria-label="Projects">
+                <Folder className="w-5 h-5 text-holo-blue animate-pulse" aria-hidden="true" /> Projects
               </Link>
-              <Link
-                to={`/profile/${user?.username || ''}`}
-                className="flex items-center gap-2 text-holo-gray hover:text-holo-blue"
-              >
-                <User className="w-5 h-5" /> Profile
+              <Link to={`/profile/${user?.username}`} className="navbar-link flex items-center gap-2" aria-label="Profile">
+                <User className="w-5 h-5 text-holo-blue animate-pulse" aria-hidden="true" /> Profile
               </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 text-holo-gray hover:text-holo-blue"
+                className="navbar-link flex items-center gap-2"
+                aria-label="Logout"
               >
-                <LogOut className="w-5 h-5" /> Logout
+                <LogOut className="w-5 h-5 text-holo-blue animate-pulse" aria-hidden="true" /> Logout
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="text-holo-gray hover:text-holo-blue">
+              <Link to="/login" className="navbar-link" aria-label="Login">
                 Login
               </Link>
-              <Link to="/register" className="text-holo-gray hover:text-holo-blue">
+              <Link to="/register" className="navbar-link" aria-label="Register">
                 Register
               </Link>
             </>
           )}
+          <button
+            onClick={toggleTheme}
+            className="navbar-link flex items-center gap-2"
+            aria-label="Toggle Theme"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" />
+            ) : (
+              <Moon className="w-5 h-5 text-holo-blue animate-pulse" aria-hidden="true" />
+            )}
+            {theme === 'dark' ? 'Light' : 'Dark'} Mode
+          </button>
         </div>
       </div>
     </nav>

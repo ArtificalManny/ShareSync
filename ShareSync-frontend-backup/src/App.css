@@ -19,7 +19,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  min-h-screen: 100vh;
   background-color: #1a1a1a;
 }
 
@@ -37,25 +37,6 @@
   100% { transform: rotate(360deg); }
 }
 
-.btn-primary {
-  background-color: #3b82f6;
-  color: #ffffff;
-  padding: 0.5rem 1rem;
-  border: none;
-  transition: background-color 0.2s;
-}
-
-.btn-primary:hover {
-  background-color: #2563eb;
-}
-
-.glassmorphic {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
 .text-holo-blue {
   color: #3b82f6;
 }
@@ -66,17 +47,4 @@
 
 .bg-holo-bg-light {
   background-color: #2d2d2d;
-}
-
-.animate-glow {
-  animation: glow 1.5s ease-in-out infinite alternate;
-}
-
-@keyframes glow {
-  from {
-    box-shadow: 0 0 5px #3b82f6;
-  }
-  to {
-    box-shadow: 0 0 10px #3b82f6;
-  }
 }

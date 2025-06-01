@@ -21,9 +21,9 @@ const Profile = () => {
     bannerPicture: '',
   });
   const [retryCount, setRetryCount] = useState(0);
-  const [hasTimedOut, setHasTimedOut] = useState(false);
-  const maxRetries = 3;
-  const timeoutDuration = 5000; // 5 seconds
+  const [hasFailed, setHasFailed] = useState(false);
+  const maxRetries = 2;
+  const timeoutDuration = 3000; // Reduced to 3 seconds
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -38,18 +38,18 @@ const Profile = () => {
         return;
       }
 
+      const controller = new AbortController();
       const timeout = setTimeout(() => {
-        if (!profile) {
-          console.log('Profile - Fetch timed out after', timeoutDuration, 'ms');
-          setHasTimedOut(true);
-          setError('Profile loading timed out. Please try again later.');
-        }
+        controller.abort();
+        setHasFailed(true);
+        setError('Profile loading timed out. Please try again later.');
       }, timeoutDuration);
 
       try {
         console.log('Profile - Fetching profile for username:', username);
         const response = await axios.get(`http://localhost:3000/api/auth/profile/${username}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          signal: controller.signal,
         });
         clearTimeout(timeout);
         setProfile(response.data);
@@ -63,11 +63,14 @@ const Profile = () => {
         });
         console.log('Profile - Profile fetched:', response.data.email);
       } catch (err) {
-        console.error('Profile - Failed to fetch profile:', err.message);
         clearTimeout(timeout);
-        if (retryCount < maxRetries) {
+        if (err.name === 'AbortError') {
+          console.log('Profile - Fetch request timed out');
+          setHasFailed(true);
+          setError('Profile loading timed out. Please try again later.');
+        } else if (retryCount < maxRetries) {
           console.log('Profile - Retrying fetch, attempt:', retryCount + 1);
-          setTimeout(() => setRetryCount(retryCount + 1), 1000);
+          setTimeout(() => setRetryCount(retryCount + 1), 500);
         } else {
           console.log('Profile - Max retries reached. Using fallback data.');
           if (user && user.username.toLowerCase() === username.toLowerCase()) {
@@ -83,8 +86,7 @@ const Profile = () => {
             });
           } else {
             setError('Failed to load profile after multiple attempts. The user may not exist or you may not have access.');
-            setHasTimedOut(true);
-            setProfile(null); // Ensure profile is null to trigger error state
+            setHasFailed(true);
           }
         }
       }
@@ -129,17 +131,18 @@ const Profile = () => {
   if (isLoading) {
     return (
       <div className="profile-container flex items-center justify-center min-h-screen bg-holo-bg-dark">
-        <p className="text-holo-blue text-2xl font-inter animate-pulse">Loading...</p>
+        <div className="loader" aria-label="Loading profile"></div>
+        <span className="text-holo-blue text-2xl font-inter ml-4">Loading...</span>
       </div>
     );
   }
 
-  if (authError || (error && hasTimedOut)) {
+  if (authError || hasFailed) {
     return (
       <div className="profile-container flex items-center justify-center min-h-screen bg-holo-bg-dark">
         <div className="text-center">
           <p className="text-red-500 text-lg font-inter mb-4">{authError || error}</p>
-          <Link to="/" className="text-holo-blue hover:underline text-base font-inter">Return to Home</Link>
+          <Link to="/" className="text-holo-blue hover:underline text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-blue">Return to Home</Link>
         </div>
       </div>
     );
@@ -148,7 +151,8 @@ const Profile = () => {
   if (!profile) {
     return (
       <div className="profile-container flex items-center justify-center min-h-screen bg-holo-bg-dark">
-        <p className="text-holo-gray text-2xl font-inter animate-pulse">Loading profile...</p>
+        <div className="loader" aria-label="Loading profile"></div>
+        <span className="text-holo-gray text-2xl font-inter ml-4">Loading profile...</span>
       </div>
     );
   }
@@ -165,13 +169,13 @@ const Profile = () => {
       <div className="profile-header relative">
         <img
           src={isEditing ? formData.bannerPicture : profile.bannerPicture}
-          alt="Banner"
+          alt="Profile banner"
           className="w-full h-48 object-cover rounded-b-3xl shadow-lg"
         />
         <div className="absolute bottom-0 left-6 transform translate-y-1/2">
           <img
             src={isEditing ? formData.profilePicture : profile.profilePicture}
-            alt="Profile"
+            alt="Profile picture"
             className="w-32 h-32 rounded-full border-4 border-holo-pink shadow-lg"
           />
         </div>
@@ -189,16 +193,18 @@ const Profile = () => {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="input-field text-2xl font-inter font-bold text-holo-blue mb-2 rounded-lg"
+                    className="input-field text-2xl font-inter font-bold text-holo-blue mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
                     placeholder="First Name"
+                    aria-label="First Name"
                   />
                   <input
                     type="text"
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="input-field text-2xl font-inter font-bold text-holo-blue mb-2 rounded-lg"
+                    className="input-field text-2xl font-inter font-bold text-holo-blue mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
                     placeholder="Last Name"
+                    aria-label="Last Name"
                   />
                 </>
               ) : (
@@ -214,32 +220,36 @@ const Profile = () => {
                     name="job"
                     value={formData.job}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-holo-gray"
+                    className="input-field w-full mb-2 rounded-lg text-holo-gray focus:outline-none focus:ring-2 focus:ring-holo-blue"
                     placeholder="Job"
+                    aria-label="Job"
                   />
                   <input
                     type="text"
                     name="school"
                     value={formData.school}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-holo-gray"
+                    className="input-field w-full mb-2 rounded-lg text-holo-gray focus:outline-none focus:ring-2 focus:ring-holo-blue"
                     placeholder="School"
+                    aria-label="School"
                   />
                   <input
                     type="text"
                     name="profilePicture"
                     value={formData.profilePicture}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-holo-gray"
+                    className="input-field w-full mb-2 rounded-lg text-holo-gray focus:outline-none focus:ring-2 focus:ring-holo-blue"
                     placeholder="Profile Picture URL"
+                    aria-label="Profile Picture URL"
                   />
                   <input
                     type="text"
                     name="bannerPicture"
                     value={formData.bannerPicture}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-holo-gray"
+                    className="input-field w-full mb-2 rounded-lg text-holo-gray focus:outline-none focus:ring-2 focus:ring-holo-blue"
                     placeholder="Banner Picture URL"
+                    aria-label="Banner Picture URL"
                   />
                 </>
               ) : (
@@ -255,13 +265,15 @@ const Profile = () => {
                   <>
                     <button
                       onClick={handleSave}
-                      className="btn-primary rounded-full animate-glow px-4 py-2 text-base font-inter"
+                      className="btn-primary rounded-full animate-glow px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                      aria-label="Save profile changes"
                     >
                       Save
                     </button>
                     <button
                       onClick={handleCancel}
-                      className="btn-primary rounded-full bg-holo-bg-light px-4 py-2 text-base font-inter"
+                      className="btn-primary rounded-full bg-holo-bg-light px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                      aria-label="Cancel editing"
                     >
                       Cancel
                     </button>
@@ -269,9 +281,10 @@ const Profile = () => {
                 ) : (
                   <button
                     onClick={handleEdit}
-                    className="btn-primary rounded-full animate-glow flex items-center px-4 py-2 text-base font-inter"
+                    className="btn-primary rounded-full animate-glow flex items-center px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    aria-label="Edit profile"
                   >
-                    <Edit className="w-5 h-5 mr-2" /> Edit Profile
+                    <Edit className="w-5 h-5 mr-2" aria-hidden="true" /> Edit Profile
                   </button>
                 )}
               </div>
@@ -280,7 +293,7 @@ const Profile = () => {
 
           <div className="projects-section">
             <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Projects
+              <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Projects
             </h2>
             {profile.projects.length === 0 ? (
               <p className="text-holo-gray text-base font-inter">No projects yet.</p>
@@ -295,7 +308,8 @@ const Profile = () => {
                           <Link
                             key={project.id}
                             to={`/projects/${project.id}`}
-                            className="project-card card p-4 glassmorphic holographic-effect shadow-md"
+                            className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                            aria-label={`View project ${project.title}`}
                           >
                             <h4 className="text-lg font-inter text-holo-blue">{project.title}</h4>
                             <p className="text-holo-gray text-sm mb-1">{project.description}</p>

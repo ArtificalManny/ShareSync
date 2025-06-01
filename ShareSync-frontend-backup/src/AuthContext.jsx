@@ -88,26 +88,40 @@ const AuthProvider = ({ children }) => {
   };
 
   const addProject = async (projectData) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 10000); // 10-second timeout
+
     try {
-      const response = await axios.post('http://localhost:3000/api/projects', projectData);
+      const response = await axios.post('http://localhost:3000/api/projects', projectData, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
       try {
         const updatedUser = await axios.get('http://localhost:3000/api/auth/me');
         setUser(updatedUser.data);
       } catch (err) {
         console.warn('AuthContext - Failed to fetch updated user data after project creation:', err.message);
-        // Continue even if /me fails, using the response from the project creation
         setUser(prevUser => ({
           ...prevUser,
           projects: [...(prevUser.projects || []), response.data],
         }));
       }
+
       socket.emit('project_activity', {
         projectId: response.data.id,
         message: `created project: ${response.data.title}`,
         user: user.email,
       });
+
       return response.data;
     } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        throw new Error('Project creation timed out. Please try again.');
+      }
       console.error('AuthContext - Add project failed:', err.message);
       throw err;
     }

@@ -59,3 +59,25 @@
   50% { opacity: 0.5; }
   100% { opacity: 1; }
 }
+
+.quick-link {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+  height: 150px; /* Fixed height for consistency */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.quick-link:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.quick-link svg {
+  margin-bottom: 0.5rem;
+}
