@@ -23,7 +23,7 @@ const Profile = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [hasFailed, setHasFailed] = useState(false);
   const maxRetries = 2;
-  const timeoutDuration = 3000;
+  const timeoutDuration = 5000; // Increased to 5 seconds
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -59,6 +59,7 @@ const Profile = () => {
           signal: controller.signal,
         });
         clearTimeout(timeout);
+        console.log('Profile - Backend response:', response.data);
         setProfile(response.data);
         setFormData({
           firstName: response.data.firstName || '',
@@ -72,14 +73,14 @@ const Profile = () => {
       } catch (err) {
         clearTimeout(timeout);
         if (err.name === 'AbortError') {
-          console.log('Profile - Fetch request timed out');
+          console.log('Profile - Fetch request timed out after', timeoutDuration, 'ms');
           setHasFailed(true);
           setError('Profile loading timed out. Please try again later.');
         } else if (retryCount < maxRetries) {
-          console.log('Profile - Retrying fetch, attempt:', retryCount + 1);
+          console.log('Profile - Retrying fetch, attempt:', retryCount + 1, 'Error:', err.message);
           setTimeout(() => setRetryCount(retryCount + 1), 500);
         } else {
-          console.log('Profile - Max retries reached. Using fallback data.');
+          console.log('Profile - Max retries reached. Error:', err.message);
           if (user && user.username.toLowerCase() === username.toLowerCase()) {
             console.log('Profile - Using authenticated user data as fallback');
             setProfile(user);

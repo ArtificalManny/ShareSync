@@ -1,176 +1,62 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { FolderPlus, Folder, AlertCircle, X, Lightbulb, Users } from 'lucide-react';
-import axios from 'axios';
-import { io } from 'socket.io-client';
+import { Folder, Plus } from 'lucide-react';
 import './Projects.css';
 
 const Projects = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, authError, addProject, setIntendedRoute } = useContext(AuthContext);
-  const [projects, setProjects] = useState([]);
-  const [notifications, setNotifications] = useState([]);
+  const { user, isAuthenticated, isLoading, authError, addProject } = useContext(AuthContext);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('Personal');
   const [error, setError] = useState('');
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newProjectTitle, setNewProjectTitle] = useState('');
-  const [newProjectDescription, setNewProjectDescription] = useState('');
-  const [newProjectCategory, setNewProjectCategory] = useState('Personal');
-  const [isCreating, setIsCreating] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const titleInputRef = useRef(null);
-  const socket = io('http://localhost:3000');
-
-  useEffect(() => {
-    if (isLoading) {
-      console.log('Projects - Waiting for AuthContext to finish loading');
-      return;
-    }
-
-    if (!isAuthenticated) {
-      console.log('Projects - User not authenticated, redirecting to login');
-      setIntendedRoute('/projects');
-      navigate('/login', { replace: true });
-      return;
-    }
-
-    if (!user || !user.email) {
-      console.log('Projects - User data not available');
-      setError('User data not available. Please log in again.');
-      setIntendedRoute('/projects');
-      navigate('/login', { replace: true });
-      return;
-    }
-
-    console.log('Projects - Fetching user projects:', user.projects);
-    if (user.projects && Array.isArray(user.projects)) {
-      setProjects(user.projects);
-      console.log('Projects - Projects state updated:', user.projects.map(p => p.id));
-    } else {
-      console.log('Projects - No projects found for user');
-      setProjects([]);
-    }
-
-    const fetchNotifications = async () => {
-      try {
-        const response = await axios.get('http://localhost:3000/api/notifications', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        setNotifications(response.data);
-      } catch (err) {
-        console.error('Projects - Failed to fetch notifications:', err.message);
-        setError('Failed to load notifications. Please try again.');
-      }
-    };
-    fetchNotifications();
-
-    // Enhanced AI suggestions based on user context
-    const suggestions = [
-      { 
-        title: "Team Collaboration Hub", 
-        description: "Create a centralized hub for team communication", 
-        matchScore: 0.95,
-        reason: user.job ? `Tailored for your role as a ${user.job}` : "Ideal for team collaboration"
-      },
-      { 
-        title: "Product Launch Timeline", 
-        description: "Plan your next product launch with milestones", 
-        matchScore: 0.90,
-        reason: totalProjects > 0 ? "Based on your experience with previous projects" : "Great for starting new initiatives"
-      },
-      { 
-        title: "Event Planning Checklist", 
-        description: "Organize an event with a detailed checklist", 
-        matchScore: 0.85,
-        reason: user.school ? `Perfect for ${user.school} events` : "Useful for personal or professional events"
-      },
-    ];
-    setAiSuggestions(suggestions);
-
-    const tasksCompleted = projects.reduce((sum, p) => sum + (p.tasksCompleted || 0), 0);
-    const mockLeaderboard = [
-      { name: user.firstName, points: tasksCompleted * 10 },
-      { name: "Alex Smith", points: 150 },
-      { name: "Jamie Doe", points: 120 },
-    ];
-    setLeaderboard(mockLeaderboard.sort((a, b) => b.points - a.points));
-  }, [isAuthenticated, user, isLoading, navigate, setIntendedRoute, projects]);
-
-  useEffect(() => {
-    if (showCreateForm && titleInputRef.current) {
-      titleInputRef.current.focus();
-    }
-  }, [showCreateForm]);
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
-    if (!newProjectTitle.trim()) {
+    setError('');
+
+    if (!title.trim()) {
       setError('Project title is required.');
       return;
     }
 
-    setIsCreating(true);
-    setError('');
-
-    const newProject = {
-      title: newProjectTitle,
-      description: newProjectDescription || 'A new project',
-      category: newProjectCategory,
-    };
-
     try {
-      console.log('Projects - Creating new project:', newProject);
-      const createdProject = await addProject(newProject);
-      console.log('Projects - Project created successfully:', createdProject);
-      const updatedProjects = [...projects, createdProject];
-      setProjects(updatedProjects);
-      console.log('Projects - Updated projects state after creation:', updatedProjects.map(p => p.id));
-      setShowCreateForm(false);
-      setNewProjectTitle('');
-      setNewProjectDescription('');
-      setNewProjectCategory('Personal');
-      navigate(`/projects/${createdProject.id}`, { replace: true });
+      const projectData = {
+        title,
+        description,
+        category,
+        status: 'Not Started',
+      };
+      const newProject = await addProject(projectData);
+      setTitle('');
+      setDescription('');
+      setCategory('Personal');
+      navigate(`/projects/${newProject.id}`);
     } catch (err) {
-      console.error('Projects - Failed to create project:', err.message, err.response?.data);
-      const errorMessage = err.response?.data?.message || err.message || 'An unexpected error occurred.';
-      setError(`Failed to create project: ${errorMessage}`);
-    } finally {
-      setIsCreating(false);
+      setError('Failed to create project: ' + (err.message || 'Please try again.'));
+      console.error('Projects - Failed to create project:', err);
     }
   };
-
-  const handleUseSuggestion = (suggestion) => {
-    setNewProjectTitle(suggestion.title);
-    setNewProjectDescription(suggestion.description);
-    setShowSuggestions(false);
-    setShowCreateForm(true);
-  };
-
-  const handleKeyDown = (e, action) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      action();
-    }
-  };
-
-  const totalProjects = projects.length;
-  const currentProjects = projects.filter(p => p.status !== 'Completed').length;
-  const pastProjects = projects.filter(p => p.status === 'Completed').length;
-  const tasksCompleted = projects.reduce((sum, p) => sum + (p.tasksCompleted || 0), 0);
 
   if (isLoading) {
-    console.log('Projects - Rendering loading state');
-    return <div className="projects-container"><p className="text-holo-gray">Loading...</p></div>;
+    return (
+      <div className="projects-container flex items-center justify-center min-h-screen">
+        <div className="loader" aria-label="Loading projects"></div>
+        <span className="text-holo-blue text-xl font-inter ml-4">Loading...</span>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    navigate('/login', { replace: true });
+    return null;
   }
 
   if (authError) {
-    console.log('Projects - Rendering auth error state:', authError);
     return (
-      <div className="projects-container">
-        <p className="text-red-500">{authError}</p>
-        <Link to="/login" className="text-holo-blue hover:underline">Login</Link>
+      <div className="projects-container flex items-center justify-center min-h-screen">
+        <p className="text-red-500 text-lg font-inter">{authError}</p>
       </div>
     );
   }
@@ -179,228 +65,91 @@ const Projects = () => {
     <div className="projects-container">
       <div className="projects-header py-8 px-6 rounded-b-3xl text-center">
         <h1 className="text-4xl font-inter text-holo-blue mb-4 animate-text-glow">Your Projects</h1>
-        <p className="text-holo-gray mb-4">Manage your projects with ease.</p>
-        <div className="flex justify-center gap-4">
-          <button
-            onClick={() => setShowCreateForm(true)}
-            onKeyDown={(e) => handleKeyDown(e, () => setShowCreateForm(true))}
-            className="btn-primary rounded-full flex items-center mx-auto animate-glow z-20 focus:outline-none focus:ring-2 focus:ring-holo-blue"
-            aria-label="Create New Project"
-            disabled={isCreating}
-          >
-            <FolderPlus className="w-5 h-5 mr-2" /> Create New Project
-          </button>
-          <button
-            onClick={() => setShowSuggestions(true)}
-            onKeyDown={(e) => handleKeyDown(e, () => setShowSuggestions(true))}
-            className="btn-primary rounded-full flex items-center mx-auto animate-glow z-20 focus:outline-none focus:ring-2 focus:ring-holo-blue"
-            aria-label="View AI Suggestions"
-          >
-            <Lightbulb className="w-5 h-5 mr-2" /> AI Suggestions
-          </button>
-        </div>
+        <p className="text-holo-gray text-lg font-inter mb-4">Manage and collaborate on your projects.</p>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
-
-        <div className="metrics-dashboard grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="metric-card card p-6 glassmorphic holographic-effect">
-            <h2 className="text-xl font-inter text-holo-blue mb-2">Total Projects</h2>
-            <p className="text-3xl font-bold text-holo-pink">{totalProjects}</p>
-          </div>
-          <div className="metric-card card p-6 glassmorphic holographic-effect">
-            <h2 className="text-xl font-inter text-holo-blue mb-2">Current Projects</h2>
-            <p className="text-3xl font-bold text-holo-pink">{currentProjects}</p>
-          </div>
-          <div className="metric-card card p-6 glassmorphic holographic-effect">
-            <h2 className="text-xl font-inter text-holo-blue mb-2">Past Projects</h2>
-            <p className="text-3xl font-bold text-holo-pink">{pastProjects}</p>
-          </div>
-          <div className="metric-card card p-6 glassmorphic holographic-effect">
-            <h2 className="text-xl font-inter text-holo-blue mb-2">Tasks Completed</h2>
-            <p className="text-3xl font-bold text-holo-pink">{tasksCompleted}</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="notifications-section card p-6 glassmorphic">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <AlertCircle className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Notifications
-            </h2>
-            {notifications.length === 0 ? (
-              <p className="text-holo-gray">No notifications yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {notifications.slice(0, 5).map((notification, index) => (
-                  <div key={index} className={`p-2 rounded ${notification.read ? 'bg-holo-bg-light' : 'bg-holo-pink bg-opacity-20'}`}>
-                    <p className="text-holo-gray text-sm">{notification.message}</p>
-                    <p className="text-holo-gray text-xs">{new Date(notification.timestamp).toLocaleString()}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="team-activity-section card p-6 glassmorphic">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Team Activity
-            </h2>
-            <p className="text-holo-gray">Recent updates will appear here (mock).</p>
-          </div>
-
-          <div className="leaderboard-section card p-6 glassmorphic">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> Leaderboard
-            </h2>
-            {leaderboard.length === 0 ? (
-              <p className="text-holo-gray">No leaderboard data yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {leaderboard.map((member, index) => (
-                  <div key={index} className="flex justify-between items-center p-2 rounded bg-holo-bg-light">
-                    <span className="text-holo-gray">{index + 1}. {member.name}</span>
-                    <span className="text-holo-pink font-bold">{member.points} points</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {projects.length === 0 ? (
-          <p className="text-holo-gray flex items-center gap-2 justify-center">
-            <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" /> No projects yet. Create one to get started!
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <Link
-                key={project.id}
-                to={`/projects/${project.id}`}
-                className="project-card card p-6 glassmorphic holographic-effect z-10 focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                aria-label={`View project ${project.title}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate(`/projects/${project.id}`);
-                }}
-              >
-                <h2 className="text-xl font-inter text-holo-blue mb-2 flex items-center">
-                  <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" /> {project.title || 'Untitled Project'}
-                </h2>
-                <p className="text-holo-gray text-sm mb-2">{project.description || 'No description'}</p>
-                <p className="text-holo-gray text-sm">Category: {project.category}</p>
-                <p className="text-holo-gray text-sm">Status: {project.status || 'Not Started'}</p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-holo-bg-light p-6 rounded-lg max-w-md w-full glassmorphic relative z-[60]">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-inter text-holo-blue">Create a New Project</h2>
-              <button onClick={() => setShowCreateForm(false)} className="text-holo-gray hover:text-holo-blue z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Close Create Project Form">
-                <X className="w-6 h-6" />
-              </button>
+        <form onSubmit={handleCreateProject} className="mb-8">
+          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+            <Plus className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Create New Project
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="title" className="block text-holo-gray mb-2">Project Title</label>
+              <input
+                type="text"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                placeholder="Enter project title"
+                aria-label="Project Title"
+              />
             </div>
-            {isCreating && (
-              <div className="flex justify-center mb-4">
-                <p className="text-holo-blue text-lg font-inter animate-pulse">Creating project...</p>
-              </div>
-            )}
-            <form onSubmit={handleCreateProject} className="space-y-4">
-              <div>
-                <label className="text-holo-gray text-sm" htmlFor="project-title">Project Title</label>
-                <input
-                  id="project-title"
-                  type="text"
-                  ref={titleInputRef}
-                  value={newProjectTitle}
-                  onChange={(e) => setNewProjectTitle(e.target.value)}
-                  placeholder="Enter project title"
-                  className="input-field w-full rounded-full z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  required
-                  aria-required="true"
-                  disabled={isCreating}
-                />
-              </div>
-              <div>
-                <label className="text-holo-gray text-sm" htmlFor="project-description">Description</label>
-                <textarea
-                  id="project-description"
-                  value={newProjectDescription}
-                  onChange={(e) => setNewProjectDescription(e.target.value)}
-                  placeholder="Enter project description (optional)"
-                  className="input-field w-full h-24 rounded-lg z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  disabled={isCreating}
-                />
-              </div>
-              <div>
-                <label className="text-holo-gray text-sm" htmlFor="project-category">Category</label>
-                <select
-                  id="project-category"
-                  value={newProjectCategory}
-                  onChange={(e) => setNewProjectCategory(e.target.value)}
-                  className="input-field w-full rounded-full z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  disabled={isCreating}
+            <div>
+              <label htmlFor="category" className="block text-holo-gray mb-2">Category</label>
+              <select
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                aria-label="Project Category"
+              >
+                <option value="Personal">Personal</option>
+                <option value="School">School</option>
+                <option value="Job">Job</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-4">
+            <label htmlFor="description" className="block text-holo-gray mb-2">Description (optional)</label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
+              placeholder="Enter project description"
+              rows="3"
+              aria-label="Project Description"
+            ></textarea>
+          </div>
+          <button
+            type="submit"
+            className="btn-primary mt-4 rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
+            aria-label="Create Project"
+          >
+            <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Create Project
+          </button>
+        </form>
+
+        <div className="projects-list">
+          <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
+            <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> All Projects
+          </h2>
+          {user.projects.length === 0 ? (
+            <p className="text-holo-gray flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No projects yet.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {user.projects.map(project => (
+                <Link
+                  key={project.id}
+                  to={`/projects/${project.id}`}
+                  className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                  aria-label={`View project ${project.title}`}
                 >
-                  <option value="School">School</option>
-                  <option value="Job">Job</option>
-                  <option value="Personal">Personal</option>
-                </select>
-              </div>
-              <button
-                type="submit"
-                disabled={isCreating}
-                className="btn-primary rounded-full w-full animate-glow flex items-center justify-center z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                aria-label="Create Project"
-              >
-                {isCreating ? (
-                  <span>Creating...</span>
-                ) : (
-                  <>
-                    <FolderPlus className="w-5 h-5 mr-2" /> Create Project
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showSuggestions && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-holo-bg-light p-6 rounded-lg max-w-md w-full glassmorphic relative z-[60]">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-inter text-holo-blue">AI Project Suggestions</h2>
-              <button onClick={() => setShowSuggestions(false)} className="text-holo-gray hover:text-holo-blue z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Close AI Suggestions">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              {aiSuggestions.map((suggestion, index) => (
-                <div key={index} className="suggestion-card card p-4 glassmorphic">
-                  <h3 className="text-lg font-inter text-holo-blue">{suggestion.title}</h3>
-                  <p className="text-holo-gray text-sm mb-2">{suggestion.description}</p>
-                  <p className="text-holo-gray text-sm">Match Score: {(suggestion.matchScore * 100).toFixed(0)}%</p>
-                  <p className="text-holo-gray text-sm mb-2">Why: {suggestion.reason}</p>
-                  <button
-                    onClick={() => handleUseSuggestion(suggestion)}
-                    onKeyDown={(e) => handleKeyDown(e, () => handleUseSuggestion(suggestion))}
-                    className="btn-primary rounded-full mt-2 animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                    aria-label={`Use suggestion ${suggestion.title}`}
-                  >
-                    Use This Idea
-                  </button>
-                </div>
+                  <h3 className="text-lg font-inter text-holo-blue">{project.title}</h3>
+                  <p className="text-holo-gray text-sm mb-1">{project.description}</p>
+                  <p className="text-holo-gray text-sm">Category: {project.category}</p>
+                  <p className="text-holo-gray text-sm">Status: {project.status}</p>
+                </Link>
               ))}
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
