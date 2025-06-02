@@ -11,35 +11,27 @@ const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [intendedRoute, setIntendedRoute] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
   const socket = io('http://localhost:3000');
 
   useEffect(() => {
     const checkAuth = async () => {
-      console.log('AuthContext - Checking authentication status');
       const token = localStorage.getItem('token');
       if (token) {
         try {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          console.log('AuthContext - Fetching user data from /api/auth/me');
-          const response = await axios.get('http://localhost:3000/api/auth/me', {
-            timeout: 15000, // Increased to 15 seconds
-          });
-          console.log('AuthContext - User data fetched:', response.data);
+          const response = await axios.get('http://localhost:3000/api/auth/me', { timeout: 15000 });
           setUser(response.data);
           setIsAuthenticated(true);
         } catch (err) {
-          console.error('AuthContext - Failed to authenticate:', err.message);
           setAuthError('Authentication failed. Please log in again.');
           setIsAuthenticated(false);
           localStorage.removeItem('token');
           setUser(null);
         }
-      } else {
-        console.log('AuthContext - No token found, user not authenticated');
       }
       setIsLoading(false);
-      console.log('AuthContext - isLoading set to false, isAuthenticated:', isAuthenticated, 'user:', user);
     };
 
     checkAuth();
@@ -47,24 +39,50 @@ const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
-    console.log('AuthContext - Theme updated:', theme);
   }, [theme]);
+
+  useEffect(() => {
+    socket.on('notification', (data) => {
+      if (user && (data.userId === user._id || !data.userId)) {
+        setNotifications(prev => [...prev, data]);
+      }
+    });
+
+    socket.on('projectCreated', (data) => {
+      if (user && data.userId === user._id) {
+        setUser(prev => ({
+          ...prev,
+          projects: [...(prev.projects || []), data.project._id],
+        }));
+      }
+    });
+
+    socket.on('projectUpdated', (data) => {
+      if (user && user.projects.includes(data.projectId)) {
+        setUser(prev => ({
+          ...prev,
+          projects: prev.projects.map(projId => projId === data.projectId ? data.project._id : projId),
+        }));
+      }
+    });
+
+    return () => {
+      socket.off('notification');
+      socket.off('projectCreated');
+      socket.off('projectUpdated');
+    };
+  }, [user]);
 
   const login = async (email, password) => {
     try {
-      console.log('AuthContext - Attempting login with email:', email);
-      const response = await axios.post('http://localhost:3000/api/auth/login', { email, password }, {
-        timeout: 15000,
-      });
+      const response = await axios.post('http://localhost:3000/api/auth/login', { email, password }, { timeout: 15000 });
       localStorage.setItem('token', response.data.token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
       setUser(response.data.user);
       setIsAuthenticated(true);
       setAuthError(null);
-      console.log('AuthContext - Login successful, user:', response.data.user);
       return true;
     } catch (err) {
-      console.error('AuthContext - Login failed:', err.message);
       setAuthError('Login failed: ' + (err.response?.data?.message || err.message));
       return false;
     }
@@ -72,129 +90,84 @@ const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      console.log('AuthContext - Attempting registration with data:', userData);
-      const response = await axios.post('http://localhost:3000/api/auth/register', userData, {
-        timeout: 15000,
-      });
+      const response = await axios.post('http://localhost:3000/api/auth/register', userData, { timeout: 15000 });
       localStorage.setItem('token', response.data.token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
       setUser(response.data.user);
       setIsAuthenticated(true);
       setAuthError(null);
-      console.log('AuthContext - Registration successful, user:', response.data.user);
       return true;
     } catch (err) {
-      console.error('AuthContext - Registration failed:', err.message);
       setAuthError('Registration failed: ' + (err.response?.data?.message || err.message));
       return false;
     }
   };
 
   const logout = () => {
-    console.log('AuthContext - Logging out user');
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
     setIsAuthenticated(false);
     setAuthError(null);
+    setNotifications([]);
   };
 
   const updateUserProfile = async (updates) => {
     try {
-      console.log('AuthContext - Updating user profile with:', updates);
-      const response = await axios.put('http://localhost:3000/api/auth/me', updates, {
-        timeout: 15000,
-      });
+      const response = await axios.put('http://localhost:3000/api/auth/me', updates, { timeout: 15000 });
       setUser(response.data);
-      console.log('AuthContext - Profile updated:', response.data);
       return response.data;
     } catch (err) {
-      console.error('AuthContext - Update profile failed:', err.message);
       throw new Error('Update profile failed: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const addProject = async (projectData) => {
     try {
-      console.log('AuthContext - Adding project with data:', projectData);
-      const response = await axios.post('http://localhost:3000/api/projects', projectData, {
-        timeout: 15000, // Increased to 15 seconds
-      });
+      const response = await axios.post('http://localhost:3000/api/projects', projectData, { timeout: 15000 });
       const newProject = response.data;
-      console.log('AuthContext - New project created:', newProject);
-      if (!newProject || !newProject.id) {
+      if (!newProject || !newProject._id) {
         throw new Error('Project creation failed: Invalid project data returned.');
       }
       try {
-        console.log('AuthContext - Fetching updated user data after project creation');
-        const updatedUser = await axios.get('http://localhost:3000/api/auth/me', {
-          timeout: 15000,
-        });
+        const updatedUser = await axios.get('http://localhost:3000/api/auth/me', { timeout: 15000 });
         setUser(updatedUser.data);
-        console.log('AuthContext - User data updated after project creation:', updatedUser.data);
       } catch (err) {
-        console.warn('AuthContext - Failed to fetch updated user data after project creation:', err.message);
         setUser(prevUser => ({
           ...prevUser,
-          projects: [...(prevUser.projects || []), newProject],
+          projects: [...(prevUser.projects || []), newProject._id],
         }));
       }
       return newProject;
     } catch (err) {
-      console.error('AuthContext - Add project failed:', err.message);
       throw new Error('Add project failed: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const updateProject = async (projectId, updates) => {
     try {
-      console.log('AuthContext - Updating project ID:', projectId, 'with:', updates);
-      const response = await axios.put(`http://localhost:3000/api/projects/${projectId}`, updates, {
-        timeout: 15000,
-      });
+      const response = await axios.put(`http://localhost:3000/api/projects/${projectId}`, updates, { timeout: 15000 });
       const updatedProject = response.data;
-      const updatedUser = await axios.get('http://localhost:3000/api/auth/me', {
-        timeout: 15000,
-      });
+      const updatedUser = await axios.get('http://localhost:3000/api/auth/me', { timeout: 15000 });
       setUser(updatedUser.data);
-      console.log('AuthContext - Project updated:', updatedProject);
       return updatedProject;
     } catch (err) {
-      console.error('AuthContext - Update project failed:', err.message);
       throw new Error('Update project failed: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const inviteToProject = async (projectId, email) => {
     try {
-      console.log('AuthContext - Inviting', email, 'to project ID:', projectId);
-      await axios.post(`http://localhost:3000/api/projects/${projectId}/invite`, { email }, {
-        timeout: 15000,
-      });
-      socket.emit('notification', {
-        projectId,
-        message: `${user.email} invited ${email} to the project`,
-        timestamp: new Date().toISOString(),
-      });
+      await axios.post(`http://localhost:3000/api/projects/${projectId}/invite`, { email }, { timeout: 15000 });
     } catch (err) {
-      console.error('AuthContext - Invite to project failed:', err.message);
       throw new Error('Invite to project failed: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const autoAssignTasks = async (projectId) => {
     try {
-      console.log('AuthContext - Auto-assigning tasks for project ID:', projectId);
-      await axios.post(`http://localhost:3000/api/projects/${projectId}/auto-assign-tasks`, {}, {
-        timeout: 15000,
-      });
-      socket.emit('notification', {
-        projectId,
-        message: `${user.email} auto-assigned tasks`,
-        timestamp: new Date().toISOString(),
-      });
+      await axios.post(`http://localhost:3000/api/projects/${projectId}/auto-assign-tasks`, {}, { timeout: 15000 });
     } catch (err) {
-      console.error('AuthContext - Auto-assign tasks failed:', err.message);
       throw new Error('Auto-assign tasks failed: ' + (err.response?.data?.message || err.message));
     }
   };
@@ -223,6 +196,8 @@ const AuthProvider = ({ children }) => {
     toggleTheme,
     intendedRoute,
     setIntendedRoute,
+    notifications,
+    setNotifications,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

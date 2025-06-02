@@ -1,54 +1,80 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Menu, X } from 'lucide-react';
+import axios from 'axios';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Menu, X, Mic, Users, Award, Bell } from 'lucide-react';
+import LazyLoad from 'react-lazy-load';
+import FeedItem from '../components/FeedItem';
 import './Home.css';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, authError } = useContext(AuthContext);
+  const { user, isAuthenticated, isLoading, authError, notifications } = useContext(AuthContext);
   const [feedItems, setFeedItems] = useState([]);
   const [newComment, setNewComment] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  console.log('Home.jsx - Component rendering started, isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'user:', user, 'authError:', authError);
+  const [recommendedProjects, setRecommendedProjects] = useState([]);
+  const [isListening, setIsListening] = useState(false);
+  const [error, setError] = useState('');
+  const [leaderboard, setLeaderboard] = useState([]);
 
   useEffect(() => {
-    console.log('Home.jsx - useEffect triggered');
+    // Initialize Web Speech API for voice navigation
+    let recognition;
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new window.webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event) => {
+        const command = event.results[0][0].transcript.toLowerCase().trim();
+        console.log('Home - Voice command received:', command);
+        if (command.includes('go to projects')) {
+          navigate('/projects');
+        } else if (command.includes('go to profile')) {
+          navigate(`/profile/${user?.username}`);
+        } else if (command.includes('go to home')) {
+          navigate('/');
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Home - Voice recognition error:', event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+    }
+
+    // Fetch feed items and leaderboard
     if (isLoading) {
       console.log('Home - Waiting for AuthContext to finish loading');
       return;
     }
 
-    console.log('Home - isLoading is false, checking authentication');
     if (!isAuthenticated) {
       console.log('Home - User not authenticated, redirecting to login');
       navigate('/login', { replace: true });
       return;
     }
 
-    console.log('Home - Checking user data');
     if (!user || !user.email) {
       console.log('Home - User data not available, redirecting to login');
       navigate('/login', { replace: true });
       return;
     }
 
-    console.log('Home - User authenticated, compiling feed items for user:', user.email);
     try {
-      const activeProjects = (user.projects || []).filter(project => {
-        if (!project || !project.status) {
-          console.warn('Home - Invalid project data:', project);
-          return false;
-        }
-        return project.status !== 'Completed';
-      });
+      const activeProjects = (user.projects || []).filter(project => project && project.status && project.status !== 'Completed');
       console.log('Home - Active projects:', activeProjects);
 
       const allFeedItems = activeProjects.flatMap(project => {
         const activityLogs = (project.activityLog || []).map(log => ({
-          projectId: project.id,
+          projectId: project._id,
           projectTitle: project.title,
           type: 'activity',
           message: log.message || 'Unknown activity',
@@ -57,7 +83,7 @@ const Home = () => {
         }));
 
         const posts = (project.posts || []).map(post => ({
-          projectId: project.id,
+          projectId: project._id,
           projectTitle: project.title,
           type: post.type || 'announcement',
           content: post.content || 'No content',
@@ -68,7 +94,7 @@ const Home = () => {
         }));
 
         const tasks = (project.tasks || []).filter(task => task.status === 'Completed').map(task => ({
-          projectId: project.id,
+          projectId: project._id,
           projectTitle: project.title,
           type: 'task-complete',
           message: `${task.title || 'Unnamed task'} completed`,
@@ -77,7 +103,7 @@ const Home = () => {
         }));
 
         const files = (project.files || []).map(file => ({
-          projectId: project.id,
+          projectId: project._id,
           projectTitle: project.title,
           type: 'file',
           message: `Shared file: ${file.name || 'Unnamed file'}`,
@@ -88,26 +114,72 @@ const Home = () => {
 
         return [...activityLogs, ...posts, ...tasks, ...files].map(item => ({
           ...item,
-          likes: 0,
-          comments: [],
-          shares: 0,
+          likes: item.likes || 0,
+          comments: item.comments || [],
+          shares: item.shares || 0,
         }));
       });
 
       allFeedItems.sort((a, b) => new Date(b.timestamp || new Date()) - new Date(a.timestamp || new Date()));
       setFeedItems(allFeedItems);
-      console.log('Home - Feed items set:', allFeedItems);
+
+      // AI-driven project recommendations (mock implementation)
+      const recommendations = activeProjects
+        .sort((a, b) => (b.activityLog?.length || 0) - (a.activityLog?.length || 0))
+        .slice(0, 3)
+        .map(project => ({
+          id: project._id,
+          title: project.title,
+          reason: 'Based on recent activity',
+        }));
+      setRecommendedProjects(recommendations);
+
+      // Fetch leaderboard data
+      const fetchLeaderboards = async () => {
+        try {
+          const projectLeaderboards = await Promise.all(
+            activeProjects.map(async (project) => {
+              const response = await axios.get(`http://localhost:3000/api/projects/${project._id}/leaderboard`);
+              return response.data;
+            })
+          );
+
+          const aggregated = {};
+          projectLeaderboards.forEach(leaderboard => {
+            leaderboard.forEach(entry => {
+              if (aggregated[entry.email]) {
+                aggregated[entry.email].points += entry.points;
+              } else {
+                aggregated[entry.email] = { ...entry };
+              }
+            });
+          });
+
+          const leaderboardArray = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 5);
+          setLeaderboard(leaderboardArray);
+        } catch (err) {
+          console.error('Failed to fetch leaderboard:', err);
+          setLeaderboard([]);
+        }
+      };
+
+      fetchLeaderboards();
     } catch (err) {
-      console.error('Home - Error compiling feed items:', err.message);
+      setError('Failed to load feed items: ' + (err.message || 'Please try again.'));
       setFeedItems([]);
     }
+
+    return () => {
+      if (recognition) {
+        recognition.stop();
+      }
+    };
   }, [isAuthenticated, isLoading, navigate, user]);
 
   const handleLike = (index) => {
-    console.log('Home - Liking feed item at index:', index);
     setFeedItems(prevItems =>
       prevItems.map((item, i) =>
-        i === index ? { ...item, likes: item.likes + 1 } : item
+        i === index ? { ...item, likes: (item.likes || 0) + 1 } : item
       )
     );
   };
@@ -117,11 +189,10 @@ const Home = () => {
     const commentText = newComment[index] || '';
     if (!commentText.trim()) return;
 
-    console.log('Home - Submitting comment for feed item at index:', index, 'comment:', commentText);
     setFeedItems(prevItems =>
       prevItems.map((item, i) =>
         i === index
-          ? { ...item, comments: [...item.comments, { text: commentText, user: user.email || 'Anonymous', timestamp: new Date().toISOString() }] }
+          ? { ...item, comments: [...(item.comments || []), { text: commentText, user: user.email || 'Anonymous', timestamp: new Date().toISOString() }] }
           : item
       )
     );
@@ -130,73 +201,73 @@ const Home = () => {
   };
 
   const handleShare = (index) => {
-    console.log('Home - Sharing feed item at index:', index);
     setFeedItems(prevItems =>
       prevItems.map((item, i) =>
-        i === index ? { ...item, shares: item.shares + 1 } : item
+        i === index ? { ...item, shares: (item.shares || 0) + 1 } : item
       )
     );
     alert('Shared! (This is a mock action—implement sharing logic as needed.)');
   };
 
   const toggleComments = (index) => {
-    console.log('Home - Toggling comments for feed item at index:', index);
     setExpandedComments(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
   const toggleSidebar = () => {
-    console.log('Home - Toggling sidebar, current state:', isSidebarOpen);
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const toggleVoiceNavigation = () => {
+    if (isListening) {
+      setIsListening(false);
+    } else {
+      setIsListening(true);
+    }
+  };
+
   if (isLoading) {
-    console.log('Home - Rendering loading state');
     return (
       <div className="home-container">
         <div className="loading-message flex items-center justify-center min-h-screen">
           <div className="loader" aria-label="Loading home page"></div>
-          <span className="text-coral-pink text-xl font-poppins ml-4">Loading...</span>
+          <span className="text-neon-magenta text-xl font-orbitron ml-4">Loading...</span>
         </div>
       </div>
     );
   }
 
-  if (authError) {
-    console.log('Home - Rendering auth error state:', authError);
+  if (authError || error) {
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-red-500 text-lg font-poppins">{authError}</p>
+          <p className="text-red-500 text-lg font-orbitron">{authError || error}</p>
         </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    console.log('Home - Not authenticated, should have redirected');
     return null;
   }
 
   if (!user) {
-    console.log('Home - No user data, rendering fallback');
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-deep-teal text-lg font-poppins">Unable to load user data. Please try logging in again.</p>
+          <p className="text-cyber-teal text-lg font-orbitron">Unable to load user data. Please try logging in again.</p>
         </div>
       </div>
     );
   }
 
-  console.log('Home - Rendering main content for user:', user.firstName);
   return (
     <div className="home-container flex flex-col lg:flex-row min-h-screen">
-      {/* Sidebar (Hidden on mobile by default, toggled with hamburger) */}
-      <div className={`sidebar fixed lg:static inset-y-0 left-0 z-50 lg:z-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-deep-teal p-4 flex flex-col gap-4 lg:flex`}>
+      {/* Sidebar */}
+      <div className={`sidebar fixed lg:static inset-y-0 left-0 z-50 lg:z-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-cyber-teal p-4 flex flex-col gap-4 lg:flex`}>
         <div className="flex justify-between items-center mb-4 lg:mb-6">
-          <h2 className="text-xl font-poppins font-semibold text-coral-pink">Activity Summary</h2>
+          <h2 className="text-xl font-orbitron font-semibold text-neon-magenta">Activity Summary</h2>
           <button
-            className="lg:hidden text-golden-yellow focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+            className="lg:hidden text-holo-silver focus:outline-none focus:ring-2 focus:ring-holo-silver"
             onClick={toggleSidebar}
             aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
           >
@@ -206,9 +277,13 @@ const Home = () => {
         <div className="flex-1 overflow-y-auto">
           <div className="space-y-4">
             {(user.projects || []).filter(p => p.status !== 'Completed').slice(0, 5).map(project => (
-              <div key={project.id} className="sidebar-item p-3 bg-coral-pink bg-opacity-20 rounded-lg">
-                <Link to={`/projects/${project.id}`} className="text-golden-yellow font-poppins font-medium hover:underline">{project.title}</Link>
-                <p className="text-light-text text-sm font-poppins">Status: {project.status}</p>
+              <div key={project._id} className="sidebar-item p-3 bg-neon-magenta bg-opacity-20 rounded-lg">
+                <Link to={`/projects/${project._id}`} className="text-holo-silver font-inter font-medium hover:underline">{project.title}</Link>
+                <p className="text-light-text text-sm font-inter">Status: {project.status}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Users className="w-4 h-4 text-holo-silver" />
+                  <span className="text-light-text text-xs font-inter">{project.members?.length || 0} active users</span>
+                </div>
               </div>
             ))}
           </div>
@@ -217,128 +292,122 @@ const Home = () => {
 
       {/* Main Content */}
       <div className="main-content flex-1 p-4 lg:p-8">
-        {/* Hamburger Menu for Mobile */}
-        <button
-          className="lg:hidden mb-4 text-golden-yellow focus:outline-none focus:ring-2 focus:ring-golden-yellow"
-          onClick={toggleSidebar}
-          aria-label="Open sidebar"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
+        <div className="flex justify-between items-center mb-4 lg:mb-6">
+          <button
+            className="lg:hidden text-holo-silver focus:outline-none focus:ring-2 focus:ring-holo-silver"
+            onClick={toggleSidebar}
+            aria-label="Open sidebar"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <button
+            className={`flex items-center gap-2 px-3 py-1 rounded-full ${isListening ? 'bg-neon-magenta' : 'bg-cyber-teal'} text-light-text focus:outline-none focus:ring-2 focus:ring-holo-silver`}
+            onClick={toggleVoiceNavigation}
+            aria-label={isListening ? "Stop voice navigation" : "Start voice navigation"}
+          >
+            <Mic className="w-5 h-5" />
+            {isListening ? 'Listening...' : 'Voice Navigation'}
+          </button>
+        </div>
 
         <div className="home-header mb-8">
-          <h1 className="text-4xl font-poppins font-bold text-coral-pink mb-2 animate-text-glow">
+          <h1 className="text-4xl font-orbitron font-bold text-neon-magenta mb-2 animate-text-glow">
             Welcome to ShareSync, {user.firstName}!
           </h1>
-          <p className="text-deep-teal text-lg font-poppins">
-            Stay connected with all your active projects.
+          <p className="text-cyber-teal text-lg font-inter">
+            Stay connected with all your active projects in a futuristic workspace.
           </p>
         </div>
 
+        {/* Notifications */}
+        <div className="notifications-section mb-8 card p-6 glassmorphic">
+          <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4 flex items-center">
+            <Bell className="w-5 h-5 mr-2 text-holo-silver animate-pulse" aria-hidden="true" /> Notifications
+          </h2>
+          {notifications.length === 0 ? (
+            <p className="text-cyber-teal font-inter">No notifications yet.</p>
+          ) : (
+            <ul className="space-y-2 max-h-96 overflow-y-auto">
+              {notifications.map((notif, index) => (
+                <li key={index} className="text-light-text font-inter p-2 bg-cyber-teal bg-opacity-20 rounded">
+                  {notif.message} - {new Date(notif.timestamp).toLocaleString()}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Leaderboard Section */}
+        <div className="leaderboard-section mb-8 card p-6 glassmorphic">
+          <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4 flex items-center">
+            <Award className="w-5 h-5 mr-2 text-holo-silver animate-pulse" aria-hidden="true" /> Overall Leaderboard
+          </h2>
+          {leaderboard.length === 0 ? (
+            <p className="text-cyber-teal font-inter flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-holo-silver animate-pulse" aria-hidden="true" /> No leaderboard data available.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {leaderboard.map((entry, index) => (
+                <div key={index} className="leaderboard-item card p-3 glassmorphic flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xl font-orbitron ${index === 0 ? 'text-holo-silver' : index === 1 ? 'text-cyber-teal' : 'text-neon-magenta'}`}>
+                      #{index + 1}
+                    </span>
+                    <span className="text-light-text font-inter">{entry.username}</span>
+                  </div>
+                  <span className="text-light-text font-inter">{entry.points} points</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* AI-Driven Project Recommendations */}
+        {recommendedProjects.length > 0 && (
+          <div className="recommendations-section mb-8">
+            <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4">Recommended Projects</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recommendedProjects.map(project => (
+                <Link
+                  key={project.id}
+                  to={`/projects/${project.id}`}
+                  className="recommendation-card card p-4 glassmorphic animate-fade-in"
+                  style={{ transformStyle: 'preserve-3d' }}
+                >
+                  <h3 className="text-lg font-orbitron font-medium text-neon-magenta">{project.title}</h3>
+                  <p className="text-cyber-teal text-sm font-inter">{project.reason}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Feed Section */}
         <div className="feed-container">
-          <h2 className="text-2xl font-poppins font-semibold text-coral-pink mb-6 flex items-center">
-            <Folder className="w-5 h-5 mr-2 text-golden-yellow animate-pulse" aria-hidden="true" /> Project Activity Feed
+          <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-6 flex items-center">
+            <Folder className="w-5 h-5 mr-2 text-holo-silver animate-pulse" aria-hidden="true" /> Project Activity Feed
           </h2>
           {feedItems.length === 0 ? (
-            <p className="text-deep-teal flex items-center gap-2 font-poppins">
-              <AlertCircle className="w-5 h-5 text-golden-yellow animate-pulse" aria-hidden="true" /> No recent activity in your active projects.
+            <p className="text-cyber-teal flex items-center gap-2 font-inter">
+              <AlertCircle className="w-5 h-5 text-holo-silver animate-pulse" aria-hidden="true" /> No recent activity in your active projects.
             </p>
           ) : (
             <div className="space-y-6">
               {feedItems.map((item, index) => (
-                <div key={index} className="feed-item card p-6 glassmorphic animate-fade-in">
-                  <div className="flex justify-between items-center mb-3">
-                    <Link to={`/projects/${item.projectId}`} className="text-coral-pink font-poppins font-bold text-lg hover:underline">
-                      {item.projectTitle}
-                    </Link>
-                    <p className="text-deep-teal text-sm font-poppins">{new Date(item.timestamp).toLocaleString()}</p>
-                  </div>
-                  {item.type === 'activity' ? (
-                    <p className="text-light-text font-poppins">{item.message} by {item.user}</p>
-                  ) : item.type === 'task-complete' ? (
-                    <p className="text-light-text font-poppins flex items-center gap-2">
-                      <CheckSquare className="w-5 h-5 text-golden-yellow" aria-hidden="true" /> {item.message} by {item.user}
-                    </p>
-                  ) : item.type === 'file' ? (
-                    <p className="text-light-text font-poppins flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-golden-yellow" aria-hidden="true" /> {item.message} by {item.user}
-                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-coral-pink hover:underline ml-2">View File</a>
-                    </p>
-                  ) : (
-                    <>
-                      <p className="text-light-text font-poppins">{item.content}</p>
-                      {item.type === 'picture' && (
-                        <img src={item.content} alt="Post content" className="w-full h-48 object-cover rounded-lg mt-3" />
-                      )}
-                      {item.type === 'poll' && (
-                        <div className="mt-3 space-y-2">
-                          {item.options.map((option, optIndex) => (
-                            <div key={optIndex} className="flex items-center gap-2">
-                              <button className="btn-primary rounded-full px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-golden-yellow" aria-label={`Vote for ${option}`}>Vote</button>
-                              <span className="text-light-text font-poppins">{option}</span>
-                              <span className="text-deep-teal font-poppins">({item.votes.filter(v => v.option === option).length} votes)</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <p className="text-deep-teal text-sm mt-2 font-poppins">Posted by {item.author}</p>
-                    </>
-                  )}
-                  <div className="flex gap-4 mt-4">
-                    <button
-                      onClick={() => handleLike(index)}
-                      className="flex items-center gap-1 text-coral-pink hover:text-golden-yellow transition-colors focus:outline-none focus:ring-2 focus:ring-golden-yellow animate-pulse-on-hover"
-                      aria-label={`Like this update (${item.likes} likes)`}
-                    >
-                      <ThumbsUp className="w-5 h-5" aria-hidden="true" /> {item.likes} Likes
-                    </button>
-                    <button
-                      onClick={() => toggleComments(index)}
-                      className="flex items-center gap-1 text-coral-pink hover:text-golden-yellow transition-colors focus:outline-none focus:ring-2 focus:ring-golden-yellow"
-                      aria-label="Toggle comments"
-                    >
-                      <MessageSquare className="w-5 h-5" aria-hidden="true" /> {item.comments.length} Comments
-                    </button>
-                    <button
-                      onClick={() => handleShare(index)}
-                      className="flex items-center gap-1 text-coral-pink hover:text-golden-yellow transition-colors focus:outline-none focus:ring-2 focus:ring-golden-yellow"
-                      aria-label={`Share this update (${item.shares} shares)`}
-                    >
-                      <Share2 className="w-5 h-5" aria-hidden="true" /> {item.shares} Shares
-                    </button>
-                  </div>
-                  {expandedComments[index] && (
-                    <div className="comments-section mt-4 animate-slide-down">
-                      {item.comments.length > 0 ? (
-                        <div className="space-y-2">
-                          {item.comments.map((comment, cIndex) => (
-                            <div key={cIndex} className="comment p-3 bg-deep-teal bg-opacity-20 rounded-lg">
-                              <p className="text-light-text text-sm font-poppins">
-                                <strong>{comment.user}:</strong> {comment.text}
-                              </p>
-                              <p className="text-deep-teal text-xs font-poppins">{new Date(comment.timestamp).toLocaleString()}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-deep-teal text-sm font-poppins">No comments yet.</p>
-                      )}
-                      <form onSubmit={(e) => handleCommentSubmit(index, e)} className="mt-3 flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={newComment[index] || ''}
-                          onChange={(e) => setNewComment(prev => ({ ...prev, [index]: e.target.value }))}
-                          placeholder="Add a comment..."
-                          className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-golden-yellow"
-                          aria-label="Add a comment"
-                        />
-                        <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-golden-yellow" aria-label="Submit comment">
-                          <Send className="w-5 h-5" aria-hidden="true" />
-                        </button>
-                      </form>
-                    </div>
-                  )}
-                </div>
+                <LazyLoad key={index} height={200} offset={100}>
+                  <FeedItem
+                    item={item}
+                    index={index}
+                    newComment={newComment}
+                    expandedComments={expandedComments}
+                    handleLike={handleLike}
+                    handleCommentSubmit={handleCommentSubmit}
+                    toggleComments={toggleComments}
+                    handleShare={handleShare}
+                    user={user}
+                  />
+                </LazyLoad>
               ))}
             </div>
           )}

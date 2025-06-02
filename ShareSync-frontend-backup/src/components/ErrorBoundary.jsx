@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import './ErrorBoundary.css';
 
 class ErrorBoundary extends Component {
   state = {
@@ -8,27 +9,27 @@ class ErrorBoundary extends Component {
   };
 
   static getDerivedStateFromError(error) {
-    console.log('ErrorBoundary - Caught error:', error.message, error.stack);
-    return { hasError: true, error };
+    return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('ErrorBoundary - Error details:', error.message, error.stack, 'Info:', errorInfo);
-    this.setState({ errorInfo });
+    this.setState({ error, errorInfo });
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-container">
-          <h2>Something went wrong</h2>
-          <p>{this.state.error?.message || 'Unknown error'}</p>
-          <details style={{ whiteSpace: 'pre-wrap' }}>
-            {this.state.error && this.state.error.toString()}
-            <br />
-            {this.state.errorInfo?.componentStack}
-          </details>
-          <button onClick={() => window.location.reload()}>Reload Page</button>
+        <div className="error-boundary-container">
+          <h1 className="text-3xl font-orbitron font-bold text-neon-magenta mb-4">Something Went Wrong</h1>
+          <p className="text-cyber-teal text-lg font-inter mb-4">An unexpected error occurred. Please try refreshing the page.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-primary rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-holo-silver"
+            aria-label="Refresh page"
+          >
+            Refresh Page
+          </button>
         </div>
       );
     }

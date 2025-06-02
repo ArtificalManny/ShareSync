@@ -1,7 +1,8 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, Plus, AlertCircle } from 'lucide-react';
+import axios from 'axios';
+import { Folder, Plus, AlertCircle, BarChart2, Award } from 'lucide-react';
 import './Projects.css';
 
 const Projects = () => {
@@ -11,6 +12,71 @@ const Projects = () => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Personal');
   const [error, setError] = useState('');
+  const [projects, setProjects] = useState([]);
+  const [metrics, setMetrics] = useState({
+    totalProjects: 0,
+    currentProjects: 0,
+    pastProjects: 0,
+    tasksCompleted: 0,
+    activeMembers: 0,
+    filesShared: 0,
+  });
+  const [leaderboard, setLeaderboard] = useState([]);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      const userProjects = user.projects || [];
+      setProjects(userProjects);
+
+      // Calculate metrics
+      const totalProjects = userProjects.length;
+      const currentProjects = userProjects.filter(p => p.status !== 'Completed').length;
+      const pastProjects = totalProjects - currentProjects;
+      const tasksCompleted = userProjects.reduce((sum, p) => sum + (p.tasks?.filter(t => t.status === 'Completed').length || 0), 0);
+      const activeMembers = userProjects.reduce((sum, p) => sum + (p.members?.length || 0), 0);
+      const filesShared = userProjects.reduce((sum, p) => sum + (p.files?.length || 0), 0);
+
+      setMetrics({
+        totalProjects,
+        currentProjects,
+        pastProjects,
+        tasksCompleted,
+        activeMembers,
+        filesShared,
+      });
+
+      // Fetch leaderboard data
+      const fetchLeaderboards = async () => {
+        try {
+          const projectLeaderboards = await Promise.all(
+            userProjects.map(async (project) => {
+              const response = await axios.get(`http://localhost:3000/api/projects/${project._id}/leaderboard`);
+              return response.data;
+            })
+          );
+
+          const aggregated = {};
+          projectLeaderboards.forEach(leaderboard => {
+            leaderboard.forEach(entry => {
+              if (aggregated[entry.email]) {
+                aggregated[entry.email].points += entry.points;
+              } else {
+                aggregated[entry.email] = { ...entry };
+              }
+            });
+          });
+
+          const leaderboardArray = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 5);
+          setLeaderboard(leaderboardArray);
+        } catch (err) {
+          console.error('Failed to fetch leaderboard:', err);
+          setLeaderboard([]);
+        }
+      };
+
+      fetchLeaderboards();
+    }
+  }, [isLoading, isAuthenticated, user]);
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
@@ -29,13 +95,13 @@ const Projects = () => {
         status: 'Not Started',
       };
       const newProject = await addProject(projectData);
-      if (!newProject || !newProject.id) {
+      if (!newProject || !newProject._id) {
         throw new Error('Project creation failed: No project ID returned.');
       }
       setTitle('');
       setDescription('');
       setCategory('Personal');
-      navigate(`/projects/${newProject.id}`);
+      navigate(`/projects/${newProject._id}`);
     } catch (err) {
       setError('Failed to create project: ' + (err.message || 'Please try again.'));
     }
@@ -80,6 +146,73 @@ const Projects = () => {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {error && <p className="text-red-500 mb-4 text-center font-orbitron">{error}</p>}
+
+        {/* Metrics Dashboard */}
+        <div className="metrics-dashboard mb-8 card p-6 glassmorphic">
+          <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4 flex items-center">
+            <BarChart2 className="w-5 h-5 mr-2 text-holo-silver" aria-hidden="true" /> Metrics Dashboard
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="metric-card p-4 bg-cyber-teal bg-opacity-20 rounded-lg">
+              <p className="text-light-text font-inter">Total Projects</p>
+              <p className="text-2xl font-orbitron text-neon-magenta">{metrics.totalProjects}</p>
+            </div>
+            <div className="metric-card p-4 bg-cyber-teal bg-opacity-20 rounded-lg">
+              <p className="text-light-text font-inter">Current Projects</p>
+              <p className="text-2xl font-orbitron text-neon-magenta">{metrics.currentProjects}</p>
+            </div>
+            <div className="metric-card p-4 bg-cyber-teal bg-opacity-20 rounded-lg">
+              <p className="text-light-text font-inter">Past Projects</p>
+              <p className="text-2xl font-orbitron text-neon-magenta">{metrics.pastProjects}</p>
+            </div>
+            <div className="metric-card p-4 bg-cyber-teal bg-opacity-20 rounded-lg">
+              <p className="text-light-text font-inter">Tasks Completed</p>
+              <p className="text-2xl font-orbitron text-neon-magenta">{metrics.tasksCompleted}</p>
+            </div>
+            <div className="metric-card p-4 bg-cyber-teal bg-opacity-20 rounded-lg">
+              <p className="text-light-text font-inter">Active Members</p>
+              <p className="text-2xl font-orbitron text-neon-magenta">{metrics.activeMembers}</p>
+            </div>
+            <div className="metric-card p-4 bg-cyber-teal bg-opacity-20 rounded-lg">
+              <p className="text-light-text font-inter">Files Shared</p>
+              <p className="text-2xl font-orbitron text-neon-magenta">{metrics.filesShared}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Leaderboard Section */}
+        <div className="leaderboard-section mb-8 card p-6 glassmorphic">
+          <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4 flex items-center">
+            <Award className="w-5 h-5 mr-2 text-holo-silver animate-pulse" aria-hidden="true" /> Overall Leaderboard
+          </h2>
+          {leaderboard.length === 0 ? (
+            <p className="text-cyber-teal font-inter flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-holo-silver animate-pulse" aria-hidden="true" /> No leaderboard data available.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {leaderboard.map((entry, index) => (
+                <div key={index} className="leaderboard-item card p-3 glassmorphic flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xl font-orbitron ${index === 0 ? 'text-holo-silver' : index === 1 ? 'text-cyber-teal' : 'text-neon-magenta'}`}>
+                      #{index + 1}
+                    </span>
+                    <span className="text-light-text font-inter">{entry.username}</span>
+                  </div>
+                  <span className="text-light-text font-inter">{entry.points} points</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Team Activity (Placeholder) */}
+        <div className="team-activity-section mb-8 card p-6 glassmorphic">
+          <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4">Team Activity</h2>
+          <p className="text-cyber-teal font-inter">No recent updates.</p>
+        </div>
+
+        {/* Create Project Form */}
         <form onSubmit={handleCreateProject} className="mb-8 card p-6 glassmorphic">
           <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4 flex items-center">
             <Plus className="w-5 h-5 mr-2 text-holo-silver animate-pulse" aria-hidden="true" /> Create New Project
@@ -133,20 +266,21 @@ const Projects = () => {
           </button>
         </form>
 
+        {/* Project List */}
         <div className="projects-list">
           <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4 flex items-center">
             <Folder className="w-5 h-5 mr-2 text-holo-silver animate-pulse" aria-hidden="true" /> All Projects
           </h2>
-          {(user.projects || []).length === 0 ? (
+          {projects.length === 0 ? (
             <p className="text-cyber-teal flex items-center gap-2 font-inter">
               <AlertCircle className="w-5 h-5 text-holo-silver animate-pulse" aria-hidden="true" /> No projects yet.
             </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(user.projects || []).map(project => (
+              {projects.map(project => (
                 <Link
-                  key={project.id}
-                  to={`/projects/${project.id}`}
+                  key={project._id}
+                  to={`/projects/${project._id}`}
                   className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-holo-silver animate-fade-in"
                   aria-label={`View project ${project.title}`}
                 >

@@ -2,13 +2,13 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import axios from 'axios';
-import { Edit, X, Folder, Award } from 'lucide-react';
+import { Edit, X, Folder, Award, Bell } from 'lucide-react';
 import './Profile.css';
 
 const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, authError, updateUserProfile } = useContext(AuthContext);
+  const { user, isAuthenticated, isLoading, authError, updateUserProfile, notifications } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -54,7 +54,7 @@ const Profile = () => {
         });
 
         // Calculate points (mock implementation)
-        const points = (user.projects?.length || 0) * 10 + (user.email.length * 2); // Example: 10 points per project, 2 per email character
+        const points = (user.projects?.length || 0) * 10 + (user.email.length * 2);
         setUserPoints(points);
 
         // Mock leaderboard
@@ -155,7 +155,8 @@ const Profile = () => {
     setIsEditing(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (e) => {
+    e.preventDefault();
     try {
       await updateUserProfile(formData);
       setProfile({ ...profile, ...formData });
@@ -316,22 +317,24 @@ const Profile = () => {
             {isOwner && (
               <div className="flex gap-4">
                 {isEditing ? (
-                  <>
-                    <button
-                      onClick={handleSave}
-                      className="btn-primary rounded-full animate-glow px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-silver"
-                      aria-label="Save profile changes"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={handleCancel}
-                      className="btn-primary rounded-full bg-cyber-teal px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-silver"
-                      aria-label="Cancel editing"
-                    >
-                      Cancel
-                    </button>
-                  </>
+                  <form onSubmit={handleSave}>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        className="btn-primary rounded-full animate-glow px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-silver"
+                        aria-label="Save profile changes"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={handleCancel}
+                        className="btn-primary rounded-full bg-cyber-teal px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-silver"
+                        aria-label="Cancel editing"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
                 ) : (
                   <button
                     onClick={handleEdit}
@@ -342,6 +345,24 @@ const Profile = () => {
                   </button>
                 )}
               </div>
+            )}
+          </div>
+
+          {/* Notifications Section */}
+          <div className="notifications-section mb-8">
+            <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4 flex items-center">
+              <Bell className="w-5 h-5 mr-2 text-holo-silver animate-pulse" aria-hidden="true" /> Notifications
+            </h2>
+            {notifications.length === 0 ? (
+              <p className="text-cyber-teal font-inter">No notifications yet.</p>
+            ) : (
+              <ul className="space-y-2 max-h-96 overflow-y-auto">
+                {notifications.map((notif, index) => (
+                  <li key={index} className="text-light-text font-inter p-2 bg-cyber-teal bg-opacity-20 rounded">
+                    {notif.message} - {new Date(notif.timestamp).toLocaleString()}
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 
@@ -389,8 +410,8 @@ const Profile = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {projectsByCategory[category].map(project => (
                           <Link
-                            key={project.id}
-                            to={`/projects/${project.id}`}
+                            key={project._id}
+                            to={`/projects/${project._id}`}
                             className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-holo-silver"
                             aria-label={`View project ${project.title}`}
                           >

@@ -7,7 +7,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
     <div className="feed-item card p-6 glassmorphic animate-fade-in" style={{ transformStyle: 'preserve-3d' }}>
       <div className="flex justify-between items-center mb-3">
         <Link to={`/projects/${item.projectId}`} className="text-neon-magenta font-orbitron font-bold text-lg hover:underline">
-          {item.projectTitle}
+          {item.projectTitle || 'Untitled Project'}
         </Link>
         <p className="text-cyber-teal text-sm font-inter">{new Date(item.timestamp).toLocaleString()}</p>
       </div>
@@ -26,7 +26,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
         <>
           <p className="text-light-text font-inter">{item.content}</p>
           {item.type === 'picture' && (
-            <img src={item.content} alt="Post content" className="w-full h-48 object-cover rounded-lg mt-3" />
+            <img src={item.content} alt="Post content" className="w-full h-48 object-cover rounded-lg mt-3" onError={(e) => e.target.src = 'https://via.placeholder.com/150'} />
           )}
           {item.type === 'poll' && (
             <div className="mt-3 space-y-2">
@@ -34,7 +34,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
                 <div key={optIndex} className="flex items-center gap-2">
                   <button className="btn-primary rounded-full px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-holo-silver" aria-label={`Vote for ${option}`}>Vote</button>
                   <span className="text-light-text font-inter">{option}</span>
-                  <span className="text-cyber-teal font-inter">({item.votes.filter(v => v.option === option).length} votes)</span>
+                  <span className="text-cyber-teal font-inter">({item.votes?.filter(v => v.option === option).length || 0} votes)</span>
                 </div>
               ))}
             </div>
@@ -46,23 +46,23 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
         <button
           onClick={() => handleLike(index)}
           className="flex items-center gap-1 text-neon-magenta hover:text-holo-silver transition-colors focus:outline-none focus:ring-2 focus:ring-holo-silver animate-pulse-on-hover"
-          aria-label={`Like this update (${item.likes} likes)`}
+          aria-label={`Like this update (${item.likes || 0} likes)`}
         >
-          <ThumbsUp className="w-5 h-5" aria-hidden="true" /> {item.likes} Likes
+          <ThumbsUp className="w-5 h-5" aria-hidden="true" /> {item.likes || 0} Likes
         </button>
         <button
           onClick={() => toggleComments(index)}
           className="flex items-center gap-1 text-neon-magenta hover:text-holo-silver transition-colors focus:outline-none focus:ring-2 focus:ring-holo-silver"
           aria-label="Toggle comments"
         >
-          <MessageSquare className="w-5 h-5" aria-hidden="true" /> {item.comments.length} Comments
+          <MessageSquare className="w-5 h-5" aria-hidden="true" /> {item.comments?.length || 0} Comments
         </button>
         <button
           onClick={() => handleShare(index)}
           className="flex items-center gap-1 text-neon-magenta hover:text-holo-silver transition-colors focus:outline-none focus:ring-2 focus:ring-holo-silver"
-          aria-label={`Share this update (${item.shares} shares)`}
+          aria-label={`Share this update (${item.shares || 0} shares)`}
         >
-          <Share2 className="w-5 h-5" aria-hidden="true" /> {item.shares} Shares
+          <Share2 className="w-5 h-5" aria-hidden="true" /> {item.shares || 0} Shares
         </button>
       </div>
       {expandedComments[index] && (
