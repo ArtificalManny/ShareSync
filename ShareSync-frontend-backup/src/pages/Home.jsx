@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare } from 'lucide-react';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Menu, X } from 'lucide-react';
 import './Home.css';
 
 const Home = () => {
@@ -10,6 +10,7 @@ const Home = () => {
   const [feedItems, setFeedItems] = useState([]);
   const [newComment, setNewComment] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   console.log('Home.jsx - Component rendering started, isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'user:', user, 'authError:', authError);
 
@@ -35,7 +36,6 @@ const Home = () => {
     }
 
     console.log('Home - User authenticated, compiling feed items for user:', user.email);
-    // Compile feed items from all active projects with error handling
     try {
       const activeProjects = (user.projects || []).filter(project => {
         if (!project || !project.status) {
@@ -94,7 +94,6 @@ const Home = () => {
         }));
       });
 
-      // Sort feed items by timestamp (most recent first)
       allFeedItems.sort((a, b) => new Date(b.timestamp || new Date()) - new Date(a.timestamp || new Date()));
       setFeedItems(allFeedItems);
       console.log('Home - Feed items set:', allFeedItems);
@@ -145,13 +144,18 @@ const Home = () => {
     setExpandedComments(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
+  const toggleSidebar = () => {
+    console.log('Home - Toggling sidebar, current state:', isSidebarOpen);
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   if (isLoading) {
     console.log('Home - Rendering loading state');
     return (
       <div className="home-container">
         <div className="loading-message flex items-center justify-center min-h-screen">
           <div className="loader" aria-label="Loading home page"></div>
-          <span className="text-holo-blue text-xl font-inter ml-4">Loading...</span>
+          <span className="text-coral-pink text-xl font-poppins ml-4">Loading...</span>
         </div>
       </div>
     );
@@ -162,7 +166,7 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-red-500 text-lg font-inter">{authError}</p>
+          <p className="text-red-500 text-lg font-poppins">{authError}</p>
         </div>
       </div>
     );
@@ -170,7 +174,7 @@ const Home = () => {
 
   if (!isAuthenticated) {
     console.log('Home - Not authenticated, should have redirected');
-    return null; // Should have redirected to /login
+    return null;
   }
 
   if (!user) {
@@ -178,7 +182,7 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-holo-gray text-lg font-inter">Unable to load user data. Please try logging in again.</p>
+          <p className="text-deep-teal text-lg font-poppins">Unable to load user data. Please try logging in again.</p>
         </div>
       </div>
     );
@@ -186,123 +190,159 @@ const Home = () => {
 
   console.log('Home - Rendering main content for user:', user.firstName);
   return (
-    <div className="home-container">
-      <div className="home-header py-8 px-6 rounded-b-3xl text-center">
-        <h1 className="text-4xl font-inter text-holo-blue mb-4 animate-text-glow">
-          Welcome to ShareSync, {user.firstName}!
-        </h1>
-        <p className="text-holo-gray text-lg font-inter mb-4">
-          Stay connected with all your active projects.
-        </p>
-      </div>
-
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-        <h2 className="text-2xl font-inter text-holo-blue mb-6 flex items-center">
-          <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Project Activity Feed
-        </h2>
-        {feedItems.length === 0 ? (
-          <p className="text-holo-gray flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No recent activity in your active projects.
-          </p>
-        ) : (
+    <div className="home-container flex flex-col lg:flex-row min-h-screen">
+      {/* Sidebar (Hidden on mobile by default, toggled with hamburger) */}
+      <div className={`sidebar fixed lg:static inset-y-0 left-0 z-50 lg:z-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-deep-teal p-4 flex flex-col gap-4 lg:flex`}>
+        <div className="flex justify-between items-center mb-4 lg:mb-6">
+          <h2 className="text-xl font-poppins font-semibold text-coral-pink">Activity Summary</h2>
+          <button
+            className="lg:hidden text-golden-yellow focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+            onClick={toggleSidebar}
+            aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
           <div className="space-y-4">
-            {feedItems.map((item, index) => (
-              <div key={index} className="feed-item card p-4 glassmorphic animate-fade-in">
-                <div className="flex justify-between items-center mb-2">
-                  <Link to={`/projects/${item.projectId}`} className="text-holo-blue font-inter font-bold text-lg hover:underline">
-                    {item.projectTitle}
-                  </Link>
-                  <p className="text-holo-gray text-sm">{new Date(item.timestamp).toLocaleString()}</p>
-                </div>
-                {item.type === 'activity' ? (
-                  <p className="text-holo-gray">{item.message} by {item.user}</p>
-                ) : item.type === 'task-complete' ? (
-                  <p className="text-holo-gray flex items-center gap-2">
-                    <CheckSquare className="w-5 h-5 text-holo-pink" aria-hidden="true" /> {item.message} by {item.user}
-                  </p>
-                ) : item.type === 'file' ? (
-                  <p className="text-holo-gray flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-holo-pink" aria-hidden="true" /> {item.message} by {item.user}
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-holo-blue hover:underline ml-2">View File</a>
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-holo-gray">{item.content}</p>
-                    {item.type === 'picture' && (
-                      <img src={item.content} alt="Post content" className="w-full h-48 object-cover rounded-lg mt-2" />
-                    )}
-                    {item.type === 'poll' && (
-                      <div className="mt-2 space-y-2">
-                        {item.options.map((option, optIndex) => (
-                          <div key={optIndex} className="flex items-center gap-2">
-                            <button className="btn-primary rounded-full px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label={`Vote for ${option}`}>Vote</button>
-                            <span>{option}</span>
-                            <span>({item.votes.filter(v => v.option === option).length} votes)</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <p className="text-holo-gray text-sm mt-1">Posted by {item.author}</p>
-                  </>
-                )}
-                <div className="flex gap-4 mt-4">
-                  <button
-                    onClick={() => handleLike(index)}
-                    className="flex items-center gap-1 text-holo-blue hover:text-holo-pink transition-colors focus:outline-none focus:ring-2 focus:ring-holo-blue animate-pulse-on-hover"
-                    aria-label={`Like this update (${item.likes} likes)`}
-                  >
-                    <ThumbsUp className="w-5 h-5" aria-hidden="true" /> {item.likes} Likes
-                  </button>
-                  <button
-                    onClick={() => toggleComments(index)}
-                    className="flex items-center gap-1 text-holo-blue hover:text-holo-pink transition-colors focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                    aria-label="Toggle comments"
-                  >
-                    <MessageSquare className="w-5 h-5" aria-hidden="true" /> {item.comments.length} Comments
-                  </button>
-                  <button
-                    onClick={() => handleShare(index)}
-                    className="flex items-center gap-1 text-holo-blue hover:text-holo-pink transition-colors focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                    aria-label={`Share this update (${item.shares} shares)`}
-                  >
-                    <Share2 className="w-5 h-5" aria-hidden="true" /> {item.shares} Shares
-                  </button>
-                </div>
-                {expandedComments[index] && (
-                  <div className="comments-section mt-4 animate-slide-down">
-                    {item.comments.length > 0 ? (
-                      <div className="space-y-2">
-                        {item.comments.map((comment, cIndex) => (
-                          <div key={cIndex} className="comment p-2 bg-holo-bg-light rounded">
-                            <p className="text-holo-gray text-sm">
-                              <strong>{comment.user}:</strong> {comment.text}
-                            </p>
-                            <p className="text-holo-gray text-xs">{new Date(comment.timestamp).toLocaleString()}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-holo-gray text-sm">No comments yet.</p>
-                    )}
-                    <form onSubmit={(e) => handleCommentSubmit(index, e)} className="mt-2 flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={newComment[index] || ''}
-                        onChange={(e) => setNewComment(prev => ({ ...prev, [index]: e.target.value }))}
-                        placeholder="Add a comment..."
-                        className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                        aria-label="Add a comment"
-                      />
-                      <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Submit comment">
-                        <Send className="w-5 h-5" aria-hidden="true" />
-                      </button>
-                    </form>
-                  </div>
-                )}
+            {(user.projects || []).filter(p => p.status !== 'Completed').slice(0, 5).map(project => (
+              <div key={project.id} className="sidebar-item p-3 bg-coral-pink bg-opacity-20 rounded-lg">
+                <Link to={`/projects/${project.id}`} className="text-golden-yellow font-poppins font-medium hover:underline">{project.title}</Link>
+                <p className="text-light-text text-sm font-poppins">Status: {project.status}</p>
               </div>
             ))}
           </div>
-        )}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="main-content flex-1 p-4 lg:p-8">
+        {/* Hamburger Menu for Mobile */}
+        <button
+          className="lg:hidden mb-4 text-golden-yellow focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+          onClick={toggleSidebar}
+          aria-label="Open sidebar"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+
+        <div className="home-header mb-8">
+          <h1 className="text-4xl font-poppins font-bold text-coral-pink mb-2 animate-text-glow">
+            Welcome to ShareSync, {user.firstName}!
+          </h1>
+          <p className="text-deep-teal text-lg font-poppins">
+            Stay connected with all your active projects.
+          </p>
+        </div>
+
+        <div className="feed-container">
+          <h2 className="text-2xl font-poppins font-semibold text-coral-pink mb-6 flex items-center">
+            <Folder className="w-5 h-5 mr-2 text-golden-yellow animate-pulse" aria-hidden="true" /> Project Activity Feed
+          </h2>
+          {feedItems.length === 0 ? (
+            <p className="text-deep-teal flex items-center gap-2 font-poppins">
+              <AlertCircle className="w-5 h-5 text-golden-yellow animate-pulse" aria-hidden="true" /> No recent activity in your active projects.
+            </p>
+          ) : (
+            <div className="space-y-6">
+              {feedItems.map((item, index) => (
+                <div key={index} className="feed-item card p-6 glassmorphic animate-fade-in">
+                  <div className="flex justify-between items-center mb-3">
+                    <Link to={`/projects/${item.projectId}`} className="text-coral-pink font-poppins font-bold text-lg hover:underline">
+                      {item.projectTitle}
+                    </Link>
+                    <p className="text-deep-teal text-sm font-poppins">{new Date(item.timestamp).toLocaleString()}</p>
+                  </div>
+                  {item.type === 'activity' ? (
+                    <p className="text-light-text font-poppins">{item.message} by {item.user}</p>
+                  ) : item.type === 'task-complete' ? (
+                    <p className="text-light-text font-poppins flex items-center gap-2">
+                      <CheckSquare className="w-5 h-5 text-golden-yellow" aria-hidden="true" /> {item.message} by {item.user}
+                    </p>
+                  ) : item.type === 'file' ? (
+                    <p className="text-light-text font-poppins flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-golden-yellow" aria-hidden="true" /> {item.message} by {item.user}
+                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-coral-pink hover:underline ml-2">View File</a>
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-light-text font-poppins">{item.content}</p>
+                      {item.type === 'picture' && (
+                        <img src={item.content} alt="Post content" className="w-full h-48 object-cover rounded-lg mt-3" />
+                      )}
+                      {item.type === 'poll' && (
+                        <div className="mt-3 space-y-2">
+                          {item.options.map((option, optIndex) => (
+                            <div key={optIndex} className="flex items-center gap-2">
+                              <button className="btn-primary rounded-full px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-golden-yellow" aria-label={`Vote for ${option}`}>Vote</button>
+                              <span className="text-light-text font-poppins">{option}</span>
+                              <span className="text-deep-teal font-poppins">({item.votes.filter(v => v.option === option).length} votes)</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-deep-teal text-sm mt-2 font-poppins">Posted by {item.author}</p>
+                    </>
+                  )}
+                  <div className="flex gap-4 mt-4">
+                    <button
+                      onClick={() => handleLike(index)}
+                      className="flex items-center gap-1 text-coral-pink hover:text-golden-yellow transition-colors focus:outline-none focus:ring-2 focus:ring-golden-yellow animate-pulse-on-hover"
+                      aria-label={`Like this update (${item.likes} likes)`}
+                    >
+                      <ThumbsUp className="w-5 h-5" aria-hidden="true" /> {item.likes} Likes
+                    </button>
+                    <button
+                      onClick={() => toggleComments(index)}
+                      className="flex items-center gap-1 text-coral-pink hover:text-golden-yellow transition-colors focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                      aria-label="Toggle comments"
+                    >
+                      <MessageSquare className="w-5 h-5" aria-hidden="true" /> {item.comments.length} Comments
+                    </button>
+                    <button
+                      onClick={() => handleShare(index)}
+                      className="flex items-center gap-1 text-coral-pink hover:text-golden-yellow transition-colors focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                      aria-label={`Share this update (${item.shares} shares)`}
+                    >
+                      <Share2 className="w-5 h-5" aria-hidden="true" /> {item.shares} Shares
+                    </button>
+                  </div>
+                  {expandedComments[index] && (
+                    <div className="comments-section mt-4 animate-slide-down">
+                      {item.comments.length > 0 ? (
+                        <div className="space-y-2">
+                          {item.comments.map((comment, cIndex) => (
+                            <div key={cIndex} className="comment p-3 bg-deep-teal bg-opacity-20 rounded-lg">
+                              <p className="text-light-text text-sm font-poppins">
+                                <strong>{comment.user}:</strong> {comment.text}
+                              </p>
+                              <p className="text-deep-teal text-xs font-poppins">{new Date(comment.timestamp).toLocaleString()}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-deep-teal text-sm font-poppins">No comments yet.</p>
+                      )}
+                      <form onSubmit={(e) => handleCommentSubmit(index, e)} className="mt-3 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newComment[index] || ''}
+                          onChange={(e) => setNewComment(prev => ({ ...prev, [index]: e.target.value }))}
+                          placeholder="Add a comment..."
+                          className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                          aria-label="Add a comment"
+                        />
+                        <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-golden-yellow" aria-label="Submit comment">
+                          <Send className="w-5 h-5" aria-hidden="true" />
+                        </button>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -23,10 +23,13 @@ const Profile = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [hasFailed, setHasFailed] = useState(false);
   const maxRetries = 2;
-  const timeoutDuration = 5000; // Increased to 5 seconds
+  const timeoutDuration = 5000;
+
+  console.log('Profile.jsx - Rendering, username:', username, 'isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'user:', user);
 
   useEffect(() => {
     const fetchProfile = async () => {
+      console.log('Profile - useEffect triggered');
       if (isLoading) {
         console.log('Profile - Waiting for AuthContext to finish loading');
         return;
@@ -45,11 +48,28 @@ const Profile = () => {
         return;
       }
 
+      // Use authenticated user data if viewing own profile
+      if (user && user.username.toLowerCase() === username.toLowerCase()) {
+        console.log('Profile - Using authenticated user data as initial profile');
+        setProfile(user);
+        setFormData({
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          job: user.job || '',
+          school: user.school || '',
+          profilePicture: user.profilePicture || 'https://via.placeholder.com/150',
+          bannerPicture: user.bannerPicture || 'https://via.placeholder.com/1200x300',
+        });
+        return;
+      }
+
+      // Fetch profile data for other users
       const controller = new AbortController();
       const timeout = setTimeout(() => {
         controller.abort();
         setHasFailed(true);
         setError('Profile loading timed out. Please try again later.');
+        console.log('Profile - Fetch request timed out after', timeoutDuration, 'ms');
       }, timeoutDuration);
 
       try {
@@ -81,21 +101,8 @@ const Profile = () => {
           setTimeout(() => setRetryCount(retryCount + 1), 500);
         } else {
           console.log('Profile - Max retries reached. Error:', err.message);
-          if (user && user.username.toLowerCase() === username.toLowerCase()) {
-            console.log('Profile - Using authenticated user data as fallback');
-            setProfile(user);
-            setFormData({
-              firstName: user.firstName || '',
-              lastName: user.lastName || '',
-              job: user.job || '',
-              school: user.school || '',
-              profilePicture: user.profilePicture || 'https://via.placeholder.com/150',
-              bannerPicture: user.bannerPicture || 'https://via.placeholder.com/1200x300',
-            });
-          } else {
-            setError('Failed to load profile after multiple attempts. The user may not exist or you may not have access.');
-            setHasFailed(true);
-          }
+          setError('Failed to load profile after multiple attempts. The user may not exist or you may not have access.');
+          setHasFailed(true);
         }
       }
     };
@@ -104,6 +111,7 @@ const Profile = () => {
   }, [username, isAuthenticated, isLoading, navigate, user, retryCount]);
 
   const handleEdit = () => {
+    console.log('Profile - Entering edit mode');
     setIsEditing(true);
   };
 
@@ -114,6 +122,7 @@ const Profile = () => {
       setProfile({ ...profile, ...formData });
       setIsEditing(false);
       alert('Profile updated successfully!');
+      console.log('Profile - Profile updated successfully');
     } catch (err) {
       console.error('Profile - Failed to update profile:', err.message);
       setError('Failed to update profile: ' + (err.message || 'Please try again.'));
@@ -121,6 +130,7 @@ const Profile = () => {
   };
 
   const handleCancel = () => {
+    console.log('Profile - Cancelling edit mode');
     setIsEditing(false);
     setFormData({
       firstName: profile.firstName || '',
@@ -137,43 +147,47 @@ const Profile = () => {
   };
 
   if (isLoading) {
+    console.log('Profile - Rendering loading state');
     return (
       <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="loader" aria-label="Loading profile"></div>
-        <span className="text-holo-blue text-xl font-inter ml-4">Loading...</span>
+        <span className="text-coral-pink text-xl font-poppins ml-4">Loading...</span>
       </div>
     );
   }
 
   if (authError || hasFailed) {
+    console.log('Profile - Rendering error state, authError:', authError, 'hasFailed:', hasFailed);
     return (
       <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-500 text-lg font-inter mb-4">{authError || error}</p>
-          <Link to="/" className="text-holo-blue hover:underline text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-blue">Return to Home</Link>
+          <p className="text-red-500 text-lg font-poppins mb-4">{authError || error}</p>
+          <Link to="/" className="text-coral-pink hover:underline text-base font-poppins focus:outline-none focus:ring-2 focus:ring-golden-yellow">Return to Home</Link>
         </div>
       </div>
     );
   }
 
   if (!profile) {
+    console.log('Profile - No profile data, rendering loading state');
     return (
       <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="loader" aria-label="Loading profile"></div>
-        <span className="text-holo-gray text-xl font-inter ml-4">Loading profile...</span>
+        <span className="text-deep-teal text-xl font-poppins ml-4">Loading profile...</span>
       </div>
     );
   }
 
   const isOwner = user && user.username.toLowerCase() === username.toLowerCase();
   const projectsByCategory = {
-    School: profile.projects?.filter(p => p.category === 'School') || [],
-    Job: profile.projects?.filter(p => p.category === 'Job') || [],
-    Personal: profile.projects?.filter(p => p.category === 'Personal') || [],
+    School: (profile.projects || []).filter(p => p.category === 'School') || [],
+    Job: (profile.projects || []).filter(p => p.category === 'Job') || [],
+    Personal: (profile.projects || []).filter(p => p.category === 'Personal') || [],
   };
 
+  console.log('Profile - Rendering main content for profile:', profile.email);
   return (
-    <div className="profile-container bg-holo-bg-dark min-h-screen">
+    <div className="profile-container min-h-screen">
       <div className="profile-header relative">
         <img
           src={isEditing ? formData.bannerPicture : profile.bannerPicture}
@@ -184,13 +198,13 @@ const Profile = () => {
           <img
             src={isEditing ? formData.profilePicture : profile.profilePicture}
             alt="Profile picture"
-            className="w-32 h-32 rounded-full border-4 border-holo-pink shadow-lg"
+            className="w-32 h-32 rounded-full border-4 border-golden-yellow shadow-lg"
           />
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 mt-16">
-        {error && <p className="text-red-500 mb-4 text-center text-lg font-inter">{error}</p>}
+        {error && <p className="text-red-500 mb-4 text-center text-lg font-poppins">{error}</p>}
         <div className="profile-details card p-6 glassmorphic shadow-lg">
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -201,7 +215,7 @@ const Profile = () => {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="input-field text-2xl font-inter font-bold text-holo-blue mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    className="input-field text-2xl font-poppins font-bold text-coral-pink mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-golden-yellow"
                     placeholder="First Name"
                     aria-label="First Name"
                   />
@@ -210,17 +224,17 @@ const Profile = () => {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="input-field text-2xl font-inter font-bold text-holo-blue mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    className="input-field text-2xl font-poppins font-bold text-coral-pink mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-golden-yellow"
                     placeholder="Last Name"
                     aria-label="Last Name"
                   />
                 </>
               ) : (
-                <h1 className="text-2xl font-inter font-bold text-holo-blue mb-2 animate-text-glow">
+                <h1 className="text-2xl font-poppins font-bold text-coral-pink mb-2 animate-text-glow">
                   {profile.firstName} {profile.lastName}
                 </h1>
               )}
-              <p className="text-holo-gray mb-2 text-base font-inter">@{profile.username}</p>
+              <p className="text-deep-teal mb-2 text-base font-poppins">@{profile.username}</p>
               {isEditing ? (
                 <>
                   <input
@@ -228,7 +242,7 @@ const Profile = () => {
                     name="job"
                     value={formData.job}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-holo-gray focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    className="input-field w-full mb-2 rounded-lg text-deep-teal focus:outline-none focus:ring-2 focus:ring-golden-yellow"
                     placeholder="Job"
                     aria-label="Job"
                   />
@@ -237,7 +251,7 @@ const Profile = () => {
                     name="school"
                     value={formData.school}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-holo-gray focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    className="input-field w-full mb-2 rounded-lg text-deep-teal focus:outline-none focus:ring-2 focus:ring-golden-yellow"
                     placeholder="School"
                     aria-label="School"
                   />
@@ -246,7 +260,7 @@ const Profile = () => {
                     name="profilePicture"
                     value={formData.profilePicture}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-holo-gray focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    className="input-field w-full mb-2 rounded-lg text-deep-teal focus:outline-none focus:ring-2 focus:ring-golden-yellow"
                     placeholder="Profile Picture URL"
                     aria-label="Profile Picture URL"
                   />
@@ -255,15 +269,15 @@ const Profile = () => {
                     name="bannerPicture"
                     value={formData.bannerPicture}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-holo-gray focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    className="input-field w-full mb-2 rounded-lg text-deep-teal focus:outline-none focus:ring-2 focus:ring-golden-yellow"
                     placeholder="Banner Picture URL"
                     aria-label="Banner Picture URL"
                   />
                 </>
               ) : (
                 <>
-                  <p className="text-holo-gray mb-1 text-base font-inter">Job: {profile.job || 'Not specified'}</p>
-                  <p className="text-holo-gray mb-1 text-base font-inter">School: {profile.school || 'Not specified'}</p>
+                  <p className="text-deep-teal mb-1 text-base font-poppins">Job: {profile.job || 'Not specified'}</p>
+                  <p className="text-deep-teal mb-1 text-base font-poppins">School: {profile.school || 'Not specified'}</p>
                 </>
               )}
             </div>
@@ -273,14 +287,14 @@ const Profile = () => {
                   <>
                     <button
                       onClick={handleSave}
-                      className="btn-primary rounded-full animate-glow px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                      className="btn-primary rounded-full animate-glow px-4 py-2 text-base font-poppins focus:outline-none focus:ring-2 focus:ring-golden-yellow"
                       aria-label="Save profile changes"
                     >
                       Save
                     </button>
                     <button
                       onClick={handleCancel}
-                      className="btn-primary rounded-full bg-holo-bg-light px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                      className="btn-primary rounded-full bg-deep-teal px-4 py-2 text-base font-poppins focus:outline-none focus:ring-2 focus:ring-golden-yellow"
                       aria-label="Cancel editing"
                     >
                       Cancel
@@ -289,7 +303,7 @@ const Profile = () => {
                 ) : (
                   <button
                     onClick={handleEdit}
-                    className="btn-primary rounded-full animate-glow flex items-center px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                    className="btn-primary rounded-full animate-glow flex items-center px-4 py-2 text-base font-poppins focus:outline-none focus:ring-2 focus:ring-golden-yellow"
                     aria-label="Edit profile"
                   >
                     <Edit className="w-5 h-5 mr-2" aria-hidden="true" /> Edit Profile
@@ -300,28 +314,28 @@ const Profile = () => {
           </div>
 
           <div className="projects-section">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Folder className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Projects
+            <h2 className="text-2xl font-poppins font-semibold text-coral-pink mb-4 flex items-center">
+              <Folder className="w-5 h-5 mr-2 text-golden-yellow animate-pulse" aria-hidden="true" /> Projects
             </h2>
-            {profile.projects.length === 0 ? (
-              <p className="text-holo-gray text-base font-inter">No projects yet.</p>
+            {(profile.projects || []).length === 0 ? (
+              <p className="text-deep-teal text-base font-poppins">No projects yet.</p>
             ) : (
               <div className="space-y-6">
                 {['School', 'Job', 'Personal'].map(category => (
                   projectsByCategory[category].length > 0 && (
                     <div key={category}>
-                      <h3 className="text-xl font-inter text-holo-blue mb-2">{category} Projects</h3>
+                      <h3 className="text-xl font-poppins font-medium text-coral-pink mb-2">{category} Projects</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {projectsByCategory[category].map(project => (
                           <Link
                             key={project.id}
                             to={`/projects/${project.id}`}
-                            className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-holo-blue"
+                            className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-golden-yellow"
                             aria-label={`View project ${project.title}`}
                           >
-                            <h4 className="text-lg font-inter text-holo-blue">{project.title}</h4>
-                            <p className="text-holo-gray text-sm mb-1">{project.description}</p>
-                            <p className="text-holo-gray text-sm">Status: {project.status}</p>
+                            <h4 className="text-lg font-poppins font-semibold text-coral-pink">{project.title || 'Untitled Project'}</h4>
+                            <p className="text-deep-teal text-sm mb-1 font-poppins">{project.description || 'No description'}</p>
+                            <p className="text-deep-teal text-sm font-poppins">Status: {project.status || 'Not Started'}</p>
                           </Link>
                         ))}
                       </div>
