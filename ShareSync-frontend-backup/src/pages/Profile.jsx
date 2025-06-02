@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import axios from 'axios';
-import { Edit, X, Folder } from 'lucide-react';
+import { Edit, X, Folder, Award } from 'lucide-react';
 import './Profile.css';
 
 const Profile = () => {
@@ -22,35 +22,27 @@ const Profile = () => {
   });
   const [retryCount, setRetryCount] = useState(0);
   const [hasFailed, setHasFailed] = useState(false);
+  const [userPoints, setUserPoints] = useState(0);
+  const [leaderboard, setLeaderboard] = useState([]);
   const maxRetries = 2;
-  const timeoutDuration = 5000;
-
-  console.log('Profile.jsx - Rendering, username:', username, 'isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'user:', user);
+  const timeoutDuration = 15000;
 
   useEffect(() => {
     const fetchProfile = async () => {
-      console.log('Profile - useEffect triggered');
-      if (isLoading) {
-        console.log('Profile - Waiting for AuthContext to finish loading');
-        return;
-      }
+      if (isLoading) return;
 
       if (!isAuthenticated) {
-        console.log('Profile - User not authenticated, redirecting to login');
         navigate('/login', { replace: true });
         return;
       }
 
       if (!username) {
-        console.log('Profile - No username provided');
         setError('No username provided.');
         setHasFailed(true);
         return;
       }
 
-      // Use authenticated user data if viewing own profile
-      if (user && user.username.toLowerCase() === username.toLowerCase()) {
-        console.log('Profile - Using authenticated user data as initial profile');
+      if (user && user.username && user.username.toLowerCase() === username.toLowerCase()) {
         setProfile(user);
         setFormData({
           firstName: user.firstName || '',
@@ -60,26 +52,53 @@ const Profile = () => {
           profilePicture: user.profilePicture || 'https://via.placeholder.com/150',
           bannerPicture: user.bannerPicture || 'https://via.placeholder.com/1200x300',
         });
+
+        // Calculate points (mock implementation)
+        const points = (user.projects?.length || 0) * 10 + (user.email.length * 2); // Example: 10 points per project, 2 per email character
+        setUserPoints(points);
+
+        // Mock leaderboard
+        setLeaderboard([
+          { username: user.username, points: points },
+          { username: 'user2', points: 150 },
+          { username: 'user3', points: 120 },
+        ].sort((a, b) => b.points - a.points));
         return;
       }
 
-      // Fetch profile data for other users
       const controller = new AbortController();
       const timeout = setTimeout(() => {
         controller.abort();
-        setHasFailed(true);
-        setError('Profile loading timed out. Please try again later.');
-        console.log('Profile - Fetch request timed out after', timeoutDuration, 'ms');
+        if (user) {
+          setProfile(user);
+          setFormData({
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            job: user.job || '',
+            school: user.school || '',
+            profilePicture: user.profilePicture || 'https://via.placeholder.com/150',
+            bannerPicture: user.bannerPicture || 'https://via.placeholder.com/1200x300',
+          });
+          const points = (user.projects?.length || 0) * 10 + (user.email.length * 2);
+          setUserPoints(points);
+          setLeaderboard([
+            { username: user.username, points: points },
+            { username: 'user2', points: 150 },
+            { username: 'user3', points: 120 },
+          ].sort((a, b) => b.points - a.points));
+        } else {
+          setHasFailed(true);
+          setError('Profile loading timed out. Please try again later.');
+        }
       }, timeoutDuration);
 
       try {
-        console.log('Profile - Fetching profile for username:', username);
         const response = await axios.get(`http://localhost:3000/api/auth/profile/${username}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           signal: controller.signal,
+          timeout: timeoutDuration,
         });
         clearTimeout(timeout);
-        console.log('Profile - Backend response:', response.data);
         setProfile(response.data);
         setFormData({
           firstName: response.data.firstName || '',
@@ -89,20 +108,42 @@ const Profile = () => {
           profilePicture: response.data.profilePicture || 'https://via.placeholder.com/150',
           bannerPicture: response.data.bannerPicture || 'https://via.placeholder.com/1200x300',
         });
-        console.log('Profile - Profile fetched:', response.data.email);
+
+        const points = (response.data.projects?.length || 0) * 10 + (response.data.email.length * 2);
+        setUserPoints(points);
+        setLeaderboard([
+          { username: response.data.username, points: points },
+          { username: 'user2', points: 150 },
+          { username: 'user3', points: 120 },
+        ].sort((a, b) => b.points - a.points));
       } catch (err) {
         clearTimeout(timeout);
         if (err.name === 'AbortError') {
-          console.log('Profile - Fetch request timed out after', timeoutDuration, 'ms');
-          setHasFailed(true);
-          setError('Profile loading timed out. Please try again later.');
+          // Handled above in the timeout callback
         } else if (retryCount < maxRetries) {
-          console.log('Profile - Retrying fetch, attempt:', retryCount + 1, 'Error:', err.message);
           setTimeout(() => setRetryCount(retryCount + 1), 500);
         } else {
-          console.log('Profile - Max retries reached. Error:', err.message);
-          setError('Failed to load profile after multiple attempts. The user may not exist or you may not have access.');
-          setHasFailed(true);
+          if (user) {
+            setProfile(user);
+            setFormData({
+              firstName: user.firstName || '',
+              lastName: user.lastName || '',
+              job: user.job || '',
+              school: user.school || '',
+              profilePicture: user.profilePicture || 'https://via.placeholder.com/150',
+              bannerPicture: user.bannerPicture || 'https://via.placeholder.com/1200x300',
+            });
+            const points = (user.projects?.length || 0) * 10 + (user.email.length * 2);
+            setUserPoints(points);
+            setLeaderboard([
+              { username: user.username, points: points },
+              { username: 'user2', points: 150 },
+              { username: 'user3', points: 120 },
+            ].sort((a, b) => b.points - a.points));
+          } else {
+            setError('Failed to load profile after multiple attempts. The user may not exist or you may not have access.');
+            setHasFailed(true);
+          }
         }
       }
     };
@@ -111,26 +152,21 @@ const Profile = () => {
   }, [username, isAuthenticated, isLoading, navigate, user, retryCount]);
 
   const handleEdit = () => {
-    console.log('Profile - Entering edit mode');
     setIsEditing(true);
   };
 
   const handleSave = async () => {
     try {
-      console.log('Profile - Saving profile updates:', formData);
       await updateUserProfile(formData);
       setProfile({ ...profile, ...formData });
       setIsEditing(false);
       alert('Profile updated successfully!');
-      console.log('Profile - Profile updated successfully');
     } catch (err) {
-      console.error('Profile - Failed to update profile:', err.message);
       setError('Failed to update profile: ' + (err.message || 'Please try again.'));
     }
   };
 
   const handleCancel = () => {
-    console.log('Profile - Cancelling edit mode');
     setIsEditing(false);
     setFormData({
       firstName: profile.firstName || '',
@@ -147,45 +183,41 @@ const Profile = () => {
   };
 
   if (isLoading) {
-    console.log('Profile - Rendering loading state');
     return (
       <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="loader" aria-label="Loading profile"></div>
-        <span className="text-coral-pink text-xl font-poppins ml-4">Loading...</span>
+        <span className="text-neon-magenta text-xl font-orbitron ml-4">Loading...</span>
       </div>
     );
   }
 
   if (authError || hasFailed) {
-    console.log('Profile - Rendering error state, authError:', authError, 'hasFailed:', hasFailed);
     return (
       <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-500 text-lg font-poppins mb-4">{authError || error}</p>
-          <Link to="/" className="text-coral-pink hover:underline text-base font-poppins focus:outline-none focus:ring-2 focus:ring-golden-yellow">Return to Home</Link>
+          <p className="text-red-500 text-lg font-orbitron mb-4">{authError || error}</p>
+          <Link to="/" className="text-neon-magenta hover:underline text-base font-orbitron focus:outline-none focus:ring-2 focus:ring-holo-silver">Return to Home</Link>
         </div>
       </div>
     );
   }
 
   if (!profile) {
-    console.log('Profile - No profile data, rendering loading state');
     return (
       <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="loader" aria-label="Loading profile"></div>
-        <span className="text-deep-teal text-xl font-poppins ml-4">Loading profile...</span>
+        <span className="text-cyber-teal text-xl font-orbitron ml-4">Loading profile...</span>
       </div>
     );
   }
 
-  const isOwner = user && user.username.toLowerCase() === username.toLowerCase();
+  const isOwner = user && user.username && user.username.toLowerCase() === username.toLowerCase();
   const projectsByCategory = {
     School: (profile.projects || []).filter(p => p.category === 'School') || [],
     Job: (profile.projects || []).filter(p => p.category === 'Job') || [],
     Personal: (profile.projects || []).filter(p => p.category === 'Personal') || [],
   };
 
-  console.log('Profile - Rendering main content for profile:', profile.email);
   return (
     <div className="profile-container min-h-screen">
       <div className="profile-header relative">
@@ -198,13 +230,13 @@ const Profile = () => {
           <img
             src={isEditing ? formData.profilePicture : profile.profilePicture}
             alt="Profile picture"
-            className="w-32 h-32 rounded-full border-4 border-golden-yellow shadow-lg"
+            className="w-32 h-32 rounded-full border-4 border-holo-silver shadow-lg"
           />
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 mt-16">
-        {error && <p className="text-red-500 mb-4 text-center text-lg font-poppins">{error}</p>}
+        {error && <p className="text-red-500 mb-4 text-center text-lg font-orbitron">{error}</p>}
         <div className="profile-details card p-6 glassmorphic shadow-lg">
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -215,7 +247,7 @@ const Profile = () => {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="input-field text-2xl font-poppins font-bold text-coral-pink mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                    className="input-field text-2xl font-orbitron font-bold text-neon-magenta mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-silver"
                     placeholder="First Name"
                     aria-label="First Name"
                   />
@@ -224,17 +256,17 @@ const Profile = () => {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="input-field text-2xl font-poppins font-bold text-coral-pink mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                    className="input-field text-2xl font-orbitron font-bold text-neon-magenta mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-silver"
                     placeholder="Last Name"
                     aria-label="Last Name"
                   />
                 </>
               ) : (
-                <h1 className="text-2xl font-poppins font-bold text-coral-pink mb-2 animate-text-glow">
+                <h1 className="text-2xl font-orbitron font-bold text-neon-magenta mb-2 animate-text-glow">
                   {profile.firstName} {profile.lastName}
                 </h1>
               )}
-              <p className="text-deep-teal mb-2 text-base font-poppins">@{profile.username}</p>
+              <p className="text-cyber-teal mb-2 text-base font-inter">@{profile.username}</p>
               {isEditing ? (
                 <>
                   <input
@@ -242,7 +274,7 @@ const Profile = () => {
                     name="job"
                     value={formData.job}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-deep-teal focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                    className="input-field w-full mb-2 rounded-lg text-cyber-teal focus:outline-none focus:ring-2 focus:ring-holo-silver"
                     placeholder="Job"
                     aria-label="Job"
                   />
@@ -251,7 +283,7 @@ const Profile = () => {
                     name="school"
                     value={formData.school}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-deep-teal focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                    className="input-field w-full mb-2 rounded-lg text-cyber-teal focus:outline-none focus:ring-2 focus:ring-holo-silver"
                     placeholder="School"
                     aria-label="School"
                   />
@@ -260,7 +292,7 @@ const Profile = () => {
                     name="profilePicture"
                     value={formData.profilePicture}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-deep-teal focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                    className="input-field w-full mb-2 rounded-lg text-cyber-teal focus:outline-none focus:ring-2 focus:ring-holo-silver"
                     placeholder="Profile Picture URL"
                     aria-label="Profile Picture URL"
                   />
@@ -269,15 +301,15 @@ const Profile = () => {
                     name="bannerPicture"
                     value={formData.bannerPicture}
                     onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-deep-teal focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                    className="input-field w-full mb-2 rounded-lg text-cyber-teal focus:outline-none focus:ring-2 focus:ring-holo-silver"
                     placeholder="Banner Picture URL"
                     aria-label="Banner Picture URL"
                   />
                 </>
               ) : (
                 <>
-                  <p className="text-deep-teal mb-1 text-base font-poppins">Job: {profile.job || 'Not specified'}</p>
-                  <p className="text-deep-teal mb-1 text-base font-poppins">School: {profile.school || 'Not specified'}</p>
+                  <p className="text-cyber-teal mb-1 text-base font-inter">Job: {profile.job || 'Not specified'}</p>
+                  <p className="text-cyber-teal mb-1 text-base font-inter">School: {profile.school || 'Not specified'}</p>
                 </>
               )}
             </div>
@@ -287,14 +319,14 @@ const Profile = () => {
                   <>
                     <button
                       onClick={handleSave}
-                      className="btn-primary rounded-full animate-glow px-4 py-2 text-base font-poppins focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                      className="btn-primary rounded-full animate-glow px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-silver"
                       aria-label="Save profile changes"
                     >
                       Save
                     </button>
                     <button
                       onClick={handleCancel}
-                      className="btn-primary rounded-full bg-deep-teal px-4 py-2 text-base font-poppins focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                      className="btn-primary rounded-full bg-cyber-teal px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-silver"
                       aria-label="Cancel editing"
                     >
                       Cancel
@@ -303,7 +335,7 @@ const Profile = () => {
                 ) : (
                   <button
                     onClick={handleEdit}
-                    className="btn-primary rounded-full animate-glow flex items-center px-4 py-2 text-base font-poppins focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                    className="btn-primary rounded-full animate-glow flex items-center px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-silver"
                     aria-label="Edit profile"
                   >
                     <Edit className="w-5 h-5 mr-2" aria-hidden="true" /> Edit Profile
@@ -313,29 +345,58 @@ const Profile = () => {
             )}
           </div>
 
+          {/* Gamified Progress Section */}
+          <div className="progress-section mb-8">
+            <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4 flex items-center">
+              <Award className="w-5 h-5 mr-2 text-holo-silver animate-pulse" aria-hidden="true" /> Your Progress
+            </h2>
+            <div className="card p-4 glassmorphic">
+              <p className="text-light-text text-lg font-inter mb-2">Total Points: <span className="text-neon-magenta font-bold">{userPoints}</span></p>
+              <p className="text-cyber-teal text-sm font-inter">Earn points by engaging with projects, posting updates, and completing tasks!</p>
+            </div>
+          </div>
+
+          {/* Leaderboard Section */}
+          <div className="leaderboard-section mb-8">
+            <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4">Leaderboard</h2>
+            <div className="space-y-3">
+              {leaderboard.map((entry, index) => (
+                <div key={index} className="leaderboard-item card p-3 glassmorphic flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xl font-orbitron ${index === 0 ? 'text-holo-silver' : index === 1 ? 'text-cyber-teal' : 'text-neon-magenta'}`}>
+                      #{index + 1}
+                    </span>
+                    <span className="text-light-text font-inter">{entry.username}</span>
+                  </div>
+                  <span className="text-light-text font-inter">{entry.points} points</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="projects-section">
-            <h2 className="text-2xl font-poppins font-semibold text-coral-pink mb-4 flex items-center">
-              <Folder className="w-5 h-5 mr-2 text-golden-yellow animate-pulse" aria-hidden="true" /> Projects
+            <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4 flex items-center">
+              <Folder className="w-5 h-5 mr-2 text-holo-silver animate-pulse" aria-hidden="true" /> Projects
             </h2>
             {(profile.projects || []).length === 0 ? (
-              <p className="text-deep-teal text-base font-poppins">No projects yet.</p>
+              <p className="text-cyber-teal text-base font-inter">No projects yet.</p>
             ) : (
               <div className="space-y-6">
                 {['School', 'Job', 'Personal'].map(category => (
                   projectsByCategory[category].length > 0 && (
                     <div key={category}>
-                      <h3 className="text-xl font-poppins font-medium text-coral-pink mb-2">{category} Projects</h3>
+                      <h3 className="text-xl font-orbitron font-medium text-neon-magenta mb-2">{category} Projects</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {projectsByCategory[category].map(project => (
                           <Link
                             key={project.id}
                             to={`/projects/${project.id}`}
-                            className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-golden-yellow"
+                            className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-holo-silver"
                             aria-label={`View project ${project.title}`}
                           >
-                            <h4 className="text-lg font-poppins font-semibold text-coral-pink">{project.title || 'Untitled Project'}</h4>
-                            <p className="text-deep-teal text-sm mb-1 font-poppins">{project.description || 'No description'}</p>
-                            <p className="text-deep-teal text-sm font-poppins">Status: {project.status || 'Not Started'}</p>
+                            <h4 className="text-lg font-orbitron font-semibold text-neon-magenta">{project.title || 'Untitled Project'}</h4>
+                            <p className="text-cyber-teal text-sm mb-1 font-inter">{project.description || 'No description'}</p>
+                            <p className="text-cyber-teal text-sm font-inter">Status: {project.status || 'Not Started'}</p>
                           </Link>
                         ))}
                       </div>

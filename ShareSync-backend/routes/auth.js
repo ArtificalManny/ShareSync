@@ -32,6 +32,7 @@ router.post('/register', async (req, res) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.status(201).json({ token, user });
   } catch (error) {
+    console.error('Auth Route - Register error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -53,6 +54,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.json({ token, user });
   } catch (error) {
+    console.error('Auth Route - Login error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -66,6 +68,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     }
     res.json(user);
   } catch (error) {
+    console.error('Auth Route - Get current user error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -77,6 +80,7 @@ router.put('/me', authMiddleware, async (req, res) => {
     const user = await User.findByIdAndUpdate(req.user.userId, updates, { new: true }).select('-password');
     res.json(user);
   } catch (error) {
+    console.error('Auth Route - Update user profile error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -84,12 +88,16 @@ router.put('/me', authMiddleware, async (req, res) => {
 // Get user profile by username
 router.get('/profile/:username', authMiddleware, async (req, res) => {
   try {
+    console.log('Auth Route - Fetching profile for username:', req.params.username);
     const user = await User.findOne({ username: req.params.username }).select('-password');
     if (!user) {
+      console.log('Auth Route - User not found for username:', req.params.username);
       return res.status(404).json({ message: 'User not found' });
     }
+    console.log('Auth Route - Profile fetched successfully:', user.email);
     res.json(user);
   } catch (error) {
+    console.error('Auth Route - Get user profile error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

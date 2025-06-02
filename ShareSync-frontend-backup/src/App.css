@@ -1,60 +1,82 @@
 /* App.css */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@300;400;600&display=swap');
+
 :root[data-theme="dark"] {
-  --background-color: #121212; /* Soft off-black */
-  --secondary-background: #1F6F78; /* Deep teal */
-  --text-primary: #EDEDED; /* Light text */
-  --text-accent: #FF5E62; /* Coral pink */
-  --highlight: #FFC107; /* Golden yellow */
+  --background-color: #0A0E2B; /* Dark navy */
+  --secondary-background: #1A0045; /* Deep purple */
+  --text-primary: #FFFFFF; /* White text */
+  --text-accent: #FF00FF; /* Neon magenta */
+  --highlight: #00FFFF; /* Cyber teal */
+  --accent-silver: #C0C0C0; /* Holographic silver */
   --card-bg: rgba(255, 255, 255, 0.05);
-  --card-border: rgba(255, 193, 7, 0.2); /* Golden yellow border */
+  --card-border: rgba(0, 255, 255, 0.3); /* Cyber teal border */
   --input-bg: rgba(255, 255, 255, 0.1);
 }
 
 :root[data-theme="light"] {
-  --background-color: #FDF6F0; /* Warm off-white */
-  --secondary-background: #1F6F78; /* Deep teal */
-  --text-primary: #1A1A1A; /* Dark text */
-  --text-accent: #FF5E62; /* Coral pink */
-  --highlight: #FFC107; /* Golden yellow */
+  --background-color: #E6E6FA; /* Lavender */
+  --secondary-background: #D8BFD8; /* Thistle */
+  --text-primary: #0A0E2B; /* Dark navy text */
+  --text-accent: #FF00FF; /* Neon magenta */
+  --highlight: #00FFFF; /* Cyber teal */
+  --accent-silver: #C0C0C0; /* Holographic silver */
   --card-bg: rgba(0, 0, 0, 0.05);
-  --card-border: rgba(255, 193, 7, 0.2); /* Golden yellow border */
+  --card-border: rgba(0, 255, 255, 0.3); /* Cyber teal border */
   --input-bg: rgba(0, 0, 0, 0.05);
 }
 
 body {
   margin: 0;
-  font-family: 'Poppins', sans-serif;
-  background-color: var(--background-color);
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(45deg, var(--background-color), var(--secondary-background));
+  background-size: 400%;
+  animation: gradientShift 15s ease infinite;
   color: var(--text-primary);
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .app-container {
   min-height: 100vh;
-  background-color: var(--background-color);
+  position: relative;
+  overflow: hidden;
 }
 
-.text-coral-pink {
+.particles-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+.text-neon-magenta {
   color: var(--text-accent);
 }
 
-.text-deep-teal {
-  color: var(--secondary-background);
-}
-
-.text-golden-yellow {
+.text-cyber-teal {
   color: var(--highlight);
 }
 
+.text-holo-silver {
+  color: var(--accent-silver);
+}
+
 .text-light-text {
-  color: #EDEDED;
+  color: #FFFFFF;
 }
 
 [data-theme="light"] .text-light-text {
-  color: #1A1A1A;
+  color: #0A0E2B;
 }
 
-.bg-deep-teal {
-  background-color: var(--secondary-background);
+.bg-cyber-teal {
+  background-color: var(--highlight);
 }
 
 .card {
