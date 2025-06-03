@@ -4,34 +4,27 @@
 }
 
 .sidebar {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border-right: 1px solid rgba(156, 163, 175, 0.3);
+  transition: transform 0.3s ease;
 }
 
-.feed-item {
+.main-content {
+  flex-grow: 1;
+}
+
+.feed-container, .leaderboard-section, .recommendations-section {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.feed-item:hover {
+.feed-container:hover, .leaderboard-section:hover, .recommendations-section:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 128, 255, 0.2);
+  box-shadow: 0 5px 10px rgba(79, 115, 224, 0.2);
 }
 
-.recommendation-card {
+.feed-item, .leaderboard-item, .recommendation-card {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.recommendation-card:hover {
+.feed-item:hover, .leaderboard-item:hover, .recommendation-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 128, 255, 0.2);
-}
-
-.leaderboard-item {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.leaderboard-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 128, 255, 0.2);
+  box-shadow: 0 5px 10px rgba(79, 115, 224, 0.2);
 }

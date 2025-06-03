@@ -29,6 +29,7 @@ export const createProject = async (projectData) => {
     const response = await axiosInstance.post('/', projectData);
     return response.data;
   } catch (error) {
+    console.error('Create project error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to create project');
   }
 };
@@ -39,6 +40,7 @@ export const fetchProjects = async () => {
     const response = await axiosInstance.get('/');
     return response.data;
   } catch (error) {
+    console.error('Fetch projects error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to fetch projects');
   }
 };
@@ -49,6 +51,7 @@ export const fetchProjectById = async (projectId) => {
     const response = await axiosInstance.get(`/${projectId}`);
     return response.data;
   } catch (error) {
+    console.error('Fetch project error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to fetch project');
   }
 };
@@ -59,6 +62,7 @@ export const updateProject = async (projectId, projectData) => {
     const response = await axiosInstance.put(`/${projectId}`, projectData);
     return response.data;
   } catch (error) {
+    console.error('Update project error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to update project');
   }
 };
@@ -69,6 +73,7 @@ export const createPost = async (projectId, postData) => {
     const response = await axiosInstance.post(`/${projectId}/posts`, postData);
     return response.data;
   } catch (error) {
+    console.error('Create post error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to create post');
   }
 };
@@ -79,6 +84,7 @@ export const createTask = async (projectId, taskData) => {
     const response = await axiosInstance.post(`/${projectId}/tasks`, taskData);
     return response.data;
   } catch (error) {
+    console.error('Create task error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to create task');
   }
 };
@@ -89,6 +95,7 @@ export const createSubtask = async (projectId, taskId, subtaskData) => {
     const response = await axiosInstance.post(`/${projectId}/tasks/${taskId}/subtasks`, subtaskData);
     return response.data;
   } catch (error) {
+    console.error('Create subtask error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to create subtask');
   }
 };
@@ -99,6 +106,7 @@ export const updateTaskStatus = async (projectId, taskId, status) => {
     const response = await axiosInstance.put(`/${projectId}/tasks/${taskId}`, { status });
     return response.data;
   } catch (error) {
+    console.error('Update task status error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to update task status');
   }
 };
@@ -109,6 +117,7 @@ export const likeTask = async (projectId, taskId) => {
     const response = await axiosInstance.post(`/${projectId}/tasks/${taskId}/like`);
     return response.data;
   } catch (error) {
+    console.error('Like task error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to like task');
   }
 };
@@ -119,6 +128,7 @@ export const shareTask = async (projectId, taskId) => {
     const response = await axiosInstance.post(`/${projectId}/tasks/${taskId}/share`);
     return response.data;
   } catch (error) {
+    console.error('Share task error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to share task');
   }
 };
@@ -129,6 +139,7 @@ export const addTaskComment = async (projectId, taskId, commentData) => {
     const response = await axiosInstance.post(`/${projectId}/tasks/${taskId}/comments`, commentData);
     return response.data;
   } catch (error) {
+    console.error('Add task comment error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to add comment');
   }
 };
@@ -139,6 +150,7 @@ export const uploadFile = async (projectId, fileData) => {
     const response = await axiosInstance.post(`/${projectId}/files`, fileData);
     return response.data;
   } catch (error) {
+    console.error('Upload file error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to upload file');
   }
 };
@@ -149,6 +161,7 @@ export const approveFile = async (projectId, fileId, status) => {
     const response = await axiosInstance.put(`/${projectId}/files/${fileId}/approve`, { status });
     return response.data;
   } catch (error) {
+    console.error('Approve file error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to update file status');
   }
 };
@@ -159,6 +172,7 @@ export const createTeam = async (projectId, teamData) => {
     const response = await axiosInstance.post(`/${projectId}/teams`, teamData);
     return response.data;
   } catch (error) {
+    console.error('Create team error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to create team');
   }
 };
@@ -169,6 +183,7 @@ export const inviteUser = async (projectId, email) => {
     const response = await axiosInstance.post(`/${projectId}/invite`, { email });
     return response.data;
   } catch (error) {
+    console.error('Invite user error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to invite user');
   }
 };
@@ -179,6 +194,7 @@ export const addSuggestion = async (projectId, suggestionData) => {
     const response = await axiosInstance.post(`/${projectId}/suggestions`, suggestionData);
     return response.data;
   } catch (error) {
+    console.error('Add suggestion error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to add suggestion');
   }
 };
@@ -189,6 +205,7 @@ export const updateNotificationSettings = async (projectId, settings) => {
     const response = await axiosInstance.put(`/${projectId}/settings/notifications`, settings);
     return response.data;
   } catch (error) {
+    console.error('Update notification settings error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to update notification settings');
   }
 };
@@ -199,6 +216,7 @@ export const fetchLeaderboard = async (projectId) => {
     const response = await axiosInstance.get(`/${projectId}/leaderboard`);
     return response.data;
   } catch (error) {
+    console.error('Fetch leaderboard error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to fetch leaderboard');
   }
 };

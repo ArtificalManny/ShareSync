@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import axios from 'axios';
-import { Edit, X, Folder, Award } from 'lucide-react';
+import { fetchLeaderboard } from '../services/project.js';
+import { Edit, X, Folder, Award, Star } from 'lucide-react';
 import './Profile.css';
 
 const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, authError, updateUserProfile } = useContext(AuthContext);
+  const { user, isAuthenticated, isLoading, authError, updateUserProfile, socket } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -24,8 +24,6 @@ const Profile = () => {
   const [hasFailed, setHasFailed] = useState(false);
   const [userPoints, setUserPoints] = useState(0);
   const [leaderboard, setLeaderboard] = useState([]);
-  const maxRetries = 2;
-  const timeoutDuration = 15000;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -42,120 +40,72 @@ const Profile = () => {
         return;
       }
 
-      if (user && user.username && user.username.toLowerCase() === username.toLowerCase()) {
-        setProfile(user);
-        setFormData({
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-          job: user.job || '',
-          school: user.school || '',
-          profilePicture: user.profilePicture || 'https://via.placeholder.com/150',
-          bannerPicture: user.bannerPicture || 'https://via.placeholder.com/1200x300',
-        });
-
-        // Calculate points (mock implementation)
-        const points = (user.projects?.length || 0) * 10 + (user.email.length * 2); // Example: 10 points per project, 2 per email character
-        setUserPoints(points);
-
-        // Mock leaderboard
-        setLeaderboard([
-          { username: user.username, points: points },
-          { username: 'user2', points: 150 },
-          { username: 'user3', points: 120 },
-        ].sort((a, b) => b.points - a.points));
-        return;
-      }
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => {
-        controller.abort();
-        if (user) {
-          setProfile(user);
-          setFormData({
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
-            job: user.job || '',
-            school: user.school || '',
-            profilePicture: user.profilePicture || 'https://via.placeholder.com/150',
-            bannerPicture: user.bannerPicture || 'https://via.placeholder.com/1200x300',
-          });
-          const points = (user.projects?.length || 0) * 10 + (user.email.length * 2);
-          setUserPoints(points);
-          setLeaderboard([
-            { username: user.username, points: points },
-            { username: 'user2', points: 150 },
-            { username: 'user3', points: 120 },
-          ].sort((a, b) => b.points - a.points));
-        } else {
-          setHasFailed(true);
-          setError('Profile loading timed out. Please try again later.');
-        }
-      }, timeoutDuration);
-
       try {
-        const response = await axios.get(`http://localhost:3000/api/auth/profile/${username}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-          signal: controller.signal,
-          timeout: timeoutDuration,
-        });
-        clearTimeout(timeout);
-        setProfile(response.data);
+        const response = await fetchUser();
+        setProfile(response);
         setFormData({
-          firstName: response.data.firstName || '',
-          lastName: response.data.lastName || '',
-          job: response.data.job || '',
-          school: response.data.school || '',
-          profilePicture: response.data.profilePicture || 'https://via.placeholder.com/150',
-          bannerPicture: response.data.bannerPicture || 'https://via.placeholder.com/1200x300',
+          firstName: response.firstName || '',
+          lastName: response.lastName || '',
+          job: response.job || '',
+          school: response.school || '',
+          profilePicture: response.profilePicture || 'https://via.placeholder.com/150',
+          bannerPicture: response.bannerPicture || 'https://via.placeholder.com/1200x300',
         });
 
-        const points = (response.data.projects?.length || 0) * 10 + (response.data.email.length * 2);
-        setUserPoints(points);
-        setLeaderboard([
-          { username: response.data.username, points: points },
-          { username: 'user2', points: 150 },
-          { username: 'user3', points: 120 },
-        ].sort((a, b) => b.points - a.points));
+        setUserPoints(response.points || 0);
+
+        const projectLeaderboards = await Promise.all(
+          response.projects.map(async (project) => {
+            const response = await fetchLeaderboard(project._id);
+            return response;
+          })
+        );
+
+        const aggregated = {};
+        projectLeaderboards.forEach(leaderboard => {
+          leaderboard.forEach(entry => {
+            if (aggregated[entry.email]) {
+              aggregated[entry.email].points += entry.points;
+            } else {
+              aggregated[entry.email] = { ...entry };
+            }
+          });
+        });
+
+        const leaderboardArray = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 3);
+        setLeaderboard(leaderboardArray);
       } catch (err) {
-        clearTimeout(timeout);
-        if (err.name === 'AbortError') {
-          // Handled above in the timeout callback
-        } else if (retryCount < maxRetries) {
-          setTimeout(() => setRetryCount(retryCount + 1), 500);
-        } else {
-          if (user) {
-            setProfile(user);
-            setFormData({
-              firstName: user.firstName || '',
-              lastName: user.lastName || '',
-              job: user.job || '',
-              school: user.school || '',
-              profilePicture: user.profilePicture || 'https://via.placeholder.com/150',
-              bannerPicture: user.bannerPicture || 'https://via.placeholder.com/1200x300',
-            });
-            const points = (user.projects?.length || 0) * 10 + (user.email.length * 2);
-            setUserPoints(points);
-            setLeaderboard([
-              { username: user.username, points: points },
-              { username: 'user2', points: 150 },
-              { username: 'user3', points: 120 },
-            ].sort((a, b) => b.points - a.points));
-          } else {
-            setError('Failed to load profile after multiple attempts. The user may not exist or you may not have access.');
-            setHasFailed(true);
-          }
-        }
+        setError('Failed to load profile: ' + (err.message || 'Please try again.'));
+        setHasFailed(true);
       }
     };
 
     fetchProfile();
-  }, [username, isAuthenticated, isLoading, navigate, user, retryCount]);
+
+    if (socket) {
+      socket.on('profile-updated', (data) => {
+        if (data.user.username === username) {
+          fetchProfile();
+        }
+      });
+
+      socket.on('project-updated', (data) => {
+        fetchProfile();
+      });
+
+      return () => {
+        socket.off('profile-updated');
+        socket.off('project-updated');
+      };
+    }
+  }, [username, isAuthenticated, isLoading, navigate, socket]);
 
   const handleEdit = () => {
     setIsEditing(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (e) => {
+    e.preventDefault();
     try {
       await updateUserProfile(formData);
       setProfile({ ...profile, ...formData });
@@ -186,7 +136,7 @@ const Profile = () => {
     return (
       <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="loader" aria-label="Loading profile"></div>
-        <span className="text-neon-magenta text-xl font-orbitron ml-4">Loading...</span>
+        <span className="text-primary-blue text-xl font-orbitron ml-4">Loading...</span>
       </div>
     );
   }
@@ -195,8 +145,8 @@ const Profile = () => {
     return (
       <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-500 text-lg font-orbitron mb-4">{authError || error}</p>
-          <Link to="/" className="text-neon-magenta hover:underline text-base font-orbitron focus:outline-none focus:ring-2 focus:ring-holo-silver">Return to Home</Link>
+          <p className="text-error-red text-lg font-orbitron mb-4">{authError || error}</p>
+          <Link to="/" className="text-primary-blue hover:underline text-base font-orbitron focus:outline-none focus:ring-2 focus:ring-neutral-gray">Return to Home</Link>
         </div>
       </div>
     );
@@ -206,7 +156,7 @@ const Profile = () => {
     return (
       <div className="profile-container flex items-center justify-center min-h-screen">
         <div className="loader" aria-label="Loading profile"></div>
-        <span className="text-cyber-teal text-xl font-orbitron ml-4">Loading profile...</span>
+        <span className="text-accent-teal text-xl font-orbitron ml-4">Loading profile...</span>
       </div>
     );
   }
@@ -217,6 +167,7 @@ const Profile = () => {
     Job: (profile.projects || []).filter(p => p.category === 'Job') || [],
     Personal: (profile.projects || []).filter(p => p.category === 'Personal') || [],
   };
+  const publicProjects = (profile.projects || []).filter(p => p.status !== 'Completed').slice(0, 3); // Limit to 3 for visitors
 
   return (
     <div className="profile-container min-h-screen">
@@ -230,13 +181,13 @@ const Profile = () => {
           <img
             src={isEditing ? formData.profilePicture : profile.profilePicture}
             alt="Profile picture"
-            className="w-32 h-32 rounded-full border-4 border-holo-silver shadow-lg"
+            className="w-32 h-32 rounded-full border-4 border-neutral-gray shadow-lg"
           />
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 mt-16">
-        {error && <p className="text-red-500 mb-4 text-center text-lg font-orbitron">{error}</p>}
+        {error && <p className="text-error-red mb-4 text-center text-lg font-orbitron">{error}</p>}
         <div className="profile-details card p-6 glassmorphic shadow-lg">
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -247,7 +198,7 @@ const Profile = () => {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="input-field text-2xl font-orbitron font-bold text-neon-magenta mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-silver"
+                    className="input-field text-2xl font-orbitron font-bold text-primary-blue mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-gray"
                     placeholder="First Name"
                     aria-label="First Name"
                   />
@@ -256,86 +207,43 @@ const Profile = () => {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="input-field text-2xl font-orbitron font-bold text-neon-magenta mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-silver"
+                    className="input-field text-2xl font-orbitron font-bold text-primary-blue mb-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-gray"
                     placeholder="Last Name"
                     aria-label="Last Name"
                   />
                 </>
               ) : (
-                <h1 className="text-2xl font-orbitron font-bold text-neon-magenta mb-2 animate-text-glow">
+                <h1 className="text-2xl font-orbitron font-bold text-primary-blue mb-2">
                   {profile.firstName} {profile.lastName}
                 </h1>
               )}
-              <p className="text-cyber-teal mb-2 text-base font-inter">@{profile.username}</p>
-              {isEditing ? (
-                <>
-                  <input
-                    type="text"
-                    name="job"
-                    value={formData.job}
-                    onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-cyber-teal focus:outline-none focus:ring-2 focus:ring-holo-silver"
-                    placeholder="Job"
-                    aria-label="Job"
-                  />
-                  <input
-                    type="text"
-                    name="school"
-                    value={formData.school}
-                    onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-cyber-teal focus:outline-none focus:ring-2 focus:ring-holo-silver"
-                    placeholder="School"
-                    aria-label="School"
-                  />
-                  <input
-                    type="text"
-                    name="profilePicture"
-                    value={formData.profilePicture}
-                    onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-cyber-teal focus:outline-none focus:ring-2 focus:ring-holo-silver"
-                    placeholder="Profile Picture URL"
-                    aria-label="Profile Picture URL"
-                  />
-                  <input
-                    type="text"
-                    name="bannerPicture"
-                    value={formData.bannerPicture}
-                    onChange={handleInputChange}
-                    className="input-field w-full mb-2 rounded-lg text-cyber-teal focus:outline-none focus:ring-2 focus:ring-holo-silver"
-                    placeholder="Banner Picture URL"
-                    aria-label="Banner Picture URL"
-                  />
-                </>
-              ) : (
-                <>
-                  <p className="text-cyber-teal mb-1 text-base font-inter">Job: {profile.job || 'Not specified'}</p>
-                  <p className="text-cyber-teal mb-1 text-base font-inter">School: {profile.school || 'Not specified'}</p>
-                </>
-              )}
+              <p className="text-accent-teal text-lg font-inter mb-2">@{profile.username}</p>
+              <p className="text-secondary-gray font-inter mb-1">Job: {profile.job || 'Not specified'}</p>
+              <p className="text-secondary-gray font-inter mb-1">School: {profile.school || 'Not specified'}</p>
             </div>
             {isOwner && (
-              <div className="flex gap-4">
+              <div>
                 {isEditing ? (
-                  <>
+                  <div className="flex gap-2">
                     <button
                       onClick={handleSave}
-                      className="btn-primary rounded-full animate-glow px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-silver"
+                      className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-neutral-gray holographic-effect"
                       aria-label="Save profile changes"
                     >
                       Save
                     </button>
                     <button
                       onClick={handleCancel}
-                      className="btn-primary rounded-full bg-cyber-teal px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-silver"
+                      className="btn-primary rounded-full flex items-center bg-error-red focus:outline-none focus:ring-2 focus:ring-neutral-gray holographic-effect"
                       aria-label="Cancel editing"
                     >
-                      Cancel
+                      <X className="w-5 h-5" aria-hidden="true" />
                     </button>
-                  </>
+                  </div>
                 ) : (
                   <button
                     onClick={handleEdit}
-                    className="btn-primary rounded-full animate-glow flex items-center px-4 py-2 text-base font-inter focus:outline-none focus:ring-2 focus:ring-holo-silver"
+                    className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-neutral-gray holographic-effect"
                     aria-label="Edit profile"
                   >
                     <Edit className="w-5 h-5 mr-2" aria-hidden="true" /> Edit Profile
@@ -345,65 +253,165 @@ const Profile = () => {
             )}
           </div>
 
-          {/* Gamified Progress Section */}
-          <div className="progress-section mb-8">
-            <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4 flex items-center">
-              <Award className="w-5 h-5 mr-2 text-holo-silver animate-pulse" aria-hidden="true" /> Your Progress
-            </h2>
-            <div className="card p-4 glassmorphic">
-              <p className="text-light-text text-lg font-inter mb-2">Total Points: <span className="text-neon-magenta font-bold">{userPoints}</span></p>
-              <p className="text-cyber-teal text-sm font-inter">Earn points by engaging with projects, posting updates, and completing tasks!</p>
-            </div>
-          </div>
+          {isOwner && isEditing && (
+            <>
+              <div className="mb-2">
+                <label htmlFor="job" className="block text-accent-teal font-inter">Job</label>
+                <input
+                  type="text"
+                  name="job"
+                  id="job"
+                  value={formData.job}
+                  onChange={handleInputChange}
+                  className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-gray"
+                  placeholder="Enter your job"
+                  aria-label="Job"
+                />
+              </div>
+              <div className="mb-2">
+                <label htmlFor="school" className="block text-accent-teal font-inter">School</label>
+                <input
+                  type="text"
+                  name="school"
+                  id="school"
+                  value={formData.school}
+                  onChange={handleInputChange}
+                  className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-gray"
+                  placeholder="Enter your school"
+                  aria-label="School"
+                />
+              </div>
+              <div className="mb-2">
+                <label htmlFor="profilePicture" className="block text-accent-teal font-inter">Profile Picture URL</label>
+                <input
+                  type="text"
+                  name="profilePicture"
+                  id="profilePicture"
+                  value={formData.profilePicture}
+                  onChange={handleInputChange}
+                  className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-gray"
+                  placeholder="Enter profile picture URL"
+                  aria-label="Profile Picture URL"
+                />
+              </div>
+              <div className="mb-2">
+                <label htmlFor="bannerPicture" className="block text-accent-teal font-inter">Banner Picture URL</label>
+                <input
+                  type="text"
+                  name="bannerPicture"
+                  id="bannerPicture"
+                  value={formData.bannerPicture}
+                  onChange={handleInputChange}
+                  className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-gray"
+                  placeholder="Enter banner picture URL"
+                  aria-label="Banner Picture URL"
+                />
+              </div>
+            </>
+          )}
 
-          {/* Leaderboard Section */}
-          <div className="leaderboard-section mb-8">
-            <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4">Leaderboard</h2>
-            <div className="space-y-3">
-              {leaderboard.map((entry, index) => (
-                <div key={index} className="leaderboard-item card p-3 glassmorphic flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xl font-orbitron ${index === 0 ? 'text-holo-silver' : index === 1 ? 'text-cyber-teal' : 'text-neon-magenta'}`}>
-                      #{index + 1}
-                    </span>
-                    <span className="text-light-text font-inter">{entry.username}</span>
-                  </div>
-                  <span className="text-light-text font-inter">{entry.points} points</span>
+          {/* Owner View: Gamified Progress */}
+          {isOwner && (
+            <div className="gamified-progress mb-8 card p-6 glassmorphic holographic-effect">
+              <h2 className="text-2xl font-orbitron font-semibold text-primary-blue mb-4 flex items-center">
+                <Star className="w-5 h-5 mr-2 text-neutral-gray animate-pulse" aria-hidden="true" /> Your Progress
+              </h2>
+              <div className="flex items-center gap-4">
+                <div className="progress-bar relative w-full h-6 bg-accent-teal bg-opacity-20 rounded-full overflow-hidden">
+                  <div
+                    className="absolute top-0 left-0 h-full bg-primary-blue animate-pulse"
+                    style={{ width: `${Math.min((userPoints / 1000) * 100, 100)}%` }}
+                  ></div>
                 </div>
-              ))}
+                <span className="text-secondary-gray font-inter text-lg">{userPoints} Points</span>
+              </div>
+              <p className="text-accent-teal text-sm font-inter mt-2">
+                {userPoints < 1000 ? `Earn ${1000 - userPoints} more points to reach the next level!` : 'You’ve reached the highest level!'}
+              </p>
             </div>
-          </div>
+          )}
 
-          <div className="projects-section">
-            <h2 className="text-2xl font-orbitron font-semibold text-neon-magenta mb-4 flex items-center">
-              <Folder className="w-5 h-5 mr-2 text-holo-silver animate-pulse" aria-hidden="true" /> Projects
+          {/* Leaderboard Section (Visible to All) */}
+          <div className="leaderboard-section mb-8 card p-6 glassmorphic holographic-effect">
+            <h2 className="text-2xl font-orbitron font-semibold text-primary-blue mb-4 flex items-center">
+              <Award className="w-5 h-5 mr-2 text-neutral-gray animate-pulse" aria-hidden="true" /> Top Collaborators
             </h2>
-            {(profile.projects || []).length === 0 ? (
-              <p className="text-cyber-teal text-base font-inter">No projects yet.</p>
+            {leaderboard.length === 0 ? (
+              <p className="text-accent-teal font-inter flex items-center gap-2">
+                <Star className="w-5 h-5 text-neutral-gray animate-pulse" aria-hidden="true" /> No leaderboard data available.
+              </p>
             ) : (
-              <div className="space-y-6">
-                {['School', 'Job', 'Personal'].map(category => (
-                  projectsByCategory[category].length > 0 && (
-                    <div key={category}>
-                      <h3 className="text-xl font-orbitron font-medium text-neon-magenta mb-2">{category} Projects</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {projectsByCategory[category].map(project => (
-                          <Link
-                            key={project.id}
-                            to={`/projects/${project.id}`}
-                            className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-holo-silver"
-                            aria-label={`View project ${project.title}`}
-                          >
-                            <h4 className="text-lg font-orbitron font-semibold text-neon-magenta">{project.title || 'Untitled Project'}</h4>
-                            <p className="text-cyber-teal text-sm mb-1 font-inter">{project.description || 'No description'}</p>
-                            <p className="text-cyber-teal text-sm font-inter">Status: {project.status || 'Not Started'}</p>
-                          </Link>
-                        ))}
-                      </div>
+              <div className="space-y-3">
+                {leaderboard.map((entry, index) => (
+                  <div key={index} className="leaderboard-item card p-3 glassmorphic flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xl font-orbitron ${index === 0 ? 'text-accent-orange' : index === 1 ? 'text-accent-teal' : 'text-primary-blue'}`}>
+                        #{index + 1}
+                      </span>
+                      <span className="text-secondary-gray font-inter">{entry.username}</span>
                     </div>
-                  )
+                    <span className="text-secondary-gray font-inter">{entry.points} points</span>
+                  </div>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Projects Section */}
+          <div className="projects-section">
+            <h2 className="text-2xl font-orbitron font-semibold text-primary-blue mb-4 flex items-center">
+              <Folder className="w-5 h-5 mr-2 text-neutral-gray" aria-hidden="true" /> Projects
+            </h2>
+            {isOwner ? (
+              Object.keys(projectsByCategory).map(category => (
+                projectsByCategory[category].length > 0 && (
+                  <div key={category} className="mb-6">
+                    <h3 className="text-xl font-orbitron font-semibold text-primary-blue mb-2">{category} Projects</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {projectsByCategory[category].map(project => (
+                        <Link
+                          key={project._id}
+                          to={`/projects/${project._id}`}
+                          className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-neutral-gray animate-fade-in"
+                          aria-label={`View project ${project.title}`}
+                        >
+                          <h4 className="text-lg font-orbitron font-bold text-primary-blue">{project.title || 'Untitled Project'}</h4>
+                          <p className="text-accent-teal text-sm mb-1 font-inter">{project.description || 'No description'}</p>
+                          <p className="text-accent-teal text-sm font-inter">Status: {project.status || 'Not Started'}</p>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )
+              ))
+            ) : (
+              <div className="public-projects">
+                {publicProjects.length === 0 ? (
+                  <p className="text-accent-teal font-inter flex items-center gap-2">
+                    <Folder className="w-5 h-5 text-neutral-gray animate-pulse" aria-hidden="true" /> No public projects available.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {publicProjects.map(project => (
+                      <Link
+                        key={project._id}
+                        to={`/projects/${project._id}`}
+                        className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-neutral-gray animate-fade-in"
+                        aria-label={`View project ${project.title}`}
+                      >
+                        <h4 className="text-lg font-orbitron font-bold text-primary-blue">{project.title || 'Untitled Project'}</h4>
+                        <p className="text-accent-teal text-sm mb-1 font-inter">Category: {project.category || 'Unknown'}</p>
+                        <p className="text-accent-teal text-sm font-inter">Status: {project.status || 'Not Started'}</p>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {isOwner && Object.values(projectsByCategory).every(projects => projects.length === 0) && (
+              <p className="text-accent-teal font-inter flex items-center gap-2">
+                <Folder className="w-5 h-5 text-neutral-gray animate-pulse" aria-hidden="true" /> No projects yet.
+              </p>
             )}
           </div>
         </div>
