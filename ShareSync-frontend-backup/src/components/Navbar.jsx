@@ -1,70 +1,98 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Home, Folder, User, LogOut, Sun, Moon } from 'lucide-react';
+import { LogOut, User, Folder, Bell, Sun, Moon } from 'lucide-react';
 import './Navbar.css';
 
-const Navbar = () => {
+const Navbar = ({ toggleTheme, currentTheme }) => {
   const navigate = useNavigate();
-  const { isAuthenticated, user, logout, theme, toggleTheme } = useContext(AuthContext);
-
-  useEffect(() => {
-    // Apply the theme to the document root
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+  const { user, isAuthenticated, logout, notifications } = useContext(AuthContext);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  // Defensive check for user.username
+  const profileUrl = user && user.username ? `/profile/${user.username}` : '/login';
+
   return (
     <nav className="navbar glassmorphic">
-      <div className="navbar-container">
-        <Link to="/" className="navbar-logo text-holo-blue font-inter text-2xl font-bold animate-text-glow">
-          ShareSync
-        </Link>
-        <div className="navbar-links">
-          {isAuthenticated ? (
-            <>
-              <Link to="/" className="navbar-link flex items-center gap-2" aria-label="Home">
-                <Home className="w-5 h-5 text-holo-blue animate-pulse" aria-hidden="true" /> Home
-              </Link>
-              <Link to="/projects" className="navbar-link flex items-center gap-2" aria-label="Projects">
-                <Folder className="w-5 h-5 text-holo-blue animate-pulse" aria-hidden="true" /> Projects
-              </Link>
-              <Link to={`/profile/${user?.username}`} className="navbar-link flex items-center gap-2" aria-label="Profile">
-                <User className="w-5 h-5 text-holo-blue animate-pulse" aria-hidden="true" /> Profile
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="navbar-link flex items-center gap-2"
-                aria-label="Logout"
-              >
-                <LogOut className="w-5 h-5 text-holo-blue animate-pulse" aria-hidden="true" /> Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="navbar-link" aria-label="Login">
-                Login
-              </Link>
-              <Link to="/register" className="navbar-link" aria-label="Register">
-                Register
-              </Link>
-            </>
-          )}
-          <button
-            onClick={toggleTheme}
-            className="navbar-theme-toggle flex items-center gap-2"
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          <Link
+            to="/"
+            className="text-2xl font-orbitron font-bold text-emerald-green focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
           >
-            {theme === 'dark' ? (
-              <Sun className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" />
+            ShareSync
+          </Link>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 text-charcoal-gray hover:text-indigo-vivid transition-colors focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+              aria-label={`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} theme`}
+            >
+              {currentTheme === 'light' ? <Moon className="w-5 h-5" aria-hidden="true" /> : <Sun className="w-5 h-5" aria-hidden="true" />}
+            </button>
+            {isAuthenticated && user ? (
+              <>
+                <Link
+                  to="/projects"
+                  className="flex items-center gap-2 text-saffron-yellow hover:text-charcoal-gray transition-colors font-inter focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                  aria-label="Go to projects"
+                >
+                  <Folder className="w-5 h-5" aria-hidden="true" /> Projects
+                </Link>
+                <Link
+                  to={profileUrl}
+                  className="flex items-center gap-2 text-saffron-yellow hover:text-charcoal-gray transition-colors font-inter focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                  aria-label="Go to profile"
+                >
+                  <User className="w-5 h-5" aria-hidden="true" />
+                  {user.profilePicture && (
+                    <img
+                      src={user.profilePicture || 'https://via.placeholder.com/24'}
+                      alt="Profile"
+                      className="w-6 h-6 rounded-full profile-pic"
+                    />
+                  )}
+                  Profile
+                </Link>
+                <div className="relative">
+                  <Bell className="w-5 h-5 text-saffron-yellow hover:text-charcoal-gray transition-colors" aria-hidden="true" />
+                  {notifications && notifications.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-indigo-vivid text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {notifications.length}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-saffron-yellow hover:text-charcoal-gray transition-colors font-inter focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                  aria-label="Log out"
+                >
+                  <LogOut className="w-5 h-5" aria-hidden="true" /> Logout
+                </button>
+              </>
             ) : (
-              <Moon className="w-5 h-5 text-holo-blue animate-pulse" aria-hidden="true" />
+              <>
+                <Link
+                  to="/login"
+                  className="text-saffron-yellow hover:text-charcoal-gray transition-colors font-inter focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                  aria-label="Go to login"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="text-saffron-yellow hover:text-charcoal-gray transition-colors font-inter focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                  aria-label="Go to register"
+                >
+                  Register
+                </Link>
+              </>
             )}
-          </button>
+          </div>
         </div>
       </div>
     </nav>
