@@ -1,34 +1,31 @@
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 
 class ErrorBoundary extends Component {
-  state = {
-    hasError: false,
-    error: null,
-    errorInfo: null,
-  };
+  state = { hasError: false, error: null };
 
   static getDerivedStateFromError(error) {
-    console.log('ErrorBoundary - Caught error:', error.message, error.stack);
     return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('ErrorBoundary - Error details:', error.message, error.stack, 'Info:', errorInfo);
-    this.setState({ errorInfo });
+    console.error('Error caught by ErrorBoundary:', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-container">
-          <h2>Something went wrong</h2>
-          <p>{this.state.error?.message || 'Unknown error'}</p>
-          <details style={{ whiteSpace: 'pre-wrap' }}>
-            {this.state.error && this.state.error.toString()}
-            <br />
-            {this.state.errorInfo?.componentStack}
-          </details>
-          <button onClick={() => window.location.reload()}>Reload Page</button>
+        <div className="error-boundary flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-4">Something Went Wrong</h1>
+            <p className="text-saffron-yellow text-lg font-inter mb-4">{this.state.error?.message || 'An unexpected error occurred.'}</p>
+            <Link
+              to="/"
+              className="text-indigo-vivid hover:underline text-base font-orbitron focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+            >
+              Return to Home
+            </Link>
+          </div>
         </div>
       );
     }

@@ -1,1037 +1,823 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import axios from 'axios';
-import { io } from 'socket.io-client';
-import { Folder, AlertCircle, Users, Edit, Send, CheckSquare, Square, FileText, MessageSquare, Settings, X, Image, BarChart, PieChart, Clock, Lightbulb, Bell } from 'lucide-react';
+import { fetchProjectById, updateProject, createPost, createTask, createSubtask, updateTaskStatus, likeTask, shareTask, addTaskComment, uploadFile, approveFile, createTeam, inviteUser, addSuggestion, updateNotificationSettings } from '../services/project.js';
+import { Folder, AlertCircle, Plus, Edit, Trash, CheckSquare, FileText, Share2, ThumbsUp, MessageSquare, Users, Settings } from 'lucide-react';
 import './ProjectHome.css';
 
 const ProjectHome = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, authError, updateProject, inviteToProject, autoAssignTasks } = useContext(AuthContext);
+  const { user, isAuthenticated, isLoading, authError, socket } = useContext(AuthContext);
   const [project, setProject] = useState(null);
   const [error, setError] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [status, setStatus] = useState('');
+  const [isEditingProject, setIsEditingProject] = useState(false);
+  const [projectForm, setProjectForm] = useState({ title: '', description: '', category: '', status: '' });
+  const [newPost, setNewPost] = useState({ type: 'announcement', content: '' });
+  const [newTask, setNewTask] = useState({ title: '', description: '', assignedTo: '', dueDate: '' });
+  const [newSubtask, setNewSubtask] = useState({ title: '', taskId: '' });
+  const [newFile, setNewFile] = useState(null);
+  const [newTeam, setNewTeam] = useState({ name: '', members: [] });
   const [inviteEmail, setInviteEmail] = useState('');
-  const [isInviting, setIsInviting] = useState(false);
-  const [newPost, setNewPost] = useState({ type: 'announcement', content: '', options: ['', ''] });
-  const [newTask, setNewTask] = useState({ title: '', description: '' });
-  const [newSubtask, setNewSubtask] = useState({ taskId: '', title: '' });
-  const [newFile, setNewFile] = useState({ name: '', url: '' });
-  const [newTeam, setNewTeam] = useState({ name: '', description: '', members: [] });
   const [newSuggestion, setNewSuggestion] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [activityFilter, setActivityFilter] = useState('All');
-  const [showSettings, setShowSettings] = useState(false);
-  const [notificationSettings, setNotificationSettings] = useState({ email: true, sms: true, inApp: true });
-  const [contributions, setContributions] = useState({});
-  const [notifications, setNotifications] = useState([]);
-  const [aiSuggestions, setAiSuggestions] = useState([]);
-  const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 3;
-  const retryDelay = 1000;
+  const [notificationSettings, setNotificationSettings] = useState({ emailNotifications: true, inAppNotifications: true });
 
   useEffect(() => {
-    const fetchProject = async () => {
-      if (isLoading) {
-        console.log('ProjectHome - Waiting for AuthContext to finish loading');
-        return;
-      }
+    const loadProject = async () => {
+      if (isLoading) return;
 
       if (!isAuthenticated) {
-        console.log('ProjectHome - User not authenticated, redirecting to login');
         navigate('/login', { replace: true });
         return;
       }
 
-      if (!user || !user.email) {
-        console.log('ProjectHome - User data not available');
-        setError('User data not available. Please log in again.');
-        navigate('/login', { replace: true });
-        return;
-      }
-
-      // Check user projects first (cached data)
-      let projectData = user.projects.find((p) => p.id === id);
-      if (projectData) {
-        console.log('ProjectHome - Project found in user data:', projectData);
-        setProject(projectData);
-        setTitle(projectData.title);
-        setDescription(projectData.description);
-        setCategory(projectData.category);
-        setStatus(projectData.status);
-        setNotificationSettings(projectData.settings?.notifications || { email: true, sms: true, inApp: true });
-        return;
-      }
-
-      // Fetch from backend if not found in user data
       try {
-        console.log('ProjectHome - Fetching project with ID:', id);
-        const response = await axios.get(`http://localhost:3000/api/projects/${id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        projectData = response.data;
-        if (!projectData) {
-          throw new Error('Project not found');
-        }
-        console.log('ProjectHome - Project fetched from backend:', projectData);
+        const projectData = await fetchProjectById(id);
         setProject(projectData);
-        setTitle(projectData.title);
-        setDescription(projectData.description);
-        setCategory(projectData.category);
-        setStatus(projectData.status);
-        setNotificationSettings(projectData.settings?.notifications || { email: true, sms: true, inApp: true });
-      } catch (err) {
-        console.error('ProjectHome - Failed to fetch project:', err.message);
-        if (retryCount < maxRetries) {
-          console.log('ProjectHome - Retrying fetch, attempt:', retryCount + 1);
-          setTimeout(() => setRetryCount(retryCount + 1), retryDelay);
-        } else {
-          setError('Failed to load project after multiple attempts: ' + (err.message || 'An unexpected error occurred.'));
-        }
-      }
-    };
-
-    const fetchContributions = async () => {
-      try {
-        const response = await axios.get(`http://localhost:3000/api/projects/${id}/contributions`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        setProjectForm({
+          title: projectData.title || '',
+          description: projectData.description || '',
+          category: projectData.category || '',
+          status: projectData.status || '',
         });
-        setContributions(response.data);
       } catch (err) {
-        console.error('ProjectHome - Failed to fetch contributions:', err.message);
-        setError('Failed to load contributions: ' + (err.message || 'Please try again.'));
+        setError('Failed to load project: ' + (err.message || 'Please try again.'));
       }
     };
 
-    const fetchAiSuggestions = () => {
-      const mockSuggestions = project?.tasks?.map((task, index) => ({
-        taskId: task.id,
-        title: task.title,
-        priority: index % 2 === 0 ? 'High' : 'Medium',
-        reason: index % 2 === 0 ? 'Due soon' : 'High impact',
-      })) || [];
-      setAiSuggestions(mockSuggestions);
-    };
+    loadProject();
 
-    fetchProject();
-    fetchContributions();
-    fetchAiSuggestions();
+    if (socket) {
+      socket.on('project-updated', (data) => {
+        if (data.project._id === id) {
+          setProject(data.project);
+        }
+      });
 
-    const socket = io('http://localhost:3000');
-    socket.on('connect', () => {
-      console.log('ProjectHome - Connected to socket.io');
-      socket.emit('join_project', id);
-    });
-
-    socket.on('message', (message) => {
-      setMessages((prev) => [...prev, message]);
-    });
-
-    socket.on('notification', (notification) => {
-      const priority = notification.message.includes('message') || notification.message.includes('task') ? 'high' : 'normal';
-      setNotifications((prev) => [...prev, { ...notification, priority }].slice(-5));
-    });
-
-    return () => {
-      socket.off('message');
-      socket.off('notification');
-      socket.disconnect();
-    };
-  }, [id, user, isAuthenticated, isLoading, navigate, retryCount]);
-
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleSave = async () => {
-    try {
-      const updates = { title, description, category, status };
-      console.log('ProjectHome - Saving project updates:', updates);
-      const updatedProject = await updateProject(id, updates);
-      setProject(updatedProject);
-      setIsEditing(false);
-      alert('Project updated successfully!');
-    } catch (err) {
-      console.error('ProjectHome - Failed to update project:', err.message);
-      setError('Failed to update project: ' + (err.message || 'Please try again.'));
+      return () => {
+        socket.off('project-updated');
+      };
     }
-  };
+  }, [id, isAuthenticated, isLoading, navigate, socket]);
 
-  const handleInvite = async (e) => {
+  const handleProjectUpdate = async (e) => {
     e.preventDefault();
-    if (!inviteEmail.trim()) {
-      setError('Invite email is required.');
-      return;
-    }
-
-    setIsInviting(true);
-    setError('');
-
     try {
-      console.log('ProjectHome - Sending invite to:', inviteEmail);
-      await inviteToProject(id, inviteEmail);
-      alert('Invite sent successfully!');
-      setInviteEmail('');
-      const updatedUser = await axios.get('http://localhost:3000/api/auth/me', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedProject = updatedUser.data.projects.find((p) => p.id === id);
+      const updatedProject = await updateProject(id, projectForm);
       setProject(updatedProject);
+      setIsEditingProject(false);
+      if (socket) {
+        socket.emit('project-updated', { project: updatedProject, userId: user?._id });
+      }
     } catch (err) {
-      console.error('ProjectHome - Failed to send invite:', err.message);
-      setError('Failed to send invite: ' + (err.message || 'Please try again.'));
-    } finally {
-      setIsInviting(false);
-    }
-  };
-
-  const handleAutoAssign = async () => {
-    try {
-      console.log('ProjectHome - Auto-assigning tasks for project:', id);
-      await autoAssignTasks(id);
-      const updatedUser = await axios.get('http://localhost:3000/api/auth/me', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedProject = updatedUser.data.projects.find((p) => p.id === id);
-      setProject(updatedProject);
-      alert('Tasks auto-assigned successfully!');
-    } catch (err) {
-      console.error('ProjectHome - Failed to auto-assign tasks:', err.message);
-      setError('Failed to auto-assign tasks: ' + (err.message || 'Please try again.'));
+      setError('Failed to update project: ' + err.message);
     }
   };
 
   const handleCreatePost = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`http://localhost:3000/api/projects/${id}/posts`, newPost, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedUser = await axios.get('http://localhost:3000/api/auth/me', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedProject = updatedUser.data.projects.find((p) => p.id === id);
-      setProject(updatedProject);
-      setNewPost({ type: 'announcement', content: '', options: ['', ''] });
+      const post = await createPost(id, newPost);
+      setProject((prev) => ({
+        ...prev,
+        posts: [...(prev.posts || []), post],
+      }));
+      setNewPost({ type: 'announcement', content: '' });
+      if (socket) {
+        socket.emit('feed-update', { ...post, projectId: id, projectTitle: project.title });
+      }
     } catch (err) {
-      setError('Failed to create post: ' + (err.message || 'Please try again.'));
+      setError('Failed to create post: ' + err.message);
     }
   };
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`http://localhost:3000/api/projects/${id}/tasks`, newTask, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedUser = await axios.get('http://localhost:3000/api/auth/me', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedProject = updatedUser.data.projects.find((p) => p.id === id);
-      setProject(updatedProject);
-      setNewTask({ title: '', description: '' });
+      const task = await createTask(id, newTask);
+      setProject((prev) => ({
+        ...prev,
+        tasks: [...(prev.tasks || []), task],
+      }));
+      setNewTask({ title: '', description: '', assignedTo: '', dueDate: '' });
     } catch (err) {
-      setError('Failed to create task: ' + (err.message || 'Please try again.'));
+      setError('Failed to create task: ' + err.message);
     }
   };
 
-  const handleCreateSubtask = async (e, taskId) => {
-    e.preventDefault();
+  const handleCreateSubtask = async (taskId) => {
     try {
-      const response = await axios.post(`http://localhost:3000/api/projects/${id}/tasks/${taskId}/subtasks`, { title: newSubtask.title }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedUser = await axios.get('http://localhost:3000/api/auth/me', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedProject = updatedUser.data.projects.find((p) => p.id === id);
-      setProject(updatedProject);
-      setNewSubtask({ taskId: '', title: '' });
+      const subtask = await createSubtask(id, taskId, { title: newSubtask.title });
+      setProject((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map(t =>
+          t._id === taskId ? { ...t, subtasks: [...(t.subtasks || []), subtask] } : t
+        ),
+      }));
+      setNewSubtask({ title: '', taskId: '' });
     } catch (err) {
-      setError('Failed to create subtask: ' + (err.message || 'Please try again.'));
+      setError('Failed to create subtask: ' + err.message);
     }
   };
 
-  const handleUploadFile = async (e) => {
-    e.preventDefault();
+  const handleUpdateTaskStatus = async (taskId, status) => {
     try {
-      const response = await axios.post(`http://localhost:3000/api/projects/${id}/files`, newFile, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedUser = await axios.get('http://localhost:3000/api/auth/me', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedProject = updatedUser.data.projects.find((p) => p.id === id);
-      setProject(updatedProject);
-      setNewFile({ name: '', url: '' });
+      const updatedTask = await updateTaskStatus(id, taskId, status);
+      setProject((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
+      }));
     } catch (err) {
-      setError('Failed to upload file: ' + (err.message || 'Please try again.'));
+      setError('Failed to update task status: ' + err.message);
+    }
+  };
+
+  const handleLikeTask = async (taskId) => {
+    try {
+      const updatedTask = await likeTask(id, taskId);
+      setProject((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
+      }));
+    } catch (err) {
+      setError('Failed to like task: ' + err.message);
+    }
+  };
+
+  const handleShareTask = async (taskId) => {
+    try {
+      const updatedTask = await shareTask(id, taskId);
+      setProject((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
+      }));
+      alert('Task shared! (Mock action—implement sharing logic as needed.)');
+    } catch (err) {
+      setError('Failed to share task: ' + err.message);
+    }
+  };
+
+  const handleAddTaskComment = async (taskId, commentText) => {
+    try {
+      const updatedTask = await addTaskComment(id, taskId, { text: commentText, user: user.email });
+      setProject((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
+      }));
+    } catch (err) {
+      setError('Failed to add comment: ' + err.message);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    e.preventDefault();
+    if (!newFile) return;
+
+    try {
+      const fileData = new FormData();
+      fileData.append('file', newFile);
+      const uploadedFile = await uploadFile(id, fileData);
+      setProject((prev) => ({
+        ...prev,
+        files: [...(prev.files || []), uploadedFile],
+      }));
+      setNewFile(null);
+    } catch (err) {
+      setError('Failed to upload file: ' + err.message);
+    }
+  };
+
+  const handleApproveFile = async (fileId, status) => {
+    try {
+      const updatedFile = await approveFile(id, fileId, status);
+      setProject((prev) => ({
+        ...prev,
+        files: prev.files.map(f => (f._id === fileId ? updatedFile : f)),
+      }));
+    } catch (err) {
+      setError('Failed to update file status: ' + err.message);
     }
   };
 
   const handleCreateTeam = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`http://localhost:3000/api/projects/${id}/teams`, newTeam, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedUser = await axios.get('http://localhost:3000/api/auth/me', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedProject = updatedUser.data.projects.find((p) => p.id === id);
-      setProject(updatedProject);
-      setNewTeam({ name: '', description: '', members: [] });
+      const team = await createTeam(id, newTeam);
+      setProject((prev) => ({
+        ...prev,
+        teams: [...(prev.teams || []), team],
+      }));
+      setNewTeam({ name: '', members: [] });
     } catch (err) {
-      setError('Failed to create team: ' + (err.message || 'Please try again.'));
+      setError('Failed to create team: ' + err.message);
     }
   };
 
-  const handleSubmitSuggestion = async (e) => {
+  const handleInviteUser = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`http://localhost:3000/api/projects/${id}/suggestions`, { content: newSuggestion }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedUser = await axios.get('http://localhost:3000/api/auth/me', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedProject = updatedUser.data.projects.find((p) => p.id === id);
-      setProject(updatedProject);
-      setNewSuggestion('');
+      await inviteUser(id, inviteEmail);
+      setInviteEmail('');
+      alert('Invitation sent! (Mock action—implement email logic as needed.)');
     } catch (err) {
-      setError('Failed to submit suggestion: ' + (err.message || 'Please try again.'));
+      setError('Failed to invite user: ' + err.message);
     }
   };
 
-  const handleSendMessage = () => {
-    const socket = io('http://localhost:3000');
-    socket.emit('message', { projectId: id, text: newMessage, user: user.email });
-    setNewMessage('');
+  const handleAddSuggestion = async (e) => {
+    e.preventDefault();
+    try {
+      const suggestion = await addSuggestion(id, { content: newSuggestion, user: user.email });
+      setProject((prev) => ({
+        ...prev,
+        suggestions: [...(prev.suggestions || []), suggestion],
+      }));
+      setNewSuggestion('');
+    } catch (err) {
+      setError('Failed to add suggestion: ' + err.message);
+    }
   };
 
-  const handleUpdateNotificationSettings = async () => {
+  const handleUpdateNotificationSettings = async (e) => {
+    e.preventDefault();
     try {
-      const response = await axios.put(`http://localhost:3000/api/projects/${id}/settings/notifications`, notificationSettings, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedUser = await axios.get('http://localhost:3000/api/auth/me', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const updatedProject = updatedUser.data.projects.find((p) => p.id === id);
-      setProject(updatedProject);
-      setShowSettings(false);
+      const updatedSettings = await updateNotificationSettings(id, notificationSettings);
+      setProject((prev) => ({
+        ...prev,
+        settings: { ...prev.settings, ...updatedSettings },
+      }));
     } catch (err) {
-      setError('Failed to update notification settings: ' + (err.message || 'Please try again.'));
+      setError('Failed to update notification settings: ' + err.message);
     }
   };
 
   if (isLoading) {
-    return <div className="project-home-container"><p className="text-holo-gray">Loading...</p></div>;
+    return (
+      <div className="project-home-container flex items-center justify-center min-h-screen">
+        <div className="loader" aria-label="Loading project"></div>
+        <span className="text-saffron-yellow text-xl font-orbitron ml-4">Loading...</span>
+      </div>
+    );
   }
 
   if (authError || error) {
     return (
-      <div className="project-home-container">
-        <p className="text-red-500">{authError || error}</p>
-        <Link to="/projects" className="text-holo-blue hover:underline focus:outline-none focus:ring-2 focus:ring-holo-blue">Return to Projects</Link>
+      <div className="project-home-container flex items-center justify-center min-h-screen">
+        <p className="text-crimson-red text-lg font-orbitron">{authError || error}</p>
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="project-home-container">
-        <p className="text-red-500">Project not found.</p>
-        <Link to="/projects" className="text-holo-blue hover:underline focus:outline-none focus:ring-2 focus:ring-holo-blue">Return to Projects</Link>
+      <div className="project-home-container flex items-center justify-center min-h-screen">
+        <p className="text-saffron-yellow text-lg font-orbitron">Project not found.</p>
       </div>
     );
   }
 
-  const isOwner = project.members.some((m) => m.email === user.email && m.role === 'Owner');
-  const filteredActivityLog = activityFilter === 'All' ? project.activityLog : project.activityLog.filter(log => log.action === activityFilter.toLowerCase());
-  const timelineEvents = project.activityLog.filter(log => ['create', 'task-create', 'task-update', 'post'].includes(log.action)).slice(-5);
-
   return (
     <div className="project-home-container">
-      <div className="project-home-header py-8 px-6 rounded-b-3xl text-center">
-        <h1 className="text-4xl font-inter text-holo-blue mb-4 animate-text-glow">
-          {isEditing ? (
+      <div className="project-header py-8 px-6 rounded-b-3xl text-center glassmorphic">
+        {isEditingProject ? (
+          <form onSubmit={handleProjectUpdate} className="max-w-2xl mx-auto">
             <input
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="input-field w-full rounded-full text-center focus:outline-none focus:ring-2 focus:ring-holo-blue"
-              aria-label="Edit project title"
+              value={projectForm.title}
+              onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
+              className="input-field text-4xl font-orbitron font-bold text-emerald-green mb-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+              placeholder="Project Title"
+              aria-label="Project Title"
             />
-          ) : (
-            project.title
-          )}
-        </h1>
-        <p className="text-holo-gray mb-4">
-          {isEditing ? (
             <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="input-field w-full h-24 rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
-              aria-label="Edit project description"
-            />
-          ) : (
-            project.description
-          )}
-        </p>
+              value={projectForm.description}
+              onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+              placeholder="Project Description"
+              rows="3"
+              aria-label="Project Description"
+            ></textarea>
+            <div className="flex gap-4 mt-4">
+              <select
+                value={projectForm.category}
+                onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
+                className="input-field rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                aria-label="Project Category"
+              >
+                <option value="Personal">Personal</option>
+                <option value="School">School</option>
+                <option value="Job">Job</option>
+              </select>
+              <select
+                value={projectForm.status}
+                onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value })}
+                className="input-field rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                aria-label="Project Status"
+              >
+                <option value="Not Started">Not Started</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                type="submit"
+                className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                aria-label="Save project changes"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setIsEditingProject(false)}
+                className="btn-primary rounded-full flex items-center bg-crimson-red focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                aria-label="Cancel editing"
+              >
+                <X className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="max-w-2xl mx-auto">
+            <div className="flex justify-between items-center">
+              <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-4">{project.title}</h1>
+              <button
+                onClick={() => setIsEditingProject(true)}
+                className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                aria-label="Edit project"
+              >
+                <Edit className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
+            <p className="text-saffron-yellow text-lg font-inter mb-4">{project.description}</p>
+            <p className="text-lavender-gray font-inter">Category: {project.category}</p>
+            <p className="text-lavender-gray font-inter">Status: {project.status}</p>
+          </div>
+        )}
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
-        <div className="project-details card p-6 glassmorphic">
-          <div className="notifications-section mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Bell className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Real-Time Notifications
-            </h2>
-            {notifications.length === 0 ? (
-              <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No recent notifications.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {notifications.sort((a, b) => (b.priority === 'high' ? 1 : -1)).map((notification, index) => (
-                  <div key={index} className={`p-2 rounded ${notification.priority === 'high' ? 'bg-holo-pink bg-opacity-30' : 'bg-holo-pink bg-opacity-20'}`}>
-                    <p className="text-holo-gray text-sm">{notification.message}</p>
-                    <p className="text-holo-gray text-xs">{new Date(notification.timestamp).toLocaleString()}</p>
-                    {notification.priority === 'high' && (
-                      <p className="text-holo-pink text-xs font-bold">Priority: High</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        {error && <p className="text-crimson-red mb-4 text-center font-orbitron">{error}</p>}
 
-          <div className="transparency-dashboard mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <PieChart className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Transparency Dashboard
-            </h2>
-            {Object.keys(contributions).length === 0 ? (
-              <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No contributions yet.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(contributions).map(([email, stats]) => (
-                  <div key={email} className="contribution-item card p-4 glassmorphic">
-                    <p className="text-holo-blue">{email}</p>
-                    <p className="text-holo-gray text-sm">Tasks Completed: {stats.tasksCompleted} (Mock: {stats.tasksCompleted * 10}% of total)</p>
-                    <p className="text-holo-gray text-sm">Posts Created: {stats.postsCreated}</p>
-                    <p className="text-holo-gray text-sm">Comments Made: {stats.commentsMade}</p>
-                    <p className="text-holo-gray text-sm">Files Uploaded: {stats.filesUploaded}</p>
-                    <p className="text-holo-gray text-sm">Suggestions Made: {stats.suggestionsMade}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="timeline-section mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Clock className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Project Timeline
-            </h2>
-            {timelineEvents.length === 0 ? (
-              <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No timeline events yet.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {timelineEvents.map((event, index) => (
-                  <div key={index} className="timeline-item card p-4 glassmorphic">
-                    <p className="text-holo-gray">{event.message}</p>
-                    <p className="text-holo-gray text-sm">By: {event.user}</p>
-                    <p className="text-holo-gray text-sm">{new Date(event.timestamp).toLocaleString()}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-2">
-              <Folder className="w-5 h-5 text-holo-pink" aria-hidden="true" />
-              <span className="text-holo-gray">
-                Category:{' '}
-                {isEditing ? (
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="input-field rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                    aria-label="Select project category"
-                  >
-                    <option value="School">School</option>
-                    <option value="Job">Job</option>
-                    <option value="Personal">Personal</option>
-                  </select>
-                ) : (
-                  project.category
-                )}
-              </span>
-              <span className="text-holo-gray">
-                Status:{' '}
-                {isEditing ? (
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="input-field rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                    aria-label="Select project status"
-                  >
-                    <option value="Not Started">Not Started</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                  </select>
-                ) : (
-                  project.status
-                )}
-              </span>
-            </div>
-            <div className="flex gap-4">
-              {isOwner && (
-                <>
-                  {isEditing ? (
-                    <>
-                      <button
-                        onClick={handleSave}
-                        className="btn-primary rounded-full animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                        aria-label="Save project changes"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setIsEditing(false)}
-                        className="btn-primary rounded-full bg-holo-bg-light focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                        aria-label="Cancel editing"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={handleEdit}
-                      className="btn-primary rounded-full animate-glow flex items-center focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                      aria-label="Edit project"
-                    >
-                      <Edit className="w-5 h-5 mr-2" aria-hidden="true" /> Edit Project
-                    </button>
-                  )}
-                </>
-              )}
-              <button
-                onClick={() => setShowSettings(true)}
-                className="btn-primary rounded-full animate-glow flex items-center focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                aria-label="Open project settings"
-              >
-                <Settings className="w-5 h-5 mr-2" aria-hidden="true" /> Settings
-              </button>
-            </div>
-          </div>
-
-          <div className="members-section mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Members
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {project.members.map((member, index) => (
-                <div key={index} className="member-item card p-4 glassmorphic">
-                  <div className="flex items-center gap-2">
+        {/* Posts Section */}
+        <div className="posts-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
+          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
+            <FileText className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Posts
+          </h2>
+          <form onSubmit={handleCreatePost} className="mb-4">
+            <select
+              value={newPost.type}
+              onChange={(e) => setNewPost({ ...newPost, type: e.target.value })}
+              className="input-field rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
+              aria-label="Post Type"
+            >
+              <option value="announcement">Announcement</option>
+              <option value="update">Update</option>
+            </select>
+            <textarea
+              value={newPost.content}
+              onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
+              placeholder="Write a post..."
+              rows="3"
+              aria-label="Post Content"
+            ></textarea>
+            <button
+              type="submit"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              aria-label="Create Post"
+            >
+              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Post
+            </button>
+          </form>
+          {(project.posts || []).length === 0 ? (
+            <p className="text-saffron-yellow font-inter flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No posts yet.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {project.posts.map((post, index) => (
+                <div key={index} className="post-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
                     <img
-                      src={member.profilePicture}
-                      alt={`${member.email}'s profile picture`}
-                      className="w-8 h-8 rounded-full"
+                      src={user.profilePicture || 'https://via.placeholder.com/32'}
+                      alt={`${post.author}'s profile`}
+                      className="w-8 h-8 rounded-full profile-pic"
                     />
                     <div>
-                      <p className="text-holo-blue">{member.email}</p>
-                      <p className="text-holo-gray text-sm">{member.role}</p>
+                      <p className="text-indigo-vivid font-orbitron font-medium">{post.type.toUpperCase()}</p>
+                      <p className="text-lavender-gray font-inter">{post.content}</p>
+                      <p className="text-lavender-gray text-sm font-inter">
+                        By {post.author} at {new Date(post.timestamp).toLocaleString()}
+                      </p>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            {isOwner && (
-              <form onSubmit={handleInvite} className="mt-4 flex items-center gap-2">
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="Enter email to invite"
-                  className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  disabled={isInviting}
-                  aria-label="Email address to invite"
-                />
-                <button
-                  type="submit"
-                  disabled={isInviting}
-                  className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  aria-label={isInviting ? "Sending invitation" : "Send invitation"}
-                >
-                  {isInviting ? (
-                    <span>Sending...</span>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5 mr-2" aria-hidden="true" /> Invite
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-          </div>
+          )}
+        </div>
 
-          <div className="ai-suggestions-section mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Lightbulb className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> AI Task Prioritization
-            </h2>
-            {aiSuggestions.length === 0 ? (
-              <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No tasks to prioritize.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {aiSuggestions.map((suggestion, index) => (
-                  <div key={index} className="ai-suggestion-item card p-4 glassmorphic">
-                    <p className="text-holo-blue">{suggestion.title}</p>
-                    <p className="text-holo-gray text-sm">Priority: {suggestion.priority}</p>
-                    <p className="text-holo-gray text-sm">Reason: {suggestion.reason}</p>
+        {/* Tasks Section */}
+        <div className="tasks-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
+          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
+            <CheckSquare className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Tasks
+          </h2>
+          <form onSubmit={handleCreateTask} className="mb-4">
+            <input
+              type="text"
+              value={newTask.title}
+              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
+              placeholder="Task Title"
+              aria-label="Task Title"
+            />
+            <textarea
+              value={newTask.description}
+              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
+              placeholder="Task Description"
+              rows="2"
+              aria-label="Task Description"
+            ></textarea>
+            <input
+              type="text"
+              value={newTask.assignedTo}
+              onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
+              placeholder="Assigned To (email)"
+              aria-label="Assigned To"
+            />
+            <input
+              type="date"
+              value={newTask.dueDate}
+              onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
+              aria-label="Due Date"
+            />
+            <button
+              type="submit"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              aria-label="Create Task"
+            >
+              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Add Task
+            </button>
+          </form>
+          {(project.tasks || []).length === 0 ? (
+            <p className="text-saffron-yellow font-inter flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No tasks yet.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {project.tasks.map((task) => (
+                <div key={task._id} className="task-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={user.profilePicture || 'https://via.placeholder.com/32'}
+                        alt={`${task.assignedTo}'s profile`}
+                        className="w-8 h-8 rounded-full profile-pic"
+                      />
+                      <h3 className="text-lg font-orbitron font-bold text-indigo-vivid">{task.title}</h3>
+                    </div>
+                    <select
+                      value={task.status}
+                      onChange={(e) => handleUpdateTaskStatus(task._id, e.target.value)}
+                      className="input-field rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                      aria-label={`Status for task ${task.title}`}
+                    >
+                      <option value="Not Started">Not Started</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                    </select>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="posts-section mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Posts
-            </h2>
-            <form onSubmit={handleCreatePost} className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <select
-                  value={newPost.type}
-                  onChange={(e) => setNewPost({ ...newPost, type: e.target.value })}
-                  className="input-field rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  aria-label="Select post type"
-                >
-                  <option value="announcement">Announcement</option>
-                  <option value="poll">Poll</option>
-                  <option value="picture">Picture</option>
-                </select>
-                <input
-                  type="text"
-                  value={newPost.content}
-                  onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-                  placeholder={newPost.type === 'picture' ? 'Image URL' : 'Post content'}
-                  className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  aria-label={newPost.type === 'picture' ? 'Enter image URL' : 'Enter post content'}
-                />
-                <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Create post">
-                  <Send className="w-5 h-5 mr-2" aria-hidden="true" /> Post
-                </button>
-              </div>
-              {newPost.type === 'poll' && (
-                <div className="flex gap-2">
-                  {newPost.options.map((option, index) => (
-                    <input
-                      key={index}
-                      type="text"
-                      value={option}
-                      onChange={(e) => {
-                        const newOptions = [...newPost.options];
-                        newOptions[index] = e.target.value;
-                        setNewPost({ ...newPost, options: newOptions });
+                  <p className="text-lavender-gray font-inter">{task.description}</p>
+                  <p className="text-lavender-gray text-sm font-inter">Assigned To: {task.assignedTo}</p>
+                  <p className="text-lavender-gray text-sm font-inter">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</p>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => handleLikeTask(task._id)}
+                      className="flex items-center gap-1 text-charcoal-gray hover:text-indigo-vivid focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                      aria-label={`Like task ${task.title}`}
+                    >
+                      <ThumbsUp className="w-4 h-4" aria-hidden="true" /> {task.likes || 0}
+                    </button>
+                    <button
+                      onClick={() => handleShareTask(task._id)}
+                      className="flex items-center gap-1 text-charcoal-gray hover:text-indigo-vivid focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                      aria-label={`Share task ${task.title}`}
+                    >
+                      <Share2 className="w-4 h-4" aria-hidden="true" /> {task.shares || 0}
+                    </button>
+                  </div>
+                  {/* Subtasks */}
+                  <div className="subtasks mt-4">
+                    <h4 className="text-md font-orbitron font-semibold text-emerald-green mb-2">Subtasks</h4>
+                    {(task.subtasks || []).map((subtask) => (
+                      <div key={subtask._id} className="subtask-item p-2 bg-charcoal-gray bg-opacity-20 rounded-lg mb-2">
+                        <p className="text-lavender-gray font-inter">{subtask.title}</p>
+                      </div>
+                    ))}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleCreateSubtask(task._id);
                       }}
-                      placeholder={`Option ${index + 1}`}
-                      className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                      aria-label={`Poll option ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              )}
-            </form>
-            {project.posts.length === 0 ? (
-              <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No posts yet.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {project.posts.map((post, index) => (
-                  <div key={index} className="post-item card p-4 glassmorphic">
-                    <div className="flex justify-between items-center mb-2">
-                      <p className="text-holo-blue">{post.author}</p>
-                      <p className="text-holo-gray text-sm">{new Date(post.timestamp).toLocaleString()}</p>
-                    </div>
-                    {post.type === 'picture' ? (
-                      <img src={post.content} alt="Post content" className="w-full h-48 object-cover rounded-lg mb-2" />
-                    ) : (
-                      <p className="text-holo-gray">{post.content}</p>
-                    )}
-                    {post.type === 'poll' && (
-                      <div className="mt-2">
-                        {post.options.map((option, optIndex) => (
-                          <div key={optIndex} className="flex items-center gap-2">
-                            <button className="btn-primary rounded-full px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label={`Vote for ${option}`}>Vote</button>
-                            <span>{option}</span>
-                            <span>({post.votes.filter(v => v.option === option).length} votes)</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="tasks-section mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-inter text-holo-blue flex items-center">
-                <CheckSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Tasks
-              </h2>
-              {isOwner && (
-                <button
-                  onClick={handleAutoAssign}
-                  className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  aria-label="Auto-assign tasks"
-                >
-                  <Square className="w-5 h-5 mr-2" aria-hidden="true" /> Auto-Assign Tasks
-                </button>
-              )}
-            </div>
-            {isOwner && (
-              <form onSubmit={handleCreateTask} className="mb-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newTask.title}
-                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    placeholder="Task title"
-                    className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                    aria-label="Task title"
-                  />
-                  <input
-                    type="text"
-                    value={newTask.description}
-                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    placeholder="Description (optional)"
-                    className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                    aria-label="Task description"
-                  />
-                  <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Add task">
-                    <CheckSquare className="w-5 h-5 mr-2" aria-hidden="true" /> Add Task
-                  </button>
-                </div>
-              </form>
-            )}
-            {project.tasks.length === 0 ? (
-              <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No tasks yet.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {project.tasks.map((task, index) => (
-                  <div key={index} className="task-item card p-4 glassmorphic animate-fade-in">
-                    <p className="text-holo-blue font-bold">{task.title}</p>
-                    <p className="text-holo-gray text-sm">Description: {task.description || 'None'}</p>
-                    <p className="text-holo-gray text-sm">Assigned to: {task.assignedTo}</p>
-                    <p className="text-holo-gray text-sm">Status: {task.status}</p>
-                    {isOwner && (
-                      <form
-                        onSubmit={(e) => handleCreateSubtask(e, task.id)}
-                        className="mt-2 flex items-center gap-2"
+                      className="flex gap-2 mt-2"
+                    >
+                      <input
+                        type="text"
+                        value={newSubtask.title}
+                        onChange={(e) => setNewSubtask({ title: e.target.value, taskId: task._id })}
+                        className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                        placeholder="Subtask Title"
+                        aria-label="Subtask Title"
+                      />
+                      <button
+                        type="submit"
+                        className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                        aria-label="Add Subtask"
                       >
-                        <input
-                          type="text"
-                          value={newSubtask.taskId === task.id ? newSubtask.title : ''}
-                          onChange={(e) => setNewSubtask({ taskId: task.id, title: e.target.value })}
-                          placeholder="Subtask title"
-                          className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                          aria-label={`Add subtask for ${task.title}`}
-                        />
-                        <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Add subtask">
-                          Add Subtask
-                        </button>
-                      </form>
-                    )}
-                    {task.subtasks.length > 0 && (
-                      <div className="mt-2 space-y-2">
-                        {task.subtasks.map((subtask, subIndex) => (
-                          <div key={subIndex} className="subtask-item p-2 bg-holo-bg-light rounded">
-                            <p className="text-holo-gray text-sm">{subtask.title}</p>
-                            <p className="text-holo-gray text-sm">Status: {subtask.status}</p>
+                        <Plus className="w-5 h-5" aria-hidden="true" />
+                      </button>
+                    </form>
+                  </div>
+                  {/* Comments */}
+                  <div className="comments mt-4">
+                    <h4 className="text-md font-orbitron font-semibold text-emerald-green mb-2">Comments</h4>
+                    {(task.comments || []).map((comment, index) => (
+                      <div key={index} className="comment-item p-2 bg-charcoal-gray bg-opacity-20 rounded-lg mb-2">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={user.profilePicture || 'https://via.placeholder.com/32'}
+                            alt={`${comment.user}'s profile`}
+                            className="w-6 h-6 rounded-full profile-pic"
+                          />
+                          <div>
+                            <p className="text-lavender-gray font-inter">{comment.text}</p>
+                            <p className="text-lavender-gray text-sm font-inter">By {comment.user} at {new Date(comment.timestamp).toLocaleString()}</p>
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    )}
+                    ))}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const commentText = e.target.comment.value;
+                        if (commentText.trim()) {
+                          handleAddTaskComment(task._id, commentText);
+                          e.target.comment.value = '';
+                        }
+                      }}
+                      className="flex gap-2 mt-2"
+                    >
+                      <input
+                        type="text"
+                        name="comment"
+                        className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                        placeholder="Add a comment..."
+                        aria-label="Comment"
+                      />
+                      <button
+                        type="submit"
+                        className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                        aria-label="Add Comment"
+                      >
+                        <MessageSquare className="w-5 h-5" aria-hidden="true" />
+                      </button>
+                    </form>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="files-section mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <FileText className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Files
-            </h2>
-            <form onSubmit={handleUploadFile} className="mb-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newFile.name}
-                  onChange={(e) => setNewFile({ ...newFile, name: e.target.value })}
-                  placeholder="File name"
-                  className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  aria-label="File name"
-                />
-                <input
-                  type="text"
-                  value={newFile.url}
-                  onChange={(e) => setNewFile({ ...newFile, url: e.target.value })}
-                  placeholder="File URL"
-                  className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  aria-label="File URL"
-                />
-                <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label={isOwner ? "Upload file" : "Request file upload"}>
-                  <FileText className="w-5 h-5 mr-2" aria-hidden="true" /> {isOwner ? 'Upload' : 'Request Upload'}
-                </button>
-              </div>
-            </form>
-            {project.files.length === 0 ? (
-              <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No files yet.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {project.files.map((file, index) => (
-                  <div key={index} className="file-item card p-4 glassmorphic animate-fade-in">
-                    <p className="text-holo-blue">{file.name}</p>
-                    <p className="text-holo-gray text-sm">Uploaded by: {file.uploadedBy}</p>
-                    <p className="text-holo-gray text-sm">Status: {file.status}</p>
-                    <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-holo-blue hover:underline focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label={`View file ${file.name}`}>View File</a>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="teams-section mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Teams
-            </h2>
-            {isOwner && (
-              <form onSubmit={handleCreateTeam} className="mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={newTeam.name}
-                    onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-                    placeholder="Team name"
-                    className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                    aria-label="Team name"
-                  />
-                  <input
-                    type="text"
-                    value={newTeam.description}
-                    onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
-                    placeholder="Description"
-                    className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                    aria-label="Team description"
-                  />
-                  <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Create team">
-                    <Users className="w-5 h-5 mr-2" aria-hidden="true" /> Create Team
-                  </button>
-                </div>
-                <select
-                  multiple
-                  value={newTeam.members}
-                  onChange={(e) => setNewTeam({ ...newTeam, members: Array.from(e.target.selectedOptions, option => option.value) })}
-                  className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  aria-label="Select team members"
-                >
-                  {project.members.map((member, index) => (
-                    <option key={index} value={member.email}>{member.email}</option>
-                  ))}
-                </select>
-              </form>
-            )}
-            {project.teams.length === 0 ? (
-              <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No teams yet.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {project.teams.map((team, index) => (
-                  <div key={index} className="team-item card p-4 glassmorphic animate-fade-in">
-                    <p className="text-holo-blue">{team.name}</p>
-                    <p className="text-holo-gray text-sm">Description: {team.description}</p>
-                    <p className="text-holo-gray text-sm">Members: {team.members.map(m => m.email).join(', ')}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="chat-section mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <MessageSquare className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Project Chat
-            </h2>
-            <div className="messages card p-4 glassmorphic max-h-60 overflow-y-auto">
-              {messages.map((msg, index) => (
-                <div key={index} className="mb-2">
-                  <strong className="text-holo-blue">{msg.user}:</strong> {msg.text}
-                  <span className="text-holo-gray text-xs ml-2">{new Date(msg.timestamp).toLocaleString()}</span>
                 </div>
               ))}
             </div>
-            <div className="flex items-center gap-2 mt-2">
+          )}
+        </div>
+
+        {/* Files Section */}
+        <div className="files-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
+          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
+            <FileText className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Files
+          </h2>
+          <form onSubmit={handleFileUpload} className="mb-4">
+            <input
+              type="file"
+              onChange={(e) => setNewFile(e.target.files[0])}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
+              aria-label="Upload File"
+            />
+            <button
+              type="submit"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              aria-label="Upload File"
+            >
+              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Upload File
+            </button>
+          </form>
+          {(project.files || []).length === 0 ? (
+            <p className="text-saffron-yellow font-inter flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No files yet.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {project.files.map((file) => (
+                <div key={file._id} className="file-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={user.profilePicture || 'https://via.placeholder.com/32'}
+                      alt={`${file.uploadedBy}'s profile`}
+                      className="w-8 h-8 rounded-full profile-pic"
+                    />
+                    <div>
+                      <p className="text-lavender-gray font-inter">{file.name}</p>
+                      <p className="text-lavender-gray text-sm font-inter">Uploaded by {file.uploadedBy} at {new Date(file.uploadedAt).toLocaleString()}</p>
+                      <p className="text-lavender-gray text-sm font-inter">Status: {file.status || 'Pending'}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApproveFile(file._id, 'Approved')}
+                      className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                      aria-label={`Approve file ${file.name}`}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleApproveFile(file._id, 'Rejected')}
+                      className="btn-primary rounded-full flex items-center bg-crimson-red focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                      aria-label={`Reject file ${file.name}`}
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Teams Section */}
+        <div className="teams-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
+          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
+            <Users className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Teams
+          </h2>
+          <form onSubmit={handleCreateTeam} className="mb-4">
+            <input
+              type="text"
+              value={newTeam.name}
+              onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
+              placeholder="Team Name"
+              aria-label="Team Name"
+            />
+            <input
+              type="text"
+              value={newTeam.members.join(', ')}
+              onChange={(e) => setNewTeam({ ...newTeam, members: e.target.value.split(',').map(m => m.trim()) })}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
+              placeholder="Members (comma-separated emails)"
+              aria-label="Team Members"
+            />
+            <button
+              type="submit"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              aria-label="Create Team"
+            >
+              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Create Team
+            </button>
+          </form>
+          {(project.teams || []).length === 0 ? (
+            <p className="text-saffron-yellow font-inter flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No teams yet.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {project.teams.map((team) => (
+                <div key={team._id} className="team-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={user.profilePicture || 'https://via.placeholder.com/32'}
+                      alt="Team creator's profile"
+                      className="w-8 h-8 rounded-full profile-pic"
+                    />
+                    <div>
+                      <p className="text-indigo-vivid font-orbitron font-medium">{team.name}</p>
+                      <p className="text-lavender-gray font-inter">Members: {team.members.join(', ')}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Invite Users */}
+        <div className="invite-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
+          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
+            <Users className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Invite Users
+          </h2>
+          <form onSubmit={handleInviteUser}>
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
+              placeholder="Enter email to invite"
+              aria-label="Invite Email"
+            />
+            <button
+              type="submit"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              aria-label="Invite User"
+            >
+              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Invite
+            </button>
+          </form>
+        </div>
+
+        {/* Suggestions Section */}
+        <div className="suggestions-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
+          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
+            <MessageSquare className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Suggestions
+          </h2>
+          <form onSubmit={handleAddSuggestion} className="mb-4">
+            <textarea
+              value={newSuggestion}
+              onChange={(e) => setNewSuggestion(e.target.value)}
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
+              placeholder="Add a suggestion..."
+              rows="3"
+              aria-label="Suggestion"
+            ></textarea>
+            <button
+              type="submit"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              aria-label="Add Suggestion"
+            >
+              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Add Suggestion
+            </button>
+          </form>
+          {(project.suggestions || []).length === 0 ? (
+            <p className="text-saffron-yellow font-inter flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No suggestions yet.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {project.suggestions.map((suggestion, index) => (
+                <div key={index} className="suggestion-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={user.profilePicture || 'https://via.placeholder.com/32'}
+                      alt={`${suggestion.user}'s profile`}
+                      className="w-8 h-8 rounded-full profile-pic"
+                    />
+                    <div>
+                      <p className="text-lavender-gray font-inter">{suggestion.content}</p>
+                      <p className="text-lavender-gray text-sm font-inter">By {suggestion.user}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Notification Settings */}
+        <div className="notification-settings-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
+          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
+            <Settings className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Notification Settings
+          </h2>
+          <form onSubmit={handleUpdateNotificationSettings}>
+            <div className="flex items-center gap-2 mb-2">
               <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                aria-label="Type a message"
+                type="checkbox"
+                id="emailNotifications"
+                checked={notificationSettings.emailNotifications}
+                onChange={(e) => setNotificationSettings({ ...notificationSettings, emailNotifications: e.target.checked })}
+                className="focus:ring-indigo-vivid"
+                aria-label="Email Notifications"
               />
-              <button
-                onClick={handleSendMessage}
-                className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                aria-label="Send message"
-              >
-                <Send className="w-5 h-5 mr-2" aria-hidden="true" /> Send
-              </button>
+              <label htmlFor="emailNotifications" className="text-lavender-gray font-inter">Email Notifications</label>
             </div>
-          </div>
-
-          <div className="activity-log-section mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <BarChart className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Activity Log
-            </h2>
-            <div className="flex gap-2 mb-4">
-              {['All', 'Create', 'Update', 'Invite', 'Post', 'Comment', 'Task-Create', 'Task-Update'].map(filter => (
-                <button
-                  key={filter}
-                  onClick={() => setActivityFilter(filter)}
-                  className={`btn-primary rounded-full px-3 py-1 ${activityFilter === filter ? 'bg-holo-pink' : ''} focus:outline-none focus:ring-2 focus:ring-holo-blue`}
-                  aria-label={`Filter activity by ${filter}`}
-                >
-                  {filter}
-                </button>
-              ))}
+            <div className="flex items-center gap-2 mb-4">
+              <input
+                type="checkbox"
+                id="inAppNotifications"
+                checked={notificationSettings.inAppNotifications}
+                onChange={(e) => setNotificationSettings({ ...notificationSettings, inAppNotifications: e.target.checked })}
+                className="focus:ring-indigo-vivid"
+                aria-label="In-App Notifications"
+              />
+              <label htmlFor="inAppNotifications" className="text-lavender-gray font-inter">In-App Notifications</label>
             </div>
-            {filteredActivityLog.length === 0 ? (
-              <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No activity yet.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {filteredActivityLog.map((log, index) => (
-                  <div key={index} className="log-item card p-4 glassmorphic animate-fade-in">
-                    <p className="text-holo-gray">{log.message}</p>
-                    <p className="text-holo-gray text-sm">By: {log.user}</p>
-                    <p className="text-holo-gray text-sm">{new Date(log.timestamp).toLocaleString()}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="suggestions-section mb-6">
-            <h2 className="text-2xl font-inter text-holo-blue mb-4 flex items-center">
-              <Lightbulb className="w-5 h-5 mr-2 text-holo-pink animate-pulse" aria-hidden="true" /> Suggestions
-            </h2>
-            <form onSubmit={handleSubmitSuggestion} className="mb-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newSuggestion}
-                  onChange={(e) => setNewSuggestion(e.target.value)}
-                  placeholder="Suggest a change..."
-                  className="input-field w-full rounded-full focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  aria-label="Suggest a change"
-                />
-                <button type="submit" className="btn-primary rounded-full flex items-center animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Submit suggestion">
-                  <Send className="w-5 h-5 mr-2" aria-hidden="true" /> Submit
-                </button>
-              </div>
-            </form>
-            {project.suggestions.length === 0 ? (
-              <p className="text-holo-gray flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-holo-pink animate-pulse" aria-hidden="true" /> No suggestions yet.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {project.suggestions.map((suggestion, index) => (
-                  <div key={index} className="suggestion-item card p-4 glassmorphic animate-fade-in">
-                    <p className="text-holo-gray">{suggestion.content}</p>
-                    <p className="text-holo-gray text-sm">By: {suggestion.author}</p>
-                    <p className="text-holo-gray text-sm">{new Date(suggestion.timestamp).toLocaleString()}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            <button
+              type="submit"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              aria-label="Save Notification Settings"
+            >
+              Save Settings
+            </button>
+          </form>
         </div>
       </div>
-
-      {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-holo-bg-light p-6 rounded-lg max-w-md w-full glassmorphic relative z-[60]">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-inter text-holo-blue">Notification Settings</h2>
-              <button onClick={() => setShowSettings(false)} className="text-holo-gray hover:text-holo-blue z-70 focus:outline-none focus:ring-2 focus:ring-holo-blue" aria-label="Close settings">
-                <X className="w-6 h-6" aria-hidden="true" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.email}
-                  onChange={(e) => setNotificationSettings({ ...notificationSettings, email: e.target.checked })}
-                  className="form-checkbox focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  aria-label="Enable email notifications"
-                />
-                <span className="text-holo-gray">Email Notifications</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.sms}
-                  onChange={(e) => setNotificationSettings({ ...notificationSettings, sms: e.target.checked })}
-                  className="form-checkbox focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  aria-label="Enable SMS notifications"
-                />
-                <span className="text-holo-gray">SMS Notifications</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.inApp}
-                  onChange={(e) => setNotificationSettings({ ...notificationSettings, inApp: e.target.checked })}
-                  className="form-checkbox focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                  aria-label="Enable in-app notifications"
-                />
-                <span className="text-holo-gray">In-App Notifications</span>
-              </label>
-              <button
-                onClick={handleUpdateNotificationSettings}
-                className="btn-primary rounded-full w-full animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
-                aria-label="Save notification settings"
-              >
-                Save Settings
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

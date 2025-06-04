@@ -27,9 +27,12 @@ axiosInstance.interceptors.request.use(
 export const createProject = async (projectData) => {
   try {
     const response = await axiosInstance.post('/', projectData);
+    if (!response.data || !response.data._id) {
+      throw new Error('Invalid project data returned from server');
+    }
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Failed to create project');
+    throw new Error(error.response?.data?.message || 'Failed to create project. Please ensure the backend server is running.');
   }
 };
 

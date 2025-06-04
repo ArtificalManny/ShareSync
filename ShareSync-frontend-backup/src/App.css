@@ -4,15 +4,15 @@
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Light theme with soft gradients */
+/* Light theme with vibrant gradients (futuristic 2025 look) */
 .app-container[data-theme="light"] {
   background: linear-gradient(135deg, #f5f7fa 0%, #e0e7ff 100%);
-  color: #1a202c;
+  color: #1e3a8a;
 }
 
-/* Dark theme with deep tones */
+/* Dark theme with immersive tones */
 .app-container[data-theme="dark"] {
-  background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+  background: linear-gradient(135deg, #1e3a8a 0%, #2d3748 100%);
   color: #e2e8f0;
 }
 
@@ -23,42 +23,71 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Typography */
+/* Typography (Inspired by "Thinking with Type") */
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Orbitron', sans-serif;
   letter-spacing: 0.05em;
+  font-weight: 700;
 }
 
-/* Color palette */
-.text-blue-500 {
-  color: #3b82f6;
+/* New Color Palette */
+.text-emerald-green {
+  color: #2dd4bf; /* Primary color for headings and actions */
 }
 
-.text-teal-400 {
-  color: #2dd4bf;
+.text-saffron-yellow {
+  color: #f4d03f; /* Secondary color for highlights */
 }
 
-.text-gray-400 {
-  color: #9ca3af;
+.text-indigo-vivid {
+  color: #4f46e5; /* Interactive elements */
 }
 
-.text-gray-200 {
-  color: #e5e7eb;
+.text-crimson-red {
+  color: #dc2626; /* Errors and alerts */
 }
 
-.text-light-text {
-  color: #e2e8f0;
+.text-lavender-gray {
+  color: #c4b5fd; /* Secondary text */
 }
 
-[data-theme="light"] .text-light-text {
-  color: #1a202c;
+.text-charcoal-gray {
+  color: #4b5563; /* Neutral elements */
 }
 
-.bg-teal-500 {
+.text-midnight-navy {
+  color: #1e3a8a; /* Dark theme text */
+}
+
+.text-neon-coral {
+  color: #ff6e7f; /* Futuristic hover effects */
+}
+
+.bg-emerald-green {
   background-color: #2dd4bf;
 }
 
-/* Animations */
+.bg-saffron-yellow {
+  background-color: #f4d03f;
+}
+
+.bg-indigo-vivid {
+  background-color: #4f46e5;
+}
+
+.bg-crimson-red {
+  background-color: #dc2626;
+}
+
+.bg-midnight-navy {
+  background-color: #1e3a8a;
+}
+
+.bg-neon-coral {
+  background-color: #ff6e7f;
+}
+
+/* Animations (Futuristic Interactions) */
 .animate-pulse {
   animation: pulse 1.5s infinite;
 }
@@ -73,6 +102,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .animate-slide-down {
   animation: slideDown 0.5s ease-out forwards;
+}
+
+.animate-orbit {
+  animation: orbit 10s linear infinite;
 }
 
 @keyframes pulse {
@@ -108,8 +141,13 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+@keyframes orbit {
+  0% { transform: rotate(0deg) translateX(5px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(5px) rotate(-360deg); }
+}
+
 .loader {
-  border: 4px solid #9ca3af;
+  border: 4px solid #4b5563;
   border-top: 4px solid transparent;
   border-radius: 50%;
   width: 36px;
@@ -122,7 +160,7 @@ h1, h2, h3, h4, h5, h6 {
   100% { transform: rotate(360deg); }
 }
 
-/* Holographic effect */
+/* Holographic effect (futuristic shine) */
 .holographic-effect {
   position: relative;
   overflow: hidden;
@@ -138,7 +176,7 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(156, 163, 175, 0.2),
+    rgba(255, 110, 127, 0.2),
     transparent
   );
   animation: holographicShine 3s infinite;
@@ -152,7 +190,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Accessibility Enhancements */
 :focus {
-  outline: 2px solid #9ca3af;
+  outline: 2px solid #4b5563;
   outline-offset: 2px;
 }
 
@@ -167,26 +205,26 @@ h1, h2, h3, h4, h5, h6 {
   border: 0;
 }
 
-/* Card styles with subtle 3D effects */
+/* Card styles with subtle effects (Geometry of Design) */
 .card {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 1rem;
-  border: 1px solid rgba(156, 163, 175, 0.3);
+  border: 1px solid rgba(107, 114, 128, 0.3);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 128, 255, 0.2);
+  box-shadow: 0 5px 10px rgba(45, 212, 191, 0.3);
 }
 
-/* Glassmorphic effect */
+/* Glassmorphic effect (futuristic transparency) */
 .glassmorphic {
   background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(15px);
   border-radius: 1rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(156, 163, 175, 0.3);
+  border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
 /* Input fields */
@@ -198,31 +236,79 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Inter', sans-serif;
   font-size: 1rem;
   line-height: 1.5;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.1s ease;
 }
 
 [data-theme="light"] .input-field {
   background: rgba(0, 0, 0, 0.05);
-  color: #1a202c;
+  color: #1e3a8a;
 }
 
 .input-field:focus {
   outline: none;
-  box-shadow: 0 0 0 2px #9ca3af;
+  box-shadow: 0 0 0 2px #4b5563;
+  transform: scale(1.01);
 }
 
-/* Buttons */
+/* Buttons (Inspired by "The Principles of Beautiful Web Design") */
 .btn-primary {
-  background-color: #9ca3af;
-  color: #1a202c;
+  background-color: #2dd4bf;
+  color: #ffffff;
   padding: 0.75rem 1.5rem;
   border: none;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
 }
 
 .btn-primary:hover {
-  background-color: #3b82f6;
+  background-color: #26a69a;
   transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(255, 110, 127, 0.5);
+}
+
+/* Profile picture styles */
+.profile-pic {
+  border-radius: 50%;
+  object-fit: cover;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.profile-pic:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(255, 110, 127, 0.5);
+}
+
+/* 3D effect for cards */
+.card-3d {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+}
+
+.card-3d:hover {
+  transform: rotateY(10deg) rotateX(5deg);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for a futuristic look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e3a8a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2dd4bf;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff6e7f;
 }

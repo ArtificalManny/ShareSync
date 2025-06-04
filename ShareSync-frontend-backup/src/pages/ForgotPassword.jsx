@@ -1,67 +1,96 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { AuthContext } from '../AuthContext';
+import { Mail, AlertCircle } from 'lucide-react';
 import './ForgotPassword.css';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
+  const { forgotPassword, isAuthenticated, isLoading, authError, setAuthError } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState('');
+
+  React.useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isLoading, isAuthenticated, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setMessage('');
-    setIsSubmitting(true);
+    setSuccess('');
+    setAuthError(null);
 
-    try {
-      const response = await axios.post('http://localhost:3000/api/auth/forgot-password', { email });
-      setMessage(response.data.message || 'Password reset link sent to your email.');
-      setTimeout(() => navigate('/login'), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send password reset link. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    if (!email.trim()) {
+      setError('Please enter your email.');
+      return;
+    }
+
+    const success = await forgotPassword(email);
+    if (success) {
+      setSuccess('Password reset link sent to your email.');
+    } else {
+      setError('Failed to send reset link. Please try again.');
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="forgot-password-container flex items-center justify-center min-h-screen">
+        <div className="loader" aria-label="Loading forgot password page"></div>
+        <span className="text-saffron-yellow text-xl font-orbitron ml-4">Loading...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="forgot-password-container flex items-center justify-center min-h-screen">
-      <div className="forgot-password-card card p-6 glassmorphic max-w-md w-full">
-        <h2 className="text-2xl font-inter text-holo-blue mb-4 text-center">Forgot Password</h2>
-        {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
-        {message && <p className="text-green-500 mb-4 text-center">{message}</p>}
+    <div className="forgot-password-container">
+      <div className="forgot-password-card card p-6 glassmorphic card-3d">
+        <h2 className="text-3xl font-orbitron font-bold text-emerald-green mb-6 text-center">Forgot Password</h2>
+        {(error || authError) && (
+          <p className="text-crimson-red mb-4 text-center font-inter flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" aria-hidden="true" /> {error || authError}
+          </p>
+        )}
+        {success && (
+          <p className="text-emerald-green mb-4 text-center font-inter flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" aria-hidden="true" /> {success}
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-holo-gray mb-2">Email Address</label>
+          <div className="mb-6">
+            <label htmlFor="email" className="block text-saffron-yellow mb-2 font-inter flex items-center gap-2">
+              <Mail className="w-5 h-5" aria-hidden="true" /> Email
+            </label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-holo-blue"
+              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
               placeholder="Enter your email"
-              required
-              aria-label="Email Address"
+              aria-label="Email"
             />
           </div>
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="btn-primary w-full rounded-full animate-glow focus:outline-none focus:ring-2 focus:ring-holo-blue"
-            aria-label={isSubmitting ? "Submitting..." : "Send Reset Link"}
+            className="btn-primary w-full rounded-full flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+            aria-label="Send reset link"
           >
-            {isSubmitting ? 'Submitting...' : 'Send Reset Link'}
+            Send Reset Link
           </button>
         </form>
-        <p className="text-holo-gray text-center mt-4">
-          Remember your password?{' '}
-          <Link to="/login" className="text-holo-blue hover:underline focus:outline-none focus:ring-2 focus:ring-holo-blue">
-            Log in
+        <div className="mt-4 text-center">
+          <Link
+            to="/login"
+            className="text-indigo-vivid hover:underline text-sm font-inter focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+            aria-label="Back to login"
+          >
+            Back to Login
           </Link>
-        </p>
+        </div>
       </div>
     </div>
   );
