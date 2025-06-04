@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import { fetchLeaderboard } from '../services/project.js';
-import { fetchUser } from '../services/auth.js';
+import { fetchUser } from '../services/auth.js'; // Ensure correct import
 import { Edit, X, Folder, Award, Star } from 'lucide-react';
 import './Profile.css';
 
