@@ -18,7 +18,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
   };
 
   return (
-    <div className="feed-item bg-white border border-gray-200 p-4 rounded-md shadow-sm">
+    <div className="feed-item bg-white border border-gray-200 p-4 rounded-lg shadow-sm transition-shadow hover:shadow-md">
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           <img
