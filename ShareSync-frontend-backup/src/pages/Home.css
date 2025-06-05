@@ -13,13 +13,18 @@
   z-index: 50;
 }
 
-.left-sidebar, .right-sidebar {
-  background: #f5f5f5 !important;
+.left-sidebar {
+  background: #1f2937 !important;
+}
+
+.right-sidebar {
+  background: #f7fafc !important;
 }
 
 .main-content {
   max-width: 600px;
   margin: 0 auto;
+  background: #ffffff !important;
 }
 
 .feed-container {

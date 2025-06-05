@@ -7,13 +7,13 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
     switch (type) {
       case 'announcement':
       case 'update':
-        return <FileText className="w-5 h-5 text-blue-600" aria-hidden="true" />;
+        return <FileText className="w-5 h-5 text-blue-accent" aria-hidden="true" />;
       case 'task-complete':
-        return <CheckSquare className="w-5 h-5 text-green-500" aria-hidden="true" />;
+        return <CheckSquare className="w-5 h-5 text-teal-accent" aria-hidden="true" />;
       case 'file':
-        return <Paperclip className="w-5 h-5 text-purple-500" aria-hidden="true" />;
+        return <Paperclip className="w-5 h-5 text-orange-accent" aria-hidden="true" />;
       default:
-        return <AlertCircle className="w-5 h-5 text-gray-600" aria-hidden="true" />;
+        return <AlertCircle className="w-5 h-5 text-red-accent" aria-hidden="true" />;
     }
   };
 
@@ -27,7 +27,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
             className="w-10 h-10 rounded-full border border-gray-300"
           />
           <div>
-            <Link to={`/projects/${item.projectId}`} className="text-blue-600 font-orbitron font-medium hover:underline">
+            <Link to={`/projects/${item.projectId}`} className="text-blue-accent font-orbitron font-medium hover:underline">
               {item.projectTitle}
             </Link>
             <p className="text-gray-500 text-sm font-inter">Posted by {item.user || item.author} • {new Date(item.timestamp).toLocaleString()}</p>
@@ -43,9 +43,9 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
         )}
         {item.type === 'announcement' && (
           <p className="text-gray-700 font-inter">
-            <span className="font-medium text-blue-600">Announcement:</span> {item.content.split(/(@\w+)/g).map((part, i) =>
+            <span className="font-medium text-blue-accent">Announcement:</span> {item.content.split(/(@\w+)/g).map((part, i) =>
               part.match(/@\w+/) ? (
-                <span key={i} className="text-purple-500 font-bold hover:underline">
+                <span key={i} className="text-orange-accent font-bold hover:underline">
                   {part}
                 </span>
               ) : (
@@ -56,9 +56,9 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
         )}
         {item.type === 'update' && (
           <p className="text-gray-700 font-inter">
-            <span className="font-medium text-blue-600">Update:</span> {item.content.split(/(@\w+)/g).map((part, i) =>
+            <span className="font-medium text-blue-accent">Update:</span> {item.content.split(/(@\w+)/g).map((part, i) =>
               part.match(/@\w+/) ? (
-                <span key={i} className="text-purple-500 font-bold hover:underline">
+                <span key={i} className="text-orange-accent font-bold hover:underline">
                   {part}
                 </span>
               ) : (
@@ -74,28 +74,28 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
         )}
         {item.type === 'file' && (
           <p className="text-gray-700 font-inter">
-            {item.user} {item.message} - <a href={item.url} className="text-blue-600 hover:underline">View File</a>
+            {item.user} {item.message} - <a href={item.url} className="text-blue-accent hover:underline">View File</a>
           </p>
         )}
       </div>
       <div className="flex gap-4 mt-2 border-t border-gray-200 pt-2">
         <button
           onClick={() => handleLike(index)}
-          className="flex items-center gap-1 text-gray-600 hover:text-orange-500 focus:outline-none focus:ring-2 focus:ring-blue-500 micro-gradient"
+          className="flex items-center gap-1 text-gray-600 hover:text-orange-accent focus:outline-none focus:ring-2 focus:ring-blue-accent micro-gradient"
           aria-label={`Like feed item ${index}`}
         >
           <ThumbsUp className="w-4 h-4" aria-hidden="true" /> {item.likes}
         </button>
         <button
           onClick={() => toggleComments(index)}
-          className="flex items-center gap-1 text-gray-600 hover:text-purple-500 focus:outline-none focus:ring-2 focus:ring-blue-500 micro-gradient"
+          className="flex items-center gap-1 text-gray-600 hover:text-teal-accent focus:outline-none focus:ring-2 focus:ring-blue-accent micro-gradient"
           aria-label={`Toggle comments for feed item ${index}`}
         >
           <MessageSquare className="w-4 h-4" aria-hidden="true" /> {item.comments.length}
         </button>
         <button
           onClick={() => handleShare(index)}
-          className="flex items-center gap-1 text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 micro-gradient"
+          className="flex items-center gap-1 text-gray-600 hover:text-red-accent focus:outline-none focus:ring-2 focus:ring-blue-accent micro-gradient"
           aria-label={`Share feed item ${index}`}
         >
           <Share2 className="w-4 h-4" aria-hidden="true" /> {item.shares}
@@ -125,7 +125,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
                 type="text"
                 value={newComment[index] || ''}
                 onChange={(e) => setNewComment({ ...newComment, [index]: e.target.value })}
-                className="w-full p-2 bg-gray-100 text-gray-800 rounded-full font-inter border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
+                className="w-full p-2 bg-gray-100 text-gray-800 rounded-full font-inter border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-accent pl-10"
                 placeholder="Write a comment... (@username to mention)"
                 aria-label="Comment"
               />
@@ -133,7 +133,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
             </div>
             <button
               onClick={(e) => handleCommentSubmit(index, { preventDefault: () => {}, target: e.target })}
-              className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 micro-gradient"
+              className="bg-red-accent text-white p-2 rounded-full hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-accent micro-gradient"
               aria-label="Submit Comment"
             >
               <Send className="w-5 h-5" aria-hidden="true" />

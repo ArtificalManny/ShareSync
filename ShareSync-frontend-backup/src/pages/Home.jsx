@@ -333,7 +333,7 @@ const Home = () => {
       <div className="home-container">
         <div className="loading-message flex items-center justify-center min-h-screen">
           <div className="loader" aria-label="Loading home page"></div>
-          <span className="text-gray-600 text-xl font-inter ml-4">Loading...</span>
+          <span className="text-gray-300 text-xl font-inter ml-4">Loading...</span>
         </div>
       </div>
     );
@@ -343,7 +343,7 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-red-500 text-lg font-inter flex items-center gap-2">
+          <p className="text-red-400 text-lg font-inter flex items-center gap-2">
             <AlertCircle className="w-5 h-5" aria-hidden="true" /> {authError || error}
           </p>
         </div>
@@ -359,27 +359,27 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-gray-600 text-lg font-inter">Unable to load user data. Please try logging in again.</p>
+          <p className="text-gray-300 text-lg font-inter">Unable to load user data. Please try logging in again.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="home-container flex flex-col min-h-screen bg-white">
+    <div className="home-container flex flex-col min-h-screen bg-dark-bg">
       {/* Header */}
-      <header className="header fixed top-0 left-0 right-0 bg-gradient-to-b from-blue-50 to-white border-b border-gray-200 z-50">
+      <header className="header fixed top-0 left-0 right-0 bg-dark-secondary border-b border-gray-600 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-orbitron font-bold text-gray-800">ShareSync</h1>
+            <h1 className="text-2xl font-orbitron font-bold text-orange-accent">ShareSync</h1>
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search projects..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-gray-50 text-gray-700 font-inter text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-10 pr-4 py-2 border border-gray-600 rounded-full bg-dark-bg text-gray-300 font-inter text-sm focus:outline-none focus:ring-2 focus:ring-teal-accent"
                 aria-label="Search projects"
               />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -387,9 +387,9 @@ const Home = () => {
               <img
                 src={user.profilePicture || 'https://via.placeholder.com/32'}
                 alt={`${user.firstName}'s profile`}
-                className="w-8 h-8 rounded-full border border-gray-300"
+                className="w-8 h-8 rounded-full border-2 border-teal-accent"
               />
-              <span className="text-gray-700 font-inter text-sm">{user.firstName}</span>
+              <span className="text-gray-300 font-inter text-sm">{user.firstName}</span>
             </Link>
           </div>
         </div>
@@ -398,21 +398,21 @@ const Home = () => {
       {/* Main Content Area */}
       <div className="flex flex-1 mt-16">
         {/* Left Sidebar */}
-        <aside className="left-sidebar w-64 bg-gray-50 border-r border-gray-200 p-4 flex-shrink-0">
+        <aside className="left-sidebar w-64 bg-dark-secondary border-r border-gray-600 p-4 flex-shrink-0">
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-4">
-              <User className="w-5 h-5 text-blue-600" aria-hidden="true" />
-              <h2 className="text-lg font-orbitron font-semibold text-gray-800">Your Profile</h2>
+              <User className="w-5 h-5 text-teal-accent" aria-hidden="true" />
+              <h2 className="text-lg font-orbitron font-semibold text-white">Your Profile</h2>
             </div>
             <div className="flex items-center gap-3 mb-4">
               <img
                 src={user.profilePicture || 'https://via.placeholder.com/40'}
                 alt={`${user.firstName}'s profile`}
-                className="w-10 h-10 rounded-full border border-gray-300"
+                className="w-10 h-10 rounded-full border-2 border-teal-accent"
               />
               <div>
-                <p className="text-gray-800 font-inter font-medium">{user.firstName} {user.lastName}</p>
-                <p className="text-gray-600 font-inter text-sm">{user.email}</p>
+                <p className="text-white font-inter font-medium">{user.firstName} {user.lastName}</p>
+                <p className="text-gray-400 font-inter text-sm">{user.email}</p>
               </div>
             </div>
             <div className="relative w-24 h-24 mx-auto">
@@ -422,7 +422,7 @@ const Home = () => {
                   cy="50"
                   r="45"
                   fill="none"
-                  stroke="#e2e8f0"
+                  stroke="#2a2e39"
                   strokeWidth="10"
                 />
                 <circle
@@ -430,37 +430,43 @@ const Home = () => {
                   cy="50"
                   r="45"
                   fill="none"
-                  stroke="#48bb78"
+                  stroke="url(#progress-gradient)"
                   strokeWidth="10"
                   strokeDasharray="283"
                   strokeDashoffset={283 * (1 - (userStats.tasksCompleted / (userStats.totalTasks || 1)))}
                   transform="rotate(-90 50 50)"
                 />
-                <text x="50" y="55" textAnchor="middle" className="text-gray-800 font-orbitron text-xl font-semibold">
+                <defs>
+                  <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style={{ stopColor: '#00c4b4', stopOpacity: 1 }} />
+                    <stop offset="100%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
+                  </linearGradient>
+                </defs>
+                <text x="50" y="55" textAnchor="middle" className="text-white font-orbitron text-xl font-semibold">
                   {Math.round((userStats.tasksCompleted / (userStats.totalTasks || 1)) * 100)}%
                 </text>
               </svg>
-              <p className="text-center text-gray-600 font-inter text-sm mt-2">Tasks Completed</p>
+              <p className="text-center text-gray-400 font-inter text-sm mt-2">Tasks Completed</p>
             </div>
           </div>
           <nav>
-            <Link to="/projects" className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-md">
-              <Folder className="w-5 h-5 text-blue-600" aria-hidden="true" />
-              <span className="text-gray-700 font-inter text-sm">Projects</span>
+            <Link to="/projects" className="flex items-center gap-2 p-2 hover:bg-dark-bg rounded-md">
+              <Folder className="w-5 h-5 text-teal-accent" aria-hidden="true" />
+              <span className="text-gray-300 font-inter text-sm">Projects</span>
             </Link>
-            <Link to={`/profile/${user.username}`} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-md">
-              <User className="w-5 h-5 text-blue-600" aria-hidden="true" />
-              <span className="text-gray-700 font-inter text-sm">Profile</span>
+            <Link to={`/profile/${user.username}`} className="flex items-center gap-2 p-2 hover:bg-dark-bg rounded-md">
+              <User className="w-5 h-5 text-teal-accent" aria-hidden="true" />
+              <span className="text-gray-300 font-inter text-sm">Profile</span>
             </Link>
           </nav>
         </aside>
 
         {/* Main Content */}
-        <main className="main-content flex-1 p-4 lg:p-6">
+        <main className="main-content flex-1 p-4 lg:p-6 bg-white">
           <div className="home-header mb-6">
             <div className="flex items-center gap-2 mb-2">
-              <Folder className="w-6 h-6 text-blue-600" aria-hidden="true" />
-              <h1 className="text-2xl font-orbitron font-semibold text-gray-800">
+              <Folder className="w-6 h-6 text-blue-accent" aria-hidden="true" />
+              <h1 className="text-2xl font-orbitron font-semibold text-black">
                 Project Activity Feed
               </h1>
             </div>
@@ -472,7 +478,7 @@ const Home = () => {
           <div className="feed-container">
             {feedItems.length === 0 ? (
               <p className="text-gray-600 flex items-center gap-2 font-inter">
-                <AlertCircle className="w-5 h-5 text-red-500" aria-hidden="true" /> No recent activity in your active projects.
+                <AlertCircle className="w-5 h-5 text-red-accent" aria-hidden="true" /> No recent activity in your active projects.
               </p>
             ) : (
               <div className="space-y-4">
@@ -498,18 +504,18 @@ const Home = () => {
         </main>
 
         {/* Right Sidebar */}
-        <aside className="right-sidebar w-80 bg-gray-50 border-l border-gray-200 p-4 flex-shrink-0">
+        <aside className="right-sidebar w-80 bg-light-bg border-l border-gray-200 p-4 flex-shrink-0">
           {/* Project Chat */}
           <div className="chat-section mb-6">
             <div className="flex items-center gap-2 mb-4">
-              <MessageCircle className="w-5 h-5 text-blue-600" aria-hidden="true" />
-              <h2 className="text-lg font-orbitron font-semibold text-gray-800">Project Chat</h2>
+              <MessageCircle className="w-5 h-5 text-blue-accent" aria-hidden="true" />
+              <h2 className="text-lg font-orbitron font-semibold text-black">Project Chat</h2>
             </div>
             <div className="mb-4">
               <select
                 value={selectedProjectId || ''}
                 onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md font-inter text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border border-gray-300 rounded-md font-inter text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-accent"
                 aria-label="Select Project for Chat"
               >
                 {(user.projects || []).filter(p => p.status !== 'Completed').map(project => (
@@ -538,13 +544,13 @@ const Home = () => {
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1 p-2 border border-gray-300 rounded-full font-inter text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 p-2 border border-gray-300 rounded-full font-inter text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-accent"
                 placeholder="Type a message..."
                 aria-label="Chat Message"
               />
               <button
                 onClick={sendMessage}
-                className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 micro-gradient"
+                className="bg-red-accent text-white p-2 rounded-full hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-accent micro-gradient"
                 aria-label="Send Message"
               >
                 <Send className="w-5 h-5" aria-hidden="true" />
@@ -555,12 +561,12 @@ const Home = () => {
           {/* Leaderboard Section */}
           <div className="leaderboard-section mb-6">
             <div className="flex items-center gap-2 mb-4">
-              <Award className="w-5 h-5 text-blue-600" aria-hidden="true" />
-              <h2 className="text-lg font-orbitron font-semibold text-gray-800">Leaderboard</h2>
+              <Award className="w-5 h-5 text-blue-accent" aria-hidden="true" />
+              <h2 className="text-lg font-orbitron font-semibold text-black">Leaderboard</h2>
             </div>
             {leaderboard.length === 0 ? (
               <p className="text-gray-600 font-inter flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-red-500" aria-hidden="true" /> No leaderboard data available.
+                <AlertCircle className="w-5 h-5 text-red-accent" aria-hidden="true" /> No leaderboard data available.
               </p>
             ) : (
               <div className="space-y-3">
@@ -573,8 +579,14 @@ const Home = () => {
                           y={100 - (entry.points / Math.max(...leaderboard.map(e => e.points)) * 80)}
                           width="40"
                           height={(entry.points / Math.max(...leaderboard.map(e => e.points)) * 80)}
-                          fill={index === 0 ? '#f6ad55' : index === 1 ? '#a0aec0' : index === 2 ? '#a78bfa' : '#e2e8f0'}
+                          fill={`url(#bar-gradient-${index})`}
                         />
+                        <defs>
+                          <linearGradient id={`bar-gradient-${index}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style={{ stopColor: index === 0 ? '#f5a623' : index === 1 ? '#00c4b4' : '#a0aec0', stopOpacity: 1 }} />
+                            <stop offset="100%" style={{ stopColor: index === 0 ? '#e69500' : index === 1 ? '#009b8b' : '#718096', stopOpacity: 1 }} />
+                          </linearGradient>
+                        </defs>
                         <text x="30" y="95" textAnchor="middle" className="text-gray-700 font-inter text-xs">{entry.username}</text>
                         <text x="30" y={100 - (entry.points / Math.max(...leaderboard.map(e => e.points)) * 80) - 5} textAnchor="middle" className="text-gray-700 font-inter text-xs">{entry.points}</text>
                       </g>
@@ -590,7 +602,7 @@ const Home = () => {
                         className="w-8 h-8 rounded-full border border-gray-300"
                       />
                       <div>
-                        <span className={`text-lg font-orbitron ${index === 0 ? 'text-orange-500' : index === 1 ? 'text-gray-500' : index === 2 ? 'text-purple-500' : 'text-gray-700'}`}>
+                        <span className={`text-lg font-orbitron ${index === 0 ? 'text-orange-accent' : index === 1 ? 'text-teal-accent' : 'text-gray-500'}`}>
                           #{index + 1}
                         </span>
                         <p className="text-gray-800 font-inter">{entry.username}</p>
@@ -614,48 +626,28 @@ const Home = () => {
           {recommendedProjects.length > 0 && (
             <div className="recommendations-section">
               <div className="flex items-center gap-2 mb-4">
-                <Briefcase className="w-5 h-5 text-blue-600" aria-hidden="true" />
-                <h2 className="text-lg font-orbitron font-semibold text-gray-800">Recommended Projects</h2>
+                <Briefcase className="w-5 h-5 text-blue-accent" aria-hidden="true" />
+                <h2 className="text-lg font-orbitron font-semibold text-black">Recommended Projects</h2>
               </div>
               <div className="space-y-3">
                 {recommendedProjects.map(project => (
                   <Link
                     key={project.id}
                     to={`/projects/${project.id}`}
-                    className="recommendation-card bg-white border border-gray-200 p-4 rounded-md block hover:border-blue-500 micro-gradient"
+                    className="recommendation-card bg-white border border-gray-200 p-4 rounded-md block hover:border-blue-accent micro-gradient"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <Folder className="w-5 h-5 text-blue-600" aria-hidden="true" />
-                      <h4 className="text-md font-orbitron font-medium text-blue-600">{project.title}</h4>
+                      <Folder className="w-5 h-5 text-blue-accent" aria-hidden="true" />
+                      <h4 className="text-md font-orbitron font-medium text-blue-accent">{project.title}</h4>
                     </div>
                     <p className="text-gray-600 text-sm font-inter">{project.reason}</p>
-                    <div className="relative w-16 h-16 mt-2">
-                      <svg className="w-full h-full" viewBox="0 0 100 100">
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="45"
-                          fill="none"
-                          stroke="#e2e8f0"
-                          strokeWidth="10"
-                        />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="45"
-                          fill="none"
-                          stroke="#a78bfa"
-                          strokeWidth="10"
-                          strokeDasharray="283"
-                          strokeDashoffset={283 * (1 - (project.activityLevel / Math.max(...recommendedProjects.map(p => p.activityLevel)) || 1))}
-                          transform="rotate(-90 50 50)"
-                        />
-                        <text x="50" y="55" textAnchor="middle" className="text-gray-800 font-orbitron text-sm font-semibold">
-                          {Math.round((project.activityLevel / Math.max(...recommendedProjects.map(p => p.activityLevel)) || 1) * 100)}%
-                        </text>
-                      </svg>
-                      <p className="text-center text-gray-600 font-inter text-xs mt-1">Activity</p>
+                    <div className="w-full h-6 mt-2 bg-gray-200 rounded-full">
+                      <div
+                        className="h-full bg-teal-accent rounded-full"
+                        style={{ width: `${(project.activityLevel / Math.max(...recommendedProjects.map(p => p.activityLevel)) || 1) * 100}%` }}
+                      ></div>
                     </div>
+                    <p className="text-gray-600 font-inter text-xs mt-1">Activity Level</p>
                   </Link>
                 ))}
               </div>
