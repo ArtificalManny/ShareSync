@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Menu, X, Users, Award } from 'lucide-react';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle } from 'lucide-react';
 import FeedItem from '../components/FeedItem';
 import { fetchLeaderboard } from '../services/project.js';
 import './Home.css';
@@ -12,10 +12,12 @@ const Home = () => {
   const [feedItems, setFeedItems] = useState([]);
   const [newComment, setNewComment] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [recommendedProjects, setRecommendedProjects] = useState([]);
   const [error, setError] = useState('');
   const [leaderboard, setLeaderboard] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -151,6 +153,7 @@ const Home = () => {
               leaderboard.forEach(entry => {
                 if (aggregated[entry.email]) {
                   aggregated[entry.email].points += entry.points;
+                  aggregated[entry.email].achievements = [...new Set([...(aggregated[entry.email].achievements || []), ...(entry.achievements || [])])];
                 } else {
                   aggregated[entry.email] = { ...entry };
                 }
@@ -165,6 +168,11 @@ const Home = () => {
         };
 
         fetchLeaderboards();
+
+        // Select the first project for chat by default
+        if (activeProjects.length > 0 && !selectedProjectId) {
+          setSelectedProjectId(activeProjects[0]._id);
+        }
       } catch (err) {
         setError('Failed to load feed items: ' + (err.message || 'Please try again.'));
         setFeedItems([]);
@@ -187,12 +195,19 @@ const Home = () => {
         });
       });
 
+      socket.on('chat-message', (message) => {
+        if (message.projectId === selectedProjectId) {
+          setMessages((prev) => [...prev, message]);
+        }
+      });
+
       return () => {
         socket.off('project-updated');
         socket.off('feed-update');
+        socket.off('chat-message');
       };
     }
-  }, [isAuthenticated, isLoading, navigate, user, socket, fetchUserData]);
+  }, [isAuthenticated, isLoading, navigate, user, socket, fetchUserData, selectedProjectId]);
 
   const handleLike = (index) => {
     setFeedItems(prevItems =>
@@ -215,6 +230,8 @@ const Home = () => {
     e.preventDefault();
     const commentText = newComment[index] || '';
     if (!commentText.trim()) return;
+
+    const mentions = commentText.match(/@(\w+)/g)?.map(mention => mention.slice(1)) || [];
 
     const newCommentData = {
       text: commentText,
@@ -243,6 +260,14 @@ const Home = () => {
           message: `${user.username} commented on your activity in project "${feedItems[index].projectTitle}"`,
         });
       }
+      if (mentions.length > 0) {
+        mentions.forEach(mentionedUser => {
+          socket.emit('notification', {
+            user: mentionedUser,
+            message: `${user.username} mentioned you in a comment in project "${feedItems[index].projectTitle}"`,
+          });
+        });
+      }
     }
   };
 
@@ -268,8 +293,22 @@ const Home = () => {
     setExpandedComments(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+  const sendMessage = () => {
+    if (!newMessage.trim() || !selectedProjectId) return;
+
+    const messageData = {
+      projectId: selectedProjectId,
+      text: newMessage,
+      user: user.email,
+      userId: user._id,
+      username: user.username,
+      profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
+      timestamp: new Date().toISOString(),
+    };
+
+    socket.emit('chat-message', messageData);
+    setMessages((prev) => [...prev, messageData]);
+    setNewMessage('');
   };
 
   if (isLoading) {
@@ -277,7 +316,7 @@ const Home = () => {
       <div className="home-container">
         <div className="loading-message flex items-center justify-center min-h-screen">
           <div className="loader" aria-label="Loading home page"></div>
-          <span className="text-saffron-yellow text-xl font-orbitron ml-4">Loading...</span>
+          <span className="text-gray-600 text-xl font-inter ml-4">Loading...</span>
         </div>
       </div>
     );
@@ -287,8 +326,8 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-crimson-red text-lg font-orbitron flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 animate-bounce" aria-hidden="true" /> {authError || error}
+          <p className="text-crimson-red text-lg font-inter flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" aria-hidden="true" /> {authError || error}
           </p>
         </div>
       </div>
@@ -303,152 +342,45 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-saffron-yellow text-lg font-orbitron">Unable to load user data. Please try logging in again.</p>
+          <p className="text-gray-600 text-lg font-inter">Unable to load user data. Please try logging in again.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="home-container flex flex-col lg:flex-row min-h-screen">
-      {/* Sidebar */}
-      <div className={`sidebar fixed lg:static inset-y-0 left-0 z-50 lg:z-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-white bg-opacity-10 p-4 flex flex-col gap-4 lg:flex glassmorphic animate-slide-down`}>
-        <div className="flex justify-between items-center mb-4 lg:mb-6">
-          <h2 className="text-xl font-orbitron font-semibold text-emerald-green">Activity Summary</h2>
-          <button
-            className="lg:hidden text-charcoal-gray focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-            onClick={toggleSidebar}
-            aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
-          >
-            <X className="w-6 h-6 animate-orbit" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <div className="space-y-4">
-            {(user.projects || []).filter(p => p.status !== 'Completed').slice(0, 5).map(project => (
-              <div key={project._id} className="sidebar-item p-3 bg-saffron-yellow bg-opacity-20 rounded-lg holographic-effect animate-fade-in">
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <img
-                      src={user.profilePicture || 'https://via.placeholder.com/32'}
-                      alt={`${user.username}'s profile`}
-                      className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
-                    />
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
-                  </div>
-                  <div>
-                    <Link to={`/projects/${project._id}`} className="text-charcoal-gray font-inter font-medium hover:underline">{project.title}</Link>
-                    <p className="text-lavender-gray text-sm font-inter">Status: {project.status}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Users className="w-4 h-4 text-charcoal-gray animate-orbit" />
-                      <span className="text-lavender-gray text-xs font-inter">{project.members?.length || 0} active users</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
+    <div className="home-container flex flex-col lg:flex-row min-h-screen bg-white">
       {/* Main Content */}
       <div className="main-content flex-1 p-4 lg:p-8">
-        <div className="flex justify-between items-center mb-4 lg:mb-6">
-          <button
-            className="lg:hidden text-charcoal-gray focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-            onClick={toggleSidebar}
-            aria-label="Open sidebar"
-          >
-            <Menu className="w-6 h-6 animate-orbit" />
-          </button>
-        </div>
-
-        <div className="home-header mb-8 glassmorphic p-6 rounded-2xl animate-slide-down">
+        <div className="home-header mb-8 p-6">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <img
-                src={user.profilePicture || 'https://via.placeholder.com/40'}
-                alt={`${user.firstName}'s profile`}
-                className="w-10 h-10 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
-              />
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
-            </div>
-            <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-2 animate-pulse">
+            <img
+              src={user.profilePicture || 'https://via.placeholder.com/40'}
+              alt={`${user.firstName}'s profile`}
+              className="w-10 h-10 rounded-full border border-gray-300"
+            />
+            <h1 className="text-3xl font-orbitron font-bold text-gray-800">
               Welcome to ShareSync, {user.firstName}!
             </h1>
           </div>
-          <p className="text-saffron-yellow text-lg font-inter animate-fade-in">
+          <p className="text-gray-600 text-lg font-inter mt-2">
             Stay connected with all your active projects in a modern workspace.
           </p>
         </div>
 
-        {/* Leaderboard Section */}
-        <div className="leaderboard-section mb-8 card p-6 glassmorphic holographic-effect card-3d animate-slide-down">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <Award className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Overall Leaderboard
-          </h2>
-          {leaderboard.length === 0 ? (
-            <p className="text-saffron-yellow font-inter flex items-center gap-2 animate-fade-in">
-              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No leaderboard data available.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {leaderboard.map((entry, index) => (
-                <div key={index} className="leaderboard-item card p-3 glassmorphic flex justify-between items-center animate-fade-in">
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <img
-                        src={entry.profilePicture || 'https://via.placeholder.com/32'}
-                        alt={`${entry.username}'s profile`}
-                        className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
-                      />
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
-                    </div>
-                    <span className={`text-xl font-orbitron ${index === 0 ? 'text-crimson-red' : index === 1 ? 'text-saffron-yellow' : 'text-indigo-vivid'}`}>
-                      #{index + 1}
-                    </span>
-                    <span className="text-lavender-gray font-inter">{entry.username}</span>
-                  </div>
-                  <span className="text-lavender-gray font-inter">{entry.points} points</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Recommendations Section */}
-        {recommendedProjects.length > 0 && (
-          <div className="recommendations-section mb-8">
-            <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 animate-slide-down">Recommended Projects</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recommendedProjects.map(project => (
-                <Link
-                  key={project.id}
-                  to={`/projects/${project.id}`}
-                  className="recommendation-card card p-4 glassmorphic animate-fade-in holographic-effect card-3d"
-                  style={{ transformStyle: 'preserve-3d' }}
-                >
-                  <h3 className="text-lg font-orbitron font-medium text-indigo-vivid">{project.title}</h3>
-                  <p className="text-saffron-yellow text-sm font-inter">{project.reason}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Feed Section */}
         <div className="feed-container">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-6 flex items-center animate-slide-down">
-            <Folder className="w-5 h-5 mr-2 text-charcoal-gray animate-orbit" aria-hidden="true" /> Project Activity Feed
+          <h2 className="text-2xl font-orbitron font-semibold text-gray-800 mb-6 flex items-center">
+            <Folder className="w-5 h-5 mr-2 text-gray-600" aria-hidden="true" /> Project Activity Feed
           </h2>
           {feedItems.length === 0 ? (
-            <p className="text-saffron-yellow flex items-center gap-2 font-inter animate-fade-in">
-              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No recent activity in your active projects.
+            <p className="text-gray-600 flex items-center gap-2 font-inter">
+              <AlertCircle className="w-5 h-5 text-gray-600" aria-hidden="true" /> No recent activity in your active projects.
             </p>
           ) : (
             <div className="space-y-6">
               {feedItems.map((item, index) => (
-                <div key={index} className="animate-fade-in">
+                <div key={index}>
                   <FeedItem
                     item={item}
                     index={index}
@@ -466,6 +398,121 @@ const Home = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Right Sidebar */}
+      <div className="sidebar w-full lg:w-80 p-4 lg:p-6 border-t lg:border-t-0 lg:border-l border-gray-200 bg-gray-50">
+        {/* Project Chat */}
+        <div className="chat-section mb-6">
+          <h3 className="text-lg font-orbitron font-semibold text-gray-800 mb-4 flex items-center">
+            <MessageCircle className="w-5 h-5 mr-2 text-gray-600" aria-hidden="true" /> Project Chat
+          </h3>
+          <div className="mb-4">
+            <select
+              value={selectedProjectId || ''}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md font-inter text-gray-700"
+              aria-label="Select Project for Chat"
+            >
+              {(user.projects || []).filter(p => p.status !== 'Completed').map(project => (
+                <option key={project._id} value={project._id}>{project.title}</option>
+              ))}
+            </select>
+          </div>
+          <div className="messages bg-white border border-gray-200 rounded-md p-4 h-64 overflow-y-auto mb-4">
+            {messages.map((msg, index) => (
+              <div key={index} className="flex items-start gap-2 mb-2">
+                <img
+                  src={msg.profilePicture}
+                  alt={`${msg.user}'s profile`}
+                  className="w-6 h-6 rounded-full border border-gray-300"
+                />
+                <div>
+                  <p className="text-gray-800 font-inter font-medium text-sm">{msg.username}</p>
+                  <p className="text-gray-700 font-inter text-sm">{msg.text}</p>
+                  <p className="text-gray-500 font-inter text-xs">{new Date(msg.timestamp).toLocaleString()}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              className="flex-1 p-2 border border-gray-300 rounded-full font-inter text-gray-700"
+              placeholder="Type a message..."
+              aria-label="Chat Message"
+            />
+            <button
+              onClick={sendMessage}
+              className="bg-emerald-green text-white p-2 rounded-full hover:bg-neon-coral focus:outline-none focus:ring-2 focus:ring-gray-300"
+              aria-label="Send Message"
+            >
+              <Send className="w-5 h-5" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        {/* Leaderboard Section */}
+        <div className="leaderboard-section mb-6">
+          <h3 className="text-lg font-orbitron font-semibold text-gray-800 mb-4 flex items-center">
+            <Award className="w-5 h-5 mr-2 text-gray-600" aria-hidden="true" /> Overall Leaderboard
+          </h3>
+          {leaderboard.length === 0 ? (
+            <p className="text-gray-600 font-inter flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-gray-600" aria-hidden="true" /> No leaderboard data available.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {leaderboard.map((entry, index) => (
+                <div key={index} className="leaderboard-item bg-white border border-gray-200 p-3 rounded-md flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={entry.profilePicture || 'https://via.placeholder.com/32'}
+                      alt={`${entry.username}'s profile`}
+                      className="w-8 h-8 rounded-full border border-gray-300"
+                    />
+                    <div>
+                      <span className={`text-lg font-orbitron ${index === 0 ? 'text-crimson-red' : index === 1 ? 'text-saffron-yellow' : 'text-indigo-vivid'}`}>
+                        #{index + 1}
+                      </span>
+                      <p className="text-gray-800 font-inter">{entry.username}</p>
+                      {entry.achievements && entry.achievements.length > 0 && (
+                        <div className="flex gap-1 mt-1">
+                          {entry.achievements.slice(0, 3).map((achievement, idx) => (
+                            <Star key={idx} className="w-4 h-4 text-yellow-500" title={achievement} aria-hidden="true" />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-gray-600 font-inter">{entry.points} points</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recommendations Section */}
+        {recommendedProjects.length > 0 && (
+          <div className="recommendations-section">
+            <h3 className="text-lg font-orbitron font-semibold text-gray-800 mb-4">Recommended Projects</h3>
+            <div className="space-y-3">
+              {recommendedProjects.map(project => (
+                <Link
+                  key={project.id}
+                  to={`/projects/${project.id}`}
+                  className="recommendation-card bg-white border border-gray-200 p-4 rounded-md block"
+                  style={{ transformStyle: 'preserve-3d' }}
+                >
+                  <h4 className="text-md font-orbitron font-medium text-indigo-vivid">{project.title}</h4>
+                  <p className="text-gray-600 text-sm font-inter">{project.reason}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
