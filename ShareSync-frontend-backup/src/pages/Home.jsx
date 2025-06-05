@@ -8,7 +8,7 @@ import './Home.css';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, authError, socket } = useContext(AuthContext);
+  const { user, isAuthenticated, isLoading, authError, socket, fetchUserData } = useContext(AuthContext);
   const [feedItems, setFeedItems] = useState([]);
   const [newComment, setNewComment] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
@@ -18,9 +18,7 @@ const Home = () => {
   const [leaderboard, setLeaderboard] = useState([]);
 
   useEffect(() => {
-    if (isLoading) {
-      return;
-    }
+    if (isLoading) return;
 
     if (!isAuthenticated) {
       navigate('/login', { replace: true });
@@ -32,140 +30,148 @@ const Home = () => {
       return;
     }
 
-    try {
-      const activeProjects = (user.projects || []).filter(project => project && project.status && project.status !== 'Completed');
+    const fetchFeedItems = () => {
+      try {
+        const activeProjects = (user.projects || []).filter(project => project && project.status && project.status !== 'Completed');
 
-      const allFeedItems = activeProjects.flatMap(project => {
-        const activityLogs = (project.activityLog || []).map(log => ({
-          projectId: project._id,
-          projectTitle: project.title,
-          type: 'activity',
-          message: log.message || 'Unknown activity',
-          user: log.user || 'Unknown user',
-          profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
-          timestamp: log.timestamp || new Date().toISOString(),
-        }));
-
-        const posts = (project.posts || []).map(post => ({
-          projectId: project._id,
-          projectTitle: project.title,
-          type: post.type || 'announcement',
-          content: post.content || 'No content',
-          author: post.author || 'Unknown author',
-          profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
-          timestamp: post.timestamp || new Date().toISOString(),
-          votes: post.votes || [],
-          options: post.options || [],
-        }));
-
-        const tasks = (project.tasks || []).filter(task => task.status === 'Completed').map(task => ({
-          projectId: project._id,
-          projectTitle: project.title,
-          type: 'task-complete',
-          message: `${task.title || 'Unnamed task'} completed`,
-          user: task.assignedTo || 'Unassigned',
-          profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
-          timestamp: task.updatedAt || new Date().toISOString(),
-        }));
-
-        const files = (project.files || []).map(file => ({
-          projectId: project._id,
-          projectTitle: project.title,
-          type: 'file',
-          message: `Shared file: ${file.name || 'Unnamed file'}`,
-          user: file.uploadedBy || 'Unknown user',
-          profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
-          timestamp: file.uploadedAt || new Date().toISOString(),
-          url: file.url || '#',
-        }));
-
-        return [...activityLogs, ...posts, ...tasks, ...files].map(item => ({
-          ...item,
-          likes: item.likes || 0,
-          comments: item.comments || [],
-          shares: item.shares || 0,
-        }));
-      });
-
-      allFeedItems.sort((a, b) => new Date(b.timestamp || new Date()) - new Date(a.timestamp || new Date()));
-      setFeedItems(allFeedItems);
-
-      const recommendProjects = () => {
-        const projectsWithActivity = activeProjects.map(project => {
-          const latestActivity = [
-            ...(project.activityLog || []),
-            ...(project.posts || []),
-            ...(project.tasks || []),
-            ...(project.files || []),
-          ].map(item => item.timestamp || new Date().toISOString())
-           .sort((a, b) => new Date(b) - new Date(a))[0];
-
-          const userInteractionCount = (project.activityLog || []).filter(log => log.user === user.email).length;
-
-          return {
-            id: project._id,
-            title: project.title,
-            latestActivity: latestActivity || new Date().toISOString(),
-            userInteractionCount,
-            hasUserInteraction: userInteractionCount > 0,
-          };
-        });
-
-        const recommendations = projectsWithActivity
-          .sort((a, b) => {
-            if (a.hasUserInteraction && !b.hasUserInteraction) return 1;
-            if (!a.hasUserInteraction && b.hasUserInteraction) return -1;
-            if (a.userInteractionCount !== b.userInteractionCount) {
-              return b.userInteractionCount - a.userInteractionCount;
-            }
-            return new Date(b.latestActivity) - new Date(a.latestActivity);
-          })
-          .slice(0, 3)
-          .map(project => ({
-            id: project.id,
-            title: project.title,
-            reason: project.hasUserInteraction
-              ? 'You’ve been active here recently'
-              : 'Active project with recent updates',
+        const allFeedItems = activeProjects.flatMap(project => {
+          const activityLogs = (project.activityLog || []).map(log => ({
+            projectId: project._id,
+            projectTitle: project.title,
+            type: 'activity',
+            message: log.message || 'Unknown activity',
+            user: log.user || 'Unknown user',
+            profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
+            timestamp: log.timestamp || new Date().toISOString(),
+            userId: log.userId || null,
           }));
 
-        setRecommendedProjects(recommendations);
-      };
+          const posts = (project.posts || []).map(post => ({
+            projectId: project._id,
+            projectTitle: project.title,
+            type: post.type || 'announcement',
+            content: post.content || 'No content',
+            author: post.author || 'Unknown author',
+            profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
+            timestamp: post.timestamp || new Date().toISOString(),
+            votes: post.votes || [],
+            options: post.options || [],
+            userId: post.userId || null,
+          }));
 
-      recommendProjects();
+          const tasks = (project.tasks || []).filter(task => task.status === 'Completed').map(task => ({
+            projectId: project._id,
+            projectTitle: project.title,
+            type: 'task-complete',
+            message: `${task.title || 'Unnamed task'} completed`,
+            user: task.assignedTo || 'Unassigned',
+            profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
+            timestamp: task.updatedAt || new Date().toISOString(),
+            userId: task.userId || null,
+          }));
 
-      const fetchLeaderboards = async () => {
-        try {
-          const projectLeaderboards = await Promise.all(
-            activeProjects.map(async (project) => {
-              const response = await fetchLeaderboard(project._id);
-              return response;
-            })
-          );
+          const files = (project.files || []).map(file => ({
+            projectId: project._id,
+            projectTitle: project.title,
+            type: 'file',
+            message: `Shared file: ${file.name || 'Unnamed file'}`,
+            user: file.uploadedBy || 'Unknown user',
+            profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
+            timestamp: file.uploadedAt || new Date().toISOString(),
+            url: file.url || '#',
+            userId: file.userId || null,
+          }));
 
-          const aggregated = {};
-          projectLeaderboards.forEach(leaderboard => {
-            leaderboard.forEach(entry => {
-              if (aggregated[entry.email]) {
-                aggregated[entry.email].points += entry.points;
-              } else {
-                aggregated[entry.email] = { ...entry };
-              }
-            });
+          return [...activityLogs, ...posts, ...tasks, ...files].map(item => ({
+            ...item,
+            likes: item.likes || 0,
+            comments: item.comments || [],
+            shares: item.shares || 0,
+          }));
+        });
+
+        allFeedItems.sort((a, b) => new Date(b.timestamp || new Date()) - new Date(a.timestamp || new Date()));
+        setFeedItems(allFeedItems);
+
+        const recommendProjects = () => {
+          const projectsWithActivity = activeProjects.map(project => {
+            const latestActivity = [
+              ...(project.activityLog || []),
+              ...(project.posts || []),
+              ...(project.tasks || []),
+              ...(project.files || []),
+            ].map(item => item.timestamp || new Date().toISOString())
+             .sort((a, b) => new Date(b) - new Date(a))[0];
+
+            const userInteractionCount = (project.activityLog || []).filter(log => log.user === user.email).length;
+
+            return {
+              id: project._id,
+              title: project.title,
+              latestActivity: latestActivity || new Date().toISOString(),
+              userInteractionCount,
+              hasUserInteraction: userInteractionCount > 0,
+            };
           });
 
-          const leaderboardArray = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 5);
-          setLeaderboard(leaderboardArray);
-        } catch (err) {
-          setLeaderboard([]);
-        }
-      };
+          const recommendations = projectsWithActivity
+            .sort((a, b) => {
+              if (a.hasUserInteraction && !b.hasUserInteraction) return 1;
+              if (!a.hasUserInteraction && b.hasUserInteraction) return -1;
+              if (a.userInteractionCount !== b.userInteractionCount) {
+                return b.userInteractionCount - a.userInteractionCount;
+              }
+              return new Date(b.latestActivity) - new Date(a.latestActivity);
+            })
+            .slice(0, 3)
+            .map(project => ({
+              id: project.id,
+              title: project.title,
+              reason: project.hasUserInteraction
+                ? 'You’ve been active here recently'
+                : 'Active project with recent updates',
+            }));
 
-      fetchLeaderboards();
-    } catch (err) {
-      setError('Failed to load feed items: ' + (err.message || 'Please try again.'));
-      setFeedItems([]);
-    }
+          setRecommendedProjects(recommendations);
+        };
+
+        recommendProjects();
+
+        const fetchLeaderboards = async () => {
+          try {
+            const projectLeaderboards = await Promise.all(
+              activeProjects.map(async (project) => {
+                const response = await fetchLeaderboard(project._id);
+                return response;
+              })
+            );
+
+            const aggregated = {};
+            projectLeaderboards.forEach(leaderboard => {
+              leaderboard.forEach(entry => {
+                if (aggregated[entry.email]) {
+                  aggregated[entry.email].points += entry.points;
+                } else {
+                  aggregated[entry.email] = { ...entry };
+                }
+              });
+            });
+
+            const leaderboardArray = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 5);
+            setLeaderboard(leaderboardArray);
+          } catch (err) {
+            setLeaderboard([]);
+          }
+        };
+
+        fetchLeaderboards();
+      } catch (err) {
+        setError('Failed to load feed items: ' + (err.message || 'Please try again.'));
+        setFeedItems([]);
+      }
+    };
+
+    fetchFeedItems();
 
     if (socket) {
       socket.on('project-updated', () => {
@@ -186,7 +192,7 @@ const Home = () => {
         socket.off('feed-update');
       };
     }
-  }, [isAuthenticated, isLoading, navigate, user, socket]);
+  }, [isAuthenticated, isLoading, navigate, user, socket, fetchUserData]);
 
   const handleLike = (index) => {
     setFeedItems(prevItems =>
@@ -196,10 +202,12 @@ const Home = () => {
     );
     if (socket) {
       socket.emit('feed-like', { item: feedItems[index], userId: user?._id });
-      socket.emit('notification', {
-        user: feedItems[index].user,
-        message: `${user.username} liked your activity in project "${feedItems[index].projectTitle}"`,
-      });
+      if (feedItems[index].userId && feedItems[index].userId !== user._id) {
+        socket.emit('notification', {
+          user: feedItems[index].userId,
+          message: `${user.username} liked your activity in project "${feedItems[index].projectTitle}"`,
+        });
+      }
     }
   };
 
@@ -211,6 +219,8 @@ const Home = () => {
     const newCommentData = {
       text: commentText,
       user: user.email || 'Anonymous',
+      userId: user._id,
+      username: user.username,
       profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
       timestamp: new Date().toISOString(),
     };
@@ -227,10 +237,12 @@ const Home = () => {
 
     if (socket) {
       socket.emit('feed-comment', { item: feedItems[index], comment: newCommentData, userId: user?._id });
-      socket.emit('notification', {
-        user: feedItems[index].user,
-        message: `${user.username} commented on your activity in project "${feedItems[index].projectTitle}"`,
-      });
+      if (feedItems[index].userId && feedItems[index].userId !== user._id) {
+        socket.emit('notification', {
+          user: feedItems[index].userId,
+          message: `${user.username} commented on your activity in project "${feedItems[index].projectTitle}"`,
+        });
+      }
     }
   };
 
@@ -243,6 +255,12 @@ const Home = () => {
     alert('Shared! (This is a mock action—implement sharing logic as needed.)');
     if (socket) {
       socket.emit('feed-share', { item: feedItems[index], userId: user?._id });
+      if (feedItems[index].userId && feedItems[index].userId !== user._id) {
+        socket.emit('notification', {
+          user: feedItems[index].userId,
+          message: `${user.username} shared your activity in project "${feedItems[index].projectTitle}"`,
+        });
+      }
     }
   };
 
@@ -269,7 +287,9 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-crimson-red text-lg font-orbitron">{authError || error}</p>
+          <p className="text-crimson-red text-lg font-orbitron flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 animate-bounce" aria-hidden="true" /> {authError || error}
+          </p>
         </div>
       </div>
     );
@@ -292,7 +312,7 @@ const Home = () => {
   return (
     <div className="home-container flex flex-col lg:flex-row min-h-screen">
       {/* Sidebar */}
-      <div className={`sidebar fixed lg:static inset-y-0 left-0 z-50 lg:z-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-saffron-yellow bg-opacity-10 p-4 flex flex-col gap-4 lg:flex glassmorphic`}>
+      <div className={`sidebar fixed lg:static inset-y-0 left-0 z-50 lg:z-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-white bg-opacity-10 p-4 flex flex-col gap-4 lg:flex glassmorphic animate-slide-down`}>
         <div className="flex justify-between items-center mb-4 lg:mb-6">
           <h2 className="text-xl font-orbitron font-semibold text-emerald-green">Activity Summary</h2>
           <button
@@ -300,7 +320,7 @@ const Home = () => {
             onClick={toggleSidebar}
             aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6 animate-orbit" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -339,11 +359,11 @@ const Home = () => {
             onClick={toggleSidebar}
             aria-label="Open sidebar"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-6 h-6 animate-orbit" />
           </button>
         </div>
 
-        <div className="home-header mb-8">
+        <div className="home-header mb-8 glassmorphic p-6 rounded-2xl animate-slide-down">
           <div className="flex items-center gap-3">
             <div className="relative">
               <img
@@ -357,18 +377,18 @@ const Home = () => {
               Welcome to ShareSync, {user.firstName}!
             </h1>
           </div>
-          <p className="text-saffron-yellow text-lg font-inter">
+          <p className="text-saffron-yellow text-lg font-inter animate-fade-in">
             Stay connected with all your active projects in a modern workspace.
           </p>
         </div>
 
         {/* Leaderboard Section */}
-        <div className="leaderboard-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
+        <div className="leaderboard-section mb-8 card p-6 glassmorphic holographic-effect card-3d animate-slide-down">
           <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
             <Award className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Overall Leaderboard
           </h2>
           {leaderboard.length === 0 ? (
-            <p className="text-saffron-yellow font-inter flex items-center gap-2">
+            <p className="text-saffron-yellow font-inter flex items-center gap-2 animate-fade-in">
               <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No leaderboard data available.
             </p>
           ) : (
@@ -399,7 +419,7 @@ const Home = () => {
         {/* Recommendations Section */}
         {recommendedProjects.length > 0 && (
           <div className="recommendations-section mb-8">
-            <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4">Recommended Projects</h2>
+            <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 animate-slide-down">Recommended Projects</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {recommendedProjects.map(project => (
                 <Link
@@ -418,11 +438,11 @@ const Home = () => {
 
         {/* Feed Section */}
         <div className="feed-container">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-6 flex items-center">
+          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-6 flex items-center animate-slide-down">
             <Folder className="w-5 h-5 mr-2 text-charcoal-gray animate-orbit" aria-hidden="true" /> Project Activity Feed
           </h2>
           {feedItems.length === 0 ? (
-            <p className="text-saffron-yellow flex items-center gap-2 font-inter">
+            <p className="text-saffron-yellow flex items-center gap-2 font-inter animate-fade-in">
               <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No recent activity in your active projects.
             </p>
           ) : (

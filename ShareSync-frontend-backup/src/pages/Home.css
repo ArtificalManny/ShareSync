@@ -1,30 +1,63 @@
 /* Home.css */
 .home-container {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .home-container {
+    flex-direction: row;
+  }
+}
+
+.home-header {
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.home-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.feed-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.feed-item {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
 }
 
 .sidebar {
-  transition: transform 0.3s ease;
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 
-.main-content {
-  flex-grow: 1;
+.leaderboard-section, .recommendations-section {
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-.feed-container, .leaderboard-section, .recommendations-section {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+.recommendation-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e5e7eb;
 }
 
-.feed-container:hover, .leaderboard-section:hover, .recommendations-section:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(45, 212, 191, 0.3);
-}
-
-.feed-item, .leaderboard-item, .recommendation-card, .sidebar-item {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.feed-item:hover, .leaderboard-item:hover, .recommendation-card:hover, .sidebar-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(45, 212, 191, 0.3);
+.leaderboard-item {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e5e7eb;
 }
