@@ -9,9 +9,9 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
       case 'update':
         return <FileText className="w-5 h-5 text-blue-accent" aria-hidden="true" />;
       case 'task-complete':
-        return <CheckSquare className="w-5 h-5 text-teal-accent" aria-hidden="true" />;
+        return <CheckSquare className="w-5 h-5 text-green-accent" aria-hidden="true" />;
       case 'file':
-        return <Paperclip className="w-5 h-5 text-orange-accent" aria-hidden="true" />;
+        return <Paperclip className="w-5 h-5 text-purple-accent" aria-hidden="true" />;
       default:
         return <AlertCircle className="w-5 h-5 text-red-accent" aria-hidden="true" />;
     }
@@ -45,7 +45,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
           <p className="text-gray-700 font-inter">
             <span className="font-medium text-blue-accent">Announcement:</span> {item.content.split(/(@\w+)/g).map((part, i) =>
               part.match(/@\w+/) ? (
-                <span key={i} className="text-orange-accent font-bold hover:underline">
+                <span key={i} className="text-purple-accent font-bold hover:underline">
                   {part}
                 </span>
               ) : (
@@ -58,7 +58,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
           <p className="text-gray-700 font-inter">
             <span className="font-medium text-blue-accent">Update:</span> {item.content.split(/(@\w+)/g).map((part, i) =>
               part.match(/@\w+/) ? (
-                <span key={i} className="text-orange-accent font-bold hover:underline">
+                <span key={i} className="text-purple-accent font-bold hover:underline">
                   {part}
                 </span>
               ) : (
@@ -88,7 +88,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
         </button>
         <button
           onClick={() => toggleComments(index)}
-          className="flex items-center gap-1 text-gray-600 hover:text-teal-accent focus:outline-none focus:ring-2 focus:ring-blue-accent micro-gradient"
+          className="flex items-center gap-1 text-gray-600 hover:text-purple-accent focus:outline-none focus:ring-2 focus:ring-blue-accent micro-gradient"
           aria-label={`Toggle comments for feed item ${index}`}
         >
           <MessageSquare className="w-4 h-4" aria-hidden="true" /> {item.comments.length}

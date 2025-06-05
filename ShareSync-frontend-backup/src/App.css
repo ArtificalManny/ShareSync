@@ -10,19 +10,17 @@
   --charcoal-gray: #4b5563;
   --midnight-navy: #1e3a8a;
   --neon-coral: #ff6e7f;
-  --dark-bg: #131722;
-  --dark-secondary: #1f2937;
-  --light-bg: #f7fafc;
   --white: #ffffff;
   --black: #1a202c;
-  --gray-300: #a0aec0;
-  --gray-400: #4a4e5a;
   --gray-600: #718096;
-  --gray-200: #e2e8f0;
-  --orange-accent: #f5a623;
-  --teal-accent: #00c4b4;
+  --gray-200: #e5e7eb;
+  --dark-bg: #1a202c;
+  --light-bg: #f0f2f5;
+  --blue-accent: #1877f2;
   --red-accent: #e63946;
-  --blue-accent: #2b6cb0;
+  --green-accent: #48bb78;
+  --orange-accent: #f6ad55;
+  --purple-accent: #a78bfa;
 }
 
 * {
@@ -33,8 +31,8 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background: var(--dark-bg);
-  color: var(--white);
+  background: var(--white);
+  color: var(--black);
   min-height: 100vh;
 }
 
@@ -53,11 +51,12 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 0.5rem;
   background: rgba(255, 255, 255, 0.05);
   padding: 1rem;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
   border-color: var(--blue-accent);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .micro-gradient {
@@ -74,7 +73,7 @@ h1, h2, h3, h4, h5, h6 {
   height: 100%;
   background: linear-gradient(
     to right,
-    rgba(43, 108, 176, 0.05),
+    rgba(24, 119, 242, 0.05),
     transparent
   );
   pointer-events: none;
@@ -95,7 +94,7 @@ h1, h2, h3, h4, h5, h6 {
 .input-field {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--white);
+  color: var(--black);
   padding: 0.5rem;
 }
 
@@ -141,5 +140,5 @@ body::before {
 :focus-visible {
   outline: 2px solid var(--blue-accent);
   outline-offset: 2px;
-  box-shadow: 0 0 8px rgba(43, 108, 176, 0.3);
+  box-shadow: 0 0 8px rgba(24, 119, 242, 0.3);
 }

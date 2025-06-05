@@ -14,11 +14,11 @@
 }
 
 .left-sidebar {
-  background: #1f2937 !important;
+  background: #1a202c !important;
 }
 
 .right-sidebar {
-  background: #f7fafc !important;
+  background: #f0f2f5 !important;
 }
 
 .main-content {
@@ -33,8 +33,8 @@
 
 .feed-item {
   background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  margin-bottom: 1rem;
+  border: 1px solid #e5e7eb !important;
+  margin-bottom: 1.5rem;
 }
 
 .chat-section, .leaderboard-section, .recommendations-section {
@@ -43,15 +43,15 @@
 
 .recommendation-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e5e7eb;
 }
 
 .leaderboard-item {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e5e7eb;
 }
 
 .messages {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e5e7eb;
 }
