@@ -5,6 +5,23 @@
 
 .profile-header {
   background: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(45, 212, 191, 0.1),
+    transparent
+  );
+  pointer-events: none;
 }
 
 .profile-details {

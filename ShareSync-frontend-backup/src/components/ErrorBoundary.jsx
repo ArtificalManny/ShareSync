@@ -15,13 +15,13 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-boundary flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-4">Something Went Wrong</h1>
+        <div className="error-boundary flex items-center justify-center min-h-screen glassmorphic">
+          <div className="text-center card p-6 glassmorphic card-3d animate-slide-down">
+            <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-4 animate-pulse">Something Went Wrong</h1>
             <p className="text-saffron-yellow text-lg font-inter mb-4">{this.state.error?.message || 'An unexpected error occurred.'}</p>
             <Link
               to="/"
-              className="text-indigo-vivid hover:underline text-base font-orbitron focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+              className="text-indigo-vivid hover:underline text-base font-orbitron focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
             >
               Return to Home
             </Link>

@@ -20,16 +20,12 @@ const Projects = () => {
     }
 
     if (socket) {
-      socket.on('project-created', (data) => {
-        if (user && data.userId !== user._id) {
-          fetchUserData();
-        }
+      socket.on('project-created', () => {
+        fetchUserData(); // Refresh user data to update project list
       });
 
-      socket.on('project-updated', (data) => {
-        if (user && data.userId !== user._id) {
-          fetchUserData();
-        }
+      socket.on('project-updated', () => {
+        fetchUserData();
       });
 
       return () => {
@@ -59,10 +55,12 @@ const Projects = () => {
       setTitle('');
       setDescription('');
       setCategory('Personal');
+      // Update projects list locally
+      setProjects((prevProjects) => [...prevProjects, newProject]);
       // Redirect to ProjectHome page for the new project
       navigate(`/projects/${newProject._id}`);
     } catch (err) {
-      setError('Failed to create project: ' + (err.message || 'Please check if the backend server is running and try again.'));
+      setError(err.message || 'Failed to create project. Please check if the backend server is running and try again.');
     }
   };
 
@@ -99,12 +97,16 @@ const Projects = () => {
   return (
     <div className="projects-container">
       <div className="projects-header py-8 px-6 rounded-b-3xl text-center glassmorphic">
-        <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-4">Your Projects</h1>
+        <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-4 animate-pulse">Your Projects</h1>
         <p className="text-saffron-yellow text-lg font-inter mb-4">Manage and collaborate on your projects.</p>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        {error && <p className="text-crimson-red mb-4 text-center font-orbitron">{error}</p>}
+        {error && (
+          <p className="text-crimson-red mb-4 text-center font-orbitron flex items-center gap-2 justify-center">
+            <AlertCircle className="w-5 h-5 animate-bounce" aria-hidden="true" /> {error}
+          </p>
+        )}
 
         {/* Create Project Form */}
         <form onSubmit={handleCreateProject} className="mb-8 card p-6 glassmorphic holographic-effect card-3d">
@@ -153,7 +155,7 @@ const Projects = () => {
           </div>
           <button
             type="submit"
-            className="btn-primary mt-4 rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+            className="btn-primary mt-4 rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
             aria-label="Create Project"
           >
             <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Create Project
@@ -163,7 +165,7 @@ const Projects = () => {
         {/* Project List */}
         <div className="projects-list">
           <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <Folder className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> All Projects
+            <Folder className="w-5 h-5 mr-2 text-charcoal-gray animate-orbit" aria-hidden="true" /> All Projects
           </h2>
           {projects.length === 0 ? (
             <p className="text-saffron-yellow flex items-center gap-2 font-inter">
@@ -175,15 +177,18 @@ const Projects = () => {
                 <Link
                   key={project._id}
                   to={`/projects/${project._id}`}
-                  className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-charcoal-gray card-3d"
+                  className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-charcoal-gray card-3d animate-fade-in"
                   aria-label={`View project ${project.title}`}
                 >
-                  <h3 className="text-lg font-orbitron font-bold text-indigo-vivid">{project.title || 'Untitled Project'}</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Folder className="w-5 h-5 text-indigo-vivid animate-pulse" aria-hidden="true" />
+                    <h3 className="text-lg font-orbitron font-bold text-indigo-vivid">{project.title || 'Untitled Project'}</h3>
+                  </div>
                   <p className="text-saffron-yellow text-sm mb-1 font-inter">{project.description || 'No description'}</p>
                   <p className="text-saffron-yellow text-sm font-inter">Category: {project.category || 'Unknown'}</p>
                   <p className="text-saffron-yellow text-sm font-inter">Status: {project.status || 'Not Started'}</p>
                   <div className="flex items-center gap-2 mt-2">
-                    <Users className="w-4 h-4 text-charcoal-gray" aria-hidden="true" />
+                    <Users className="w-4 h-4 text-charcoal-gray animate-orbit" aria-hidden="true" />
                     <span className="text-lavender-gray text-xs font-inter">{project.members?.length || 0} members</span>
                   </div>
                 </Link>

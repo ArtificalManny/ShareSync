@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import { fetchLeaderboard } from '../services/project.js';
-import { fetchUser } from '../services/auth.js'; // Ensure correct import
+import { fetchUser } from '../services/auth.js';
 import { Edit, X, Folder, Award, Star } from 'lucide-react';
 import './Profile.css';
 
@@ -168,28 +168,35 @@ const Profile = () => {
     Job: (profile.projects || []).filter(p => p.category === 'Job') || [],
     Personal: (profile.projects || []).filter(p => p.category === 'Personal') || [],
   };
-  const publicProjects = (profile.projects || []).filter(p => p.status !== 'Completed').slice(0, 3); // Limit to 3 for visitors
+  const publicProjects = (profile.projects || []).filter(p => p.status !== 'Completed').slice(0, 3);
 
   return (
     <div className="profile-container min-h-screen">
-      <div className="profile-header relative">
+      <div className="profile-header relative glassmorphic">
         <img
           src={isEditing ? formData.bannerPicture : profile.bannerPicture}
           alt="Profile banner"
-          className="w-full h-48 object-cover rounded-b-3xl shadow-lg"
+          className="w-full h-48 object-cover rounded-b-3xl shadow-lg animate-fade-in"
         />
         <div className="absolute bottom-0 left-6 transform translate-y-1/2">
-          <img
-            src={isEditing ? formData.profilePicture : profile.profilePicture}
-            alt="Profile picture"
-            className="w-32 h-32 rounded-full border-4 border-charcoal-gray shadow-lg profile-pic"
-          />
+          <div className="relative">
+            <img
+              src={isEditing ? formData.profilePicture : profile.profilePicture}
+              alt="Profile picture"
+              className="w-32 h-32 rounded-full border-4 border-charcoal-gray shadow-lg profile-pic animate-glow"
+            />
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-emerald-green rounded-full border-4 border-charcoal-gray animate-pulse flex items-center justify-center">
+              <Star className="w-6 h-6 text-charcoal-gray animate-orbit" aria-hidden="true" />
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 mt-16">
-        {error && <p className="text-crimson-red mb-4 text-center text-lg font-orbitron">{error}</p>}
-        <div className="profile-details card p-6 glassmorphic shadow-lg card-3d">
+        {error && <p className="text-crimson-red mb-4 text-center text-lg font-orbitron flex items-center gap-2 justify-center">
+          <AlertCircle className="w-5 h-5 animate-bounce" aria-hidden="true" /> {error}
+        </p>}
+        <div className="profile-details card p-6 glassmorphic shadow-lg card-3d animate-slide-down">
           <div className="flex justify-between items-start mb-6">
             <div className="flex items-center gap-3">
               {isEditing ? (
@@ -214,15 +221,18 @@ const Profile = () => {
                   />
                 </>
               ) : (
-                <h1 className="text-2xl font-orbitron font-bold text-emerald-green mb-2">
+                <h1 className="text-2xl font-orbitron font-bold text-emerald-green mb-2 animate-pulse">
                   {profile.firstName} {profile.lastName}
                 </h1>
               )}
-              <img
-                src={profile.profilePicture}
-                alt={`${profile.username}'s profile`}
-                className="w-8 h-8 rounded-full profile-pic"
-              />
+              <div className="relative">
+                <img
+                  src={profile.profilePicture}
+                  alt={`${profile.username}'s profile`}
+                  className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
+                />
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+              </div>
             </div>
             {isOwner && (
               <div>
@@ -230,34 +240,34 @@ const Profile = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={handleSave}
-                      className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                      className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
                       aria-label="Save profile changes"
                     >
                       Save
                     </button>
                     <button
                       onClick={handleCancel}
-                      className="btn-primary rounded-full flex items-center bg-crimson-red focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                      className="btn-primary rounded-full flex items-center bg-crimson-red focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
                       aria-label="Cancel editing"
                     >
-                      <X className="w-5 h-5" aria-hidden="true" />
+                      <X className="w-5 h-5 animate-orbit" aria-hidden="true" />
                     </button>
                   </div>
                 ) : (
                   <button
                     onClick={handleEdit}
-                    className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                    className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
                     aria-label="Edit profile"
                   >
-                    <Edit className="w-5 h-5 mr-2" aria-hidden="true" /> Edit Profile
+                    <Edit className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Edit Profile
                   </button>
                 )}
               </div>
             )}
           </div>
-          <p className="text-saffron-yellow text-lg font-inter mb-2">@{profile.username}</p>
-          <p className="text-lavender-gray font-inter mb-1">Job: {profile.job || 'Not specified'}</p>
-          <p className="text-lavender-gray font-inter mb-1">School: {profile.school || 'Not specified'}</p>
+          <p className="text-saffron-yellow text-lg font-inter mb-2 animate-slide-down">@{profile.username}</p>
+          <p className="text-lavender-gray font-inter mb-1 animate-slide-down">Job: {profile.job || 'Not specified'}</p>
+          <p className="text-lavender-gray font-inter mb-1 animate-slide-down">School: {profile.school || 'Not specified'}</p>
 
           {isOwner && isEditing && (
             <>
@@ -318,12 +328,12 @@ const Profile = () => {
 
           {/* Owner View: Gamified Progress */}
           {isOwner && (
-            <div className="gamified-progress mb-8 card p-6 glassmorphic holographic-effect card-3d">
+            <div className="gamified-progress mb-8 card p-6 glassmorphic holographic-effect card-3d animate-slide-down">
               <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
                 <Star className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Your Progress
               </h2>
               <div className="flex items-center gap-4">
-                <div className="progress-bar relative w-full h-6 bg-saffron-yellow bg-opacity-20 rounded-full overflow-hidden">
+                <div className="progress-bar relative w-full h-6 bg-saffron-yellow bg-opacity-20 rounded-full overflow-hidden holographic-effect">
                   <div
                     className="absolute top-0 left-0 h-full bg-indigo-vivid animate-pulse"
                     style={{ width: `${Math.min((userPoints / 1000) * 100, 100)}%` }}
@@ -338,7 +348,7 @@ const Profile = () => {
           )}
 
           {/* Leaderboard Section (Visible to All) */}
-          <div className="leaderboard-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
+          <div className="leaderboard-section mb-8 card p-6 glassmorphic holographic-effect card-3d animate-slide-down">
             <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
               <Award className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Top Collaborators
             </h2>
@@ -349,13 +359,16 @@ const Profile = () => {
             ) : (
               <div className="space-y-3">
                 {leaderboard.map((entry, index) => (
-                  <div key={index} className="leaderboard-item card p-3 glassmorphic flex justify-between items-center">
+                  <div key={index} className="leaderboard-item card p-3 glassmorphic flex justify-between items-center animate-fade-in">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={entry.profilePicture || 'https://via.placeholder.com/40'}
-                        alt={`${entry.username}'s profile`}
-                        className="w-8 h-8 rounded-full profile-pic"
-                      />
+                      <div className="relative">
+                        <img
+                          src={entry.profilePicture || 'https://via.placeholder.com/40'}
+                          alt={`${entry.username}'s profile`}
+                          className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
+                        />
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+                      </div>
                       <span className={`text-xl font-orbitron ${index === 0 ? 'text-crimson-red' : index === 1 ? 'text-saffron-yellow' : 'text-indigo-vivid'}`}>
                         #{index + 1}
                       </span>
@@ -371,7 +384,7 @@ const Profile = () => {
           {/* Projects Section */}
           <div className="projects-section">
             <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-              <Folder className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Projects
+              <Folder className="w-5 h-5 mr-2 text-charcoal-gray animate-orbit" aria-hidden="true" /> Projects
             </h2>
             {isOwner ? (
               Object.keys(projectsByCategory).map(category => (
@@ -386,7 +399,10 @@ const Profile = () => {
                           className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-charcoal-gray animate-fade-in card-3d"
                           aria-label={`View project ${project.title}`}
                         >
-                          <h4 className="text-lg font-orbitron font-bold text-indigo-vivid">{project.title || 'Untitled Project'}</h4>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Folder className="w-5 h-5 text-indigo-vivid animate-pulse" aria-hidden="true" />
+                            <h4 className="text-lg font-orbitron font-bold text-indigo-vivid">{project.title || 'Untitled Project'}</h4>
+                          </div>
                           <p className="text-saffron-yellow text-sm mb-1 font-inter">{project.description || 'No description'}</p>
                           <p className="text-saffron-yellow text-sm font-inter">Status: {project.status || 'Not Started'}</p>
                         </Link>
@@ -410,7 +426,10 @@ const Profile = () => {
                         className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-charcoal-gray animate-fade-in card-3d"
                         aria-label={`View project ${project.title}`}
                       >
-                        <h4 className="text-lg font-orbitron font-bold text-indigo-vivid">{project.title || 'Untitled Project'}</h4>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Folder className="w-5 h-5 text-indigo-vivid animate-pulse" aria-hidden="true" />
+                          <h4 className="text-lg font-orbitron font-bold text-indigo-vivid">{project.title || 'Untitled Project'}</h4>
+                        </div>
                         <p className="text-saffron-yellow text-sm mb-1 font-inter">Category: {project.category || 'Unknown'}</p>
                         <p className="text-saffron-yellow text-sm font-inter">Status: {project.status || 'Not Started'}</p>
                       </Link>

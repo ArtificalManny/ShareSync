@@ -42,7 +42,7 @@ const Home = () => {
           type: 'activity',
           message: log.message || 'Unknown activity',
           user: log.user || 'Unknown user',
-          profilePicture: user.profilePicture || 'https://via.placeholder.com/40', // Add profile picture
+          profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
           timestamp: log.timestamp || new Date().toISOString(),
         }));
 
@@ -52,7 +52,7 @@ const Home = () => {
           type: post.type || 'announcement',
           content: post.content || 'No content',
           author: post.author || 'Unknown author',
-          profilePicture: user.profilePicture || 'https://via.placeholder.com/40', // Add profile picture
+          profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
           timestamp: post.timestamp || new Date().toISOString(),
           votes: post.votes || [],
           options: post.options || [],
@@ -64,7 +64,7 @@ const Home = () => {
           type: 'task-complete',
           message: `${task.title || 'Unnamed task'} completed`,
           user: task.assignedTo || 'Unassigned',
-          profilePicture: user.profilePicture || 'https://via.placeholder.com/40', // Add profile picture
+          profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
           timestamp: task.updatedAt || new Date().toISOString(),
         }));
 
@@ -74,7 +74,7 @@ const Home = () => {
           type: 'file',
           message: `Shared file: ${file.name || 'Unnamed file'}`,
           user: file.uploadedBy || 'Unknown user',
-          profilePicture: user.profilePicture || 'https://via.placeholder.com/40', // Add profile picture
+          profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
           timestamp: file.uploadedAt || new Date().toISOString(),
           url: file.url || '#',
         }));
@@ -90,7 +90,6 @@ const Home = () => {
       allFeedItems.sort((a, b) => new Date(b.timestamp || new Date()) - new Date(a.timestamp || new Date()));
       setFeedItems(allFeedItems);
 
-      // Recommendations based on user activity
       const recommendProjects = () => {
         const projectsWithActivity = activeProjects.map(project => {
           const latestActivity = [
@@ -135,7 +134,6 @@ const Home = () => {
 
       recommendProjects();
 
-      // Fetch leaderboard
       const fetchLeaderboards = async () => {
         try {
           const projectLeaderboards = await Promise.all(
@@ -198,6 +196,10 @@ const Home = () => {
     );
     if (socket) {
       socket.emit('feed-like', { item: feedItems[index], userId: user?._id });
+      socket.emit('notification', {
+        user: feedItems[index].user,
+        message: `${user.username} liked your activity in project "${feedItems[index].projectTitle}"`,
+      });
     }
   };
 
@@ -225,6 +227,10 @@ const Home = () => {
 
     if (socket) {
       socket.emit('feed-comment', { item: feedItems[index], comment: newCommentData, userId: user?._id });
+      socket.emit('notification', {
+        user: feedItems[index].user,
+        message: `${user.username} commented on your activity in project "${feedItems[index].projectTitle}"`,
+      });
     }
   };
 
@@ -300,18 +306,21 @@ const Home = () => {
         <div className="flex-1 overflow-y-auto">
           <div className="space-y-4">
             {(user.projects || []).filter(p => p.status !== 'Completed').slice(0, 5).map(project => (
-              <div key={project._id} className="sidebar-item p-3 bg-saffron-yellow bg-opacity-20 rounded-lg holographic-effect">
+              <div key={project._id} className="sidebar-item p-3 bg-saffron-yellow bg-opacity-20 rounded-lg holographic-effect animate-fade-in">
                 <div className="flex items-center gap-2">
-                  <img
-                    src={user.profilePicture || 'https://via.placeholder.com/32'}
-                    alt={`${user.username}'s profile`}
-                    className="w-8 h-8 rounded-full profile-pic"
-                  />
+                  <div className="relative">
+                    <img
+                      src={user.profilePicture || 'https://via.placeholder.com/32'}
+                      alt={`${user.username}'s profile`}
+                      className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
+                    />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+                  </div>
                   <div>
                     <Link to={`/projects/${project._id}`} className="text-charcoal-gray font-inter font-medium hover:underline">{project.title}</Link>
                     <p className="text-lavender-gray text-sm font-inter">Status: {project.status}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Users className="w-4 h-4 text-charcoal-gray" />
+                      <Users className="w-4 h-4 text-charcoal-gray animate-orbit" />
                       <span className="text-lavender-gray text-xs font-inter">{project.members?.length || 0} active users</span>
                     </div>
                   </div>
@@ -336,12 +345,15 @@ const Home = () => {
 
         <div className="home-header mb-8">
           <div className="flex items-center gap-3">
-            <img
-              src={user.profilePicture || 'https://via.placeholder.com/40'}
-              alt={`${user.firstName}'s profile`}
-              className="w-10 h-10 rounded-full profile-pic"
-            />
-            <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-2">
+            <div className="relative">
+              <img
+                src={user.profilePicture || 'https://via.placeholder.com/40'}
+                alt={`${user.firstName}'s profile`}
+                className="w-10 h-10 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
+              />
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+            </div>
+            <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-2 animate-pulse">
               Welcome to ShareSync, {user.firstName}!
             </h1>
           </div>
@@ -362,13 +374,16 @@ const Home = () => {
           ) : (
             <div className="space-y-3">
               {leaderboard.map((entry, index) => (
-                <div key={index} className="leaderboard-item card p-3 glassmorphic flex justify-between items-center">
+                <div key={index} className="leaderboard-item card p-3 glassmorphic flex justify-between items-center animate-fade-in">
                   <div className="flex items-center gap-2">
-                    <img
-                      src={entry.profilePicture || 'https://via.placeholder.com/32'}
-                      alt={`${entry.username}'s profile`}
-                      className="w-8 h-8 rounded-full profile-pic"
-                    />
+                    <div className="relative">
+                      <img
+                        src={entry.profilePicture || 'https://via.placeholder.com/32'}
+                        alt={`${entry.username}'s profile`}
+                        className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
+                      />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+                    </div>
                     <span className={`text-xl font-orbitron ${index === 0 ? 'text-crimson-red' : index === 1 ? 'text-saffron-yellow' : 'text-indigo-vivid'}`}>
                       #{index + 1}
                     </span>
@@ -404,7 +419,7 @@ const Home = () => {
         {/* Feed Section */}
         <div className="feed-container">
           <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-6 flex items-center">
-            <Folder className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Project Activity Feed
+            <Folder className="w-5 h-5 mr-2 text-charcoal-gray animate-orbit" aria-hidden="true" /> Project Activity Feed
           </h2>
           {feedItems.length === 0 ? (
             <p className="text-saffron-yellow flex items-center gap-2 font-inter">
@@ -413,7 +428,7 @@ const Home = () => {
           ) : (
             <div className="space-y-6">
               {feedItems.map((item, index) => (
-                <div key={index}>
+                <div key={index} className="animate-fade-in">
                   <FeedItem
                     item={item}
                     index={index}

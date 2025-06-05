@@ -28,11 +28,11 @@ export const createProject = async (projectData) => {
   try {
     const response = await axiosInstance.post('/', projectData);
     if (!response.data || !response.data._id) {
-      throw new Error('Invalid project data returned from server');
+      throw new Error('Invalid project data returned from server: ' + JSON.stringify(response.data));
     }
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Failed to create project. Please ensure the backend server is running.');
+    throw new Error(error.response?.data?.message || 'Failed to create project. Please ensure the backend server is running and you are authenticated.');
   }
 };
 

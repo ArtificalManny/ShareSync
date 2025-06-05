@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import { fetchProjectById, updateProject, createPost, createTask, createSubtask, updateTaskStatus, likeTask, shareTask, addTaskComment, uploadFile, approveFile, createTeam, inviteUser, addSuggestion, updateNotificationSettings } from '../services/project.js';
-import { Folder, AlertCircle, Plus, Edit, Trash, CheckSquare, FileText, Share2, ThumbsUp, MessageSquare, Users, Settings } from 'lucide-react';
+import { Folder, AlertCircle, Plus, Edit, Trash, CheckSquare, FileText, Share2, ThumbsUp, MessageSquare, Users, Settings, AtSign } from 'lucide-react';
 import './ProjectHome.css';
 
 const ProjectHome = () => {
@@ -78,6 +78,16 @@ const ProjectHome = () => {
     e.preventDefault();
     try {
       const post = await createPost(id, newPost);
+      // Extract mentioned users from post content (e.g., @username)
+      const mentions = newPost.content.match(/@(\w+)/g)?.map(mention => mention.slice(1)) || [];
+      if (mentions.length > 0 && socket) {
+        mentions.forEach(mentionedUser => {
+          socket.emit('notification', {
+            user: mentionedUser,
+            message: `${user.username} mentioned you in a post in project "${project.title}"`,
+          });
+        });
+      }
       setProject((prev) => ({
         ...prev,
         posts: [...(prev.posts || []), post],
@@ -139,6 +149,12 @@ const ProjectHome = () => {
         ...prev,
         tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
       }));
+      if (socket) {
+        socket.emit('notification', {
+          user: updatedTask.assignedTo,
+          message: `${user.username} liked your task "${updatedTask.title}" in project "${project.title}"`,
+        });
+      }
     } catch (err) {
       setError('Failed to like task: ' + err.message);
     }
@@ -164,6 +180,12 @@ const ProjectHome = () => {
         ...prev,
         tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
       }));
+      if (socket) {
+        socket.emit('notification', {
+          user: updatedTask.assignedTo,
+          message: `${user.username} commented on your task "${updatedTask.title}" in project "${project.title}"`,
+        });
+      }
     } catch (err) {
       setError('Failed to add comment: ' + err.message);
     }
@@ -218,6 +240,12 @@ const ProjectHome = () => {
     try {
       await inviteUser(id, inviteEmail);
       setInviteEmail('');
+      if (socket) {
+        socket.emit('notification', {
+          user: inviteEmail,
+          message: `${user.username} invited you to join project "${project.title}"`,
+        });
+      }
       alert('Invitation sent! (Mock action—implement email logic as needed.)');
     } catch (err) {
       setError('Failed to invite user: ' + err.message);
@@ -322,14 +350,14 @@ const ProjectHome = () => {
             <div className="flex gap-2 mt-4">
               <button
                 type="submit"
-                className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
                 aria-label="Save project changes"
               >
                 Save
               </button>
               <button
                 onClick={() => setIsEditingProject(false)}
-                className="btn-primary rounded-full flex items-center bg-crimson-red focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                className="btn-primary rounded-full flex items-center bg-crimson-red focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
                 aria-label="Cancel editing"
               >
                 <X className="w-5 h-5" aria-hidden="true" />
@@ -339,13 +367,13 @@ const ProjectHome = () => {
         ) : (
           <div className="max-w-2xl mx-auto">
             <div className="flex justify-between items-center">
-              <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-4">{project.title}</h1>
+              <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-4 animate-pulse">{project.title}</h1>
               <button
                 onClick={() => setIsEditingProject(true)}
-                className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
                 aria-label="Edit project"
               >
-                <Edit className="w-5 h-5" aria-hidden="true" />
+                <Edit className="w-5 h-5 animate-orbit" aria-hidden="true" />
               </button>
             </div>
             <p className="text-saffron-yellow text-lg font-inter mb-4">{project.description}</p>
@@ -356,12 +384,16 @@ const ProjectHome = () => {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        {error && <p className="text-crimson-red mb-4 text-center font-orbitron">{error}</p>}
+        {error && (
+          <p className="text-crimson-red mb-4 text-center font-orbitron flex items-center gap-2 justify-center">
+            <AlertCircle className="w-5 h-5 animate-bounce" aria-hidden="true" /> {error}
+          </p>
+        )}
 
         {/* Posts Section */}
         <div className="posts-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
           <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <FileText className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Posts
+            <FileText className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Posts
           </h2>
           <form onSubmit={handleCreatePost} className="mb-4">
             <select
@@ -373,20 +405,23 @@ const ProjectHome = () => {
               <option value="announcement">Announcement</option>
               <option value="update">Update</option>
             </select>
-            <textarea
-              value={newPost.content}
-              onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
-              placeholder="Write a post..."
-              rows="3"
-              aria-label="Post Content"
-            ></textarea>
+            <div className="relative">
+              <textarea
+                value={newPost.content}
+                onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+                className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2 pl-10"
+                placeholder="Write a post... (e.g., @username to mention someone)"
+                rows="3"
+                aria-label="Post Content"
+              ></textarea>
+              <AtSign className="absolute left-3 top-3 w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" />
+            </div>
             <button
               type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
               aria-label="Create Post"
             >
-              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Post
+              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Post
             </button>
           </form>
           {(project.posts || []).length === 0 ? (
@@ -396,16 +431,29 @@ const ProjectHome = () => {
           ) : (
             <div className="space-y-4">
               {project.posts.map((post, index) => (
-                <div key={index} className="post-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg">
+                <div key={index} className="post-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg animate-fade-in">
                   <div className="flex items-center gap-2 mb-2">
-                    <img
-                      src={user.profilePicture || 'https://via.placeholder.com/32'}
-                      alt={`${post.author}'s profile`}
-                      className="w-8 h-8 rounded-full profile-pic"
-                    />
+                    <div className="relative">
+                      <img
+                        src={user.profilePicture || 'https://via.placeholder.com/32'}
+                        alt={`${post.author}'s profile`}
+                        className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
+                      />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+                    </div>
                     <div>
                       <p className="text-indigo-vivid font-orbitron font-medium">{post.type.toUpperCase()}</p>
-                      <p className="text-lavender-gray font-inter">{post.content}</p>
+                      <p className="text-lavender-gray font-inter">
+                        {post.content.split(/(@\w+)/g).map((part, i) =>
+                          part.match(/@\w+/) ? (
+                            <span key={i} className="text-indigo-vivid font-bold hover:underline">
+                              {part}
+                            </span>
+                          ) : (
+                            part
+                          )
+                        )}
+                      </p>
                       <p className="text-lavender-gray text-sm font-inter">
                         By {post.author} at {new Date(post.timestamp).toLocaleString()}
                       </p>
@@ -420,7 +468,7 @@ const ProjectHome = () => {
         {/* Tasks Section */}
         <div className="tasks-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
           <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <CheckSquare className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Tasks
+            <CheckSquare className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Tasks
           </h2>
           <form onSubmit={handleCreateTask} className="mb-4">
             <input
@@ -456,10 +504,10 @@ const ProjectHome = () => {
             />
             <button
               type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
               aria-label="Create Task"
             >
-              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Add Task
+              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Add Task
             </button>
           </form>
           {(project.tasks || []).length === 0 ? (
@@ -469,14 +517,17 @@ const ProjectHome = () => {
           ) : (
             <div className="space-y-4">
               {project.tasks.map((task) => (
-                <div key={task._id} className="task-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg">
+                <div key={task._id} className="task-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg animate-fade-in">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={user.profilePicture || 'https://via.placeholder.com/32'}
-                        alt={`${task.assignedTo}'s profile`}
-                        className="w-8 h-8 rounded-full profile-pic"
-                      />
+                      <div className="relative">
+                        <img
+                          src={user.profilePicture || 'https://via.placeholder.com/32'}
+                          alt={`${task.assignedTo}'s profile`}
+                          className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
+                        />
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+                      </div>
                       <h3 className="text-lg font-orbitron font-bold text-indigo-vivid">{task.title}</h3>
                     </div>
                     <select
@@ -496,24 +547,26 @@ const ProjectHome = () => {
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => handleLikeTask(task._id)}
-                      className="flex items-center gap-1 text-charcoal-gray hover:text-indigo-vivid focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                      className="flex items-center gap-1 text-charcoal-gray hover:text-neon-coral focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
                       aria-label={`Like task ${task.title}`}
                     >
-                      <ThumbsUp className="w-4 h-4" aria-hidden="true" /> {task.likes || 0}
+                      <ThumbsUp className="w-4 h-4 animate-pulse" aria-hidden="true" /> {task.likes || 0}
                     </button>
                     <button
                       onClick={() => handleShareTask(task._id)}
-                      className="flex items-center gap-1 text-charcoal-gray hover:text-indigo-vivid focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                      className="flex items-center gap-1 text-charcoal-gray hover:text-neon-coral focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
                       aria-label={`Share task ${task.title}`}
                     >
-                      <Share2 className="w-4 h-4" aria-hidden="true" /> {task.shares || 0}
+                      <Share2 className="w-4 h-4 animate-orbit" aria-hidden="true" /> {task.shares || 0}
                     </button>
                   </div>
                   {/* Subtasks */}
                   <div className="subtasks mt-4">
-                    <h4 className="text-md font-orbitron font-semibold text-emerald-green mb-2">Subtasks</h4>
+                    <h4 className="text-md font-orbitron font-semibold text-emerald-green mb-2 flex items-center">
+                      <Folder className="w-4 h-4 mr-2 animate-pulse" aria-hidden="true" /> Subtasks
+                    </h4>
                     {(task.subtasks || []).map((subtask) => (
-                      <div key={subtask._id} className="subtask-item p-2 bg-charcoal-gray bg-opacity-20 rounded-lg mb-2">
+                      <div key={subtask._id} className="subtask-item p-2 bg-charcoal-gray bg-opacity-20 rounded-lg mb-2 animate-fade-in">
                         <p className="text-lavender-gray font-inter">{subtask.title}</p>
                       </div>
                     ))}
@@ -534,24 +587,29 @@ const ProjectHome = () => {
                       />
                       <button
                         type="submit"
-                        className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                        className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
                         aria-label="Add Subtask"
                       >
-                        <Plus className="w-5 h-5" aria-hidden="true" />
+                        <Plus className="w-5 h-5 animate-orbit" aria-hidden="true" />
                       </button>
                     </form>
                   </div>
                   {/* Comments */}
                   <div className="comments mt-4">
-                    <h4 className="text-md font-orbitron font-semibold text-emerald-green mb-2">Comments</h4>
+                    <h4 className="text-md font-orbitron font-semibold text-emerald-green mb-2 flex items-center">
+                      <MessageSquare className="w-4 h-4 mr-2 animate-pulse" aria-hidden="true" /> Comments
+                    </h4>
                     {(task.comments || []).map((comment, index) => (
-                      <div key={index} className="comment-item p-2 bg-charcoal-gray bg-opacity-20 rounded-lg mb-2">
+                      <div key={index} className="comment-item p-2 bg-charcoal-gray bg-opacity-20 rounded-lg mb-2 animate-fade-in">
                         <div className="flex items-center gap-2">
-                          <img
-                            src={user.profilePicture || 'https://via.placeholder.com/32'}
-                            alt={`${comment.user}'s profile`}
-                            className="w-6 h-6 rounded-full profile-pic"
-                          />
+                          <div className="relative">
+                            <img
+                              src={user.profilePicture || 'https://via.placeholder.com/32'}
+                              alt={`${comment.user}'s profile`}
+                              className="w-6 h-6 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
+                            />
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+                          </div>
                           <div>
                             <p className="text-lavender-gray font-inter">{comment.text}</p>
                             <p className="text-lavender-gray text-sm font-inter">By {comment.user} at {new Date(comment.timestamp).toLocaleString()}</p>
@@ -579,10 +637,10 @@ const ProjectHome = () => {
                       />
                       <button
                         type="submit"
-                        className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                        className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
                         aria-label="Add Comment"
                       >
-                        <MessageSquare className="w-5 h-5" aria-hidden="true" />
+                        <MessageSquare className="w-5 h-5 animate-orbit" aria-hidden="true" />
                       </button>
                     </form>
                   </div>
@@ -595,7 +653,7 @@ const ProjectHome = () => {
         {/* Files Section */}
         <div className="files-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
           <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <FileText className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Files
+            <FileText className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Files
           </h2>
           <form onSubmit={handleFileUpload} className="mb-4">
             <input
@@ -606,10 +664,10 @@ const ProjectHome = () => {
             />
             <button
               type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
               aria-label="Upload File"
             >
-              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Upload File
+              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Upload File
             </button>
           </form>
           {(project.files || []).length === 0 ? (
@@ -619,13 +677,16 @@ const ProjectHome = () => {
           ) : (
             <div className="space-y-4">
               {project.files.map((file) => (
-                <div key={file._id} className="file-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg flex justify-between items-center">
+                <div key={file._id} className="file-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg flex justify-between items-center animate-fade-in">
                   <div className="flex items-center gap-2">
-                    <img
-                      src={user.profilePicture || 'https://via.placeholder.com/32'}
-                      alt={`${file.uploadedBy}'s profile`}
-                      className="w-8 h-8 rounded-full profile-pic"
-                    />
+                    <div className="relative">
+                      <img
+                        src={user.profilePicture || 'https://via.placeholder.com/32'}
+                        alt={`${file.uploadedBy}'s profile`}
+                        className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
+                      />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+                    </div>
                     <div>
                       <p className="text-lavender-gray font-inter">{file.name}</p>
                       <p className="text-lavender-gray text-sm font-inter">Uploaded by {file.uploadedBy} at {new Date(file.uploadedAt).toLocaleString()}</p>
@@ -635,14 +696,14 @@ const ProjectHome = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleApproveFile(file._id, 'Approved')}
-                      className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                      className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
                       aria-label={`Approve file ${file.name}`}
                     >
                       Approve
                     </button>
                     <button
                       onClick={() => handleApproveFile(file._id, 'Rejected')}
-                      className="btn-primary rounded-full flex items-center bg-crimson-red focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+                      className="btn-primary rounded-full flex items-center bg-crimson-red focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
                       aria-label={`Reject file ${file.name}`}
                     >
                       Reject
@@ -657,7 +718,7 @@ const ProjectHome = () => {
         {/* Teams Section */}
         <div className="teams-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
           <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <Users className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Teams
+            <Users className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Teams
           </h2>
           <form onSubmit={handleCreateTeam} className="mb-4">
             <input
@@ -678,10 +739,10 @@ const ProjectHome = () => {
             />
             <button
               type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
               aria-label="Create Team"
             >
-              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Create Team
+              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Create Team
             </button>
           </form>
           {(project.teams || []).length === 0 ? (
@@ -691,13 +752,16 @@ const ProjectHome = () => {
           ) : (
             <div className="space-y-4">
               {project.teams.map((team) => (
-                <div key={team._id} className="team-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg">
+                <div key={team._id} className="team-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg animate-fade-in">
                   <div className="flex items-center gap-2">
-                    <img
-                      src={user.profilePicture || 'https://via.placeholder.com/32'}
-                      alt="Team creator's profile"
-                      className="w-8 h-8 rounded-full profile-pic"
-                    />
+                    <div className="relative">
+                      <img
+                        src={user.profilePicture || 'https://via.placeholder.com/32'}
+                        alt="Team creator's profile"
+                        className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
+                      />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+                    </div>
                     <div>
                       <p className="text-indigo-vivid font-orbitron font-medium">{team.name}</p>
                       <p className="text-lavender-gray font-inter">Members: {team.members.join(', ')}</p>
@@ -712,7 +776,7 @@ const ProjectHome = () => {
         {/* Invite Users */}
         <div className="invite-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
           <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <Users className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Invite Users
+            <Users className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Invite Users
           </h2>
           <form onSubmit={handleInviteUser}>
             <input
@@ -725,10 +789,10 @@ const ProjectHome = () => {
             />
             <button
               type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
               aria-label="Invite User"
             >
-              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Invite
+              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Invite
             </button>
           </form>
         </div>
@@ -736,7 +800,7 @@ const ProjectHome = () => {
         {/* Suggestions Section */}
         <div className="suggestions-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
           <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <MessageSquare className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Suggestions
+            <MessageSquare className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Suggestions
           </h2>
           <form onSubmit={handleAddSuggestion} className="mb-4">
             <textarea
@@ -749,10 +813,10 @@ const ProjectHome = () => {
             ></textarea>
             <button
               type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
               aria-label="Add Suggestion"
             >
-              <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Add Suggestion
+              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Add Suggestion
             </button>
           </form>
           {(project.suggestions || []).length === 0 ? (
@@ -762,13 +826,16 @@ const ProjectHome = () => {
           ) : (
             <div className="space-y-4">
               {project.suggestions.map((suggestion, index) => (
-                <div key={index} className="suggestion-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg">
+                <div key={index} className="suggestion-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg animate-fade-in">
                   <div className="flex items-center gap-2">
-                    <img
-                      src={user.profilePicture || 'https://via.placeholder.com/32'}
-                      alt={`${suggestion.user}'s profile`}
-                      className="w-8 h-8 rounded-full profile-pic"
-                    />
+                    <div className="relative">
+                      <img
+                        src={user.profilePicture || 'https://via.placeholder.com/32'}
+                        alt={`${suggestion.user}'s profile`}
+                        className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
+                      />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+                    </div>
                     <div>
                       <p className="text-lavender-gray font-inter">{suggestion.content}</p>
                       <p className="text-lavender-gray text-sm font-inter">By {suggestion.user}</p>
@@ -783,7 +850,7 @@ const ProjectHome = () => {
         {/* Notification Settings */}
         <div className="notification-settings-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
           <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <Settings className="w-5 h-5 mr-2 text-charcoal-gray" aria-hidden="true" /> Notification Settings
+            <Settings className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Notification Settings
           </h2>
           <form onSubmit={handleUpdateNotificationSettings}>
             <div className="flex items-center gap-2 mb-2">
@@ -810,7 +877,7 @@ const ProjectHome = () => {
             </div>
             <button
               type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect"
+              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
               aria-label="Save Notification Settings"
             >
               Save Settings

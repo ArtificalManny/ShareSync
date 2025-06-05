@@ -21,33 +21,35 @@ const NotificationToast = () => {
 
   return (
     <div className="notification-toast fixed top-4 right-4 z-50">
-      <div className="card p-4 glassmorphic shadow-lg card-3d">
+      <div className="card p-4 glassmorphic shadow-lg card-3d animate-slide-down">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="text-lg font-orbitron font-semibold text-emerald-green">Notifications</h3>
+          <h3 className="text-lg font-orbitron font-semibold text-emerald-green flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 animate-pulse" aria-hidden="true" /> Notifications
+          </h3>
           <button
             onClick={() => {
               clearNotifications();
               setVisible(false);
             }}
-            className="text-charcoal-gray hover:text-indigo-vivid focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+            className="text-charcoal-gray hover:text-neon-coral focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
             aria-label="Clear all notifications"
           >
-            <X className="w-5 h-5" aria-hidden="true" />
+            <X className="w-5 h-5 animate-orbit" aria-hidden="true" />
           </button>
         </div>
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {notifications.map((notification, index) => (
-            <div key={index} className="notification-item p-2 bg-saffron-yellow bg-opacity-20 rounded-lg flex justify-between items-center">
+            <div key={index} className="notification-item p-2 bg-saffron-yellow bg-opacity-20 rounded-lg flex justify-between items-center animate-fade-in">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-charcoal-gray" aria-hidden="true" />
+                <AlertCircle className="w-4 h-4 text-charcoal-gray animate-pulse" aria-hidden="true" />
                 <p className="text-lavender-gray font-inter">{notification.message}</p>
               </div>
               <button
                 onClick={() => removeNotification(index)}
-                className="text-charcoal-gray hover:text-indigo-vivid focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
+                className="text-charcoal-gray hover:text-neon-coral focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
                 aria-label={`Remove notification ${index}`}
               >
-                <X className="w-4 h-4" aria-hidden="true" />
+                <X className="w-4 h-4 animate-orbit" aria-hidden="true" />
               </button>
             </div>
           ))}
