@@ -5,33 +5,31 @@
   flex-direction: column;
 }
 
-@media (min-width: 1024px) {
-  .home-container {
-    flex-direction: row;
-  }
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
 }
 
-.home-header {
-  background: transparent;
+.left-sidebar, .right-sidebar {
+  background: #f5f5f5 !important;
+}
+
+.main-content {
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .feed-container {
-  max-width: 700px;
-  margin: 0 auto;
+  margin-top: 0;
 }
 
 .feed-item {
   background: #ffffff !important;
-  border: none !important;
+  border: 1px solid #e2e8f0 !important;
   margin-bottom: 1rem;
-}
-
-.left-sidebar {
-  background: #1f2937 !important;
-}
-
-.right-sidebar {
-  background: rgba(255, 255, 255, 0.1) !important;
 }
 
 .chat-section, .leaderboard-section, .recommendations-section {
@@ -39,16 +37,16 @@
 }
 
 .recommendation-card {
-  background: #1f2937;
-  border: 1px solid #374151;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
 }
 
 .leaderboard-item {
-  background: #1f2937;
-  border: 1px solid #374151;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
 }
 
 .messages {
-  background: #1f2937;
-  border: 1px solid #374151;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
 }

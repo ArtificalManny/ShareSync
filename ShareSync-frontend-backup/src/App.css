@@ -10,12 +10,14 @@
   --charcoal-gray: #4b5563;
   --midnight-navy: #1e3a8a;
   --neon-coral: #ff6e7f;
-  --navy-dark: #0a1a3c;
-  --cyan-neon: #00d4ff;
-  --magenta-neon: #ff2d55;
-  --purple-soft: #a78bfa;
-  --gray-dark: #1f2937;
-  --gray-light: #f3f4f6;
+  --white: #ffffff;
+  --black: #1a202c;
+  --gray-600: #718096;
+  --gray-200: #e2e8f0;
+  --blue-600: #2b6cb0;
+  --orange-500: #f6ad55;
+  --green-500: #48bb78;
+  --purple-500: #a78bfa;
 }
 
 * {
@@ -26,8 +28,8 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background: var(--navy-dark);
-  color: var(--charcoal-gray);
+  background: var(--white);
+  color: var(--black);
   min-height: 100vh;
 }
 
@@ -37,64 +39,40 @@ h1, h2, h3, h4, h5, h6 {
 
 .glassmorphic {
   background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .card {
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   background: rgba(255, 255, 255, 0.05);
   padding: 1rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 212, 255, 0.3);
-}
-
-.card-3d {
-  transform: none;
-}
-
-.card-3d:hover {
-  transform: none;
-}
-
-.holographic-effect {
-  position: relative;
-  overflow: hidden;
   transition: border-color 0.2s ease;
 }
 
-.holographic-effect:hover {
-  border-color: var(--cyan-neon);
+.card:hover {
+  border-color: var(--blue-600);
 }
 
-.holographic-effect::after {
+.micro-gradient {
+  position: relative;
+  overflow: hidden;
+}
+
+.micro-gradient::after {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(
     to right,
-    transparent,
-    rgba(0, 212, 255, 0.2),
+    rgba(43, 108, 176, 0.05),
     transparent
   );
-  transform: rotate(45deg);
   pointer-events: none;
-}
-
-.neon-glow {
-  text-shadow: 0 0 5px var(--cyan-neon), 0 0 10px var(--cyan-neon);
-}
-
-.shadow-glow {
-  box-shadow: 0 0 8px var(--cyan-neon);
 }
 
 .btn-primary {
@@ -112,12 +90,12 @@ h1, h2, h3, h4, h5, h6 {
 .input-field {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--charcoal-gray);
+  color: var(--black);
   padding: 0.5rem;
 }
 
 .input-field:focus {
-  border-color: var(--indigo-vivid);
+  border-color: var(--blue-600);
 }
 
 .loader {
@@ -150,13 +128,13 @@ body::before {
   left: 0;
   width: 100%;
   height: 100%;
-  background: url('https://www.transparenttextures.com/patterns/stardust.png');
-  opacity: 0.05;
+  background: none;
+  opacity: 0;
   z-index: -1;
 }
 
 :focus-visible {
-  outline: 2px solid var(--cyan-neon);
+  outline: 2px solid var(--blue-600);
   outline-offset: 2px;
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 8px rgba(43, 108, 176, 0.3);
 }

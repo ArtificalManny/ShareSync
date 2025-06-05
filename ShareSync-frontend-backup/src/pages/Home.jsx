@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, Menu, X } from 'lucide-react';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, Search, User, BarChart2, PieChart, Briefcase } from 'lucide-react';
 import FeedItem from '../components/FeedItem';
 import { fetchLeaderboard } from '../services/project.js';
 import './Home.css';
@@ -18,7 +18,7 @@ const Home = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(false);
+  const [userStats, setUserStats] = useState({ tasksCompleted: 0, totalTasks: 0 });
 
   useEffect(() => {
     if (isLoading) return;
@@ -108,12 +108,15 @@ const Home = () => {
 
             const userInteractionCount = (project.activityLog || []).filter(log => log.user === user.email).length;
 
+            const activityLevel = (project.activityLog || []).length + (project.posts || []).length + (project.tasks || []).length;
+
             return {
               id: project._id,
               title: project.title,
               latestActivity: latestActivity || new Date().toISOString(),
               userInteractionCount,
               hasUserInteraction: userInteractionCount > 0,
+              activityLevel,
             };
           });
 
@@ -133,6 +136,7 @@ const Home = () => {
               reason: project.hasUserInteraction
                 ? 'You’ve been active here recently'
                 : 'Active project with recent updates',
+              activityLevel: project.activityLevel,
             }));
 
           setRecommendedProjects(recommendations);
@@ -169,6 +173,19 @@ const Home = () => {
         };
 
         fetchLeaderboards();
+
+        const fetchUserStats = () => {
+          let tasksCompleted = 0;
+          let totalTasks = 0;
+          activeProjects.forEach(project => {
+            const projectTasks = project.tasks || [];
+            tasksCompleted += projectTasks.filter(task => task.status === 'Completed').length;
+            totalTasks += projectTasks.length;
+          });
+          setUserStats({ tasksCompleted, totalTasks });
+        };
+
+        fetchUserStats();
 
         if (activeProjects.length > 0 && !selectedProjectId) {
           setSelectedProjectId(activeProjects[0]._id);
@@ -311,16 +328,12 @@ const Home = () => {
     setNewMessage('');
   };
 
-  const toggleLeftSidebar = () => {
-    setIsLeftSidebarOpen(!isLeftSidebarOpen);
-  };
-
   if (isLoading) {
     return (
       <div className="home-container">
         <div className="loading-message flex items-center justify-center min-h-screen">
           <div className="loader" aria-label="Loading home page"></div>
-          <span className="text-gray-300 text-xl font-inter ml-4">Loading...</span>
+          <span className="text-gray-600 text-xl font-inter ml-4">Loading...</span>
         </div>
       </div>
     );
@@ -330,7 +343,7 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-red-400 text-lg font-inter flex items-center gap-2">
+          <p className="text-red-500 text-lg font-inter flex items-center gap-2">
             <AlertCircle className="w-5 h-5" aria-hidden="true" /> {authError || error}
           </p>
         </div>
@@ -346,221 +359,309 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-gray-300 text-lg font-inter">Unable to load user data. Please try logging in again.</p>
+          <p className="text-gray-600 text-lg font-inter">Unable to load user data. Please try logging in again.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="home-container flex min-h-screen bg-navy-dark">
-      {/* Left Sidebar */}
-      <div className={`left-sidebar fixed lg:static inset-y-0 left-0 z-50 lg:z-0 transform ${isLeftSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-gray-900 p-4 flex flex-col gap-4 lg:flex`}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-orbitron font-semibold text-cyan-neon">Projects</h2>
-          <button
-            className="lg:hidden text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-neon"
-            onClick={toggleLeftSidebar}
-            aria-label={isLeftSidebarOpen ? "Close sidebar" : "Open sidebar"}
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <div className="space-y-2">
-            {(user.projects || []).filter(p => p.status !== 'Completed').map(project => (
-              <Link
-                key={project._id}
-                to={`/projects/${project._id}`}
-                className="block p-3 bg-gray-800 rounded-lg hover:bg-gray-700 text-gray-300 font-inter text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <Folder className="w-4 h-4 text-cyan-neon" />
-                  <span>{project.title}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <Users className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-400 text-xs">{project.members?.length || 0} members</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="main-content flex-1 p-4 lg:p-6">
-        <div className="flex justify-between items-center mb-4 lg:mb-6">
-          <button
-            className="lg:hidden text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-neon"
-            onClick={toggleLeftSidebar}
-            aria-label="Open sidebar"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="home-header mb-6 glassmorphic p-6 rounded-xl">
+    <div className="home-container flex flex-col min-h-screen bg-white">
+      {/* Header */}
+      <header className="header fixed top-0 left-0 right-0 bg-gradient-to-b from-blue-50 to-white border-b border-gray-200 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img
-              src={user.profilePicture || 'https://via.placeholder.com/40'}
-              alt={`${user.firstName}'s profile`}
-              className="w-10 h-10 rounded-full border-2 border-cyan-neon shadow-glow"
-            />
-            <h1 className="text-3xl font-orbitron font-bold text-white neon-glow">
-              Welcome to ShareSync, {user.firstName}!
-            </h1>
-          </div>
-          <p className="text-gray-300 text-lg font-inter mt-2">
-            Collaborate seamlessly in a futuristic workspace.
-          </p>
-        </div>
-
-        {/* Feed Section */}
-        <div className="feed-container">
-          <h2 className="text-xl font-orbitron font-semibold text-white mb-4 flex items-center">
-            <Folder className="w-5 h-5 mr-2 text-cyan-neon" aria-hidden="true" /> Project Activity Feed
-          </h2>
-          {feedItems.length === 0 ? (
-            <p className="text-gray-300 flex items-center gap-2 font-inter">
-              <AlertCircle className="w-5 h-5 text-red-400" aria-hidden="true" /> No recent activity in your active projects.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {feedItems.map((item, index) => (
-                <div key={index}>
-                  <FeedItem
-                    item={item}
-                    index={index}
-                    newComment={newComment}
-                    expandedComments={expandedComments}
-                    handleLike={handleLike}
-                    handleCommentSubmit={handleCommentSubmit}
-                    toggleComments={toggleComments}
-                    handleShare={handleShare}
-                    user={user}
-                    setNewComment={setNewComment}
-                  />
-                </div>
-              ))}
+            <h1 className="text-2xl font-orbitron font-bold text-gray-800">ShareSync</h1>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search projects..."
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-gray-50 text-gray-700 font-inter text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Search projects"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Right Sidebar */}
-      <div className="right-sidebar w-full lg:w-80 p-4 lg:p-6 glassmorphic">
-        {/* Project Chat */}
-        <div className="chat-section mb-6">
-          <h3 className="text-lg font-orbitron font-semibold text-white mb-4 flex items-center">
-            <MessageCircle className="w-5 h-5 mr-2 text-cyan-neon" aria-hidden="true" /> Project Chat
-          </h3>
-          <div className="mb-4">
-            <select
-              value={selectedProjectId || ''}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="w-full p-2 bg-gray-800 text-gray-300 rounded-md font-inter border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-neon"
-              aria-label="Select Project for Chat"
-            >
-              {(user.projects || []).filter(p => p.status !== 'Completed').map(project => (
-                <option key={project._id} value={project._id} className="bg-gray-800 text-gray-300">{project.title}</option>
-              ))}
-            </select>
           </div>
-          <div className="messages bg-gray-800 border border-gray-700 rounded-md p-4 h-64 overflow-y-auto mb-4">
-            {messages.map((msg, index) => (
-              <div key={index} className="flex items-start gap-2 mb-2">
-                <img
-                  src={msg.profilePicture}
-                  alt={`${msg.user}'s profile`}
-                  className="w-6 h-6 rounded-full border border-cyan-neon shadow-glow"
-                />
-                <div>
-                  <p className="text-white font-inter font-medium text-sm">{msg.username}</p>
-                  <p className="text-gray-300 font-inter text-sm">{msg.text}</p>
-                  <p className="text-gray-500 font-inter text-xs">{new Date(msg.timestamp).toLocaleString()}</p>
-                </div>
+          <div className="flex items-center gap-3">
+            <Link to={`/profile/${user.username}`} className="flex items-center gap-2">
+              <img
+                src={user.profilePicture || 'https://via.placeholder.com/32'}
+                alt={`${user.firstName}'s profile`}
+                className="w-8 h-8 rounded-full border border-gray-300"
+              />
+              <span className="text-gray-700 font-inter text-sm">{user.firstName}</span>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <div className="flex flex-1 mt-16">
+        {/* Left Sidebar */}
+        <aside className="left-sidebar w-64 bg-gray-50 border-r border-gray-200 p-4 flex-shrink-0">
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <User className="w-5 h-5 text-blue-600" aria-hidden="true" />
+              <h2 className="text-lg font-orbitron font-semibold text-gray-800">Your Profile</h2>
+            </div>
+            <div className="flex items-center gap-3 mb-4">
+              <img
+                src={user.profilePicture || 'https://via.placeholder.com/40'}
+                alt={`${user.firstName}'s profile`}
+                className="w-10 h-10 rounded-full border border-gray-300"
+              />
+              <div>
+                <p className="text-gray-800 font-inter font-medium">{user.firstName} {user.lastName}</p>
+                <p className="text-gray-600 font-inter text-sm">{user.email}</p>
               </div>
-            ))}
+            </div>
+            <div className="relative w-24 h-24 mx-auto">
+              <svg className="w-full h-full" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="#e2e8f0"
+                  strokeWidth="10"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="#48bb78"
+                  strokeWidth="10"
+                  strokeDasharray="283"
+                  strokeDashoffset={283 * (1 - (userStats.tasksCompleted / (userStats.totalTasks || 1)))}
+                  transform="rotate(-90 50 50)"
+                />
+                <text x="50" y="55" textAnchor="middle" className="text-gray-800 font-orbitron text-xl font-semibold">
+                  {Math.round((userStats.tasksCompleted / (userStats.totalTasks || 1)) * 100)}%
+                </text>
+              </svg>
+              <p className="text-center text-gray-600 font-inter text-sm mt-2">Tasks Completed</p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-1 p-2 bg-gray-800 text-gray-300 rounded-full font-inter border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-neon"
-              placeholder="Type a message..."
-              aria-label="Chat Message"
-            />
-            <button
-              onClick={sendMessage}
-              className="bg-cyan-neon text-navy-dark p-2 rounded-full hover:bg-magenta-neon focus:outline-none focus:ring-2 focus:ring-cyan-neon holographic-effect"
-              aria-label="Send Message"
-            >
-              <Send className="w-5 h-5" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
+          <nav>
+            <Link to="/projects" className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-md">
+              <Folder className="w-5 h-5 text-blue-600" aria-hidden="true" />
+              <span className="text-gray-700 font-inter text-sm">Projects</span>
+            </Link>
+            <Link to={`/profile/${user.username}`} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-md">
+              <User className="w-5 h-5 text-blue-600" aria-hidden="true" />
+              <span className="text-gray-700 font-inter text-sm">Profile</span>
+            </Link>
+          </nav>
+        </aside>
 
-        {/* Leaderboard Section */}
-        <div className="leaderboard-section mb-6">
-          <h3 className="text-lg font-orbitron font-semibold text-white mb-4 flex items-center">
-            <Award className="w-5 h-5 mr-2 text-cyan-neon" aria-hidden="true" /> Overall Leaderboard
-          </h3>
-          {leaderboard.length === 0 ? (
-            <p className="text-gray-300 font-inter flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-400" aria-hidden="true" /> No leaderboard data available.
+        {/* Main Content */}
+        <main className="main-content flex-1 p-4 lg:p-6">
+          <div className="home-header mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Folder className="w-6 h-6 text-blue-600" aria-hidden="true" />
+              <h1 className="text-2xl font-orbitron font-semibold text-gray-800">
+                Project Activity Feed
+              </h1>
+            </div>
+            <p className="text-gray-600 text-base font-inter">
+              Stay updated with the latest activity in your projects.
             </p>
-          ) : (
-            <div className="space-y-3">
-              {leaderboard.map((entry, index) => (
-                <div key={index} className="leaderboard-item bg-gray-800 border border-gray-700 p-3 rounded-md flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={entry.profilePicture || 'https://via.placeholder.com/32'}
-                      alt={`${entry.username}'s profile`}
-                      className="w-8 h-8 rounded-full border-2 border-cyan-neon shadow-glow"
+          </div>
+
+          <div className="feed-container">
+            {feedItems.length === 0 ? (
+              <p className="text-gray-600 flex items-center gap-2 font-inter">
+                <AlertCircle className="w-5 h-5 text-red-500" aria-hidden="true" /> No recent activity in your active projects.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {feedItems.map((item, index) => (
+                  <div key={index}>
+                    <FeedItem
+                      item={item}
+                      index={index}
+                      newComment={newComment}
+                      expandedComments={expandedComments}
+                      handleLike={handleLike}
+                      handleCommentSubmit={handleCommentSubmit}
+                      toggleComments={toggleComments}
+                      handleShare={handleShare}
+                      user={user}
+                      setNewComment={setNewComment}
                     />
-                    <div>
-                      <span className={`text-lg font-orbitron ${index === 0 ? 'text-magenta-neon' : index === 1 ? 'text-purple-soft' : 'text-cyan-neon'}`}>
-                        #{index + 1}
-                      </span>
-                      <p className="text-white font-inter">{entry.username}</p>
-                      {entry.achievements && entry.achievements.length > 0 && (
-                        <div className="flex gap-1 mt-1">
-                          {entry.achievements.slice(0, 3).map((achievement, idx) => (
-                            <Star key={idx} className="w-4 h-4 text-yellow-400" title={achievement} aria-hidden="true" />
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
-                  <span className="text-gray-300 font-inter">{entry.points} points</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+
+        {/* Right Sidebar */}
+        <aside className="right-sidebar w-80 bg-gray-50 border-l border-gray-200 p-4 flex-shrink-0">
+          {/* Project Chat */}
+          <div className="chat-section mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <MessageCircle className="w-5 h-5 text-blue-600" aria-hidden="true" />
+              <h2 className="text-lg font-orbitron font-semibold text-gray-800">Project Chat</h2>
+            </div>
+            <div className="mb-4">
+              <select
+                value={selectedProjectId || ''}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md font-inter text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Select Project for Chat"
+              >
+                {(user.projects || []).filter(p => p.status !== 'Completed').map(project => (
+                  <option key={project._id} value={project._id}>{project.title}</option>
+                ))}
+              </select>
+            </div>
+            <div className="messages bg-white border border-gray-200 rounded-md p-4 h-64 overflow-y-auto mb-4">
+              {messages.map((msg, index) => (
+                <div key={index} className="flex items-start gap-2 mb-2">
+                  <img
+                    src={msg.profilePicture}
+                    alt={`${msg.user}'s profile`}
+                    className="w-6 h-6 rounded-full border border-gray-300"
+                  />
+                  <div>
+                    <p className="text-gray-800 font-inter font-medium text-sm">{msg.username}</p>
+                    <p className="text-gray-700 font-inter text-sm">{msg.text}</p>
+                    <p className="text-gray-500 font-inter text-xs">{new Date(msg.timestamp).toLocaleString()}</p>
+                  </div>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Recommendations Section */}
-        {recommendedProjects.length > 0 && (
-          <div className="recommendations-section">
-            <h3 className="text-lg font-orbitron font-semibold text-white mb-4">Recommended Projects</h3>
-            <div className="space-y-3">
-              {recommendedProjects.map(project => (
-                <Link
-                  key={project.id}
-                  to={`/projects/${project.id}`}
-                  className="recommendation-card bg-gray-800 border border-gray-700 p-4 rounded-md block hover:border-cyan-neon holographic-effect"
-                  style={{ transformStyle: 'preserve-3d' }}
-                >
-                  <h4 className="text-md font-orbitron font-medium text-cyan-neon">{project.title}</h4>
-                  <p className="text-gray-300 text-sm font-inter">{project.reason}</p>
-                </Link>
-              ))}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="flex-1 p-2 border border-gray-300 rounded-full font-inter text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Type a message..."
+                aria-label="Chat Message"
+              />
+              <button
+                onClick={sendMessage}
+                className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 micro-gradient"
+                aria-label="Send Message"
+              >
+                <Send className="w-5 h-5" aria-hidden="true" />
+              </button>
             </div>
           </div>
-        )}
+
+          {/* Leaderboard Section */}
+          <div className="leaderboard-section mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Award className="w-5 h-5 text-blue-600" aria-hidden="true" />
+              <h2 className="text-lg font-orbitron font-semibold text-gray-800">Leaderboard</h2>
+            </div>
+            {leaderboard.length === 0 ? (
+              <p className="text-gray-600 font-inter flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500" aria-hidden="true" /> No leaderboard data available.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <div className="bg-white border border-gray-200 p-4 rounded-md">
+                  <svg className="w-full h-40" viewBox={`0 0 ${leaderboard.length * 60} 100`}>
+                    {leaderboard.map((entry, index) => (
+                      <g key={index} transform={`translate(${index * 60}, 0)`}>
+                        <rect
+                          x="10"
+                          y={100 - (entry.points / Math.max(...leaderboard.map(e => e.points)) * 80)}
+                          width="40"
+                          height={(entry.points / Math.max(...leaderboard.map(e => e.points)) * 80)}
+                          fill={index === 0 ? '#f6ad55' : index === 1 ? '#a0aec0' : index === 2 ? '#a78bfa' : '#e2e8f0'}
+                        />
+                        <text x="30" y="95" textAnchor="middle" className="text-gray-700 font-inter text-xs">{entry.username}</text>
+                        <text x="30" y={100 - (entry.points / Math.max(...leaderboard.map(e => e.points)) * 80) - 5} textAnchor="middle" className="text-gray-700 font-inter text-xs">{entry.points}</text>
+                      </g>
+                    ))}
+                  </svg>
+                </div>
+                {leaderboard.map((entry, index) => (
+                  <div key={index} className="leaderboard-item bg-white border border-gray-200 p-3 rounded-md flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={entry.profilePicture || 'https://via.placeholder.com/32'}
+                        alt={`${entry.username}'s profile`}
+                        className="w-8 h-8 rounded-full border border-gray-300"
+                      />
+                      <div>
+                        <span className={`text-lg font-orbitron ${index === 0 ? 'text-orange-500' : index === 1 ? 'text-gray-500' : index === 2 ? 'text-purple-500' : 'text-gray-700'}`}>
+                          #{index + 1}
+                        </span>
+                        <p className="text-gray-800 font-inter">{entry.username}</p>
+                        {entry.achievements && entry.achievements.length > 0 && (
+                          <div className="flex gap-1 mt-1">
+                            {entry.achievements.slice(0, 3).map((achievement, idx) => (
+                              <Star key={idx} className="w-4 h-4 text-yellow-500" title={achievement} aria-hidden="true" />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-gray-600 font-inter">{entry.points} points</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recommendations Section */}
+          {recommendedProjects.length > 0 && (
+            <div className="recommendations-section">
+              <div className="flex items-center gap-2 mb-4">
+                <Briefcase className="w-5 h-5 text-blue-600" aria-hidden="true" />
+                <h2 className="text-lg font-orbitron font-semibold text-gray-800">Recommended Projects</h2>
+              </div>
+              <div className="space-y-3">
+                {recommendedProjects.map(project => (
+                  <Link
+                    key={project.id}
+                    to={`/projects/${project.id}`}
+                    className="recommendation-card bg-white border border-gray-200 p-4 rounded-md block hover:border-blue-500 micro-gradient"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Folder className="w-5 h-5 text-blue-600" aria-hidden="true" />
+                      <h4 className="text-md font-orbitron font-medium text-blue-600">{project.title}</h4>
+                    </div>
+                    <p className="text-gray-600 text-sm font-inter">{project.reason}</p>
+                    <div className="relative w-16 h-16 mt-2">
+                      <svg className="w-full h-full" viewBox="0 0 100 100">
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          fill="none"
+                          stroke="#e2e8f0"
+                          strokeWidth="10"
+                        />
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          fill="none"
+                          stroke="#a78bfa"
+                          strokeWidth="10"
+                          strokeDasharray="283"
+                          strokeDashoffset={283 * (1 - (project.activityLevel / Math.max(...recommendedProjects.map(p => p.activityLevel)) || 1))}
+                          transform="rotate(-90 50 50)"
+                        />
+                        <text x="50" y="55" textAnchor="middle" className="text-gray-800 font-orbitron text-sm font-semibold">
+                          {Math.round((project.activityLevel / Math.max(...recommendedProjects.map(p => p.activityLevel)) || 1) * 100)}%
+                        </text>
+                      </svg>
+                      <p className="text-center text-gray-600 font-inter text-xs mt-1">Activity</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
     </div>
   );
