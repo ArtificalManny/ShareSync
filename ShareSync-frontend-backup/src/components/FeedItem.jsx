@@ -7,30 +7,30 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
     switch (type) {
       case 'announcement':
       case 'update':
-        return <FileText className="w-5 h-5 text-indigo-vivid" aria-hidden="true" />;
+        return <FileText className="w-5 h-5 text-cyan-neon" aria-hidden="true" />;
       case 'task-complete':
-        return <CheckSquare className="w-5 h-5 text-emerald-green" aria-hidden="true" />;
+        return <CheckSquare className="w-5 h-5 text-green-400" aria-hidden="true" />;
       case 'file':
-        return <Paperclip className="w-5 h-5 text-saffron-yellow" aria-hidden="true" />;
+        return <Paperclip className="w-5 h-5 text-purple-soft" aria-hidden="true" />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="feed-item bg-white border border-gray-200 p-4 rounded-md shadow-sm">
+    <div className="feed-item bg-white p-4 rounded-xl shadow-md border border-gray-200 holographic-effect">
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           <img
             src={item.profilePicture}
             alt={`${item.user}'s profile`}
-            className="w-10 h-10 rounded-full border border-gray-300"
+            className="w-10 h-10 rounded-full border-2 border-cyan-neon shadow-glow"
           />
           <div>
-            <Link to={`/projects/${item.projectId}`} className="text-indigo-vivid font-orbitron font-medium hover:underline">
+            <Link to={`/projects/${item.projectId}`} className="text-cyan-neon font-orbitron font-medium hover:underline">
               {item.projectTitle}
             </Link>
-            <p className="text-gray-500 text-sm font-inter">Posted by {item.user || item.author} • {new Date(item.timestamp).toLocaleString()}</p>
+            <p className="text-gray-600 text-sm font-inter">Posted by {item.user || item.author} • {new Date(item.timestamp).toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -43,9 +43,9 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
         )}
         {item.type === 'announcement' && (
           <p className="text-gray-700 font-inter">
-            <span className="font-medium text-indigo-vivid">Announcement:</span> {item.content.split(/(@\w+)/g).map((part, i) =>
+            <span className="font-medium text-cyan-neon">Announcement:</span> {item.content.split(/(@\w+)/g).map((part, i) =>
               part.match(/@\w+/) ? (
-                <span key={i} className="text-indigo-vivid font-bold hover:underline">
+                <span key={i} className="text-purple-soft font-bold hover:underline">
                   {part}
                 </span>
               ) : (
@@ -56,9 +56,9 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
         )}
         {item.type === 'update' && (
           <p className="text-gray-700 font-inter">
-            <span className="font-medium text-indigo-vivid">Update:</span> {item.content.split(/(@\w+)/g).map((part, i) =>
+            <span className="font-medium text-cyan-neon">Update:</span> {item.content.split(/(@\w+)/g).map((part, i) =>
               part.match(/@\w+/) ? (
-                <span key={i} className="text-indigo-vivid font-bold hover:underline">
+                <span key={i} className="text-purple-soft font-bold hover:underline">
                   {part}
                 </span>
               ) : (
@@ -74,28 +74,28 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
         )}
         {item.type === 'file' && (
           <p className="text-gray-700 font-inter">
-            {item.user} {item.message} - <a href={item.url} className="text-indigo-vivid hover:underline">View File</a>
+            {item.user} {item.message} - <a href={item.url} className="text-purple-soft hover:underline">View File</a>
           </p>
         )}
       </div>
       <div className="flex gap-4 mt-2 border-t border-gray-200 pt-2">
         <button
           onClick={() => handleLike(index)}
-          className="flex items-center gap-1 text-gray-600 hover:text-emerald-green focus:outline-none focus:ring-2 focus:ring-gray-300"
+          className="flex items-center gap-1 text-gray-600 hover:text-magenta-neon focus:outline-none focus:ring-2 focus:ring-cyan-neon holographic-effect"
           aria-label={`Like feed item ${index}`}
         >
           <ThumbsUp className="w-4 h-4" aria-hidden="true" /> {item.likes}
         </button>
         <button
           onClick={() => toggleComments(index)}
-          className="flex items-center gap-1 text-gray-600 hover:text-indigo-vivid focus:outline-none focus:ring-2 focus:ring-gray-300"
+          className="flex items-center gap-1 text-gray-600 hover:text-purple-soft focus:outline-none focus:ring-2 focus:ring-cyan-neon holographic-effect"
           aria-label={`Toggle comments for feed item ${index}`}
         >
           <MessageSquare className="w-4 h-4" aria-hidden="true" /> {item.comments.length}
         </button>
         <button
           onClick={() => handleShare(index)}
-          className="flex items-center gap-1 text-gray-600 hover:text-neon-coral focus:outline-none focus:ring-2 focus:ring-gray-300"
+          className="flex items-center gap-1 text-gray-600 hover:text-cyan-neon focus:outline-none focus:ring-2 focus:ring-cyan-neon holographic-effect"
           aria-label={`Share feed item ${index}`}
         >
           <Share2 className="w-4 h-4" aria-hidden="true" /> {item.shares}
@@ -104,12 +104,12 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
       {expandedComments[index] && (
         <div className="comments-section mt-4">
           {(item.comments || []).map((comment, commentIndex) => (
-            <div key={commentIndex} className="comment bg-gray-100 border border-gray-200 p-2 rounded-md mb-2">
+            <div key={commentIndex} className="comment bg-gray-50 border border-gray-200 p-2 rounded-md mb-2">
               <div className="flex items-start gap-2">
                 <img
                   src={comment.profilePicture}
                   alt={`${comment.user}'s profile`}
-                  className="w-8 h-8 rounded-full border border-gray-300"
+                  className="w-8 h-8 rounded-full border-2 border-cyan-neon shadow-glow"
                 />
                 <div className="flex-1">
                   <p className="text-gray-800 font-inter font-medium text-sm">{comment.username || comment.user}</p>
@@ -119,26 +119,26 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
               </div>
             </div>
           ))}
-          <form onSubmit={(e) => handleCommentSubmit(index, e)} className="flex gap-2 mt-2">
+          <div className="flex gap-2 mt-2">
             <div className="relative flex-1">
               <input
                 type="text"
                 value={newComment[index] || ''}
                 onChange={(e) => setNewComment({ ...newComment, [index]: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-full font-inter text-gray-700 pl-10"
+                className="w-full p-2 bg-gray-100 text-gray-800 rounded-full font-inter border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-neon pl-10"
                 placeholder="Write a comment... (@username to mention)"
                 aria-label="Comment"
               />
               <MessageSquare className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-600" aria-hidden="true" />
             </div>
             <button
-              type="submit"
-              className="bg-emerald-green text-white p-2 rounded-full hover:bg-neon-coral focus:outline-none focus:ring-2 focus:ring-gray-300"
+              onClick={(e) => handleCommentSubmit(index, { preventDefault: () => {}, target: e.target })}
+              className="bg-cyan-neon text-navy-dark p-2 rounded-full hover:bg-magenta-neon focus:outline-none focus:ring-2 focus:ring-cyan-neon holographic-effect"
               aria-label="Submit Comment"
             >
               <Send className="w-5 h-5" aria-hidden="true" />
             </button>
-          </form>
+          </div>
         </div>
       )}
     </div>

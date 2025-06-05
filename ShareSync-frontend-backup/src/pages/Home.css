@@ -12,40 +12,43 @@
 }
 
 .home-header {
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background: transparent;
 }
 
 .feed-container {
-  max-width: 600px;
+  max-width: 700px;
   margin: 0 auto;
 }
 
 .feed-item {
   background: #ffffff !important;
-  border: 1px solid #e5e7eb;
+  border: none !important;
   margin-bottom: 1rem;
 }
 
-.sidebar {
-  background: #f9fafb !important;
+.left-sidebar {
+  background: #1f2937 !important;
+}
+
+.right-sidebar {
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 
 .chat-section, .leaderboard-section, .recommendations-section {
-  background: #f9fafb;
+  background: transparent;
 }
 
 .recommendation-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: #1f2937;
+  border: 1px solid #374151;
 }
 
 .leaderboard-item {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: #1f2937;
+  border: 1px solid #374151;
 }
 
 .messages {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: #1f2937;
+  border: 1px solid #374151;
 }
