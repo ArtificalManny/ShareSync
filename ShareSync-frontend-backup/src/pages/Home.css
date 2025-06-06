@@ -3,6 +3,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 .header {
@@ -13,18 +14,14 @@
   z-index: 50;
 }
 
-.left-sidebar {
-  background: linear-gradient(to bottom, #1a202c, #2d3748) !important;
-}
-
 .right-sidebar {
-  background: #f0f2f5 !important;
+  background: #f1faee !important;
+  margin-top: 1rem;
 }
 
 .main-content {
-  max-width: 700px;
+  max-width: 500px;
   margin: 0 auto;
-  background: #ffffff !important;
 }
 
 .feed-container {
@@ -34,7 +31,7 @@
 .feed-item {
   background: #ffffff !important;
   border: 1px solid #e5e7eb !important;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .chat-section, .leaderboard-section, .recommendations-section {
@@ -54,6 +51,15 @@
 .messages {
   background: #ffffff;
   border: 1px solid #e5e7eb;
+}
+
+.dark .feed-item, .dark .recommendation-card, .dark .leaderboard-item, .dark .messages {
+  background: #1f2937 !important;
+  border-color: #4a5568 !important;
+}
+
+.dark .right-sidebar {
+  background: #2d3748 !important;
 }
 
 @media (max-width: 1024px) {
