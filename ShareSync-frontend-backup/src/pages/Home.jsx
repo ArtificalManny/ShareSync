@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback, memo, useReducer } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, Search, Bell, Moon, Sun, Plus, ChevronDown, ChevronUp, LayoutDashboard, X } from 'lucide-react';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, Search, Bell, Moon, Sun, ChevronDown, ChevronUp, User, X } from 'lucide-react';
 import FeedItem from '../components/FeedItem';
 import { fetchLeaderboard } from '../services/project.js';
 import './Home.css';
@@ -162,7 +162,7 @@ const Home = () => {
               }
               return new Date(b.latestActivity) - new Date(a.latestActivity);
             })
-            .slice(0, 2) // Limit to 2 projects
+            .slice(0, 2)
             .map(project => ({
               id: project.id,
               title: project.title,
@@ -198,7 +198,7 @@ const Home = () => {
               });
             });
 
-            const leaderboardArray = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 3); // Limit to top 3
+            const leaderboardArray = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 3);
             setLeaderboard(leaderboardArray);
           } catch (err) {
             setLeaderboard([]);
@@ -575,14 +575,6 @@ const Home = () => {
           {/* Right: Icons */}
           <div className="flex items-center gap-6">
             <div className="relative group">
-              <Link to="/dashboard" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110">
-                <LayoutDashboard className="w-4 h-4" style={{ stroke: `url(#dashboard-gradient-${accentColor})` }} aria-hidden="true" />
-              </Link>
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
-                Dashboard
-              </div>
-            </div>
-            <div className="relative group">
               <Link to="/projects" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110">
                 <Folder className="w-4 h-4" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
               </Link>
@@ -631,36 +623,12 @@ const Home = () => {
             </div>
             <div className="relative group">
               <button
-                onClick={toggleDarkMode}
-                className="text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
-                aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-              >
-                {isDarkMode ? (
-                  <Sun className="w-4 h-4" style={{ stroke: `url(#sun-gradient-${accentColor})` }} aria-hidden="true" />
-                ) : (
-                  <Moon className="w-4 h-4" style={{ stroke: `url(#moon-gradient-${accentColor})` }} aria-hidden="true" />
-                )}
-              </button>
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
-                {isDarkMode ? "Light Mode" : "Dark Mode"}
-              </div>
-            </div>
-            <div className="relative group">
-              <button
                 onClick={toggleProfileDropdown}
                 className="flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
                 aria-label="Profile menu"
                 aria-expanded={isProfileDropdownOpen}
               >
-                <div className="relative">
-                  <img
-                    src={user.profilePicture || 'https://via.placeholder.com/32'}
-                    alt={`${user.firstName}'s profile`}
-                    className="w-8 h-8 rounded-full"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 rounded-full ring-gradient"></div>
-                </div>
+                <User className="w-4 h-4 text-white" aria-hidden="true" />
                 <ChevronDown className="w-4 h-4 text-white" aria-hidden="true" />
               </button>
               <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
@@ -695,6 +663,18 @@ const Home = () => {
                       />
                     </div>
                   </div>
+                  <div className="px-4 py-2 text-sm font-lato text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    Dark Mode:
+                    <button
+                      onClick={() => {
+                        toggleDarkMode();
+                      }}
+                      className="text-gray-700 dark:text-gray-300 hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent"
+                      aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+                    >
+                      {isDarkMode ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
+                    </button>
+                  </div>
                   <button
                     className="block w-full text-left px-4 py-2 text-sm font-lato text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => {
@@ -710,10 +690,6 @@ const Home = () => {
           </div>
         </div>
         <svg className="absolute w-0 h-0">
-          <linearGradient id={`dashboard-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
-          </linearGradient>
           <linearGradient id={`folder-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
@@ -722,21 +698,9 @@ const Home = () => {
             <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
           </linearGradient>
-          <linearGradient id={`sun-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`moon-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
-          </linearGradient>
           <linearGradient id={`search-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`dashboard-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
           </linearGradient>
           <linearGradient id={`folder-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
@@ -746,35 +710,15 @@ const Home = () => {
             <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
           </linearGradient>
-          <linearGradient id={`sun-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`moon-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
-          </linearGradient>
           <linearGradient id={`search-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`dashboard-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
           </linearGradient>
           <linearGradient id={`folder-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
           </linearGradient>
           <linearGradient id={`bell-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`sun-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`moon-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
           </linearGradient>
@@ -920,7 +864,7 @@ const Home = () => {
               )}
             </div>
             <div className="messages bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md p-3 h-32 overflow-y-auto mb-2">
-              {messages.slice(-3).map((msg, index) => ( // Show latest 3 messages
+              {messages.slice(-3).map((msg, index) => (
                 <div key={index} className="flex items-start gap-2 mb-2">
                   <div className="relative">
                     <img
@@ -1041,24 +985,10 @@ const Home = () => {
         </aside>
       </div>
 
-      {/* Floating Action Button with Tooltip */}
-      <div className="fixed bottom-6 right-6 z-40 group">
-        <button
-          className="relative bg-blue-accent text-white p-3 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-accent micro-gradient transition-transform duration-200 transform hover:scale-110 ripple"
-          aria-label="Quick Actions"
-          onClick={() => handleQuickAction('new-project')}
-        >
-          <Plus className="w-5 h-5" aria-hidden="true" />
-        </button>
-        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2">
-          Create New Project or Task
-        </div>
-      </div>
-
       {/* Back to Top Button */}
       {showBackToTop && (
         <button
-          className="fixed bottom-20 right-6 z-40 bg-gray-600 text-white p-2 rounded-full shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-transform duration-200 transform hover:scale-110"
+          className="fixed bottom-6 right-6 z-40 bg-gray-600 text-white p-2 rounded-full shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-transform duration-200 transform hover:scale-110"
           aria-label="Back to Top"
           onClick={scrollToTop}
         >
