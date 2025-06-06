@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext, useCallback, memo, useReducer } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, Search, Bell, Moon, Sun, ChevronDown, ChevronUp, User, X } from 'lucide-react';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, ChevronUp } from 'lucide-react';
+import Navbar from '../components/Navbar';
 import FeedItem from '../components/FeedItem';
 import { fetchLeaderboard } from '../services/project.js';
 import './Home.css';
@@ -53,7 +54,6 @@ const Home = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
-    // Debug authentication state
     console.log('AuthContext State:', { isAuthenticated, user, isLoading, authError });
 
     if (isLoading) return;
@@ -485,252 +485,24 @@ const Home = () => {
         <div className="dot-pattern"></div>
       </div>
 
-      {/* Header */}
-      <header className="header fixed top-0 left-0 right-0 bg-gradient-to-r from-dark-secondary to-dark-bg border-b border-gray-300 z-50 h-14">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between min-w-0">
-          {/* Left: Logo and Search Icon (Mobile) */}
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <div className="pl-2">
-              <Link to="/">
-                <h1 className="text-lg font-poppins font-bold text-white">
-                  ShareSync
-                </h1>
-              </Link>
-            </div>
-            <button
-              onClick={toggleSearch}
-              className="md:hidden text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0"
-              aria-label={isSearchOpen ? "Close search" : "Open search"}
-            >
-              <Search className="w-4 h-4" style={{ stroke: `url(#search-gradient-${accentColor})` }} aria-hidden="true" />
-            </button>
-          </div>
-
-          {/* Center: Search Bar (Desktop) */}
-          <div className="flex-1 max-w-md mx-4 hidden md:block">
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchState.query}
-              onChange={(e) => dispatchSearch({ type: 'SET_QUERY', payload: e.target.value })}
-              onKeyDown={handleSearchSubmit}
-              className="w-full pl-3 pr-3 py-1 border border-gray-300 rounded-full bg-white text-gray-700 font-lato text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
-              aria-label="Search projects"
-            />
-            {searchState.suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 mx-auto mt-1 w-full max-w-md bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
-                {searchState.suggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className="px-3 py-1 text-sm font-lato text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                    onClick={() => {
-                      dispatchSearch({ type: 'SET_QUERY', payload: suggestion });
-                      dispatchSearch({ type: 'SET_SUGGESTIONS', payload: [] });
-                    }}
-                  >
-                    {suggestion}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {isSearchOpen && (
-            <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col p-4 md:hidden">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-poppins font-semibold text-black dark:text-white">Search</h2>
-                <button
-                  onClick={toggleSearch}
-                  className="text-black dark:text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent"
-                  aria-label="Close search"
-                >
-                  <X className="w-6 h-6" aria-hidden="true" />
-                </button>
-              </div>
-              <input
-                type="text"
-                placeholder="Search projects..."
-                value={searchState.query}
-                onChange={(e) => dispatchSearch({ type: 'SET_QUERY', payload: e.target.value })}
-                onKeyDown={handleSearchSubmit}
-                className="w-full pl-3 pr-3 py-1 border border-gray-300 rounded-full bg-white text-gray-700 font-lato text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
-                aria-label="Search projects"
-              />
-              {searchState.suggestions.length > 0 && (
-                <div className="mt-2 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
-                  {searchState.suggestions.map((suggestion, index) => (
-                    <div
-                      key={index}
-                      className="px-3 py-1 text-sm font-lato text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                      onClick={() => {
-                        dispatchSearch({ type: 'SET_QUERY', payload: suggestion });
-                        dispatchSearch({ type: 'SET_SUGGESTIONS', payload: [] });
-                        setIsSearchOpen(false);
-                      }}
-                    >
-                      {suggestion}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Right: Icons */}
-          <div className="flex items-center justify-center gap-4 md:gap-6">
-            <div className="relative group hidden md:block">
-              <Link to="/projects" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0 p-1">
-                <Folder className="w-4 h-4" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
-              </Link>
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
-                Projects
-              </div>
-            </div>
-            <div className="relative group">
-              <button
-                className="relative text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0 p-1"
-                aria-label="Notifications"
-                onClick={toggleNotificationDropdown}
-                aria-expanded={isNotificationDropdownOpen}
-              >
-                <Bell className="w-4 h-4" style={{ stroke: `url(#bell-gradient-${accentColor})` }} aria-hidden="true" />
-                {notifications.length > 0 && (
-                  <span className="absolute top-[-4px] right-[-4px] w-4 h-4 bg-red-accent text-white text-xs rounded-full flex items-center justify-center">
-                    {notifications.length}
-                  </span>
-                )}
-              </button>
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
-                Notifications
-              </div>
-              {isNotificationDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto" role="region" aria-live="polite">
-                  {notifications.length === 0 ? (
-                    <div className="px-4 py-2 text-sm font-lato text-gray-700 dark:text-gray-300">
-                      No notifications
-                    </div>
-                  ) : (
-                    notifications.map((notification, index) => (
-                      <div
-                        key={index}
-                        className="px-4 py-2 text-sm font-lato text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-b-0"
-                      >
-                        {notification.message}
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {new Date().toLocaleString()}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="relative group">
-              <button
-                onClick={toggleProfileDropdown}
-                className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0 p-1"
-                aria-label="Profile menu"
-                aria-expanded={isProfileDropdownOpen}
-              >
-                <User className="w-4 h-4 text-white" aria-hidden="true" />
-                <ChevronDown className="w-4 h-4 text-white" aria-hidden="true" />
-              </button>
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
-                Profile
-              </div>
-              {isProfileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
-                  <Link
-                    to={`/profile/${user.username}`}
-                    className="block px-4 py-2 text-sm font-lato text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={() => setIsProfileDropdownOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                  <div className="px-4 py-2 text-sm font-lato text-gray-700 dark:text-gray-300">
-                    Accent Color:
-                    <div className="flex gap-2 mt-1">
-                      <button
-                        onClick={() => changeAccentColor('blue')}
-                        className="w-6 h-6 bg-blue-accent rounded-full focus:outline-none focus:ring-2 focus:ring-blue-accent"
-                        aria-label="Select blue accent color"
-                      />
-                      <button
-                        onClick={() => changeAccentColor('green')}
-                        className="w-6 h-6 bg-green-accent rounded-full focus:outline-none focus:ring-2 focus:ring-green-accent"
-                        aria-label="Select green accent color"
-                      />
-                      <button
-                        onClick={() => changeAccentColor('purple')}
-                        className="w-6 h-6 bg-purple-accent rounded-full focus:outline-none focus:ring-2 focus:ring-purple-accent"
-                        aria-label="Select purple accent color"
-                      />
-                    </div>
-                  </div>
-                  <div className="px-4 py-2 text-sm font-lato text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                    Dark Mode:
-                    <button
-                      onClick={() => {
-                        toggleDarkMode();
-                      }}
-                      className="text-gray-700 dark:text-gray-300 hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent"
-                      aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-                    >
-                      {isDarkMode ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
-                    </button>
-                  </div>
-                  <button
-                    className="block w-full text-left px-4 py-2 text-sm font-lato text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={() => {
-                      setIsProfileDropdownOpen(false);
-                      alert('Logout functionality to be implemented.');
-                    }}
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        <svg className="absolute w-0 h-0">
-          <linearGradient id={`folder-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`bell-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`search-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`folder-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`bell-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`search-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`folder-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`bell-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id={`search-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
-          </linearGradient>
-        </svg>
-      </header>
+      {/* Navbar */}
+      <Navbar
+        searchState={searchState}
+        dispatchSearch={dispatchSearch}
+        handleSearchSubmit={handleSearchSubmit}
+        isSearchOpen={isSearchOpen}
+        setIsSearchOpen={setIsSearchOpen}
+        accentColor={accentColor}
+        notifications={notifications}
+        toggleNotificationDropdown={toggleNotificationDropdown}
+        isNotificationDropdownOpen={isNotificationDropdownOpen}
+        toggleProfileDropdown={toggleProfileDropdown}
+        isProfileDropdownOpen={isProfileDropdownOpen}
+        user={user}
+        changeAccentColor={changeAccentColor}
+        isDarkMode={isDarkMode}
+        toggleDarkMode={toggleDarkMode}
+      />
 
       {/* Fallback UI if not authenticated */}
       {(!isAuthenticated || !user) && (
@@ -863,7 +635,7 @@ const Home = () => {
                   aria-expanded={isProjectDropdownOpen}
                 >
                   <span>{(user.projects || []).find(p => p._id === selectedProjectId)?.title || 'Select a project'}</span>
-                  <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" />
+                  <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" />
                 </button>
                 {isProjectDropdownOpen && (
                   <div className="absolute right-0 mt-1 w-full max-h-40 overflow-y-auto bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">

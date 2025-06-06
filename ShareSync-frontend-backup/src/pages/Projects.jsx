@@ -1,202 +1,205 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useReducer } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, Plus, AlertCircle, Users } from 'lucide-react';
+import { Folder, AlertCircle, ChevronDown, Menu, Filter } from 'lucide-react';
+import Navbar from '../components/Navbar';
 import './Projects.css';
+
+const searchReducer = (state, action) => {
+  switch (action.type) {
+    case 'SET_QUERY':
+      return { ...state, query: action.payload };
+    case 'SET_SUGGESTIONS':
+      return { ...state, suggestions: action.payload };
+    default:
+      return state;
+  }
+};
 
 const Projects = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, authError, addProject, socket, fetchUserData } = useContext(AuthContext);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Personal');
-  const [error, setError] = useState('');
+  const { user, isAuthenticated, isLoading, authError } = useContext(AuthContext);
   const [projects, setProjects] = useState([]);
+  const [error, setError] = useState('');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [searchState, dispatchSearch] = useReducer(searchReducer, { query: '', suggestions: [] });
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [accentColor, setAccentColor] = useState('blue');
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated && user) {
-      const userProjects = user.projects || [];
-      setProjects(userProjects);
-    }
+    if (isLoading) return;
 
-    if (socket) {
-      socket.on('project-created', () => {
-        fetchUserData(); // Refresh user data to update project list
-      });
-
-      socket.on('project-updated', () => {
-        fetchUserData();
-      });
-
-      return () => {
-        socket.off('project-created');
-        socket.off('project-updated');
-      };
-    }
-  }, [isLoading, isAuthenticated, user, socket, fetchUserData]);
-
-  const handleCreateProject = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (!title.trim()) {
-      setError('Project title is required.');
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true });
       return;
     }
 
-    try {
-      const projectData = {
-        title,
-        description,
-        category,
-        status: 'Not Started',
-      };
-      const newProject = await addProject(projectData);
-      setTitle('');
-      setDescription('');
-      setCategory('Personal');
-      // Update projects list locally
-      setProjects((prevProjects) => [...prevProjects, newProject]);
-      // Redirect to ProjectHome page for the new project
-      navigate(`/projects/${newProject._id}`);
-    } catch (err) {
-      setError(err.message || 'Failed to create project. Please check if the backend server is running and try again.');
+    if (!user || !user.email) {
+      navigate('/login', { replace: true });
+      return;
     }
+
+    const fetchProjects = () => {
+      try {
+        const userProjects = user.projects || [];
+        setProjects(userProjects);
+      } catch (err) {
+        setError('Failed to load projects: ' + (err.message || 'Please try again.'));
+      }
+    };
+
+    fetchProjects();
+  }, [isAuthenticated, isLoading, navigate, user]);
+
+  useEffect(() => {
+    if (searchState.query.length > 0) {
+      const suggestions = (user?.projects || [])
+        .filter(project => project.title.toLowerCase().includes(searchState.query.toLowerCase()))
+        .map(project => project.title)
+        .slice(0, 5);
+      dispatchSearch({ type: 'SET_SUGGESTIONS', payload: suggestions });
+    } else {
+      dispatchSearch({ type: 'SET_SUGGESTIONS', payload: [] });
+    }
+  }, [searchState.query, user]);
+
+  const handleSearchSubmit = (e) => {
+    if (e.key === 'Enter') {
+      alert(`Navigate to search results for: ${searchState.query} (Implement search results page.)`);
+      setIsSearchOpen(false);
+    }
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => !prev);
+    document.documentElement.classList.toggle('dark');
+  };
+
+  const toggleProfileDropdown = () => {
+    setIsProfileDropdownOpen(prev => !prev);
+    if (isNotificationDropdownOpen) setIsNotificationDropdownOpen(false);
+  };
+
+  const toggleNotificationDropdown = () => {
+    setIsNotificationDropdownOpen(prev => !prev);
+    if (isProfileDropdownOpen) setIsProfileDropdownOpen(false);
+  };
+
+  const changeAccentColor = (color) => {
+    setAccentColor(color);
   };
 
   if (isLoading) {
     return (
-      <div className="projects-container flex items-center justify-center min-h-screen">
-        <div className="loader" aria-label="Loading projects"></div>
-        <span className="text-saffron-yellow text-xl font-orbitron ml-4">Loading...</span>
+      <div className="projects-container">
+        <div className="loading-message flex items-center justify-center min-h-screen">
+          <div className="loader" aria-label="Loading projects page"></div>
+          <span className="text-gray-600 dark:text-gray-400 text-xl font-lato ml-4">Loading...</span>
+        </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    navigate('/login', { replace: true });
-    return null;
-  }
-
-  if (authError) {
+  if (authError || error) {
     return (
-      <div className="projects-container flex items-center justify-center min-h-screen">
-        <p className="text-crimson-red text-lg font-orbitron">{authError}</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="projects-container flex items-center justify-center min-h-screen">
-        <p className="text-saffron-yellow text-lg font-orbitron">Unable to load user data. Please try logging in again.</p>
+      <div className="projects-container">
+        <div className="error-message flex items-center justify-center min-h-screen">
+          <p className="text-red-500 text-lg font-lato flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" aria-hidden="true" /> {authError || error}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="projects-container">
-      <div className="projects-header py-8 px-6 rounded-b-3xl text-center glassmorphic">
-        <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-4 animate-pulse">Your Projects</h1>
-        <p className="text-saffron-yellow text-lg font-inter mb-4">Manage and collaborate on your projects.</p>
-      </div>
+    <div className={`projects-container flex flex-col min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'} relative`}>
+      {/* Navbar */}
+      <Navbar
+        searchState={searchState}
+        dispatchSearch={dispatchSearch}
+        handleSearchSubmit={handleSearchSubmit}
+        isSearchOpen={isSearchOpen}
+        setIsSearchOpen={setIsSearchOpen}
+        accentColor={accentColor}
+        notifications={notifications}
+        toggleNotificationDropdown={toggleNotificationDropdown}
+        isNotificationDropdownOpen={isNotificationDropdownOpen}
+        toggleProfileDropdown={toggleProfileDropdown}
+        isProfileDropdownOpen={isProfileDropdownOpen}
+        user={user}
+        changeAccentColor={changeAccentColor}
+        isDarkMode={isDarkMode}
+        toggleDarkMode={toggleDarkMode}
+      />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        {error && (
-          <p className="text-crimson-red mb-4 text-center font-orbitron flex items-center gap-2 justify-center">
-            <AlertCircle className="w-5 h-5 animate-bounce" aria-hidden="true" /> {error}
-          </p>
-        )}
-
-        {/* Create Project Form */}
-        <form onSubmit={handleCreateProject} className="mb-8 card p-6 glassmorphic holographic-effect card-3d">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <Plus className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Create New Project
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="title" className="block text-saffron-yellow mb-2 font-inter">Project Title</label>
-              <input
-                type="text"
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-                placeholder="Enter project title"
-                aria-label="Project Title"
-              />
-            </div>
-            <div>
-              <label htmlFor="category" className="block text-saffron-yellow mb-2 font-inter">Category</label>
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-                aria-label="Project Category"
-              >
-                <option value="Personal">Personal</option>
-                <option value="School">School</option>
-                <option value="Job">Job</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-4">
-            <label htmlFor="description" className="block text-saffron-yellow mb-2 font-inter">Description (optional)</label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-              placeholder="Enter project description"
-              rows="3"
-              aria-label="Project Description"
-            ></textarea>
-          </div>
-          <button
-            type="submit"
-            className="btn-primary mt-4 rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-            aria-label="Create Project"
-          >
-            <Plus className="w-5 h-5 mr-2" aria-hidden="true" /> Create Project
-          </button>
-        </form>
-
-        {/* Project List */}
-        <div className="projects-list">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <Folder className="w-5 h-5 mr-2 text-charcoal-gray animate-orbit" aria-hidden="true" /> All Projects
-          </h2>
-          {projects.length === 0 ? (
-            <p className="text-saffron-yellow flex items-center gap-2 font-inter">
-              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No projects yet.
+      {/* Fallback UI if not authenticated */}
+      {(!isAuthenticated || !user) && (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="loader mx-auto mb-4" aria-label="Redirecting to login"></div>
+            <p className="text-gray-600 dark:text-gray-400 text-lg font-lato">
+              Redirecting to login...
             </p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projects.map(project => (
-                <Link
-                  key={project._id}
-                  to={`/projects/${project._id}`}
-                  className="project-card card p-4 glassmorphic holographic-effect shadow-md focus:outline-none focus:ring-2 focus:ring-charcoal-gray card-3d animate-fade-in"
-                  aria-label={`View project ${project.title}`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Folder className="w-5 h-5 text-indigo-vivid animate-pulse" aria-hidden="true" />
-                    <h3 className="text-lg font-orbitron font-bold text-indigo-vivid">{project.title || 'Untitled Project'}</h3>
-                  </div>
-                  <p className="text-saffron-yellow text-sm mb-1 font-inter">{project.description || 'No description'}</p>
-                  <p className="text-saffron-yellow text-sm font-inter">Category: {project.category || 'Unknown'}</p>
-                  <p className="text-saffron-yellow text-sm font-inter">Status: {project.status || 'Not Started'}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Users className="w-4 h-4 text-charcoal-gray animate-orbit" aria-hidden="true" />
-                    <span className="text-lavender-gray text-xs font-inter">{project.members?.length || 0} members</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Main Content Area */}
+      {isAuthenticated && user && (
+        <div className="flex flex-1 mt-14 relative z-10">
+          <main className="main-content flex-1 p-4 sm:p-6">
+            <div className="projects-header mb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Folder className="w-5 h-5 text-blue-accent" aria-hidden="true" />
+                <h1 className="text-lg sm:text-xl font-poppins font-semibold text-gray-800 dark:text-gray-200">
+                  Your Projects
+                </h1>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 text-sm font-lato">
+                Manage and view all your projects here.
+              </p>
+            </div>
+
+            <div className="projects-list">
+              {projects.length === 0 ? (
+                <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 font-lato text-sm">
+                  <AlertCircle className="w-4 h-4 text-red-accent" aria-hidden="true" /> No projects found.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {projects.map(project => (
+                    <Link
+                      key={project._id}
+                      to={`/projects/${project._id}`}
+                      className="project-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm hover:border-blue-accent hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-transform duration-200 transform hover:scale-102"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <Folder className="w-4 h-4 text-blue-accent" aria-hidden="true" />
+                        <h3 className="text-md font-poppins font-medium text-gray-800 dark:text-gray-200">
+                          {project.title}
+                        </h3>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm font-lato mb-2">
+                        Status: {project.status || 'Not Started'}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" />
+                        <span className="text-gray-600 dark:text-gray-400 text-xs font-lato">
+                          {project.members?.length || 0} members
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
+      )}
     </div>
   );
 };

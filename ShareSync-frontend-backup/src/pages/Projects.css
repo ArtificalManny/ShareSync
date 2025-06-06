@@ -1,17 +1,37 @@
-/* Projects.css */
 .projects-container {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.main-content {
+  flex: 1;
 }
 
 .projects-header {
-  background: transparent;
+  margin-bottom: 1rem;
 }
 
 .project-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.2s ease-in-out;
 }
 
 .project-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(45, 212, 191, 0.3);
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.loader {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
