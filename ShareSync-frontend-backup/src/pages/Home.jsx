@@ -578,7 +578,7 @@ const Home = () => {
           {/* Right: Icons */}
           <div className="flex items-center justify-center gap-4 md:gap-6">
             <div className="relative group hidden md:block">
-              <Link to="/projects" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0">
+              <Link to="/projects" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0 p-1">
                 <Folder className="w-4 h-4" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
               </Link>
               <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
@@ -587,14 +587,14 @@ const Home = () => {
             </div>
             <div className="relative group">
               <button
-                className="relative text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0"
+                className="relative text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0 p-1"
                 aria-label="Notifications"
                 onClick={toggleNotificationDropdown}
                 aria-expanded={isNotificationDropdownOpen}
               >
                 <Bell className="w-4 h-4" style={{ stroke: `url(#bell-gradient-${accentColor})` }} aria-hidden="true" />
                 {notifications.length > 0 && (
-                  <span className="absolute top-0 right-0 w-4 h-4 bg-red-accent text-white text-xs rounded-full flex items-center justify-center">
+                  <span className="absolute top-[-4px] right-[-4px] w-4 h-4 bg-red-accent text-white text-xs rounded-full flex items-center justify-center">
                     {notifications.length}
                   </span>
                 )}
@@ -627,7 +627,7 @@ const Home = () => {
             <div className="relative group">
               <button
                 onClick={toggleProfileDropdown}
-                className="flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0"
+                className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0 p-1"
                 aria-label="Profile menu"
                 aria-expanded={isProfileDropdownOpen}
               >
@@ -1001,6 +1001,7 @@ const Home = () => {
           </aside>
         </div>
       )}
+
       {/* Back to Top Button */}
       {isAuthenticated && user && showBackToTop && (
         <button
