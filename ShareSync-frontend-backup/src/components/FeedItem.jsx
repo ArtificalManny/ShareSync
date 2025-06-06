@@ -18,7 +18,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
   };
 
   return (
-    <div className="feed-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-4 rounded-lg shadow-sm transition-shadow hover:shadow-md hover:bg-blue-50 dark:hover:bg-blue-900/20 micro-gradient holographic-effect">
+    <div className="feed-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-4 rounded-lg shadow-sm transition-shadow hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-700/20 micro-gradient holographic-effect">
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -29,7 +29,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
               loading="lazy"
             />
             <div className="absolute inset-0 rounded-full ring-gradient"></div>
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+            <span className="absolute bottom-0 right-0 translate-x-1 translate-y-1 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></span>
           </div>
           <div>
             <Link to={`/projects/${item.projectId}`} className="text-blue-accent font-poppins font-medium hover:underline text-sm">
@@ -53,7 +53,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
             <span className="font-medium text-blue-accent">Announcement:</span>{' '}
             {item.content.split(/(@\w+)/g).map((part, i) =>
               part.match(/@\w+/) ? (
-                <span key={i} className="text-blue-accent font-bold hover:underline bg-blue-50 dark:bg-blue-900/20 px-1 rounded">
+                <span key={i} className="text-blue-accent font-bold hover:underline bg-gray-100 dark:bg-gray-600/20 px-1 rounded">
                   {part}
                 </span>
               ) : (
@@ -67,7 +67,7 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
             <span className="font-medium text-blue-accent">Update:</span>{' '}
             {item.content.split(/(@\w+)/g).map((part, i) =>
               part.match(/@\w+/) ? (
-                <span key={i} className="text-blue-accent font-bold hover:underline bg-blue-50 dark:bg-blue-900/20 px-1 rounded">
+                <span key={i} className="text-blue-accent font-bold hover:underline bg-gray-100 dark:bg-gray-600/20 px-1 rounded">
                   {part}
                 </span>
               ) : (
@@ -126,14 +126,14 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
                     loading="lazy"
                   />
                   <div className="absolute inset-0 rounded-full ring-gradient"></div>
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                  <span className={`absolute bottom-0 right-0 translate-x-1 translate-y-1 w-2 h-2 rounded-full border-2 border-white dark:border-gray-800 shadow-sm ${comment.online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                 </div>
                 <div className="flex-1">
                   <p className="text-gray-800 dark:text-gray-300 font-lato font-medium text-sm">{comment.username || comment.user}</p>
                   <p className="text-gray-700 dark:text-gray-400 font-lato text-sm tracking-wide">
                     {comment.text.split(/(@\w+)/g).map((part, i) =>
                       part.match(/@\w+/) ? (
-                        <span key={i} className="text-blue-accent font-bold hover:underline bg-blue-50 dark:bg-blue-900/20 px-1 rounded">
+                        <span key={i} className="text-blue-accent font-bold hover:underline bg-gray-100 dark:bg-gray-600/20 px-1 rounded">
                           {part}
                         </span>
                       ) : (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback, memo, useReducer } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, Bell, Moon, Sun, Plus, ChevronDown, ChevronUp, LayoutDashboard } from 'lucide-react';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, Search, Bell, Moon, Sun, Plus, ChevronDown, ChevronUp, LayoutDashboard } from 'lucide-react';
 import FeedItem from '../components/FeedItem';
 import { fetchLeaderboard } from '../services/project.js';
 import './Home.css';
@@ -49,7 +49,8 @@ const Home = () => {
   const [searchState, dispatchSearch] = useReducer(searchReducer, { query: '', suggestions: [] });
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [userStats, setUserStats] = useState({ activeProjects: 0, tasksCompleted: 0, achievements: [] });
-  const [accentColor, setAccentColor] = useState('blue'); // Default to blue
+  const [accentColor, setAccentColor] = useState('blue');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -421,6 +422,10 @@ const Home = () => {
     setIsProjectDropdownOpen(prev => !prev);
   };
 
+  const toggleSearch = () => {
+    setIsSearchOpen(prev => !prev);
+  };
+
   const selectProject = (projectId) => {
     setSelectedProjectId(projectId);
     setIsProjectDropdownOpen(false);
@@ -476,33 +481,70 @@ const Home = () => {
   }
 
   return (
-    <div className={`home-container flex flex-col min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-light-blue text-black'} relative`}>
+    <div className={`home-container flex flex-col min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'} relative`}>
       {/* Animated Background Pattern */}
       <div className="animated-bg absolute inset-0 z-0 opacity-10 pointer-events-none">
         <div className="dot-pattern"></div>
       </div>
 
       {/* Header */}
-      <header className="header fixed top-0 left-0 right-0 bg-gradient-to-r from-dark-secondary to-blue-dark border-b border-gray-300 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <h1 className="text-xl font-poppins font-bold text-white">
-                ShareSync
-              </h1>
-            </Link>
-            <div className="relative">
+      <header className="header fixed top-0 left-0 right-0 bg-gradient-to-r from-dark-secondary to-dark-bg border-b border-gray-300 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
+          {/* Left: Logo */}
+          <Link to="/">
+            <h1 className="text-lg font-poppins font-bold text-white">
+              ShareSync
+            </h1>
+          </Link>
+
+          {/* Center: Search Bar (Desktop) / Search Icon (Mobile) */}
+          <div className="flex-1 max-w-md mx-auto hidden md:block">
+            <input
+              type="text"
+              placeholder="Search projects..."
+              value={searchState.query}
+              onChange={(e) => dispatchSearch({ type: 'SET_QUERY', payload: e.target.value })}
+              onKeyDown={handleSearchSubmit}
+              className="w-full pl-3 pr-3 py-1 border border-gray-300 rounded-full bg-white text-gray-700 font-lato text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+              aria-label="Search projects"
+            />
+            {searchState.suggestions.length > 0 && (
+              <div className="absolute left-0 right-0 mx-auto mt-1 w-full max-w-md bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
+                {searchState.suggestions.map((suggestion, index) => (
+                  <div
+                    key={index}
+                    className="px-3 py-1 text-sm font-lato text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                    onClick={() => {
+                      dispatchSearch({ type: 'SET_QUERY', payload: suggestion });
+                      dispatchSearch({ type: 'SET_SUGGESTIONS', payload: [] });
+                    }}
+                  >
+                    {suggestion}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={toggleSearch}
+            className="md:hidden text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
+            aria-label={isSearchOpen ? "Close search" : "Open search"}
+          >
+            <Search className="w-4 h-4" style={{ stroke: `url(#search-gradient-${accentColor})` }} aria-hidden="true" />
+          </button>
+          {isSearchOpen && (
+            <div className="absolute top-14 left-0 right-0 mx-4 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 md:hidden">
               <input
                 type="text"
                 placeholder="Search projects..."
                 value={searchState.query}
                 onChange={(e) => dispatchSearch({ type: 'SET_QUERY', payload: e.target.value })}
                 onKeyDown={handleSearchSubmit}
-                className="pl-3 pr-3 py-1 border border-gray-300 rounded-full bg-white text-gray-700 font-lato text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent w-48 sm:w-64 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+                className="w-full pl-3 pr-3 py-1 border border-gray-300 rounded-full bg-white text-gray-700 font-lato text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
                 aria-label="Search projects"
               />
               {searchState.suggestions.length > 0 && (
-                <div className="absolute left-0 mt-1 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
+                <div className="mt-1 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
                   {searchState.suggestions.map((suggestion, index) => (
                     <div
                       key={index}
@@ -510,6 +552,7 @@ const Home = () => {
                       onClick={() => {
                         dispatchSearch({ type: 'SET_QUERY', payload: suggestion });
                         dispatchSearch({ type: 'SET_SUGGESTIONS', payload: [] });
+                        setIsSearchOpen(false);
                       }}
                     >
                       {suggestion}
@@ -518,28 +561,43 @@ const Home = () => {
                 </div>
               )}
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link to="/dashboard" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110">
-              <LayoutDashboard className="w-5 h-5" style={{ stroke: `url(#dashboard-gradient-${accentColor})` }} aria-hidden="true" />
-            </Link>
-            <Link to="/projects" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110">
-              <Folder className="w-5 h-5" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
-            </Link>
-            <div className="relative">
+          )}
+
+          {/* Right: Icons */}
+          <div className="flex items-center gap-4">
+            <div className="relative group">
+              <Link to="/dashboard" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110">
+                <LayoutDashboard className="w-4 h-4" style={{ stroke: `url(#dashboard-gradient-${accentColor})` }} aria-hidden="true" />
+              </Link>
+              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
+                Dashboard
+              </div>
+            </div>
+            <div className="relative group">
+              <Link to="/projects" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110">
+                <Folder className="w-4 h-4" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
+              </Link>
+              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
+                Projects
+              </div>
+            </div>
+            <div className="relative group">
               <button
                 className="relative text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
                 aria-label="Notifications"
                 onClick={toggleNotificationDropdown}
                 aria-expanded={isNotificationDropdownOpen}
               >
-                <Bell className="w-5 h-5" style={{ stroke: `url(#bell-gradient-${accentColor})` }} aria-hidden="true" />
+                <Bell className="w-4 h-4" style={{ stroke: `url(#bell-gradient-${accentColor})` }} aria-hidden="true" />
                 {notifications.length > 0 && (
                   <span className="absolute top-0 right-0 w-4 h-4 bg-red-accent text-white text-xs rounded-full flex items-center justify-center">
                     {notifications.length}
                   </span>
                 )}
               </button>
+              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
+                Notifications
+              </div>
               {isNotificationDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto" role="region" aria-live="polite">
                   {notifications.length === 0 ? (
@@ -562,18 +620,23 @@ const Home = () => {
                 </div>
               )}
             </div>
-            <button
-              onClick={toggleDarkMode}
-              className="text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
-              aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-            >
-              {isDarkMode ? (
-                <Sun className="w-5 h-5" style={{ stroke: `url(#sun-gradient-${accentColor})` }} aria-hidden="true" />
-              ) : (
-                <Moon className="w-5 h-5" style={{ stroke: `url(#moon-gradient-${accentColor})` }} aria-hidden="true" />
-              )}
-            </button>
-            <div className="relative">
+            <div className="relative group">
+              <button
+                onClick={toggleDarkMode}
+                className="text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
+                aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {isDarkMode ? (
+                  <Sun className="w-4 h-4" style={{ stroke: `url(#sun-gradient-${accentColor})` }} aria-hidden="true" />
+                ) : (
+                  <Moon className="w-4 h-4" style={{ stroke: `url(#moon-gradient-${accentColor})` }} aria-hidden="true" />
+                )}
+              </button>
+              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
+                {isDarkMode ? "Light Mode" : "Dark Mode"}
+              </div>
+            </div>
+            <div className="relative group">
               <button
                 onClick={toggleProfileDropdown}
                 className="flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
@@ -588,10 +651,13 @@ const Home = () => {
                     loading="lazy"
                   />
                   <div className="absolute inset-0 rounded-full ring-gradient"></div>
-                  <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                  <span className="absolute bottom-0 right-0 translate-x-1 translate-y-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></span>
                 </div>
-                <ChevronDown className="w-5 h-5 text-white" aria-hidden="true" />
+                <ChevronDown className="w-4 h-4 text-white" aria-hidden="true" />
               </button>
+              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
+                Profile
+              </div>
               {isProfileDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
                   <Link
@@ -656,6 +722,10 @@ const Home = () => {
             <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
           </linearGradient>
+          <linearGradient id={`search-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
+          </linearGradient>
           <linearGradient id={`dashboard-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
@@ -673,6 +743,10 @@ const Home = () => {
             <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
           </linearGradient>
           <linearGradient id={`moon-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`search-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
           </linearGradient>
@@ -696,6 +770,10 @@ const Home = () => {
             <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
           </linearGradient>
+          <linearGradient id={`search-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
+          </linearGradient>
         </svg>
       </header>
 
@@ -714,7 +792,7 @@ const Home = () => {
                   loading="lazy"
                 />
                 <div className="absolute inset-0 rounded-full ring-gradient"></div>
-                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                <span className="absolute bottom-0 right-0 translate-x-1 translate-y-1 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></span>
               </div>
               <div>
                 <h2 className="text-lg font-poppins font-semibold holographic-text">
@@ -845,7 +923,7 @@ const Home = () => {
                       loading="lazy"
                     />
                     <div className="absolute inset-0 rounded-full ring-gradient"></div>
-                    <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${msg.online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                    <span className={`absolute bottom-0 right-0 translate-x-1 translate-y-1 w-2 h-2 rounded-full border-2 border-white dark:border-gray-800 shadow-sm ${msg.online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                   </div>
                   <div>
                     <p className="text-gray-800 dark:text-gray-300 font-lato font-medium text-sm">{msg.username}</p>
@@ -920,7 +998,7 @@ const Home = () => {
                           loading="lazy"
                         />
                         <div className="absolute inset-0 rounded-full ring-gradient"></div>
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                        <span className="absolute bottom-0 right-0 translate-x-1 translate-y-1 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></span>
                       </div>
                       <div>
                         <span className={`text-sm font-poppins ${index === 0 ? 'text-orange-accent' : index === 1 ? 'text-blue-accent' : 'text-purple-accent'}`}>
@@ -947,7 +1025,7 @@ const Home = () => {
           {recommendedProjects.length > 0 && (
             <div className="recommendations-section">
               <div className="flex items-center gap-2 mb-2">
-                <Briefcase className="w-4 h-4 text-blue-accent" aria-hidden="true" />
+                <Folder className="w-4 h-4 text-blue-accent" aria-hidden="true" />
                 <h2 className="text-md font-poppins font-semibold holographic-text">Recommended Projects</h2>
               </div>
               <div className="space-y-2">
