@@ -1,7 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './AuthContext';
-import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
 import ProjectHome from './pages/ProjectHome';

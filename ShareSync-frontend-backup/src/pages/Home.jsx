@@ -486,18 +486,27 @@ const Home = () => {
 
       {/* Header */}
       <header className="header fixed top-0 left-0 right-0 bg-gradient-to-r from-dark-secondary to-dark-bg border-b border-gray-300 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
-          {/* Left: Logo */}
-          <div className="pl-2">
-            <Link to="/">
-              <h1 className="text-lg font-poppins font-bold text-white">
-                ShareSync
-              </h1>
-            </Link>
+        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between min-w-0">
+          {/* Left: Logo and Search Icon (Mobile) */}
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <div className="pl-2">
+              <Link to="/">
+                <h1 className="text-lg font-poppins font-bold text-white">
+                  ShareSync
+                </h1>
+              </Link>
+            </div>
+            <button
+              onClick={toggleSearch}
+              className="md:hidden text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0"
+              aria-label={isSearchOpen ? "Close search" : "Open search"}
+            >
+              <Search className="w-4 h-4" style={{ stroke: `url(#search-gradient-${accentColor})` }} aria-hidden="true" />
+            </button>
           </div>
 
-          {/* Center: Search Bar (Desktop) / Search Icon (Mobile) */}
-          <div className="flex-1 max-w-md mx-auto hidden md:block">
+          {/* Center: Search Bar (Desktop) */}
+          <div className="flex-1 max-w-md mx-4 hidden md:block">
             <input
               type="text"
               placeholder="Search projects..."
@@ -524,13 +533,6 @@ const Home = () => {
               </div>
             )}
           </div>
-          <button
-            onClick={toggleSearch}
-            className="md:hidden text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
-            aria-label={isSearchOpen ? "Close search" : "Open search"}
-          >
-            <Search className="w-4 h-4" style={{ stroke: `url(#search-gradient-${accentColor})` }} aria-hidden="true" />
-          </button>
           {isSearchOpen && (
             <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col p-4 md:hidden">
               <div className="flex justify-between items-center mb-4">
@@ -573,9 +575,9 @@ const Home = () => {
           )}
 
           {/* Right: Icons */}
-          <div className="flex items-center gap-6">
-            <div className="relative group">
-              <Link to="/projects" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110">
+          <div className="flex items-center justify-center gap-4 md:gap-6">
+            <div className="relative group hidden md:block">
+              <Link to="/projects" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0">
                 <Folder className="w-4 h-4" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
               </Link>
               <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
@@ -584,7 +586,7 @@ const Home = () => {
             </div>
             <div className="relative group">
               <button
-                className="relative text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
+                className="relative text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0"
                 aria-label="Notifications"
                 onClick={toggleNotificationDropdown}
                 aria-expanded={isNotificationDropdownOpen}
@@ -624,7 +626,7 @@ const Home = () => {
             <div className="relative group">
               <button
                 onClick={toggleProfileDropdown}
-                className="flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
+                className="flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110 flex-shrink-0"
                 aria-label="Profile menu"
                 aria-expanded={isProfileDropdownOpen}
               >
