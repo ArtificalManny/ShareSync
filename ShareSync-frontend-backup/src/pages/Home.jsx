@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback, memo, useReducer } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, Search, Bell, Moon, Sun, Plus, ChevronDown, ChevronUp, LayoutDashboard } from 'lucide-react';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, Search, Bell, Moon, Sun, Plus, ChevronDown, ChevronUp, LayoutDashboard, X } from 'lucide-react';
 import FeedItem from '../components/FeedItem';
 import { fetchLeaderboard } from '../services/project.js';
 import './Home.css';
@@ -162,7 +162,7 @@ const Home = () => {
               }
               return new Date(b.latestActivity) - new Date(a.latestActivity);
             })
-            .slice(0, 3)
+            .slice(0, 2) // Limit to 2 projects
             .map(project => ({
               id: project.id,
               title: project.title,
@@ -198,7 +198,7 @@ const Home = () => {
               });
             });
 
-            const leaderboardArray = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 5);
+            const leaderboardArray = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 3); // Limit to top 3
             setLeaderboard(leaderboardArray);
           } catch (err) {
             setLeaderboard([]);
@@ -213,14 +213,12 @@ const Home = () => {
             const projectTasks = project.tasks || [];
             tasksCompleted += projectTasks.filter(task => task.status === 'Completed').length;
           });
-          // Mock achievements for now
           const achievements = [
             { id: 1, name: 'Task Starter', description: 'Completed 5 tasks', earned: tasksCompleted >= 5 },
             { id: 2, name: 'On-Time Pro', description: 'Delivered a project on time', earned: true },
           ];
           setUserStats({ activeProjects: activeProjects.length, tasksCompleted, achievements });
 
-          // Show toast for new achievements
           achievements.forEach(achievement => {
             if (achievement.earned) {
               dispatchNotifications({
@@ -288,7 +286,6 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    // Mock search suggestions based on project titles
     if (searchState.query.length > 0) {
       const suggestions = (user?.projects || [])
         .filter(project => project.title.toLowerCase().includes(searchState.query.toLowerCase()))
@@ -395,7 +392,6 @@ const Home = () => {
       username: user.username,
       profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
       timestamp: new Date().toISOString(),
-      online: true, // Mock online status
     };
 
     socket.emit('chat-message', messageData);
@@ -446,6 +442,7 @@ const Home = () => {
   const handleSearchSubmit = (e) => {
     if (e.key === 'Enter') {
       alert(`Navigate to search results for: ${searchState.query} (Implement search results page.)`);
+      setIsSearchOpen(false);
     }
   };
 
@@ -491,11 +488,13 @@ const Home = () => {
       <header className="header fixed top-0 left-0 right-0 bg-gradient-to-r from-dark-secondary to-dark-bg border-b border-gray-300 z-50">
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
           {/* Left: Logo */}
-          <Link to="/">
-            <h1 className="text-lg font-poppins font-bold text-white">
-              ShareSync
-            </h1>
-          </Link>
+          <div className="pl-2">
+            <Link to="/">
+              <h1 className="text-lg font-poppins font-bold text-white">
+                ShareSync
+              </h1>
+            </Link>
+          </div>
 
           {/* Center: Search Bar (Desktop) / Search Icon (Mobile) */}
           <div className="flex-1 max-w-md mx-auto hidden md:block">
@@ -533,7 +532,17 @@ const Home = () => {
             <Search className="w-4 h-4" style={{ stroke: `url(#search-gradient-${accentColor})` }} aria-hidden="true" />
           </button>
           {isSearchOpen && (
-            <div className="absolute top-14 left-0 right-0 mx-4 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 md:hidden">
+            <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col p-4 md:hidden">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-poppins font-semibold text-black dark:text-white">Search</h2>
+                <button
+                  onClick={toggleSearch}
+                  className="text-black dark:text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent"
+                  aria-label="Close search"
+                >
+                  <X className="w-6 h-6" aria-hidden="true" />
+                </button>
+              </div>
               <input
                 type="text"
                 placeholder="Search projects..."
@@ -544,7 +553,7 @@ const Home = () => {
                 aria-label="Search projects"
               />
               {searchState.suggestions.length > 0 && (
-                <div className="mt-1 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
+                <div className="mt-2 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
                   {searchState.suggestions.map((suggestion, index) => (
                     <div
                       key={index}
@@ -564,12 +573,12 @@ const Home = () => {
           )}
 
           {/* Right: Icons */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <div className="relative group">
               <Link to="/dashboard" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110">
                 <LayoutDashboard className="w-4 h-4" style={{ stroke: `url(#dashboard-gradient-${accentColor})` }} aria-hidden="true" />
               </Link>
-              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
                 Dashboard
               </div>
             </div>
@@ -577,7 +586,7 @@ const Home = () => {
               <Link to="/projects" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110">
                 <Folder className="w-4 h-4" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
               </Link>
-              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
                 Projects
               </div>
             </div>
@@ -595,7 +604,7 @@ const Home = () => {
                   </span>
                 )}
               </button>
-              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
                 Notifications
               </div>
               {isNotificationDropdownOpen && (
@@ -632,7 +641,7 @@ const Home = () => {
                   <Moon className="w-4 h-4" style={{ stroke: `url(#moon-gradient-${accentColor})` }} aria-hidden="true" />
                 )}
               </button>
-              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
                 {isDarkMode ? "Light Mode" : "Dark Mode"}
               </div>
             </div>
@@ -651,11 +660,10 @@ const Home = () => {
                     loading="lazy"
                   />
                   <div className="absolute inset-0 rounded-full ring-gradient"></div>
-                  <span className="absolute bottom-0 right-0 translate-x-1 translate-y-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></span>
                 </div>
                 <ChevronDown className="w-4 h-4 text-white" aria-hidden="true" />
               </button>
-              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-xs font-lato rounded py-1 px-2 whitespace-nowrap">
                 Profile
               </div>
               {isProfileDropdownOpen && (
@@ -792,7 +800,6 @@ const Home = () => {
                   loading="lazy"
                 />
                 <div className="absolute inset-0 rounded-full ring-gradient"></div>
-                <span className="absolute bottom-0 right-0 translate-x-1 translate-y-1 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></span>
               </div>
               <div>
                 <h2 className="text-lg font-poppins font-semibold holographic-text">
@@ -810,7 +817,7 @@ const Home = () => {
                     achievement.earned && (
                       <div key={achievement.id} className="flex items-center gap-1">
                         <Star className="w-4 h-4 text-yellow-500" aria-hidden="true" />
-                        <span className="text-xs font-lato text-gray-600 dark:text-gray-400">{achievement.name}</span>
+                        <span className="text-xs font-lato text-gray-600 dark:text-gray-400 font-light">{achievement.name}</span>
                       </div>
                     )
                   ))}
@@ -826,7 +833,7 @@ const Home = () => {
                 Project Activity Feed
               </h1>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 text-sm font-lato">
+            <p className="text-gray-600 dark:text-gray-400 text-sm font-lato font-light">
               Stay updated with the latest activity in your projects.
             </p>
           </div>
@@ -853,7 +860,7 @@ const Home = () => {
                 ))}
               </div>
             ) : feedItems.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 font-lato text-sm">
+              <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 font-lato text-sm font-light">
                 <AlertCircle className="w-4 h-4 text-red-accent" aria-hidden="true" /> No recent activity in your active projects.
               </p>
             ) : (
@@ -881,12 +888,12 @@ const Home = () => {
         </main>
 
         {/* Right Sidebar */}
-        <aside className="right-sidebar w-72 border-l border-gray-200 p-4 flex-shrink-0 hidden lg:block sticky top-12 h-[calc(100vh-3rem)] overflow-y-auto">
+        <aside className="right-sidebar w-72 border-l border-gray-200 p-4 flex-shrink-0 hidden lg:block sticky top-12 h-[calc(100vh-3rem)] overflow-y-auto pt-4 pb-8 shadow-sm">
           {/* Project Chat */}
-          <div className="chat-section mb-6">
+          <div className="chat-section mb-8">
             <div className="flex items-center gap-2 mb-2">
               <MessageCircle className="w-4 h-4" style={{ stroke: `url(#message-gradient-${accentColor})` }} aria-hidden="true" />
-              <h2 className="text-md font-poppins font-semibold holographic-text">Project Chat</h2>
+              <h2 className="text-sm font-poppins font-semibold holographic-text">Project Chat</h2>
             </div>
             <div className="relative mb-2">
               <button
@@ -912,8 +919,8 @@ const Home = () => {
                 </div>
               )}
             </div>
-            <div className="messages bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md p-3 h-48 overflow-y-auto mb-2">
-              {messages.map((msg, index) => (
+            <div className="messages bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md p-3 h-32 overflow-y-auto mb-2">
+              {messages.slice(-3).map((msg, index) => ( // Show latest 3 messages
                 <div key={index} className="flex items-start gap-2 mb-2">
                   <div className="relative">
                     <img
@@ -923,72 +930,53 @@ const Home = () => {
                       loading="lazy"
                     />
                     <div className="absolute inset-0 rounded-full ring-gradient"></div>
-                    <span className={`absolute bottom-0 right-0 translate-x-1 translate-y-1 w-2 h-2 rounded-full border-2 border-white dark:border-gray-800 shadow-sm ${msg.online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                   </div>
                   <div>
                     <p className="text-gray-800 dark:text-gray-300 font-lato font-medium text-sm">{msg.username}</p>
                     <p className="text-gray-700 dark:text-gray-400 font-lato text-sm">{msg.text}</p>
-                    <p className="text-gray-500 dark:text-gray-500 font-lato text-xs">{new Date(msg.timestamp).toLocaleString()}</p>
+                    <p className="text-gray-500 dark:text-gray-500 font-lato text-xs font-light">{new Date(msg.timestamp).toLocaleString()}</p>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1 p-1 border border-gray-200 dark:border-gray-600 rounded-full font-lato text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent bg-white dark:bg-gray-800"
-                placeholder="Type a message..."
-                aria-label="Chat Message"
-              />
-              <button
-                onClick={sendMessage}
-                className="relative bg-red-accent text-white p-1 rounded-full hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-accent micro-gradient transition-transform duration-200 transform hover:scale-105 ripple"
-                aria-label="Send Message"
-              >
-                <Send className="w-4 h-4" aria-hidden="true" />
-              </button>
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2 flex-1">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="flex-1 p-1 border border-gray-200 dark:border-gray-600 rounded-full font-lato text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent bg-white dark:bg-gray-800"
+                  placeholder="Type a message..."
+                  aria-label="Chat Message"
+                />
+                <button
+                  onClick={sendMessage}
+                  className="relative bg-red-accent text-white p-1 rounded-full hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-accent micro-gradient transition-transform duration-200 transform hover:scale-105 ripple"
+                  aria-label="Send Message"
+                >
+                  <Send className="w-4 h-4" aria-hidden="true" />
+                </button>
+              </div>
+              <Link to={`/chat/${selectedProjectId}`} className="text-blue-accent hover:underline text-xs font-lato ml-2">
+                View More
+              </Link>
             </div>
           </div>
 
           {/* Leaderboard Section */}
-          <div className="leaderboard-section mb-6">
+          <div className="leaderboard-section mb-8">
             <div className="flex items-center gap-2 mb-2">
               <Award className="w-4 h-4 text-blue-accent" aria-hidden="true" />
-              <h2 className="text-md font-poppins font-semibold holographic-text">Leaderboard</h2>
+              <h2 className="text-sm font-poppins font-semibold holographic-text">Leaderboard</h2>
             </div>
             {leaderboard.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400 font-lato flex items-center gap-2 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 font-lato flex items-center gap-2 text-sm font-light">
                 <AlertCircle className="w-4 h-4 text-red-accent" aria-hidden="true" /> No leaderboard data available.
               </p>
             ) : (
               <div className="space-y-2">
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-3 rounded-md micro-gradient">
-                  <svg className="w-full h-24" viewBox={`0 0 ${leaderboard.length * 40} 80`}>
-                    {leaderboard.map((entry, index) => (
-                      <g key={index} transform={`translate(${index * 40}, 0)`}>
-                        <rect
-                          x="5"
-                          y={80 - (entry.points / Math.max(...leaderboard.map(e => e.points)) * 60)}
-                          width="30"
-                          height={(entry.points / Math.max(...leaderboard.map(e => e.points)) * 60)}
-                          fill={`url(#bar-gradient-${index})`}
-                        />
-                        <defs>
-                          <linearGradient id={`bar-gradient-${index}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style={{ stopColor: index === 0 ? '#f6ad55' : index === 1 ? '#1877f2' : '#a78bfa', stopOpacity: 1 }} />
-                            <stop offset="100%" style={{ stopColor: index === 0 ? '#e69500' : index === 1 ? '#0c5ab5' : '#805ad5', stopOpacity: 1 }} />
-                          </linearGradient>
-                        </defs>
-                        <text x="20" y="75" textAnchor="middle" className="text-gray-700 dark:text-gray-300 font-lato text-[10px]">{entry.username}</text>
-                        <text x="20" y={80 - (entry.points / Math.max(...leaderboard.map(e => e.points)) * 60) - 5} textAnchor="middle" className="text-gray-700 dark:text-gray-300 font-lato text-[10px]">{entry.points}</text>
-                      </g>
-                    ))}
-                  </svg>
-                </div>
                 {leaderboard.map((entry, index) => (
-                  <div key={index} className="leaderboard-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-2 rounded-md flex justify-between items-center transition-transform duration-200 transform hover:scale-102 hover:bg-blue-50 dark:hover:bg-blue-900/20 micro-gradient">
+                  <div key={index} className="leaderboard-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-2 rounded-md flex justify-between items-center transition-transform duration-200 transform hover:scale-102 hover:bg-gray-50 dark:hover:bg-gray-700/20 micro-gradient">
                     <div className="flex items-center gap-2">
                       <div className="relative">
                         <img
@@ -998,7 +986,6 @@ const Home = () => {
                           loading="lazy"
                         />
                         <div className="absolute inset-0 rounded-full ring-gradient"></div>
-                        <span className="absolute bottom-0 right-0 translate-x-1 translate-y-1 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></span>
                       </div>
                       <div>
                         <span className={`text-sm font-poppins ${index === 0 ? 'text-orange-accent' : index === 1 ? 'text-blue-accent' : 'text-purple-accent'}`}>
@@ -1014,7 +1001,7 @@ const Home = () => {
                         )}
                       </div>
                     </div>
-                    <span className="text-gray-600 dark:text-gray-400 font-lato text-xs">{entry.points} points</span>
+                    <span className="text-gray-600 dark:text-gray-400 font-lato text-xs font-light">{entry.points} points</span>
                   </div>
                 ))}
               </div>
@@ -1026,27 +1013,26 @@ const Home = () => {
             <div className="recommendations-section">
               <div className="flex items-center gap-2 mb-2">
                 <Folder className="w-4 h-4 text-blue-accent" aria-hidden="true" />
-                <h2 className="text-md font-poppins font-semibold holographic-text">Recommended Projects</h2>
+                <h2 className="text-sm font-poppins font-semibold holographic-text">Recommended Projects</h2>
               </div>
               <div className="space-y-2">
                 {recommendedProjects.map(project => (
                   <Link
                     key={project.id}
                     to={`/projects/${project.id}`}
-                    className="recommendation-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-2 rounded-md block hover:border-blue-accent hover:bg-blue-50 dark:hover:bg-blue-900/20 micro-gradient transition-transform duration-200 transform hover:scale-102"
+                    className="recommendation-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-2 rounded-md block hover:border-blue-accent hover:bg-gray-50 dark:hover:bg-gray-700/20 micro-gradient transition-transform duration-200 transform hover:scale-102"
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Folder className="w-4 h-4" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
                       <h4 className="text-sm font-poppins font-medium text-blue-accent">{project.title}</h4>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-400 text-xs font-lato">{project.reason}</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-xs font-lato font-light">{project.reason}</p>
                     <div className="w-full h-4 mt-1 bg-gray-200 dark:bg-gray-700 rounded-full">
                       <div
                         className="h-full bg-green-accent rounded-full"
                         style={{ width: `${(project.activityLevel / Math.max(...recommendedProjects.map(p => p.activityLevel)) || 1) * 100}%` }}
                       ></div>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-400 font-lato text-[10px] mt-1">Activity Level</p>
                   </Link>
                 ))}
               </div>

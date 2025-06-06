@@ -29,7 +29,6 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
               loading="lazy"
             />
             <div className="absolute inset-0 rounded-full ring-gradient"></div>
-            <span className="absolute bottom-0 right-0 translate-x-1 translate-y-1 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></span>
           </div>
           <div>
             <Link to={`/projects/${item.projectId}`} className="text-blue-accent font-poppins font-medium hover:underline text-sm">
@@ -126,7 +125,6 @@ const FeedItem = ({ item, index, newComment, expandedComments, handleLike, handl
                     loading="lazy"
                   />
                   <div className="absolute inset-0 rounded-full ring-gradient"></div>
-                  <span className={`absolute bottom-0 right-0 translate-x-1 translate-y-1 w-2 h-2 rounded-full border-2 border-white dark:border-gray-800 shadow-sm ${comment.online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                 </div>
                 <div className="flex-1">
                   <p className="text-gray-800 dark:text-gray-300 font-lato font-medium text-sm">{comment.username || comment.user}</p>
