@@ -1,10 +1,32 @@
-import React, { useState, useEffect, useContext, useCallback, memo } from 'react';
+import React, { useState, useEffect, useContext, useCallback, memo, useReducer } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, Search, User, Briefcase, Bell, Moon, Sun, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, Bell, Moon, Sun, Plus, ChevronDown, ChevronUp, LayoutDashboard } from 'lucide-react';
 import FeedItem from '../components/FeedItem';
 import { fetchLeaderboard } from '../services/project.js';
 import './Home.css';
+
+const notificationReducer = (state, action) => {
+  switch (action.type) {
+    case 'ADD_NOTIFICATION':
+      return [...state, action.payload];
+    case 'CLEAR_NOTIFICATIONS':
+      return [];
+    default:
+      return state;
+  }
+};
+
+const searchReducer = (state, action) => {
+  switch (action.type) {
+    case 'SET_QUERY':
+      return { ...state, query: action.payload };
+    case 'SET_SUGGESTIONS':
+      return { ...state, suggestions: action.payload };
+    default:
+      return state;
+  }
+};
 
 const Home = () => {
   const navigate = useNavigate();
@@ -18,16 +40,16 @@ const Home = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, dispatchNotifications] = useReducer(notificationReducer, []);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [searchState, dispatchSearch] = useReducer(searchReducer, { query: '', suggestions: [] });
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [userStats, setUserStats] = useState({ activeProjects: 0, tasksCompleted: 0 });
+  const [userStats, setUserStats] = useState({ activeProjects: 0, tasksCompleted: 0, achievements: [] });
+  const [accentColor, setAccentColor] = useState('blue'); // Default to blue
 
   useEffect(() => {
     if (isLoading) return;
@@ -103,7 +125,7 @@ const Home = () => {
           }));
         });
 
-        allFeedItems.sort((a, b) => new Date(b.timestamp || new Date()) - new Date(a.timestamp || new Date()));
+        allFeedItems.sort((a, b) => new Date(b) - new Date(a));
         setFeedItems(allFeedItems);
 
         const recommendProjects = () => {
@@ -190,7 +212,22 @@ const Home = () => {
             const projectTasks = project.tasks || [];
             tasksCompleted += projectTasks.filter(task => task.status === 'Completed').length;
           });
-          setUserStats({ activeProjects: activeProjects.length, tasksCompleted });
+          // Mock achievements for now
+          const achievements = [
+            { id: 1, name: 'Task Starter', description: 'Completed 5 tasks', earned: tasksCompleted >= 5 },
+            { id: 2, name: 'On-Time Pro', description: 'Delivered a project on time', earned: true },
+          ];
+          setUserStats({ activeProjects: activeProjects.length, tasksCompleted, achievements });
+
+          // Show toast for new achievements
+          achievements.forEach(achievement => {
+            if (achievement.earned) {
+              dispatchNotifications({
+                type: 'ADD_NOTIFICATION',
+                payload: { message: `Achievement Unlocked: ${achievement.name}!` },
+              });
+            }
+          });
         };
 
         fetchUserStats();
@@ -228,7 +265,7 @@ const Home = () => {
       });
 
       socket.on('notification', (notification) => {
-        setNotifications((prev) => [...prev, notification]);
+        dispatchNotifications({ type: 'ADD_NOTIFICATION', payload: notification });
       });
 
       return () => {
@@ -251,16 +288,16 @@ const Home = () => {
 
   useEffect(() => {
     // Mock search suggestions based on project titles
-    if (searchQuery.length > 0) {
+    if (searchState.query.length > 0) {
       const suggestions = (user?.projects || [])
-        .filter(project => project.title.toLowerCase().includes(searchQuery.toLowerCase()))
+        .filter(project => project.title.toLowerCase().includes(searchState.query.toLowerCase()))
         .map(project => project.title)
         .slice(0, 5);
-      setSearchSuggestions(suggestions);
+      dispatchSearch({ type: 'SET_SUGGESTIONS', payload: suggestions });
     } else {
-      setSearchSuggestions([]);
+      dispatchSearch({ type: 'SET_SUGGESTIONS', payload: [] });
     }
-  }, [searchQuery, user]);
+  }, [searchState.query, user]);
 
   const handleLike = useCallback((index) => {
     setFeedItems(prevItems =>
@@ -357,6 +394,7 @@ const Home = () => {
       username: user.username,
       profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
       timestamp: new Date().toISOString(),
+      online: true, // Mock online status
     };
 
     socket.emit('chat-message', messageData);
@@ -400,6 +438,16 @@ const Home = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleSearchSubmit = (e) => {
+    if (e.key === 'Enter') {
+      alert(`Navigate to search results for: ${searchState.query} (Implement search results page.)`);
+    }
+  };
+
+  const changeAccentColor = (color) => {
+    setAccentColor(color);
+  };
+
   if (isLoading) {
     return (
       <div className="home-container">
@@ -428,9 +476,14 @@ const Home = () => {
   }
 
   return (
-    <div className={`home-container flex flex-col min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
+    <div className={`home-container flex flex-col min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-light-blue text-black'} relative`}>
+      {/* Animated Background Pattern */}
+      <div className="animated-bg absolute inset-0 z-0 opacity-10 pointer-events-none">
+        <div className="dot-pattern"></div>
+      </div>
+
       {/* Header */}
-      <header className="header fixed top-0 left-0 right-0 bg-gradient-to-r from-dark-secondary to-dark-bg border-b border-gray-300 z-50">
+      <header className="header fixed top-0 left-0 right-0 bg-gradient-to-r from-dark-secondary to-blue-dark border-b border-gray-300 z-50">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Link to="/">
@@ -442,21 +495,21 @@ const Home = () => {
               <input
                 type="text"
                 placeholder="Search projects..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-6 pr-3 py-1 border border-gray-300 rounded-full bg-white text-gray-700 font-lato text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent w-48 sm:w-64 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+                value={searchState.query}
+                onChange={(e) => dispatchSearch({ type: 'SET_QUERY', payload: e.target.value })}
+                onKeyDown={handleSearchSubmit}
+                className="pl-3 pr-3 py-1 border border-gray-300 rounded-full bg-white text-gray-700 font-lato text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent w-48 sm:w-64 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
                 aria-label="Search projects"
               />
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" />
-              {searchSuggestions.length > 0 && (
+              {searchState.suggestions.length > 0 && (
                 <div className="absolute left-0 mt-1 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
-                  {searchSuggestions.map((suggestion, index) => (
+                  {searchState.suggestions.map((suggestion, index) => (
                     <div
                       key={index}
                       className="px-3 py-1 text-sm font-lato text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                       onClick={() => {
-                        setSearchQuery(suggestion);
-                        setSearchSuggestions([]);
+                        dispatchSearch({ type: 'SET_QUERY', payload: suggestion });
+                        dispatchSearch({ type: 'SET_SUGGESTIONS', payload: [] });
                       }}
                     >
                       {suggestion}
@@ -467,6 +520,12 @@ const Home = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <Link to="/dashboard" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110">
+              <LayoutDashboard className="w-5 h-5" style={{ stroke: `url(#dashboard-gradient-${accentColor})` }} aria-hidden="true" />
+            </Link>
+            <Link to="/projects" className="text-white hover:text-blue-accent transition-transform duration-200 transform hover:scale-110">
+              <Folder className="w-5 h-5" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
+            </Link>
             <div className="relative">
               <button
                 className="relative text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
@@ -474,7 +533,7 @@ const Home = () => {
                 onClick={toggleNotificationDropdown}
                 aria-expanded={isNotificationDropdownOpen}
               >
-                <Bell className="w-5 h-5" aria-hidden="true" />
+                <Bell className="w-5 h-5" style={{ stroke: `url(#bell-gradient-${accentColor})` }} aria-hidden="true" />
                 {notifications.length > 0 && (
                   <span className="absolute top-0 right-0 w-4 h-4 bg-red-accent text-white text-xs rounded-full flex items-center justify-center">
                     {notifications.length}
@@ -482,7 +541,7 @@ const Home = () => {
                 )}
               </button>
               {isNotificationDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto">
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto" role="region" aria-live="polite">
                   {notifications.length === 0 ? (
                     <div className="px-4 py-2 text-sm font-lato text-gray-700 dark:text-gray-300">
                       No notifications
@@ -508,7 +567,11 @@ const Home = () => {
               className="text-white hover:text-blue-accent focus:outline-none focus:ring-2 focus:ring-blue-accent transition-transform duration-200 transform hover:scale-110"
               aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
             >
-              {isDarkMode ? <Sun className="w-5 h-5" aria-hidden="true" /> : <Moon className="w-5 h-5" aria-hidden="true" />}
+              {isDarkMode ? (
+                <Sun className="w-5 h-5" style={{ stroke: `url(#sun-gradient-${accentColor})` }} aria-hidden="true" />
+              ) : (
+                <Moon className="w-5 h-5" style={{ stroke: `url(#moon-gradient-${accentColor})` }} aria-hidden="true" />
+              )}
             </button>
             <div className="relative">
               <button
@@ -517,11 +580,16 @@ const Home = () => {
                 aria-label="Profile menu"
                 aria-expanded={isProfileDropdownOpen}
               >
-                <img
-                  src={user.profilePicture || 'https://via.placeholder.com/32'}
-                  alt={`${user.firstName}'s profile`}
-                  className="w-8 h-8 rounded-full border-2 border-blue-accent"
-                />
+                <div className="relative">
+                  <img
+                    src={user.profilePicture || 'https://via.placeholder.com/32'}
+                    alt={`${user.firstName}'s profile`}
+                    className="w-8 h-8 rounded-full"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 rounded-full ring-gradient"></div>
+                  <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                </div>
                 <ChevronDown className="w-5 h-5 text-white" aria-hidden="true" />
               </button>
               {isProfileDropdownOpen && (
@@ -533,6 +601,26 @@ const Home = () => {
                   >
                     Profile
                   </Link>
+                  <div className="px-4 py-2 text-sm font-lato text-gray-700 dark:text-gray-300">
+                    Accent Color:
+                    <div className="flex gap-2 mt-1">
+                      <button
+                        onClick={() => changeAccentColor('blue')}
+                        className="w-6 h-6 bg-blue-accent rounded-full focus:outline-none focus:ring-2 focus:ring-blue-accent"
+                        aria-label="Select blue accent color"
+                      />
+                      <button
+                        onClick={() => changeAccentColor('green')}
+                        className="w-6 h-6 bg-green-accent rounded-full focus:outline-none focus:ring-2 focus:ring-green-accent"
+                        aria-label="Select green accent color"
+                      />
+                      <button
+                        onClick={() => changeAccentColor('purple')}
+                        className="w-6 h-6 bg-purple-accent rounded-full focus:outline-none focus:ring-2 focus:ring-purple-accent"
+                        aria-label="Select purple accent color"
+                      />
+                    </div>
+                  </div>
                   <button
                     className="block w-full text-left px-4 py-2 text-sm font-lato text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => {
@@ -547,35 +635,116 @@ const Home = () => {
             </div>
           </div>
         </div>
+        <svg className="absolute w-0 h-0">
+          <linearGradient id={`dashboard-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`folder-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`bell-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`sun-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`moon-gradient-blue`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#1877f2', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#4fd1c5', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`dashboard-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`folder-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`bell-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`sun-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`moon-gradient-green`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#48bb78', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`dashboard-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`folder-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`bell-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`sun-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
+          </linearGradient>
+          <linearGradient id={`moon-gradient-purple`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
+          </linearGradient>
+        </svg>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 mt-12">
+      <div className="flex flex-1 mt-12 relative z-10">
         {/* Main Content */}
         <main className="main-content flex-1 p-4 sm:p-6">
           {/* Welcome Banner */}
-          <div className="welcome-banner bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-6 shadow-sm micro-gradient">
+          <div className="welcome-banner bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-6 shadow-sm micro-gradient holographic-effect">
             <div className="flex items-center gap-3">
-              <img
-                src={user.profilePicture || 'https://via.placeholder.com/40'}
-                alt={`${user.firstName}'s profile`}
-                className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-600"
-              />
+              <div className="relative">
+                <img
+                  src={user.profilePicture || 'https://via.placeholder.com/40'}
+                  alt={`${user.firstName}'s profile`}
+                  className="w-10 h-10 rounded-full"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 rounded-full ring-gradient"></div>
+                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+              </div>
               <div>
-                <h2 className="text-lg font-poppins font-semibold">
+                <h2 className="text-lg font-poppins font-semibold holographic-text">
                   Welcome, {user.firstName}!
                 </h2>
                 <p className="text-sm font-lato text-gray-600 dark:text-gray-400">
-                  You have {userStats.activeProjects} active projects and {userStats.tasksCompleted} tasks completed.
+                  You have{' '}
+                  <Link to="/projects" className="text-blue-accent hover:underline">
+                    {userStats.activeProjects} active projects
+                  </Link>{' '}
+                  and {userStats.tasksCompleted} tasks completed.
                 </p>
+                <div className="flex gap-2 mt-2">
+                  {userStats.achievements.map(achievement => (
+                    achievement.earned && (
+                      <div key={achievement.id} className="flex items-center gap-1">
+                        <Star className="w-4 h-4 text-yellow-500" aria-hidden="true" />
+                        <span className="text-xs font-lato text-gray-600 dark:text-gray-400">{achievement.name}</span>
+                      </div>
+                    )
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
           <div className="home-header mb-4">
             <div className="flex items-center gap-2 mb-1">
-              <Folder className="w-5 h-5 text-blue-accent" aria-hidden="true" />
-              <h1 className="text-lg sm:text-xl font-poppins font-semibold">
+              <Folder className="w-5 h-5" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
+              <h1 className="text-lg sm:text-xl font-poppins font-semibold holographic-text">
                 Project Activity Feed
               </h1>
             </div>
@@ -624,6 +793,7 @@ const Home = () => {
                       handleShare={handleShare}
                       user={user}
                       setNewComment={setNewComment}
+                      accentColor={accentColor}
                     />
                   </div>
                 ))}
@@ -637,8 +807,8 @@ const Home = () => {
           {/* Project Chat */}
           <div className="chat-section mb-6">
             <div className="flex items-center gap-2 mb-2">
-              <MessageCircle className="w-4 h-4 text-blue-accent" aria-hidden="true" />
-              <h2 className="text-md font-poppins font-semibold">Project Chat</h2>
+              <MessageCircle className="w-4 h-4" style={{ stroke: `url(#message-gradient-${accentColor})` }} aria-hidden="true" />
+              <h2 className="text-md font-poppins font-semibold holographic-text">Project Chat</h2>
             </div>
             <div className="relative mb-2">
               <button
@@ -667,11 +837,16 @@ const Home = () => {
             <div className="messages bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md p-3 h-48 overflow-y-auto mb-2">
               {messages.map((msg, index) => (
                 <div key={index} className="flex items-start gap-2 mb-2">
-                  <img
-                    src={msg.profilePicture}
-                    alt={`${msg.user}'s profile`}
-                    className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-600"
-                  />
+                  <div className="relative">
+                    <img
+                      src={msg.profilePicture}
+                      alt={`${msg.user}'s profile`}
+                      className="w-6 h-6 rounded-full"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 rounded-full ring-gradient"></div>
+                    <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${msg.online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                  </div>
                   <div>
                     <p className="text-gray-800 dark:text-gray-300 font-lato font-medium text-sm">{msg.username}</p>
                     <p className="text-gray-700 dark:text-gray-400 font-lato text-sm">{msg.text}</p>
@@ -691,7 +866,7 @@ const Home = () => {
               />
               <button
                 onClick={sendMessage}
-                className="bg-red-accent text-white p-1 rounded-full hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-accent micro-gradient transition-transform duration-200 transform hover:scale-105"
+                className="relative bg-red-accent text-white p-1 rounded-full hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-accent micro-gradient transition-transform duration-200 transform hover:scale-105 ripple"
                 aria-label="Send Message"
               >
                 <Send className="w-4 h-4" aria-hidden="true" />
@@ -703,7 +878,7 @@ const Home = () => {
           <div className="leaderboard-section mb-6">
             <div className="flex items-center gap-2 mb-2">
               <Award className="w-4 h-4 text-blue-accent" aria-hidden="true" />
-              <h2 className="text-md font-poppins font-semibold">Leaderboard</h2>
+              <h2 className="text-md font-poppins font-semibold holographic-text">Leaderboard</h2>
             </div>
             {leaderboard.length === 0 ? (
               <p className="text-gray-600 dark:text-gray-400 font-lato flex items-center gap-2 text-sm">
@@ -735,13 +910,18 @@ const Home = () => {
                   </svg>
                 </div>
                 {leaderboard.map((entry, index) => (
-                  <div key={index} className="leaderboard-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-2 rounded-md flex justify-between items-center transition-transform duration-200 transform hover:scale-102 micro-gradient">
+                  <div key={index} className="leaderboard-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-2 rounded-md flex justify-between items-center transition-transform duration-200 transform hover:scale-102 hover:bg-blue-50 dark:hover:bg-blue-900/20 micro-gradient">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={entry.profilePicture || 'https://via.placeholder.com/24'}
-                        alt={`${entry.username}'s profile`}
-                        className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-600"
-                      />
+                      <div className="relative">
+                        <img
+                          src={entry.profilePicture || 'https://via.placeholder.com/24'}
+                          alt={`${entry.username}'s profile`}
+                          className="w-6 h-6 rounded-full"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 rounded-full ring-gradient"></div>
+                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                      </div>
                       <div>
                         <span className={`text-sm font-poppins ${index === 0 ? 'text-orange-accent' : index === 1 ? 'text-blue-accent' : 'text-purple-accent'}`}>
                           #{index + 1}
@@ -768,17 +948,17 @@ const Home = () => {
             <div className="recommendations-section">
               <div className="flex items-center gap-2 mb-2">
                 <Briefcase className="w-4 h-4 text-blue-accent" aria-hidden="true" />
-                <h2 className="text-md font-poppins font-semibold">Recommended Projects</h2>
+                <h2 className="text-md font-poppins font-semibold holographic-text">Recommended Projects</h2>
               </div>
               <div className="space-y-2">
                 {recommendedProjects.map(project => (
                   <Link
                     key={project.id}
                     to={`/projects/${project.id}`}
-                    className="recommendation-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-2 rounded-md block hover:border-blue-accent micro-gradient transition-transform duration-200 transform hover:scale-102"
+                    className="recommendation-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-2 rounded-md block hover:border-blue-accent hover:bg-blue-50 dark:hover:bg-blue-900/20 micro-gradient transition-transform duration-200 transform hover:scale-102"
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <Folder className="w-4 h-4 text-blue-accent" aria-hidden="true" />
+                      <Folder className="w-4 h-4" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
                       <h4 className="text-sm font-poppins font-medium text-blue-accent">{project.title}</h4>
                     </div>
                     <p className="text-gray-600 dark:text-gray-400 text-xs font-lato">{project.reason}</p>
@@ -800,7 +980,7 @@ const Home = () => {
       {/* Floating Action Button with Tooltip */}
       <div className="fixed bottom-6 right-6 z-40 group">
         <button
-          className="bg-blue-accent text-white p-3 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-accent micro-gradient transition-transform duration-200 transform hover:scale-110"
+          className="relative bg-blue-accent text-white p-3 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-accent micro-gradient transition-transform duration-200 transform hover:scale-110 ripple"
           aria-label="Quick Actions"
           onClick={() => handleQuickAction('new-project')}
         >
