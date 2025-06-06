@@ -1,5 +1,5 @@
 /* App.css */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Lato:wght@400;500&display=swap');
 
 :root {
   --emerald-green: #2dd4bf;
@@ -11,12 +11,12 @@
   --midnight-navy: #1e3a8a;
   --neon-coral: #ff6e7f;
   --white: #ffffff;
-  --black: #1a202c;
-  --gray-600: #718096;
-  --gray-200: #e5e7eb;
+  --black: #1c2526;
+  --gray-600: #606770;
+  --gray-200: #e4e6eb;
   --dark-bg: #1a202c;
   --dark-secondary: #2d3748;
-  --light-bg: #f1faee;
+  --light-bg: #f0f2f5;
   --blue-accent: #1877f2;
   --red-accent: #e63946;
   --green-accent: #48bb78;
@@ -31,7 +31,7 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Lato', sans-serif;
   background: var(--white);
   color: var(--black);
   min-height: 100vh;
@@ -44,8 +44,8 @@ html.dark body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Orbitron', sans-serif;
-  letter-spacing: 0.05em;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .glassmorphic {
