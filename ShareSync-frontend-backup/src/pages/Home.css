@@ -4,8 +4,8 @@
   --rose-accent: #F43F5E;
   --amber-accent: #FBBF24;
   --emerald-accent: #34D399;
-  --frosted-bg: rgba(255, 255, 255, 0.95);
-  --dark-bg: rgba(17, 24, 39, 0.95);
+  --frosted-bg: rgba(255, 255, 255, 0.98);
+  --dark-bg: rgba(17, 24, 39, 0.98);
   --white: #ffffff;
   --black: #000000;
 }
@@ -21,7 +21,7 @@ body {
   background: var(--white);
   color: var(--black);
   min-height: 100vh;
-  transition: background-color 0.3s, color 0.3s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 html.dark body {
@@ -33,7 +33,7 @@ html.dark body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  transition: background-color 0.3s, color 0.3s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .main-content {
@@ -52,14 +52,21 @@ html.dark body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, var(--purple-accent), var(--teal-accent));
-  opacity: 0.15;
+  background: linear-gradient(135deg, var(--purple-accent), var(--teal-accent), var(--rose-accent));
+  opacity: 0.2;
   z-index: 0;
+  animation: gradientShift 10s infinite;
 }
 
 .welcome-banner > * {
   position: relative;
   z-index: 1;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .border-gradient-purple-teal {
@@ -75,12 +82,12 @@ html.dark body {
 }
 
 .loader {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid var(--purple-accent);
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--purple-accent);
   border-radius: 50%;
-  width: 10px;
-  height: 10px;
-  animation: spin 1s linear infinite;
+  width: 8px;
+  height: 8px;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
@@ -89,20 +96,20 @@ html.dark body {
 }
 
 .animated-bg {
-  background: radial-gradient(circle at 50% 50%, var(--purple-accent) 0%, var(--teal-accent) 50%, transparent 70%);
-  animation: pulse 8s infinite;
+  background: radial-gradient(circle at 40% 40%, var(--purple-accent) 0%, var(--teal-accent) 50%, var(--rose-accent) 100%);
+  animation: pulse 6s infinite;
 }
 
 .dot-pattern {
   width: 100%;
   height: 100%;
-  background-image: radial-gradient(var(--purple-accent) 1px, transparent 1px);
-  background-size: 15px 15px;
+  background-image: radial-gradient(var(--purple-accent) 0.5px, transparent 0.5px);
+  background-size: 10px 10px;
 }
 
 @keyframes pulse {
   0% { opacity: 0.1; }
-  50% { opacity: 0.3; }
+  50% { opacity: 0.4; }
   100% { opacity: 0.1; }
 }
 
@@ -112,7 +119,7 @@ html.dark body {
 }
 
 .project-stories::-webkit-scrollbar {
-  height: 4px;
+  height: 3px;
 }
 
 .project-stories::-webkit-scrollbar-track {
@@ -121,21 +128,21 @@ html.dark body {
 
 .project-stories::-webkit-scrollbar-thumb {
   background-color: var(--purple-accent);
-  border-radius: 2px;
+  border-radius: 1px;
 }
 
 .animate-pulse-slow {
-  animation: pulse-slow 1.5s infinite;
+  animation: pulse-slow 1.2s infinite;
 }
 
 @keyframes pulse-slow {
   0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  50% { transform: scale(1.15); }
   100% { transform: scale(1); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-in;
+  animation: fadeIn 0.2s ease-in;
 }
 
 @keyframes fadeIn {
@@ -144,9 +151,19 @@ html.dark body {
 }
 
 .hover-glow {
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .hover-glow:hover {
+  box-shadow: 0 0 20px var(--purple-accent), 0 0 10px var(--teal-accent);
+  transform: scale(1.02);
+}
+
+.feed-item {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.feed-item:hover {
   box-shadow: 0 0 15px var(--purple-accent), 0 0 5px var(--teal-accent);
+  transform: translateY(-2px);
 }
