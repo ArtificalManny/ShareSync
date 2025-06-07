@@ -1,63 +1,151 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { useState, useReducer } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
-import ProjectHome from './pages/ProjectHome';
-import Profile from './pages/Profile';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import './App.css';
+import { AuthContext } from './AuthContext';
+
+const searchReducer = (state, action) => {
+  switch (action.type) {
+    case 'SET_QUERY':
+      return { ...state, query: action.payload };
+    case 'SET_SUGGESTIONS':
+      return { ...state, suggestions: action.payload };
+    default:
+      return state;
+  }
+};
 
 const App = () => {
-  console.log('App.jsx - Rendering App component');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [searchState, dispatchSearch] = useReducer(searchReducer, { query: '', suggestions: [] });
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [accentColor, setAccentColor] = useState('purple');
 
-  useEffect(() => {
-    // Initialize particles.js
-    if (window.particlesJS) {
-      window.particlesJS('particles-js', {
-        particles: {
-          number: { value: 80, density: { enable: true, value_area: 800 } },
-          color: { value: '#FF00FF' }, // Neon magenta particles
-          shape: { type: 'circle' },
-          opacity: { value: 0.5, random: false },
-          size: { value: 3, random: true },
-          line_linked: { enable: true, distance: 150, color: '#00FFFF', opacity: 0.4, width: 1 }, // Cyber teal links
-          move: { enable: true, speed: 2, direction: 'none', random: false, straight: false, out_mode: 'out', bounce: false }
+  // Mock AuthContext value
+  const [authState] = useState({
+    user: {
+      username: 'user',
+      email: 'user@example.com',
+      firstName: 'User',
+      profilePicture: 'https://via.placeholder.com/40',
+      projects: [
+        {
+          _id: '1',
+          title: 'Project Alpha',
+          status: 'In Progress',
+          activityLog: [
+            { message: 'Updated project plan', user: 'user@example.com', timestamp: new Date().toISOString() }
+          ],
+          posts: [],
+          tasks: [],
+          files: [],
+          members: ['user@example.com'],
         },
-        interactivity: {
-          detect_on: 'canvas',
-          events: { onhover: { enable: true, mode: 'repulse' }, onclick: { enable: true, mode: 'push' }, resize: true },
-          modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
-        },
-        retina_detect: true
-      });
+        {
+          _id: '2',
+          title: 'Project Beta',
+          status: 'In Progress',
+          activityLog: [],
+          posts: [
+            { content: 'New announcement posted', author: 'user@example.com', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString() }
+          ],
+          tasks: [],
+          files: [],
+          members: ['user@example.com'],
+        }
+      ]
+    },
+    isAuthenticated: true,
+    isLoading: false,
+    authError: null,
+    socket: null,
+    fetchUserData: () => Promise.resolve(),
+  });
+
+  const handleSearchSubmit = (e) => {
+    if (e.key === 'Enter') {
+      alert(`Navigate to search results for: ${searchState.query} (Implement search results page.)`);
+      setIsSearchOpen(false);
     }
-  }, []);
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => !prev);
+    document.documentElement.classList.toggle('dark');
+  };
+
+  const toggleProfileDropdown = () => {
+    setIsProfileDropdownOpen(prev => !prev);
+    if (isNotificationDropdownOpen) setIsNotificationDropdownOpen(false);
+  };
+
+  const toggleNotificationDropdown = () => {
+    setIsNotificationDropdownOpen(prev => !prev);
+    if (isProfileDropdownOpen) setIsProfileDropdownOpen(false);
+  };
+
+  const changeAccentColor = (color) => {
+    setAccentColor(color);
+  };
 
   return (
-    <Router>
-      <AuthProvider>
-        <div className="app-container">
-          <div id="particles-js" className="particles-background"></div>
-          <Navbar />
-          <Suspense fallback={<div className="text-light-text">Loading page...</div>}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/projects/:id" element={<ProjectHome />} />
-              <Route path="/profile/:username" element={<Profile />} />
-              <Route path="*" element={<div className="text-light-text text-center mt-8">404 - Page Not Found</div>} />
-            </Routes>
-          </Suspense>
+    <AuthContext.Provider value={authState}>
+      <Router>
+        <div className={`app-container ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <Navbar
+            searchState={searchState}
+            dispatchSearch={dispatchSearch}
+            handleSearchSubmit={handleSearchSubmit}
+            isSearchOpen={isSearchOpen}
+            setIsSearchOpen={setIsSearchOpen}
+            accentColor={accentColor}
+            notifications={notifications}
+            toggleNotificationDropdown={toggleNotificationDropdown}
+            isNotificationDropdownOpen={isNotificationDropdownOpen}
+            toggleProfileDropdown={toggleProfileDropdown}
+            isProfileDropdownOpen={isProfileDropdownOpen}
+            user={authState.user}
+            changeAccentColor={changeAccentColor}
+            isDarkMode={isDarkMode}
+            toggleDarkMode={toggleDarkMode}
+          />
+          <Routes>
+            <Route path="/" element={
+              <Home
+                searchState={searchState}
+                dispatchSearch={dispatchSearch}
+                isDarkMode={isDarkMode}
+                setIsDarkMode={setIsDarkMode}
+                accentColor={accentColor}
+                setAccentColor={setAccentColor}
+                notifications={notifications}
+                setNotifications={setNotifications}
+              />
+            } />
+            <Route path="/projects" element={
+              <Projects
+                searchState={searchState}
+                dispatchSearch={dispatchSearch}
+                isDarkMode={isDarkMode}
+                setIsDarkMode={setIsDarkMode}
+                accentColor={accentColor}
+                setAccentColor={setAccentColor}
+                notifications={notifications}
+                setNotifications={setNotifications}
+              />
+            } />
+            <Route path="/projects/:id" element={<div>Project Detail Page (To be implemented)</div>} />
+            <Route path="/profile/:username" element={<div>Profile Page (To be implemented)</div>} />
+            <Route path="/chat/:projectId" element={<div>Chat Page (To be implemented)</div>} />
+            <Route path="/login" element={<div>Login Page (To be implemented)</div>} />
+          </Routes>
         </div>
-      </AuthProvider>
-    </Router>
+      </Router>
+    </AuthContext.Provider>
   );
 };
 

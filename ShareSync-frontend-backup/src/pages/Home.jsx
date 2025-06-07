@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback, memo, useReducer } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Award, Star, MessageCircle, ChevronUp } from 'lucide-react';
-import Navbar from '../components/Navbar';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Sparkles, Star, MessageCircle, ChevronUp, FileClock } from 'lucide-react';
 import FeedItem from '../components/FeedItem';
 import { fetchLeaderboard } from '../services/project.js';
 import './Home.css';
@@ -18,54 +17,46 @@ const notificationReducer = (state, action) => {
   }
 };
 
-const searchReducer = (state, action) => {
-  switch (action.type) {
-    case 'SET_QUERY':
-      return { ...state, query: action.payload };
-    case 'SET_SUGGESTIONS':
-      return { ...state, suggestions: action.payload };
-    default:
-      return state;
-  }
-};
-
-const Home = () => {
+const Home = ({
+  searchState,
+  dispatchSearch,
+  isDarkMode,
+  setIsDarkMode,
+  accentColor,
+  setAccentColor,
+  notifications,
+  setNotifications,
+}) => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading, authError, socket, fetchUserData } = useContext(AuthContext);
   const [feedItems, setFeedItems] = useState([]);
   const [newComment, setNewComment] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
   const [recommendedProjects, setRecommendedProjects] = useState([]);
+  const [projectStories, setProjectStories] = useState([]);
+  const [seenStories, setSeenStories] = useState(new Set());
   const [error, setError] = useState('');
   const [leaderboard, setLeaderboard] = useState([]);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [notifications, dispatchNotifications] = useReducer(notificationReducer, []);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [notificationsState, dispatchNotifications] = useReducer(notificationReducer, notifications);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
-  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
-  const [searchState, dispatchSearch] = useReducer(searchReducer, { query: '', suggestions: [] });
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [userStats, setUserStats] = useState({ activeProjects: 0, tasksCompleted: 0, achievements: [] });
-  const [accentColor, setAccentColor] = useState('blue');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  useEffect(() => {
+    setNotifications(notificationsState);
+  }, [notificationsState, setNotifications]);
 
   useEffect(() => {
     console.log('AuthContext State:', { isAuthenticated, user, isLoading, authError });
 
     if (isLoading) return;
 
-    if (!isAuthenticated) {
-      console.log('Not authenticated, redirecting to /login');
-      navigate('/login', { replace: true });
-      return;
-    }
-
-    if (!user || !user.email) {
-      console.log('No user or user.email, redirecting to /login');
+    if (!isAuthenticated || !user) {
+      console.log('Not authenticated or no user, redirecting to /login');
       navigate('/login', { replace: true });
       return;
     }
@@ -73,7 +64,35 @@ const Home = () => {
     const fetchFeedItems = async () => {
       try {
         setIsLoadingFeed(true);
-        const activeProjects = (user.projects || []).filter(project => project && project.status && project.status !== 'Completed');
+        const activeProjects = (user?.projects || []).filter(project => project && project.status && project.status !== 'Completed');
+
+        // Calculate project stories
+        const stories = activeProjects.map(project => {
+          const recentActivity = [
+            ...(project.activityLog || []),
+            ...(project.posts || []),
+            ...(project.tasks || []),
+            ...(project.files || []),
+          ]
+            .map(item => ({
+              type: item.message ? 'activity' : item.content ? 'post' : item.status ? 'task' : 'file',
+              message: item.message || item.content || `${item.title || 'Unnamed task'} completed` || `Shared file: ${item.name || 'Unnamed file'}`,
+              timestamp: item.timestamp || item.updatedAt || item.uploadedAt || new Date().toISOString(),
+            }))
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 3);
+
+          const hasRecentActivity = recentActivity.length > 0 && 
+            (new Date() - new Date(recentActivity[0].timestamp)) / (1000 * 60 * 60) < 24;
+
+          return hasRecentActivity ? {
+            id: project._id,
+            title: project.title,
+            recentActivity,
+          } : null;
+        }).filter(story => story !== null);
+
+        setProjectStories(stories);
 
         const allFeedItems = activeProjects.flatMap(project => {
           const activityLogs = (project.activityLog || []).map(log => ({
@@ -249,11 +268,11 @@ const Home = () => {
     fetchFeedItems();
 
     if (socket) {
-      socket.on('project-updated', () => {
+      socket?.on('project-updated', () => {
         fetchUserData();
       });
 
-      socket.on('feed-update', (data) => {
+      socket?.on('feed-update', (data) => {
         setFeedItems((prev) => {
           const updatedItems = [...prev, data].sort(
             (a, b) => new Date(b) - new Date(a)
@@ -262,21 +281,21 @@ const Home = () => {
         });
       });
 
-      socket.on('chat-message', (message) => {
+      socket?.on('chat-message', (message) => {
         if (message.projectId === selectedProjectId) {
           setMessages((prev) => [...prev, message]);
         }
       });
 
-      socket.on('notification', (notification) => {
+      socket?.on('notification', (notification) => {
         dispatchNotifications({ type: 'ADD_NOTIFICATION', payload: notification });
       });
 
       return () => {
-        socket.off('project-updated');
-        socket.off('feed-update');
-        socket.off('chat-message');
-        socket.off('notification');
+        socket?.off('project-updated');
+        socket?.off('feed-update');
+        socket?.off('chat-message');
+        socket?.off('notification');
       };
     }
   }, [isAuthenticated, isLoading, navigate, user, socket, fetchUserData, selectedProjectId]);
@@ -300,7 +319,7 @@ const Home = () => {
     } else {
       dispatchSearch({ type: 'SET_SUGGESTIONS', payload: [] });
     }
-  }, [searchState.query, user]);
+  }, [searchState.query, user, dispatchSearch]);
 
   const handleLike = useCallback((index) => {
     setFeedItems(prevItems =>
@@ -328,10 +347,10 @@ const Home = () => {
 
     const newCommentData = {
       text: commentText,
-      user: user.email || 'Anonymous',
-      userId: user._id,
-      username: user.username,
-      profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
+      user: user?.email || 'Anonymous',
+      userId: user?._id,
+      username: user?.username,
+      profilePicture: user?.profilePicture || 'https://via.placeholder.com/40',
       timestamp: new Date().toISOString(),
     };
 
@@ -392,39 +411,20 @@ const Home = () => {
     const messageData = {
       projectId: selectedProjectId,
       text: newMessage,
-      user: user.email,
-      userId: user._id,
-      username: user.username,
-      profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
+      user: user?.email,
+      userId: user?._id,
+      username: user?.username,
+      profilePicture: user?.profilePicture || 'https://via.placeholder.com/40',
       timestamp: new Date().toISOString(),
     };
 
-    socket.emit('chat-message', messageData);
+    socket?.emit('chat-message', messageData);
     setMessages((prev) => [...prev, messageData]);
     setNewMessage('');
   }, [newMessage, selectedProjectId, socket, user]);
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(prev => !prev);
-    document.documentElement.classList.toggle('dark');
-  };
-
-  const toggleProfileDropdown = () => {
-    setIsProfileDropdownOpen(prev => !prev);
-    if (isNotificationDropdownOpen) setIsNotificationDropdownOpen(false);
-  };
-
-  const toggleNotificationDropdown = () => {
-    setIsNotificationDropdownOpen(prev => !prev);
-    if (isProfileDropdownOpen) setIsProfileDropdownOpen(false);
-  };
-
   const toggleProjectDropdown = () => {
     setIsProjectDropdownOpen(prev => !prev);
-  };
-
-  const toggleSearch = () => {
-    setIsSearchOpen(prev => !prev);
   };
 
   const selectProject = (projectId) => {
@@ -444,15 +444,13 @@ const Home = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSearchSubmit = (e) => {
-    if (e.key === 'Enter') {
-      alert(`Navigate to search results for: ${searchState.query} (Implement search results page.)`);
-      setIsSearchOpen(false);
-    }
-  };
-
-  const changeAccentColor = (color) => {
-    setAccentColor(color);
+  const handleStoryClick = (story) => {
+    setSeenStories(prev => new Set(prev).add(story.id));
+    const activityMessages = story.recentActivity.map(activity => 
+      `${activity.type.toUpperCase()}: ${activity.message} (${new Date(activity.timestamp).toLocaleString()})`
+    ).join('\n');
+    alert(`Recent Activity for "${story.title}":\n\n${activityMessages}`);
+    // TODO: Replace alert with a modal showing recent activity
   };
 
   if (isLoading) {
@@ -460,7 +458,7 @@ const Home = () => {
       <div className="home-container">
         <div className="loading-message flex items-center justify-center min-h-screen">
           <div className="loader" aria-label="Loading home page"></div>
-          <span className="text-gray-600 dark:text-gray-400 text-xl font-lato ml-4">Loading...</span>
+          <span className="text-gray-600 dark:text-gray-400 text-xl font-sans ml-4">Loading...</span>
         </div>
       </div>
     );
@@ -470,7 +468,7 @@ const Home = () => {
     return (
       <div className="home-container">
         <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-red-500 text-lg font-lato flex items-center gap-2">
+          <p className="text-rose-500 text-lg font-sans flex items-center gap-2">
             <AlertCircle className="w-5 h-5" aria-hidden="true" /> {authError || error}
           </p>
         </div>
@@ -479,37 +477,18 @@ const Home = () => {
   }
 
   return (
-    <div className={`home-container flex flex-col min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'} relative`}>
+    <div className={`home-container flex flex-col min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'} relative`}>
       {/* Animated Background Pattern */}
-      <div className="animated-bg absolute inset-0 z-0 opacity-10 pointer-events-none">
+      <div className="animated-bg absolute inset-0 z-0 opacity-5 pointer-events-none">
         <div className="dot-pattern"></div>
       </div>
-
-      {/* Navbar */}
-      <Navbar
-        searchState={searchState}
-        dispatchSearch={dispatchSearch}
-        handleSearchSubmit={handleSearchSubmit}
-        isSearchOpen={isSearchOpen}
-        setIsSearchOpen={setIsSearchOpen}
-        accentColor={accentColor}
-        notifications={notifications}
-        toggleNotificationDropdown={toggleNotificationDropdown}
-        isNotificationDropdownOpen={isNotificationDropdownOpen}
-        toggleProfileDropdown={toggleProfileDropdown}
-        isProfileDropdownOpen={isProfileDropdownOpen}
-        user={user}
-        changeAccentColor={changeAccentColor}
-        isDarkMode={isDarkMode}
-        toggleDarkMode={toggleDarkMode}
-      />
 
       {/* Fallback UI if not authenticated */}
       {(!isAuthenticated || !user) && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="loader mx-auto mb-4" aria-label="Redirecting to login"></div>
-            <p className="text-gray-600 dark:text-gray-400 text-lg font-lato">
+            <p className="text-gray-600 dark:text-gray-400 text-lg font-sans">
               Redirecting to login...
             </p>
           </div>
@@ -522,24 +501,24 @@ const Home = () => {
           {/* Main Content */}
           <main className="main-content flex-1 p-4 sm:p-6">
             {/* Welcome Banner */}
-            <div className="welcome-banner bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-6 shadow-sm micro-gradient holographic-effect">
+            <div className="welcome-banner bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-6 shadow-lg transition-all duration-300 hover:shadow-xl">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <img
                     src={user.profilePicture || 'https://via.placeholder.com/40'}
                     alt={`${user.firstName}'s profile`}
-                    className="w-10 h-10 rounded-full"
+                    className="w-10 h-10 rounded-full border-2 border-purple-500"
                     loading="lazy"
                   />
                   <div className="absolute inset-0 rounded-full ring-gradient"></div>
                 </div>
                 <div>
-                  <h2 className="text-lg font-poppins font-semibold holographic-text">
+                  <h2 className="text-lg font-sans font-bold text-gray-900 dark:text-white">
                     Welcome, {user.firstName}!
                   </h2>
-                  <p className="text-sm font-lato text-gray-600 dark:text-gray-400">
+                  <p className="text-sm font-sans text-gray-600 dark:text-gray-400">
                     You have{' '}
-                    <Link to="/projects" className="text-blue-accent hover:underline">
+                    <Link to="/projects" className="text-purple-500 hover:underline">
                       {userStats.activeProjects} active projects
                     </Link>{' '}
                     and {userStats.tasksCompleted} tasks completed.
@@ -548,8 +527,8 @@ const Home = () => {
                     {userStats.achievements.map(achievement => (
                       achievement.earned && (
                         <div key={achievement.id} className="flex items-center gap-1">
-                          <Star className="w-4 h-4 text-yellow-500" aria-hidden="true" />
-                          <span className="text-xs font-lato text-gray-600 dark:text-gray-400 font-light">{achievement.name}</span>
+                          <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
+                          <span className="text-xs font-sans text-gray-600 dark:text-gray-400">{achievement.name}</span>
                         </div>
                       )
                     ))}
@@ -558,14 +537,46 @@ const Home = () => {
               </div>
             </div>
 
+            {/* Project Stories Section */}
+            {projectStories.length > 0 && (
+              <div className="project-stories mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileClock className="w-5 h-5 text-purple-500" aria-hidden="true" />
+                  <h2 className="text-md font-sans font-bold text-gray-900 dark:text-white">
+                    Recent Project Updates
+                  </h2>
+                </div>
+                <div className="flex overflow-x-auto space-x-4 pb-2">
+                  {projectStories.map(story => {
+                    const isSeen = seenStories.has(story.id);
+                    return (
+                      <button
+                        key={story.id}
+                        onClick={() => handleStoryClick(story)}
+                        className="flex flex-col items-center gap-1 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-full"
+                        aria-label={`View recent updates for ${story.title}`}
+                      >
+                        <div className={`relative w-16 h-16 rounded-full ${isSeen ? 'border-2 border-gray-300' : 'p-[2px] bg-gradient-to-r from-purple-500 to-pink-500'}`}>
+                          <div className="w-full h-full bg-white dark:bg-gray-800 rounded-full flex items-center justify-center">
+                            <Folder className="w-8 h-8 text-purple-500" aria-hidden="true" />
+                          </div>
+                        </div>
+                        <span className="text-xs font-sans text-gray-700 dark:text-gray-300 truncate w-16">{story.title}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="home-header mb-4">
               <div className="flex items-center gap-2 mb-1">
-                <Folder className="w-5 h-5" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
-                <h1 className="text-lg sm:text-xl font-poppins font-semibold holographic-text">
+                <Folder className="w-5 h-5 text-purple-500" aria-hidden="true" />
+                <h1 className="text-lg sm:text-xl font-sans font-bold text-gray-900 dark:text-white">
                   Project Activity Feed
                 </h1>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm font-lato font-light">
+              <p className="text-gray-600 dark:text-gray-400 text-sm font-sans">
                 Stay updated with the latest activity in your projects.
               </p>
             </div>
@@ -574,7 +585,7 @@ const Home = () => {
               {isLoadingFeed ? (
                 <div className="space-y-4">
                   {[...Array(3)].map((_, index) => (
-                    <div key={index} className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg p-4">
+                    <div key={index} className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
                         <div className="flex-1">
@@ -592,8 +603,8 @@ const Home = () => {
                   ))}
                 </div>
               ) : feedItems.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 font-lato text-sm font-light">
-                  <AlertCircle className="w-4 h-4 text-red-accent" aria-hidden="true" /> No recent activity in your active projects.
+                <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 font-sans text-sm">
+                  <AlertCircle className="w-4 h-4 text-rose-500" aria-hidden="true" /> No recent activity in your active projects.
                 </p>
               ) : (
                 <div className="space-y-6">
@@ -610,7 +621,7 @@ const Home = () => {
                         handleShare={handleShare}
                         user={user}
                         setNewComment={setNewComment}
-                        accentColor={accentColor}
+                        accentColor="purple"
                       />
                     </div>
                   ))}
@@ -620,30 +631,30 @@ const Home = () => {
           </main>
 
           {/* Right Sidebar */}
-          <aside className="right-sidebar w-72 border-l border-gray-200 p-4 flex-shrink-0 hidden lg:block sticky top-12 h-[calc(100vh-3rem)] overflow-y-auto pt-4 pb-8 shadow-sm">
+          <aside className="right-sidebar w-72 border-l border-gray-200 dark:border-gray-700 p-4 flex-shrink-0 hidden lg:block sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto pt-4 pb-8 shadow-lg">
             {/* Project Chat */}
             <div className="chat-section mb-8">
               <div className="flex items-center gap-2 mb-2">
-                <MessageCircle className="w-4 h-4" style={{ stroke: `url(#message-gradient-${accentColor})` }} aria-hidden="true" />
-                <h2 className="text-sm font-poppins font-semibold holographic-text">Project Chat</h2>
+                <MessageCircle className="w-4 h-4 text-teal-400" aria-hidden="true" />
+                <h2 className="text-sm font-sans font-bold text-gray-900 dark:text-white">Project Chat</h2>
               </div>
               <div className="relative mb-2">
                 <button
                   onClick={toggleProjectDropdown}
-                  className="w-full p-1 border border-gray-300 rounded-md font-lato text-gray-700 dark:text-gray-300 dark:border-gray-600 text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent flex items-center justify-between bg-white dark:bg-gray-800"
+                  className="w-full p-1 border border-gray-300 dark:border-gray-600 rounded-md font-sans text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-between bg-white dark:bg-gray-800 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700"
                   aria-label="Select project for chat"
                   aria-expanded={isProjectDropdownOpen}
                 >
-                  <span>{(user.projects || []).find(p => p._id === selectedProjectId)?.title || 'Select a project'}</span>
+                  <span>{(user?.projects || []).find(p => p._id === selectedProjectId)?.title || 'Select a project'}</span>
                   <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" />
                 </button>
                 {isProjectDropdownOpen && (
                   <div className="absolute right-0 mt-1 w-full max-h-40 overflow-y-auto bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
-                    {(user.projects || []).filter(p => p.status !== 'Completed').map(project => (
+                    {(user?.projects || []).filter(p => p.status !== 'Completed').map(project => (
                       <button
                         key={project._id}
                         onClick={() => selectProject(project._id)}
-                        className="block w-full text-left px-3 py-1 text-sm font-lato text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="block w-full text-left px-3 py-1 text-sm font-sans text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         {project.title}
                       </button>
@@ -664,9 +675,9 @@ const Home = () => {
                       <div className="absolute inset-0 rounded-full ring-gradient"></div>
                     </div>
                     <div>
-                      <p className="text-gray-800 dark:text-gray-300 font-lato font-medium text-sm">{msg.username}</p>
-                      <p className="text-gray-700 dark:text-gray-400 font-lato text-sm">{msg.text}</p>
-                      <p className="text-gray-500 dark:text-gray-500 font-lato text-xs font-light">{new Date(msg.timestamp).toLocaleString()}</p>
+                      <p className="text-gray-800 dark:text-gray-300 font-sans font-medium text-sm">{msg.username}</p>
+                      <p className="text-gray-700 dark:text-gray-400 font-sans text-sm">{msg.text}</p>
+                      <p className="text-gray-500 dark:text-gray-500 font-sans text-xs">{new Date(msg.timestamp).toLocaleString()}</p>
                     </div>
                   </div>
                 ))}
@@ -677,19 +688,19 @@ const Home = () => {
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    className="flex-1 p-1 border border-gray-200 dark:border-gray-600 rounded-full font-lato text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent bg-white dark:bg-gray-800"
+                    className="flex-1 p-1 border border-gray-200 dark:border-gray-600 rounded-full font-sans text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-800"
                     placeholder="Type a message..."
                     aria-label="Chat Message"
                   />
                   <button
                     onClick={sendMessage}
-                    className="relative bg-red-accent text-white p-1 rounded-full hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-accent micro-gradient transition-transform duration-200 transform hover:scale-105 ripple"
+                    className="relative bg-pink-500 text-white p-1 rounded-full hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-transform duration-200 transform hover:scale-105"
                     aria-label="Send Message"
                   >
                     <Send className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
-                <Link to={`/chat/${selectedProjectId}`} className="text-blue-accent hover:underline text-xs font-lato ml-2">
+                <Link to={`/chat/${selectedProjectId}`} className="text-purple-500 hover:underline text-xs font-sans ml-2">
                   View More
                 </Link>
               </div>
@@ -698,17 +709,17 @@ const Home = () => {
             {/* Leaderboard Section */}
             <div className="leaderboard-section mb-8">
               <div className="flex items-center gap-2 mb-2">
-                <Award className="w-4 h-4 text-blue-accent" aria-hidden="true" />
-                <h2 className="text-sm font-poppins font-semibold holographic-text">Leaderboard</h2>
+                <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
+                <h2 className="text-sm font-sans font-bold text-gray-900 dark:text-white">Leaderboard</h2>
               </div>
               {leaderboard.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400 font-lato flex items-center gap-2 text-sm font-light">
-                  <AlertCircle className="w-4 h-4 text-red-accent" aria-hidden="true" /> No leaderboard data available.
+                <p className="text-gray-600 dark:text-gray-400 font-sans flex items-center gap-2 text-sm">
+                  <AlertCircle className="w-4 h-4 text-rose-500" aria-hidden="true" /> No leaderboard data available.
                 </p>
               ) : (
                 <div className="space-y-2">
                   {leaderboard.map((entry, index) => (
-                    <div key={index} className="leaderboard-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-2 rounded-md flex justify-between items-center transition-transform duration-200 transform hover:scale-102 hover:bg-gray-50 dark:hover:bg-gray-700/20 micro-gradient">
+                    <div key={index} className="leaderboard-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md p-2 transition-transform duration-200 transform hover:scale-102 hover:bg-gray-50 dark:hover:bg-gray-700/20">
                       <div className="flex items-center gap-2">
                         <div className="relative">
                           <img
@@ -720,20 +731,20 @@ const Home = () => {
                           <div className="absolute inset-0 rounded-full ring-gradient"></div>
                         </div>
                         <div>
-                          <span className={`text-sm font-poppins ${index === 0 ? 'text-orange-accent' : index === 1 ? 'text-blue-accent' : 'text-purple-accent'}`}>
+                          <span className={`text-sm font-sans ${index === 0 ? 'text-amber-500' : index === 1 ? 'text-purple-500' : 'text-teal-400'}`}>
                             #{index + 1}
                           </span>
-                          <p className="text-gray-800 dark:text-gray-300 font-lato text-sm font-medium">{entry.username}</p>
+                          <p className="text-gray-800 dark:text-gray-300 font-sans text-sm font-medium">{entry.username}</p>
                           {entry.achievements && entry.achievements.length > 0 && (
                             <div className="flex gap-1 mt-1">
                               {entry.achievements.slice(0, 3).map((achievement, idx) => (
-                                <Star key={idx} className="w-3 h-3 text-yellow-500" title={achievement} aria-hidden="true" />
+                                <Star key={idx} className="w-3 h-3 text-amber-500" title={achievement} aria-hidden="true" />
                               ))}
                             </div>
                           )}
                         </div>
                       </div>
-                      <span className="text-gray-600 dark:text-gray-400 font-lato text-xs font-light">{entry.points} points</span>
+                      <span className="text-gray-600 dark:text-gray-400 font-sans text-xs">{entry.points} points</span>
                     </div>
                   ))}
                 </div>
@@ -744,24 +755,24 @@ const Home = () => {
             {recommendedProjects.length > 0 && (
               <div className="recommendations-section">
                 <div className="flex items-center gap-2 mb-2">
-                  <Folder className="w-4 h-4 text-blue-accent" aria-hidden="true" />
-                  <h2 className="text-sm font-poppins font-semibold holographic-text">Recommended Projects</h2>
+                  <Folder className="w-4 h-4 text-purple-500" aria-hidden="true" />
+                  <h2 className="text-sm font-sans font-bold text-gray-900 dark:text-white">Recommended Projects</h2>
                 </div>
                 <div className="space-y-2">
                   {recommendedProjects.map(project => (
                     <Link
                       key={project.id}
                       to={`/projects/${project.id}`}
-                      className="recommendation-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-2 rounded-md block hover:border-blue-accent hover:bg-gray-50 dark:hover:bg-gray-700/20 micro-gradient transition-transform duration-200 transform hover:scale-102"
+                      className="recommendation-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md p-2 block hover:border-purple-500 hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-transform duration-200 transform hover:scale-102"
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <Folder className="w-4 h-4" style={{ stroke: `url(#folder-gradient-${accentColor})` }} aria-hidden="true" />
-                        <h4 className="text-sm font-poppins font-medium text-blue-accent">{project.title}</h4>
+                        <Folder className="w-4 h-4 text-purple-500" aria-hidden="true" />
+                        <h4 className="text-sm font-sans font-medium text-purple-500">{project.title}</h4>
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-xs font-lato font-light">{project.reason}</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-xs font-sans">{project.reason}</p>
                       <div className="w-full h-4 mt-1 bg-gray-200 dark:bg-gray-700 rounded-full">
                         <div
-                          className="h-full bg-green-accent rounded-full"
+                          className="h-full bg-teal-400 rounded-full"
                           style={{ width: `${(project.activityLevel / Math.max(...recommendedProjects.map(p => p.activityLevel)) || 1) * 100}%` }}
                         ></div>
                       </div>
@@ -777,7 +788,7 @@ const Home = () => {
       {/* Back to Top Button */}
       {isAuthenticated && user && showBackToTop && (
         <button
-          className="fixed bottom-6 right-6 z-40 bg-gray-600 text-white p-2 rounded-full shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-transform duration-200 transform hover:scale-110"
+          className="fixed bottom-6 right-6 z-40 bg-purple-500 text-white p-2 rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-transform duration-200 transform hover:scale-110"
           aria-label="Back to Top"
           onClick={scrollToTop}
         >

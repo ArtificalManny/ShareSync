@@ -22,19 +22,15 @@ const Projects = ({
   useEffect(() => {
     if (isLoading) return;
 
-    if (!isAuthenticated) {
-      navigate('/login', { replace: true });
-      return;
-    }
-
-    if (!user || !user.email) {
+    if (!isAuthenticated || !user) {
+      console.log('Not authenticated or no user, redirecting to /login');
       navigate('/login', { replace: true });
       return;
     }
 
     const fetchProjects = () => {
       try {
-        const userProjects = user.projects || [];
+        const userProjects = user?.projects || [];
         setProjects(userProjects);
       } catch (err) {
         setError('Failed to load projects: ' + (err.message || 'Please try again.'));
