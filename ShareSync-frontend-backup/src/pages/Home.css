@@ -4,7 +4,6 @@
   --rose-accent: #F43F5E;
   --amber-accent: #FBBF24;
   --emerald-accent: #34D399;
-  --gold-accent: #FBBF24;
   --frosted-bg: rgba(255, 255, 255, 0.9);
   --dark-bg: rgba(17, 24, 39, 0.9);
   --white: #ffffff;
@@ -63,23 +62,12 @@ html.dark body {
   z-index: 1;
 }
 
-.holographic-effect {
-  background: linear-gradient(135deg, var(--purple-accent), var(--teal-accent));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
 .border-gradient-purple-teal {
   border-image: linear-gradient(to right, var(--purple-accent), var(--teal-accent)) 1;
 }
 
-.border-gradient-teal-pink {
+.border-gradient-teal-rose {
   border-image: linear-gradient(to right, var(--teal-accent), var(--rose-accent)) 1;
-}
-
-.border-gradient-amber-purple {
-  border-image: linear-gradient(to right, var(--amber-accent), var(--purple-accent)) 1;
 }
 
 .ring-gradient {
