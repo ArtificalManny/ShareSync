@@ -30,7 +30,7 @@ const FeedItem = ({
   };
 
   return (
-    <div className="feed-item bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer" onClick={() => console.log(`View ${item.type} details for ${item.projectTitle}`)}>
+    <div className="feed-item bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer" onClick={() => console.log(`View ${item.type} in ${item.projectTitle}`)}>
       <div className="flex items-start gap-3 mb-2">
         <div className="relative">
           <img src={item.profilePicture} alt={`${item.user}'s profile`} className="w-10 h-10 rounded-full border-2 border-gradient-purple-teal object-cover" loading="lazy" />

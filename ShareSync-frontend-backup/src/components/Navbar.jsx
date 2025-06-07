@@ -31,7 +31,7 @@ const Navbar = ({
             {notifications.length > 0 && <span className="absolute top-[-5px] right-[-5px] w-5 h-5 bg-rose-500 text-white text-xs rounded-full flex items-center justify-center">{notifications.length}</span>}
             {isNotificationDropdownOpen && (
               <div className="absolute left-16 top-0 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto">
-                {notifications.length === 0 ? <div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">No notifications</div> : notifications.map((n, i) => (
+                {notifications.map((n, i) => (
                   <div key={i} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
                     {n.message} <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(n.timestamp).toLocaleString()}</span>
                   </div>
