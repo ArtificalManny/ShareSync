@@ -101,7 +101,6 @@ const App = () => {
   };
 
   useEffect(() => {
-    // Simulate real-time feed updates
     const interval = setInterval(() => {
       setFeedItems(prev => [
         ...prev,
@@ -118,7 +117,7 @@ const App = () => {
           shares: 0,
         },
       ]);
-    }, 30000); // Update every 30 seconds
+    }, 30000);
     return () => clearInterval(interval);
   }, [authState.user.email, authState.user.profilePicture]);
 
@@ -143,7 +142,7 @@ const App = () => {
             isDarkMode={isDarkMode}
             toggleDarkMode={toggleDarkMode}
           />
-          <main className="flex-1 ml-16 p-4 sm:p-6 lg:p-8">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8">
             <Home
               searchState={searchState}
               dispatchSearch={dispatchSearch}
@@ -156,25 +155,25 @@ const App = () => {
               feedItems={feedItems}
               setFeedItems={setFeedItems}
             />
+            <Routes>
+              <Route path="/projects" element={
+                <Projects
+                  searchState={searchState}
+                  dispatchSearch={dispatchSearch}
+                  isDarkMode={isDarkMode}
+                  setIsDarkMode={setIsDarkMode}
+                  accentColor={accentColor}
+                  setAccentColor={setAccentColor}
+                  notifications={notifications}
+                  setNotifications={setNotifications}
+                />
+              } />
+              <Route path="/projects/:id" element={<div>Project Detail Page</div>} />
+              <Route path="/profile/:username" element={<div>Profile Page</div>} />
+              <Route path="/chat/:projectId" element={<div>Chat Page</div>} />
+              <Route path="/login" element={<div>Login Page</div>} />
+            </Routes>
           </main>
-          <Routes>
-            <Route path="/projects" element={
-              <Projects
-                searchState={searchState}
-                dispatchSearch={dispatchSearch}
-                isDarkMode={isDarkMode}
-                setIsDarkMode={setIsDarkMode}
-                accentColor={accentColor}
-                setAccentColor={setAccentColor}
-                notifications={notifications}
-                setNotifications={setNotifications}
-              />
-            } />
-            <Route path="/projects/:id" element={<div>Project Detail Page (To be implemented)</div>} />
-            <Route path="/profile/:username" element={<div>Profile Page (To be implemented)</div>} />
-            <Route path="/chat/:projectId" element={<div>Chat Page (To be implemented)</div>} />
-            <Route path="/login" element={<div>Login Page (To be implemented)</div>} />
-          </Routes>
         </div>
       </Router>
     </AuthContext.Provider>
