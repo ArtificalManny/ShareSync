@@ -25,10 +25,9 @@ const App = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [accentColor, setAccentColor] = useState('purple');
 
-  // Mock AuthContext value
   const [authState] = useState({
     user: {
-      username: 'user',
+      username: 'User',
       email: 'user@example.com',
       firstName: 'User',
       profilePicture: 'https://via.placeholder.com/40',
@@ -37,9 +36,7 @@ const App = () => {
           _id: '1',
           title: 'Project Alpha',
           status: 'In Progress',
-          activityLog: [
-            { message: 'Updated project plan', user: 'user@example.com', timestamp: new Date().toISOString() }
-          ],
+          activityLog: [{ message: 'Updated project plan', user: 'user@example.com', timestamp: new Date().toISOString() }],
           posts: [],
           tasks: [],
           files: [],
@@ -50,14 +47,12 @@ const App = () => {
           title: 'Project Beta',
           status: 'In Progress',
           activityLog: [],
-          posts: [
-            { content: 'New announcement posted', author: 'user@example.com', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString() }
-          ],
+          posts: [{ content: 'New announcement posted', author: 'user@example.com', timestamp: new Date().toISOString() }],
           tasks: [],
           files: [],
           members: ['user@example.com'],
-        }
-      ]
+        },
+      ],
     },
     isAuthenticated: true,
     isLoading: false,
@@ -68,7 +63,7 @@ const App = () => {
 
   const handleSearchSubmit = (e) => {
     if (e.key === 'Enter') {
-      alert(`Navigate to search results for: ${searchState.query} (Implement search results page.)`);
+      alert(`Navigate to search results for: ${searchState.query}`);
       setIsSearchOpen(false);
     }
   };
@@ -95,7 +90,7 @@ const App = () => {
   return (
     <AuthContext.Provider value={authState}>
       <Router>
-        <div className={`app-container ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className={`app-container min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} backdrop-blur-md`}>
           <Navbar
             searchState={searchState}
             dispatchSearch={dispatchSearch}

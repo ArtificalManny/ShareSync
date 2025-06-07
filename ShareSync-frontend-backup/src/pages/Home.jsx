@@ -51,8 +51,6 @@ const Home = ({
   }, [notificationsState, setNotifications]);
 
   useEffect(() => {
-    console.log('AuthContext State:', { isAuthenticated, user, isLoading, authError });
-
     if (isLoading) return;
 
     if (!isAuthenticated || !user) {
@@ -64,9 +62,8 @@ const Home = ({
     const fetchFeedItems = async () => {
       try {
         setIsLoadingFeed(true);
-        const activeProjects = (user?.projects || []).filter(project => project && project.status && project.status !== 'Completed');
+        const activeProjects = (user.projects || []).filter(project => project && project.status && project.status !== 'Completed');
 
-        // Calculate project stories
         const stories = activeProjects.map(project => {
           const recentActivity = [
             ...(project.activityLog || []),
@@ -268,11 +265,11 @@ const Home = ({
     fetchFeedItems();
 
     if (socket) {
-      socket?.on('project-updated', () => {
+      socket.on('project-updated', () => {
         fetchUserData();
       });
 
-      socket?.on('feed-update', (data) => {
+      socket.on('feed-update', (data) => {
         setFeedItems((prev) => {
           const updatedItems = [...prev, data].sort(
             (a, b) => new Date(b) - new Date(a)
@@ -281,21 +278,21 @@ const Home = ({
         });
       });
 
-      socket?.on('chat-message', (message) => {
+      socket.on('chat-message', (message) => {
         if (message.projectId === selectedProjectId) {
           setMessages((prev) => [...prev, message]);
         }
       });
 
-      socket?.on('notification', (notification) => {
+      socket.on('notification', (notification) => {
         dispatchNotifications({ type: 'ADD_NOTIFICATION', payload: notification });
       });
 
       return () => {
-        socket?.off('project-updated');
-        socket?.off('feed-update');
-        socket?.off('chat-message');
-        socket?.off('notification');
+        socket.off('project-updated');
+        socket.off('feed-update');
+        socket.off('chat-message');
+        socket.off('notification');
       };
     }
   }, [isAuthenticated, isLoading, navigate, user, socket, fetchUserData, selectedProjectId]);
@@ -311,7 +308,7 @@ const Home = ({
 
   useEffect(() => {
     if (searchState.query.length > 0) {
-      const suggestions = (user?.projects || [])
+      const suggestions = (user.projects || [])
         .filter(project => project.title.toLowerCase().includes(searchState.query.toLowerCase()))
         .map(project => project.title)
         .slice(0, 5);
@@ -328,7 +325,7 @@ const Home = ({
       )
     );
     if (socket) {
-      socket.emit('feed-like', { item: feedItems[index], userId: user?._id });
+      socket.emit('feed-like', { item: feedItems[index], userId: user._id });
       if (feedItems[index].userId && feedItems[index].userId !== user._id) {
         socket.emit('notification', {
           user: feedItems[index].userId,
@@ -347,10 +344,10 @@ const Home = ({
 
     const newCommentData = {
       text: commentText,
-      user: user?.email || 'Anonymous',
-      userId: user?._id,
-      username: user?.username,
-      profilePicture: user?.profilePicture || 'https://via.placeholder.com/40',
+      user: user.email,
+      userId: user._id,
+      username: user.username,
+      profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
       timestamp: new Date().toISOString(),
     };
 
@@ -365,7 +362,7 @@ const Home = ({
     setExpandedComments(prev => ({ ...prev, [index]: true }));
 
     if (socket) {
-      socket.emit('feed-comment', { item: feedItems[index], comment: newCommentData, userId: user?._id });
+      socket.emit('feed-comment', { item: feedItems[index], comment: newCommentData, userId: user._id });
       if (feedItems[index].userId && feedItems[index].userId !== user._id) {
         socket.emit('notification', {
           user: feedItems[index].userId,
@@ -391,7 +388,7 @@ const Home = ({
     );
     alert('Shared! (This is a mock action—implement sharing logic as needed.)');
     if (socket) {
-      socket.emit('feed-share', { item: feedItems[index], userId: user?._id });
+      socket.emit('feed-share', { item: feedItems[index], userId: user._id });
       if (feedItems[index].userId && feedItems[index].userId !== user._id) {
         socket.emit('notification', {
           user: feedItems[index].userId,
@@ -411,14 +408,14 @@ const Home = ({
     const messageData = {
       projectId: selectedProjectId,
       text: newMessage,
-      user: user?.email,
-      userId: user?._id,
-      username: user?.username,
-      profilePicture: user?.profilePicture || 'https://via.placeholder.com/40',
+      user: user.email,
+      userId: user._id,
+      username: user.username,
+      profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
       timestamp: new Date().toISOString(),
     };
 
-    socket?.emit('chat-message', messageData);
+    socket.emit('chat-message', messageData);
     setMessages((prev) => [...prev, messageData]);
     setNewMessage('');
   }, [newMessage, selectedProjectId, socket, user]);
@@ -455,10 +452,10 @@ const Home = ({
 
   if (isLoading) {
     return (
-      <div className="home-container">
+      <div className="home-container min-h-screen">
         <div className="loading-message flex items-center justify-center min-h-screen">
-          <div className="loader" aria-label="Loading home page"></div>
-          <span className="text-gray-600 dark:text-gray-400 text-xl font-sans ml-4">Loading...</span>
+          <div className="loader w-10 h-10" aria-label="Loading home page"></div>
+          <span className="text-gray-600 dark:text-gray-400 text-xl font-sans ml-4 animate-pulse">Loading...</span>
         </div>
       </div>
     );
@@ -466,10 +463,10 @@ const Home = ({
 
   if (authError || error) {
     return (
-      <div className="home-container">
+      <div className="home-container min-h-screen">
         <div className="error-message flex items-center justify-center min-h-screen">
           <p className="text-rose-500 text-lg font-sans flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" aria-hidden="true" /> {authError || error}
+            <AlertCircle className="w-6 h-6" aria-hidden="true" /> {authError || error}
           </p>
         </div>
       </div>
@@ -477,7 +474,7 @@ const Home = ({
   }
 
   return (
-    <div className={`home-container flex flex-col min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'} relative`}>
+    <div className={`home-container min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} backdrop-blur-md relative`}>
       {/* Animated Background Pattern */}
       <div className="animated-bg absolute inset-0 z-0 opacity-5 pointer-events-none">
         <div className="dot-pattern"></div>
@@ -487,8 +484,8 @@ const Home = ({
       {(!isAuthenticated || !user) && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="loader mx-auto mb-4" aria-label="Redirecting to login"></div>
-            <p className="text-gray-600 dark:text-gray-400 text-lg font-sans">
+            <div className="loader w-10 h-10 mx-auto mb-4" aria-label="Redirecting to login"></div>
+            <p className="text-gray-600 dark:text-gray-400 text-lg font-sans animate-pulse">
               Redirecting to login...
             </p>
           </div>
@@ -497,38 +494,38 @@ const Home = ({
 
       {/* Main Content Area */}
       {isAuthenticated && user && (
-        <div className="flex flex-1 mt-14 relative z-10">
+        <div className="flex flex-1 mt-16 relative z-10">
           {/* Main Content */}
-          <main className="main-content flex-1 p-4 sm:p-6">
+          <main className="main-content flex-1 p-4 sm:p-6 lg:p-8">
             {/* Welcome Banner */}
-            <div className="welcome-banner bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-6 shadow-lg transition-all duration-300 hover:shadow-xl">
-              <div className="flex items-center gap-3">
+            <div className="welcome-banner bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-6 shadow-lg backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+              <div className="flex items-center gap-4">
                 <div className="relative">
                   <img
                     src={user.profilePicture || 'https://via.placeholder.com/40'}
                     alt={`${user.firstName}'s profile`}
-                    className="w-10 h-10 rounded-full border-2 border-purple-500"
+                    className="w-12 h-12 rounded-full border-4 border-gradient-purple-pink object-cover"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 rounded-full ring-gradient"></div>
+                  <div className="absolute inset-0 rounded-full ring-2 ring-purple-500 animate-pulse-slow"></div>
                 </div>
                 <div>
-                  <h2 className="text-lg font-sans font-bold text-gray-900 dark:text-white">
+                  <h2 className="text-2xl font-sans font-bold text-gray-900 dark:text-white">
                     Welcome, {user.firstName}!
                   </h2>
-                  <p className="text-sm font-sans text-gray-600 dark:text-gray-400">
+                  <p className="text-base font-sans text-gray-600 dark:text-gray-400 mt-1">
                     You have{' '}
-                    <Link to="/projects" className="text-purple-500 hover:underline">
+                    <Link to="/projects" className="text-purple-500 hover:text-purple-600 underline-offset-4 hover:underline">
                       {userStats.activeProjects} active projects
                     </Link>{' '}
                     and {userStats.tasksCompleted} tasks completed.
                   </p>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-3 mt-2">
                     {userStats.achievements.map(achievement => (
                       achievement.earned && (
-                        <div key={achievement.id} className="flex items-center gap-1">
-                          <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
-                          <span className="text-xs font-sans text-gray-600 dark:text-gray-400">{achievement.name}</span>
+                        <div key={achievement.id} className="flex items-center gap-2 bg-gold-100 dark:bg-gold-900 p-1 rounded-lg shadow-md">
+                          <Sparkles className="w-5 h-5 text-gold-500" aria-hidden="true" />
+                          <span className="text-sm font-sans text-gray-700 dark:text-gray-300">{achievement.name}</span>
                         </div>
                       )
                     ))}
@@ -540,28 +537,33 @@ const Home = ({
             {/* Project Stories Section */}
             {projectStories.length > 0 && (
               <div className="project-stories mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <FileClock className="w-5 h-5 text-purple-500" aria-hidden="true" />
-                  <h2 className="text-md font-sans font-bold text-gray-900 dark:text-white">
+                <div className="flex items-center gap-3 mb-4">
+                  <FileClock className="w-6 h-6 text-purple-500 animate-pulse-slow" aria-hidden="true" />
+                  <h2 className="text-lg font-sans font-bold text-gray-900 dark:text-white">
                     Recent Project Updates
                   </h2>
                 </div>
-                <div className="flex overflow-x-auto space-x-4 pb-2">
+                <div className="flex overflow-x-auto space-x-4 pb-3 scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-transparent">
                   {projectStories.map(story => {
                     const isSeen = seenStories.has(story.id);
                     return (
                       <button
                         key={story.id}
                         onClick={() => handleStoryClick(story)}
-                        className="flex flex-col items-center gap-1 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-full"
+                        className="flex flex-col items-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-full group"
                         aria-label={`View recent updates for ${story.title}`}
                       >
-                        <div className={`relative w-16 h-16 rounded-full ${isSeen ? 'border-2 border-gray-300' : 'p-[2px] bg-gradient-to-r from-purple-500 to-pink-500'}`}>
+                        <div className={`relative w-16 h-16 rounded-full ${isSeen ? 'border-4 border-gray-300' : 'p-1 bg-gradient-to-r from-purple-500 to-pink-500'}`}>
                           <div className="w-full h-full bg-white dark:bg-gray-800 rounded-full flex items-center justify-center">
-                            <Folder className="w-8 h-8 text-purple-500" aria-hidden="true" />
+                            <Folder className="w-10 h-10 text-purple-500" aria-hidden="true" />
                           </div>
+                          {!isSeen && (
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 opacity-50 animate-pulse"></div>
+                          )}
                         </div>
-                        <span className="text-xs font-sans text-gray-700 dark:text-gray-300 truncate w-16">{story.title}</span>
+                        <span className="text-sm font-sans text-gray-700 dark:text-gray-300 truncate w-16 text-center group-hover:text-purple-500 transition-colors duration-200">
+                          {story.title}
+                        </span>
                       </button>
                     );
                   })}
@@ -569,42 +571,42 @@ const Home = ({
               </div>
             )}
 
-            <div className="home-header mb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Folder className="w-5 h-5 text-purple-500" aria-hidden="true" />
-                <h1 className="text-lg sm:text-xl font-sans font-bold text-gray-900 dark:text-white">
+            <div className="home-header mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <Folder className="w-6 h-6 text-purple-500 animate-pulse-slow" aria-hidden="true" />
+                <h1 className="text-2xl font-sans font-bold text-gray-900 dark:text-white">
                   Project Activity Feed
                 </h1>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm font-sans">
+              <p className="text-base font-sans text-gray-600 dark:text-gray-400">
                 Stay updated with the latest activity in your projects.
               </p>
             </div>
 
-            <div className="feed-container">
+            <div className="feed-container space-y-6">
               {isLoadingFeed ? (
                 <div className="space-y-4">
                   {[...Array(3)].map((_, index) => (
-                    <div key={index} className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                    <div key={index} className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl p-4 shadow-md">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
                         <div className="flex-1">
-                          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-1"></div>
-                          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+                          <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-1"></div>
+                          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
                         </div>
                       </div>
-                      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full mb-2"></div>
-                      <div className="flex gap-4">
-                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
-                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
-                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
+                      <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-full mb-2"></div>
+                      <div className="flex gap-3">
+                        <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
+                        <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
+                        <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : feedItems.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 font-sans text-sm">
-                  <AlertCircle className="w-4 h-4 text-rose-500" aria-hidden="true" /> No recent activity in your active projects.
+                <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 font-sans text-base">
+                  <AlertCircle className="w-6 h-6 text-rose-500" aria-hidden="true" /> No recent activity in your active projects.
                 </p>
               ) : (
                 <div className="space-y-6">
@@ -621,7 +623,7 @@ const Home = ({
                         handleShare={handleShare}
                         user={user}
                         setNewComment={setNewComment}
-                        accentColor="purple"
+                        accentColor={accentColor}
                       />
                     </div>
                   ))}
@@ -631,30 +633,32 @@ const Home = ({
           </main>
 
           {/* Right Sidebar */}
-          <aside className="right-sidebar w-72 border-l border-gray-200 dark:border-gray-700 p-4 flex-shrink-0 hidden lg:block sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto pt-4 pb-8 shadow-lg">
+          <aside className="right-sidebar w-72 border-l border-gray-200 dark:border-gray-700 p-4 flex-shrink-0 hidden lg:block sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto pt-4 pb-8 shadow-lg backdrop-blur-sm">
             {/* Project Chat */}
-            <div className="chat-section mb-8">
-              <div className="flex items-center gap-2 mb-2">
-                <MessageCircle className="w-4 h-4 text-teal-400" aria-hidden="true" />
-                <h2 className="text-sm font-sans font-bold text-gray-900 dark:text-white">Project Chat</h2>
+            <div className="chat-section mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <MessageCircle className="w-6 h-6 text-teal-400 animate-pulse-slow" aria-hidden="true" />
+                <h2 className="text-lg font-sans font-bold text-gray-900 dark:text-white">
+                  Project Chat
+                </h2>
               </div>
-              <div className="relative mb-2">
+              <div className="relative mb-3">
                 <button
                   onClick={toggleProjectDropdown}
-                  className="w-full p-1 border border-gray-300 dark:border-gray-600 rounded-md font-sans text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-between bg-white dark:bg-gray-800 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-full font-sans text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-between bg-white dark:bg-gray-800 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700"
                   aria-label="Select project for chat"
                   aria-expanded={isProjectDropdownOpen}
                 >
-                  <span>{(user?.projects || []).find(p => p._id === selectedProjectId)?.title || 'Select a project'}</span>
-                  <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" />
+                  <span>{(user.projects || []).find(p => p._id === selectedProjectId)?.title || 'Select a project'}</span>
+                  <ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" aria-hidden="true" />
                 </button>
                 {isProjectDropdownOpen && (
-                  <div className="absolute right-0 mt-1 w-full max-h-40 overflow-y-auto bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
-                    {(user?.projects || []).filter(p => p.status !== 'Completed').map(project => (
+                  <div className="absolute right-0 mt-1 w-full max-h-40 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg z-50 border border-gray-200 dark:border-gray-700">
+                    {(user.projects || []).filter(p => p.status !== 'Completed').map(project => (
                       <button
                         key={project._id}
                         onClick={() => selectProject(project._id)}
-                        className="block w-full text-left px-3 py-1 text-sm font-sans text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="block w-full text-left px-3 py-2 text-sm font-sans text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         {project.title}
                       </button>
@@ -662,20 +666,20 @@ const Home = ({
                   </div>
                 )}
               </div>
-              <div className="messages bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md p-3 h-32 overflow-y-auto mb-2">
+              <div className="messages bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl p-3 h-32 overflow-y-auto mb-3">
                 {messages.slice(-3).map((msg, index) => (
-                  <div key={index} className="flex items-start gap-2 mb-2">
+                  <div key={index} className="flex items-start gap-2 mb-2 animate-fade-in">
                     <div className="relative">
                       <img
                         src={msg.profilePicture}
                         alt={`${msg.user}'s profile`}
-                        className="w-6 h-6 rounded-full"
+                        className="w-8 h-8 rounded-full border-2 border-gradient-teal-pink object-cover"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 rounded-full ring-gradient"></div>
+                      <div className="absolute inset-0 rounded-full ring-2 ring-teal-400 animate-pulse-slow"></div>
                     </div>
                     <div>
-                      <p className="text-gray-800 dark:text-gray-300 font-sans font-medium text-sm">{msg.username}</p>
+                      <p className="text-gray-800 dark:text-gray-300 font-sans font-medium text-base">{msg.username}</p>
                       <p className="text-gray-700 dark:text-gray-400 font-sans text-sm">{msg.text}</p>
                       <p className="text-gray-500 dark:text-gray-500 font-sans text-xs">{new Date(msg.timestamp).toLocaleString()}</p>
                     </div>
@@ -688,63 +692,65 @@ const Home = ({
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    className="flex-1 p-1 border border-gray-200 dark:border-gray-600 rounded-full font-sans text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-800"
+                    className="flex-1 p-2 border border-gray-200 dark:border-gray-600 rounded-full font-sans text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-800"
                     placeholder="Type a message..."
                     aria-label="Chat Message"
                   />
                   <button
                     onClick={sendMessage}
-                    className="relative bg-pink-500 text-white p-1 rounded-full hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-transform duration-200 transform hover:scale-105"
+                    className="bg-pink-500 text-white p-2 rounded-full hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-transform duration-200 transform hover:scale-105 animate-pulse-slow"
                     aria-label="Send Message"
                   >
-                    <Send className="w-4 h-4" aria-hidden="true" />
+                    <Send className="w-5 h-5" aria-hidden="true" />
                   </button>
                 </div>
-                <Link to={`/chat/${selectedProjectId}`} className="text-purple-500 hover:underline text-xs font-sans ml-2">
+                <Link to={`/chat/${selectedProjectId}`} className="text-purple-500 hover:text-purple-600 underline-offset-4 hover:underline text-sm font-sans ml-2">
                   View More
                 </Link>
               </div>
             </div>
 
             {/* Leaderboard Section */}
-            <div className="leaderboard-section mb-8">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
-                <h2 className="text-sm font-sans font-bold text-gray-900 dark:text-white">Leaderboard</h2>
+            <div className="leaderboard-section mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <Sparkles className="w-6 h-6 text-amber-500 animate-pulse-slow" aria-hidden="true" />
+                <h2 className="text-lg font-sans font-bold text-gray-900 dark:text-white">
+                  Leaderboard
+                </h2>
               </div>
               {leaderboard.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400 font-sans flex items-center gap-2 text-sm">
-                  <AlertCircle className="w-4 h-4 text-rose-500" aria-hidden="true" /> No leaderboard data available.
+                <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 font-sans text-base">
+                  <AlertCircle className="w-6 h-6 text-rose-500" aria-hidden="true" /> No leaderboard data available.
                 </p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {leaderboard.map((entry, index) => (
-                    <div key={index} className="leaderboard-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md p-2 transition-transform duration-200 transform hover:scale-102 hover:bg-gray-50 dark:hover:bg-gray-700/20">
-                      <div className="flex items-center gap-2">
+                    <div key={index} className="leaderboard-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 transition-transform duration-200 transform hover:scale-102 hover:shadow-xl backdrop-blur-sm animate-fade-in">
+                      <div className="flex items-center gap-3">
                         <div className="relative">
                           <img
                             src={entry.profilePicture || 'https://via.placeholder.com/24'}
                             alt={`${entry.username}'s profile`}
-                            className="w-6 h-6 rounded-full"
+                            className="w-10 h-10 rounded-full border-2 border-gradient-amber-purple object-cover"
                             loading="lazy"
                           />
-                          <div className="absolute inset-0 rounded-full ring-gradient"></div>
+                          <div className="absolute inset-0 rounded-full ring-2 ring-amber-500 animate-pulse-slow"></div>
                         </div>
                         <div>
-                          <span className={`text-sm font-sans ${index === 0 ? 'text-amber-500' : index === 1 ? 'text-purple-500' : 'text-teal-400'}`}>
+                          <span className={`text-base font-sans ${index === 0 ? 'text-amber-500' : index === 1 ? 'text-purple-500' : 'text-teal-400'}`}>
                             #{index + 1}
                           </span>
-                          <p className="text-gray-800 dark:text-gray-300 font-sans text-sm font-medium">{entry.username}</p>
+                          <p className="text-lg font-sans font-medium text-gray-900 dark:text-gray-100">{entry.username}</p>
                           {entry.achievements && entry.achievements.length > 0 && (
-                            <div className="flex gap-1 mt-1">
+                            <div className="flex gap-2 mt-1">
                               {entry.achievements.slice(0, 3).map((achievement, idx) => (
-                                <Star key={idx} className="w-3 h-3 text-amber-500" title={achievement} aria-hidden="true" />
+                                <Star key={idx} className="w-4 h-4 text-amber-500" title={achievement} aria-hidden="true" />
                               ))}
                             </div>
                           )}
                         </div>
                       </div>
-                      <span className="text-gray-600 dark:text-gray-400 font-sans text-xs">{entry.points} points</span>
+                      <span className="text-gray-600 dark:text-gray-400 font-sans text-sm ml-3">{entry.points} points</span>
                     </div>
                   ))}
                 </div>
@@ -754,23 +760,25 @@ const Home = ({
             {/* Recommended Projects Section */}
             {recommendedProjects.length > 0 && (
               <div className="recommendations-section">
-                <div className="flex items-center gap-2 mb-2">
-                  <Folder className="w-4 h-4 text-purple-500" aria-hidden="true" />
-                  <h2 className="text-sm font-sans font-bold text-gray-900 dark:text-white">Recommended Projects</h2>
+                <div className="flex items-center gap-3 mb-3">
+                  <Folder className="w-6 h-6 text-purple-500 animate-pulse-slow" aria-hidden="true" />
+                  <h2 className="text-lg font-sans font-bold text-gray-900 dark:text-white">
+                    Recommended Projects
+                  </h2>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {recommendedProjects.map(project => (
                     <Link
                       key={project.id}
                       to={`/projects/${project.id}`}
-                      className="recommendation-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md p-2 block hover:border-purple-500 hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-transform duration-200 transform hover:scale-102"
+                      className="recommendation-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 block hover:border-purple-500 hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-transform duration-200 transform hover:scale-102 hover:shadow-xl backdrop-blur-sm animate-fade-in"
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <Folder className="w-4 h-4 text-purple-500" aria-hidden="true" />
-                        <h4 className="text-sm font-sans font-medium text-purple-500">{project.title}</h4>
+                      <div className="flex items-center gap-3 mb-1">
+                        <Folder className="w-5 h-5 text-purple-500" aria-hidden="true" />
+                        <h4 className="text-base font-sans font-medium text-purple-500">{project.title}</h4>
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-xs font-sans">{project.reason}</p>
-                      <div className="w-full h-4 mt-1 bg-gray-200 dark:bg-gray-700 rounded-full">
+                      <p className="text-gray-600 dark:text-gray-400 text-sm font-sans">{project.reason}</p>
+                      <div className="w-full h-2 mt-2 bg-gray-200 dark:bg-gray-700 rounded-full">
                         <div
                           className="h-full bg-teal-400 rounded-full"
                           style={{ width: `${(project.activityLevel / Math.max(...recommendedProjects.map(p => p.activityLevel)) || 1) * 100}%` }}
@@ -788,11 +796,11 @@ const Home = ({
       {/* Back to Top Button */}
       {isAuthenticated && user && showBackToTop && (
         <button
-          className="fixed bottom-6 right-6 z-40 bg-purple-500 text-white p-2 rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-transform duration-200 transform hover:scale-110"
+          className="fixed bottom-6 right-6 z-50 bg-purple-500 text-white p-2 rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-transform duration-200 transform hover:scale-105 animate-pulse-slow"
           aria-label="Back to Top"
           onClick={scrollToTop}
         >
-          <ChevronUp className="w-5 h-5" aria-hidden="true" />
+          <ChevronUp className="w-6 h-6" aria-hidden="true" />
         </button>
       )}
     </div>

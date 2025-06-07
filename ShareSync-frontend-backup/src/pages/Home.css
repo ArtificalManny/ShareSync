@@ -3,8 +3,10 @@
   --pink-accent: #EC4899;
   --teal-accent: #2DD4BF;
   --rose-accent: #F43F5E;
-  --amber-accent: #F59E0B;
+  --amber-accent: #FBBF24;
   --emerald-accent: #34D399;
+  --gold-accent: #FBBF24;
+  --frosted-bg: rgba(255, 255, 255, 0.1);
   --white: #ffffff;
   --black: #000000;
 }
@@ -12,6 +14,7 @@
 html.dark {
   --white: #1a202c;
   --black: #ffffff;
+  --frosted-bg: rgba(26, 32, 44, 0.5);
 }
 
 body {
@@ -79,6 +82,18 @@ html.dark body {
   opacity: 0.05;
 }
 
+.border-gradient-purple-pink {
+  border-image: linear-gradient(to right, var(--purple-accent), var(--pink-accent)) 1;
+}
+
+.border-gradient-teal-pink {
+  border-image: linear-gradient(to right, var(--teal-accent), var(--pink-accent)) 1;
+}
+
+.border-gradient-amber-purple {
+  border-image: linear-gradient(to right, var(--amber-accent), var(--purple-accent)) 1;
+}
+
 .ring-gradient {
   box-shadow: 0 0 0 2px transparent, 0 0 0 4px var(--purple-accent), 0 0 0 6px var(--pink-accent);
 }
@@ -97,7 +112,7 @@ html.dark body {
   height: 5px;
   background: rgba(255, 255, 255, 0.5);
   opacity: 0;
-  border-radius: 100%;
+  border-radius: 50%;
   transform: scale(1);
   transform-origin: 50% 50%;
   animation: ripple 1s infinite;
@@ -118,8 +133,8 @@ html.dark body {
   border: 4px solid #f3f3f3;
   border-top: 4px solid var(--purple-accent);
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 10px;
+  height: 10px;
   animation: spin 1s linear infinite;
 }
 
@@ -162,4 +177,23 @@ html.dark body {
 .project-stories::-webkit-scrollbar-thumb {
   background-color: var(--purple-accent);
   border-radius: 3px;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s infinite;
+}
+
+@keyframes pulse-slow {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }

@@ -10,7 +10,7 @@
 }
 
 .projects-header {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .project-card {
@@ -19,19 +19,38 @@
 
 .project-card:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .loader {
   border: 4px solid #f3f3f3;
   border-top: 4px solid var(--purple-accent);
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 10px;
+  height: 10px;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s infinite;
+}
+
+@keyframes pulse-slow {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
