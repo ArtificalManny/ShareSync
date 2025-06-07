@@ -1,21 +1,9 @@
-import React, { useState, useEffect, useContext, useCallback, memo, useReducer } from 'react';
+import React, { useState, useEffect, useContext, useCallback, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, Users, Sparkles, Star, MessageCircle, ChevronUp, FileClock } from 'lucide-react';
+import { Folder, AlertCircle, ThumbsUp, MessageSquare, Send, Share2, FileText, CheckSquare, User, MessageCircle, ChevronUp } from 'lucide-react';
 import FeedItem from '../components/FeedItem';
-import { fetchLeaderboard } from '../services/project.js';
 import './Home.css';
-
-const notificationReducer = (state, action) => {
-  switch (action.type) {
-    case 'ADD_NOTIFICATION':
-      return [...state, action.payload];
-    case 'CLEAR_NOTIFICATIONS':
-      return [];
-    default:
-      return state;
-  }
-};
 
 const Home = ({
   searchState,
@@ -30,499 +18,83 @@ const Home = ({
   setFeedItems,
 }) => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, authError, socket, fetchUserData } = useContext(AuthContext);
+  const { user, isAuthenticated, authError, socket } = useContext(AuthContext);
   const [newComment, setNewComment] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
-  const [recommendedProjects, setRecommendedProjects] = useState([]);
   const [projectStories, setProjectStories] = useState([]);
   const [seenStories, setSeenStories] = useState(new Set());
-  const [error, setError] = useState('');
-  const [leaderboard, setLeaderboard] = useState([]);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [notificationsState, dispatchNotifications] = useReducer(notificationReducer, notifications);
+  const [selectedProjectId, setSelectedProjectId] = useState(user?.projects[0]?._id || null);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
-  const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [userStats, setUserStats] = useState({ activeProjects: 0, tasksCompleted: 0, achievements: [] });
+  const [userStats, setUserStats] = useState({ activeProjects: 0, tasksCompleted: 0 });
 
   useEffect(() => {
-    setNotifications(notificationsState);
-  }, [notificationsState, setNotifications]);
+    if (!isAuthenticated || !user) { navigate('/login', { replace: true }); return; }
+    const activeProjects = user.projects.filter(p => p.status !== 'Completed');
+    const stories = activeProjects.map(p => {
+      const recent = [...(p.activityLog || []), ...(p.posts || []), ...(p.tasks || []), ...(p.files || [])]
+        .map(i => ({ type: i.message ? 'activity' : i.content ? 'post' : i.status ? 'task' : 'file', message: i.message || i.content || `${i.title} completed` || `Shared ${i.name}`, timestamp: i.timestamp || new Date().toISOString() }))
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 3);
+      return recent.length ? { id: p._id, title: p.title, recent } : null;
+    }).filter(s => s);
+    setProjectStories(stories);
+    setFeedItems(prev => [...prev, ...activeProjects.flatMap(p => [
+      ...(p.activityLog || []).map(l => ({ projectId: p._id, projectTitle: p.title, type: 'activity', message: l.message, user: l.user || user.email, profilePicture: user.profilePicture, timestamp: l.timestamp || new Date().toISOString(), likes: 0, comments: [], shares: 0 })),
+      ...(p.posts || []).map(p => ({ projectId: p._id, projectTitle: p.title, type: 'announcement', content: p.content, author: p.author || user.email, profilePicture: user.profilePicture, timestamp: p.timestamp || new Date().toISOString(), likes: 0, comments: [], shares: 0 })),
+      ...(p.tasks || []).filter(t => t.status === 'Completed').map(t => ({ projectId: p._id, projectTitle: p.title, type: 'task-complete', message: `${t.title} completed`, user: t.assignedTo || user.email, profilePicture: user.profilePicture, timestamp: t.updatedAt || new Date().toISOString(), likes: 0, comments: [], shares: 0 })),
+      ...(p.files || []).map(f => ({ projectId: p._id, projectTitle: p.title, type: 'file', message: `Shared ${f.name}`, user: f.uploadedBy || user.email, profilePicture: user.profilePicture, timestamp: f.uploadedAt || new Date().toISOString(), url: f.url || '#', likes: 0, comments: [], shares: 0 })),
+    ])].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+    setUserStats({ activeProjects: activeProjects.length, tasksCompleted: activeProjects.reduce((sum, p) => sum + (p.tasks || []).filter(t => t.status === 'Completed').length, 0) });
+  }, [isAuthenticated, user, navigate, socket, setFeedItems]);
 
-  useEffect(() => {
-    if (isLoading) return;
+  useEffect(() => { window.addEventListener('scroll', () => setShowBackToTop(window.scrollY > 300)); return () => window.removeEventListener('scroll', () => {}); }, []);
+  useEffect(() => { if (searchState.query) dispatchSearch({ type: 'SET_SUGGESTIONS', payload: (user?.projects || []).filter(p => p.title.toLowerCase().includes(searchState.query.toLowerCase())).map(p => p.title).slice(0, 5) }); else dispatchSearch({ type: 'SET_SUGGESTIONS', payload: [] }); }, [searchState.query, user, dispatchSearch]);
 
-    if (!isAuthenticated || !user) {
-      console.log('Not authenticated or no user, redirecting to /login');
-      navigate('/login', { replace: true });
-      return;
-    }
+  const handleLike = useCallback((index) => { const updated = { ...feedItems[index], likes: (feedItems[index].likes || 0) + 1 }; setFeedItems(prev => prev.map((item, i) => i === index ? updated : item)); if (socket) socket.emit('feed-like', { item: updated, userId: user._id }); }, [feedItems, socket, user]);
+  const handleCommentSubmit = useCallback((index, e) => { e.preventDefault(); const text = newComment[index] || ''; if (!text.trim()) return; const comment = { text, user: user.email, userId: user._id, username: user.username, profilePicture: user.profilePicture, timestamp: new Date().toISOString() }; const updated = { ...feedItems[index], comments: [...(feedItems[index].comments || []), comment] }; setFeedItems(prev => prev.map((item, i) => i === index ? updated : item)); setNewComment(prev => ({ ...prev, [index]: '' })); setExpandedComments(prev => ({ ...prev, [index]: true })); if (socket) socket.emit('feed-comment', { item: updated, comment, userId: user._id }); }, [feedItems, newComment, socket, user]);
+  const handleShare = useCallback((index) => { const updated = { ...feedItems[index], shares: (feedItems[index].shares || 0) + 1 }; setFeedItems(prev => prev.map((item, i) => i === index ? updated : item)); if (socket) socket.emit('feed-share', { item: updated, userId: user._id }); }, [feedItems, socket, user]);
+  const toggleComments = useCallback((index) => setExpandedComments(prev => ({ ...prev, [index]: !prev[index] })), []);
+  const sendMessage = useCallback(() => { if (!newMessage.trim() || !selectedProjectId) return; const message = { projectId: selectedProjectId, text: newMessage, user: user.email, userId: user._id, username: user.username, profilePicture: user.profilePicture, timestamp: new Date().toISOString() }; socket.emit('chat-message', message); setMessages(prev => [...prev, message]); setNewMessage(''); }, [newMessage, selectedProjectId, socket, user]);
+  const toggleProjectDropdown = () => setIsProjectDropdownOpen(prev => !prev);
+  const selectProject = (projectId) => { setSelectedProjectId(projectId); setIsProjectDropdownOpen(false); };
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleStoryClick = (story) => { setSeenStories(prev => new Set(prev).add(story.id)); alert(`Updates for ${story.title}: ${story.recentActivity.map(a => a.message).join('\n')}`); };
 
-    const fetchFeedItems = async () => {
-      try {
-        setIsLoadingFeed(true);
-        const activeProjects = (user.projects || []).filter(project => project && project.status && project.status !== 'Completed');
-
-        const stories = activeProjects.map(project => {
-          const recentActivity = [
-            ...(project.activityLog || []),
-            ...(project.posts || []),
-            ...(project.tasks || []),
-            ...(project.files || []),
-          ]
-            .map(item => ({
-              type: item.message ? 'activity' : item.content ? 'post' : item.status ? 'task' : 'file',
-              message: item.message || item.content || `${item.title || 'Unnamed task'} completed` || `Shared file: ${item.name || 'Unnamed file'}`,
-              timestamp: item.timestamp || item.updatedAt || item.uploadedAt || new Date().toISOString(),
-            }))
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-            .slice(0, 3);
-
-          const hasRecentActivity = recentActivity.length > 0 && 
-            (new Date() - new Date(recentActivity[0].timestamp)) / (1000 * 60 * 60) < 24;
-
-          return hasRecentActivity ? {
-            id: project._id,
-            title: project.title,
-            recentActivity,
-          } : null;
-        }).filter(story => story !== null);
-
-        setProjectStories(stories);
-
-        setFeedItems(prev => [
-          ...prev,
-          ...activeProjects.flatMap(project => {
-            const activityLogs = (project.activityLog || []).map(log => ({
-              projectId: project._id,
-              projectTitle: project.title,
-              type: 'activity',
-              message: log.message || 'Unknown activity',
-              user: log.user || 'Unknown user',
-              profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
-              timestamp: log.timestamp || new Date().toISOString(),
-              userId: log.userId || null,
-              likes: 0,
-              comments: [],
-              shares: 0,
-            }));
-
-            const posts = (project.posts || []).map(post => ({
-              projectId: project._id,
-              projectTitle: project.title,
-              type: post.type || 'announcement',
-              content: post.content || 'No content',
-              author: post.author || 'Unknown author',
-              profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
-              timestamp: post.timestamp || new Date().toISOString(),
-              votes: post.votes || [],
-              options: post.options || [],
-              userId: post.userId || null,
-              likes: 0,
-              comments: [],
-              shares: 0,
-            }));
-
-            const tasks = (project.tasks || []).filter(task => task.status === 'Completed').map(task => ({
-              projectId: project._id,
-              projectTitle: project.title,
-              type: 'task-complete',
-              message: `${task.title || 'Unnamed task'} completed`,
-              user: task.assignedTo || 'Unassigned',
-              profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
-              timestamp: task.updatedAt || new Date().toISOString(),
-              userId: task.userId || null,
-              likes: 0,
-              comments: [],
-              shares: 0,
-            }));
-
-            const files = (project.files || []).map(file => ({
-              projectId: project._id,
-              projectTitle: project.title,
-              type: 'file',
-              message: `Shared file: ${file.name || 'Unnamed file'}`,
-              user: file.uploadedBy || 'Unknown user',
-              profilePicture: user.profilePicture || 'https://via.placeholder.com/40',
-              timestamp: file.uploadedAt || new Date().toISOString(),
-              url: file.url || '#',
-              userId: file.userId || null,
-              likes: 0,
-              comments: [],
-              shares: 0,
-            }));
-
-            return [...activityLogs, ...posts, ...tasks, ...files];
-          }),
-        ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
-
-        const recommendProjects = () => {
-          const projectsWithActivity = activeProjects.map(project => {
-            const latestActivity = [
-              ...(project.activityLog || []),
-              ...(project.posts || []),
-              ...(project.tasks || []),
-              ...(project.files || []),
-            ].map(item => item.timestamp || new Date().toISOString())
-             .sort((a, b) => new Date(b) - new Date(a))[0];
-
-            const userInteractionCount = (project.activityLog || []).filter(log => log.user === user.email).length;
-
-            const activityLevel = (project.activityLog || []).length + (project.posts || []).length + (project.tasks || []).length;
-
-            return {
-              id: project._id,
-              title: project.title,
-              latestActivity: latestActivity || new Date().toISOString(),
-              userInteractionCount,
-              hasUserInteraction: userInteractionCount > 0,
-              activityLevel,
-            };
-          });
-
-          const recommendations = projectsWithActivity
-            .sort((a, b) => {
-              if (a.hasUserInteraction && !b.hasUserInteraction) return 1;
-              if (!a.hasUserInteraction && b.hasUserInteraction) return -1;
-              if (a.userInteractionCount !== b.userInteractionCount) {
-                return b.userInteractionCount - a.userInteractionCount;
-              }
-              return new Date(b.latestActivity) - new Date(a.latestActivity);
-            })
-            .slice(0, 2)
-            .map(project => ({
-              id: project.id,
-              title: project.title,
-              reason: project.hasUserInteraction
-                ? 'You’ve been active here recently'
-                : 'Active project with recent updates',
-              activityLevel: project.activityLevel,
-            }));
-
-          setRecommendedProjects(recommendations);
-        };
-
-        recommendProjects();
-
-        const fetchLeaderboards = async () => {
-          try {
-            const projectLeaderboards = await Promise.all(
-              activeProjects.map(async (project) => {
-                const response = await fetchLeaderboard(project._id);
-                return response;
-              })
-            );
-
-            const aggregated = {};
-            projectLeaderboards.forEach(leaderboard => {
-              leaderboard.forEach(entry => {
-                if (aggregated[entry.email]) {
-                  aggregated[entry.email].points += entry.points;
-                  aggregated[entry.email].achievements = [...new Set([...(aggregated[entry.email].achievements || []), ...(entry.achievements || [])])];
-                } else {
-                  aggregated[entry.email] = { ...entry };
-                }
-              });
-            });
-
-            const leaderboardArray = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 3);
-            setLeaderboard(leaderboardArray);
-          } catch (err) {
-            setLeaderboard([]);
-          }
-        };
-
-        fetchLeaderboards();
-
-        const fetchUserStats = () => {
-          let tasksCompleted = 0;
-          activeProjects.forEach(project => {
-            const projectTasks = project.tasks || [];
-            tasksCompleted += projectTasks.filter(task => task.status === 'Completed').length;
-          });
-          const achievements = [
-            { id: 1, name: 'Task Starter', description: 'Completed 5 tasks', earned: tasksCompleted >= 5 },
-            { id: 2, name: 'On-Time Pro', description: 'Delivered a project on time', earned: true },
-          ];
-          setUserStats({ activeProjects: activeProjects.length, tasksCompleted, achievements });
-
-          achievements.forEach(achievement => {
-            if (achievement.earned) {
-              dispatchNotifications({
-                type: 'ADD_NOTIFICATION',
-                payload: { message: `Achievement Unlocked: ${achievement.name}!`, timestamp: new Date().toISOString() },
-              });
-            }
-          });
-        };
-
-        fetchUserStats();
-
-        if (activeProjects.length > 0 && !selectedProjectId) {
-          setSelectedProjectId(activeProjects[0]._id);
-        }
-      } catch (err) {
-        setError('Failed to load feed items: ' + (err.message || 'Please try again.'));
-      } finally {
-        setIsLoadingFeed(false);
-      }
-    };
-
-    fetchFeedItems();
-
-    if (socket) {
-      socket.on('feed-update', (data) => {
-        setFeedItems(prev => [...prev, data].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
-      });
-
-      socket.on('chat-message', (message) => {
-        if (message.projectId === selectedProjectId) {
-          setMessages(prev => [...prev, message]);
-        }
-      });
-
-      socket.on('notification', (notification) => {
-        dispatchNotifications({ type: 'ADD_NOTIFICATION', payload: notification });
-      });
-
-      return () => {
-        socket.off('feed-update');
-        socket.off('chat-message');
-        socket.off('notification');
-      };
-    }
-  }, [isAuthenticated, isLoading, navigate, user, socket, fetchUserData, selectedProjectId]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowBackToTop(window.scrollY > 300);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    if (searchState.query.length > 0) {
-      const suggestions = (user.projects || [])
-        .filter(project => project.title.toLowerCase().includes(searchState.query.toLowerCase()))
-        .map(project => project.title)
-        .slice(0, 5);
-      dispatchSearch({ type: 'SET_SUGGESTIONS', payload: suggestions });
-    } else {
-      dispatchSearch({ type: 'SET_SUGGESTIONS', payload: [] });
-    }
-  }, [searchState.query, user, dispatchSearch]);
-
-  const handleLike = useCallback((index) => {
-    const updatedItem = { ...feedItems[index], likes: (feedItems[index].likes || 0) + 1 };
-    setFeedItems(prev => prev.map((item, i) => i === index ? updatedItem : item));
-    if (socket) {
-      socket.emit('feed-like', { item: updatedItem, userId: user._id });
-    }
-  }, [feedItems, socket, user]);
-
-  const handleCommentSubmit = useCallback((index, e) => {
-    e.preventDefault();
-    const commentText = newComment[index] || '';
-    if (!commentText.trim()) return;
-
-    const mentions = commentText.match(/@(\w+)/g)?.map(mention => mention.slice(1)) || [];
-    const newCommentData = {
-      text: commentText,
-      user: user.email,
-      userId: user._id,
-      username: user.username,
-      profilePicture: user.profilePicture,
-      timestamp: new Date().toISOString(),
-    };
-
-    const updatedItem = {
-      ...feedItems[index],
-      comments: [...(feedItems[index].comments || []), newCommentData],
-    };
-    setFeedItems(prev => prev.map((item, i) => i === index ? updatedItem : item));
-    setNewComment(prev => ({ ...prev, [index]: '' }));
-    setExpandedComments(prev => ({ ...prev, [index]: true }));
-
-    if (socket) {
-      socket.emit('feed-comment', { item: updatedItem, comment: newCommentData, userId: user._id });
-    }
-  }, [feedItems, newComment, socket, user]);
-
-  const handleShare = useCallback((index) => {
-    const updatedItem = { ...feedItems[index], shares: (feedItems[index].shares || 0) + 1 };
-    setFeedItems(prev => prev.map((item, i) => i === index ? updatedItem : item));
-    if (socket) {
-      socket.emit('feed-share', { item: updatedItem, userId: user._id });
-    }
-  }, [feedItems, socket, user]);
-
-  const toggleComments = useCallback((index) => {
-    setExpandedComments(prev => ({ ...prev, [index]: !prev[index] }));
-  }, []);
-
-  const sendMessage = useCallback(() => {
-    if (!newMessage.trim() || !selectedProjectId) return;
-
-    const messageData = {
-      projectId: selectedProjectId,
-      text: newMessage,
-      user: user.email,
-      userId: user._id,
-      username: user.username,
-      profilePicture: user.profilePicture,
-      timestamp: new Date().toISOString(),
-    };
-
-    socket.emit('chat-message', messageData);
-    setMessages(prev => [...prev, messageData]);
-    setNewMessage('');
-  }, [newMessage, selectedProjectId, socket, user]);
-
-  const toggleProjectDropdown = () => {
-    setIsProjectDropdownOpen(prev => !prev);
-  };
-
-  const selectProject = (projectId) => {
-    setSelectedProjectId(projectId);
-    setIsProjectDropdownOpen(false);
-  };
-
-  const handleQuickAction = (action) => {
-    if (action === 'new-project') {
-      alert('Create New Project! (Implement modal or navigation to project creation page.)');
-    } else if (action === 'new-task') {
-      alert('Create New Task! (Implement modal or navigation to task creation page.)');
-    }
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleStoryClick = (story) => {
-    setSeenStories(prev => new Set(prev).add(story.id));
-    const activityMessages = story.recentActivity.map(activity => 
-      `${activity.type.toUpperCase()}: ${activity.message} (${new Date(activity.timestamp).toLocaleString()})`
-    ).join('\n');
-    alert(`Recent Activity for "${story.title}":\n\n${activityMessages}`);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="home-container min-h-screen">
-        <div className="loading-message flex items-center justify-center min-h-screen">
-          <div className="loader w-10 h-10" aria-label="Loading home page"></div>
-          <span className="text-gray-600 dark:text-gray-400 text-xl font-sans ml-4 animate-pulse">Loading...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (authError || error) {
-    return (
-      <div className="home-container min-h-screen">
-        <div className="error-message flex items-center justify-center min-h-screen">
-          <p className="text-rose-500 text-lg font-sans flex items-center gap-2">
-            <AlertCircle className="w-6 h-6" aria-hidden="true" /> {authError || error}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (authError) return <div className="home-container min-h-screen"><div className="error-message flex items-center justify-center min-h-screen"><p className="text-rose-500 text-lg font-sans flex items-center gap-2"><AlertCircle className="w-6 h-6" />{authError}</p></div></div>;
 
   return (
-    <div className="home-container min-h-screen bg-gray-50 dark:bg-gray-900 backdrop-blur-md relative ml-16">
-      <div className="animated-bg absolute inset-0 z-0 opacity-5 pointer-events-none">
-        <div className="dot-pattern"></div>
-      </div>
-
-      {(!isAuthenticated || !user) && (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="loader w-10 h-10 mx-auto mb-4" aria-label="Redirecting to login"></div>
-            <p className="text-gray-600 dark:text-gray-400 text-lg font-sans animate-pulse">
-              Redirecting to login...
-            </p>
-          </div>
-        </div>
-      )}
-
-      {isAuthenticated && user && (
-        <div className="flex flex-1 mt-4">
+    <div className="home-container min-h-screen bg-white dark:bg-gray-900 relative ml-16">
+      {isAuthenticated && (
+        <div className="flex flex-1">
           <main className="main-content w-full p-4 sm:p-6 lg:p-8">
-            <div className="welcome-banner bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-6 shadow-lg backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+            <div className="welcome-banner bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-6 shadow-lg backdrop-blur-md hover:shadow-xl transition-all duration-300">
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <img
-                    src={user.profilePicture}
-                    alt={`${user.firstName}'s profile`}
-                    className="w-12 h-12 rounded-full border-2 border-gradient-purple-pink object-cover"
-                    loading="lazy"
-                  />
+                  <img src={user.profilePicture} alt={`${user.firstName}'s profile`} className="w-12 h-12 rounded-full border-2 border-gradient-purple-teal object-cover" loading="lazy" />
                   <div className="absolute inset-0 rounded-full ring-2 ring-purple-500 animate-pulse-slow"></div>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-sans font-bold text-gray-900 dark:text-white">
-                    Welcome, {user.firstName}!
-                  </h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Folder className="w-5 h-5 text-purple-500" aria-hidden="true" />
-                    <span className="text-base font-sans text-gray-600 dark:text-gray-400">
-                      {userStats.activeProjects} active projects
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <CheckSquare className="w-5 h-5 text-emerald-500" aria-hidden="true" />
-                    <span className="text-base font-sans text-gray-600 dark:text-gray-400">
-                      {userStats.tasksCompleted} tasks completed
-                    </span>
-                  </div>
-                  <div className="flex gap-3 mt-2">
-                    {userStats.achievements.map(achievement => (
-                      achievement.earned && (
-                        <div key={achievement.id} className="flex items-center gap-2 bg-gold-100 dark:bg-gold-900 p-2 rounded-xl shadow-md">
-                          <Sparkles className="w-5 h-5 text-gold-500" aria-hidden="true" />
-                        </div>
-                      )
-                    ))}
-                  </div>
+                  <h2 className="text-2xl font-sans font-bold text-gray-900 dark:text-white">Welcome, {user.firstName}!</h2>
+                  <div className="flex items-center gap-2 mt-1"><Folder className="w-5 h-5 text-purple-500" /><span className="text-base font-sans text-gray-600 dark:text-gray-400">{userStats.activeProjects} active</span></div>
+                  <div className="flex items-center gap-2 mt-1"><CheckSquare className="w-5 h-5 text-emerald-500" /><span className="text-base font-sans text-gray-600 dark:text-gray-400">{userStats.tasksCompleted} completed</span></div>
                 </div>
               </div>
             </div>
 
             {projectStories.length > 0 && (
               <div className="project-stories mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <FileClock className="w-6 h-6 text-purple-500 animate-pulse-slow" aria-hidden="true" />
-                  <h2 className="text-lg font-sans font-bold text-gray-900 dark:text-white">
-                    Recent Updates
-                  </h2>
-                </div>
                 <div className="flex overflow-x-auto space-x-4 pb-3 scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-transparent">
                   {projectStories.map(story => {
                     const isSeen = seenStories.has(story.id);
                     return (
-                      <button
-                        key={story.id}
-                        onClick={() => handleStoryClick(story)}
-                        className="flex flex-col items-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-full group"
-                        aria-label={`View updates for ${story.title}`}
-                      >
-                        <div className={`relative w-16 h-16 rounded-full ${isSeen ? 'border-4 border-gray-300' : 'p-1 bg-gradient-to-r from-purple-500 to-pink-500'}`}>
-                          <div className="w-full h-full bg-white dark:bg-gray-800 rounded-full flex items-center justify-center">
-                            <Folder className="w-10 h-10 text-purple-500" aria-hidden="true" />
-                          </div>
-                          {!isSeen && (
-                            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 opacity-50 animate-pulse"></div>
-                          )}
+                      <button key={story.id} onClick={() => handleStoryClick(story)} className="flex flex-col items-center gap-1 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-full group">
+                        <div className={`relative w-16 h-16 rounded-full ${isSeen ? 'border-4 border-gray-300' : 'p-1 bg-gradient-to-r from-purple-500 to-teal-400'}`}>
+                          <div className="w-full h-full bg-white dark:bg-gray-800 rounded-full flex items-center justify-center"><Folder className="w-10 h-10 text-purple-500" /></div>
+                          {!isSeen && <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-teal-400 opacity-50 animate-pulse"></div>}
                         </div>
-                        <span className="text-sm font-sans text-gray-700 dark:text-gray-300 truncate w-16 text-center group-hover:text-purple-500 transition-colors duration-200">
-                          {story.title}
-                        </span>
+                        <span className="text-xs font-sans text-gray-700 dark:text-gray-300 truncate w-16 text-center group-hover:text-purple-500">{story.title}</span>
                       </button>
                     );
                   })}
@@ -531,232 +103,54 @@ const Home = ({
             )}
 
             <div className="home-header mb-6">
-              <div className="flex items-center gap-3 mb-2">
-                <Folder className="w-6 h-6 text-purple-500 animate-pulse-slow" aria-hidden="true" />
-                <h1 className="text-2xl font-sans font-bold text-gray-900 dark:text-white">
-                  Activity Feed
-                </h1>
-              </div>
-              <p className="text-base font-sans text-gray-600 dark:text-gray-400">
-                Stay updated with the latest activity.
-              </p>
+              <div className="flex items-center gap-3"><Folder className="w-6 h-6 text-purple-500 animate-pulse-slow" /><h1 className="text-2xl font-sans font-bold text-gray-900 dark:text-white">Feed</h1></div>
             </div>
 
-            <div className="feed-container space-y-6">
-              {isLoadingFeed ? (
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, index) => (
-                    <div key={index} className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl p-4 shadow-md">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-                        <div className="flex-1">
-                          <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-1"></div>
-                          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
-                        </div>
-                      </div>
-                      <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-full mb-2"></div>
-                      <div className="flex gap-3">
-                        <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
-                        <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
-                        <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : feedItems.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 font-sans text-base">
-                  <AlertCircle className="w-6 h-6 text-rose-500" aria-hidden="true" /> No recent activity.
-                </p>
+            <div className="feed-container space-y-4">
+              {feedItems.length === 0 ? (
+                <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2"><AlertCircle className="w-6 h-6 text-rose-500" />No activity</p>
               ) : (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {feedItems.map((item, index) => (
-                    <div key={index}>
-                      <FeedItem
-                        item={item}
-                        index={index}
-                        newComment={newComment}
-                        expandedComments={expandedComments}
-                        handleLike={handleLike}
-                        handleCommentSubmit={handleCommentSubmit}
-                        toggleComments={toggleComments}
-                        handleShare={handleShare}
-                        user={user}
-                        setNewComment={setNewComment}
-                        accentColor={accentColor}
-                      />
-                    </div>
+                    <FeedItem key={index} item={item} index={index} newComment={newComment} expandedComments={expandedComments} handleLike={handleLike} handleCommentSubmit={handleCommentSubmit} toggleComments={toggleComments} handleShare={handleShare} user={user} setNewComment={setNewComment} accentColor={accentColor} />
                   ))}
                 </div>
               )}
             </div>
           </main>
 
-          <aside className="right-sidebar w-72 border-l border-gray-200 dark:border-gray-700 p-4 flex-shrink-0 hidden lg:block sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto pt-4 pb-8 shadow-lg backdrop-blur-sm">
-            <div className="chat-section mb-6">
-              <div className="flex items-center gap-3 mb-3">
-                <MessageCircle className="w-6 h-6 text-teal-400 animate-pulse-slow" aria-hidden="true" />
-                <h2 className="text-lg font-sans font-bold text-gray-900 dark:text-white">
-                  Chat
-                </h2>
-              </div>
-              <div className="relative mb-3">
-                <button
-                  onClick={toggleProjectDropdown}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-full font-sans text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-between bg-white dark:bg-gray-800 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  aria-label="Select project for chat"
-                  aria-expanded={isProjectDropdownOpen}
-                >
-                  <span>{(user.projects || []).find(p => p._id === selectedProjectId)?.title || 'Select a project'}</span>
-                  <ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" aria-hidden="true" />
+          <aside className="right-sidebar w-72 border-l border-gray-200 dark:border-gray-700 p-4 flex-shrink-0 hidden lg:block sticky top-0 h-screen overflow-y-auto shadow-lg backdrop-blur-md">
+            <div className="sidebar-toggle flex justify-end mb-2"><button className="text-purple-500 hover:text-purple-600"><ChevronUp className="w-6 h-6" /></button></div>
+            <div className="chat-section mb-2">
+              <div className="flex items-center gap-2 mb-1"><MessageCircle className="w-6 h-6 text-teal-400 animate-pulse-slow" /><span className="text-lg font-sans font-bold text-gray-900 dark:text-white">Chat</span></div>
+              <div className="relative mb-1">
+                <button onClick={toggleProjectDropdown} className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-full text-sm font-sans text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center">
+                  {(user.projects.find(p => p._id === selectedProjectId)?.title) || 'Select'} <ChevronUp className="w-5 h-5 ml-2" />
                 </button>
                 {isProjectDropdownOpen && (
-                  <div className="absolute right-0 mt-1 w-full max-h-40 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg z-50 border border-gray-200 dark:border-gray-700">
-                    {(user.projects || []).filter(p => p.status !== 'Completed').map(project => (
-                      <button
-                        key={project._id}
-                        onClick={() => selectProject(project._id)}
-                        className="block w-full text-left px-3 py-2 text-sm font-sans text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      >
-                        {project.title}
+                  <div className="absolute right-0 mt-1 w-full max-h-32 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    {user.projects.filter(p => p.status !== 'Completed').map(p => (
+                      <button key={p._id} onClick={() => selectProject(p._id)} className="block w-full text-left px-3 py-2 text-sm font-sans text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        {p.title}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-              <div className="messages bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl p-3 h-32 overflow-y-auto mb-3">
-                {messages.slice(-3).map((msg, index) => (
-                  <div key={index} className="flex items-start gap-2 mb-2 animate-fade-in">
-                    <div className="relative">
-                      <img
-                        src={msg.profilePicture}
-                        alt={`${msg.user}'s profile`}
-                        className="w-8 h-8 rounded-full border-2 border-gradient-teal-pink object-cover"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 rounded-full ring-2 ring-teal-400 animate-pulse-slow"></div>
-                    </div>
-                    <div>
-                      <p className="text-gray-800 dark:text-gray-300 font-sans font-medium text-base">{msg.username}</p>
-                      <p className="text-gray-700 dark:text-gray-400 font-sans text-sm">{msg.text}</p>
-                      <p className="text-gray-500 dark:text-gray-500 font-sans text-xs">{new Date(msg.timestamp).toLocaleString()}</p>
-                    </div>
+              <div className="messages bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 rounded-xl p-2 h-20 overflow-y-auto mb-1">
+                {messages.slice(-2).map((msg, i) => (
+                  <div key={i} className="flex items-start gap-2 mb-1 animate-fade-in">
+                    <img src={msg.profilePicture} alt={`${msg.user}'s profile`} className="w-8 h-8 rounded-full border-2 border-gradient-teal-rose" />
+                    <div><p className="text-gray-800 dark:text-gray-300 font-sans text-sm">{msg.username}</p><p className="text-gray-700 dark:text-gray-400 text-xs">{msg.text}</p></div>
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between items-center">
-                <div className="flex gap-2 flex-1">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    className="flex-1 p-2 border border-gray-200 dark:border-gray-600 rounded-full font-sans text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-800"
-                    placeholder="Type a message..."
-                    aria-label="Chat Message"
-                  />
-                  <button
-                    onClick={sendMessage}
-                    className="bg-pink-500 text-white p-2 rounded-full hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-transform duration-200 transform hover:scale-105 animate-pulse-slow"
-                    aria-label="Send Message"
-                  >
-                    <Send className="w-5 h-5" aria-hidden="true" />
-                  </button>
-                </div>
-                <Link to={`/chat/${selectedProjectId}`} className="text-purple-500 hover:text-purple-600 underline-offset-4 hover:underline text-sm font-sans ml-2">
-                  View More
-                </Link>
-              </div>
+              <div className="flex gap-2"><input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} className="flex-1 p-2 border border-gray-200 dark:border-gray-600 rounded-full text-sm font-sans text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800" placeholder="Message..." /><button onClick={sendMessage} className="bg-teal-500 text-white p-2 rounded-full hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500"><Send className="w-5 h-5" /></button></div>
             </div>
-
-            <div className="leaderboard-section mb-6">
-              <div className="flex items-center gap-3 mb-3">
-                <Sparkles className="w-6 h-6 text-amber-500 animate-pulse-slow" aria-hidden="true" />
-                <h2 className="text-lg font-sans font-bold text-gray-900 dark:text-white">
-                  Leaderboard
-                </h2>
-              </div>
-              {leaderboard.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 font-sans text-base">
-                  <AlertCircle className="w-6 h-6 text-rose-500" aria-hidden="true" /> No leaderboard data available.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {leaderboard.map((entry, index) => (
-                    <div key={index} className="leaderboard-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 transition-transform duration-200 transform hover:scale-102 hover:shadow-xl backdrop-blur-sm animate-fade-in">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <img
-                            src={entry.profilePicture || 'https://via.placeholder.com/24'}
-                            alt={`${entry.username}'s profile`}
-                            className="w-10 h-10 rounded-full border-2 border-gradient-amber-purple object-cover"
-                            loading="lazy"
-                          />
-                          <div className="absolute inset-0 rounded-full ring-2 ring-amber-500 animate-pulse-slow"></div>
-                        </div>
-                        <div>
-                          <span className={`text-base font-sans ${index === 0 ? 'text-amber-500' : index === 1 ? 'text-purple-500' : 'text-teal-400'}`}>
-                            #{index + 1}
-                          </span>
-                          <p className="text-lg font-sans font-medium text-gray-900 dark:text-gray-100">{entry.username}</p>
-                          {entry.achievements && entry.achievements.length > 0 && (
-                            <div className="flex gap-2 mt-1">
-                              {entry.achievements.slice(0, 3).map((achievement, idx) => (
-                                <Star key={idx} className="w-4 h-4 text-amber-500" title={achievement} aria-hidden="true" />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <span className="text-gray-600 dark:text-gray-400 font-sans text-sm ml-3">{entry.points} points</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {recommendedProjects.length > 0 && (
-              <div className="recommendations-section">
-                <div className="flex items-center gap-3 mb-3">
-                  <Folder className="w-6 h-6 text-purple-500 animate-pulse-slow" aria-hidden="true" />
-                  <h2 className="text-lg font-sans font-bold text-gray-900 dark:text-white">
-                    Recommended
-                  </h2>
-                </div>
-                <div className="space-y-3">
-                  {recommendedProjects.map(project => (
-                    <Link
-                      key={project.id}
-                      to={`/projects/${project.id}`}
-                      className="recommendation-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 block hover:border-purple-500 hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-transform duration-200 transform hover:scale-102 hover:shadow-xl backdrop-blur-sm animate-fade-in"
-                    >
-                      <div className="flex items-center gap-3 mb-1">
-                        <Folder className="w-5 h-5 text-purple-500" aria-hidden="true" />
-                        <h4 className="text-base font-sans font-medium text-purple-500">{project.title}</h4>
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm font-sans">{project.reason}</p>
-                      <div className="w-full h-2 mt-2 bg-gray-200 dark:bg-gray-700 rounded-full">
-                        <div
-                          className="h-full bg-teal-400 rounded-full"
-                          style={{ width: `${(project.activityLevel / Math.max(...recommendedProjects.map(p => p.activityLevel)) || 1) * 100}%` }}
-                        ></div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
           </aside>
         </div>
       )}
-
-      {isAuthenticated && user && showBackToTop && (
-        <button
-          className="fixed bottom-6 right-6 z-50 bg-purple-500 text-white p-2 rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-transform duration-200 transform hover:scale-105 animate-pulse-slow"
-          aria-label="Back to Top"
-          onClick={scrollToTop}
-        >
-          <ChevronUp className="w-6 h-6" aria-hidden="true" />
-        </button>
-      )}
+      {showBackToTop && <button className="fixed bottom-6 right-6 bg-purple-500 text-white p-2 rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200" onClick={scrollToTop}><ChevronUp className="w-6 h-6" /></button>}
     </div>
   );
 };
