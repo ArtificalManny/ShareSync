@@ -1,4 +1,4 @@
-import React, { useState, useReducer } from 'react';
+import React, { useState, useReducer, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -24,9 +24,11 @@ const App = () => {
   const [searchState, dispatchSearch] = useReducer(searchReducer, { query: '', suggestions: [] });
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [accentColor, setAccentColor] = useState('purple');
+  const [feedItems, setFeedItems] = useState([]);
 
   const [authState] = useState({
     user: {
+      _id: 'user1',
       username: 'User',
       email: 'user@example.com',
       firstName: 'User',
@@ -57,7 +59,18 @@ const App = () => {
     isAuthenticated: true,
     isLoading: false,
     authError: null,
-    socket: null,
+    socket: {
+      on: (event, callback) => {
+        if (event === 'feed-update') callback({ message: 'New activity', timestamp: new Date().toISOString() });
+      },
+      emit: (event, data) => {
+        if (event === 'feed-like' || event === 'feed-comment' || event === 'feed-share') {
+          setFeedItems(prev => [...prev, data.item].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+          setNotifications(prev => [...prev, { message: `${authState.user.username} ${event.replace('feed-', '')}d an item`, timestamp: new Date().toISOString() }]);
+        }
+      },
+      off: () => {},
+    },
     fetchUserData: () => Promise.resolve(),
   });
 
@@ -87,10 +100,32 @@ const App = () => {
     setAccentColor(color);
   };
 
+  useEffect(() => {
+    // Simulate real-time feed updates
+    const interval = setInterval(() => {
+      setFeedItems(prev => [
+        ...prev,
+        {
+          projectId: '1',
+          projectTitle: 'Project Alpha',
+          type: 'activity',
+          message: `New update at ${new Date().toLocaleTimeString()}`,
+          user: authState.user.email,
+          profilePicture: authState.user.profilePicture,
+          timestamp: new Date().toISOString(),
+          likes: 0,
+          comments: [],
+          shares: 0,
+        },
+      ]);
+    }, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, [authState.user.email, authState.user.profilePicture]);
+
   return (
     <AuthContext.Provider value={authState}>
       <Router>
-        <div className={`app-container min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} backdrop-blur-md`}>
+        <div className="app-container min-h-screen flex flex-row">
           <Navbar
             searchState={searchState}
             dispatchSearch={dispatchSearch}
@@ -108,19 +143,21 @@ const App = () => {
             isDarkMode={isDarkMode}
             toggleDarkMode={toggleDarkMode}
           />
+          <main className="flex-1 ml-16 p-4 sm:p-6 lg:p-8">
+            <Home
+              searchState={searchState}
+              dispatchSearch={dispatchSearch}
+              isDarkMode={isDarkMode}
+              setIsDarkMode={setIsDarkMode}
+              accentColor={accentColor}
+              setAccentColor={setAccentColor}
+              notifications={notifications}
+              setNotifications={setNotifications}
+              feedItems={feedItems}
+              setFeedItems={setFeedItems}
+            />
+          </main>
           <Routes>
-            <Route path="/" element={
-              <Home
-                searchState={searchState}
-                dispatchSearch={dispatchSearch}
-                isDarkMode={isDarkMode}
-                setIsDarkMode={setIsDarkMode}
-                accentColor={accentColor}
-                setAccentColor={setAccentColor}
-                notifications={notifications}
-                setNotifications={setNotifications}
-              />
-            } />
             <Route path="/projects" element={
               <Projects
                 searchState={searchState}

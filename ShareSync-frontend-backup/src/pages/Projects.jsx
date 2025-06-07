@@ -76,8 +76,7 @@ const Projects = ({
   }
 
   return (
-    <div className={`projects-container min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} backdrop-blur-md relative`}>
-      {/* Fallback UI if not authenticated */}
+    <div className="projects-container min-h-screen bg-gray-50 dark:bg-gray-900 backdrop-blur-md relative ml-16">
       {(!isAuthenticated || !user) && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
@@ -89,10 +88,9 @@ const Projects = ({
         </div>
       )}
 
-      {/* Main Content Area */}
       {isAuthenticated && user && (
-        <div className="flex flex-1 mt-16 relative z-10">
-          <main className="main-content flex-1 p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-1 mt-4">
+          <main className="main-content w-full p-4 sm:p-6 lg:p-8">
             <div className="projects-header mb-6">
               <div className="flex items-center gap-3 mb-2">
                 <Briefcase className="w-6 h-6 text-purple-500 animate-pulse-slow" aria-hidden="true" />
@@ -101,7 +99,7 @@ const Projects = ({
                 </h1>
               </div>
               <p className="text-base font-sans text-gray-600 dark:text-gray-400">
-                Manage and view all your projects here.
+                Manage and view all your projects.
               </p>
             </div>
 
@@ -125,7 +123,7 @@ const Projects = ({
                         </h3>
                       </div>
                       <p className="text-gray-600 dark:text-gray-400 text-sm font-sans mb-1">
-                        Status: {project.status || 'Not Started'}
+                        <span className="text-emerald-500">Status:</span> {project.status || 'Not Started'}
                       </p>
                       <div className="flex items-center gap-2">
                         <Users className="w-5 h-5 text-gray-500 dark:text-gray-400" aria-hidden="true" />

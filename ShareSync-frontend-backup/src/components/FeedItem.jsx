@@ -1,5 +1,5 @@
 import React from 'react';
-import { ThumbsUp, MessageSquare, Share2, FileText, CheckSquare } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Share2, FileText, CheckSquare, User } from 'lucide-react';
 
 const FeedItem = ({
   item,
@@ -18,44 +18,52 @@ const FeedItem = ({
     switch (item.type) {
       case 'activity':
         return (
-          <p className="text-gray-700 dark:text-gray-300 font-sans text-base">
-            <span className="font-medium">{item.user}</span> {item.message} in{' '}
-            <span className="text-purple-500 hover:text-purple-600">{item.projectTitle}</span>
-          </p>
+          <div className="flex items-center gap-2">
+            <User className="w-5 h-5 text-gray-500" aria-hidden="true" />
+            <p className="text-gray-700 dark:text-gray-300 font-sans text-base">
+              {item.message} in <span className="text-purple-500 hover:text-purple-600">{item.projectTitle}</span>
+            </p>
+          </div>
         );
       case 'announcement':
       case 'poll':
         return (
-          <div>
-            <p className="text-gray-700 dark:text-gray-300 font-sans text-base">
-              <span className="font-medium">{item.author}</span> posted an {item.type} in{' '}
-              <span className="text-purple-500 hover:text-purple-600">{item.projectTitle}</span>
-            </p>
-            <p className="mt-1 text-gray-600 dark:text-gray-400 font-sans text-sm">{item.content}</p>
-            {item.options && item.options.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {item.options.map((option, idx) => (
-                  <div key={idx} className="text-gray-600 dark:text-gray-400 font-sans text-sm">
-                    - {option}
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-gray-500" aria-hidden="true" />
+            <div>
+              <p className="text-gray-700 dark:text-gray-300 font-sans text-base">
+                Posted in <span className="text-purple-500 hover:text-purple-600">{item.projectTitle}</span>
+              </p>
+              <p className="mt-1 text-gray-600 dark:text-gray-400 font-sans text-sm">{item.content}</p>
+              {item.options && item.options.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {item.options.map((option, idx) => (
+                    <div key={idx} className="text-gray-600 dark:text-gray-400 font-sans text-sm">
+                      - {option}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         );
       case 'task-complete':
         return (
-          <p className="text-gray-700 dark:text-gray-300 font-sans text-base">
-            <span className="font-medium">{item.user}</span> completed a task: {item.message} in{' '}
-            <span className="text-purple-500 hover:text-purple-600">{item.projectTitle}</span>
-          </p>
+          <div className="flex items-center gap-2">
+            <CheckSquare className="w-5 h-5 text-emerald-500" aria-hidden="true" />
+            <p className="text-gray-700 dark:text-gray-300 font-sans text-base">
+              {item.message} in <span className="text-purple-500 hover:text-purple-600">{item.projectTitle}</span>
+            </p>
+          </div>
         );
       case 'file':
         return (
-          <p className="text-gray-700 dark:text-gray-300 font-sans text-base">
-            <span className="font-medium">{item.user}</span> shared a file: <a href={item.url} className="text-purple-500 hover:text-purple-600">{item.message}</a> in{' '}
-            <span className="text-purple-500 hover:text-purple-600">{item.projectTitle}</span>
-          </p>
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-gray-500" aria-hidden="true" />
+            <p className="text-gray-700 dark:text-gray-300 font-sans text-base">
+              Shared <a href={item.url} className="text-purple-500 hover:text-purple-600">{item.message}</a> in <span className="text-purple-500 hover:text-purple-600">{item.projectTitle}</span>
+            </p>
+          </div>
         );
       default:
         return null;
