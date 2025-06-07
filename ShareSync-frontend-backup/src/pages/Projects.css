@@ -10,7 +10,7 @@
 }
 
 .projects-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .project-card {
@@ -18,8 +18,8 @@
 }
 
 .project-card:hover {
-  transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: scale(1.03);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
 }
 
 .loader {
@@ -37,20 +37,28 @@
 }
 
 .animate-pulse-slow {
-  animation: pulse-slow 2s infinite;
+  animation: pulse-slow 1.5s infinite;
 }
 
 @keyframes pulse-slow {
   0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  50% { transform: scale(1.1); }
   100% { transform: scale(1); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.5s ease-in;
+  animation: fadeIn 0.3s ease-in;
 }
 
 @keyframes fadeIn {
   0% { opacity: 0; }
   100% { opacity: 1; }
+}
+
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 15px var(--purple-accent), 0 0 5px var(--teal-accent);
 }
