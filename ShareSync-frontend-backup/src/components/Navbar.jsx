@@ -20,38 +20,38 @@ const Navbar = ({
   toggleDarkMode,
 }) => {
   return (
-    <nav className="navbar fixed top-0 left-0 h-full w-9 sm:w-10 bg-white dark:bg-gray-950 shadow-sm z-50">
-      <div className="flex flex-col items-center justify-between h-full py-1 sm:py-1.5">
-        <div className="mb-1.5 sm:mb-2"><Link to="/"><span className="text-sm sm:text-base font-sans font-bold text-purple-600">S</span></Link></div>
-        <div className="flex flex-col items-center space-y-2 sm:space-y-2.5">
-          <Link to="/" title="Home" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors duration-150 hover-glow" onClick={() => console.log('Navigated to Home')}><Home className="w-3.5 h-3.5 sm:w-4 h-4" style={{ stroke: `url(#home-gradient-${accentColor})` }} /></Link>
-          <button onClick={() => { setIsSearchOpen(!isSearchOpen); console.log('Search toggled'); }} title="Search" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors duration-150 hover-glow"><Search className="w-3.5 h-3.5 sm:w-4 h-4" style={{ stroke: `url(#search-gradient-${accentColor})` }} /></button>
+    <nav className="navbar fixed top-0 left-0 h-screen w-14 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans z-50">
+      <div className="flex flex-col items-center justify-between h-full py-2">
+        <div className="mb-4"><Link to="/"><span className="text-base font-sans font-bold text-purple-600">S</span></Link></div>
+        <div className="flex flex-col items-center space-y-4">
+          <Link to="/" title="Home" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors duration-200" onClick={() => console.log('Navigated to Home')}><Home className="w-6 h-6" style={{ stroke: `url(#home-gradient-${accentColor})` }} /></Link>
+          <button onClick={() => { setIsSearchOpen(!isSearchOpen); console.log('Search toggled'); }} title="Search" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors duration-200"><Search className="w-6 h-6" style={{ stroke: `url(#search-gradient-${accentColor})` }} /></button>
           <div className="relative">
-            <button onClick={() => { toggleNotificationDropdown(); console.log('Notifications toggled'); }} title="Notifications" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors duration-150 hover-glow"><BellRing className="w-3.5 h-3.5 sm:w-4 h-4" style={{ stroke: `url(#bell-gradient-${accentColor})` }} /></button>
-            {notifications.length > 0 && <span className="absolute top-[-2px] right-[-2px] w-2.5 h-2.5 sm:w-3 h-3 bg-rose-600 text-white text-[7px] sm:text-[8px] rounded-full flex items-center justify-center">{notifications.length}</span>}
+            <button onClick={() => { toggleNotificationDropdown(); console.log('Notifications toggled'); }} title="Notifications" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors duration-200"><BellRing className="w-6 h-6" style={{ stroke: `url(#bell-gradient-${accentColor})` }} /></button>
+            {notifications.length > 0 && <span className="absolute top-[-2px] right-[-2px] w-4 h-4 bg-rose-600 text-white text-xs rounded-full flex items-center justify-center">{notifications.length}</span>}
             {isNotificationDropdownOpen && (
-              <div className="absolute left-10 sm:left-11 top-0 w-40 sm:w-44 bg-white dark:bg-gray-950 rounded-lg shadow-md border border-gray-50 dark:border-gray-800 max-h-56 overflow-y-auto">
+              <div className="absolute left-14 top-0 w-48 bg-white dark:bg-gray-950 rounded-lg shadow-md border border-gray-50 dark:border-gray-800 max-h-64 overflow-y-auto">
                 {notifications.map((n, i) => (
-                  <div key={i} className="px-1 sm:px-1.5 py-0.5 sm:py-1 text-xs sm:text-sm font-sans text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 border-b border-gray-50 dark:border-gray-800 last:border-b-0" onClick={() => console.log(`Notification ${n.message} clicked`)}>
-                    {n.message} <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{new Date(n.timestamp).toLocaleTimeString()}</span>
+                  <div key={i} className="px-2 py-1 text-sm font-sans text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 border-b border-gray-50 dark:border-gray-800 last:border-b-0" onClick={() => console.log(`Notification ${n.message} clicked`)}>
+                    {n.message} <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(n.timestamp).toLocaleTimeString()}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
           <div className="relative">
-            <button onClick={() => { toggleProfileDropdown(); console.log('Profile toggled'); }} title="Profile" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors duration-150 hover-glow"><User className="w-3.5 h-3.5 sm:w-4 h-4" /></button>
+            <button onClick={() => { toggleProfileDropdown(); console.log('Profile toggled'); }} title="Profile" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors duration-200"><User className="w-6 h-6" /></button>
             {isProfileDropdownOpen && (
-              <div className="absolute left-10 sm:left-11 top-0 w-36 sm:w-40 bg-white dark:bg-gray-950 rounded-lg shadow-md border border-gray-50 dark:border-gray-800">
-                <Link to={`/profile/${user.username}`} onClick={() => { toggleProfileDropdown(); console.log('Navigated to Profile'); }} className="block px-1 sm:px-1.5 py-0.5 sm:py-1 text-xs sm:text-sm font-sans text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900">Profile</Link>
-                <div className="px-1 sm:px-1.5 py-0.5 sm:py-1 text-xs sm:text-sm font-sans text-gray-700 dark:text-gray-300">Accent Color: <div className="flex gap-0.5 sm:gap-1 mt-0.5 sm:mt-1"><button onClick={() => { changeAccentColor('purple'); console.log('Accent set to purple'); }} className="w-3.5 h-3.5 sm:w-4 h-4 bg-purple-600 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-300" /><button onClick={() => { changeAccentColor('teal'); console.log('Accent set to teal'); }} className="w-3.5 h-3.5 sm:w-4 h-4 bg-teal-400 rounded-full focus:outline-none focus:ring-2 focus:ring-teal-300" /><button onClick={() => { changeAccentColor('rose'); console.log('Accent set to rose'); }} className="w-3.5 h-3.5 sm:w-4 h-4 bg-rose-600 rounded-full focus:outline-none focus:ring-2 focus:ring-rose-300" /></div></div>
-                <div className="px-1 sm:px-1.5 py-0.5 sm:py-1 text-xs sm:text-sm font-sans text-gray-700 dark:text-gray-300 flex items-center gap-0.5 sm:gap-1">Dark Mode: <button onClick={() => { toggleDarkMode(); console.log('Dark mode toggled'); }} className="hover:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500">{isDarkMode ? <Sun className="w-3.5 h-3.5 sm:w-4 h-4" /> : <MoonStar className="w-3.5 h-3.5 sm:w-4 h-4" />}</button></div>
-                <button onClick={() => { toggleProfileDropdown(); alert('Logout to be implemented'); console.log('Logout clicked'); }} className="block w-full text-left px-1 sm:px-1.5 py-0.5 sm:py-1 text-xs sm:text-sm font-sans text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900">Logout</button>
+              <div className="absolute left-14 top-0 w-48 bg-white dark:bg-gray-950 rounded-lg shadow-md border border-gray-50 dark:border-gray-800">
+                <Link to={`/profile/${user.username}`} onClick={() => { toggleProfileDropdown(); console.log('Navigated to Profile'); }} className="block px-2 py-1 text-sm font-sans text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900">Profile</Link>
+                <div className="px-2 py-1 text-sm font-sans text-gray-700 dark:text-gray-300">Accent Color: <div className="flex gap-1 mt-1"><button onClick={() => { changeAccentColor('purple'); console.log('Accent set to purple'); }} className="w-5 h-5 bg-purple-600 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-300" /><button onClick={() => { changeAccentColor('teal'); console.log('Accent set to teal'); }} className="w-5 h-5 bg-teal-400 rounded-full focus:outline-none focus:ring-2 focus:ring-teal-300" /><button onClick={() => { changeAccentColor('rose'); console.log('Accent set to rose'); }} className="w-5 h-5 bg-rose-600 rounded-full focus:outline-none focus:ring-2 focus:ring-rose-300" /></div></div>
+                <div className="px-2 py-1 text-sm font-sans text-gray-700 dark:text-gray-300 flex items-center gap-1">Dark Mode: <button onClick={() => { toggleDarkMode(); console.log('Dark mode toggled'); }} className="hover:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500">{isDarkMode ? <Sun className="w-6 h-6" /> : <MoonStar className="w-6 h-6" />}</button></div>
+                <button onClick={() => { toggleProfileDropdown(); alert('Logout to be implemented'); console.log('Logout clicked'); }} className="block w-full text-left px-2 py-1 text-sm font-sans text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900">Logout</button>
               </div>
             )}
           </div>
         </div>
-        <div><button onClick={() => { toggleDarkMode(); console.log('Dark mode toggled'); }} title="Toggle Dark Mode" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 hover-glow"><span className="sr-only">Toggle Dark Mode</span>{isDarkMode ? <Sun className="w-3.5 h-3.5 sm:w-4 h-4" /> : <MoonStar className="w-3.5 h-3.5 sm:w-4 h-4" />}</button></div>
+        <div><button onClick={() => { toggleDarkMode(); console.log('Dark mode toggled'); }} title="Toggle Dark Mode" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500"><span className="sr-only">Toggle Dark Mode</span>{isDarkMode ? <Sun className="w-6 h-6" /> : <MoonStar className="w-6 h-6" />}</button></div>
       </div>
       <svg className="absolute w-0 h-0">
         <linearGradient id="home-gradient-purple" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style={{ stopColor: '#6B46C1', stopOpacity: 1 }} /><stop offset="100%" style={{ stopColor: '#38B2AC', stopOpacity: 1 }} /></linearGradient>
