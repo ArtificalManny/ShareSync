@@ -18,6 +18,8 @@ const ProjectsCreate = () => {
   const [newMember, setNewMember] = useState({ email: '', role: 'member' });
   const [addToProfile, setAddToProfile] = useState(true);
   const [created, setCreated] = useState(false);
+  const [projectColor, setProjectColor] = useState('#6b48ff');
+  const [projectImage, setProjectImage] = useState('');
 
   const handleInputChange = (e) => {
     setProjectDetails({ ...projectDetails, [e.target.name]: e.target.value });
@@ -169,6 +171,24 @@ const ProjectsCreate = () => {
                 />
                 Add to my profile
               </label>
+              <div className="mb-4">
+                <label className="block mb-2 font-semibold">Project Color</label>
+                <input
+                  type="color"
+                  value={projectColor}
+                  onChange={e => setProjectColor(e.target.value)}
+                  className="w-12 h-12 rounded-full border-2 border-gray-300"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block mb-2 font-semibold">Project Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setProjectImage(e.target.files[0])}
+                  className="block"
+                />
+              </div>
               <button onClick={createProject} className="btn-primary rounded-full flex items-center w-full justify-center mt-4">
                 <PlusCircle className="w-5 h-5 mr-2" /> Create Project
               </button>
