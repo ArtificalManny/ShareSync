@@ -42,7 +42,7 @@ const Sidebar = () => {
                 className="sidebar-profile-pic"
               />
             </Link>
-            <h2>{`${user.firstName} ${user.lastName}`}</h2>
+            <h2 className="sidebar-profile-name">{`${user.firstName} ${user.lastName}`}</h2>
             <p className="text-secondary">Active Projects: 3</p> {/* Social proof for dopamine */}
           </>
         )}

@@ -7,55 +7,60 @@ const authMiddleware = require('../middleware/auth');
 
 // Register
 router.post('/register', async (req, res) => {
-  const { firstName, lastName, username, email, password, job, school, profilePicture, bannerPicture } = req.body;
   try {
-    let user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
+    const { firstName, lastName, username, email, password, profilePicture } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    user = new User({
+    const user = new User({
       firstName,
       lastName,
       username,
       email,
-      password: await bcrypt.hash(password, 10),
-      job,
-      school,
-      profilePicture: profilePicture || 'https://via.placeholder.com/150',
-      bannerPicture: bannerPicture || 'https://via.placeholder.com/1200x300',
-      projects: [],
+      password: hashedPassword,
+      profilePicture
     });
 
     await user.save();
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(201).json({ token, user });
-  } catch (error) {
-    console.error('Auth Route - Register error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(201).json({
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      username: user.username,
+      email: user.email,
+      profilePicture: user.profilePicture
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
 // Login
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
   try {
+    const { email, password } = req.body;
     const user = await User.findOne({ email });
+
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ error: 'Invalid credentials' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token, user });
-  } catch (error) {
-    console.error('Auth Route - Login error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.json({
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      username: user.username,
+      email: user.email,
+      profilePicture: user.profilePicture
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

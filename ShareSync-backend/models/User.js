@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 
-const userSchema = new mongoose.Schema({
+const UserSchema = new mongoose.Schema({
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
   username: { type: String, required: true, unique: true },
-  firstName: { type: String },
-  lastName: { type: String },
   email: { type: String, required: true, unique: true },
-  age: { type: Number },
   password: { type: String, required: true },
-  profilePicture: { type: String, default: 'https://via.placeholder.com/150' },
+  profilePicture: { type: String, default: '' },
+  age: { type: Number },
   bannerPicture: { type: String, default: 'https://via.placeholder.com/1200x300' },
   job: { type: String },
   school: { type: String },
@@ -129,4 +129,6 @@ const userSchema = new mongoose.Schema({
   ],
 });
 
-module.exports = mongoose.model('User', userSchema);
+const User = mongoose.model('User', UserSchema);
+
+module.exports = User;

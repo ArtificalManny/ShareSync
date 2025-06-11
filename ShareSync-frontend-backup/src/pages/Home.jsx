@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';                    // ← use axios directly
+import axios from 'axios';
 import { io } from 'socket.io-client';
 import StoryCarousel from '../components/StoryCarousel';
 import {
@@ -11,13 +11,21 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
-  const [user] = useState({
-    name: 'Manny',
-    avatarUrl: '/path/to/avatar.jpg',
-  });
+  const [user, setUser] = useState(null);
   const [projects, setProjects] = useState([]);
   const [feedItems, setFeedItems] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      setUser({ firstName: 'User', lastName: '', profilePicture: '/path/to/avatar.jpg' });
+    }
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -80,13 +88,13 @@ export default function Home() {
         style={{ background: 'linear-gradient(135deg, #D8B4FE, #FDE68A)' }}
       >
         <img
-          src={user.avatarUrl}
-          alt={`${user.name}'s profile`}
+          src={user?.profilePicture || '/path/to/avatar.jpg'}
+          alt={`${user?.firstName || 'User'}'s profile`}
           className="w-20 h-20 rounded-full ring-4 ring-indigo-500"
         />
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            Welcome, {user.name}!
+            Welcome, {user ? `${user.firstName} ${user.lastName}` : 'User'}!
           </h1>
           <p className="text-gray-700 dark:text-gray-300 mt-1 flex space-x-6">
             <span className="inline-flex items-center">
