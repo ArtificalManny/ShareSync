@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import StoryCarousel from '../components/StoryCarousel';
+import ProjectsCreate from './ProjectsCreate.jsx';
 import {
   Folder,
   CheckCircle,
@@ -11,7 +12,7 @@ import {
   PlusCircle
 } from 'lucide-react';
 
-const DEFAULT_PROFILE_PIC = '/default-profile.png'; // Place a default image in your public folder
+const DEFAULT_PROFILE_PIC = '/default-profile.png';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -19,6 +20,7 @@ export default function Home() {
   const [feedItems, setFeedItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [showProjectModal, setShowProjectModal] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -94,8 +96,12 @@ export default function Home() {
     const formData = new FormData();
     formData.append('profilePicture', file);
     try {
+      const token = localStorage.getItem('token');
       const res = await axios.post('/api/profile/upload-profile-picture', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
       });
       const updatedUser = { ...user, profilePicture: res.data.profilePicture };
       setUser(updatedUser);
@@ -107,8 +113,13 @@ export default function Home() {
   };
 
   const handleStartProject = () => {
-    // Redirect to project creation page or open modal
-    window.location.href = '/projects/new';
+    setShowProjectModal(true);
+  };
+
+  const handleProjectCreated = (newProject) => {
+    setShowProjectModal(false);
+    setProjects((prev) => [newProject, ...prev]);
+    window.location.href = `/projects/${newProject._id}`;
   };
 
   if (loading) {
@@ -116,19 +127,32 @@ export default function Home() {
   }
 
   return (
-    <div className="ml-16 md:ml-24 p-6 bg-gray-100 dark:bg-gray-800 min-h-screen space-y-6">
-      {/* Welcome Banner */}
+    <div className="ml-16 md:ml-24 p-6 bg-gray-100 dark:bg-gray-800 min-h-screen space-y-8">
+      {showProjectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 w-full max-w-lg relative">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+              onClick={() => setShowProjectModal(false)}
+            >
+              ×
+            </button>
+            <ProjectsCreate onProjectCreated={handleProjectCreated} />
+          </div>
+        </div>
+      )}
+
       <section
-        className="rounded-lg shadow-lg p-6 flex items-center space-x-4"
+        className="rounded-3xl shadow-xl p-8 flex items-center space-x-6"
         style={{ background: 'linear-gradient(135deg, #D8B4FE, #FDE68A)' }}
       >
         <div className="relative">
           <img
             src={user?.profilePicture || DEFAULT_PROFILE_PIC}
             alt={`${user?.firstName || 'User'}'s profile`}
-            className="w-20 h-20 rounded-full ring-4 ring-indigo-500 cursor-pointer object-cover"
+            className="w-24 h-24 rounded-full ring-4 ring-indigo-500 cursor-pointer object-cover transition-all duration-300"
             onClick={handleProfilePicClick}
-            style={{ objectFit: 'cover' }}
+            style={{ objectFit: 'cover', borderRadius: '50%' }}
           />
           {uploading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 rounded-full">
@@ -144,46 +168,46 @@ export default function Home() {
           />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
             Welcome, {user?.firstName || 'User'}!
           </h1>
-          <p className="text-gray-700 dark:text-gray-300 mt-1 flex space-x-6">
+          <p className="text-gray-700 dark:text-gray-300 mt-2 flex space-x-8 text-lg">
             <span className="inline-flex items-center">
-              <Folder className="w-5 h-5 mr-1 text-indigo-500" />
+              <Folder className="w-6 h-6 mr-2 text-indigo-500" />
               {projects.length} active
             </span>
             <span className="inline-flex items-center">
-              <CheckCircle className="w-5 h-5 mr-1 text-green-500" />
+              <CheckCircle className="w-6 h-6 mr-2 text-green-500" />
               {feedItems.filter((f) => f.type === 'completed').length} completed
             </span>
           </p>
         </div>
       </section>
 
-      {/* Stories Carousel / Recent Updates */}
-      <section className="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+      <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
             Recent Updates
           </h2>
-          {feedItems.length === 0 && (
+          {(feedItems.length > 0 || projects.length > 0) && (
             <button
-              className="flex items-center px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+              className="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-full hover:bg-indigo-600 transition"
               onClick={handleStartProject}
             >
-              <PlusCircle className="w-5 h-5 mr-1" />
+              <PlusCircle className="w-5 h-5 mr-2" />
               Start a New Project
             </button>
           )}
         </div>
         {feedItems.length === 0 ? (
           <div className="text-gray-500 dark:text-gray-400 text-center py-8">
-            No updates yet. <br />
+            No updates yet.
+            <br />
             <button
-              className="mt-4 flex items-center px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+              className="mt-6 flex items-center px-6 py-3 bg-indigo-500 text-white rounded-full hover:bg-indigo-600 transition"
               onClick={handleStartProject}
             >
-              <PlusCircle className="w-5 h-5 mr-2" />
+              <PlusCircle className="w-6 h-6 mr-3" />
               Start a New Project
             </button>
           </div>
@@ -192,18 +216,17 @@ export default function Home() {
         )}
       </section>
 
-      {/* Activity Feed */}
-      <section className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+      <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
             Project Activity Feed
           </h2>
-          {feedItems.length === 0 && (
+          {(feedItems.length > 0 || projects.length > 0) && (
             <button
-              className="flex items-center px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+              className="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-full hover:bg-indigo-600 transition"
               onClick={handleStartProject}
             >
-              <PlusCircle className="w-5 h-5 mr-1" />
+              <PlusCircle className="w-5 h-5 mr-2" />
               Start a New Project
             </button>
           )}
@@ -213,28 +236,28 @@ export default function Home() {
             No activity yet. Start by creating a project or posting an update!
             <br />
             <button
-              className="mt-4 flex items-center px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+              className="mt-6 flex items-center px-6 py-3 bg-indigo-500 text-white rounded-full hover:bg-indigo-600 transition"
               onClick={handleStartProject}
             >
-              <PlusCircle className="w-5 h-5 mr-2" />
+              <PlusCircle className="w-6 h-6 mr-3" />
               Start a New Project
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {feedItems.map((item) => (
               <div
                 key={item.id}
-                className="flex flex-col p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition"
+                className="flex flex-col p-6 bg-white dark:bg-gray-800 rounded-2xl shadow hover:shadow-xl transition"
               >
-                <div className="flex items-center space-x-2 mb-2">
+                <div className="flex items-center space-x-3 mb-3">
                   <img
                     src={item.user.avatarUrl}
                     alt={item.user.name}
-                    className="w-8 h-8 rounded-full ring-2 ring-indigo-500"
+                    className="w-10 h-10 rounded-full ring-2 ring-indigo-500 object-cover"
                   />
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <p className="text-base font-medium text-gray-900 dark:text-gray-100">
                       {item.user.name}{' '}
                       <span className="text-indigo-500">
                         {item.type === 'update'
@@ -245,7 +268,7 @@ export default function Home() {
                     <p className="text-xs text-gray-500">{item.timestamp}</p>
                   </div>
                 </div>
-                <div className="mt-auto flex items-center justify-between text-gray-600 dark:text-gray-400 text-sm">
+                <div className="mt-auto flex items-center justify-between text-gray-600 dark:text-gray-400 text-base">
                   <button
                     className="flex items-center space-x-1"
                     onClick={() => handleLike(item.id)}
