@@ -53,7 +53,7 @@ const ProjectsCreate = ({ onProjectCreated }) => {
       if (onProjectCreated) onProjectCreated(response.data);
       navigate(`/projects/${response.data._id}`);
     } catch (err) {
-      alert('Failed to create project');
+      alert('Failed to create project: ' + (err.response?.data?.error || err.message));
     }
   };
 
