@@ -4,6 +4,10 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
 import { AuthContext } from './AuthContext';
+import Settings from './pages/Settings';
+import Login from './pages/Login';
+import Profile from './pages/Profile';
+import ProjectHome from './pages/ProjectHome';
 
 const searchReducer = (state, action) => {
   switch (action.type) {
@@ -156,22 +160,12 @@ const App = () => {
               setFeedItems={setFeedItems}
             />
             <Routes>
-              <Route path="/projects" element={
-                <Projects
-                  searchState={searchState}
-                  dispatchSearch={dispatchSearch}
-                  isDarkMode={isDarkMode}
-                  setIsDarkMode={setIsDarkMode}
-                  accentColor={accentColor}
-                  setAccentColor={setAccentColor}
-                  notifications={notifications}
-                  setNotifications={setNotifications}
-                />
-              } />
-              <Route path="/projects/:id" element={<div>Project Detail Page</div>} />
-              <Route path="/profile/:username" element={<div>Profile Page</div>} />
-              <Route path="/chat/:projectId" element={<div>Chat Page</div>} />
-              <Route path="/login" element={<div>Login Page</div>} />
+              <Route path="/home" element={<Home />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/projects/:id" element={<ProjectHome />} />
             </Routes>
           </main>
         </div>

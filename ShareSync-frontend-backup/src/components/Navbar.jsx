@@ -7,6 +7,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode }) {
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
     navigate('/login');
   };
 

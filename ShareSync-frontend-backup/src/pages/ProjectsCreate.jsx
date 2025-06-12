@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import { PlusCircle, UserPlus, CheckCircle } from 'lucide-react';
 import './ProjectsCreate.css';
+import axios from 'axios';
 
 const ProjectsCreate = () => {
   const { user, socket, addProject } = useContext(AuthContext);
@@ -31,32 +32,25 @@ const ProjectsCreate = () => {
     setNewMember({ email: '', role: 'member' });
   };
 
-  const createProject = () => {
+  const createProject = async () => {
     if (!projectDetails.title) return;
-    const newProject = {
-      id: `proj-${Date.now()}`,
-      title: projectDetails.title,
-      description: projectDetails.description,
-      category: projectDetails.category,
-      status: projectDetails.status,
-      privacy: projectDetails.privacy,
-      tasksCompleted: 0,
-      totalTasks: 0,
-      admin: user.email,
-      members: members.map(m => ({ email: m.email, role: m.role, profilePicture: 'https://via.placeholder.com/150' })),
-      posts: [],
-      comments: [],
-      activityLog: [],
-      files: [],
-      tasks: [],
-      teams: [],
-      announcements: [],
-    };
-    socket.emit('project-create', newProject);
-    if (addToProfile) {
-      addProject(newProject);
+    const formData = new FormData();
+    formData.append('title', projectDetails.title);
+    formData.append('description', projectDetails.description);
+    formData.append('category', projectDetails.category);
+    formData.append('status', projectDetails.status);
+    formData.append('privacy', projectDetails.privacy);
+    formData.append('color', projectColor);
+    if (projectImage) formData.append('image', projectImage);
+
+    try {
+      const response = await axios.post('/api/projects', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      onProjectCreated(response.data);
+    } catch (err) {
+      alert('Failed to create project');
     }
-    setCreated(true);
   };
 
   const goToProjects = () => {

@@ -134,7 +134,7 @@ export default function Home() {
           onClick={() => setShowProjectModal(false)}
         >
           <div
-            className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 w-full max-w-lg relative"
+            className="project-modal relative"
             onClick={e => e.stopPropagation()}
           >
             <button
