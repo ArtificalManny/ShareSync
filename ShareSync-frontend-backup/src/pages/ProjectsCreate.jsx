@@ -48,6 +48,7 @@ const ProjectsCreate = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       onProjectCreated(response.data);
+      navigate(`/projects/${response.data._id}`);
     } catch (err) {
       alert('Failed to create project');
     }

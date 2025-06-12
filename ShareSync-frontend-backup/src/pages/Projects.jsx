@@ -17,13 +17,23 @@ const Projects = ({
   const navigate = useNavigate();
   const { user, isAuthenticated, authError } = useContext(AuthContext);
   const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
       navigate('/login', { replace: true });
       return;
     }
-    setProjects(user.projects || []);
+    // Fetch projects from backend
+    fetch('/api/projects', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setProjects(data.projects || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, [isAuthenticated, navigate, user]);
 
   useEffect(() => {
@@ -36,6 +46,7 @@ const Projects = ({
   }, [searchState.query, user, dispatchSearch]);
 
   if (authError) return <div className="projects-container min-h-screen flex items-center justify-center bg-white dark:bg-gray-950"><div className="error-message text-rose-500 text-lg font-sans flex items-center gap-2"><AlertCircle className="w-6 h-6" />{authError}</div></div>;
+  if (loading) return <div className="projects-container min-h-screen flex items-center justify-center">Loading...</div>;
 
   return (
     <div className="projects-container min-h-screen bg-white dark:bg-gray-950 flex flex-col ml-10 sm:ml-12 transition-all duration-200">

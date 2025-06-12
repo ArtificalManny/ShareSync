@@ -135,6 +135,16 @@ export default function Home() {
         >
           <div
             className="project-modal relative"
+            style={{
+              maxWidth: '420px',
+              width: '95vw',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              borderRadius: '2rem',
+              background: 'rgba(42,42,62,0.98)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+              padding: '2rem'
+            }}
             onClick={e => e.stopPropagation()}
           >
             <button
