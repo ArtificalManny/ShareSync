@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const Project = require('../models/Project');
 
 // Mock notification function (replace with SendGrid/Twilio in production)
 const sendNotification = async (user, message, projectId) => {
@@ -1973,6 +1974,25 @@ router.get('/:projectId/contributions', auth, async (req, res) => {
   } catch (err) {
     console.error('Projects Route - Error fetching contribution stats:', err.message);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.post('/create', auth, async (req, res) => {
+  try {
+    const { title, color, image, members } = req.body;
+    if (!title) return res.status(400).json({ msg: 'Title is required' });
+    const project = new Project({
+      title,
+      color,
+      image,
+      members,
+      owner: req.user.id,
+    });
+    await project.save();
+    res.json(project);
+  } catch (err) {
+    console.error('Project creation error:', err); // <--- Check your backend logs!
+    res.status(500).json({ msg: 'Server error' });
   }
 });
 

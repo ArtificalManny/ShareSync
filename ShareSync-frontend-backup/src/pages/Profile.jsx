@@ -133,6 +133,29 @@ const Profile = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleProfilePicUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:YOUR_BACKEND_PORT/api/profile/upload-profile-picture', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      // Update UI and localStorage with new profile picture URL
+    } catch (err) {
+      alert('Failed to upload profile picture');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="profile-container flex items-center justify-center min-h-screen">
@@ -342,7 +365,9 @@ const Profile = () => {
                 <span className="text-lavender-gray font-inter text-lg">{userPoints} Points</span>
               </div>
               <p className="text-saffron-yellow text-sm font-inter mt-2">
-                {userPoints < 1000 ? `Earn ${1000 - userPoints} more points to reach the next level!` : 'You’ve reached the highest level!'}
+                {userPoints < 1000
+                  ? `Earn $${1000 - userPoints} more points to reach the next level!`
+                  : "You've reached the highest level!"}
               </p>
             </div>
           )}

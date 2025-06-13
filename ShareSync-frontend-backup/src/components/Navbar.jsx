@@ -16,11 +16,11 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode }) {
       {/* PROFILE */}
       <div className="flex flex-col items-center space-y-1">
         <Link to="/profile">
-          <img
+        <img
             src={user?.profilePicture || '/default-profile.png'}
             alt={user?.firstName || 'User'}
             className="w-10 h-10 rounded-full ring-2 ring-indigo-500 object-cover"
-          />
+        />
         </Link>
         <span className="text-xs font-medium text-gray-800 dark:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity">
           {user?.firstName || 'User'}
@@ -45,6 +45,12 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode }) {
           <Settings className="w-6 h-6 text-gray-800 dark:text-gray-200" />
           <span className="mt-1 text-xxs text-gray-600 dark:text-gray-400 opacity-0 group-hover:opacity-100">
             Settings
+          </span>
+        </Link>
+        <Link to="/profile" className="group flex flex-col items-center">
+          <UserIcon className="w-6 h-6" />
+          <span className="mt-1 text-xxs text-gray-600 dark:text-gray-400 opacity-0 group-hover:opacity-100">
+            Profile
           </span>
         </Link>
       </div>

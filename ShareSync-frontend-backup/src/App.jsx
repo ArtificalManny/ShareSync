@@ -128,46 +128,19 @@ const App = () => {
   return (
     <AuthContext.Provider value={authState}>
       <Router>
-        <div className="app-container min-h-screen flex flex-row">
-          <Navbar
-            searchState={searchState}
-            dispatchSearch={dispatchSearch}
-            handleSearchSubmit={handleSearchSubmit}
-            isSearchOpen={isSearchOpen}
-            setIsSearchOpen={setIsSearchOpen}
-            accentColor={accentColor}
-            notifications={notifications}
-            toggleNotificationDropdown={toggleNotificationDropdown}
-            isNotificationDropdownOpen={isNotificationDropdownOpen}
-            toggleProfileDropdown={toggleProfileDropdown}
-            isProfileDropdownOpen={isProfileDropdownOpen}
-            user={authState.user}
-            changeAccentColor={changeAccentColor}
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-          />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
-            <Home
-              searchState={searchState}
-              dispatchSearch={dispatchSearch}
-              isDarkMode={isDarkMode}
-              setIsDarkMode={setIsDarkMode}
-              accentColor={accentColor}
-              setAccentColor={setAccentColor}
-              notifications={notifications}
-              setNotifications={setNotifications}
-              feedItems={feedItems}
-              setFeedItems={setFeedItems}
-            />
+        <div className="app-container">
+          <Navbar />
+          <div className="main-content">
             <Routes>
               <Route path="/home" element={<Home />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/profile" element={<Profile />} />
               <Route path="/projects/:id" element={<ProjectHome />} />
+              <Route path="*" element={<Home />} />
             </Routes>
-          </main>
+          </div>
         </div>
       </Router>
     </AuthContext.Provider>

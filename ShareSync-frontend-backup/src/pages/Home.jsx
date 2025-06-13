@@ -163,13 +163,15 @@ export default function Home() {
         style={{ background: 'linear-gradient(135deg, #D8B4FE, #FDE68A)' }}
       >
         <div className="relative">
-          <img
-            src={user?.profilePicture || DEFAULT_PROFILE_PIC}
-            alt={`${user?.firstName || 'User'}'s profile`}
-            className="w-24 h-24 rounded-full ring-4 ring-indigo-500 cursor-pointer object-cover transition-all duration-300"
-            onClick={handleProfilePicClick}
-            style={{ objectFit: 'cover', borderRadius: '50%' }}
-          />
+          <div className="profile-picture-ring">
+            <img
+              src={user?.profilePicture || DEFAULT_PROFILE_PIC}
+              alt={`${user?.firstName || 'User'}'s profile`}
+              className="w-24 h-24 rounded-full ring-4 ring-indigo-500 cursor-pointer object-cover transition-all duration-300"
+              onClick={handleProfilePicClick}
+              style={{ objectFit: 'cover', borderRadius: '50%' }}
+            />
+          </div>
           {uploading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 rounded-full">
               <span className="text-xs text-gray-700">Uploading...</span>

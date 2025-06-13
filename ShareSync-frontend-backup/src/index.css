@@ -6,3 +6,17 @@
 @tailwind utilities;
 
 /* Remove any custom rules targeting .navbar, .nav-icon, fixed top bars, etc. */
+
+.profile-picture-ring {
+  display: inline-block;
+  padding: 3px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7f5af0, #ff8906, #f15bb5);
+}
+.profile-picture-ring img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: block;
+  background: #fff;
+}
