@@ -4,7 +4,7 @@ import { AuthContext } from '../AuthContext';
 import { fetchLeaderboard } from '../services/project.js';
 import { fetchUser } from '../services/auth.js';
 import { Edit, X, Folder, Award, Star } from 'lucide-react';
-import './Profile.css';
+import "../index.css";
 
 const Profile = () => {
   const { username } = useParams();
@@ -141,7 +141,7 @@ const Profile = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:YOUR_BACKEND_PORT/api/profile/upload-profile-picture', {
+      const res = await fetch('http://localhost:5000/api/profile/upload-profile-picture', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

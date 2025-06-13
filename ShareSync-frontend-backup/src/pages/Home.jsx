@@ -126,6 +126,8 @@ export default function Home() {
     return <div className="ml-16 md:ml-24 p-6">Loading…</div>;
   }
 
+  const firstName = user?.firstName || "User";
+
   return (
     <div className="ml-16 md:ml-24 p-6 bg-gray-100 dark:bg-gray-800 min-h-screen space-y-8">
       {showProjectModal && (
@@ -166,7 +168,7 @@ export default function Home() {
           <div className="profile-picture-ring">
             <img
               src={user?.profilePicture || DEFAULT_PROFILE_PIC}
-              alt={`${user?.firstName || 'User'}'s profile`}
+              alt={`${firstName}'s profile`}
               className="w-24 h-24 rounded-full ring-4 ring-indigo-500 cursor-pointer object-cover transition-all duration-300"
               onClick={handleProfilePicClick}
               style={{ objectFit: 'cover', borderRadius: '50%' }}
@@ -187,7 +189,7 @@ export default function Home() {
         </div>
         <div>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-            Welcome, {user?.firstName || 'User'}!
+            Welcome, {firstName}!
           </h1>
           <p className="text-gray-700 dark:text-gray-300 mt-2 flex space-x-8 text-lg">
             <span className="inline-flex items-center">
