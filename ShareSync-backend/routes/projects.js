@@ -1991,7 +1991,7 @@ router.post('/create', auth, async (req, res) => {
     await project.save();
     res.json(project);
   } catch (err) {
-    console.error(err); // <--- THIS will print the real error in your terminal!
+    console.error('Project creation error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 });

@@ -148,9 +148,8 @@ const Profile = () => {
         },
         body: formData,
       });
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
-      // Update UI and localStorage with new profile picture URL
+      if (!res.ok) throw new Error('Failed to upload');
+      window.location.reload();
     } catch (err) {
       alert('Failed to upload profile picture');
     }
