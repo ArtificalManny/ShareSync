@@ -1,39 +1,72 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../AuthContext';
+import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate, Link } from "react-router-dom";
 
-const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const { setAuthState } = useContext(AuthContext);
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simulate login (replace with actual authentication logic)
-    setAuthState(prev => ({
-      ...prev,
-      user: { _id: 'user1', username, email: `${username}@example.com`, firstName: username, profilePicture: '/default-avatar.png', projects: [{ _id: 'proj1', title: 'Project Alpha', status: 'Active' }] },
-      isAuthenticated: true,
-      authError: null,
-    }));
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('user', JSON.stringify(res.data.user));
-    navigate('/');
+    setError("");
+    try {
+      const res = await axios.post("/api/auth/login", { email, password });
+      // Save token and user to localStorage
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      navigate("/home");
+    } catch (err) {
+      setError("Invalid credentials. Please try again.");
+    }
   };
 
   return (
-    <div className="login-container min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans flex items-center justify-center p-4">
-      <div className="login-card bg-white/98 dark:bg-gray-900/98 border border-gray-50 dark:border-gray-800 rounded-xl p-4 sm:p-6 w-full max-w-md shadow-md hover:shadow-lg transition-all duration-200">
-        <h1 className="text-2xl sm:text-3xl font-sans font-bold text-center text-gray-900 dark:text-white mb-4">Login</h1>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm sm:text-base font-sans text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white dark:bg-gray-800" />
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm sm:text-base font-sans text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white dark:bg-gray-800" />
-          <button type="submit" className="w-full bg-purple-600 text-white p-2 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 transition-all duration-200">Login</button>
-        </form>
-      </div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+      <form
+        onSubmit={handleLogin}
+        className="bg-white p-8 rounded-xl shadow-md w-full max-w-sm"
+      >
+        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
+        {error && <div className="text-red-500 mb-4">{error}</div>}
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full mb-4 p-3 border rounded"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full mb-4 p-3 border rounded"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <button
+          type="submit"
+          className="w-full bg-purple-600 text-white py-3 rounded font-semibold hover:bg-purple-700 transition"
+        >
+          Login
+        </button>
+        <div className="flex flex-col items-center mt-6 space-y-2">
+          <Link
+            to="/create-account"
+            className="text-blue-600 hover:underline text-sm"
+          >
+            Create Account
+          </Link>
+          <Link
+            to="/forgot-password"
+            className="text-blue-600 hover:underline text-sm"
+          >
+            Forgot Password?
+          </Link>
+        </div>
+      </form>
     </div>
   );
-};
-
-export default Login;
+}

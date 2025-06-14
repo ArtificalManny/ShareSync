@@ -1,5 +1,5 @@
 import React, { useState, useReducer, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
@@ -19,11 +19,6 @@ const searchReducer = (state, action) => {
       return state;
   }
 };
-
-function PrivateRoute({ children }) {
-  const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" />;
-}
 
 const App = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -137,10 +132,10 @@ const App = () => {
           <Navbar />
           <div className="main-content">
             <Routes>
-              <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
-              <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-              <Route path="/projects" element={<PrivateRoute><Projects /></PrivateRoute>} />
-              <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+              <Route path="/home" element={<Home />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/login" element={<Login />} />
               <Route path="/projects/:id" element={<ProjectHome />} />
               <Route path="*" element={<Home />} />
