@@ -15,14 +15,17 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 router.post('/upload-profile-picture', auth, upload.single('profilePicture'), async (req, res) => {
+  console.log('Upload route hit');
   try {
+    console.log('File:', req.file);
+    console.log('User:', req.user);
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ msg: 'User not found' });
     user.profilePicture = `/uploads/profile-pictures/${req.file.filename}`;
     await user.save();
     res.json({ profilePicture: user.profilePicture });
   } catch (err) {
-    console.error('Profile upload error:', err); // <--- Check your backend logs!
+    console.error('Profile upload error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 });

@@ -1978,7 +1978,10 @@ router.get('/:projectId/contributions', auth, async (req, res) => {
 });
 
 router.post('/create', auth, async (req, res) => {
+  console.log('Project create route hit');
   try {
+    console.log('Body:', req.body);
+    console.log('User:', req.user);
     const { title, color, image, members } = req.body;
     if (!title) return res.status(400).json({ msg: 'Title is required' });
     const project = new Project({
