@@ -31,29 +31,19 @@ const ProjectsCreate = ({ onProjectCreated }) => {
     setNewMember({ email: '', role: 'member' });
   };
 
-  const createProject = async () => {
-    if (!projectDetails.title) return;
-    const formData = new FormData();
-    formData.append('title', projectDetails.title);
-    formData.append('description', projectDetails.description);
-    formData.append('category', projectDetails.category);
-    formData.append('status', projectDetails.status);
-    formData.append('privacy', projectDetails.privacy);
-    formData.append('color', projectColor);
-    if (projectImage) formData.append('image', projectImage);
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('/api/projects', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (onProjectCreated) onProjectCreated(response.data);
-      navigate(`/projects/${response.data._id}`);
+      const res = await axios.post(
+        '/api/projects/create',
+        { title: projectDetails.title, description: projectDetails.description, category: projectDetails.category },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      onProjectCreated(res.data);
+      navigate(`/projects/${res.data._id}`);
     } catch (err) {
-      alert('Failed to create project: ' + (err.response?.data?.error || err.message));
+      alert('Failed to create project');
     }
   };
 
@@ -72,6 +62,7 @@ const ProjectsCreate = ({ onProjectCreated }) => {
                 onChange={handleInputChange}
                 placeholder="Project Title"
                 className="input-field w-full rounded-full"
+                required
               />
               <textarea
                 name="description"
@@ -79,6 +70,7 @@ const ProjectsCreate = ({ onProjectCreated }) => {
                 onChange={handleInputChange}
                 placeholder="Project Description"
                 className="input-field w-full h-24"
+                required
               />
               <input
                 type="text"
@@ -87,6 +79,7 @@ const ProjectsCreate = ({ onProjectCreated }) => {
                 onChange={handleInputChange}
                 placeholder="Category"
                 className="input-field w-full rounded-full"
+                required
               />
               <select
                 name="status"
@@ -171,7 +164,7 @@ const ProjectsCreate = ({ onProjectCreated }) => {
                 className="block"
               />
             </div>
-              <button onClick={createProject} className="btn-primary rounded-full flex items-center w-full justify-center mt-4">
+              <button type="submit" className="btn-primary rounded-full flex items-center w-full justify-center mt-4">
                 <PlusCircle className="w-5 h-5 mr-2" /> Create Project
               </button>
             </div>

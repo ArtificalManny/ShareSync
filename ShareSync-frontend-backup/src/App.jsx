@@ -8,6 +8,8 @@ import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
 import ProjectHome from './pages/ProjectHome';
+import CreateAccount from "./pages/CreateAccount";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const searchReducer = (state, action) => {
   switch (action.type) {
