@@ -17,7 +17,8 @@ const Login = () => {
       isAuthenticated: true,
       authError: null,
     }));
-    localStorage.setItem('user', JSON.stringify({ _id: 'user1', username, email: `${username}@example.com`, firstName: username, profilePicture: '/default-avatar.png', projects: [{ _id: 'proj1', title: 'Project Alpha', status: 'Active' }] }));
+    localStorage.setItem('token', res.data.token);
+    localStorage.setItem('user', JSON.stringify(res.data.user));
     navigate('/');
   };
 

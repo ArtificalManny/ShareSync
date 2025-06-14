@@ -167,7 +167,7 @@ export default function Home() {
         <div className="relative">
           <div className="profile-picture-ring">
             <img
-              src={user?.profilePicture || DEFAULT_PROFILE_PIC}
+              src={user?.profilePic || DEFAULT_PROFILE_PIC}
               alt={`${firstName}'s profile`}
               className="w-24 h-24 rounded-full ring-4 ring-indigo-500 cursor-pointer object-cover transition-all duration-300"
               onClick={handleProfilePicClick}

@@ -5,11 +5,12 @@ import { fetchLeaderboard } from '../services/project.js';
 import { fetchUser } from '../services/auth.js';
 import { Edit, X, Folder, Award, Star } from 'lucide-react';
 import "../index.css";
+import axios from 'axios';
 
 const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, authError, updateUserProfile, socket } = useContext(AuthContext);
+  const { user, isAuthenticated, isLoading, authError, updateUserProfile, socket, setUser } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -141,15 +142,13 @@ const Profile = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/profile/upload-profile-picture', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // DO NOT set Content-Type here!
-        },
-        body: formData,
+      const res = await axios.post('/api/profile/upload-profile-picture', formData, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to upload');
+      const updatedUser = { ...user, profilePic: res.data.profilePic };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       window.location.reload();
     } catch (err) {
       alert('Failed to upload profile picture');

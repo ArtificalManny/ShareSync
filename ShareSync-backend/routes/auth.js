@@ -26,13 +26,16 @@ router.post('/register', async (req, res) => {
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
 
     res.status(201).json({
-      id: user._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      username: user.username,
-      email: user.email,
-      profilePicture: user.profilePicture,
-      token
+      token,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        email: user.email,
+        profilePic: user.profilePicture,
+        // ...any other fields you want
+      }
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -59,13 +62,16 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
 
     res.json({
-      id: user._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      username: user.username,
-      email: user.email,
-      profilePicture: user.profilePicture,
-      token
+      token,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        email: user.email,
+        profilePic: user.profilePicture,
+        // ...any other fields you want
+      }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
