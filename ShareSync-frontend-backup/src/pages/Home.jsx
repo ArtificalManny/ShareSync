@@ -98,12 +98,9 @@ export default function Home() {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.post('/api/profile/upload-profile-picture', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
-      const updatedUser = { ...user, profilePicture: res.data.profilePicture };
+      const updatedUser = { ...user, profilePic: res.data.profilePic };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
     } catch (err) {

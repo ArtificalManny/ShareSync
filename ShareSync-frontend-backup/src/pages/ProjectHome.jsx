@@ -279,6 +279,12 @@ const ProjectHome = () => {
     }
   };
 
+  const handleProjectCreated = (newProject) => {
+    setShowProjectModal(false);
+    setProjects((prev) => [newProject, ...prev]);
+    window.location.href = `/projects/${newProject._id}`; // or use navigate() if using react-router
+  };
+
   if (isLoading) {
     return (
       <div className="project-home-container flex items-center justify-center min-h-screen">
