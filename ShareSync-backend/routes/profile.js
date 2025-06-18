@@ -12,14 +12,15 @@ const storage = multer.diskStorage({
     cb(null, req.user.id + '-' + Date.now() + '-' + file.originalname);
   }
 });
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 router.post('/upload-profile-picture', auth, upload.single('profilePicture'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ msg: 'No file uploaded' });
+    const profilePicPath = `/uploads/profile-pictures/${req.file.filename}`;
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { profilePic: `/uploads/profile-pictures/${req.file.filename}` },
+      { profilePic: profilePicPath },
       { new: true }
     );
     res.json({ profilePic: user.profilePic, user });

@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
-import { AuthContext } from './AuthContext';
+import { AuthProvider } from './AuthContext';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
@@ -26,59 +26,10 @@ const App = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
   const [searchState, dispatchSearch] = useReducer(searchReducer, { query: '', suggestions: [] });
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [accentColor, setAccentColor] = useState('purple');
   const [feedItems, setFeedItems] = useState([]);
-
-  const [authState] = useState({
-    user: {
-      _id: 'user1',
-      username: 'User',
-      email: 'user@example.com',
-      firstName: 'User',
-      profilePicture: 'https://via.placeholder.com/40',
-      projects: [
-        {
-          _id: '1',
-          title: 'Project Alpha',
-          status: 'In Progress',
-          activityLog: [{ message: 'Updated project plan', user: 'user@example.com', timestamp: new Date().toISOString() }],
-          posts: [],
-          tasks: [],
-          files: [],
-          members: ['user@example.com'],
-        },
-        {
-          _id: '2',
-          title: 'Project Beta',
-          status: 'In Progress',
-          activityLog: [],
-          posts: [{ content: 'New announcement posted', author: 'user@example.com', timestamp: new Date().toISOString() }],
-          tasks: [],
-          files: [],
-          members: ['user@example.com'],
-        },
-      ],
-    },
-    isAuthenticated: true,
-    isLoading: false,
-    authError: null,
-    socket: {
-      on: (event, callback) => {
-        if (event === 'feed-update') callback({ message: 'New activity', timestamp: new Date().toISOString() });
-      },
-      emit: (event, data) => {
-        if (event === 'feed-like' || event === 'feed-comment' || event === 'feed-share') {
-          setFeedItems(prev => [...prev, data.item].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
-          setNotifications(prev => [...prev, { message: `${authState.user.username} ${event.replace('feed-', '')}d an item`, timestamp: new Date().toISOString() }]);
-        }
-      },
-      off: () => {},
-    },
-    fetchUserData: () => Promise.resolve(),
-  });
 
   const handleSearchSubmit = (e) => {
     if (e.key === 'Enter') {
@@ -115,8 +66,8 @@ const App = () => {
           projectTitle: 'Project Alpha',
           type: 'activity',
           message: `New update at ${new Date().toLocaleTimeString()}`,
-          user: authState.user.email,
-          profilePicture: authState.user.profilePicture,
+          user: 'user@example.com',
+          profilePicture: 'https://via.placeholder.com/40',
           timestamp: new Date().toISOString(),
           likes: 0,
           comments: [],
@@ -125,10 +76,10 @@ const App = () => {
       ]);
     }, 30000);
     return () => clearInterval(interval);
-  }, [authState.user.email, authState.user.profilePicture]);
+  }, []);
 
   return (
-    <AuthContext.Provider value={authState}>
+    <AuthProvider>
       <Router>
         <div className="app-container">
           <Navbar />
@@ -145,7 +96,7 @@ const App = () => {
           </div>
         </div>
       </Router>
-    </AuthContext.Provider>
+    </AuthProvider>
   );
 };
 

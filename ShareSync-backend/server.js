@@ -1,70 +1,37 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const http = require('http');
-const { Server } = require('socket.io');
-require('dotenv').config();
-
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: 'http://localhost:54693',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  },
-});
+const port = 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:54693', // Allow frontend origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow necessary methods
+  credentials: true, // Allow cookies/auth headers if needed
+}));
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
 
-// MongoDB Connection
-mongoose.connect('mongodb://localhost:27017/sharesync', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => {
-  console.log('Connected to MongoDB');
-}).catch((err) => {
-  console.error('MongoDB connection error:', err.message);
+// Mock project creation endpoint
+app.post('/api/projects/create', (req, res) => {
+  const { title, description, category, status, privacy, members, addToProfile, projectColor, projectImage } = req.body;
+  // Remove token check for testing (re-enable later with real auth)
+  const newProject = {
+    _id: `proj_${Date.now()}`,
+    title,
+    description,
+    category,
+    status,
+    privacy,
+    members: members || [],
+    addToProfile: addToProfile || false,
+    projectColor: projectColor || '#6b48ff',
+    projectImage: projectImage || '',
+    createdAt: new Date().toISOString(),
+  };
+
+  console.log('New project created:', newProject);
+  res.status(201).json(newProject);
 });
 
-// Routes
-const authRoutes = require('./routes/auth');
-const projectsRoutes = require('./routes/projects');
-const notificationsRoutes = require('./routes/notifications');
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', projectsRoutes);
-app.use('/api/notifications', notificationsRoutes);
-
-// WebSocket for real-time notifications
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
-  socket.on('join_project', (projectId) => {
-    socket.join(projectId);
-    console.log(`User ${socket.id} joined project: ${projectId}`);
-  });
-
-  socket.on('message', (data) => {
-    const { projectId, text, user } = data;
-    const message = { user, text, timestamp: new Date().toISOString() };
-    io.to(projectId).emit('message', message);
-    io.to(projectId).emit('notification', { message: `${user} sent a new message: ${text}`, timestamp: message.timestamp });
-    console.log(`Message sent in project ${projectId}: ${text} by ${user}`);
-  });
-
-  socket.on('project_activity', (data) => {
-    const { projectId, message, user } = data;
-    io.to(projectId).emit('notification', { message: `${user} ${message}`, timestamp: new Date().toISOString() });
-    console.log(`Activity in project ${projectId}: ${message} by ${user}`);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
 });

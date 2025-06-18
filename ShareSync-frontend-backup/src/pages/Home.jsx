@@ -100,9 +100,8 @@ export default function Home() {
       const res = await axios.post('/api/profile/upload-profile-picture', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const updatedUser = { ...user, profilePic: res.data.profilePic };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(res.data.user);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
     } catch (err) {
       alert('Failed to upload profile picture');
     }

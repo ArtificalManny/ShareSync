@@ -4,6 +4,7 @@ import { AuthContext } from '../AuthContext';
 import { fetchProjectById, updateProject, createPost, createTask, createSubtask, updateTaskStatus, likeTask, shareTask, addTaskComment, uploadFile, approveFile, createTeam, inviteUser, addSuggestion, updateNotificationSettings } from '../services/project.js';
 import { Folder, AlertCircle, Plus, Edit, Trash, CheckSquare, FileText, Share2, ThumbsUp, MessageSquare, Users, Settings, AtSign } from 'lucide-react';
 import './ProjectHome.css';
+import axios from 'axios';
 
 const ProjectHome = () => {
   const { id } = useParams();

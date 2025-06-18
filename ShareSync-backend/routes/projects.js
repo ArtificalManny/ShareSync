@@ -63,7 +63,7 @@ router.post('/', auth, async (req, res) => {
 
     await sendNotification(user, `You created a new project: ${title}`, newProject.id);
 
-    res.status(201).json(newProject);
+    res.status(201).json({ _id: newProject._id, ...newProject.toObject() });
   } catch (err) {
     console.error('Projects Route - Error creating project:', err.message, err.stack);
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -1979,21 +1979,18 @@ router.get('/:projectId/contributions', auth, async (req, res) => {
 
 router.post('/create', auth, async (req, res) => {
   try {
-    const { title, description, category, color, image, members } = req.body;
+    const { title, description, category } = req.body;
     if (!title || !description || !category) {
-      return res.status(400).json({ msg: 'Title, description, and category are required' });
+      return res.status(400).json({ msg: 'Missing required fields' });
     }
     const project = new Project({
       title,
       description,
       category,
-      color,
-      image,
-      members,
       owner: req.user.id,
     });
     await project.save();
-    res.json(project);
+    res.json({ _id: project._id, ...project.toObject() });
   } catch (err) {
     console.error('Project creation error:', err);
     res.status(500).json({ msg: 'Server error' });
