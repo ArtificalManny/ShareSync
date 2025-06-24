@@ -1,47 +1,42 @@
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
+// src/auth/auth.controller.ts
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
-@Controller('api/auth')
+@Controller('auth')           // ← must be exactly 'auth'
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('register')
-  async register(
-    @Body() registerDto: { email: string; username: string; password: string; firstName: string; lastName: string },
+  @Post('login')
+  async login(
+    @Body() loginDto: { email: string; password: string }
   ) {
-    try {
-      return await this.authService.register(registerDto);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
+    return this.authService.login(loginDto);
   }
 
-  @Post('login')
-  async login(@Body() loginDto: { email: string; password: string }) {
-    try {
-      return await this.authService.login(loginDto);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
+  @Post('register')
+  async register(
+    @Body() registerDto: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
     }
+  ) {
+    return this.authService.register(registerDto);
   }
 
   @Post('forgot-password')
   async forgotPassword(@Body('email') email: string) {
-    try {
-      await this.authService.forgotPassword(email);
-      return { message: 'Password reset link sent to your email.' };
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
+    return this.authService.forgotPassword(email);
   }
 
   @Post('reset-password')
-  async resetPassword(@Body() resetDto: { token: string; newPassword: string }) {
-    try {
-      await this.authService.resetPassword(resetDto.token, resetDto.newPassword);
-      return { message: 'Password reset successfully.' };
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
+  async resetPassword(
+    @Body() body: { email: string; newPassword: string }
+  ) {
+    return this.authService.resetPassword(
+      body.email,
+      body.newPassword
+    );
   }
 }

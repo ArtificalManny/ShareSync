@@ -12,7 +12,7 @@ import { ProfileModule }  from './profile/profile.module';
     AuthModule,
     UserModule,
     ProjectModule,
-    ProfileModule,   // ← add this
+    ProfileModule,     // ← here
   ],
 })
 export class AppModule {}

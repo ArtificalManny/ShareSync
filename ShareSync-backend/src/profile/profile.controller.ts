@@ -1,4 +1,5 @@
 // src/profile/profile.controller.ts
+
 import {
     Controller,
     Post,
@@ -10,7 +11,7 @@ import {
   } from '@nestjs/common';
   import { FileInterceptor } from '@nestjs/platform-express';
   import { diskStorage } from 'multer';
-  import { extname, join } from 'path';
+  import { extname } from 'path';
   import { JwtAuthGuard } from '../auth/jwt-auth.guard';
   import { UserService } from '../user/user.service';
   import { Request } from 'express';
@@ -34,7 +35,7 @@ import {
         }),
         fileFilter: (_req, file, cb) => {
           if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
-            return cb(new BadRequestException('Only PNG/JPG allowed'), false);
+            return cb(new BadRequestException('Only JPG/PNG allowed'), false);
           }
           cb(null, true);
         },
@@ -45,16 +46,25 @@ import {
       @UploadedFile() file: Express.Multer.File,
       @Req() req: Request,
     ) {
+      // ← added for debugging:
+      console.log(
+        '🚀 uploadProfilePicture called; user:', 
+        (req.user as any).sub, 
+        'file:', 
+        file,
+      );
+  
       if (!file) {
         throw new BadRequestException('No file uploaded');
       }
   
-      // `sub` was signed in your JWT payload in AuthService.login()
+      // extract userId from the validated JWT
       const userId = (req.user as any).sub as string;
   
-      // save a relative URL into your user record
+      // build a URL for your front-end
       const url = `/uploads/profile-pictures/${file.filename}`;
   
+      // persist it on the user record
       const updated = await this.userService.update(userId, {
         profilePicture: url,
       });
