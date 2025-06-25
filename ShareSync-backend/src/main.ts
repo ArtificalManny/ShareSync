@@ -7,11 +7,14 @@ import * as express    from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // ← add this:
+  // allow CORS from your Vite port
   app.enableCors({
-    origin: true,           // allow all origins (or replace `true` with an array of allowed URLs)
-    credentials: true,      // if you ever use cookies
+    origin: true,
+    credentials: true,
   });
+
+  // everything in Nest now lives under `/api`
+  app.setGlobalPrefix('api');
 
   await app.listen(3000);
 }

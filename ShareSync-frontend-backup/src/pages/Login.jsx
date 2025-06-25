@@ -14,6 +14,7 @@ export default function Login() {
       const { data } = await client.post('/auth/login', { email, password })
       // store them for later requests
       localStorage.setItem('access_token', data.access_token)
+      localStorage.setItem('refresh_token', data.refresh_token)
       localStorage.setItem('user', JSON.stringify(data.user))
       // go to the protected home
       nav('/home')
