@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tsparticles/react": "^3.0.0",
     "axios": "^1.7.2",
     "chart.js": "^4.4.3",
     "lucide-react": "^0.395.0",

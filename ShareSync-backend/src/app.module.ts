@@ -1,17 +1,21 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService }    from './app.service';
+// src/app.module.ts
+import { Module }         from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
 
-import { ProjectController } from './projects/project.controller';
-import { FeedController    } from './feed/feed.controller';
+import { AuthModule }     from './auth/auth.module';
+import { UserModule }     from './user/user.module';
+import { ProjectModule }  from './projects/project.module';
+import { FeedModule }     from './feed/feed.module';
+import { ProfileModule }  from './profile/profile.module';
 
 @Module({
-  imports: [],
-  controllers: [
-    AppController,       // you can remove if unused
-    ProjectController,   // ← serves GET /api/projects
-    FeedController,      // ← serves GET /api/feed
+  imports: [
+    MongooseModule.forRoot(process.env.MONGO_URI),
+    AuthModule,
+    UserModule,
+    ProjectModule,
+    FeedModule,
+    ProfileModule,
   ],
-  providers: [AppService],
 })
 export class AppModule {}
