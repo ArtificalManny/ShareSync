@@ -1,22 +1,21 @@
 // src/main.ts
-import { NestFactory } from '@nestjs/core';
-import { AppModule }   from './app.module';
-import { join }        from 'path';
-import * as express    from 'express';
+import { NestFactory }            from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { AppModule }              from './app.module';
+import { join }                   from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // ← tell Nest we want the Express‐specific app type
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // allow CORS from your Vite port:
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
-
-  // everything in Nest now lives under /api
+  app.enableCors({ origin: true, credentials: true });
   app.setGlobalPrefix('api');
+
+  // only now call useStaticAssets
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads',
+  });
 
   await app.listen(3000);
 }
 bootstrap();
-
