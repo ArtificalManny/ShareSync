@@ -1,4 +1,5 @@
 // src/main.ts
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join }            from 'path';
@@ -14,6 +15,8 @@ async function bootstrap() {
 
   app.enableCors({ origin: true, credentials: true });
   app.setGlobalPrefix('api');
-  await app.listen(3000);
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  console.log(`Application is running on: http://localhost:${port}`);
 }
 bootstrap();
