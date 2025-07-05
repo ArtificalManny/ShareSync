@@ -1,6 +1,7 @@
 // src/user/user.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document }                   from 'mongoose';
+import { Document } from 'mongoose';
+import * as bcrypt from 'bcrypt'; // ✅ Add this line
 
 export type UserDocument = User & Document;
 
@@ -37,4 +38,12 @@ export class User {
   notificationPreferences?: Record<string, any>;
 }
 
+// ✅ Add the pre-save hook to hash password
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.pre<UserDocument>('save', async function (next) {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});

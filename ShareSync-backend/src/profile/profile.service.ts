@@ -1,7 +1,7 @@
 // src/profile/profile.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model }       from 'mongoose';
+import { Model } from 'mongoose';
 import { User, UserDocument } from '../user/user.schema';
 
 @Injectable()
@@ -11,13 +11,11 @@ export class ProfileService {
   ) {}
 
   async updateProfilePicture(userId: string, file: Express.Multer.File) {
-    const publicPath = `/uploads/${file.filename}`;
-    return this.userModel
-      .findByIdAndUpdate(
-        userId,
-        { profilePicture: publicPath },
-        { new: true },
-      )
-      .lean();
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      userId,
+      { profilePicture: file.path }, // ✅ uses correct schema field
+      { new: true }
+    );
+    return updatedUser;
   }
 }

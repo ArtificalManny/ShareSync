@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const User = require('../models/User');
 const router = express.Router();
-const auth = require('../middleware/auth'); // JWT middleware
+const auth = require('../middleware/authenticateToken'); // JWT middleware
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {

@@ -2,143 +2,101 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { UserService } from '../user/user.service';
-import { RefreshToken, RefreshTokenDocument } from './refresh-token.schema';
+import { User, UserDocument } from '../user/user.schema';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly userService: UserService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
     private readonly jwtService: JwtService,
-    @InjectModel(RefreshToken.name)
-    private readonly refreshTokenModel: Model<RefreshTokenDocument>,
   ) {}
 
-  /* ------------------------------------------------------------------ */
-  /*  Core credential check used by Passport-local                       */
-  /* ------------------------------------------------------------------ */
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.userService.findOneByEmail(email);
-    if (!user) return null;
-
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) return null;
-
-    // strip out password before returning to Passport
-    const { password: _pw, ...safeUser } =
-      typeof user.toObject === 'function' ? user.toObject() : user;
-    return safeUser;
-  }
-
-  /* ------------------------------------------------------------------ */
-  /*  Login                                                              */
-  /* ------------------------------------------------------------------ */
   async login(loginDto: { email: string; password: string }) {
-    const { email, password } = loginDto;
-    const user = await this.userService.findOneByEmail(email);
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+    const user = await this.userModel.findOne({ email: loginDto.email });
+    if (!user) throw new UnauthorizedException('User not found');
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials');
+    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    if (!isPasswordValid) throw new UnauthorizedException('Invalid password');
 
     const payload = { sub: user._id.toString(), email: user.email };
-    const access_token = this.jwtService.sign(payload);
-    const refresh_token = await this.generateRefreshToken(user._id.toString());
+    const token = this.jwtService.sign(payload);
 
     return {
-      access_token,
-      refresh_token,
       user: {
-        id: user._id.toString(),
+        id: user._id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        profilePicture: user.profilePicture, // ✅ fixed property name
       },
+      token,
     };
   }
 
-  /* ------------------------------------------------------------------ */
-  /*  Register                                                           */
-  /* ------------------------------------------------------------------ */
   async register(registerDto: {
     email: string;
     password: string;
     firstName: string;
     lastName: string;
   }) {
-    const { email, password, firstName, lastName } = registerDto;
+    const existing = await this.userModel.findOne({ email: registerDto.email });
+    if (existing) throw new UnauthorizedException('Email already in use');
 
-    const existing = await this.userService.findOneByEmail(email);
-    if (existing) throw new UnauthorizedException('Email already exists');
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    const user = await this.userService.create({
-      email,
-      username: email.split('@')[0],
-      password,
-      firstName,
-      lastName,
+    const user = new this.userModel({
+      email: registerDto.email,
+      password: hashedPassword,
+      firstName: registerDto.firstName,
+      lastName: registerDto.lastName,
+      profilePicture: '/default-profile.png', // ✅ matches schema default
     });
 
+    await user.save();
+
     const payload = { sub: user._id.toString(), email: user.email };
-    const access_token = this.jwtService.sign(payload);
-    const refresh_token = await this.generateRefreshToken(user._id.toString());
+    const token = this.jwtService.sign(payload);
 
     return {
-      access_token,
-      refresh_token,
       user: {
-        id: user._id.toString(),
+        id: user._id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        profilePicture: user.profilePicture,
       },
+      token,
     };
   }
 
-  /* ------------------------------------------------------------------ */
-  /*  Refresh-token flow                                                */
-  /* ------------------------------------------------------------------ */
-  async refreshToken(refreshToken: string) {
-    const tokenDoc = await this.refreshTokenModel
-      .findOne({ token: refreshToken })
-      .exec();
-    if (!tokenDoc || new Date() > tokenDoc.expiresAt) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
-    }
-
-    const user = await this.userService.findById(tokenDoc.userId);
-    if (!user) throw new UnauthorizedException('User not found');
-
-    const payload = { sub: user._id.toString(), email: user.email };
-    const access_token = this.jwtService.sign(payload);
-    return { access_token };
-  }
-
-  private async generateRefreshToken(userId: string): Promise<string> {
-    const token = crypto.randomBytes(64).toString('hex');
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
-    await new this.refreshTokenModel({ userId, token, expiresAt }).save();
-    return token;
-  }
-
-  /* ------------------------------------------------------------------ */
-  /*  Misc utilities (forgot/reset)                                     */
-  /* ------------------------------------------------------------------ */
   async forgotPassword(email: string) {
-    const user = await this.userService.findOneByEmail(email);
-    if (!user) throw new UnauthorizedException('User not found');
-    return { message: 'Password reset link sent' };
+    return { message: 'Password reset email sent (not implemented).' };
   }
 
   async resetPassword(email: string, newPassword: string) {
-    const user = await this.userService.findOneByEmail(email);
+    const user = await this.userModel.findOne({ email });
     if (!user) throw new UnauthorizedException('User not found');
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    await this.userService.update(user._id.toString(), { password: hashed });
+    user.password = hashed;
+    await user.save();
+
     return { message: 'Password reset successful' };
+  }
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.userModel.findOne({ email });
+    if (!user) return null;
+  
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return null;
+  
+    return {
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profilePicture: user.profilePicture,
+    };
   }
 }

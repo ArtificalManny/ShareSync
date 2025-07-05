@@ -1,0 +1,67 @@
+.
+├── README.md
+├── ShareSync-backend
+│   ├── dist
+│   ├── dump.rdb
+│   ├── generate-password-hash.js
+│   ├── hash-password.js
+│   ├── jwt-auth.guard.d.ts
+│   ├── jwt-auth.guard.js
+│   ├── jwt-auth.guard.js.map
+│   ├── models
+│   ├── modules
+│   ├── nest-cli.json
+│   ├── node_modules
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── reset-password.js
+│   ├── routes
+│   ├── server.js
+│   ├── src
+│   ├── test-password.js
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   ├── update-password.ts
+│   ├── uploads
+│   └── vite-env.d.ts
+├── ShareSync-frontend-backup
+│   ├── FeedbackForm.tsx
+│   ├── Intacom-root
+│   ├── Navigation.css
+│   ├── Navigation.jsx
+│   ├── app.modules.ts
+│   ├── assets
+│   ├── comments.module.ts
+│   ├── create-post.dto.ts
+│   ├── create-project.dto.ts
+│   ├── create-user.dto.ts
+│   ├── index.html
+│   ├── likes.module.ts
+│   ├── login-user.dto.ts
+│   ├── node_modules
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── package.json.backup
+│   ├── postcss.config.js
+│   ├── posts.module.ts
+│   ├── posts.service.ts
+│   ├── projects.service.js
+│   ├── projects.service.js.map
+│   ├── public
+│   ├── script.js
+│   ├── src
+│   ├── styles.css
+│   ├── tailwind.config.js
+│   ├── tsconfig.json
+│   ├── vite.config.js
+│   └── vite.config.ts
+├── backup-recent-files
+│   └── backend
+├── docker-compose.yml
+├── eslint.config.mjs
+├── package.json
+├── structure.txt
+├── uploads
+└── vercel.json
+
+18 directories, 47 files
