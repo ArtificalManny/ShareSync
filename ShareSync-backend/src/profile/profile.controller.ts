@@ -28,8 +28,15 @@ export class ProfileController {
           cb(null, filename);
         },
       }),
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          return cb(new Error('Only image files are allowed'), false);
+        }
+        cb(null, true);
+      },
+      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
     }),
-  )
+  )  
   async uploadProfilePicture(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
     console.log('[UPLOAD] req.user:', req.user); // ✅ Should show decoded token
     const user = await this.service.updateProfilePicture(req.user.userId, file);

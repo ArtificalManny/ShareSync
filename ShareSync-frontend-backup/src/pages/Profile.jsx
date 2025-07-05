@@ -145,7 +145,7 @@ const Profile = () => {
       const res = await axios.post('/api/profile/upload-profile-picture', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Failed to upload');
+      if (res.status !== 201 && res.status !== 200) throw new Error('Failed to upload');
       const updatedUser = { ...user, profilePic: res.data.profilePic };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
