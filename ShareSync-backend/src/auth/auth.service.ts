@@ -20,6 +20,10 @@ export class AuthService {
     if (!isPasswordValid) throw new UnauthorizedException('Invalid password');
 
     const payload = { sub: user._id.toString(), email: user.email };
+
+    // ✅ Log the JWT secret used during signing
+    console.log('🔐 SIGNING TOKEN WITH SECRET:', process.env.JWT_SECRET);
+
     const token = this.jwtService.sign(payload);
 
     return {
@@ -28,7 +32,7 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        profilePicture: user.profilePicture, // ✅ fixed property name
+        profilePicture: user.profilePicture,
       },
       token,
     };
@@ -50,12 +54,16 @@ export class AuthService {
       password: hashedPassword,
       firstName: registerDto.firstName,
       lastName: registerDto.lastName,
-      profilePicture: '/default-profile.png', // ✅ matches schema default
+      profilePicture: '/default-profile.png',
     });
 
     await user.save();
 
     const payload = { sub: user._id.toString(), email: user.email };
+
+    // ✅ Log again during registration token signing
+    console.log('🔐 SIGNING TOKEN WITH SECRET (register):', process.env.JWT_SECRET);
+
     const token = this.jwtService.sign(payload);
 
     return {
@@ -84,13 +92,14 @@ export class AuthService {
 
     return { message: 'Password reset successful' };
   }
+
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.userModel.findOne({ email });
     if (!user) return null;
-  
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return null;
-  
+
     return {
       id: user._id,
       email: user.email,

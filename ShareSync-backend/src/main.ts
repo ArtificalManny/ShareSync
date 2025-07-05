@@ -1,5 +1,5 @@
 // src/main.ts
-import 'dotenv/config'
+import * as dotenv from 'dotenv/config'
 import { join }            from 'path'
 import { NestFactory }     from '@nestjs/core'
 import { NestExpressApplication } from '@nestjs/platform-express'
