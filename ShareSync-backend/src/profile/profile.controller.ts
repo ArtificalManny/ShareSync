@@ -17,7 +17,7 @@ import { ProfileService } from './profile.service';
 export class ProfileController {
   constructor(private readonly service: ProfileService) {}
 
-  @UseGuards(JwtAuthGuard) // ✅ This protects the route
+  @UseGuards(JwtAuthGuard)
   @Post('upload-profile-picture')
   @UseInterceptors(
     FileInterceptor('profilePicture', {
@@ -34,12 +34,19 @@ export class ProfileController {
         }
         cb(null, true);
       },
-      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
+      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
     }),
-  )  
+  )
   async uploadProfilePicture(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
-    console.log('[UPLOAD] req.user:', req.user); // ✅ Should show decoded token
-    const user = await this.service.updateProfilePicture(req.user.userId, file);
-    return { user };
+    console.log('[UPLOAD] req.user:', req.user);
+
+    const user = await this.service.updateProfilePicture(req.user.userId, file.filename);
+
+    return {
+      user: {
+        ...user.toObject(),
+        profilePicture: `uploads/${file.filename}`,
+      },
+    };
   }
 }

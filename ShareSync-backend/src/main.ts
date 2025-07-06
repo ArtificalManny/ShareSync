@@ -6,20 +6,14 @@ import { NestExpressApplication } from '@nestjs/platform-express'
 import { AppModule }       from './app.module'
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule)
+  const app = await NestFactory.create(AppModule);
+  
+  app.enableCors({
+    origin: 'http://localhost:54693', // exact origin of frontend
+    credentials: true, // if using cookies, optional for headers
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
 
-  // serve ./uploads under http://localhost:3000/uploads/...
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads',
-  })
-
-  app.enableCors({ origin: true, credentials: true })
-  app.setGlobalPrefix('api')
-
-  console.log('🟢 JWT_SECRET:', process.env.JWT_SECRET) // ✅ NOW CORRECTLY PLACED
-
-  const port = process.env.PORT || 3000
-  await app.listen(port)
-  console.log(`🚀 Running on http://localhost:${port}`)
+  await app.listen(3000);
 }
 bootstrap()

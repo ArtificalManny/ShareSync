@@ -1,3 +1,4 @@
+// App.jsx
 import React, { useState, useReducer, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -23,6 +24,11 @@ const searchReducer = (state, action) => {
 };
 
 const App = () => {
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
+
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
@@ -82,7 +88,12 @@ const App = () => {
     <AuthProvider>
       <Router>
         <div className="app-container">
-          <Navbar />
+          <Navbar
+            user={user}
+            setUser={setUser}
+            isDarkMode={isDarkMode}
+            toggleDarkMode={toggleDarkMode}
+          />
           <div className="main-content">
             <Routes>
               <Route path="/home" element={<Home />} />
@@ -91,6 +102,8 @@ const App = () => {
               <Route path="/settings" element={<Settings />} />
               <Route path="/login" element={<Login />} />
               <Route path="/projects/:id" element={<ProjectHome />} />
+              <Route path="/create-account" element={<CreateAccount />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="*" element={<Home />} />
             </Routes>
           </div>
