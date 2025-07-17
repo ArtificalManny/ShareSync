@@ -5,6 +5,9 @@ import { io } from 'socket.io-client'
 import StoryCarousel from '../components/StoryCarousel'
 import ProjectsCreate from './ProjectsCreate.jsx'
 import ProfilePicChanger from '../components/ProfilePicChanger'
+import WelcomeCard from '../components/WelcomeCard'
+import AISuggestionCard from '../components/AISuggestionCard'
+import formatProfilePicture from '../utils/formatProfilePicture'
 
 import {
   Folder,
@@ -14,18 +17,17 @@ import {
   Share2,
   PlusCircle
 } from 'lucide-react'
+import MomentumRing from '../components/MomentumRing.jsx'
 
-// fallback served from public/default-profile.png
 const DEFAULT_PROFILE_PIC = '/default-profile.png'
 
 export default function Home() {
-  const [user, setUser]         = useState(null)
+  const [user, setUser] = useState(null)
   const [projects, setProjects] = useState([])
   const [feedItems, setFeedItems] = useState([])
-  const [loading, setLoading]   = useState(true)
+  const [loading, setLoading] = useState(true)
   const [showProjectModal, setShowProjectModal] = useState(false)
 
-  // 1) load user from localStorage
   useEffect(() => {
     const stored = localStorage.getItem('user')
     if (stored) {
@@ -35,7 +37,6 @@ export default function Home() {
     }
   }, [])
 
-  // 2) fetch projects + feed
   useEffect(() => {
     Promise.all([client.get('/projects'), client.get('/feed')])
       .then(([projRes, feedRes]) => {
@@ -46,7 +47,6 @@ export default function Home() {
       .finally(() => setLoading(false))
   }, [])
 
-  // 3) realtime socket updates
   useEffect(() => {
     const socket = io()
     socket.on('newActivity', activity => {
@@ -55,7 +55,6 @@ export default function Home() {
     return () => socket.disconnect()
   }, [])
 
-  // 4) project modal handlers
   const handleStartProject = () => setShowProjectModal(true)
   const handleProjectCreated = newProj => {
     setShowProjectModal(false)
@@ -68,9 +67,32 @@ export default function Home() {
   }
 
   const firstName = user?.firstName || 'User'
+  const profilePic = user?.profilePicture || DEFAULT_PROFILE_PIC
+  const greeting = getGreeting()
+
+  function getGreeting() {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 18) return 'Good afternoon'
+    return 'Good evening'
+  }
 
   return (
     <div className="ml-16 md:ml-24 p-6 bg-gray-100 dark:bg-gray-800 min-h-screen space-y-8">
+      <WelcomeCard
+        greeting={`${greeting}, ${firstName} 👋`}
+        profilePic={formatProfilePicture(profilePic)}
+        suggestion="Tip: Stay consistent. Momentum builds clarity."
+        streakDays={user?.streakDays || 0}
+        lastLogin={user?.lastLogin}
+      />
+
+      <div className="mb-8">
+        <MomentumRing streakDays={user?.streakDays || 0} />
+      </div>
+
+      <AISuggestionCard message="Coming soon: AI-generated tips just for you." />
+
       {showProjectModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
@@ -91,12 +113,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* Header Banner */}
       <section
         className="rounded-3xl shadow-xl p-8 flex items-center space-x-6"
         style={{ background: 'linear-gradient(135deg, #D8B4FE, #FDE68A)' }}
       >
-        {/* ===== your new profile‐pic uploader component ===== */}
         <ProfilePicChanger
           currentPic={user?.profilePicture || DEFAULT_PROFILE_PIC}
           onProfileUpdate={updatedUser => {
@@ -122,7 +142,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Recent Updates */}
       <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
@@ -155,7 +174,6 @@ export default function Home() {
         )}
       </section>
 
-      {/* Project Activity Feed */}
       <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg p-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">

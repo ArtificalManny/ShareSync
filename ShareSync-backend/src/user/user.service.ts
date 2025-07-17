@@ -11,7 +11,13 @@ export class UserService {
     private projectService: ProjectService,
   ) {}
 
-  async create(createUserDto: { email: string; username: string; password: string; firstName: string; lastName: string }): Promise<UserDocument> {
+  async create(createUserDto: {
+    email: string;
+    username: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<UserDocument> {
     const createdUser = new this.userModel(createUserDto);
     return createdUser.save();
   }
@@ -33,7 +39,15 @@ export class UserService {
     return user.save();
   }
 
-  async updateProfile(id: string, profileData: { profilePicture?: string; bannerPicture?: string; school?: string; job?: string }): Promise<UserDocument> {
+  async updateProfile(
+    id: string,
+    profileData: {
+      profilePicture?: string;
+      bannerPicture?: string;
+      school?: string;
+      job?: string;
+    }
+  ): Promise<UserDocument> {
     return this.update(id, profileData);
   }
 
@@ -43,11 +57,39 @@ export class UserService {
 
   async getProjectsByCategory(userId: string): Promise<any> {
     const projects = await this.projectService.findAll(userId);
-    const categorizedProjects = {
+    return {
       School: projects.filter(p => p.category === 'School'),
       Job: projects.filter(p => p.category === 'Job'),
       Personal: projects.filter(p => p.category === 'Personal'),
     };
-    return categorizedProjects;
+  }
+
+  async updatePassword(email: string, newPasswordHash: string): Promise<UserDocument | null> {
+    return this.userModel.findOneAndUpdate(
+      { email },
+      { password: newPasswordHash },
+      { new: true }
+    ).exec();
+  }
+
+  // ✅ NEW: Login tracking logic
+  async trackLoginActivity(email: string): Promise<UserDocument> {
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new Error('User not found');
+
+    const now = new Date();
+    const last = user.lastLogin ? new Date(user.lastLogin) : null;
+    const diffDays = last ? Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24)) : null;
+
+    if (diffDays === 1) {
+      user.streakDays = (user.streakDays || 0) + 1;
+    } else if (diffDays === 0) {
+      // no change
+    } else {
+      user.streakDays = 1;
+    }
+
+    user.lastLogin = now;
+    return user.save();
   }
 }

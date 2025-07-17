@@ -3,6 +3,8 @@ import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, Folder, Settings, User as UserIcon, Sun, Moon } from 'lucide-react';
 import axios from 'axios';
+import { getAccessToken } from '../utils/tokenUtils'; // ✅ Use this utility
+import { formatProfilePicture } from '../utils/imageUtils';
 
 const DEFAULT_PIC = '/default-profile.png';
 
@@ -12,7 +14,7 @@ export default function Navbar({ user, setUser, isDarkMode, toggleDarkMode }) {
   const [uploading, setUploading] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('access_token'); // ✅ ensure correct token key
     localStorage.removeItem('user');
     navigate('/login');
   };
@@ -22,17 +24,20 @@ export default function Navbar({ user, setUser, isDarkMode, toggleDarkMode }) {
   const handleChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    const token = getAccessToken(); // ✅ Correct placement
+
     try {
       setUploading(true);
-      const token = localStorage.getItem('token');
       const fd = new FormData();
       fd.append('profilePicture', file);
+
       const { data } = await axios.post(
-        '/api/profile/upload-profile-picture',
+        'http://localhost:3000/api/profile/upload-profile-picture',
         fd,
-        { headers: { Authorization: `Bearer ${token}` } },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Update global state and persist to localStorage
+
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);
     } catch (err) {
@@ -55,10 +60,10 @@ export default function Navbar({ user, setUser, isDarkMode, toggleDarkMode }) {
             className="hidden"
           />
           <img
-            src={user?.profilePicture || DEFAULT_PIC}
-            alt={user?.firstName || 'User'}
-            className="w-10 h-10 rounded-full ring-2 ring-indigo-500 object-cover"
-          />
+  src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC}
+  alt={user?.firstName || 'User'}
+  className="avatar"
+/>
           {uploading && (
             <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold bg-white/70 rounded-full">
               ...

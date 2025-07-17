@@ -1,9 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-
 import { ProjectService } from './project.service';
 import { ProjectController } from './project.controller';
-// ← point at your schemas folder
 import { Project, ProjectSchema } from './schemas/project.schema';
 
 @Module({

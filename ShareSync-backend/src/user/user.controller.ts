@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Put, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserService } from './user.service';
 
@@ -21,6 +21,8 @@ export class UserController {
       job: user.job,
       school: user.school,
       notificationPreferences: user.notificationPreferences,
+      lastLogin: user.lastLogin,
+      streakDays: user.streakDays,
     };
   }
 
@@ -40,5 +42,12 @@ export class UserController {
   @Put('notifications')
   async updateNotificationPreferences(@Request() req, @Body('preferences') preferences: string[]) {
     return this.userService.updateNotificationPreferences(req.user.sub, preferences);
+  }
+
+  // ✅ NEW: Endpoint to trigger login tracking
+  @UseGuards(JwtAuthGuard)
+  @Post('login-activity')
+  async updateLoginActivity(@Request() req) {
+    return this.userService.trackLoginActivity(req.user.email);
   }
 }

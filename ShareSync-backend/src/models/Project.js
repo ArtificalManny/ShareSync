@@ -1,9 +1,15 @@
-// backend/src/models/Project.js
 const mongoose = require('mongoose');
 const projectSchema = new mongoose.Schema({
-    name: String,
+    title: String,
     description: String,
-    admin: String,
+    category: String,
+    status: String,
+    privacy: String,
+    userId: String,
+    members: [{
+        email: String,
+        role: String
+    }],
     sharedWith: [String],
     announcements: [{
         id: Number,

@@ -1,23 +1,20 @@
 // src/auth/jwt.strategy.ts
-import { Injectable, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  private readonly logger = new Logger(JwtStrategy.name);
-
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET,
+      secretOrKey: process.env.JWT_SECRET, // Make sure this matches
     });
   }
 
   async validate(payload: any) {
-    this.logger.debug('Validating JWT token...');
-    this.logger.verbose(`Payload: ${JSON.stringify(payload)}`);
+    // ✅ Confirming the 'sub' field is the user ID
     return { userId: payload.sub, email: payload.email };
   }
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import './Sidebar.css';
+import { formatProfilePicture } from '../utils/imageUtils';
 
 const Sidebar = () => {
   const [user, setUser] = useState(null);
@@ -33,11 +34,11 @@ const Sidebar = () => {
         {user && (
           <>
             <Link to="/profile">
-              <img
-                src={user.profilePicture || 'https://via.placeholder.com/80'}
-                alt="Profile"
-                className="sidebar-profile-pic"
-              />
+            <img
+  src={formatProfilePicture(user?.profilePicture) || '/default-profile.png'}
+  alt={user?.firstName || 'User'}
+  className="avatar"
+/>
             </Link>
             <div className="sidebar-profile-name">
               {user.firstName} {user.lastName}

@@ -2,20 +2,26 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Project, ProjectDocument } from './schemas/project.schema';
+import { CreateProjectDto } from './dto/create-project.dto'; // ✅ NEW
 
 @Injectable()
 export class ProjectService {
-  constructor(@InjectModel(Project.name) private projectModel: Model<ProjectDocument>) {}
+  constructor(
+    @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
+  ) {}
 
-  async create(createProjectDto: any): Promise<ProjectDocument> {
+  // ✅ CHANGED: Type is now CreateProjectDto instead of any
+  async create(createProjectDto: CreateProjectDto): Promise<ProjectDocument> {
     const createdProject = new this.projectModel({
       ...createProjectDto,
       userId: createProjectDto.userId || 'defaultUserId',
-      members: createProjectDto.members ? JSON.parse(createProjectDto.members) : [],
+      // ✅ CHANGED: accept array directly instead of requiring JSON.parse()
+      members: createProjectDto.members || [],
     });
     return await createdProject.save();
   }
 
+  // ✅ CHANGED: Supports /my-projects route
   async findAll(userId: string): Promise<ProjectDocument[]> {
     return this.projectModel.find({ userId }).exec();
   }

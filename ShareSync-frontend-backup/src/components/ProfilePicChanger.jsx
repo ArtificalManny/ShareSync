@@ -1,13 +1,17 @@
 // src/components/ProfilePicChanger.jsx
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useContext } from 'react';
+import { getAccessToken } from '../utils/tokenUtils';
+import { AuthContext } from '../AuthContext';
 
-export default function ProfilePicChanger({ currentPic, onProfileUpdate }) {
+export default function ProfilePicChanger() {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
+  const { user, updateProfile } = useContext(AuthContext);
 
   const handleClick = () => fileInputRef.current?.click();
 
   const handleFileChange = async e => {
+    const token = getAccessToken();
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
@@ -16,8 +20,6 @@ export default function ProfilePicChanger({ currentPic, onProfileUpdate }) {
     try {
       const formData = new FormData();
       formData.append('profilePicture', selectedFile);
-
-      const token = localStorage.getItem('token');
 
       const response = await fetch('http://localhost:3000/api/profile/upload-profile-picture', {
         method: 'POST',
@@ -36,19 +38,21 @@ export default function ProfilePicChanger({ currentPic, onProfileUpdate }) {
         profilePicture: `http://localhost:3000/${data.user.profilePicture}`,
       };
 
-      onProfileUpdate(updatedUser);
+      updateProfile(updatedUser);
     } catch (err) {
       console.error(err);
-      alert(`Failed to upload:\n${err.message}`);
+      alert(`Upload failed:\n${err.message}`);
     } finally {
       setUploading(false);
     }
   };
 
+  const imageSrc = user?.profilePicture || '/default-user-icon.png';
+
   return (
     <div className="relative inline-block">
       <img
-        src={currentPic}
+        src={imageSrc}
         alt="Your profile"
         className="w-24 h-24 rounded-full ring-4 ring-indigo-500 object-cover cursor-pointer transition-all duration-300"
         onClick={handleClick}

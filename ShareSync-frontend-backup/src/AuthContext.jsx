@@ -1,7 +1,8 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { getAccessToken, setTokens, clearTokens } from './utils/tokenUtils';
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
+export { AuthContext}; 
 
 export const AuthProvider = ({ children }) => {
   console.log('AuthProvider - Initializing');
@@ -74,7 +75,12 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    const value = { isAuthenticated, user, login, logout, setUser };
+    const updateProfile = (updatedUser) => {
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    };
+
+    const value = { isAuthenticated, user, login, logout, setUser, updateProfile };
     console.log('AuthProvider - Context value:', value);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

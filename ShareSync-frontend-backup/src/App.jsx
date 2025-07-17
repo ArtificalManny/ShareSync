@@ -1,10 +1,10 @@
-// App.jsx
-import React, { useState, useReducer, useEffect } from 'react';
+// src/App.jsx
+import React, { useState, useReducer, useEffect, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
-import { AuthProvider } from './AuthContext';
+import { AuthProvider, AuthContext } from './AuthContext';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
@@ -23,11 +23,8 @@ const searchReducer = (state, action) => {
   }
 };
 
-const App = () => {
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
-  });
+const AppRoutes = () => {
+  const { user, logout } = useContext(AuthContext);
 
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -45,17 +42,17 @@ const App = () => {
   };
 
   const toggleDarkMode = () => {
-    setIsDarkMode(prev => !prev);
+    setIsDarkMode((prev) => !prev);
     document.documentElement.classList.toggle('dark');
   };
 
   const toggleProfileDropdown = () => {
-    setIsProfileDropdownOpen(prev => !prev);
+    setIsProfileDropdownOpen((prev) => !prev);
     if (isNotificationDropdownOpen) setIsNotificationDropdownOpen(false);
   };
 
   const toggleNotificationDropdown = () => {
-    setIsNotificationDropdownOpen(prev => !prev);
+    setIsNotificationDropdownOpen((prev) => !prev);
     if (isProfileDropdownOpen) setIsProfileDropdownOpen(false);
   };
 
@@ -65,7 +62,7 @@ const App = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setFeedItems(prev => [
+      setFeedItems((prev) => [
         ...prev,
         {
           projectId: '1',
@@ -85,30 +82,36 @@ const App = () => {
   }, []);
 
   return (
-    <AuthProvider>
-      <Router>
-        <div className="app-container">
-          <Navbar
-            user={user}
-            setUser={setUser}
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-          />
-          <div className="main-content">
-            <Routes>
-              <Route path="/home" element={<Home />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/projects/:id" element={<ProjectHome />} />
-              <Route path="/create-account" element={<CreateAccount />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="*" element={<Home />} />
-            </Routes>
-          </div>
+    <Router>
+      <div className="app-container">
+        <Navbar
+          user={user}
+          logout={logout}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+        />
+        <div className="main-content">
+          <Routes>
+            <Route path="/home" element={<Home />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/projects/:id" element={<ProjectHome />} />
+            <Route path="/create-account" element={<CreateAccount />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="*" element={<Home />} />
+          </Routes>
         </div>
-      </Router>
+      </div>
+    </Router>
+  );
+};
+
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppRoutes />
     </AuthProvider>
   );
 };

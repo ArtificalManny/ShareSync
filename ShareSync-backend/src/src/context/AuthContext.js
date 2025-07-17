@@ -1,7 +1,7 @@
+// src/AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import client from '../api/client'; // axios instance
 
-// shape of what we store in localStorage under "user"
 const STORAGE_KEY = 'user';
 
 const AuthContext = createContext({
@@ -14,25 +14,33 @@ const AuthContext = createContext({
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
-  // on mount, load from localStorage
+  // Load user from localStorage on mount
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) setUser(JSON.parse(raw));
   }, []);
 
-  // persist to localStorage on user change
+  // Persist to localStorage whenever user changes
   useEffect(() => {
     if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     else localStorage.removeItem(STORAGE_KEY);
   }, [user]);
 
-  // call your login endpoint, then set user + tokens
+  // Call backend login and update tokens + lastLogin
   const login = async (email, password) => {
     const { data } = await client.post('/auth/login', { email, password });
     localStorage.setItem('access_token', data.access_token);
     localStorage.setItem('refresh_token', data.refresh_token);
-    setUser(data.user);
-    return data.user;
+
+    // Immediately fetch updated user with lastLogin & streakDays
+    const userRes = await client.get('/api/users/me', {
+      headers: {
+        Authorization: `Bearer ${data.access_token}`,
+      },
+    });
+
+    setUser(userRes.data); // Use full backend-fetched user object
+    return userRes.data;
   };
 
   const logout = () => {
@@ -40,9 +48,8 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  // merge in any updated fields (e.g. profileImage)
   const updateUser = (updates) => {
-    setUser(u => ({ ...u, ...updates }));
+    setUser((u) => ({ ...u, ...updates }));
   };
 
   return (

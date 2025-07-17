@@ -4,6 +4,7 @@ import { AuthContext } from '../AuthContext';
 import { PlusCircle, UserPlus } from 'lucide-react';
 import './ProjectsCreate.css';
 import axios from 'axios';
+import { getAccessToken } from '../utils/tokenUtils'; // ✅ Good placement
 
 const ProjectsCreate = ({ onProjectCreated }) => {
   const navigate = useNavigate();
@@ -29,16 +30,21 @@ const ProjectsCreate = ({ onProjectCreated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!projectDetails.title || !projectDetails.description || !projectDetails.category) {
-      alert('Please fill all required fields: Title, Description, and Category.');
-      return;
-    }
-    const token = localStorage.getItem('token'); 
+
+    // ✅ FIX: get fresh token inside submit handler
+    const token = getAccessToken(); 
+
     if (!token) {
       alert('Please log in to create a project.');
       navigate('/login');
       return;
     }
+
+    if (!projectDetails.title || !projectDetails.description || !projectDetails.category) {
+      alert('Please fill all required fields: Title, Description, and Category.');
+      return;
+    }
+
     try {
       const res = await axios.post(
         'http://localhost:3000/api/projects',

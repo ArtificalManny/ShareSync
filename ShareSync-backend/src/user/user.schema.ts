@@ -1,48 +1,47 @@
-// src/user/user.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import * as bcrypt from 'bcrypt';
 
 export type UserDocument = User & Document;
 
-@Schema({ timestamps: true })
+@Schema()
 export class User {
+  _id: string;
+
   @Prop({ required: true, unique: true })
   email: string;
 
   @Prop({ required: true })
-  password: string;
-
-  @Prop({ required: true })
-  firstName: string;
-
-  @Prop({ required: true })
-  lastName: string;
-
-  @Prop({ required: true, unique: true })
   username: string;
 
-  @Prop({ default: '/default-profile.png' })
+  @Prop({ required: true })
+  password: string;
+
+  @Prop()
+  firstName: string;
+
+  @Prop()
+  lastName: string;
+
+  @Prop()
   profilePicture: string;
 
   @Prop()
-  bannerPicture?: string;
+  bannerPicture: string;
 
   @Prop()
-  job?: string;
+  job: string;
 
   @Prop()
-  school?: string;
+  school: string;
 
-  @Prop({ type: Object, default: {} })
-  notificationPreferences?: Record<string, any>;
+  @Prop({ type: Object })
+  notificationPreferences: Record<string, any>;
+
+  @Prop({ type: Date }) // ✅ new
+  lastLogin: Date;
+
+  @Prop({ type: Number, default: 0 }) // ✅ new
+  streakDays: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-
-UserSchema.pre<UserDocument>('save', async function (next) {
-  if (this.isModified('password')) {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
-  next();
-});

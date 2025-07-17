@@ -1,40 +1,42 @@
 // src/pages/Login.jsx
-import React, { useState } from 'react'
-import client from '../api/client'
-import { useNavigate } from 'react-router-dom'
+import React, { useState } from 'react';
+import client from '../api/client';
+import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const nav = useNavigate()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const nav = useNavigate();
 
-  const handleSubmit = async e => {
-    e.preventDefault()
-
-    // ✅ Moved inside handleSubmit
-    console.log('Attempting login with', email, password)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
     try {
-      const { data } = await client.post('http://localhost:3000/api/auth/login', {
+      const response = await client.post('http://localhost:3000/api/auth/login', {
         email,
         password,
-      })
+      });
 
-      // ✅ Store tokens
-      localStorage.setItem('access_token', data.access_token)
-      localStorage.setItem('refresh_token', data.refresh_token)
-      localStorage.setItem('user', JSON.stringify(data.user))
+      const data = response.data;
 
-      // ✅ Log token for Postman use
-      console.log('ACCESS TOKEN:', data.access_token)
+      // ✅ Match the key returned by your backend: `token`
+      if (!data.token) {
+        console.error('❌ token missing in backend response');
+        alert('Login succeeded but no token returned.');
+        return;
+      }
 
-      // ✅ Navigate after success
-      nav('/home')
+      // ✅ Save using the expected key
+      localStorage.setItem('access_token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      console.log('✅ Logged in. Token saved:', data.token);
+      nav('/home');
     } catch (err) {
-      console.error('Login failed:', err) // ✅ helpful debug
-      alert('Login failed: ' + (err.response?.data?.message || err.message))
+      console.error('Login failed:', err);
+      alert('Login failed: ' + (err.response?.data?.message || err.message));
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="max-w-sm mx-auto p-6">
@@ -44,7 +46,7 @@ export default function Login() {
         <input
           type="email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           required
           className="w-full p-2 border rounded"
         />
@@ -54,7 +56,7 @@ export default function Login() {
         <input
           type="password"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           required
           className="w-full p-2 border rounded"
         />
@@ -66,5 +68,5 @@ export default function Login() {
         Log In
       </button>
     </form>
-  )
+  );
 }

@@ -40,12 +40,15 @@ export class ProfileController {
   async uploadProfilePicture(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
     console.log('[UPLOAD] req.user:', req.user);
 
-    const user = await this.service.updateProfilePicture(req.user.userId, file.filename);
+    // ✅ Safely use user ID from JWT payload (typically 'sub')
+    const userId = req.user.userId || req.user.sub || req.user.id;
+
+    const user = await this.service.updateProfilePicture(userId, file.filename);
 
     return {
       user: {
-        ...user.toObject(),
-        profilePicture: `uploads/${file.filename}`,
+        ...user.toObject?.() || user, // ✅ fallback in case toObject isn't defined
+        profilePicture: `uploads/${file.filename}`, // ✅ matches static asset route
       },
     };
   }

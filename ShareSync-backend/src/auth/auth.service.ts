@@ -1,3 +1,4 @@
+// src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
@@ -21,8 +22,7 @@ export class AuthService {
 
     const payload = { sub: user._id.toString(), email: user.email };
 
-    // ✅ Log the JWT secret used during signing
-    console.log('🔐 SIGNING TOKEN WITH SECRET:', process.env.JWT_SECRET);
+    console.log('🔐 SIGNING TOKEN WITH SECRET (login):', process.env.JWT_SECRET);
 
     const token = this.jwtService.sign(payload);
 
@@ -61,7 +61,6 @@ export class AuthService {
 
     const payload = { sub: user._id.toString(), email: user.email };
 
-    // ✅ Log again during registration token signing
     console.log('🔐 SIGNING TOKEN WITH SECRET (register):', process.env.JWT_SECRET);
 
     const token = this.jwtService.sign(payload);
