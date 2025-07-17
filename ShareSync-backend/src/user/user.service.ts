@@ -92,4 +92,12 @@ export class UserService {
     user.lastLogin = now;
     return user.save();
   }
+
+  async getTopStreaks(limit = 10) {
+    return this.userModel
+      .find({}, { firstName: 1, streakDays: 1, profilePicture: 1 })
+      .sort({ streakDays: -1 })
+      .limit(limit)
+      .exec();
+  }  
 }
