@@ -1,97 +1,73 @@
+// src/AuthContext.jsx
 import React, { createContext, useState, useEffect } from 'react';
+import client from './api/client'; // axios instance
 import { getAccessToken, setTokens, clearTokens } from './utils/tokenUtils';
 
 const AuthContext = createContext();
-export { AuthContext}; 
+export { AuthContext };
 
 export const AuthProvider = ({ children }) => {
-  console.log('AuthProvider - Initializing');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
 
-  try {
-    const [isAuthenticated, setIsAuthenticated] = useState(() => {
-      try {
-        const token = getAccessToken();
-        console.log('AuthProvider - Initial token:', token);
-        return !!token;
-      } catch (error) {
-        console.error('AuthProvider - Error checking token:', error.message);
-        return false;
-      }
-    });
+  // Load auth state from localStorage on mount
+  useEffect(() => {
+    const token = getAccessToken();
+    const storedUser = localStorage.getItem('user');
+    if (token && storedUser) {
+      setIsAuthenticated(true);
+      setUser(JSON.parse(storedUser));
+    } else {
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  }, []);
 
-    const [user, setUser] = useState(() => {
-      try {
-        const storedUser = localStorage.getItem('user');
-        const parsedUser = storedUser ? JSON.parse(storedUser) : {};
-        console.log('AuthProvider - Initial user:', parsedUser);
-        return parsedUser;
-      } catch (error) {
-        console.error('AuthProvider - Error parsing user:', error.message);
-        return {};
-      }
-    });
+  // Login: calls backend, stores tokens, fetches user
+  const login = async (email, password) => {
+    try {
+      const { data } = await client.post('/auth/login', { email, password });
 
-    useEffect(() => {
-      console.log('AuthProvider - Syncing auth state');
-      try {
-        const token = getAccessToken();
-        const storedUser = localStorage.getItem('user');
-        const parsedUser = storedUser ? JSON.parse(storedUser) : {};
-        setIsAuthenticated(!!token);
-        setUser(parsedUser);
-        console.log('AuthProvider - Synced state:', { isAuthenticated: !!token, user: parsedUser });
-      } catch (error) {
-        console.error('AuthProvider - Error in useEffect:', error.message);
-        setIsAuthenticated(false);
-        setUser({});
-      }
-    }, []);
+      // Save tokens
+      setTokens(data.access_token, data.refresh_token);
 
-    const login = (accessToken, refreshToken, userData) => {
-      console.log('AuthProvider - Logging in:', { accessToken, refreshToken, userData });
-      try {
-        if (!accessToken) throw new Error('Access token is required');
-        setTokens(accessToken, refreshToken, userData);
-        setIsAuthenticated(true);
-        setUser(userData || {});
-        console.log('AuthProvider - Login successful');
-      } catch (error) {
-        console.error('AuthProvider - Login error:', error.message);
-        setIsAuthenticated(false);
-        setUser({});
-        throw error;
-      }
-    };
+      // Fetch updated user with streaks, etc.
+      const userRes = await client.get('/api/users/me', {
+        headers: {
+          Authorization: `Bearer ${data.access_token}`,
+        },
+      });
 
-    const logout = () => {
-      console.log('AuthProvider - Logging out');
-      try {
-        clearTokens();
-        setIsAuthenticated(false);
-        setUser({});
-        console.log('AuthProvider - Logout successful');
-      } catch (error) {
-        console.error('AuthProvider - Logout error:', error.message);
-      }
-    };
+      const userData = userRes.data;
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      setIsAuthenticated(true);
 
-    const updateProfile = (updatedUser) => {
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-    };
+      return userData;
+    } catch (err) {
+      console.error('AuthContext - login failed:', err);
+      logout();
+      throw err;
+    }
+  };
 
-    const value = { isAuthenticated, user, login, logout, setUser, updateProfile };
-    console.log('AuthProvider - Context value:', value);
+  // Logout
+  const logout = () => {
+    clearTokens();
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setUser(null);
+  };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-  } catch (error) {
-    console.error('AuthProvider - Fatal error:', error.message, error.stack);
-    return (
-      <div className="error-container">
-        <h2>Authentication Error</h2>
-        <p>{error.message}</p>
-        <button onClick={() => window.location.reload()}>Reload</button>
-      </div>
-    );
-  }
+  // Update user profile in state and storage
+  const updateProfile = (updatedUser) => {
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, updateProfile }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

@@ -18,13 +18,17 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// ✅ Route Imports
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
+const activityRoutes = require('./routes/activity');
+
+// ✅ Route Registration
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/activity', activityRoutes); // <-- NEW LINE ✅
 
-// Socket.IO
+// ✅ Socket.IO Events
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
@@ -46,7 +50,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// MongoDB Connection
+// ✅ MongoDB
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));

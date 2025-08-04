@@ -184,3 +184,24 @@ body::before {
 .dark .text-gray-500 {
   color: #9ca3af; /* Contrast ratio 4.5:1 against #111827 */
 }
+
+/* Tier-based background gradient */
+.tier-gradient-newcomer {
+  background: linear-gradient(135deg, #e0e7ff, #f0f5ff);
+}
+.tier-gradient-intermediate {
+  background: linear-gradient(135deg, #bfdbfe, #dbeafe);
+}
+.tier-gradient-advanced {
+  background: linear-gradient(135deg, #6ee7b7, #a7f3d0);
+}
+.tier-gradient-pro {
+  background: linear-gradient(135deg, #fde68a, #fcd34d);
+}
+.tier-gradient-veteran {
+  background: linear-gradient(135deg, #c084fc, #a855f7);
+}
+
+.glow-text {
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+}

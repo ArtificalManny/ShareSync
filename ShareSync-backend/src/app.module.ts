@@ -7,6 +7,7 @@ import { UserModule }         from './user/user.module';
 import { ProjectModule }      from './projects/project.module';
 import { FeedModule }         from './feed/feed.module';
 import { ProfileModule }      from './profile/profile.module';
+import { ActivitiesModule }   from './activities/activities.module'
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ProfileModule }      from './profile/profile.module';
     ProjectModule,
     FeedModule,
     ProfileModule,
+    ActivitiesModule,
   ],
 })
 export class AppModule {}

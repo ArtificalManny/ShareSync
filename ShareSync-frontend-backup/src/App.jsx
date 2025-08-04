@@ -11,6 +11,7 @@ import Profile from './pages/Profile';
 import ProjectHome from './pages/ProjectHome';
 import CreateAccount from "./pages/CreateAccount";
 import ForgotPassword from "./pages/ForgotPassword";
+import './theme.css';
 
 const searchReducer = (state, action) => {
   switch (action.type) {

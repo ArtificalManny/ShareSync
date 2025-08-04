@@ -1,0 +1,119 @@
+/* theme.css (Final Updates for ShareSync Theme Integration) */
+:root {
+    --emerald-green: #2dd4bf;
+    --saffron-yellow: #f4d03f;
+    --indigo-vivid: #4f46e5;
+    --crimson-red: #dc2626;
+    --lavender-gray: #c4b5fd;
+    --charcoal-gray: #4b5563;
+    --midnight-navy: #1e3a8a;
+    --neon-coral: #ff6e7f;
+    --white: #ffffff;
+    --black: #1c2526;
+    --gray-600: #606770;
+    --gray-200: #e4e6eb;
+    --dark-bg: #1a202c;
+    --dark-secondary: #2d3748;
+    --blue-dark: #1e40af;
+    --light-bg: #f0f2f5;
+    --light-blue: #f5faff;
+    --blue-accent: #1877f2;
+    --blue-hover: #dbeafe;
+    --red-accent: #e63946;
+    --green-accent: #48bb78;
+    --orange-accent: #f6ad55;
+    --purple-accent: #a78bfa;
+    --ring-newcomer: #a0aec0;
+    --ring-intermediate: #60a5fa;
+    --ring-advanced: #34d399;
+    --ring-pro: #facc15;
+    --ring-veteran: #a78bfa;
+  }
+  
+  .tier-gradient-Newcomer {
+    background: linear-gradient(to right, var(--gray-200), var(--gray-600));
+  }
+  
+  .tier-gradient-Intermediate {
+    background: linear-gradient(to right, var(--blue-accent), var(--blue-hover));
+  }
+  
+  .tier-gradient-Advanced {
+    background: linear-gradient(to right, var(--green-accent), #059669);
+  }
+  
+  .tier-gradient-Pro {
+    background: linear-gradient(to right, var(--saffron-yellow), var(--orange-accent));
+  }
+  
+  .tier-gradient-Veteran {
+    background: linear-gradient(to right, var(--purple-accent), var(--lavender-gray));
+  }
+  
+  .glow-card {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+  }
+  
+  .sidebar-glow {
+    box-shadow: 0 0 8px rgba(24, 119, 242, 0.4);
+  }
+  
+  .icon-glow {
+    filter: drop-shadow(0 0 6px rgba(72, 187, 120, 0.4));
+  }
+  
+  .chart-highlight {
+    background-color: var(--blue-hover);
+    border-radius: 8px;
+    padding: 0.25rem 0.5rem;
+    color: var(--blue-dark);
+    font-weight: 600;
+  }  
+
+  /* Momentum Ring Styling */
+.momentum-ring-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    background: var(--light-blue);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+    width: 180px;
+    height: 220px;
+    position: relative;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  
+  .dark .momentum-ring-card {
+    background: #1e1b4b;
+  }
+  
+  .ring-label {
+    margin-top: -24px;
+  }
+  
+  .xp-amount {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+  }
+  
+  .tier-name {
+    font-weight: 600;
+    color: var(--gray-600);
+  }
+  
+  .tier-progress {
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+  
+  .ring-caption {
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: #a0aec0;
+  }
+  

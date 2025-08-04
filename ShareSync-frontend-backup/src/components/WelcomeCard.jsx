@@ -1,44 +1,40 @@
-import React from 'react';
+// src/components/WelcomeCard.jsx
+import React from "react";
+import { motion } from "framer-motion";
 
-export default function WelcomeCard({ greeting, profilePic, suggestion, streakDays, lastLogin }) {
+export default function WelcomeCard({ streakDays = 0, tasksCompleted = 0 }) {
+  const greeting = getGreeting();
+  const formattedName = "Manny"; // TEMP: Replace with useAuth().user?.firstName in future
+
   return (
-    <div className="rounded-3xl bg-white dark:bg-gray-900 shadow p-6 flex items-center space-x-6">
-      <img
-        src={profilePic}
-        alt="Profile"
-        className="w-20 h-20 rounded-full object-cover ring-4 ring-indigo-500"
-      />
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{greeting}</h2>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="w-full bg-white dark:bg-gray-900 rounded-2xl shadow-md px-6 py-5 transition-colors duration-300"
+    >
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white tracking-tight mb-2">
+        {greeting}, {formattedName}! 👋
+      </h2>
 
-        {typeof streakDays === 'number' && (
-          <p className="text-lg text-orange-500">🔥 {streakDays}-day streak</p>
-        )}
-
-        {lastLogin && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Last login: {new Date(lastLogin).toLocaleString()}
-          </p>
-        )}
-
-        {streakDays >= 7 && (
-          <p className="text-green-600 dark:text-green-400 font-semibold mt-2">
-            🎯 You've unlocked a 7-day streak reward!
-          </p>
-        )}
-        {streakDays >= 14 && (
-          <p className="text-blue-600 dark:text-blue-400 font-semibold mt-2">
-            🏅 14-day streak! You’re building serious momentum.
-          </p>
-        )}
-        {streakDays >= 30 && (
-          <p className="text-yellow-600 dark:text-yellow-400 font-semibold mt-2">
-            🌟 30+ day streak! You’re in elite territory.
-          </p>
-        )}
-
-        <p className="text-gray-700 dark:text-gray-300">{suggestion}</p>
+      <div className="bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 rounded-xl px-5 py-4 flex flex-col gap-2 shadow-inner transition-colors duration-300">
+        <p className="text-sm font-medium text-purple-800 dark:text-purple-300">
+          🔥 You’re on a <strong>{streakDays}-day streak</strong> — keep it going!
+        </p>
+        <p className="text-sm text-blue-800 dark:text-blue-300">
+          ✅ Tasks completed this week: <strong>{tasksCompleted}</strong>
+        </p>
+        <p className="text-sm italic text-gray-600 dark:text-gray-400">
+          Stay consistent and finish strong 💪
+        </p>
       </div>
-    </div>
+    </motion.div>
   );
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }

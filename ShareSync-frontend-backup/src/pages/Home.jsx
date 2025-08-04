@@ -1,4 +1,3 @@
-// src/pages/Home.jsx
 import React, { useState, useEffect } from 'react'
 import client from '../api/client'
 import { io } from 'socket.io-client'
@@ -8,16 +7,22 @@ import ProfilePicChanger from '../components/ProfilePicChanger'
 import WelcomeCard from '../components/WelcomeCard'
 import AISuggestionCard from '../components/AISuggestionCard'
 import formatProfilePicture from '../utils/formatProfilePicture'
-
-import {
-  Folder,
-  CheckCircle,
-  ThumbsUp,
-  MessageCircle,
-  Share2,
-  PlusCircle
-} from 'lucide-react'
+import LeaderboardCard from '../components/LeaderboardCard'
+import LiveActivityFeed from '../components/LiveActivityFeed'
+import PinnedForumPanel from '../components/PinnedForumPanel'
 import MomentumRing from '../components/MomentumRing.jsx'
+import HighlightsPanel from '../components/analytics/HighlightsPanel.jsx'
+import AssignedTasksPanel from '../components/AssignedTasksPanel'
+import ChartModal from '../components/analytics/ChartModal.jsx'
+import WeeklyReportModal from '../components/analytics/WeeklyReportModal.jsx'
+import { getRandomTip } from '../utils/productivityTips.js'
+import SocialPanel from '../components/social/SocialPanel'
+import ProjectUnifiedFeed from "../components/project/ProjectUnifiedFeed";
+import YourProjectsPanel from '../components/project/YourProjectsPanel'
+import MomentumForecast from '../components/analytics/MomentumForecast'
+
+
+
 
 const DEFAULT_PROFILE_PIC = '/default-profile.png'
 
@@ -25,8 +30,26 @@ export default function Home() {
   const [user, setUser] = useState(null)
   const [projects, setProjects] = useState([])
   const [feedItems, setFeedItems] = useState([])
+  const [forumPosts, setForumPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showProjectModal, setShowProjectModal] = useState(false)
+
+  // ✅ Chart Modal state
+  const [showChart, setShowChart] = useState(false)
+  const [xpHistory, setXpHistory] = useState([])
+  const [streakData, setStreakData] = useState([])
+  const [streakDays, setStreakDays] = useState(0);
+  const [tier, setTier] = useState('Newcomer');
+  const [xp, setXp] = useState(0)
+
+  // ✅ Weekly Report Modal state
+  const [showWeeklyReport, setShowWeeklyReport] = useState(false)
+  const [weeklyData, setWeeklyData] = useState({
+    tasksCompleted: 0,
+    xpEarned: 0,
+    streakChange: 0,
+    tip: getRandomTip()
+  })
 
   useEffect(() => {
     const stored = localStorage.getItem('user')
@@ -38,13 +61,50 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    Promise.all([client.get('/projects'), client.get('/feed')])
-      .then(([projRes, feedRes]) => {
+    Promise.all([
+      client.get('/projects'),
+      client.get('/feed'),
+      client.get('/user/me')
+    ])
+      .then(([projRes, feedRes, userRes]) => {
         setProjects(projRes.data)
         setFeedItems(feedRes.data)
+        setUser(userRes.data)
+
+        // Weekly Report Modal check
+        const today = new Date()
+        const isMonday = today.getDay() === 1
+        const lastLoginDate = new Date(userRes.data.lastLogin)
+        const isTodayLogin = lastLoginDate.toDateString() === today.toDateString()
+
+        if (isMonday && isTodayLogin) {
+          client.get('/user/activity-summary?range=7d')
+            .then(res => {
+              setWeeklyData({
+                tasksCompleted: res.data.tasksCompleted,
+                xpEarned: res.data.xpEarned,
+                streakChange: res.data.streakChange,
+                tip: getRandomTip()
+              })
+              setShowWeeklyReport(true)
+            })
+            .catch(err => console.error('Error fetching weekly summary:', err))
+        }
       })
       .catch(err => console.error('[Home] fetch error', err))
       .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    client.get('/user/activity-summary')
+      .then(res => {
+        setXpHistory(res.data.xpHistory)
+        setStreakData(res.data.streakData)
+        setXp(res.data.totalXP)
+        setStreakDays(res.data.streakDays)
+        setTier(res.data.tier || getTier(res.data.streakDays))
+      })
+      .catch(err => console.error('Error loading XP/streak data', err))
   }, [])
 
   useEffect(() => {
@@ -62,10 +122,6 @@ export default function Home() {
     window.location.href = `/projects/${newProj._id}`
   }
 
-  if (loading) {
-    return <div className="ml-16 md:ml-24 p-6">Loading…</div>
-  }
-
   const firstName = user?.firstName || 'User'
   const profilePic = user?.profilePicture || DEFAULT_PROFILE_PIC
   const greeting = getGreeting()
@@ -78,179 +134,87 @@ export default function Home() {
   }
 
   return (
-    <div className="ml-16 md:ml-24 p-6 bg-gray-100 dark:bg-gray-800 min-h-screen space-y-8">
-      <WelcomeCard
-        greeting={`${greeting}, ${firstName} 👋`}
-        profilePic={formatProfilePicture(profilePic)}
-        suggestion="Tip: Stay consistent. Momentum builds clarity."
-        streakDays={user?.streakDays || 0}
-        lastLogin={user?.lastLogin}
+  <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-100 dark:bg-gray-800 min-h-screen max-w-6xl mx-auto space-y-10">
+
+    {/* 🏁 Welcome & Highlights */}
+    <WelcomeCard
+      greeting={`${greeting}, ${firstName} 👋`}
+      profilePic={formatProfilePicture(profilePic)}
+      suggestion="Tip: Stay consistent. Momentum builds clarity."
+      streakDays={user?.streakDays || 0}
+      tasksCompleted={user?.tasksCompleted || 0}
+      lastLogin={user?.lastLogin}
+    />
+
+<HighlightsPanel
+  user={user}
+  xp={xp}
+  onSyncUser={(updatedUser) => setUser(updatedUser)}
+/>
+
+<MomentumForecast
+  streakDays={user?.streakDays || 0}
+  tasksThisWeek={weeklyData.tasksCompleted}
+  xp={xp}
+/>
+
+
+    {/* 📈 Momentum Ring, Leaderboard, Social */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <MomentumRing
+        streakDays={streakDays}
+        xp={xp}
+        tier={tier}
+        onClick={() => setShowChart(true)}
       />
-
-      <div className="mb-8">
-        <MomentumRing streakDays={user?.streakDays || 0} />
-      </div>
-
-      <AISuggestionCard message="Coming soon: AI-generated tips just for you." />
-
-      {showProjectModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
-          onClick={() => setShowProjectModal(false)}
-        >
-          <div
-            className="relative max-w-md w-11/12 max-h-[90vh] overflow-y-auto rounded-2xl bg-gray-800 p-6"
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
-              onClick={() => setShowProjectModal(false)}
-            >
-              ×
-            </button>
-            <ProjectsCreate onProjectCreated={handleProjectCreated} />
-          </div>
-        </div>
-      )}
-
-      <section
-        className="rounded-3xl shadow-xl p-8 flex items-center space-x-6"
-        style={{ background: 'linear-gradient(135deg, #D8B4FE, #FDE68A)' }}
-      >
-        <ProfilePicChanger
-          currentPic={user?.profilePicture || DEFAULT_PROFILE_PIC}
-          onProfileUpdate={updatedUser => {
-            setUser(updatedUser)
-            localStorage.setItem('user', JSON.stringify(updatedUser))
-          }}
-        />
-
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-            Welcome, {firstName}!
-          </h1>
-          <p className="mt-2 flex space-x-8 text-lg text-gray-700 dark:text-gray-300">
-            <span className="inline-flex items-center">
-              <Folder className="w-6 h-6 mr-2 text-indigo-500" />
-              {projects.length} active
-            </span>
-            <span className="inline-flex items-center">
-              <CheckCircle className="w-6 h-6 mr-2 text-green-500" />
-              {feedItems.filter(f => f.type === 'completed').length} completed
-            </span>
-          </p>
-        </div>
-      </section>
-
-      <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
-            Recent Updates
-          </h2>
-          {(feedItems.length > 0 || projects.length > 0) && (
-            <button
-              className="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-full hover:bg-indigo-600"
-              onClick={handleStartProject}
-            >
-              <PlusCircle className="w-5 h-5 mr-2" />
-              Start a New Project
-            </button>
-          )}
-        </div>
-        {feedItems.length === 0 ? (
-          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-            No updates yet.
-            <br />
-            <button
-              className="mt-6 flex items-center px-6 py-3 bg-indigo-500 text-white rounded-full hover:bg-indigo-600"
-              onClick={handleStartProject}
-            >
-              <PlusCircle className="w-6 h-6 mr-3" />
-              Start a New Project
-            </button>
-          </div>
-        ) : (
-          <StoryCarousel projects={projects} />
-        )}
-      </section>
-
-      <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
-            Project Activity Feed
-          </h2>
-          {(feedItems.length > 0 || projects.length > 0) && (
-            <button
-              className="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-full hover:bg-indigo-600"
-              onClick={handleStartProject}
-            >
-              <PlusCircle className="w-5 h-5 mr-2" />
-              Start a New Project
-            </button>
-          )}
-        </div>
-        {feedItems.length === 0 ? (
-          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-            No activity yet. Start by creating a project or posting an update!
-            <br />
-            <button
-              className="mt-6 flex items-center px-6 py-3 bg-indigo-500 text-white rounded-full hover:bg-indigo-600"
-              onClick={handleStartProject}
-            >
-              <PlusCircle className="w-6 h-6 mr-3" />
-              Start a New Project
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {feedItems.map(item => (
-              <div
-                key={item.id}
-                className="flex flex-col p-6 bg-white dark:bg-gray-800 rounded-2xl shadow hover:shadow-xl transition"
-              >
-                <div className="flex items-center space-x-3 mb-3">
-                  <img
-                    src={item.user.avatarUrl}
-                    alt={item.user.name}
-                    className="w-10 h-10 rounded-full ring-2 ring-indigo-500 object-cover"
-                  />
-                  <div>
-                    <p className="text-base font-medium text-gray-900 dark:text-gray-100">
-                      {item.user.name}{' '}
-                      <span className="text-indigo-500">
-                        {item.type === 'update'
-                          ? `Updated ${item.projectName}`
-                          : item.title}
-                      </span>
-                    </p>
-                    <p className="text-xs text-gray-500">{item.timestamp}</p>
-                  </div>
-                </div>
-                <div className="mt-auto flex items-center justify-between text-gray-600 dark:text-gray-400 text-base">
-                  <button
-                    className="flex items-center space-x-1"
-                    onClick={() => handleLike(item.id)}
-                  >
-                    <ThumbsUp className="w-4 h-4" />
-                    <span>{item.likes}</span>
-                  </button>
-                  <button
-                    className="flex items-center space-x-1"
-                    onClick={() => handleComment(item.id)}
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>{item.comments}</span>
-                  </button>
-                  <button className="flex items-center space-x-1">
-                    <Share2 className="w-4 h-4" />
-                    <span>{item.shares}</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      <LeaderboardCard currentUserId={user?.id} />
+      <SocialPanel />
     </div>
-  )
+
+    {/* 🧠 Your Projects */}
+    <YourProjectsPanel projects={projects} />
+
+    {/* 🧩 Chart Modal */}
+    {showChart && (
+      <ChartModal
+        xpHistory={xpHistory}
+        streakData={streakData}
+        xpTierColor="#8B5CF6"
+        onClose={() => setShowChart(false)}
+      />
+    )}
+
+    {/* 📌 Assigned Tasks & Pinned Posts */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <AssignedTasksPanel tasks={user?.assignedTasks || []} />
+      <PinnedForumPanel
+        posts={forumPosts}
+        onPostSubmit={(post) => setForumPosts(prev => [post, ...prev])}
+      />
+    </div>
+
+    {/* 📡 Real-Time Activity */}
+    <LiveActivityFeed feedItems={feedItems} />
+
+    {/* 🤖 AI Suggestion */}
+    <AISuggestionCard message="Coming soon: AI-generated tips just for you." />
+
+    {/* 🛠️ Create Project Modal */}
+    {showProjectModal && (
+      <ProjectsCreate
+        onClose={() => setShowProjectModal(false)}
+        onCreated={handleProjectCreated}
+      />
+    )}
+
+    {/* 🗓️ Weekly Report Modal */}
+    {showWeeklyReport && (
+      <WeeklyReportModal
+        isOpen={showWeeklyReport}
+        onClose={() => setShowWeeklyReport(false)}
+        data={weeklyData}
+      />
+    )}
+  </div>
+)
 }

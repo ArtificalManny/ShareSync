@@ -5,6 +5,9 @@ import { fetchProjectById, updateProject, createPost, createTask, createSubtask,
 import { Folder, AlertCircle, Plus, Edit, Trash, CheckSquare, FileText, Share2, ThumbsUp, MessageSquare, Users, Settings, AtSign } from 'lucide-react';
 import './ProjectHome.css';
 import axios from 'axios';
+import ProjectActivityFeed from '../components/project/ProjectActivityFeed'
+
+
 
 const ProjectHome = () => {
   const { id } = useParams();

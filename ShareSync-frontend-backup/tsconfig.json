@@ -17,5 +17,5 @@
       "jsx": "react-jsx",
       "types": ["vite/client"]
     },
-    "include": ["src"]
+    "include": ["src", "../ShareSync-backend/src/utils/logUserActivity.ts"]
   }

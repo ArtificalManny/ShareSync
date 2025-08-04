@@ -1,6 +1,6 @@
-// src/auth/jwt.strategy.ts
+// jwt.strategy.ts
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Strategy, ExtractJwt } from 'passport-jwt';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -9,12 +9,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET, // Make sure this matches
+      secretOrKey: process.env.JWT_SECRET,  // ✅ this must match
     });
   }
 
   async validate(payload: any) {
-    // ✅ Confirming the 'sub' field is the user ID
-    return { userId: payload.sub, email: payload.email };
+    return { sub: payload.sub, email: payload.email };
   }
 }
