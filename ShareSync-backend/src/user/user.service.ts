@@ -11,6 +11,11 @@ export class UserService {
     private projectService: ProjectService,
   ) {}
 
+  // ✅ NEW: Public profile support
+  async findByUsername(username: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ username }).exec();
+  }
+
   async create(createUserDto: {
     email: string;
     username: string;
@@ -46,7 +51,8 @@ export class UserService {
       bannerPicture?: string;
       school?: string;
       job?: string;
-    }
+      publicProfile?: boolean;
+    },
   ): Promise<UserDocument> {
     return this.update(id, profileData);
   }
@@ -72,7 +78,6 @@ export class UserService {
     ).exec();
   }
 
-  // ✅ NEW: Login tracking logic
   async trackLoginActivity(email: string): Promise<UserDocument> {
     const user = await this.userModel.findOne({ email });
     if (!user) throw new Error('User not found');
@@ -99,5 +104,5 @@ export class UserService {
       .sort({ streakDays: -1 })
       .limit(limit)
       .exec();
-  }  
+  }
 }

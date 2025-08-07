@@ -2,6 +2,7 @@
 import React from 'react'
 import { User } from 'lucide-react'
 import { cn } from '../utils/classnames'
+import '../styles/card.css' // ✅ import reusable styles
 
 const tierStyles = {
   Newcomer: 'text-gray-400',
@@ -42,8 +43,8 @@ export default function LeaderboardCard({ currentUserId }) {
   ]
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg p-6 sm:p-8 space-y-6">
-      <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
+    <div className="card-base card-padding rounded-3xl shadow-lg space-y-6">
+      <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
         🏆 Streak Leaderboard
       </h2>
       <div className="space-y-4">
@@ -54,7 +55,7 @@ export default function LeaderboardCard({ currentUserId }) {
             <div
               key={user.id}
               className={cn(
-                'flex items-center justify-between px-4 py-3 rounded-2xl border transition-all duration-300',
+                'flex items-center justify-between px-4 py-3 rounded-2xl border transition-all duration-300 group relative',
                 isCurrentUser
                   ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-400'
                   : 'bg-gray-50 dark:bg-gray-800/40',
@@ -62,6 +63,11 @@ export default function LeaderboardCard({ currentUserId }) {
                 isCurrentUser && glowStyles[user.tier]
               )}
             >
+              {/* Tooltip */}
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-700 text-white text-xs rounded-md px-2 py-1 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-10 whitespace-nowrap">
+                {user.name} is on a {user.streak}-day streak!
+              </div>
+
               <div className="flex items-center gap-4">
                 <div
                   className={cn(

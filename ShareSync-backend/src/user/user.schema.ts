@@ -1,20 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-
-export type UserDocument = User & Document;
+import { Document, Types } from 'mongoose';
 
 @Schema()
 export class User {
-  _id: string;
-
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   email: string;
 
   @Prop({ required: true })
   username: string;
-
-  @Prop({ required: true })
-  password: string;
 
   @Prop()
   firstName: string;
@@ -23,25 +16,38 @@ export class User {
   lastName: string;
 
   @Prop()
-  profilePicture: string;
+  password: string;
 
   @Prop()
-  bannerPicture: string;
+  profilePicture?: string;
 
   @Prop()
-  job: string;
+  bannerPicture?: string;
 
   @Prop()
-  school: string;
+  school?: string;
 
-  @Prop({ type: Object })
-  notificationPreferences: Record<string, any>;
+  @Prop()
+  job?: string;
 
-  @Prop({ type: Date }) // ✅ new
-  lastLogin: Date;
+  @Prop({ default: false })
+  publicProfile?: boolean;
 
-  @Prop({ type: Number, default: 0 }) // ✅ new
+  @Prop({ default: 0 })
+  points: number;
+
+  @Prop({ type: [Types.ObjectId], ref: 'Project', default: [] })
+  projects: Types.ObjectId[];
+
+  @Prop({ type: [String], default: [] })
+  notificationPreferences: string[];
+
+  @Prop({ default: null })
+  lastLogin?: Date;
+
+  @Prop({ default: 0 })
   streakDays: number;
 }
 
+export type UserDocument = User & Document;
 export const UserSchema = SchemaFactory.createForClass(User);

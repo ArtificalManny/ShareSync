@@ -1,6 +1,7 @@
 // src/components/MomentumRing.jsx
 import React from "react";
 import { motion } from "framer-motion";
+import { fireConfetti } from '../utils/confetti'; // adjust path
 
 export default function MomentumRing({ streakDays = 0, xp = 0, tier = "Newcomer", onClick }) {
   // Remove internal: const tier = getTier(streakDays);
@@ -110,3 +111,4 @@ function getTierTip(tier) {
       return "🌱 Welcome aboard! Every click builds momentum.";
   }
 }
+

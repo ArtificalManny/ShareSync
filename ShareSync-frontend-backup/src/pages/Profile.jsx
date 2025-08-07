@@ -1,12 +1,14 @@
+// /src/pages/Profile.jsx
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { fetchLeaderboard } from '../services/project.js';
-import { fetchUser } from '../services/auth.js';
-import { Edit, X, Folder, Award, Star, AlertCircle } from 'lucide-react';
-import "../index.css";
+import { fetchLeaderboard } from '../services/project';
+import { fetchUser } from '../services/auth';
 import axios from 'axios';
+import { Award } from 'lucide-react';
+import "../index.css";
 
+// Utility
 const getTierFromXP = (xp) => {
   if (xp >= 2000) return "Legend";
   if (xp >= 1000) return "Elite";
@@ -14,77 +16,70 @@ const getTierFromXP = (xp) => {
   return "Novice";
 };
 
+const XPProgressRing = ({ xp }) => {
+  const radius = 40;
+  const stroke = 8;
+  const normalizedRadius = radius - stroke * 0.5;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const progress = Math.min(xp / 2000, 1);
+  const strokeDashoffset = circumference - progress * circumference;
+
+  return (
+    <svg height={radius * 2} width={radius * 2} className="mx-auto block">
+      <circle stroke="#ccc" fill="transparent" strokeWidth={stroke} r={normalizedRadius} cx={radius} cy={radius} />
+      <circle stroke="#FFD700" fill="transparent" strokeWidth={stroke} r={normalizedRadius} cx={radius} cy={radius}
+        strokeDasharray={circumference} style={{ strokeDashoffset, transition: 'stroke-dashoffset 0.5s ease' }} />
+      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle"
+        className="text-xs font-bold text-gray-800">{xp} XP</text>
+    </svg>
+  );
+};
+
 const Profile = () => {
   const { username } = useParams();
-  const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, authError, updateUserProfile, socket, setUser } = useContext(AuthContext);
+  const { user, socket } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
-  const [error, setError] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    job: '',
-    school: '',
-    profilePicture: '',
-    bannerPicture: '',
-  });
-  const [retryCount, setRetryCount] = useState(0);
-  const [hasFailed, setHasFailed] = useState(false);
   const [userPoints, setUserPoints] = useState(0);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [error, setError] = useState('');
+  const [hasFailed, setHasFailed] = useState(false);
+
+  const isOwner = user?.username?.toLowerCase() === username?.toLowerCase();
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (isLoading) return;
-
-      if (!isAuthenticated) {
-        navigate('/login', { replace: true });
-        return;
-      }
-
-      if (!username) {
-        setError('No username provided.');
-        setHasFailed(true);
-        return;
-      }
-
       try {
-        const response = await fetchUser();
-        setProfile(response);
-        setFormData({
-          firstName: response.firstName || '',
-          lastName: response.lastName || '',
-          job: response.job || '',
-          school: response.school || '',
-          profilePicture: response.profilePicture || 'https://via.placeholder.com/150',
-          bannerPicture: response.bannerPicture || 'https://via.placeholder.com/1200x300',
-        });
+        let response;
 
+        if (isOwner) {
+          response = await fetchUser(); // own profile
+        } else {
+          const res = await axios.get(`/api/users/public/${username}`);
+          response = res.data;
+        }
+
+        setProfile(response);
         setUserPoints(response.points || 0);
 
-        const projectLeaderboards = await Promise.all(
-          response.projects.map(async (project) => {
-            const response = await fetchLeaderboard(project._id);
-            return response;
-          })
-        );
+        if (response.projects?.length > 0) {
+          const boards = await Promise.all(response.projects.map(p => fetchLeaderboard(p._id)));
+          const flat = boards.flat();
+          const aggregated = {};
 
-        const aggregated = {};
-        projectLeaderboards.forEach(leaderboard => {
-          leaderboard.forEach(entry => {
+          flat.forEach(entry => {
             if (aggregated[entry.email]) {
               aggregated[entry.email].points += entry.points;
             } else {
               aggregated[entry.email] = { ...entry };
             }
           });
-        });
 
-        const leaderboardArray = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 3);
-        setLeaderboard(leaderboardArray);
+          const top = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 3);
+          setLeaderboard(top);
+        }
+
       } catch (err) {
-        setError('Failed to load profile: ' + (err.message || 'Please try again.'));
+        setError('Profile failed to load: ' + (err.response?.data?.message || err.message));
         setHasFailed(true);
       }
     };
@@ -93,136 +88,65 @@ const Profile = () => {
 
     if (socket) {
       socket.on('profile-updated', (data) => {
-        if (data.user.username === username) {
-          fetchProfile();
-        }
+        if (data.user.username === username) fetchProfile();
       });
-
-      socket.on('project-updated', (data) => {
-        fetchProfile();
-      });
-
+      socket.on('project-updated', fetchProfile);
       return () => {
         socket.off('profile-updated');
         socket.off('project-updated');
       };
     }
-  }, [username, isAuthenticated, isLoading, navigate, socket]);
+  }, [username, user, socket]);
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    try {
-      await updateUserProfile(formData);
-      setProfile({ ...profile, ...formData });
-      setIsEditing(false);
-      alert('Profile updated successfully!');
-    } catch (err) {
-      setError('Failed to update profile: ' + (err.message || 'Please try again.'));
-    }
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    setFormData({
-      firstName: profile.firstName || '',
-      lastName: profile.lastName || '',
-      job: profile.job || '',
-      school: profile.school || '',
-      profilePicture: profile.profilePicture || 'https://via.placeholder.com/150',
-      bannerPicture: profile.bannerPicture || 'https://via.placeholder.com/1200x300',
-    });
-  };
-
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleProfilePicUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('profilePicture', file);
-
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post('/api/profile/upload-profile-picture', formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.status !== 201 && res.status !== 200) throw new Error('Failed to upload');
-      const updatedUser = { ...user, profilePic: res.data.profilePic };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      window.location.reload();
-    } catch (err) {
-      alert('Failed to upload profile picture');
-    }
-  };
-
-  if (isLoading) {
+  if (hasFailed) {
     return (
-      <div className="profile-container flex items-center justify-center min-h-screen">
-        <div className="loader" aria-label="Loading profile"></div>
-        <span className="text-saffron-yellow text-xl font-orbitron ml-4">Loading...</span>
-      </div>
-    );
-  }
-
-  if (authError || hasFailed) {
-    return (
-      <div className="profile-container flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <p className="text-crimson-red text-lg font-orbitron mb-4">{authError || error}</p>
-          <Link to="/" className="text-emerald-green hover:underline text-base font-orbitron focus:outline-none focus:ring-2 focus:ring-charcoal-gray">Return to Home</Link>
+          <p className="text-red-500 text-lg font-orbitron mb-4">{error}</p>
+          <Link to="/" className="text-indigo-500 hover:underline">← Back to Home</Link>
         </div>
       </div>
     );
   }
 
-  if (!profile) {
+  if (!profile) return null; // blank until loaded
+
+  if (!isOwner && !profile.publicProfile) {
     return (
-      <div className="profile-container flex items-center justify-center min-h-screen">
-        <div className="loader" aria-label="Loading profile"></div>
-        <span className="text-saffron-yellow text-xl font-orbitron ml-4">Loading profile...</span>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-500 text-lg font-orbitron mb-4">This profile is private.</p>
+          <Link to="/" className="text-indigo-500 hover:underline">← Back to Home</Link>
+        </div>
       </div>
     );
   }
-
-  const isOwner = user && user.username && user.username.toLowerCase() === username.toLowerCase();
-  const projectsByCategory = {
-    School: (profile.projects || []).filter(p => p.category === 'School') || [],
-    Job: (profile.projects || []).filter(p => p.category === 'Job') || [],
-    Personal: (profile.projects || []).filter(p => p.category === 'Personal') || [],
-  };
-  const publicProjects = (profile.projects || []).filter(p => p.status !== 'Completed').slice(0, 3);
 
   return (
-    <div className="profile-container min-h-screen">
-      <div className="profile-header relative glassmorphic">
-        {/* Remaining JSX... */}
+    <div className="min-h-screen p-6">
+      <div className="relative glassmorphic text-center py-8 px-4">
+        <img src={profile.profilePicture || 'https://via.placeholder.com/150'} alt="Profile"
+          className="w-24 h-24 rounded-full border-4 mx-auto shadow-md" />
+        <XPProgressRing xp={userPoints} />
+        <div className="mt-2 font-orbitron text-lg text-indigo-600">🎖️ Tier: {getTierFromXP(userPoints)}</div>
+        <div className="text-yellow-500 font-orbitron">🔥 Streak: {profile.streakDays || 0} days</div>
+      </div>
 
-        {/* Add XP + Streak badges below username block */}
-        <div className="flex items-center gap-3 mb-4 mt-4">
-          <span className="text-indigo-vivid font-orbitron text-lg px-3 py-1 rounded-full bg-indigo-vivid/10 shadow">
-            🎖️ Tier: {getTierFromXP(userPoints)}
-          </span>
-          <span className="text-saffron-yellow font-orbitron text-lg px-3 py-1 rounded-full bg-saffron-yellow/10 shadow">
-            🔥 Streak: {profile.streakDays || 0} days
-          </span>
+      <div className="mt-6">
+        <h3 className="font-orbitron text-xl text-center text-gray-700 dark:text-gray-300 mb-4">Top Projects</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 px-4">
+          {leaderboard.map((entry, index) => (
+            <div key={index} className="p-4 rounded-lg glassmorphic border border-gray-200 shadow-md">
+              <div className="flex items-center gap-3">
+                <Award className="text-indigo-500" />
+                <div>
+                  <p className="font-bold text-gray-800 dark:text-white">{entry.firstName || entry.email}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-300">{entry.points} XP</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-
-        {/* Optional: Most Productive Day placeholder */}
-        {profile.activityLog && profile.activityLog.length > 0 && (
-          <div className="text-lavender-gray font-inter text-md mt-2">
-            📈 Most Productive Day: {/* Placeholder until getMostProductiveDay utility is hooked up */}
-            {/* {getMostProductiveDay(profile.activityLog)} */} Thursday
-          </div>
-        )}
-
-        {/* Remaining JSX continues... */}
       </div>
     </div>
   );

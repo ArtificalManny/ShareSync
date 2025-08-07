@@ -11,6 +11,10 @@ const UserSchema = new mongoose.Schema({
   bannerPicture: { type: String, default: 'https://via.placeholder.com/1200x300' },
   job: { type: String },
   school: { type: String },
+
+  // ✅ NEW: Public profile toggle
+  publicProfile: { type: Boolean, default: false },
+
   projects: [
     {
       id: { type: String, required: true },
@@ -33,8 +37,8 @@ const UserSchema = new mongoose.Schema({
               shares: [{ type: String }],
             },
           ],
-          options: [{ type: String }], // For polls
-          votes: [{ user: String, option: String }], // For polls
+          options: [{ type: String }],
+          votes: [{ user: String, option: String }],
         },
       ],
       activityLog: [

@@ -108,3 +108,22 @@ html.dark {
 .tier-gradient-elite {
   background: var(--gradient-elite);
 }
+
+@keyframes flash-badge {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0px #FFD700;
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 10px #FFD700;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0px #FFD700;
+  }
+}
+
+.badge-flash {
+  animation: flash-badge 1.5s ease-in-out;
+}

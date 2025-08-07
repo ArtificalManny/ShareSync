@@ -12,6 +12,8 @@ import ProjectHome from './pages/ProjectHome';
 import CreateAccount from "./pages/CreateAccount";
 import ForgotPassword from "./pages/ForgotPassword";
 import './theme.css';
+import './styles/card.css';
+
 
 const searchReducer = (state, action) => {
   switch (action.type) {
@@ -94,7 +96,7 @@ const AppRoutes = () => {
         <div className="main-content">
           <Routes>
             <Route path="/home" element={<Home />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:username" element={<Profile />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/login" element={<Login />} />

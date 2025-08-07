@@ -1,4 +1,5 @@
-// src/api/user/user.controller.ts
+// ✅ COMPLETE user.controller.ts with public profile fetch route
+
 import {
   Controller,
   Get,
@@ -7,6 +8,8 @@ import {
   Body,
   UseGuards,
   Request,
+  Param,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserService } from './user.service';
@@ -33,6 +36,7 @@ export class UserController {
       notificationPreferences: user.notificationPreferences,
       lastLogin: user.lastLogin,
       streakDays: user.streakDays,
+      publicProfile: user.publicProfile,
     };
   }
 
@@ -43,7 +47,7 @@ export class UserController {
     return this.userService.getProjectsByCategory(req.user.sub);
   }
 
-  // 🖼️ Update profile details
+  // 🖼️ Update profile details (✅ includes publicProfile toggle)
   @UseGuards(JwtAuthGuard)
   @Put('profile')
   async updateProfile(
@@ -54,6 +58,7 @@ export class UserController {
       bannerPicture?: string;
       school?: string;
       job?: string;
+      publicProfile?: boolean;
     },
   ) {
     return this.userService.updateProfile(req.user.sub, profileData);
@@ -83,7 +88,6 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Get('activity-summary')
   getActivitySummary(@Request() req) {
-    // Replace this mock with actual DB logic later
     return {
       xpHistory: [
         { date: '2025-07-20', amount: 10, type: 'Task Completed' },
@@ -97,5 +101,39 @@ export class UserController {
       ],
       totalXP: 85,
     };
+  }
+
+  // 🌐 ✅ NEW: Public profile fetch by username
+  @Get('public/:username')
+  async getPublicProfile(@Param('username') username: string) {
+    const user = await this.userService.findByUsername(username);
+    if (!user) throw new NotFoundException('User not found');
+
+    if (!user.publicProfile) {
+      return {
+        username: user.username,
+        publicProfile: false,
+      };
+    }
+
+    return {
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profilePicture: user.profilePicture,
+      streakDays: user.streakDays,
+      points: user.points,
+      publicProfile: user.publicProfile,
+      projects: user.projects,
+      tier: this.getTierFromXP(user.points || 0),
+      bannerPicture: user.bannerPicture || null,
+    };
+  }
+
+  private getTierFromXP(xp: number): string {
+    if (xp >= 2000) return 'Legend';
+    if (xp >= 1000) return 'Elite';
+    if (xp >= 500) return 'Rising Star';
+    return 'Novice';
   }
 }

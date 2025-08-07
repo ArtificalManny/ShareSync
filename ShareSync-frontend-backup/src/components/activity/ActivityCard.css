@@ -1,0 +1,123 @@
+.activity-card {
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .activity-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
+  
+  .activity-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    border: 2px solid transparent;
+  }
+  
+  .avatar.veteran {
+    border-color: #ffd700;
+    box-shadow: 0 0 5px #ffd70088;
+  }
+  
+  .avatar.advanced {
+    border-color: #4fd1c5;
+    box-shadow: 0 0 5px #4fd1c588;
+  }
+  
+  .avatar.intermediate {
+    border-color: #63b3ed;
+  }
+  
+  .avatar.newcomer {
+    border-color: #cbd5e0;
+  }
+  
+  .activity-info {
+    flex-grow: 1;
+  }
+  
+  .username {
+    font-weight: 600;
+    color: #fff;
+    margin-right: 0.5rem;
+  }
+  
+  .action {
+    color: #cbd5e0;
+    font-size: 0.9rem;
+  }
+  
+  .timestamp {
+    font-size: 0.8rem;
+    color: #a0aec0;
+    white-space: nowrap;
+  }
+  
+  .activity-body {
+    margin-top: 0.5rem;
+    color: #edf2f7;
+    font-size: 0.95rem;
+  }
+  
+  .activity-tags {
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  
+  .badge.streak {
+    background: rgba(255, 99, 71, 0.15);
+    color: #ff6347;
+  }
+  
+  .badge.xp {
+    background: rgba(255, 215, 0, 0.15);
+    color: #ffd700;
+  }
+  
+  .tier-badge {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  
+  .tier-badge.veteran {
+    color: #ffd700;
+  }
+  
+  .tier-badge.advanced {
+    color: #4fd1c5;
+  }
+  
+  .tier-badge.intermediate {
+    color: #63b3ed;
+  }
+  
+  .tier-badge.newcomer {
+    color: #cbd5e0;
+  }
+  

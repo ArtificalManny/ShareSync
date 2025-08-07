@@ -1,6 +1,8 @@
 // src/components/WelcomeCard.jsx
 import React from "react";
 import { motion } from "framer-motion";
+import "../styles/card.css"; // ✅ Import the reusable card styles
+import { getStreakMilestone } from '../utils/streakMilestones';
 
 export default function WelcomeCard({ streakDays = 0, tasksCompleted = 0 }) {
   const greeting = getGreeting();
@@ -11,20 +13,20 @@ export default function WelcomeCard({ streakDays = 0, tasksCompleted = 0 }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full bg-white dark:bg-gray-900 rounded-2xl shadow-md px-6 py-5 transition-colors duration-300"
+      className="card-base card-padding w-full rounded-3xl shadow-lg space-y-4"
     >
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white tracking-tight mb-2">
+      <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">
         {greeting}, {formattedName}! 👋
       </h2>
 
-      <div className="bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 rounded-xl px-5 py-4 flex flex-col gap-2 shadow-inner transition-colors duration-300">
-        <p className="text-sm font-medium text-purple-800 dark:text-purple-300">
+      <div className="gradient-card rounded-2xl shadow-inner flex flex-col gap-2">
+        <p className="text-sm sm:text-base font-medium text-purple-800 dark:text-purple-300">
           🔥 You’re on a <strong>{streakDays}-day streak</strong> — keep it going!
         </p>
-        <p className="text-sm text-blue-800 dark:text-blue-300">
+        <p className="text-sm sm:text-base text-blue-800 dark:text-blue-300">
           ✅ Tasks completed this week: <strong>{tasksCompleted}</strong>
         </p>
-        <p className="text-sm italic text-gray-600 dark:text-gray-400">
+        <p className="text-sm sm:text-base italic text-gray-600 dark:text-gray-400">
           Stay consistent and finish strong 💪
         </p>
       </div>
@@ -38,3 +40,5 @@ function getGreeting() {
   if (hour < 18) return "Good afternoon";
   return "Good evening";
 }
+
+
