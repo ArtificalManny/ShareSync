@@ -17,5 +17,5 @@
       "jsx": "react-jsx",
       "types": ["vite/client"]
     },
-    "include": ["src", "../ShareSync-backend/src/utils/logUserActivity.ts"]
+    "include": ["src", "../ShareSync-backend/src/utils/logUserActivity.ts", "../ShareSync-backend/src/models/streakFeedItem.model.ts"]
   }

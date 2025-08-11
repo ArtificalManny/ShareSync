@@ -1,9 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <title>ShareSync</title>
+
+    <!-- SEO -->
+    <meta name="description" content="ShareSync — plan projects, track daily goals, and celebrate team progress with a public streak feed." />
+    <link rel="canonical" href="https://example.com/" />
+
+    <!-- PWA-ish basics (helps Lighthouse Best Practices/SEO, optional icons if you have them) -->
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Preconnects (safe even if not used; removes warnings about font/CDN warmups) -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
   </head>
   <body>
     <div id="root"></div>

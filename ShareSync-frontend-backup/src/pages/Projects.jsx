@@ -1,78 +1,215 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../AuthContext';
-import { Briefcase, AlertCircle } from 'lucide-react';
-import './Projects.css';
+// /src/pages/Projects.jsx
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-const Projects = ({
-  searchState,
-  dispatchSearch,
-  isDarkMode,
-  setIsDarkMode,
-  accentColor,
-  setAccentColor,
-  notifications,
-  setNotifications,
-}) => {
+import ProjectsHeader from '../components/projects/ProjectsHeader.jsx';
+import ProjectsCreate from './ProjectsCreate.jsx';
+import ProjectListItem from '../components/projects/ProjectListItem.jsx';
+import ProjectSkeleton from '../components/projects/ProjectSkeleton.jsx';
+import ProjectsEmpty from '../components/projects/ProjectsEmpty.jsx';
+import RightRail from '../components/projects/RightRail.jsx';
+
+/** Small debounce hook to avoid spamming the backend on each key press */
+function useDebounce(value, delay = 300) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
+/** Helpers for URL <-> state sync */
+function readParams(search) {
+  const p = new URLSearchParams(search);
+  return {
+    query: p.get('query') ?? '',
+    status: p.get('status') ?? 'all',   // 'all' | 'not_started' | 'in_progress' | 'completed'
+    owner: p.get('owner') ?? 'all',     // 'all' | 'me' | 'team'
+    updated: p.get('updated') ?? '7d',  // '7d' | '30d' | 'all'
+  };
+}
+
+function writeParams({ query, status, owner, updated }) {
+  const p = new URLSearchParams();
+  if (query) p.set('query', query);
+  if (status && status !== 'all') p.set('status', status);
+  if (owner && owner !== 'all') p.set('owner', owner);
+  if (updated && updated !== '7d') p.set('updated', updated);
+  const s = p.toString();
+  return s ? `?${s}` : '';
+}
+
+export default function Projects() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, authError } = useContext(AuthContext);
+  const location = useLocation();
+
+  // initial state from URL
+  const init = readParams(location.search);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
 
+  // Header state
+  const [query, setQuery] = useState(init.query);
+  const [status, setStatus] = useState(init.status);
+  const [owner, setOwner] = useState(init.owner);
+  const [updated, setUpdated] = useState(init.updated);
+
+  // keep URL in sync whenever filters change
   useEffect(() => {
-    if (!isAuthenticated || !user) {
-      navigate('/login', { replace: true });
-      return;
+    const next = writeParams({ query, status, owner, updated });
+    const current = location.search || '';
+    if (next !== current) {
+      navigate({ pathname: location.pathname, search: next }, { replace: true });
     }
-    // Fetch projects from backend
-    fetch('/api/projects', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setProjects(data.projects || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [isAuthenticated, navigate, user]);
+  }, [query, status, owner, updated, location.pathname, location.search, navigate]);
 
+  const debouncedQuery = useDebounce(query, 350);
+
+  // load projects when filters change (server-side filtering if supported)
   useEffect(() => {
-    if (searchState.query) {
-      const suggestions = (user.projects || []).filter(p => p.title.toLowerCase().includes(searchState.query.toLowerCase())).map(p => p.title).slice(0, 5);
-      dispatchSearch({ type: 'SET_SUGGESTIONS', payload: suggestions });
-    } else {
-      dispatchSearch({ type: 'SET_SUGGESTIONS', payload: [] });
-    }
-  }, [searchState.query, user, dispatchSearch]);
+    let ignore = false;
+    const load = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const qs = writeParams({
+          query: debouncedQuery,
+          status,
+          owner,
+          updated,
+        });
+        const res = await fetch(`/api/projects${qs}`, { credentials: 'include' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!ignore) setProjects(Array.isArray(data) ? data : (data.projects || []));
+      } catch (e) {
+        if (!ignore) setError('Failed to load projects.');
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, [debouncedQuery, status, owner, updated]);
 
-  if (authError) return <div className="projects-container min-h-screen flex items-center justify-center bg-white dark:bg-gray-950"><div className="error-message text-rose-500 text-lg font-sans flex items-center gap-2"><AlertCircle className="w-6 h-6" />{authError}</div></div>;
-  if (loading) return <div className="projects-container min-h-screen flex items-center justify-center">Loading...</div>;
+  // client-side filtering as a fallback if backend ignores params
+  const filtered = useMemo(() => {
+    const q = debouncedQuery.trim().toLowerCase();
+    const now = Date.now();
+    const withinWindow = (iso) => {
+      if (updated === 'all') return true;
+      const dt = new Date(iso || Date.now()).getTime();
+      const windowMs = updated === '7d' ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
+      return now - dt <= windowMs;
+    };
+    const statusMap = {
+      not_started: 'Not Started',
+      in_progress: 'In Progress',
+      completed: 'Completed',
+    };
+
+    return (projects || []).filter((p) => {
+      const matchQ =
+        !q ||
+        (p.title && p.title.toLowerCase().includes(q)) ||
+        (p.description && p.description.toLowerCase().includes(q)) ||
+        (Array.isArray(p.members) &&
+          p.members.some((m) => (m?.username || m?.email || '').toLowerCase().includes(q)));
+
+      const matchStatus = status === 'all' || (p.status && p.status === statusMap[status]);
+
+      const meId = (window.__SS_USER && window.__SS_USER.id) || null;
+      const matchOwner =
+        owner === 'all' ||
+        (owner === 'me' && (p.ownerId === meId || p.owner === meId)) ||
+        (owner === 'team' && (p.ownerId !== meId && p.owner !== meId));
+
+      const matchUpdated = withinWindow(p.updatedAt || p.lastActivityAt || p.createdAt);
+
+      return matchQ && matchStatus && matchOwner && matchUpdated;
+    });
+  }, [projects, debouncedQuery, status, owner, updated]);
+
+  const handleProjectCreated = (newProject) => {
+    setShowCreate(false);
+    if (newProject) {
+      setProjects((prev) => [newProject, ...prev]);
+    }
+  };
 
   return (
-    <div className="projects-container min-h-screen bg-white dark:bg-gray-950 flex flex-col ml-10 sm:ml-12 transition-all duration-200">
-      {isAuthenticated && (
-        <div className="flex flex-1">
-          <main className="main-content w-full p-2 sm:p-3 lg:p-4">
-            <div className="projects-header mb-2 sm:mb-3">
-              <div className="flex items-center gap-2 sm:gap-3"><Briefcase className="w-5 h-5 sm:w-6 h-6 text-purple-500 animate-pulse-slow" /><h1 className="text-xl sm:text-2xl font-sans font-bold text-gray-900 dark:text-gray-100">Projects</h1></div>
+    <div
+      data-accent="emerald"
+      className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-100 dark:bg-gray-800 min-h-screen max-w-6xl mx-auto"
+    >
+      <ProjectsHeader
+        query={query}
+        onQueryChange={setQuery}
+        status={status}
+        onStatusChange={setStatus}
+        owner={owner}
+        onOwnerChange={setOwner}
+        updated={updated}
+        onUpdatedChange={setUpdated}
+        onCreateProject={() => setShowCreate(true)}
+      />
+
+      {/* Two-column layout: list + right rail */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mt-4">
+        {/* LEFT: Project list */}
+        <div className="space-y-4">
+          {loading && (
+            <div className="grid grid-cols-1 gap-3">
+              {[...Array(4)].map((_, i) => (
+                <ProjectSkeleton key={i} />
+              ))}
             </div>
-            <div className="projects-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-              {projects.length === 0 ? (
-                <p className="col-span-full text-gray-600 dark:text-gray-400 flex items-center gap-2"><AlertCircle className="w-5 h-5 sm:w-6 h-6 text-rose-500" />No projects</p>
-              ) : (
-                projects.map(project => (
-                  <Link key={project._id} to={`/projects/${project._id}`} className="project-card bg-white/98 dark:bg-gray-900/98 border border-gray-100 dark:border-gray-800 rounded-xl p-2 sm:p-3 shadow-sm hover:shadow-md hover-glow transition-all duration-200">
-                    <div className="flex items-center gap-1 sm:gap-2"><Briefcase className="w-4 h-4 sm:w-5 h-5 text-purple-500" /><span className="text-base font-sans text-gray-900 dark:text-gray-100">{project.title}</span></div>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm"><span className="text-emerald-500">Status:</span> {project.status || 'Not Started'}</p>
-                  </Link>
-                ))
-              )}
+          )}
+
+          {!!error && !loading && (
+            <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-rose-200/60 dark:border-rose-400/20">
+              <p className="text-rose-600 dark:text-rose-400">{error}</p>
             </div>
-          </main>
+          )}
+
+          {!loading && !error && filtered.length === 0 && (
+            <ProjectsEmpty onCreate={() => setShowCreate(true)} />
+          )}
+
+          {!loading && !error && filtered.length > 0 && (
+            <div className="grid grid-cols-1 gap-3">
+              {filtered.map((p) => (
+                <ProjectListItem
+                  key={p._id || p.id}
+                  project={p}
+                  onClick={() => navigate(`/projects/${p._id || p.id}`)}
+                />
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* RIGHT: Rail */}
+        <div className="hidden lg:block">
+          <RightRail
+            onQuickStatus={(s) => setStatus(s)}
+            onQuickOwner={(o) => setOwner(o)}
+            onQuickUpdated={(u) => setUpdated(u)}
+          />
+        </div>
+      </div>
+
+      {showCreate && (
+        <ProjectsCreate
+          onClose={() => setShowCreate(false)}
+          onProjectCreated={handleProjectCreated}
+        />
       )}
     </div>
   );
-};
-
-export default Projects;
+}

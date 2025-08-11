@@ -1,13 +1,44 @@
+// src/pages/ProjectHome.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import { fetchProjectById, updateProject, createPost, createTask, createSubtask, updateTaskStatus, likeTask, shareTask, addTaskComment, uploadFile, approveFile, createTeam, inviteUser, addSuggestion, updateNotificationSettings } from '../services/project.js';
-import { Folder, AlertCircle, Plus, Edit, Trash, CheckSquare, FileText, Share2, ThumbsUp, MessageSquare, Users, Settings, AtSign } from 'lucide-react';
+import {
+  fetchProjectById,
+  updateProject,
+  createPost,
+  createTask,
+  createSubtask,
+  updateTaskStatus,
+  likeTask,
+  shareTask,
+  addTaskComment,
+  uploadFile,
+  approveFile,
+  createTeam,
+  inviteUser,
+  addSuggestion,
+  updateNotificationSettings
+} from '../services/project.js';
+import {
+  Folder,
+  AlertCircle,
+  Plus,
+  Edit,
+  Trash,
+  CheckSquare,
+  FileText,
+  Share2,
+  ThumbsUp,
+  MessageSquare,
+  Users,
+  Settings,
+  AtSign,
+  X
+} from 'lucide-react';
 import './ProjectHome.css';
 import axios from 'axios';
-import ProjectActivityFeed from '../components/project/ProjectActivityFeed'
-
-
+import ProjectActivityFeed from '../components/project/ProjectActivityFeed';
+import { logActivityClient } from '../utils/logActivity';
 
 const ProjectHome = () => {
   const { id } = useParams();
@@ -70,9 +101,19 @@ const ProjectHome = () => {
       const updatedProject = await updateProject(id, projectForm);
       setProject(updatedProject);
       setIsEditingProject(false);
+
       if (socket) {
         socket.emit('project-updated', { project: updatedProject, userId: user?._id });
       }
+
+      // ✅ log project:update
+      logActivityClient({
+        type: 'project:update',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        title: updatedProject?.title
+      });
     } catch (err) {
       setError('Failed to update project: ' + err.message);
     }
@@ -82,24 +123,36 @@ const ProjectHome = () => {
     e.preventDefault();
     try {
       const post = await createPost(id, newPost);
-      // Extract mentioned users from post content (e.g., @username)
+
+      // Mentions → notifications
       const mentions = newPost.content.match(/@(\w+)/g)?.map(mention => mention.slice(1)) || [];
       if (mentions.length > 0 && socket) {
         mentions.forEach(mentionedUser => {
           socket.emit('notification', {
             user: mentionedUser,
-            message: `${user.username} mentioned you in a post in project "${project.title}"`,
+            message: `${user?.username} mentioned you in a post in project "${project?.title}"`
           });
         });
       }
+
       setProject((prev) => ({
         ...prev,
         posts: [...(prev.posts || []), post],
       }));
       setNewPost({ type: 'announcement', content: '' });
+
       if (socket) {
-        socket.emit('feed-update', { ...post, projectId: id, projectTitle: project.title });
+        socket.emit('feed-update', { ...post, projectId: id, projectTitle: project?.title });
       }
+
+      // ✅ log post:create
+      logActivityClient({
+        type: 'post:create',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        postId: post?._id
+      });
     } catch (err) {
       setError('Failed to create post: ' + err.message);
     }
@@ -109,11 +162,22 @@ const ProjectHome = () => {
     e.preventDefault();
     try {
       const task = await createTask(id, newTask);
+
       setProject((prev) => ({
         ...prev,
         tasks: [...(prev.tasks || []), task],
       }));
       setNewTask({ title: '', description: '', assignedTo: '', dueDate: '' });
+
+      // ✅ log task:create
+      logActivityClient({
+        type: 'task:create',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        taskId: task?._id,
+        title: task?.title
+      });
     } catch (err) {
       setError('Failed to create task: ' + err.message);
     }
@@ -122,6 +186,7 @@ const ProjectHome = () => {
   const handleCreateSubtask = async (taskId) => {
     try {
       const subtask = await createSubtask(id, taskId, { title: newSubtask.title });
+
       setProject((prev) => ({
         ...prev,
         tasks: prev.tasks.map(t =>
@@ -129,6 +194,17 @@ const ProjectHome = () => {
         ),
       }));
       setNewSubtask({ title: '', taskId: '' });
+
+      // ✅ log subtask:create
+      logActivityClient({
+        type: 'subtask:create',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        taskId,
+        subtaskId: subtask?._id,
+        title: subtask?.title
+      });
     } catch (err) {
       setError('Failed to create subtask: ' + err.message);
     }
@@ -137,10 +213,23 @@ const ProjectHome = () => {
   const handleUpdateTaskStatus = async (taskId, status) => {
     try {
       const updatedTask = await updateTaskStatus(id, taskId, status);
+
       setProject((prev) => ({
         ...prev,
         tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
       }));
+
+      // ✅ log task:complete when applicable
+      if (status === 'Completed') {
+        logActivityClient({
+          type: 'task:complete',
+          userId: user?._id,
+          username: user?.username,
+          projectId: id,
+          taskId: updatedTask?._id,
+          title: updatedTask?.title
+        });
+      }
     } catch (err) {
       setError('Failed to update task status: ' + err.message);
     }
@@ -149,16 +238,28 @@ const ProjectHome = () => {
   const handleLikeTask = async (taskId) => {
     try {
       const updatedTask = await likeTask(id, taskId);
+
       setProject((prev) => ({
         ...prev,
         tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
       }));
+
       if (socket) {
         socket.emit('notification', {
           user: updatedTask.assignedTo,
-          message: `${user.username} liked your task "${updatedTask.title}" in project "${project.title}"`,
+          message: `${user?.username} liked your task "${updatedTask.title}" in project "${project?.title}"`,
         });
       }
+
+      // ✅ log task:like
+      logActivityClient({
+        type: 'task:like',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        taskId: updatedTask?._id,
+        title: updatedTask?.title
+      });
     } catch (err) {
       setError('Failed to like task: ' + err.message);
     }
@@ -167,10 +268,22 @@ const ProjectHome = () => {
   const handleShareTask = async (taskId) => {
     try {
       const updatedTask = await shareTask(id, taskId);
+
       setProject((prev) => ({
         ...prev,
         tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
       }));
+
+      // ✅ log task:share
+      logActivityClient({
+        type: 'task:share',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        taskId: updatedTask?._id,
+        title: updatedTask?.title
+      });
+
       alert('Task shared! (Mock action—implement sharing logic as needed.)');
     } catch (err) {
       setError('Failed to share task: ' + err.message);
@@ -180,16 +293,28 @@ const ProjectHome = () => {
   const handleAddTaskComment = async (taskId, commentText) => {
     try {
       const updatedTask = await addTaskComment(id, taskId, { text: commentText, user: user.email });
+
       setProject((prev) => ({
         ...prev,
         tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
       }));
+
       if (socket) {
         socket.emit('notification', {
           user: updatedTask.assignedTo,
-          message: `${user.username} commented on your task "${updatedTask.title}" in project "${project.title}"`,
+          message: `${user?.username} commented on your task "${updatedTask.title}" in project "${project?.title}"`,
         });
       }
+
+      // ✅ log comment add
+      logActivityClient({
+        type: 'task:comment',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        taskId: updatedTask?._id,
+        title: updatedTask?.title
+      });
     } catch (err) {
       setError('Failed to add comment: ' + err.message);
     }
@@ -203,11 +328,22 @@ const ProjectHome = () => {
       const fileData = new FormData();
       fileData.append('file', newFile);
       const uploadedFile = await uploadFile(id, fileData);
+
       setProject((prev) => ({
         ...prev,
         files: [...(prev.files || []), uploadedFile],
       }));
       setNewFile(null);
+
+      // ✅ log file:upload
+      logActivityClient({
+        type: 'file:upload',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        fileId: uploadedFile?._id,
+        name: uploadedFile?.name
+      });
     } catch (err) {
       setError('Failed to upload file: ' + err.message);
     }
@@ -216,10 +352,22 @@ const ProjectHome = () => {
   const handleApproveFile = async (fileId, status) => {
     try {
       const updatedFile = await approveFile(id, fileId, status);
+
       setProject((prev) => ({
         ...prev,
         files: prev.files.map(f => (f._id === fileId ? updatedFile : f)),
       }));
+
+      // ✅ optional log (review)
+      logActivityClient({
+        type: 'file:review',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        fileId,
+        name: updatedFile?.name,
+        status
+      });
     } catch (err) {
       setError('Failed to update file status: ' + err.message);
     }
@@ -229,11 +377,22 @@ const ProjectHome = () => {
     e.preventDefault();
     try {
       const team = await createTeam(id, newTeam);
+
       setProject((prev) => ({
         ...prev,
         teams: [...(prev.teams || []), team],
       }));
       setNewTeam({ name: '', members: [] });
+
+      // ✅ log team:create
+      logActivityClient({
+        type: 'team:create',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        teamId: team?._id,
+        title: team?.name
+      });
     } catch (err) {
       setError('Failed to create team: ' + err.message);
     }
@@ -244,12 +403,23 @@ const ProjectHome = () => {
     try {
       await inviteUser(id, inviteEmail);
       setInviteEmail('');
+
       if (socket) {
         socket.emit('notification', {
           user: inviteEmail,
-          message: `${user.username} invited you to join project "${project.title}"`,
+          message: `${user?.username} invited you to join project "${project?.title}"`,
         });
       }
+
+      // ✅ log invite:sent
+      logActivityClient({
+        type: 'invite:sent',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        target: inviteEmail
+      });
+
       alert('Invitation sent! (Mock action—implement email logic as needed.)');
     } catch (err) {
       setError('Failed to invite user: ' + err.message);
@@ -260,11 +430,21 @@ const ProjectHome = () => {
     e.preventDefault();
     try {
       const suggestion = await addSuggestion(id, { content: newSuggestion, user: user.email });
+
       setProject((prev) => ({
         ...prev,
         suggestions: [...(prev.suggestions || []), suggestion],
       }));
       setNewSuggestion('');
+
+      // ✅ log suggestion:add
+      logActivityClient({
+        type: 'suggestion:add',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id,
+        suggestionId: suggestion?._id
+      });
     } catch (err) {
       setError('Failed to add suggestion: ' + err.message);
     }
@@ -274,19 +454,29 @@ const ProjectHome = () => {
     e.preventDefault();
     try {
       const updatedSettings = await updateNotificationSettings(id, notificationSettings);
+
       setProject((prev) => ({
         ...prev,
         settings: { ...prev.settings, ...updatedSettings },
       }));
+
+      // ✅ log settings:update
+      logActivityClient({
+        type: 'settings:update',
+        userId: user?._id,
+        username: user?.username,
+        projectId: id
+      });
     } catch (err) {
       setError('Failed to update notification settings: ' + err.message);
     }
   };
 
+  // NOTE: unused in this page, kept as-is (safe but not called)
   const handleProjectCreated = (newProject) => {
     setShowProjectModal(false);
     setProjects((prev) => [newProject, ...prev]);
-    window.location.href = `/projects/${newProject._id}`; // or use navigate() if using react-router
+    window.location.href = `/projects/${newProject._id}`;
   };
 
   if (isLoading) {
@@ -445,7 +635,7 @@ const ProjectHome = () => {
                   <div className="flex items-center gap-2 mb-2">
                     <div className="relative">
                       <img
-                        src={user.profilePicture || 'https://via.placeholder.com/32'}
+                        src={user?.profilePicture || 'https://via.placeholder.com/32'}
                         alt={`${post.author}'s profile`}
                         className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
                       />
@@ -480,7 +670,7 @@ const ProjectHome = () => {
           <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
             <CheckSquare className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Tasks
           </h2>
-          <form onSubmit={handleCreateTask} className="mb-4">
+        <form onSubmit={handleCreateTask} className="mb-4">
             <input
               type="text"
               value={newTask.title}
@@ -532,7 +722,7 @@ const ProjectHome = () => {
                     <div className="flex items-center gap-2">
                       <div className="relative">
                         <img
-                          src={user.profilePicture || 'https://via.placeholder.com/32'}
+                          src={user?.profilePicture || 'https://via.placeholder.com/32'}
                           alt={`${task.assignedTo}'s profile`}
                           className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
                         />
@@ -614,7 +804,7 @@ const ProjectHome = () => {
                         <div className="flex items-center gap-2">
                           <div className="relative">
                             <img
-                              src={user.profilePicture || 'https://via.placeholder.com/32'}
+                              src={user?.profilePicture || 'https://via.placeholder.com/32'}
                               alt={`${comment.user}'s profile`}
                               className="w-6 h-6 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
                             />
@@ -691,7 +881,7 @@ const ProjectHome = () => {
                   <div className="flex items-center gap-2">
                     <div className="relative">
                       <img
-                        src={user.profilePicture || 'https://via.placeholder.com/32'}
+                        src={user?.profilePicture || 'https://via.placeholder.com/32'}
                         alt={`${file.uploadedBy}'s profile`}
                         className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
                       />
@@ -766,7 +956,7 @@ const ProjectHome = () => {
                   <div className="flex items-center gap-2">
                     <div className="relative">
                       <img
-                        src={user.profilePicture || 'https://via.placeholder.com/32'}
+                        src={user?.profilePicture || 'https://via.placeholder.com/32'}
                         alt="Team creator's profile"
                         className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
                       />
@@ -840,7 +1030,7 @@ const ProjectHome = () => {
                   <div className="flex items-center gap-2">
                     <div className="relative">
                       <img
-                        src={user.profilePicture || 'https://via.placeholder.com/32'}
+                        src={user?.profilePicture || 'https://via.placeholder.com/32'}
                         alt={`${suggestion.user}'s profile`}
                         className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
                       />

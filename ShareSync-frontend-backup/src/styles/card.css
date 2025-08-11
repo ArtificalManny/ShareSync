@@ -1,25 +1,27 @@
-/* src/styles/card.css */
+/* Card helpers driven by theme tokens */
 
-.card-base {
-    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-2xl shadow-md transition-colors duration-300;
-  }
-  
-  .card-padding {
-    @apply px-6 py-5 sm:px-8 sm:py-6;
-  }
-  
-  .card-heading {
-    @apply text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white;
-  }
-  
-  .card-subheading {
-    @apply text-sm sm:text-base font-medium text-gray-600 dark:text-gray-300;
-  }
-  
-  .card-section-title {
-    @apply text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide;
-  }
-  .card-chartbox {
-    @apply rounded-xl border px-4 py-3 sm:px-5 sm:py-4 dark:border-gray-700;
-  }
-  
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+}
+
+.card.hoverable {
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.card.hoverable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+  border-color: var(--color-ring);
+}
+
+.card-header {
+  padding: 16px 16px 0 16px;
+}
+.card-body {
+  padding: 16px;
+}
+.card-footer {
+  padding: 0 16px 16px 16px;
+}

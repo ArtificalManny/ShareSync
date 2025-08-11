@@ -1,119 +1,253 @@
-/* theme.css (Final Updates for ShareSync Theme Integration) */
-:root {
-    --emerald-green: #2dd4bf;
-    --saffron-yellow: #f4d03f;
-    --indigo-vivid: #4f46e5;
-    --crimson-red: #dc2626;
-    --lavender-gray: #c4b5fd;
-    --charcoal-gray: #4b5563;
-    --midnight-navy: #1e3a8a;
-    --neon-coral: #ff6e7f;
-    --white: #ffffff;
-    --black: #1c2526;
-    --gray-600: #606770;
-    --gray-200: #e4e6eb;
-    --dark-bg: #1a202c;
-    --dark-secondary: #2d3748;
-    --blue-dark: #1e40af;
-    --light-bg: #f0f2f5;
-    --light-blue: #f5faff;
-    --blue-accent: #1877f2;
-    --blue-hover: #dbeafe;
-    --red-accent: #e63946;
-    --green-accent: #48bb78;
-    --orange-accent: #f6ad55;
-    --purple-accent: #a78bfa;
-    --ring-newcomer: #a0aec0;
-    --ring-intermediate: #60a5fa;
-    --ring-advanced: #34d399;
-    --ring-pro: #facc15;
-    --ring-veteran: #a78bfa;
-  }
-  
-  .tier-gradient-Newcomer {
-    background: linear-gradient(to right, var(--gray-200), var(--gray-600));
-  }
-  
-  .tier-gradient-Intermediate {
-    background: linear-gradient(to right, var(--blue-accent), var(--blue-hover));
-  }
-  
-  .tier-gradient-Advanced {
-    background: linear-gradient(to right, var(--green-accent), #059669);
-  }
-  
-  .tier-gradient-Pro {
-    background: linear-gradient(to right, var(--saffron-yellow), var(--orange-accent));
-  }
-  
-  .tier-gradient-Veteran {
-    background: linear-gradient(to right, var(--purple-accent), var(--lavender-gray));
-  }
-  
-  .glow-card {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
-  }
-  
-  .sidebar-glow {
-    box-shadow: 0 0 8px rgba(24, 119, 242, 0.4);
-  }
-  
-  .icon-glow {
-    filter: drop-shadow(0 0 6px rgba(72, 187, 120, 0.4));
-  }
-  
-  .chart-highlight {
-    background-color: var(--blue-hover);
-    border-radius: 8px;
-    padding: 0.25rem 0.5rem;
-    color: var(--blue-dark);
-    font-weight: 600;
-  }  
+/* ============================
+   Design System: Tokens & Base
+   ============================ */
 
-  /* Momentum Ring Styling */
-.momentum-ring-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    border-radius: 1rem;
-    background: var(--light-blue);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
-    width: 180px;
-    height: 220px;
-    position: relative;
-    text-align: center;
-    transition: all 0.3s ease;
-  }
-  
-  .dark .momentum-ring-card {
-    background: #1e1b4b;
-  }
-  
-  .ring-label {
-    margin-top: -24px;
-  }
-  
-  .xp-amount {
-    font-size: 1.4rem;
-    font-weight: bold;
-    margin-bottom: 0.25rem;
-  }
-  
-  .tier-name {
-    font-weight: 600;
-    color: var(--gray-600);
-  }
-  
-  .tier-progress {
-    font-size: 0.85rem;
-    color: #6b7280;
-  }
-  
-  .ring-caption {
-    margin-top: 0.25rem;
-    font-size: 0.8rem;
-    color: #a0aec0;
-  }
-  
+/* Light theme tokens */
+:root {
+  /* Grey / Surface */
+  --color-bg:            #f7f8fa;     /* page background */
+  --color-surface:       #ffffff;     /* cards, panels */
+  --color-surface-2:     #f2f4f7;     /* subtle panels */
+  --color-border:        #e6e8eb;     /* dividers */
+  --color-ring:          #cdd4db;     /* focus ring */
+  --shadow-color:        0deg 0% 0%;
+
+  /* Text */
+  --ink-900:             #0f172a;     /* headings */
+  --ink-700:             #334155;     /* body */
+  --ink-500:             #64748b;     /* secondary */
+  --ink-300:             #94a3b8;     /* muted */
+
+  /* State */
+  --success-600:         #059669;
+  --warning-600:         #d97706;
+  --danger-600:          #dc2626;
+
+  /* Accents (CNBC-ish: indigo & emerald primarily) */
+  --accent-1:            #4f46e5;     /* indigo-600 */
+  --accent-1-600:        #4f46e5;
+  --accent-1-700:        #4338ca;
+  --accent-1-50:         #eef2ff;
+
+  --accent-2:            #059669;     /* emerald-600 */
+  --accent-2-600:        #059669;
+  --accent-2-700:        #047857;
+  --accent-2-50:         #ecfdf5;
+
+  /* Elevation */
+  --card-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+
+  /* Typography scale */
+  --font-family:         ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --h1-size:             24px;
+  --h1-line:             32px;
+  --h2-size:             18px;
+  --h2-line:             28px;
+  --body-size:           14px;
+  --body-line:           22px;
+
+  /* Spacing */
+  --section-space:       32px;  /* section vertical rhythm */
+  --gutter:              24px;  /* grid gutter */
+
+  /* Grid */
+  --grid-columns:        12;
+  --content-max:         1200px;
+}
+
+/* Dark theme tokens */
+:root.dark {
+  --color-bg:            #0b1220;
+  --color-surface:       #0f172a;
+  --color-surface-2:     #0d1324;
+  --color-border:        #1e293b;
+  --color-ring:          #334155;
+
+  --ink-900:             #e5e7eb;
+  --ink-700:             #cbd5e1;
+  --ink-500:             #94a3b8;
+  --ink-300:             #64748b;
+
+  --accent-1-50:         #1e1b4b;
+  --accent-2-50:         #052e2b;
+
+  --card-shadow:         0 1px 2px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* ============================
+   Base Resets
+   ============================ */
+html, body, #root {
+  height: 100%;
+}
+body {
+  background: var(--color-bg);
+  color: var(--ink-700);
+  font-family: var(--font-family);
+  font-size: var(--body-size);
+  line-height: var(--body-line);
+}
+
+/* Headings scale */
+.h1, h1 {
+  font-size: var(--h1-size);
+  line-height: var(--h1-line);
+  color: var(--ink-900);
+  font-weight: 700;
+}
+.h2, h2 {
+  font-size: var(--h2-size);
+  line-height: var(--h2-line);
+  color: var(--ink-900);
+  font-weight: 600;
+}
+
+/* ============================
+   Layout: container + grid
+   ============================ */
+.container {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+.section {
+  margin-block: var(--section-space);
+}
+
+/* A simple 12-col grid helper */
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--gutter);
+}
+
+/* ============================
+   Cards
+   ============================ */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+}
+.card--subtle {
+  background: var(--color-surface-2);
+}
+
+/* ============================
+   Buttons
+   ============================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  line-height: 1;
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-ring);
+}
+
+/* Accent handling: keep ≤ 2 accents per view.
+   Set data-accent on a parent (body or major section) to 'indigo' or 'emerald'. */
+[data-accent="indigo"] .btn-primary {
+  background: var(--accent-1-600);
+  border-color: var(--accent-1-600);
+  color: #fff;
+}
+[data-accent="indigo"] .btn-primary:hover {
+  background: var(--accent-1-700);
+  border-color: var(--accent-1-700);
+}
+[data-accent="indigo"] .chip-accent {
+  background: var(--accent-1-50);
+  color: var(--accent-1-700);
+}
+
+[data-accent="emerald"] .btn-primary {
+  background: var(--accent-2-600);
+  border-color: var(--accent-2-600);
+  color: #fff;
+}
+[data-accent="emerald"] .btn-primary:hover {
+  background: var(--accent-2-700);
+  border-color: var(--accent-2-700);
+}
+[data-accent="emerald"] .chip-accent {
+  background: var(--accent-2-50);
+  color: var(--accent-2-700);
+}
+
+/* Neutral button */
+.btn-ghost {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--ink-700);
+}
+.btn-ghost:hover {
+  background: var(--color-surface-2);
+}
+
+/* Badges / Chips */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+  border: 1px solid var(--color-border);
+  color: var(--ink-700);
+}
+
+/* Status pills */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.pill--not-started { background: #e2e8f0; color: #334155; }
+.pill--in-progress { background: #e0e7ff; color: #3730a3; }
+.pill--completed   { background: #dcfce7; color: #166534; }
+
+
+:root {
+  /* Colors */
+  --card-bg: #ffffff;
+  --card-bg-dark: #1e293b;
+  --card-border: #e2e8f0;
+  --card-border-dark: #334155;
+  --chip-bg: #f1f5f9;
+  --chip-bg-dark: #334155;
+  --chip-hover-bg: #e2e8f0;
+  --chip-hover-bg-dark: #475569;
+  --chip-text: #0f172a;
+  --muted-text: #64748b;
+  --muted-text-dark: #94a3b8;
+  --icon-muted: #cbd5e1;
+  --icon-muted-dark: #64748b;
+  --heading-sm: #0f172a;
+  --heading-sm-dark: #f8fafc;
+  --heading-lg: #0f172a;
+  --heading-lg-dark: #f8fafc;
+  --body-text: #475569;
+  --body-text-dark: #cbd5e1;
+  --accent: #10b981; /* emerald */
+  --accent-hover: #059669;
+
+  /* Typography scale */
+  --font-lg: 1.5rem;    /* 24px */
+  --leading-lg: 2rem;   /* 32px */
+  --font-sm: 0.875rem;  /* 14px */
+  --leading-sm: 1.375rem; /* 22px */
+  --font-xs: 0.75rem;   /* 12px */
+  --leading-xs: 1.25rem; /* 20px */
+}

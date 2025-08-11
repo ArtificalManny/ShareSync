@@ -1,5 +1,5 @@
 // /src/components/modals/InviteModal.jsx
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { X, Send } from 'lucide-react';
 import { sendInvite } from '../../api/invite';
@@ -11,8 +11,6 @@ const InviteModal = ({ isOpen, onClose, defaultProjectId, inviterId, onInvited }
   const [projectId, setProjectId] = useState(defaultProjectId || '');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const emailRef = useRef(null); // initial focus target
-  const descId = 'invite-desc';
 
   const handleInvite = async () => {
     if (!email) return;
@@ -25,57 +23,55 @@ const InviteModal = ({ isOpen, onClose, defaultProjectId, inviterId, onInvited }
         projectId: projectId || undefined,
       });
 
+      // success toast
       toast({
         title: 'Invite sent',
         description: `Invitation sent to ${email}${projectId ? ` for project ${projectId}` : ''}.`,
         variant: 'success',
       });
 
+      // Let parent mark row as "Invited"
       if (typeof onInvited === 'function') {
         onInvited({ email, projectId, inviteId: res?.inviteId });
       }
 
+      // reset and close
       setEmail('');
       setRole('Member');
       setProjectId(defaultProjectId || '');
       setMessage('');
       onClose?.();
     } catch (err) {
-      const msg = err?.response?.data?.error || err?.message || 'Failed to send invite';
-      toast({ title: 'Invite failed', description: msg, variant: 'error' });
+      // error toast
+      const msg =
+        err?.response?.data?.error ||
+        err?.message ||
+        'Failed to send invite';
+      toast({
+        title: 'Invite failed',
+        description: msg,
+        variant: 'error',
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} className="fixed z-50 inset-0 overflow-y-auto" initialFocus={emailRef}>
+    <Dialog open={isOpen} onClose={onClose} className="fixed z-50 inset-0 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen p-4 bg-black/50">
-        <Dialog.Panel
-          className="bg-white dark:bg-charcoal-gray p-6 rounded-xl max-w-md w-full shadow-lg"
-          aria-describedby={descId}
-        >
+        <Dialog.Panel className="bg-white dark:bg-charcoal-gray p-6 rounded-xl max-w-md w-full shadow-lg">
           <div className="flex justify-between items-center mb-4">
-            <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">
-              Invite Collaborator
-            </Dialog.Title>
+            <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">Invite Collaborator</Dialog.Title>
             <button onClick={onClose} className="text-gray-500 hover:text-red-500" aria-label="Close">
               <X size={20} />
             </button>
           </div>
 
-          <p id={descId} className="sr-only">
-            Enter the collaborator’s email and optional details, then send an invite.
-          </p>
-
           <div className="space-y-4">
             <div>
-              <label htmlFor="invite-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Email
-              </label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
               <input
-                id="invite-email"
-                ref={emailRef}
                 type="email"
                 className="w-full mt-1 px-3 py-2 rounded-md border shadow-sm focus:ring focus:ring-indigo-500"
                 value={email}
@@ -85,11 +81,8 @@ const InviteModal = ({ isOpen, onClose, defaultProjectId, inviterId, onInvited }
             </div>
 
             <div>
-              <label htmlFor="invite-role" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Role
-              </label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
               <select
-                id="invite-role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 className="w-full mt-1 px-3 py-2 rounded-md border shadow-sm"
@@ -101,11 +94,8 @@ const InviteModal = ({ isOpen, onClose, defaultProjectId, inviterId, onInvited }
             </div>
 
             <div>
-              <label htmlFor="invite-project" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Project ID (optional)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Project ID (optional)</label>
               <input
-                id="invite-project"
                 type="text"
                 className="w-full mt-1 px-3 py-2 rounded-md border shadow-sm"
                 value={projectId}
@@ -115,11 +105,8 @@ const InviteModal = ({ isOpen, onClose, defaultProjectId, inviterId, onInvited }
             </div>
 
             <div>
-              <label htmlFor="invite-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Message (optional)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Message (optional)</label>
               <textarea
-                id="invite-message"
                 className="w-full mt-1 px-3 py-2 rounded-md border shadow-sm h-20"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
