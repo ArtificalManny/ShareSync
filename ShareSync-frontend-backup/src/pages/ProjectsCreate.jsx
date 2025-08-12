@@ -1,234 +1,256 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PlusCircle, UserPlus, X, Trash2 } from 'lucide-react';
-import './ProjectsCreate.css';
-import client from '../api/client'; // ✅ use the shared axios instance
-import { getAccessToken } from '../utils/tokenUtils';
+// /src/pages/ProjectsCreate.jsx
+import React, { useState } from "react";
+import { Dialog } from "@headlessui/react";
+import { X, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { createProject } from "../api/projects";
+import { toast } from "../components/ui/toast";
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-export default function ProjectsCreate({ onProjectCreated, onClose }) {
+export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    category: '',
-    status: 'Not Started',
-    privacy: 'private',
-  });
-
+  // Form state (keep fields you actually render in your layout)
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [status, setStatus] = useState("Not Started"); // Not Started | In Progress | Completed
+  const [privacy, setPrivacy] = useState("Private");   // Private | Public
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberRole, setMemberRole] = useState("Member");
   const [members, setMembers] = useState([]);
-  const [newMember, setNewMember] = useState({ email: '', role: 'member' });
-
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  const updateField = (e) => {
-    const { name, value } = e.target;
-    setForm((s) => ({ ...s, [name]: value }));
-  };
 
   const addMember = () => {
-    if (!newMember.email.trim()) return;
-    if (!/^\S+@\S+\.\S+$/.test(newMember.email.trim())) {
-      setError('Please enter a valid member email.');
+    const email = memberEmail.trim();
+    if (!email) return;
+    setMembers((prev) => [...prev, { email, role: memberRole }]);
+    setMemberEmail("");
+    setMemberRole("Member");
+  };
+
+  const removeMember = (email) => {
+    setMembers((prev) => prev.filter((m) => m.email !== email));
+  };
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!title.trim()) {
+      toast({ title: "Title required", description: "Please add a title.", variant: "error" });
       return;
     }
-    setMembers((m) => [...m, { ...newMember }]);
-    setNewMember({ email: '', role: 'member' });
-    setError('');
-  };
-
-  const removeMember = (idx) => {
-    setMembers((m) => m.filter((_, i) => i !== idx));
-  };
-
-  const validate = () => {
-    if (!form.title.trim() || !form.description.trim() || !form.category.trim()) {
-      setError('Please fill all required fields: Title, Description, and Category.');
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    if (!validate()) return;
 
     setSubmitting(true);
     try {
-      // Ensure a token exists (most setups already inject via client interceptors; this is a safety net).
-      const token = getAccessToken?.();
       const payload = {
-        title: form.title.trim(),
-        description: form.description.trim(),
-        category: form.category.trim(),
-        status: form.status,
-        privacy: form.privacy,
-        members,
+        title: title.trim(),
+        description: description.trim(),
+        category: category.trim() || undefined,
+        status,
+        privacy,       // if your backend expects boolean, map here
+        members,       // [{ email, role }]
       };
 
-      const res = await client.post(
-        '/projects',
-        payload,
-        token
-          ? { baseURL: API_BASE, headers: { Authorization: `Bearer ${token}` } }
-          : { baseURL: API_BASE }
-      );
+      const project = await createProject(payload);
 
-      const project = res.data;
-      onProjectCreated && onProjectCreated(project);
-      navigate(`/projects/${project._id}`);
+      const id = project?._id || project?.id;
+      if (!id) throw new Error("Backend did not return an _id");
+
+      toast({ title: "Project created", description: `"${project.title}" is live.`, variant: "success" });
+
+      // Let Projects.jsx prepend the new row (optional)
+      onProjectCreated?.(project);
+
+      // Redirect to detail page
+      navigate(`/projects/${id}`);
+
+      onClose?.();
     } catch (err) {
       const msg =
-        err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
-        'Failed to create project';
-      if (String(err?.response?.status) === '401') {
-        setError('Unauthorized. Please log in again.');
-      } else {
-        setError(`Failed to create project: ${msg}`);
-      }
+        "Failed to create project";
+      toast({ title: "Create failed", description: msg, variant: "error" });
     } finally {
       setSubmitting(false);
     }
-  };
+  }
 
   return (
-    <div className="pc-modal">
-      <div className="pc-card">
-        <div className="pc-header">
-          <h1 className="pc-title">
-            <PlusCircle className="pc-title-icon" /> Create New Project
-          </h1>
-          {onClose && (
-            <button className="pc-icon-btn" onClick={onClose} aria-label="Close create project">
+    <Dialog open={true} onClose={onClose} className="fixed inset-0 z-50">
+      <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel className="w-full max-w-4xl rounded-2xl bg-white dark:bg-slate-800 shadow-xl">
+          {/* Header */}
+          <div className="flex items-center justify-between p-5 border-b border-slate-200/70 dark:border-slate-700">
+            <Dialog.Title className="text-xl font-bold text-ink-900 dark:text-white">
+              Create New Project
+            </Dialog.Title>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+              aria-label="Close create project dialog"
+            >
               <X size={18} />
             </button>
-          )}
-        </div>
-
-        <form onSubmit={handleSubmit} className="pc-form">
-          {error && <div className="pc-alert">{error}</div>}
-
-          <div className="pc-grid">
-            <div className="pc-field">
-              <label className="pc-label">Title *</label>
-              <input
-                name="title"
-                value={form.title}
-                onChange={updateField}
-                placeholder="Project title"
-                className="pc-input"
-              />
-            </div>
-
-            <div className="pc-field pc-col-span-2">
-              <label className="pc-label">Description *</label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={updateField}
-                placeholder="What are you building? Why now?"
-                className="pc-textarea"
-                rows={4}
-              />
-            </div>
-
-            <div className="pc-field">
-              <label className="pc-label">Category *</label>
-              <input
-                name="category"
-                value={form.category}
-                onChange={updateField}
-                placeholder="e.g., Personal, School, Work"
-                className="pc-input"
-              />
-            </div>
-
-            <div className="pc-field">
-              <label className="pc-label">Status</label>
-              <select name="status" value={form.status} onChange={updateField} className="pc-select">
-                <option value="Not Started">Not Started</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </div>
-
-            <div className="pc-field">
-              <label className="pc-label">Privacy</label>
-              <select name="privacy" value={form.privacy} onChange={updateField} className="pc-select">
-                <option value="private">Private</option>
-                <option value="public">Public</option>
-              </select>
-            </div>
           </div>
 
-          <div className="pc-divider" />
-
-          <div className="pc-members">
-            <div className="pc-members-header">
-              <h2 className="pc-section-title">
-                <UserPlus className="pc-section-icon" /> Add Members
-              </h2>
-              <div className="pc-members-row">
+          {/* Body */}
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Top row: Title / Description */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Title *
+                </label>
                 <input
-                  type="email"
-                  value={newMember.email}
-                  onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                  placeholder="member@email.com"
-                  className="pc-input"
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Project title"
+                  className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                  aria-required="true"
                 />
-                <select
-                  value={newMember.role}
-                  onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
-                  className="pc-select"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="member">Member</option>
-                  <option value="viewer">Viewer</option>
-                </select>
-                <button type="button" className="pc-btn" onClick={addMember}>
-                  <UserPlus size={16} /> Add
-                </button>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Description *
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What are you building? Why now?"
+                  className="mt-1 w-full h-[84px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                />
               </div>
             </div>
 
-            {members.length > 0 && (
-              <ul className="pc-member-list">
-                {members.map((m, i) => (
-                  <li key={`${m.email}-${i}`} className="pc-member-item">
-                    <span className="pc-member-email">{m.email}</span>
-                    <span className="pc-member-role">{m.role}</span>
-                    <button
-                      type="button"
-                      className="pc-icon-btn danger"
-                      onClick={() => removeMember(i)}
-                      aria-label="Remove member"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+            {/* Middle row: Category / Status / Privacy */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Category
+                </label>
+                <input
+                  type="text"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="e.g., Personal, School, Work"
+                  className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                />
+              </div>
 
-          <div className="pc-actions">
-            {onClose && (
-              <button type="button" className="pc-btn ghost" onClick={onClose}>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Status
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                >
+                  <option>Not Started</option>
+                  <option>In Progress</option>
+                  <option>Completed</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Privacy
+                </label>
+                <select
+                  value={privacy}
+                  onChange={(e) => setPrivacy(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                >
+                  <option>Private</option>
+                  <option>Public</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Add members */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Add Members
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_160px_120px] gap-3">
+                <input
+                  type="email"
+                  value={memberEmail}
+                  onChange={(e) => setMemberEmail(e.target.value)}
+                  placeholder="member@email.com"
+                  className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                />
+                <select
+                  value={memberRole}
+                  onChange={(e) => setMemberRole(e.target.value)}
+                  className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                >
+                  <option>Member</option>
+                  <option>Manager</option>
+                  <option>Viewer</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={addMember}
+                  className="btn btn-primary flex justify-center"
+                  aria-label="Add member"
+                >
+                  <Plus size={16} />
+                  <span className="ml-1">Add</span>
+                </button>
+              </div>
+
+              {members.length > 0 && (
+                <ul className="mt-3 space-y-2">
+                  {members.map((m) => (
+                    <li
+                      key={m.email}
+                      className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2"
+                    >
+                      <span className="text-sm">
+                        {m.email} <span className="text-slate-500">({m.role})</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeMember(m.email)}
+                        className="text-sm text-rose-600 hover:underline"
+                        aria-label={`Remove ${m.email}`}
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Footer buttons */}
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200/70 dark:border-slate-700">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={onClose}
+                disabled={submitting}
+              >
                 Cancel
               </button>
-            )}
-            <button type="submit" className="pc-btn primary" disabled={submitting}>
-              {submitting ? 'Creating…' : (<><PlusCircle size={16} /> Create Project</>)}
-            </button>
-          </div>
-        </form>
+              <button
+                type="submit"
+                className={`btn btn-primary ${submitting ? "opacity-70 cursor-wait" : ""}`}
+                disabled={submitting}
+              >
+                {submitting ? "Creating…" : "Create Project"}
+              </button>
+            </div>
+          </form>
+        </Dialog.Panel>
       </div>
-    </div>
+    </Dialog>
   );
 }

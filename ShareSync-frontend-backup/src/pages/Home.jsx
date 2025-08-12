@@ -1,66 +1,58 @@
-// src/pages/Home.jsx
-import React, { useState, useEffect, useContext } from 'react'
-import client from '../api/client'
-import { io } from 'socket.io-client'
-import { Link } from 'react-router-dom'
+// /src/pages/Home.jsx
+import React, { useState, useEffect, useContext } from 'react';
+import { io } from 'socket.io-client';
+import { Link } from 'react-router-dom';
 
-import WelcomeCard from '../components/WelcomeCard'
-import MomentumRing from '../components/MomentumRing.jsx'
-import HighlightsPanel from '../components/analytics/HighlightsPanel.jsx'
-import StatsPanel from '../components/analytics/StatsPanel'
-import ActivityLineGraph from '../components/analytics/ActivityLineGraph'
-import MomentumForecast from '../components/analytics/MomentumForecast'
-import ChartModal from '../components/analytics/ChartModal.jsx'
-import WeeklyReportModal from '../components/analytics/WeeklyReportModal.jsx'
-import ProjectsCreate from './ProjectsCreate.jsx'
+import client from '../api/client';
+import { getActivitySummary } from "../api/user.js";
 
-import formatProfilePicture from '../utils/formatProfilePicture'
-import { getRandomTip } from '../utils/productivityTips'
-import { generateDailyGoal } from '../utils/generateDailyGoal'
+import WelcomeCard from '../components/WelcomeCard';
+import MomentumRing from '../components/MomentumRing.jsx';
+import HighlightsPanel from '../components/analytics/HighlightsPanel.jsx';
+import ActivityLineGraph from '../components/analytics/ActivityLineGraph';
+import MomentumForecast from '../components/analytics/MomentumForecast';
+import ChartModal from '../components/analytics/ChartModal.jsx';
+import WeeklyReportModal from '../components/analytics/WeeklyReportModal.jsx';
+import ProjectsCreate from './ProjectsCreate.jsx';
 
-import LeaderboardCard from '../components/LeaderboardCard'
-import SocialPanel from '../components/social/SocialPanel'
-import PublicStreakFeed from '../components/feed/PublicStreakFeed'
-import LiveActivityFeed from '../components/LiveActivityFeed'
-import AssignedTasksPanel from '../components/AssignedTasksPanel'
-import PinnedForumPanel from '../components/PinnedForumPanel'
-import YourProjectsPanel from '../components/project/YourProjectsPanel'
-import AISuggestionCard from '../components/AISuggestionCard'
-import InviteModal from '../components/invite/InviteModal'
+import formatProfilePicture from '../utils/formatProfilePicture';
+import { getRandomTip } from '../utils/productivityTips';
+import { generateDailyGoal } from '../utils/generateDailyGoal';
 
-import { fetchAISuggestion } from '../api/ai'
-import { AuthContext } from '../AuthContext' // ✅ use existing context used elsewhere
+import LeaderboardCard from '../components/LeaderboardCard';
+import SocialPanel from '../components/social/SocialPanel';
+import PublicStreakFeed from '../components/feed/PublicStreakFeed';
+import LiveActivityFeed from '../components/LiveActivityFeed';
+import AssignedTasksPanel from '../components/AssignedTasksPanel';
+import PinnedForumPanel from '../components/PinnedForumPanel';
+import YourProjectsPanel from '../components/project/YourProjectsPanel';
+import AISuggestionCard from '../components/AISuggestionCard';
+import InviteModal from '../components/invite/InviteModal';
+import { AuthContext } from '../AuthContext';
 
-const DEFAULT_PROFILE_PIC = '/default-profile.png'
+const DEFAULT_PROFILE_PIC = '/default-profile.png';
 
 const getTierFromXP = (xp) => {
-  if (xp >= 2000) return 'Legend'
-  if (xp >= 1000) return 'Elite'
-  if (xp >= 500) return 'Rising Star'
-  return 'Novice'
-}
+  if (xp >= 2000) return 'Legend';
+  if (xp >= 1000) return 'Elite';
+  if (xp >= 500) return 'Rising Star';
+  return 'Novice';
+};
 
 const XPProgressRing = ({ xp }) => {
-  const radius = 40
-  const stroke = 8
-  const normalizedRadius = radius - stroke * 0.5
-  const circumference = normalizedRadius * 2 * Math.PI
-  const maxXP = 2000
-  const progress = Math.min(xp / maxXP, 1)
-  const strokeDashoffset = circumference - progress * circumference
+  const radius = 40;
+  const stroke = 8;
+  const normalizedRadius = radius - stroke * 0.5;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const maxXP = 2000;
+  const progress = Math.min(xp / maxXP, 1);
+  const strokeDashoffset = circumference - progress * circumference;
 
   return (
     <svg height={radius * 2} width={radius * 2} className="mx-auto block">
+      <circle stroke="#ccc" fill="transparent" strokeWidth={stroke} r={normalizedRadius} cx={radius} cy={radius} />
       <circle
-        stroke="#ccc"
-        fill="transparent"
-        strokeWidth={stroke}
-        r={normalizedRadius}
-        cx={radius}
-        cy={radius}
-      />
-      <circle
-        stroke="#FFD700"
+        stroke="#8B5CF6"
         fill="transparent"
         strokeWidth={stroke}
         strokeDasharray={circumference + ' ' + circumference}
@@ -69,60 +61,60 @@ const XPProgressRing = ({ xp }) => {
         cx={radius}
         cy={radius}
       />
-      <text
-        x="50%"
-        y="50%"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        className="text-xs font-bold text-gray-800"
-      >
+      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-xs font-bold text-gray-800">
         {xp} XP
       </text>
     </svg>
-  )
-}
+  );
+};
 
 export default function Home() {
-  const { user: authUser } = useContext(AuthContext) || {} // ✅ safe read
-  const [user, setUser] = useState(null)
-  const [projects, setProjects] = useState([])
-  const [feedItems, setFeedItems] = useState([])
-  const [forumPosts, setForumPosts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showProjectModal, setShowProjectModal] = useState(false)
-  const [taskCompletionRate, setTaskCompletionRate] = useState(0)
-  const [daysActive, setDaysActive] = useState(0)
-  const [longestStreak, setLongestStreak] = useState(0)
-  const [activityData, setActivityData] = useState([])
-  const [showChart, setShowChart] = useState(false)
-  const [xpHistory, setXpHistory] = useState([])
-  const [streakData, setStreakData] = useState([])
-  const [streakDays, setStreakDays] = useState(0)
-  const [tier, setTier] = useState('Newcomer')
-  const [xp, setXp] = useState(0)
-  const [showWeeklyReport, setShowWeeklyReport] = useState(false)
-  const [weeklyData, setWeeklyData] = useState({
-    tasksCompleted: 0,
-    xpEarned: 0,
-    streakChange: 0,
-    tip: getRandomTip()
-  })
-  const [inviteOpen, setInviteOpen] = useState(false)
-  const [aiSuggestion, setAiSuggestion] = useState('')
+  const { user: authUser } = useContext(AuthContext) || {};
+  const [user, setUser] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [feedItems, setFeedItems] = useState([]);
+  const [forumPosts, setForumPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showProjectModal, setShowProjectModal] = useState(false);
 
-  const smartGoal = generateDailyGoal(xp, streakDays)
+  // KPIs
+  const [taskCompletionRate, setTaskCompletionRate] = useState(0);
+  const [daysActive, setDaysActive] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
+  const [tasksThisWeek, setTasksThisWeek] = useState(0);
 
+  // Chart + extras
+  const [activitySeries, setActivitySeries] = useState([]); // [{date, value}]
+  const [xpHistory, setXpHistory] = useState([]);
+  const [streakData, setStreakData] = useState([]);
+  const [showChart, setShowChart] = useState(false);
+
+  // User progress
+  const [streakDays, setStreakDays] = useState(0);
+  const [tier, setTier] = useState('Newcomer');
+  const [xp, setXp] = useState(0);
+
+  // Weekly modal / AI
+  const [showWeeklyReport, setShowWeeklyReport] = useState(false);
+  const [weeklyData, setWeeklyData] = useState({ tasksCompleted: 0, xpEarned: 0, streakChange: 0, tip: getRandomTip() });
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState('');
+
+  // derived
+  const smartGoal = generateDailyGoal(xp, streakDays);
+
+  // Initial page fetches
   useEffect(() => {
     Promise.all([client.get('/projects'), client.get('/feed'), client.get('/user/me')])
       .then(([projRes, feedRes, userRes]) => {
-        setProjects(projRes.data)
-        setFeedItems(feedRes.data)
-        setUser(userRes.data)
+        setProjects(projRes.data);
+        setFeedItems(feedRes.data);
+        setUser(userRes.data);
 
-        const today = new Date()
-        const isMonday = today.getDay() === 1
-        const lastLoginDate = new Date(userRes.data.lastLogin)
-        const isTodayLogin = lastLoginDate.toDateString() === today.toDateString()
+        const today = new Date();
+        const isMonday = today.getDay() === 1;
+        const lastLoginDate = new Date(userRes.data.lastLogin);
+        const isTodayLogin = lastLoginDate.toDateString() === today.toDateString();
 
         if (isMonday && isTodayLogin) {
           client
@@ -132,91 +124,146 @@ export default function Home() {
                 tasksCompleted: res.data.tasksCompleted,
                 xpEarned: res.data.xpEarned,
                 streakChange: res.data.streakChange,
-                tip: getRandomTip()
-              })
-              setShowWeeklyReport(true)
+                tip: getRandomTip(),
+              });
+              setShowWeeklyReport(true);
             })
-            .catch((err) => console.error('Error fetching weekly summary:', err))
+            .catch((err) => console.error('Error fetching weekly summary:', err));
         }
       })
       .catch((err) => console.error('[Home] fetch error', err))
-      .finally(() => setLoading(false))
-  }, [])
+      .finally(() => setLoading(false));
+  }, []);
 
+  // Activity summary (KPI + chart)
   useEffect(() => {
-    client
-      .get('/user/activity-summary')
-      .then((res) => {
-        setXpHistory(res.data.xpHistory)
-        setStreakData(res.data.streakData)
-        setXp(res.data.totalXP)
-        setStreakDays(res.data.streakDays)
-        setTier(res.data.tier || getTierFromXP(res.data.totalXP))
-        setTaskCompletionRate(res.data.taskCompletionRate || 0)
-        setDaysActive(res.data.daysActive || 0)
-        setLongestStreak(res.data.longestStreak || 0)
-        setActivityData(res.data.activityCalendar || [])
+    let ignore = false;
+    (async () => {
+      try {
+        const s = await getActivitySummary('28d');
 
-        // 🔮 AI suggestion from backend
-        fetchAISuggestion({
-          streakDays: res.data.streakDays,
-          totalXP: res.data.totalXP,
-          tasksCompletedToday: res.data.tasksToday ?? 0,
-          tasksThisWeek:
-            res.data.tasksThisWeek ??
-            (res.data.activityCalendar?.slice?.(-7)?.reduce?.((acc, d) => acc + (d.count || 0), 0) || 0),
-          longestStreak: res.data.longestStreak ?? 0,
-          taskCompletionRate: res.data.taskCompletionRate ?? 0
-        })
-          .then(({ suggestion }) => setAiSuggestion(suggestion))
-          .catch((err) => {
-            console.error('[AI] suggestion fetch failed', err)
-            setAiSuggestion('Stay consistent and finish strong 💪')
-          })
-      })
-      .catch((err) => console.error('Error loading activity summary', err))
-  }, [])
+        if (ignore) return;
 
+        // KPIs
+        setXp(Number(s.totalXP ?? 0));
+        setStreakDays(Number(s.streakDays ?? 0));
+        setTier(s.tier || getTierFromXP(Number(s.totalXP ?? 0)));
+        setTaskCompletionRate(Number(s.taskCompletionRate ?? 0));
+        setDaysActive(Number(s.daysActive ?? 0));
+        setLongestStreak(Number(s.longestStreak ?? 0));
+        setTasksThisWeek(
+          Number(
+            s.tasksThisWeek ??
+              (Array.isArray(s.activityCalendar)
+                ? s.activityCalendar.slice(-7).reduce((acc, d) => acc + Number(d.count || 0), 0)
+                : 0)
+          )
+        );
+
+        // Time-series for chart
+        const series =
+          Array.isArray(s.activityCalendar) && s.activityCalendar.length
+            ? s.activityCalendar.map((d) => ({
+                date: d.date || d.day || d.ts || d._id,
+                value: Number(d.count ?? d.value ?? 0),
+              }))
+            : [];
+
+        setActivitySeries(series);
+
+        // Extras (for ChartModal)
+        setXpHistory(Array.isArray(s.xpHistory) ? s.xpHistory : []);
+        setStreakData(Array.isArray(s.streakData) ? s.streakData : []);
+
+        // AI suggestion (best-effort)
+        try {
+          const { data } = await client.post('/ai/suggestion', {
+            streakDays: s.streakDays,
+            totalXP: s.totalXP,
+            tasksCompletedToday: s.tasksToday ?? 0,
+            tasksThisWeek:
+              s.tasksThisWeek ??
+              (Array.isArray(s.activityCalendar) ? s.activityCalendar.slice(-7).reduce((a, d) => a + (d.count || 0), 0) : 0),
+            longestStreak: s.longestStreak ?? 0,
+            taskCompletionRate: s.taskCompletionRate ?? 0,
+          });
+          setAiSuggestion(data?.suggestion || 'Stay consistent and finish strong 💪');
+        } catch {
+          setAiSuggestion('Stay consistent and finish strong 💪');
+        }
+      } catch (e) {
+        console.error('[Home] activity-summary error', e);
+      }
+    })();
+    return () => { ignore = true; };
+  }, []);
+
+  // Realtime (optional)
   useEffect(() => {
-    const socket = io()
-    socket.on('newActivity', (activity) => {
-      setFeedItems((prev) => [activity, ...prev])
-    })
-    return () => socket.disconnect()
-  }, [])
+    const socket = io();
+    socket.on('newActivity', (activity) => setFeedItems((prev) => [activity, ...prev]));
+    return () => socket.disconnect();
+  }, []);
 
   const handleProjectCreated = (newProj) => {
-    setShowProjectModal(false)
-    setProjects((prev) => [newProj, ...prev])
-    window.location.href = `/projects/${newProj._id}`
-  }
+    setShowProjectModal(false);
+    setProjects((prev) => [newProj, ...prev]);
+    window.location.href = `/projects/${newProj._id}`;
+  };
 
-  const greeting = getGreeting()
-  const firstName = user?.firstName || 'User'
-  const username = user?.username
-  const profilePic = user?.profilePicture || DEFAULT_PROFILE_PIC
+  const greeting = (() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  })();
 
-  function getGreeting() {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 18) return 'Good afternoon'
-    return 'Good evening'
-  }
+  const firstName = user?.firstName || 'User';
+  const username = user?.username;
+  const profilePic = user?.profilePicture || DEFAULT_PROFILE_PIC;
 
   return (
     <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-100 dark:bg-gray-800 min-h-screen max-w-6xl mx-auto space-y-10">
 
-      {/* Invite Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setInviteOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-xl shadow"
-        >
-          📩 Invite Teammate
-        </button>
+      {/* Header strip (CNBC-ish) */}
+      <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Link to={`/profile/${username}`} className="shrink-0">
+            <img
+              src={formatProfilePicture(profilePic)}
+              alt="User profile"
+              className="w-12 h-12 rounded-full border border-slate-200 dark:border-slate-600"
+            />
+          </Link>
+          <div>
+            <div className="text-base font-semibold text-slate-900 dark:text-slate-100">
+              {greeting}, {firstName}
+            </div>
+            <div className="text-sm text-slate-500 dark:text-slate-400">Welcome back 👋</div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-8">
+          <div className="text-center">
+            <XPProgressRing xp={xp} />
+            <div className="text-xs mt-1 text-slate-500 dark:text-slate-400">Experience</div>
+          </div>
+
+          <div className="text-right">
+            <div className="text-xs text-slate-500 dark:text-slate-400">Tier</div>
+            <div className="text-indigo-600 dark:text-indigo-300 font-semibold">{tier}</div>
+          </div>
+
+          <button
+            onClick={() => setInviteOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow"
+          >
+            Invite Teammate
+          </button>
+        </div>
       </div>
 
-      {/* Invite Modal (guarded) */}
+      {/* Invite Modal */}
       {inviteOpen && (
         <InviteModal
           isOpen={inviteOpen}
@@ -226,35 +273,42 @@ export default function Home() {
         />
       )}
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
-        <Link to={`/profile/${username}`} className="text-center hover:opacity-90 transition">
-          <img
-            src={formatProfilePicture(profilePic)}
-            alt="Profile"
-            className="w-20 h-20 rounded-full border-4 border-indigo-500 shadow-lg"
-          />
-          <div className="mt-2 text-indigo-700 font-orbitron text-sm underline">View Profile</div>
-        </Link>
-        <XPProgressRing xp={xp} />
-        <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-300 font-orbitron">Tier</p>
-          <p className="text-xl font-bold text-indigo-600 dark:text-indigo-300">{tier}</p>
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 p-4">
+          <div className="text-xs text-slate-500">Streak</div>
+          <div className="text-xl font-semibold">{streakDays} days</div>
+        </div>
+        <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 p-4">
+          <div className="text-xs text-slate-500">Tasks this week</div>
+          <div className="text-xl font-semibold">{tasksThisWeek}</div>
+        </div>
+        <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 p-4">
+          <div className="text-xs text-slate-500">On-time completion</div>
+          <div className="text-xl font-semibold">{Math.round(taskCompletionRate * 100)}%</div>
+        </div>
+        <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 p-4">
+          <div className="text-xs text-slate-500">Active days (28d)</div>
+          <div className="text-xl font-semibold">{daysActive}</div>
         </div>
       </div>
 
+      {/* Welcome + insights */}
       <WelcomeCard
         greeting={`${greeting}, ${firstName}`}
         suggestion={smartGoal}
         profilePic={formatProfilePicture(profilePic)}
         streakDays={streakDays}
-        tasksCompleted={weeklyData.tasksCompleted}
+        tasksCompleted={tasksThisWeek}
         lastLogin={user?.lastLogin}
       />
 
+      {/* Real data Activity chart */}
+      <ActivityLineGraph data={activitySeries} title="Activity (last 28 days)" yLabel="Actions" />
+
+      {/* Optional extras retained */}
       <HighlightsPanel user={user} xp={xp} onSyncUser={(updatedUser) => setUser(updatedUser)} />
-      <StatsPanel taskCompletionRate={taskCompletionRate} daysActive={daysActive} longestStreak={longestStreak} />
-      <ActivityLineGraph />
-      <MomentumForecast streakDays={streakDays} tasksThisWeek={weeklyData.tasksCompleted} xp={xp} />
+      <MomentumForecast streakDays={streakDays} tasksThisWeek={tasksThisWeek} xp={xp} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <MomentumRing streakDays={streakDays} xp={xp} tier={tier} onClick={() => setShowChart(true)} />
@@ -288,7 +342,6 @@ export default function Home() {
         <LiveActivityFeed feedItems={feedItems} />
       </div>
 
-      {/* AI suggestion from backend */}
       <AISuggestionCard message={aiSuggestion || 'Stay consistent and finish strong 💪'} />
 
       {showProjectModal && (
@@ -299,5 +352,5 @@ export default function Home() {
         <WeeklyReportModal isOpen={showWeeklyReport} onClose={() => setShowWeeklyReport(false)} data={weeklyData} />
       )}
     </div>
-  )
+  );
 }

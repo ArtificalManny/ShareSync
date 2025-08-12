@@ -1,12 +1,11 @@
-// src/api/user.js
+// /src/api/user.js
 import client from './client';
 
-export const updateLoginActivity = async () => {
-  try {
-    const res = await client.post('/users/login-activity');
-    return res.data;
-  } catch (err) {
-    console.error('[updateLoginActivity] Failed:', err);
-    return null;
-  }
-};
+/**
+ * GET /api/user/activity-summary?range=28d
+ * Returns totals + time-series used by KPI row and Activity chart.
+ */
+export async function getActivitySummary(range = '28d') {
+  const { data } = await client.get(`/user/activity-summary?range=${range}`);
+  return data;
+}

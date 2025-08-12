@@ -1,1092 +1,148 @@
-// src/pages/ProjectHome.jsx
-import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { AuthContext } from '../AuthContext';
-import {
-  fetchProjectById,
-  updateProject,
-  createPost,
-  createTask,
-  createSubtask,
-  updateTaskStatus,
-  likeTask,
-  shareTask,
-  addTaskComment,
-  uploadFile,
-  approveFile,
-  createTeam,
-  inviteUser,
-  addSuggestion,
-  updateNotificationSettings
-} from '../services/project.js';
-import {
-  Folder,
-  AlertCircle,
-  Plus,
-  Edit,
-  Trash,
-  CheckSquare,
-  FileText,
-  Share2,
-  ThumbsUp,
-  MessageSquare,
-  Users,
-  Settings,
-  AtSign,
-  X
-} from 'lucide-react';
-import './ProjectHome.css';
-import axios from 'axios';
-import ProjectActivityFeed from '../components/project/ProjectActivityFeed';
-import { logActivityClient } from '../utils/logActivity';
+// /src/pages/ProjectHome.jsx
+import React, { useEffect, useState, useMemo } from "react";
+import { useParams, Link } from "react-router-dom";
 
-const ProjectHome = () => {
+function timeAgo(date) {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const diff = Math.max(0, Date.now() - (d?.getTime?.() || Date.now()));
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const dys = Math.floor(h / 24);
+  if (dys < 30) return `${dys}d ago`;
+  const mo = Math.floor(dys / 30);
+  if (mo < 12) return `${mo}mo ago`;
+  const y = Math.floor(mo / 12);
+  return `${y}y ago`;
+}
+
+export default function ProjectHome() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, authError, socket } = useContext(AuthContext);
   const [project, setProject] = useState(null);
-  const [error, setError] = useState('');
-  const [isEditingProject, setIsEditingProject] = useState(false);
-  const [projectForm, setProjectForm] = useState({ title: '', description: '', category: '', status: '' });
-  const [newPost, setNewPost] = useState({ type: 'announcement', content: '' });
-  const [newTask, setNewTask] = useState({ title: '', description: '', assignedTo: '', dueDate: '' });
-  const [newSubtask, setNewSubtask] = useState({ title: '', taskId: '' });
-  const [newFile, setNewFile] = useState(null);
-  const [newTeam, setNewTeam] = useState({ name: '', members: [] });
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [newSuggestion, setNewSuggestion] = useState('');
-  const [notificationSettings, setNotificationSettings] = useState({ emailNotifications: true, inAppNotifications: true });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const loadProject = async () => {
-      if (isLoading) return;
-
-      if (!isAuthenticated) {
-        navigate('/login', { replace: true });
-        return;
-      }
-
+    let ignore = false;
+    (async () => {
+      setLoading(true);
+      setError("");
       try {
-        const projectData = await fetchProjectById(id);
-        setProject(projectData);
-        setProjectForm({
-          title: projectData.title || '',
-          description: projectData.description || '',
-          category: projectData.category || '',
-          status: projectData.status || '',
-        });
-      } catch (err) {
-        setError('Failed to load project: ' + (err.message || 'Please try again.'));
+        const res = await fetch(`/api/projects/${id}`, { credentials: "include" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!ignore) setProject(data);
+      } catch (e) {
+        if (!ignore) setError("Failed to load project.");
+      } finally {
+        if (!ignore) setLoading(false);
       }
-    };
+    })();
+    return () => { ignore = true; };
+  }, [id]);
 
-    loadProject();
-
-    if (socket) {
-      socket.on('project-updated', (data) => {
-        if (data.project._id === id) {
-          setProject(data.project);
-        }
-      });
-
-      return () => {
-        socket.off('project-updated');
-      };
-    }
-  }, [id, isAuthenticated, isLoading, navigate, socket]);
-
-  const handleProjectUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      const updatedProject = await updateProject(id, projectForm);
-      setProject(updatedProject);
-      setIsEditingProject(false);
-
-      if (socket) {
-        socket.emit('project-updated', { project: updatedProject, userId: user?._id });
-      }
-
-      // ✅ log project:update
-      logActivityClient({
-        type: 'project:update',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        title: updatedProject?.title
-      });
-    } catch (err) {
-      setError('Failed to update project: ' + err.message);
-    }
-  };
-
-  const handleCreatePost = async (e) => {
-    e.preventDefault();
-    try {
-      const post = await createPost(id, newPost);
-
-      // Mentions → notifications
-      const mentions = newPost.content.match(/@(\w+)/g)?.map(mention => mention.slice(1)) || [];
-      if (mentions.length > 0 && socket) {
-        mentions.forEach(mentionedUser => {
-          socket.emit('notification', {
-            user: mentionedUser,
-            message: `${user?.username} mentioned you in a post in project "${project?.title}"`
-          });
-        });
-      }
-
-      setProject((prev) => ({
-        ...prev,
-        posts: [...(prev.posts || []), post],
-      }));
-      setNewPost({ type: 'announcement', content: '' });
-
-      if (socket) {
-        socket.emit('feed-update', { ...post, projectId: id, projectTitle: project?.title });
-      }
-
-      // ✅ log post:create
-      logActivityClient({
-        type: 'post:create',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        postId: post?._id
-      });
-    } catch (err) {
-      setError('Failed to create post: ' + err.message);
-    }
-  };
-
-  const handleCreateTask = async (e) => {
-    e.preventDefault();
-    try {
-      const task = await createTask(id, newTask);
-
-      setProject((prev) => ({
-        ...prev,
-        tasks: [...(prev.tasks || []), task],
-      }));
-      setNewTask({ title: '', description: '', assignedTo: '', dueDate: '' });
-
-      // ✅ log task:create
-      logActivityClient({
-        type: 'task:create',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        taskId: task?._id,
-        title: task?.title
-      });
-    } catch (err) {
-      setError('Failed to create task: ' + err.message);
-    }
-  };
-
-  const handleCreateSubtask = async (taskId) => {
-    try {
-      const subtask = await createSubtask(id, taskId, { title: newSubtask.title });
-
-      setProject((prev) => ({
-        ...prev,
-        tasks: prev.tasks.map(t =>
-          t._id === taskId ? { ...t, subtasks: [...(t.subtasks || []), subtask] } : t
-        ),
-      }));
-      setNewSubtask({ title: '', taskId: '' });
-
-      // ✅ log subtask:create
-      logActivityClient({
-        type: 'subtask:create',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        taskId,
-        subtaskId: subtask?._id,
-        title: subtask?.title
-      });
-    } catch (err) {
-      setError('Failed to create subtask: ' + err.message);
-    }
-  };
-
-  const handleUpdateTaskStatus = async (taskId, status) => {
-    try {
-      const updatedTask = await updateTaskStatus(id, taskId, status);
-
-      setProject((prev) => ({
-        ...prev,
-        tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
-      }));
-
-      // ✅ log task:complete when applicable
-      if (status === 'Completed') {
-        logActivityClient({
-          type: 'task:complete',
-          userId: user?._id,
-          username: user?.username,
-          projectId: id,
-          taskId: updatedTask?._id,
-          title: updatedTask?.title
-        });
-      }
-    } catch (err) {
-      setError('Failed to update task status: ' + err.message);
-    }
-  };
-
-  const handleLikeTask = async (taskId) => {
-    try {
-      const updatedTask = await likeTask(id, taskId);
-
-      setProject((prev) => ({
-        ...prev,
-        tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
-      }));
-
-      if (socket) {
-        socket.emit('notification', {
-          user: updatedTask.assignedTo,
-          message: `${user?.username} liked your task "${updatedTask.title}" in project "${project?.title}"`,
-        });
-      }
-
-      // ✅ log task:like
-      logActivityClient({
-        type: 'task:like',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        taskId: updatedTask?._id,
-        title: updatedTask?.title
-      });
-    } catch (err) {
-      setError('Failed to like task: ' + err.message);
-    }
-  };
-
-  const handleShareTask = async (taskId) => {
-    try {
-      const updatedTask = await shareTask(id, taskId);
-
-      setProject((prev) => ({
-        ...prev,
-        tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
-      }));
-
-      // ✅ log task:share
-      logActivityClient({
-        type: 'task:share',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        taskId: updatedTask?._id,
-        title: updatedTask?.title
-      });
-
-      alert('Task shared! (Mock action—implement sharing logic as needed.)');
-    } catch (err) {
-      setError('Failed to share task: ' + err.message);
-    }
-  };
-
-  const handleAddTaskComment = async (taskId, commentText) => {
-    try {
-      const updatedTask = await addTaskComment(id, taskId, { text: commentText, user: user.email });
-
-      setProject((prev) => ({
-        ...prev,
-        tasks: prev.tasks.map(t => (t._id === taskId ? updatedTask : t)),
-      }));
-
-      if (socket) {
-        socket.emit('notification', {
-          user: updatedTask.assignedTo,
-          message: `${user?.username} commented on your task "${updatedTask.title}" in project "${project?.title}"`,
-        });
-      }
-
-      // ✅ log comment add
-      logActivityClient({
-        type: 'task:comment',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        taskId: updatedTask?._id,
-        title: updatedTask?.title
-      });
-    } catch (err) {
-      setError('Failed to add comment: ' + err.message);
-    }
-  };
-
-  const handleFileUpload = async (e) => {
-    e.preventDefault();
-    if (!newFile) return;
-
-    try {
-      const fileData = new FormData();
-      fileData.append('file', newFile);
-      const uploadedFile = await uploadFile(id, fileData);
-
-      setProject((prev) => ({
-        ...prev,
-        files: [...(prev.files || []), uploadedFile],
-      }));
-      setNewFile(null);
-
-      // ✅ log file:upload
-      logActivityClient({
-        type: 'file:upload',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        fileId: uploadedFile?._id,
-        name: uploadedFile?.name
-      });
-    } catch (err) {
-      setError('Failed to upload file: ' + err.message);
-    }
-  };
-
-  const handleApproveFile = async (fileId, status) => {
-    try {
-      const updatedFile = await approveFile(id, fileId, status);
-
-      setProject((prev) => ({
-        ...prev,
-        files: prev.files.map(f => (f._id === fileId ? updatedFile : f)),
-      }));
-
-      // ✅ optional log (review)
-      logActivityClient({
-        type: 'file:review',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        fileId,
-        name: updatedFile?.name,
-        status
-      });
-    } catch (err) {
-      setError('Failed to update file status: ' + err.message);
-    }
-  };
-
-  const handleCreateTeam = async (e) => {
-    e.preventDefault();
-    try {
-      const team = await createTeam(id, newTeam);
-
-      setProject((prev) => ({
-        ...prev,
-        teams: [...(prev.teams || []), team],
-      }));
-      setNewTeam({ name: '', members: [] });
-
-      // ✅ log team:create
-      logActivityClient({
-        type: 'team:create',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        teamId: team?._id,
-        title: team?.name
-      });
-    } catch (err) {
-      setError('Failed to create team: ' + err.message);
-    }
-  };
-
-  const handleInviteUser = async (e) => {
-    e.preventDefault();
-    try {
-      await inviteUser(id, inviteEmail);
-      setInviteEmail('');
-
-      if (socket) {
-        socket.emit('notification', {
-          user: inviteEmail,
-          message: `${user?.username} invited you to join project "${project?.title}"`,
-        });
-      }
-
-      // ✅ log invite:sent
-      logActivityClient({
-        type: 'invite:sent',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        target: inviteEmail
-      });
-
-      alert('Invitation sent! (Mock action—implement email logic as needed.)');
-    } catch (err) {
-      setError('Failed to invite user: ' + err.message);
-    }
-  };
-
-  const handleAddSuggestion = async (e) => {
-    e.preventDefault();
-    try {
-      const suggestion = await addSuggestion(id, { content: newSuggestion, user: user.email });
-
-      setProject((prev) => ({
-        ...prev,
-        suggestions: [...(prev.suggestions || []), suggestion],
-      }));
-      setNewSuggestion('');
-
-      // ✅ log suggestion:add
-      logActivityClient({
-        type: 'suggestion:add',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id,
-        suggestionId: suggestion?._id
-      });
-    } catch (err) {
-      setError('Failed to add suggestion: ' + err.message);
-    }
-  };
-
-  const handleUpdateNotificationSettings = async (e) => {
-    e.preventDefault();
-    try {
-      const updatedSettings = await updateNotificationSettings(id, notificationSettings);
-
-      setProject((prev) => ({
-        ...prev,
-        settings: { ...prev.settings, ...updatedSettings },
-      }));
-
-      // ✅ log settings:update
-      logActivityClient({
-        type: 'settings:update',
-        userId: user?._id,
-        username: user?.username,
-        projectId: id
-      });
-    } catch (err) {
-      setError('Failed to update notification settings: ' + err.message);
-    }
-  };
-
-  // NOTE: unused in this page, kept as-is (safe but not called)
-  const handleProjectCreated = (newProject) => {
-    setShowProjectModal(false);
-    setProjects((prev) => [newProject, ...prev]);
-    window.location.href = `/projects/${newProject._id}`;
-  };
-
-  if (isLoading) {
-    return (
-      <div className="project-home-container flex items-center justify-center min-h-screen">
-        <div className="loader" aria-label="Loading project"></div>
-        <span className="text-saffron-yellow text-xl font-orbitron ml-4">Loading...</span>
-      </div>
-    );
-  }
-
-  if (authError || error) {
-    return (
-      <div className="project-home-container flex items-center justify-center min-h-screen">
-        <p className="text-crimson-red text-lg font-orbitron">{authError || error}</p>
-      </div>
-    );
-  }
-
-  if (!project) {
-    return (
-      <div className="project-home-container flex items-center justify-center min-h-screen">
-        <p className="text-saffron-yellow text-lg font-orbitron">Project not found.</p>
-      </div>
-    );
-  }
+  const updatedAt = useMemo(
+    () =>
+      new Date(
+        project?.updatedAt || project?.lastActivityAt || project?.createdAt || Date.now()
+      ),
+    [project?.updatedAt, project?.lastActivityAt, project?.createdAt]
+  );
 
   return (
-    <div className="project-home-container">
-      <div className="project-header py-8 px-6 rounded-b-3xl text-center glassmorphic">
-        {isEditingProject ? (
-          <form onSubmit={handleProjectUpdate} className="max-w-2xl mx-auto">
-            <input
-              type="text"
-              value={projectForm.title}
-              onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
-              className="input-field text-4xl font-orbitron font-bold text-emerald-green mb-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-              placeholder="Project Title"
-              aria-label="Project Title"
-            />
-            <textarea
-              value={projectForm.description}
-              onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-              placeholder="Project Description"
-              rows="3"
-              aria-label="Project Description"
-            ></textarea>
-            <div className="flex gap-4 mt-4">
-              <select
-                value={projectForm.category}
-                onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
-                className="input-field rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-                aria-label="Project Category"
-              >
-                <option value="Personal">Personal</option>
-                <option value="School">School</option>
-                <option value="Job">Job</option>
-              </select>
-              <select
-                value={projectForm.status}
-                onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value })}
-                className="input-field rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-                aria-label="Project Status"
-              >
-                <option value="Not Started">Not Started</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-              </select>
+    <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      {/* Top bar */}
+      <div className="max-w-4xl mx-auto flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            {project?.title || (loading ? "Loading…" : "Project")}
+          </h1>
+          {project?.category && (
+            <div className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600">
+              {project.category}
             </div>
-            <div className="flex gap-2 mt-4">
-              <button
-                type="submit"
-                className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-                aria-label="Save project changes"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => setIsEditingProject(false)}
-                className="btn-primary rounded-full flex items-center bg-crimson-red focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-                aria-label="Cancel editing"
-              >
-                <X className="w-5 h-5" aria-hidden="true" />
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="max-w-2xl mx-auto">
-            <div className="flex justify-between items-center">
-              <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-4 animate-pulse">{project.title}</h1>
-              <button
-                onClick={() => setIsEditingProject(true)}
-                className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-                aria-label="Edit project"
-              >
-                <Edit className="w-5 h-5 animate-orbit" aria-hidden="true" />
-              </button>
-            </div>
-            <p className="text-saffron-yellow text-lg font-inter mb-4">{project.description}</p>
-            <p className="text-lavender-gray font-inter">Category: {project.category}</p>
-            <p className="text-lavender-gray font-inter">Status: {project.status}</p>
-          </div>
-        )}
+          )}
+        </div>
+        <Link
+          to="/projects"
+          className="rounded-full border px-3 py-1 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+          aria-label="Back to Projects"
+        >
+          Back
+        </Link>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        {error && (
-          <p className="text-crimson-red mb-4 text-center font-orbitron flex items-center gap-2 justify-center">
-            <AlertCircle className="w-5 h-5 animate-bounce" aria-hidden="true" /> {error}
-          </p>
+      {/* Content */}
+      <div className="max-w-4xl mx-auto space-y-4">
+        {loading && (
+          <div className="rounded-2xl p-6 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 animate-pulse">
+            <div className="h-5 w-1/3 bg-slate-200 dark:bg-slate-700 rounded mb-3" />
+            <div className="h-4 w-2/3 bg-slate-200 dark:bg-slate-700 rounded" />
+          </div>
         )}
 
-        {/* Posts Section */}
-        <div className="posts-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <FileText className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Posts
-          </h2>
-          <form onSubmit={handleCreatePost} className="mb-4">
-            <select
-              value={newPost.type}
-              onChange={(e) => setNewPost({ ...newPost, type: e.target.value })}
-              className="input-field rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
-              aria-label="Post Type"
-            >
-              <option value="announcement">Announcement</option>
-              <option value="update">Update</option>
-            </select>
-            <div className="relative">
-              <textarea
-                value={newPost.content}
-                onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-                className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2 pl-10"
-                placeholder="Write a post... (e.g., @username to mention someone)"
-                rows="3"
-                aria-label="Post Content"
-              ></textarea>
-              <AtSign className="absolute left-3 top-3 w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" />
-            </div>
-            <button
-              type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-              aria-label="Create Post"
-            >
-              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Post
-            </button>
-          </form>
-          {(project.posts || []).length === 0 ? (
-            <p className="text-saffron-yellow font-inter flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No posts yet.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {project.posts.map((post, index) => (
-                <div key={index} className="post-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg animate-fade-in">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="relative">
-                      <img
-                        src={user?.profilePicture || 'https://via.placeholder.com/32'}
-                        alt={`${post.author}'s profile`}
-                        className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
-                      />
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
-                    </div>
-                    <div>
-                      <p className="text-indigo-vivid font-orbitron font-medium">{post.type.toUpperCase()}</p>
-                      <p className="text-lavender-gray font-inter">
-                        {post.content.split(/(@\w+)/g).map((part, i) =>
-                          part.match(/@\w+/) ? (
-                            <span key={i} className="text-indigo-vivid font-bold hover:underline">
-                              {part}
-                            </span>
-                          ) : (
-                            part
-                          )
-                        )}
-                      </p>
-                      <p className="text-lavender-gray text-sm font-inter">
-                        By {post.author} at {new Date(post.timestamp).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
+        {!!error && !loading && (
+          <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-rose-200/60 dark:border-rose-400/20">
+            <p className="text-rose-600 dark:text-rose-400">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && project && (
+          <>
+            <div className="rounded-2xl p-6 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Overview</h2>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                {project.description || "No description."}
+              </p>
+
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                <div className="rounded-xl border p-3">
+                  <div className="text-slate-500">Status</div>
+                  <div className="font-medium">{project.status || "Not Started"}</div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Tasks Section */}
-        <div className="tasks-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <CheckSquare className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Tasks
-          </h2>
-        <form onSubmit={handleCreateTask} className="mb-4">
-            <input
-              type="text"
-              value={newTask.title}
-              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
-              placeholder="Task Title"
-              aria-label="Task Title"
-            />
-            <textarea
-              value={newTask.description}
-              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
-              placeholder="Task Description"
-              rows="2"
-              aria-label="Task Description"
-            ></textarea>
-            <input
-              type="text"
-              value={newTask.assignedTo}
-              onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
-              placeholder="Assigned To (email)"
-              aria-label="Assigned To"
-            />
-            <input
-              type="date"
-              value={newTask.dueDate}
-              onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
-              aria-label="Due Date"
-            />
-            <button
-              type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-              aria-label="Create Task"
-            >
-              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Add Task
-            </button>
-          </form>
-          {(project.tasks || []).length === 0 ? (
-            <p className="text-saffron-yellow font-inter flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No tasks yet.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {project.tasks.map((task) => (
-                <div key={task._id} className="task-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg animate-fade-in">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <img
-                          src={user?.profilePicture || 'https://via.placeholder.com/32'}
-                          alt={`${task.assignedTo}'s profile`}
-                          className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
-                        />
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
-                      </div>
-                      <h3 className="text-lg font-orbitron font-bold text-indigo-vivid">{task.title}</h3>
-                    </div>
-                    <select
-                      value={task.status}
-                      onChange={(e) => handleUpdateTaskStatus(task._id, e.target.value)}
-                      className="input-field rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-                      aria-label={`Status for task ${task.title}`}
-                    >
-                      <option value="Not Started">Not Started</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                  <p className="text-lavender-gray font-inter">{task.description}</p>
-                  <p className="text-lavender-gray text-sm font-inter">Assigned To: {task.assignedTo}</p>
-                  <p className="text-lavender-gray text-sm font-inter">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</p>
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => handleLikeTask(task._id)}
-                      className="flex items-center gap-1 text-charcoal-gray hover:text-neon-coral focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-                      aria-label={`Like task ${task.title}`}
-                    >
-                      <ThumbsUp className="w-4 h-4 animate-pulse" aria-hidden="true" /> {task.likes || 0}
-                    </button>
-                    <button
-                      onClick={() => handleShareTask(task._id)}
-                      className="flex items-center gap-1 text-charcoal-gray hover:text-neon-coral focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-                      aria-label={`Share task ${task.title}`}
-                    >
-                      <Share2 className="w-4 h-4 animate-orbit" aria-hidden="true" /> {task.shares || 0}
-                    </button>
-                  </div>
-                  {/* Subtasks */}
-                  <div className="subtasks mt-4">
-                    <h4 className="text-md font-orbitron font-semibold text-emerald-green mb-2 flex items-center">
-                      <Folder className="w-4 h-4 mr-2 animate-pulse" aria-hidden="true" /> Subtasks
-                    </h4>
-                    {(task.subtasks || []).map((subtask) => (
-                      <div key={subtask._id} className="subtask-item p-2 bg-charcoal-gray bg-opacity-20 rounded-lg mb-2 animate-fade-in">
-                        <p className="text-lavender-gray font-inter">{subtask.title}</p>
-                      </div>
-                    ))}
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        handleCreateSubtask(task._id);
-                      }}
-                      className="flex gap-2 mt-2"
-                    >
-                      <input
-                        type="text"
-                        value={newSubtask.title}
-                        onChange={(e) => setNewSubtask({ title: e.target.value, taskId: task._id })}
-                        className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-                        placeholder="Subtask Title"
-                        aria-label="Subtask Title"
-                      />
-                      <button
-                        type="submit"
-                        className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-                        aria-label="Add Subtask"
-                      >
-                        <Plus className="w-5 h-5 animate-orbit" aria-hidden="true" />
-                      </button>
-                    </form>
-                  </div>
-                  {/* Comments */}
-                  <div className="comments mt-4">
-                    <h4 className="text-md font-orbitron font-semibold text-emerald-green mb-2 flex items-center">
-                      <MessageSquare className="w-4 h-4 mr-2 animate-pulse" aria-hidden="true" /> Comments
-                    </h4>
-                    {(task.comments || []).map((comment, index) => (
-                      <div key={index} className="comment-item p-2 bg-charcoal-gray bg-opacity-20 rounded-lg mb-2 animate-fade-in">
-                        <div className="flex items-center gap-2">
-                          <div className="relative">
-                            <img
-                              src={user?.profilePicture || 'https://via.placeholder.com/32'}
-                              alt={`${comment.user}'s profile`}
-                              className="w-6 h-6 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
-                            />
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
-                          </div>
-                          <div>
-                            <p className="text-lavender-gray font-inter">{comment.text}</p>
-                            <p className="text-lavender-gray text-sm font-inter">By {comment.user} at {new Date(comment.timestamp).toLocaleString()}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const commentText = e.target.comment.value;
-                        if (commentText.trim()) {
-                          handleAddTaskComment(task._id, commentText);
-                          e.target.comment.value = '';
-                        }
-                      }}
-                      className="flex gap-2 mt-2"
-                    >
-                      <input
-                        type="text"
-                        name="comment"
-                        className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray"
-                        placeholder="Add a comment..."
-                        aria-label="Comment"
-                      />
-                      <button
-                        type="submit"
-                        className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-                        aria-label="Add Comment"
-                      >
-                        <MessageSquare className="w-5 h-5 animate-orbit" aria-hidden="true" />
-                      </button>
-                    </form>
-                  </div>
+                <div className="rounded-xl border p-3">
+                  <div className="text-slate-500">Privacy</div>
+                  <div className="font-medium">{project.privacy || "Private"}</div>
                 </div>
-              ))}
+                <div className="rounded-xl border p-3">
+                  <div className="text-slate-500">Updated</div>
+                  <div className="font-medium">{timeAgo(updatedAt)}</div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Files Section */}
-        <div className="files-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <FileText className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Files
-          </h2>
-          <form onSubmit={handleFileUpload} className="mb-4">
-            <input
-              type="file"
-              onChange={(e) => setNewFile(e.target.files[0])}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
-              aria-label="Upload File"
-            />
-            <button
-              type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-              aria-label="Upload File"
-            >
-              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Upload File
-            </button>
-          </form>
-          {(project.files || []).length === 0 ? (
-            <p className="text-saffron-yellow font-inter flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No files yet.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {project.files.map((file) => (
-                <div key={file._id} className="file-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg flex justify-between items-center animate-fade-in">
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <img
-                        src={user?.profilePicture || 'https://via.placeholder.com/32'}
-                        alt={`${file.uploadedBy}'s profile`}
-                        className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
-                      />
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
-                    </div>
-                    <div>
-                      <p className="text-lavender-gray font-inter">{file.name}</p>
-                      <p className="text-lavender-gray text-sm font-inter">Uploaded by {file.uploadedBy} at {new Date(file.uploadedAt).toLocaleString()}</p>
-                      <p className="text-lavender-gray text-sm font-inter">Status: {file.status || 'Pending'}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleApproveFile(file._id, 'Approved')}
-                      className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-                      aria-label={`Approve file ${file.name}`}
+            {/* Members */}
+            <div className="rounded-2xl p-6 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Members</h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(project.members || []).length === 0 && (
+                  <span className="text-sm text-slate-500">No members yet.</span>
+                )}
+                {(project.members || []).map((m, i) => {
+                  const label = m?.username || m?.email || "Member";
+                  const initials =
+                    (label.replace(/@.*$/, "").match(/[A-Za-z]/g) || [])
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase() || "??";
+                  return (
+                    <div
+                      key={`${label}-${i}`}
+                      title={label}
+                      className="h-8 w-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-[11px] font-medium border border-white shadow-sm"
                     >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleApproveFile(file._id, 'Rejected')}
-                      className="btn-primary rounded-full flex items-center bg-crimson-red focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-                      aria-label={`Reject file ${file.name}`}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Teams Section */}
-        <div className="teams-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <Users className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Teams
-          </h2>
-          <form onSubmit={handleCreateTeam} className="mb-4">
-            <input
-              type="text"
-              value={newTeam.name}
-              onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
-              placeholder="Team Name"
-              aria-label="Team Name"
-            />
-            <input
-              type="text"
-              value={newTeam.members.join(', ')}
-              onChange={(e) => setNewTeam({ ...newTeam, members: e.target.value.split(',').map(m => m.trim()) })}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
-              placeholder="Members (comma-separated emails)"
-              aria-label="Team Members"
-            />
-            <button
-              type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-              aria-label="Create Team"
-            >
-              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Create Team
-            </button>
-          </form>
-          {(project.teams || []).length === 0 ? (
-            <p className="text-saffron-yellow font-inter flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No teams yet.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {project.teams.map((team) => (
-                <div key={team._id} className="team-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg animate-fade-in">
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <img
-                        src={user?.profilePicture || 'https://via.placeholder.com/32'}
-                        alt="Team creator's profile"
-                        className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
-                      />
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
+                      {initials}
                     </div>
-                    <div>
-                      <p className="text-indigo-vivid font-orbitron font-medium">{team.name}</p>
-                      <p className="text-lavender-gray font-inter">Members: {team.members.join(', ')}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
-          )}
-        </div>
-
-        {/* Invite Users */}
-        <div className="invite-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <Users className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Invite Users
-          </h2>
-          <form onSubmit={handleInviteUser}>
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
-              placeholder="Enter email to invite"
-              aria-label="Invite Email"
-            />
-            <button
-              type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-              aria-label="Invite User"
-            >
-              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Invite
-            </button>
-          </form>
-        </div>
-
-        {/* Suggestions Section */}
-        <div className="suggestions-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <MessageSquare className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Suggestions
-          </h2>
-          <form onSubmit={handleAddSuggestion} className="mb-4">
-            <textarea
-              value={newSuggestion}
-              onChange={(e) => setNewSuggestion(e.target.value)}
-              className="input-field w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-charcoal-gray mb-2"
-              placeholder="Add a suggestion..."
-              rows="3"
-              aria-label="Suggestion"
-            ></textarea>
-            <button
-              type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-              aria-label="Add Suggestion"
-            >
-              <Plus className="w-5 h-5 mr-2 animate-orbit" aria-hidden="true" /> Add Suggestion
-            </button>
-          </form>
-          {(project.suggestions || []).length === 0 ? (
-            <p className="text-saffron-yellow font-inter flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-charcoal-gray animate-pulse" aria-hidden="true" /> No suggestions yet.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {project.suggestions.map((suggestion, index) => (
-                <div key={index} className="suggestion-item p-4 bg-saffron-yellow bg-opacity-20 rounded-lg animate-fade-in">
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <img
-                        src={user?.profilePicture || 'https://via.placeholder.com/32'}
-                        alt={`${suggestion.user}'s profile`}
-                        className="w-8 h-8 rounded-full profile-pic border-2 border-indigo-vivid shadow-lg"
-                      />
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-green rounded-full border-2 border-charcoal-gray animate-pulse"></div>
-                    </div>
-                    <div>
-                      <p className="text-lavender-gray font-inter">{suggestion.content}</p>
-                      <p className="text-lavender-gray text-sm font-inter">By {suggestion.user}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Notification Settings */}
-        <div className="notification-settings-section mb-8 card p-6 glassmorphic holographic-effect card-3d">
-          <h2 className="text-2xl font-orbitron font-semibold text-emerald-green mb-4 flex items-center">
-            <Settings className="w-5 h-5 mr-2 text-charcoal-gray animate-pulse" aria-hidden="true" /> Notification Settings
-          </h2>
-          <form onSubmit={handleUpdateNotificationSettings}>
-            <div className="flex items-center gap-2 mb-2">
-              <input
-                type="checkbox"
-                id="emailNotifications"
-                checked={notificationSettings.emailNotifications}
-                onChange={(e) => setNotificationSettings({ ...notificationSettings, emailNotifications: e.target.checked })}
-                className="focus:ring-indigo-vivid"
-                aria-label="Email Notifications"
-              />
-              <label htmlFor="emailNotifications" className="text-lavender-gray font-inter">Email Notifications</label>
-            </div>
-            <div className="flex items-center gap-2 mb-4">
-              <input
-                type="checkbox"
-                id="inAppNotifications"
-                checked={notificationSettings.inAppNotifications}
-                onChange={(e) => setNotificationSettings({ ...notificationSettings, inAppNotifications: e.target.checked })}
-                className="focus:ring-indigo-vivid"
-                aria-label="In-App Notifications"
-              />
-              <label htmlFor="inAppNotifications" className="text-lavender-gray font-inter">In-App Notifications</label>
-            </div>
-            <button
-              type="submit"
-              className="btn-primary rounded-full flex items-center focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-              aria-label="Save Notification Settings"
-            >
-              Save Settings
-            </button>
-          </form>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
-};
-
-export default ProjectHome;
+}

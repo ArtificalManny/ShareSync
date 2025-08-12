@@ -1,54 +1,68 @@
-// src/components/analytics/ActivityLineGraph.jsx
+// /src/components/analytics/ActivityLineGraph.jsx
 import React from 'react';
 import {
+  ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer,
-  CartesianGrid
+  CartesianGrid,
 } from 'recharts';
 
-// Example mock data (replace with real backend data via props)
-const mockData = [
-  { date: 'Jul 01', value: 1 },
-  { date: 'Jul 02', value: 2 },
-  { date: 'Jul 03', value: 1 },
-  { date: 'Jul 04', value: 3 },
-  { date: 'Jul 05', value: 4 },
-  { date: 'Jul 06', value: 2 },
-  { date: 'Jul 07', value: 5 },
-];
+/**
+ * Props:
+ *  - data: [{ date: '2025-08-01', value: 3 }, ...]
+ *  - title?: string
+ *  - yLabel?: string
+ */
+export default function ActivityLineGraph({ data = [], title = 'Activity Over Time', yLabel = 'Tasks' }) {
+  // Coerce safe, sorted data
+  const safe = Array.isArray(data)
+    ? [...data]
+        .map(d => ({
+          date: d.date || d.day || d.ts || d._id || '',
+          value: Number(d.value ?? d.count ?? d.xp ?? 0),
+        }))
+        .filter(d => d.date)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+    : [];
 
-const ActivityLineGraph = ({ data = mockData }) => {
   return (
-    <div className="bg-white dark:bg-gray-900 shadow-md rounded-2xl p-4">
-      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">
-        📈 Activity Over Time
-      </h2>
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-          <XAxis dataKey="date" stroke="#94a3b8" />
-          <YAxis stroke="#94a3b8" allowDecimals={false} />
-          <Tooltip
-            contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }}
-            labelStyle={{ color: '#f8fafc' }}
-            itemStyle={{ color: '#facc15' }}
-          />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke="#6366f1"
-            strokeWidth={2}
-            dot={{ r: 3 }}
-            activeDot={{ r: 5 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
+      </div>
+
+      <div style={{ width: '100%', height: 260 }}>
+        <ResponsiveContainer>
+          <LineChart data={safe} margin={{ top: 8, right: 12, bottom: 8, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="date"
+              tickFormatter={(d) => {
+                try { return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+                catch { return d; }
+              }}
+              tick={{ fontSize: 12 }}
+              minTickGap={24}
+            />
+            <YAxis
+              tick={{ fontSize: 12 }}
+              allowDecimals={false}
+              label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 8 }}
+            />
+            <Tooltip
+              formatter={(v) => [v, yLabel]}
+              labelFormatter={(l) => {
+                try { return new Date(l).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }); }
+                catch { return l; }
+              }}
+            />
+            <Line type="monotone" dataKey="value" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
-};
-
-export default ActivityLineGraph;
+}

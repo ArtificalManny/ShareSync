@@ -1,5 +1,5 @@
 // /src/pages/Projects.jsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import ProjectsHeader from '../components/projects/ProjectsHeader.jsx';
@@ -8,9 +8,10 @@ import ProjectListItem from '../components/projects/ProjectListItem.jsx';
 import ProjectSkeleton from '../components/projects/ProjectSkeleton.jsx';
 import ProjectsEmpty from '../components/projects/ProjectsEmpty.jsx';
 import RightRail from '../components/projects/RightRail.jsx';
+import { listProjects } from '../api/projects';
 
-/** Small debounce hook to avoid spamming the backend on each key press */
-function useDebounce(value, delay = 300) {
+/** Debounce a value to limit API calls while typing */
+function useDebounce(value, delay = 350) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const t = setTimeout(() => setDebounced(value), delay);
@@ -19,17 +20,18 @@ function useDebounce(value, delay = 300) {
   return debounced;
 }
 
-/** Helpers for URL <-> state sync */
+/** Read filters from URL */
 function readParams(search) {
   const p = new URLSearchParams(search);
   return {
     query: p.get('query') ?? '',
     status: p.get('status') ?? 'all',   // 'all' | 'not_started' | 'in_progress' | 'completed'
-    owner: p.get('owner') ?? 'all',     // 'all' | 'me' | 'team'
-    updated: p.get('updated') ?? '7d',  // '7d' | '30d' | 'all'
+    owner:  p.get('owner')  ?? 'all',   // 'all' | 'me' | 'team'
+    updated:p.get('updated')?? '7d',    // '7d' | '30d' | 'all'
   };
 }
 
+/** Write filters to URL */
 function writeParams({ query, status, owner, updated }) {
   const p = new URLSearchParams();
   if (query) p.set('query', query);
@@ -43,21 +45,20 @@ function writeParams({ query, status, owner, updated }) {
 export default function Projects() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // initial state from URL
   const init = readParams(location.search);
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+
+  // UI + filter state
+  const [projects, setProjects]   = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
-  // Header state
-  const [query, setQuery] = useState(init.query);
-  const [status, setStatus] = useState(init.status);
-  const [owner, setOwner] = useState(init.owner);
+  const [query, setQuery]     = useState(init.query);
+  const [status, setStatus]   = useState(init.status);
+  const [owner, setOwner]     = useState(init.owner);
   const [updated, setUpdated] = useState(init.updated);
 
-  // keep URL in sync whenever filters change
+  // keep URL in sync
   useEffect(() => {
     const next = writeParams({ query, status, owner, updated });
     const current = location.search || '';
@@ -68,39 +69,47 @@ export default function Projects() {
 
   const debouncedQuery = useDebounce(query, 350);
 
-  // load projects when filters change (server-side filtering if supported)
+  // === FETCH PROJECTS (with abort + robust errors) ===
+  const abortRef = useRef(null);
+
+  async function fetchProjects() {
+    setLoading(true);
+    setError('');
+
+    // cancel any in-flight request
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const items = await listProjects({
+        query: debouncedQuery,
+        status,
+        owner,
+        updated,
+      });
+      setProjects(items);
+    } catch (e) {
+      // Show a friendly error; keep technical message in console
+      console.error('[Projects] load error', e);
+      setError('Failed to load projects.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
-    let ignore = false;
-    const load = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const qs = writeParams({
-          query: debouncedQuery,
-          status,
-          owner,
-          updated,
-        });
-        const res = await fetch(`/api/projects${qs}`, { credentials: 'include' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (!ignore) setProjects(Array.isArray(data) ? data : (data.projects || []));
-      } catch (e) {
-        if (!ignore) setError('Failed to load projects.');
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      ignore = true;
-    };
+    fetchProjects();
+    // cleanup abort on unmount
+    return () => abortRef.current?.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery, status, owner, updated]);
 
-  // client-side filtering as a fallback if backend ignores params
+  // client-side filtering fallback (if backend ignores params)
   const filtered = useMemo(() => {
     const q = debouncedQuery.trim().toLowerCase();
     const now = Date.now();
+
     const withinWindow = (iso) => {
       if (updated === 'all') return true;
       const dt = new Date(iso || Date.now()).getTime();
@@ -135,11 +144,10 @@ export default function Projects() {
     });
   }, [projects, debouncedQuery, status, owner, updated]);
 
+  // when a project is created, prepend and close modal
   const handleProjectCreated = (newProject) => {
     setShowCreate(false);
-    if (newProject) {
-      setProjects((prev) => [newProject, ...prev]);
-    }
+    if (newProject) setProjects((prev) => [newProject, ...prev]);
   };
 
   return (
@@ -159,28 +167,39 @@ export default function Projects() {
         onCreateProject={() => setShowCreate(true)}
       />
 
-      {/* Two-column layout: list + right rail */}
+      {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mt-4">
         {/* LEFT: Project list */}
         <div className="space-y-4">
+          {/* Loading state → skeletons */}
           {loading && (
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-3" aria-busy="true" aria-live="polite">
               {[...Array(4)].map((_, i) => (
                 <ProjectSkeleton key={i} />
               ))}
             </div>
           )}
 
+          {/* Error state */}
           {!!error && !loading && (
             <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-rose-200/60 dark:border-rose-400/20">
-              <p className="text-rose-600 dark:text-rose-400">{error}</p>
+              <p className="text-rose-600 dark:text-rose-400 mb-3">{error}</p>
+              <button
+                onClick={fetchProjects}
+                className="btn btn-primary"
+                aria-label="Retry loading projects"
+              >
+                Retry
+              </button>
             </div>
           )}
 
+          {/* Empty state */}
           {!loading && !error && filtered.length === 0 && (
             <ProjectsEmpty onCreate={() => setShowCreate(true)} />
           )}
 
+          {/* List */}
           {!loading && !error && filtered.length > 0 && (
             <div className="grid grid-cols-1 gap-3">
               {filtered.map((p) => (
@@ -204,6 +223,7 @@ export default function Projects() {
         </div>
       </div>
 
+      {/* Create modal */}
       {showCreate && (
         <ProjectsCreate
           onClose={() => setShowCreate(false)}

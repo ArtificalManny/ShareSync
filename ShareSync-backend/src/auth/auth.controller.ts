@@ -1,37 +1,21 @@
-// src/auth/auth.controller.ts
-
 import { Controller, Post, Body } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { JwtService } from '@nestjs/jwt';
 
-@Controller('auth')
+@Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly jwt: JwtService) {}
 
-  @Post('login')
-  async login(@Body() body: { email: string; password: string }) {
-    return this.authService.login(body);
-  }
+  // ... your existing login/register etc.
 
-  @Post('register')
-  async register(
-    @Body()
-    body: {
-      email: string;
-      password: string;
-      firstName: string;
-      lastName: string;
+  @Post('verify')
+  verify(@Body() body: { token: string }) {
+    try {
+      const payload = this.jwt.verify(body.token, {
+        secret: process.env.JWT_SECRET || 'dev_secret_please_change',
+      });
+      return { ok: true, payload };
+    } catch (e) {
+      return { ok: false, error: String(e) };
     }
-  ) {
-    return this.authService.register(body);
-  }
-
-  @Post('forgot-password')
-  async forgotPassword(@Body() body: { email: string }) {
-    return this.authService.forgotPassword(body.email);
-  }
-
-  @Post('reset-password')
-  async resetPassword(@Body() body: { email: string; password: string }) {
-    return this.authService.resetPassword(body.email, body.password);
   }
 }
