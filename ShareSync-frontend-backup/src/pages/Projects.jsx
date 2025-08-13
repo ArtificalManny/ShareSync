@@ -76,7 +76,6 @@ export default function Projects() {
     setLoading(true);
     setError('');
 
-    // cancel any in-flight request
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -90,7 +89,6 @@ export default function Projects() {
       });
       setProjects(items);
     } catch (e) {
-      // Show a friendly error; keep technical message in console
       console.error('[Projects] load error', e);
       setError('Failed to load projects.');
     } finally {
@@ -100,12 +98,11 @@ export default function Projects() {
 
   useEffect(() => {
     fetchProjects();
-    // cleanup abort on unmount
     return () => abortRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery, status, owner, updated]);
 
-  // client-side filtering fallback (if backend ignores params)
+  // client-side filtering fallback
   const filtered = useMemo(() => {
     const q = debouncedQuery.trim().toLowerCase();
     const now = Date.now();
@@ -167,11 +164,9 @@ export default function Projects() {
         onCreateProject={() => setShowCreate(true)}
       />
 
-      {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mt-4">
         {/* LEFT: Project list */}
         <div className="space-y-4">
-          {/* Loading state → skeletons */}
           {loading && (
             <div className="grid grid-cols-1 gap-3" aria-busy="true" aria-live="polite">
               {[...Array(4)].map((_, i) => (
@@ -180,7 +175,6 @@ export default function Projects() {
             </div>
           )}
 
-          {/* Error state */}
           {!!error && !loading && (
             <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-rose-200/60 dark:border-rose-400/20">
               <p className="text-rose-600 dark:text-rose-400 mb-3">{error}</p>
@@ -194,12 +188,10 @@ export default function Projects() {
             </div>
           )}
 
-          {/* Empty state */}
           {!loading && !error && filtered.length === 0 && (
             <ProjectsEmpty onCreate={() => setShowCreate(true)} />
           )}
 
-          {/* List */}
           {!loading && !error && filtered.length > 0 && (
             <div className="grid grid-cols-1 gap-3">
               {filtered.map((p) => (
@@ -223,7 +215,6 @@ export default function Projects() {
         </div>
       </div>
 
-      {/* Create modal */}
       {showCreate && (
         <ProjectsCreate
           onClose={() => setShowCreate(false)}

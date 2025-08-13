@@ -82,6 +82,14 @@ const AppRoutes = () => {
 
   return (
     <Router>
+      {/* ✅ Skip link for keyboard users */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 bg-white text-ink-900 px-3 py-2 rounded-lg shadow"
+      >
+        Skip to content
+      </a>
+
       <div className="app-container" data-accent="indigo">
         <Navbar
           user={user}
@@ -90,7 +98,8 @@ const AppRoutes = () => {
           toggleDarkMode={toggleDarkMode}
         />
 
-        <div className="main-content">
+        {/* ✅ Identify the main region for the skip link */}
+        <div id="main" role="main" className="main-content">
           <Suspense
             fallback={
               <div className="px-6 py-10 text-center text-slate-500" role="status" aria-live="polite">

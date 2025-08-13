@@ -1,253 +1,180 @@
-/* ============================
-   Design System: Tokens & Base
-   ============================ */
+/* /src/theme.css
+   ShareSync Design Tokens (CNBC-ish)
+   - Colors, Type Scale, Card Surface, Motion
+   - Safe with Tailwind (scoped to CSS variables + light utilities)
+*/
 
-/* Light theme tokens */
+/* ---------- Root (Light) ---------- */
 :root {
-  /* Grey / Surface */
-  --color-bg:            #f7f8fa;     /* page background */
-  --color-surface:       #ffffff;     /* cards, panels */
-  --color-surface-2:     #f2f4f7;     /* subtle panels */
-  --color-border:        #e6e8eb;     /* dividers */
-  --color-ring:          #cdd4db;     /* focus ring */
-  --shadow-color:        0deg 0% 0%;
+  /* Palette */
+  --blue-600: #2457F5;
+  --blue-700: #1B46C8;
 
-  /* Text */
-  --ink-900:             #0f172a;     /* headings */
-  --ink-700:             #334155;     /* body */
-  --ink-500:             #64748b;     /* secondary */
-  --ink-300:             #94a3b8;     /* muted */
+  --green-500: #17B26A; /* success */
+  --amber-500: #F59E0B; /* warn */
+  --red-500:   #EF4444; /* danger */
 
-  /* State */
-  --success-600:         #059669;
-  --warning-600:         #d97706;
-  --danger-600:          #dc2626;
+  --ink-900: #111827;   /* text strong */
+  --ink-600: #4B5563;   /* text secondary */
+  --ink-100: #F3F4F6;   /* subtle bg */
 
-  /* Accents (CNBC-ish: indigo & emerald primarily) */
-  --accent-1:            #4f46e5;     /* indigo-600 */
-  --accent-1-600:        #4f46e5;
-  --accent-1-700:        #4338ca;
-  --accent-1-50:         #eef2ff;
+  --bg-elevated: #FFFFFF;
+  --bg-canvas:   #F7F9FC;
 
-  --accent-2:            #059669;     /* emerald-600 */
-  --accent-2-600:        #059669;
-  --accent-2-700:        #047857;
-  --accent-2-50:         #ecfdf5;
+  /* Type scale (font-size/line-height) */
+  --h1-size: 24px;
+  --h1-leading: 32px;
 
-  /* Elevation */
-  --card-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+  --h2-size: 18px;
+  --h2-leading: 28px;
 
-  /* Typography scale */
-  --font-family:         ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  --h1-size:             24px;
-  --h1-line:             32px;
-  --h2-size:             18px;
-  --h2-line:             28px;
-  --body-size:           14px;
-  --body-line:           22px;
+  --body-size: 14px;
+  --body-leading: 22px;
 
-  /* Spacing */
-  --section-space:       32px;  /* section vertical rhythm */
-  --gutter:              24px;  /* grid gutter */
+  /* Radii */
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
 
-  /* Grid */
-  --grid-columns:        12;
-  --content-max:         1200px;
+  /* Shadow (CNBC-ish, soft & long) */
+  --shadow-elev: 0 8px 24px rgba(16, 24, 40, 0.08);
+
+  /* Motion */
+  --ease-standard: cubic-bezier(.2,.7,.3,1);
+  --motion-quick: 150ms var(--ease-standard);
+  --motion-std:   200ms var(--ease-standard);
+  --motion-slow:  300ms var(--ease-standard);
+
+  /* Glass (backdrop blur) */
+  --glass-blur: 8px;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.35);
 }
 
-/* Dark theme tokens */
+/* ---------- Dark Mode ---------- */
 :root.dark {
-  --color-bg:            #0b1220;
-  --color-surface:       #0f172a;
-  --color-surface-2:     #0d1324;
-  --color-border:        #1e293b;
-  --color-ring:          #334155;
+  --bg-elevated: #0B1220; /* near-slate */
+  --bg-canvas:   #0A0F1A;
 
-  --ink-900:             #e5e7eb;
-  --ink-700:             #cbd5e1;
-  --ink-500:             #94a3b8;
-  --ink-300:             #64748b;
+  --ink-900: #E5E7EB; /* flip text */
+  --ink-600: #94A3B8;
+  --ink-100: #111827;
 
-  --accent-1-50:         #1e1b4b;
-  --accent-2-50:         #052e2b;
-
-  --card-shadow:         0 1px 2px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+  --glass-bg: rgba(10, 15, 26, 0.6);
+  --glass-border: rgba(148, 163, 184, 0.25);
+  --shadow-elev: 0 8px 24px rgba(2, 6, 23, 0.6);
 }
 
-/* ============================
-   Base Resets
-   ============================ */
-html, body, #root {
-  height: 100%;
-}
-body {
-  background: var(--color-bg);
-  color: var(--ink-700);
-  font-family: var(--font-family);
-  font-size: var(--body-size);
-  line-height: var(--body-line);
+/* ---------- Base Application Canvas ---------- */
+html, body, #root, .app-container {
+  background: var(--bg-canvas);
+  color: var(--ink-900);
 }
 
-/* Headings scale */
-.h1, h1 {
+/* ---------- Type Utilities (opt-in; Tailwind still works) ---------- */
+.ds-h1 {
   font-size: var(--h1-size);
-  line-height: var(--h1-line);
-  color: var(--ink-900);
+  line-height: var(--h1-leading);
   font-weight: 700;
-}
-.h2, h2 {
-  font-size: var(--h2-size);
-  line-height: var(--h2-line);
+  letter-spacing: -0.01em;
   color: var(--ink-900);
+}
+
+.ds-h2 {
+  font-size: var(--h2-size);
+  line-height: var(--h2-leading);
   font-weight: 600;
+  color: var(--ink-900);
 }
 
-/* ============================
-   Layout: container + grid
-   ============================ */
-.container {
-  max-width: var(--content-max);
-  margin-inline: auto;
-  padding-inline: 16px;
-}
-.section {
-  margin-block: var(--section-space);
+.ds-body {
+  font-size: var(--body-size);
+  line-height: var(--body-leading);
+  color: var(--ink-600);
 }
 
-/* A simple 12-col grid helper */
-.grid-12 {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: var(--gutter);
-}
-
-/* ============================
-   Cards
-   ============================ */
+/* ---------- Card Surface (glassy + standard) ---------- */
 .card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  box-shadow: var(--card-shadow);
-}
-.card--subtle {
-  background: var(--color-surface-2);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elev);
+  border: 1px solid rgba(2, 6, 23, 0.06);
 }
 
-/* ============================
-   Buttons
-   ============================ */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  font-weight: 600;
-  line-height: 1;
-}
-.btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--color-ring);
+/* Glass variant: use when you want frosted look (header/rails) */
+.card--glass {
+  background: var(--glass-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elev);
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 
-/* Accent handling: keep ≤ 2 accents per view.
-   Set data-accent on a parent (body or major section) to 'indigo' or 'emerald'. */
-[data-accent="indigo"] .btn-primary {
-  background: var(--accent-1-600);
-  border-color: var(--accent-1-600);
+/* ---------- Motion (apply to nav tabs, chips, toasts, etc.) ---------- */
+.motion-std {
+  transition: all var(--motion-std);
+}
+.motion-quick {
+  transition: all var(--motion-quick);
+}
+.motion-slow {
+  transition: all var(--motion-slow);
+}
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .motion-std, .motion-quick, .motion-slow {
+    transition: none !important;
+  }
+}
+
+/* ---------- Accent Helpers ---------- */
+.accent {
+  color: var(--blue-600);
+}
+.bg-accent {
+  background: var(--blue-600);
   color: #fff;
 }
-[data-accent="indigo"] .btn-primary:hover {
-  background: var(--accent-1-700);
-  border-color: var(--accent-1-700);
-}
-[data-accent="indigo"] .chip-accent {
-  background: var(--accent-1-50);
-  color: var(--accent-1-700);
+.bg-accent:hover {
+  background: var(--blue-700);
 }
 
-[data-accent="emerald"] .btn-primary {
-  background: var(--accent-2-600);
-  border-color: var(--accent-2-600);
-  color: #fff;
-}
-[data-accent="emerald"] .btn-primary:hover {
-  background: var(--accent-2-700);
-  border-color: var(--accent-2-700);
-}
-[data-accent="emerald"] .chip-accent {
-  background: var(--accent-2-50);
-  color: var(--accent-2-700);
-}
-
-/* Neutral button */
-.btn-ghost {
-  background: transparent;
-  border-color: var(--color-border);
-  color: var(--ink-700);
-}
-.btn-ghost:hover {
-  background: var(--color-surface-2);
-}
-
-/* Badges / Chips */
-.badge {
+/* Status chips */
+.chip {
   display: inline-flex;
   align-items: center;
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  line-height: 1;
-  border: 1px solid var(--color-border);
-  color: var(--ink-700);
-}
-
-/* Status pills */
-.pill {
-  display: inline-flex;
-  align-items: center;
+  gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 12px;
+  line-height: 18px;
   font-weight: 600;
+  background: var(--ink-100);
+  color: var(--ink-600);
+  transition: background var(--motion-quick), color var(--motion-quick);
 }
-.pill--not-started { background: #e2e8f0; color: #334155; }
-.pill--in-progress { background: #e0e7ff; color: #3730a3; }
-.pill--completed   { background: #dcfce7; color: #166534; }
+.chip--success { background: color-mix(in srgb, var(--green-500) 14%, white); color: var(--green-500); }
+.chip--warn    { background: color-mix(in srgb, var(--amber-500) 18%, white); color: var(--amber-500); }
+.chip--danger  { background: color-mix(in srgb, var(--red-500)   16%, white); color: var(--red-500); }
 
+/* ---------- Buttons (minimal, for spots outside Tailwind) ---------- */
+.btn-primary {
+  background: var(--blue-600);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+  transition: background var(--motion-quick), transform var(--motion-quick);
+}
+.btn-primary:hover { background: var(--blue-700); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
 
-:root {
-  /* Colors */
-  --card-bg: #ffffff;
-  --card-bg-dark: #1e293b;
-  --card-border: #e2e8f0;
-  --card-border-dark: #334155;
-  --chip-bg: #f1f5f9;
-  --chip-bg-dark: #334155;
-  --chip-hover-bg: #e2e8f0;
-  --chip-hover-bg-dark: #475569;
-  --chip-text: #0f172a;
-  --muted-text: #64748b;
-  --muted-text-dark: #94a3b8;
-  --icon-muted: #cbd5e1;
-  --icon-muted-dark: #64748b;
-  --heading-sm: #0f172a;
-  --heading-sm-dark: #f8fafc;
-  --heading-lg: #0f172a;
-  --heading-lg-dark: #f8fafc;
-  --body-text: #475569;
-  --body-text-dark: #cbd5e1;
-  --accent: #10b981; /* emerald */
-  --accent-hover: #059669;
-
-  /* Typography scale */
-  --font-lg: 1.5rem;    /* 24px */
-  --leading-lg: 2rem;   /* 32px */
-  --font-sm: 0.875rem;  /* 14px */
-  --leading-sm: 1.375rem; /* 22px */
-  --font-xs: 0.75rem;   /* 12px */
-  --leading-xs: 1.25rem; /* 20px */
+/* ---------- Focus Ring ---------- */
+/* Visible focus for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--blue-600);
+  outline-offset: 2px;
+  border-radius: 8px;
 }

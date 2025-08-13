@@ -1,17 +1,31 @@
-import { Module } from '@nestjs/common';
+// src/user/user.module.ts
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
-import { UserService } from './user.service';
 import { UserController } from './user.controller';
-import { User, UserSchema } from './user.schema';
+import { UserService } from './user.service';
 
-// ↓ Change this path from ../project/... to ../projects/...
+// Your existing User schema import (adjust path if different)
+import { Schema } from 'mongoose';
+const UserSchema = new Schema(
+  {
+    email: String,
+    firstName: String,
+    lastName: String,
+    username: String,
+    profilePicture: String,
+    lastLogin: Date,
+  },
+  { timestamps: true }
+);
+
+// Import ProjectModule so UserService can receive ProjectService
 import { ProjectModule } from '../projects/project.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    ProjectModule,
+    MongooseModule.forFeature([{ name: 'User', schema: UserSchema }]),
+    forwardRef(() => ProjectModule), // ← add this
   ],
   controllers: [UserController],
   providers: [UserService],
