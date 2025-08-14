@@ -1,11 +1,34 @@
-import { Controller, Post, Body } from '@nestjs/common';
+// src/auth/auth.controller.ts
+import { Body, Controller, Post, Res } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Response } from 'express';
+import { AuthService } from './auth.service';
 
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
-  constructor(private readonly jwt: JwtService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly jwt: JwtService, // used by /auth/verify
+  ) {}
 
-  // ... your existing login/register etc.
+  @Post('login')
+  async login(
+    @Body() body: { email: string; password: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { token, user } = await this.auth.login(body.email, body.password);
+
+    // also set a cookie so requests without Authorization header still work
+    res.cookie('accessToken', token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false, // set true behind HTTPS
+      maxAge: 7 * 24 * 3600 * 1000,
+      path: '/',
+    });
+
+    return { token, user };
+  }
 
   @Post('verify')
   verify(@Body() body: { token: string }) {

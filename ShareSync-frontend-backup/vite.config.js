@@ -8,18 +8,9 @@ export default defineConfig({
     port: 54693,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3000', // Nest port
         changeOrigin: true,
         secure: false,
-      },
-      '/uploads': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/socket.io': {
-        target: 'http://localhost:3000',
-        ws: true,
       },
     },
   },

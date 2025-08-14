@@ -1,22 +1,33 @@
 // /src/api/client.js
-import axios from 'axios';
+import axios from "axios";
+import { getAccessToken } from "../utils/tokenUtils";
 
-// Always hit the Vite dev server proxy, which forwards /api → http://localhost:3000
+// All requests go to /api (Vite dev proxy forwards to http://localhost:5000)
 const client = axios.create({
-  baseURL: '/api',
+  baseURL: "/api",
   withCredentials: true,
+  headers: { "Content-Type": "application/json" },
 });
 
-// Attach Authorization header if we have a token
 client.interceptors.request.use((config) => {
-  try {
-    const token = localStorage.getItem('access_token'); // key you’re saving in Login.jsx
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  } catch {}
+  const token = getAccessToken?.();
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
+
+client.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    const resp = err?.response;
+    if (resp?.data && typeof resp.data === "object") {
+      err.message =
+        resp.data.error || resp.data.message || err.message || "Request failed";
+    }
+    return Promise.reject(err);
+  }
+);
 
 export default client;

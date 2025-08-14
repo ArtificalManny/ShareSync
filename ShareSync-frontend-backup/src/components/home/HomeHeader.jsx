@@ -1,9 +1,9 @@
 // src/components/home/HomeHeader.jsx
 import React from "react";
 import { Link } from "react-router-dom";
-import formatProfilePicture from "../../utils/formatProfilePicture";
+import usePRM from "../../utils/usePrefersReducedMotion";
 
-const XPProgressRing = ({ xp = 0 }) => {
+const XPProgressRing = ({ xp = 0, prefersReduced = false }) => {
   const radius = 40;
   const stroke = 8;
   const r = radius - stroke * 0.5;
@@ -13,14 +13,14 @@ const XPProgressRing = ({ xp = 0 }) => {
   const dash = C - p * C;
 
   return (
-    <svg height={radius * 2} width={radius * 2} className="mx-auto block">
+    <svg height={radius * 2} width={radius * 2} className="mx-auto block" aria-hidden="true">
       <circle stroke="#E5E7EB" fill="transparent" strokeWidth={stroke} r={r} cx={radius} cy={radius} />
       <circle
         stroke="#6366F1"
         fill="transparent"
         strokeWidth={stroke}
         strokeDasharray={`${C} ${C}`}
-        style={{ strokeDashoffset: dash, transition: "stroke-dashoffset 0.5s ease" }}
+        style={{ strokeDashoffset: dash, transition: prefersReduced ? "none" : "stroke-dashoffset 0.5s ease" }}
         r={r}
         cx={radius}
         cy={radius}
@@ -39,7 +39,16 @@ const XPProgressRing = ({ xp = 0 }) => {
   );
 };
 
-export default function HomeHeader({ username, firstName = "User", profilePic = "/default-profile.png", tier = "Newcomer", xp = 0, onInvite }) {
+export default function HomeHeader({
+  username,
+  firstName = "User",
+  profilePic = "/default-profile.png",
+  tier = "Newcomer",
+  xp = 0,
+  onInvite,
+}) {
+  const prefersReduced = usePRM();
+
   return (
     <section
       aria-label="Account overview"
@@ -54,9 +63,13 @@ export default function HomeHeader({ username, firstName = "User", profilePic = 
             aria-label="View profile"
           >
             <img
-              src={formatProfilePicture(profilePic)}
+              src={profilePic}
               alt={`${firstName} profile`}
               className="h-12 w-12 rounded-full object-cover"
+              width={48}
+              height={48}
+              decoding="async"
+              fetchPriority="high"
             />
           </Link>
           <div className="min-w-0">
@@ -70,7 +83,7 @@ export default function HomeHeader({ username, firstName = "User", profilePic = 
         {/* Center: XP ring */}
         <div className="col-span-12 md:col-span-3 flex justify-center">
           <div className="text-center">
-            <XPProgressRing xp={xp} />
+            <XPProgressRing xp={xp} prefersReduced={prefersReduced} />
             <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">Experience</div>
           </div>
         </div>

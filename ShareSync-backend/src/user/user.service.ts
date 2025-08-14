@@ -2,16 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './user.schema';
-import { ProjectService } from '../projects/project.service';
+import { ProjectsService } from '../projects/project.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private projectService: ProjectService,
+    private readonly projects: ProjectsService,
   ) {}
 
-  // ✅ NEW: Public profile support
+  // Public profile support
   async findByUsername(username: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ username }).exec();
   }
@@ -61,21 +61,20 @@ export class UserService {
     return this.update(id, { notificationPreferences: preferences });
   }
 
+  // ⬇️ Fixed to use ProjectsService.findAll(userId)
   async getProjectsByCategory(userId: string): Promise<any> {
-    const projects = await this.projectService.findAll(userId);
+    const projects = await this.projects.findAll(userId);
     return {
-      School: projects.filter(p => p.category === 'School'),
-      Job: projects.filter(p => p.category === 'Job'),
-      Personal: projects.filter(p => p.category === 'Personal'),
+      School: projects.filter((p: any) => p.category === 'School'),
+      Job: projects.filter((p: any) => p.category === 'Job'),
+      Personal: projects.filter((p: any) => p.category === 'Personal'),
     };
   }
 
   async updatePassword(email: string, newPasswordHash: string): Promise<UserDocument | null> {
-    return this.userModel.findOneAndUpdate(
-      { email },
-      { password: newPasswordHash },
-      { new: true }
-    ).exec();
+    return this.userModel
+      .findOneAndUpdate({ email }, { password: newPasswordHash }, { new: true })
+      .exec();
   }
 
   async trackLoginActivity(email: string): Promise<UserDocument> {
@@ -89,7 +88,7 @@ export class UserService {
     if (diffDays === 1) {
       user.streakDays = (user.streakDays || 0) + 1;
     } else if (diffDays === 0) {
-      // no change
+      // same day login — no change
     } else {
       user.streakDays = 1;
     }

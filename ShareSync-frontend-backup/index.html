@@ -9,18 +9,28 @@
     <title>ShareSync</title>
 
     <!-- SEO -->
-    <meta name="description" content="ShareSync — plan projects, track daily goals, and celebrate team progress with a public streak feed." />
+    <meta name="description" content="ShareSync — plan projects, track daily goals, and celebrate team progress with a public cadence feed." />
     <link rel="canonical" href="https://example.com/" />
 
-    <!-- PWA-ish basics (helps Lighthouse Best Practices/SEO, optional icons if you have them) -->
+    <!-- PWA-ish basics -->
     <meta name="theme-color" content="#0f172a" />
     <link rel="manifest" href="/manifest.webmanifest" />
 
-    <!-- Preconnects (safe even if not used; removes warnings about font/CDN warmups) -->
+    <!-- Preconnects -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
+    <!-- Skip link should be first focusable element -->
+    <a href="#main"
+       class="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:top-3 focus:left-3 focus:bg-white focus:text-slate-900 focus:px-3 focus:py-2 focus:rounded-md focus:ring-2">
+      Skip to main content
+    </a>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

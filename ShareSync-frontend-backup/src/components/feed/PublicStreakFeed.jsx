@@ -38,17 +38,20 @@ const FeedItem = memo(
       return d.toLocaleString();
     }, [item.timestamp, item.createdAt]);
 
+    // Copy-only: show "cadence" for type "streak" without changing data
+    const displayType = item.type === "streak" ? "cadence" : item.type;
+
     return (
       <article
         className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 p-4"
-        aria-label={item.title || item.message || item.type}
+        aria-label={item.title || item.message || displayType}
       >
         <header className="flex items-center justify-between">
           <div className="text-sm font-medium text-slate-700 dark:text-slate-200">
             {item.username || item.name || "User"}
           </div>
           <div className="text-xs text-slate-500">
-            {item.type} • {tsLabel}
+            {displayType} • {tsLabel}
           </div>
         </header>
 
@@ -119,6 +122,7 @@ export default function PublicStreakFeed({
   const observerRef = useRef(null);
   const abortRef = useRef(null);
 
+  // Keep API route name (server expects "streak-feed")
   const urlBase = "/api/streak-feed";
 
   const listKeyed = useMemo(
@@ -266,11 +270,22 @@ export default function PublicStreakFeed({
 
   return (
     <div className="space-y-4">
+      {/* Header copy (Cadence) */}
+      <div>
+        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+          Public Cadence Feed
+        </h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Recent activity across public projects. Cadence reflects how
+          consistently teams are making progress.
+        </p>
+      </div>
+
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-2">
         {["all", "streak", "levelUp", "taskComplete"].map((t) => (
           <Chip key={t} active={type === t} onClick={() => onType(t)}>
-            {t === "all" ? "All" : t}
+            {t === "all" ? "All" : t === "streak" ? "Cadence" : t}
           </Chip>
         ))}
 

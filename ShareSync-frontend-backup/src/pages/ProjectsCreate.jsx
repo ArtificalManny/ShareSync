@@ -57,15 +57,13 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
       toast({ title: "Project created", description: `"${project.title}" is live.`, variant: "success" });
 
-      // Let Projects.jsx prepend the new row (optional)
       onProjectCreated?.(project);
-
-      // Redirect to detail page
       navigate(`/projects/${id}`);
-
       onClose?.();
     } catch (err) {
       const msg =
+        err?.normalizedMessage ||           // from interceptor
+        err?.response?.data?.message ||     // Nest error shape
         err?.response?.data?.error ||
         err?.message ||
         "Failed to create project";

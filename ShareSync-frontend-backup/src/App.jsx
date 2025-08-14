@@ -122,7 +122,7 @@ const AppRoutes = () => {
                 element={
                   <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-50 dark:bg-gray-900 min-h-screen max-w-4xl mx-auto">
                     <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">
-                      Public Streak Feed
+                      Public Cadence Feed
                     </h1>
                     <PublicStreakFeed initialType="all" initialSince="7d" initialSort="newest" pageSize={20} />
                   </div>

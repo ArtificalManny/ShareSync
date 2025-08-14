@@ -1,110 +1,52 @@
 // src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
+import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
-import { User, UserDocument } from '../user/user.schema';
 import * as bcrypt from 'bcrypt';
+
+import { User, UserDocument } from '../user/user.schema';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private readonly jwtService: JwtService,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    private readonly jwt: JwtService,
   ) {}
 
-  async login(loginDto: { email: string; password: string }) {
-    const user = await this.userModel.findOne({ email: loginDto.email });
-    if (!user) throw new UnauthorizedException('User not found');
+  /** Validate email/password and return the user (without password).
+   *  NOTE: public so LocalStrategy can call it.
+   */
+  public async validateUser(email: string, password: string) {
+    const user = await this.userModel.findOne({ email }).lean<UserDocument & { password?: string }>();
+    if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
-    if (!isPasswordValid) throw new UnauthorizedException('Invalid password');
+    const stored = user.password || '';
+    let ok = false;
 
-    const payload = { sub: user._id.toString(), email: user.email };
+    // If hashed with bcrypt, compare; else plain compare (dev-only).
+    if (stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$')) {
+      ok = await bcrypt.compare(password, stored);
+    } else {
+      ok = stored === password;
+    }
 
-    console.log('🔐 SIGNING TOKEN WITH SECRET (login):', process.env.JWT_SECRET);
+    if (!ok) throw new UnauthorizedException('Invalid credentials');
 
-    const token = this.jwtService.sign(payload);
-
-    return {
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profilePicture: user.profilePicture,
-      },
-      token,
-    };
+    const { password: _pw, ...safe } = user as any;
+    return safe;
   }
 
-  async register(registerDto: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-  }) {
-    const existing = await this.userModel.findOne({ email: registerDto.email });
-    if (existing) throw new UnauthorizedException('Email already in use');
+  /** Issue JWT and return it along with the safe user object */
+  async login(email: string, password: string) {
+    const user = await this.validateUser(email, password);
 
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-
-    const user = new this.userModel({
-      email: registerDto.email,
-      password: hashedPassword,
-      firstName: registerDto.firstName,
-      lastName: registerDto.lastName,
-      profilePicture: '/default-profile.png',
+    const payload = { sub: String(user._id), email: user.email, roles: user.roles || [] };
+    const token = await this.jwt.signAsync(payload, {
+      secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+      expiresIn: '7d',
     });
 
-    await user.save();
-
-    const payload = { sub: user._id.toString(), email: user.email };
-
-    console.log('🔐 SIGNING TOKEN WITH SECRET (register):', process.env.JWT_SECRET);
-
-    const token = this.jwtService.sign(payload);
-
-    return {
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profilePicture: user.profilePicture,
-      },
-      token,
-    };
-  }
-
-  async forgotPassword(email: string) {
-    return { message: 'Password reset email sent (not implemented).' };
-  }
-
-  async resetPassword(email: string, newPassword: string) {
-    const user = await this.userModel.findOne({ email });
-    if (!user) throw new UnauthorizedException('User not found');
-
-    const hashed = await bcrypt.hash(newPassword, 10);
-    user.password = hashed;
-    await user.save();
-
-    return { message: 'Password reset successful' };
-  }
-
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.userModel.findOne({ email });
-    if (!user) return null;
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return null;
-
-    return {
-      id: user._id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      profilePicture: user.profilePicture,
-    };
+    return { token, user };
   }
 }

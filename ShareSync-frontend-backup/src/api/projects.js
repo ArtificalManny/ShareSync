@@ -1,126 +1,84 @@
 // /src/api/projects.js
-import client from './client'; // axios instance with /api base + auth interceptor
-import { getAccessToken } from '../utils/tokenUtils';
-
-// ---- helpers ----
-function authHeaders() {
-  const token = getAccessToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+import client from "./client"; // axios instance with /api base + auth interceptor
 
 function toQS(params = {}) {
   const p = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '' && v !== 'all') p.set(k, String(v));
+    if (v !== undefined && v !== null && v !== "" && v !== "all") {
+      p.set(k, String(v));
+    }
   });
   const s = p.toString();
-  return s ? `?${s}` : '';
+  return s ? `?${s}` : "";
 }
 
-// ---- REQUIRED by Projects.jsx ----
 /**
- * Fetch list of projects for the logged-in user.
- * Accepts optional filters (query, status, owner, updated) but works without them too.
- * Returns [] on success (even if empty). Throws on HTTP error.
+ * Fetch list of projects for the logged-in user
  */
 export async function listProjects(params = {}) {
-  // You can use axios client or fetch; using axios here for simplicity.
   const qs = toQS(params);
-  const { data } = await client.get(`/projects${qs}`, {
-    headers: { ...authHeaders() },
-    withCredentials: true,
-  });
-  // Normalize to array
-  return Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []);
+  const { data } = await client.get(`/projects${qs}`);
+  return Array.isArray(data)
+    ? data
+    : Array.isArray(data?.items)
+    ? data.items
+    : [];
 }
 
-// ---- existing exports (kept working) ----
+/**
+ * Create project
+ */
 export async function createProject(payload) {
-  const res = await fetch('/api/projects', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders(),
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const msg = await res.text().catch(() => '');
-    throw new Error(msg || `HTTP ${res.status}`);
-  }
-  return res.json();
+  // If your backend expects boolean privacy, map here:
+  // const mapped = { ...payload, privacy: payload.privacy === "Public" };
+  const { data } = await client.post("/projects", payload);
+  return data;
 }
 
+/**
+ * Get project by id
+ */
 export async function getProject(id) {
-  const res = await fetch(`/api/projects/${id}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: { ...authHeaders() },
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    const error = new Error(text || `HTTP ${res.status}`);
-    error.status = res.status;
-    throw error;
-  }
-  return res.json();
+  const { data } = await client.get(`/projects/${id}`);
+  return data;
 }
 
-// Quick list for the home “stories” rail
+/**
+ * Quick projects list for home rail
+ */
 export async function getProjectsQuick() {
-  const { data } = await client.get('/projects/quick', {
-    headers: { ...authHeaders() },
-    withCredentials: true,
-  });
+  const { data } = await client.get("/projects/quick");
   return Array.isArray(data) ? data : [];
 }
 
-// Feed + mutations
+/**
+ * Feed
+ */
 export async function getProjectFeed(id, { limit = 20, cursor } = {}) {
   const u = new URL(`/api/projects/${id}/feed`, window.location.origin);
-  u.searchParams.set('limit', String(limit));
-  if (cursor) u.searchParams.set('cursor', cursor);
-
-  const res = await fetch(u.pathname + u.search, {
-    method: 'GET',
-    credentials: 'include',
-    headers: { ...authHeaders() },
-  });
-  if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
-  return res.json(); // { items, nextCursor }
+  u.searchParams.set("limit", String(limit));
+  if (cursor) u.searchParams.set("cursor", cursor);
+  const { data } = await client.get(u.pathname + u.search);
+  return data; // { items, nextCursor }
 }
 
+/**
+ * Post update
+ */
 export async function postProjectUpdate(id, payload) {
-  const res = await fetch(`/api/projects/${id}/updates`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
-  return res.json(); // created update object
+  const { data } = await client.post(`/projects/${id}/updates`, payload);
+  return data;
 }
 
+/**
+ * Tasks
+ */
 export async function createTask(id, payload) {
-  const res = await fetch(`/api/projects/${id}/tasks`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
-  return res.json(); // created task
+  const { data } = await client.post(`/projects/${id}/tasks`, payload);
+  return data;
 }
 
 export async function patchTask(id, taskId, payload) {
-  const res = await fetch(`/api/projects/${id}/tasks/${taskId}`, {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
-  return res.json(); // updated task
+  const { data } = await client.patch(`/projects/${id}/tasks/${taskId}`, payload);
+  return data;
 }

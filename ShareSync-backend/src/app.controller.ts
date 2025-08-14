@@ -1,6 +1,7 @@
+// src/app.controller.ts
 import { Controller, Get } from '@nestjs/common';
 
-@Controller('api')
+@Controller() // <- NO "api" here; global prefix handles it
 export class AppController {
   @Get('health')
   health() {

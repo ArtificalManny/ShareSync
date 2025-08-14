@@ -244,7 +244,7 @@ export default function Home() {
       </div>
 
       <div className="space-y-6">
-        <h2 className="text-lg font-semibold text-indigo-500 dark:text-indigo-300">Public Streak Feed</h2>
+        <h2 className="text-lg font-semibold text-indigo-500 dark:text-indigo-300">Public Cadence Feed</h2>
         <PublicStreakFeed />
       </div>
 

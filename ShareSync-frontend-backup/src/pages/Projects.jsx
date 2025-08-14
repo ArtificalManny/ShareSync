@@ -76,6 +76,7 @@ export default function Projects() {
     setLoading(true);
     setError('');
 
+    // cancel any in-flight request
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -102,7 +103,7 @@ export default function Projects() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery, status, owner, updated]);
 
-  // client-side filtering fallback
+  // client-side filtering fallback (if backend ignores params)
   const filtered = useMemo(() => {
     const q = debouncedQuery.trim().toLowerCase();
     const now = Date.now();
@@ -147,80 +148,90 @@ export default function Projects() {
     if (newProject) setProjects((prev) => [newProject, ...prev]);
   };
 
+  // --- PERF: mark when navigating to ProjectHome ---
+  const goToProject = (id) => {
+    try { performance?.mark?.('ss:nav-project-click'); } catch {}
+    navigate(`/projects/${id}`);
+  };
+
   return (
-    <div
-      data-accent="emerald"
-      className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-100 dark:bg-gray-800 min-h-screen max-w-6xl mx-auto"
-    >
-      <ProjectsHeader
-        query={query}
-        onQueryChange={setQuery}
-        status={status}
-        onStatusChange={setStatus}
-        owner={owner}
-        onOwnerChange={setOwner}
-        updated={updated}
-        onUpdatedChange={setUpdated}
-        onCreateProject={() => setShowCreate(true)}
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mt-4">
-        {/* LEFT: Project list */}
-        <div className="space-y-4">
-          {loading && (
-            <div className="grid grid-cols-1 gap-3" aria-busy="true" aria-live="polite">
-              {[...Array(4)].map((_, i) => (
-                <ProjectSkeleton key={i} />
-              ))}
-            </div>
-          )}
-
-          {!!error && !loading && (
-            <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-rose-200/60 dark:border-rose-400/20">
-              <p className="text-rose-600 dark:text-rose-400 mb-3">{error}</p>
-              <button
-                onClick={fetchProjects}
-                className="btn btn-primary"
-                aria-label="Retry loading projects"
-              >
-                Retry
-              </button>
-            </div>
-          )}
-
-          {!loading && !error && filtered.length === 0 && (
-            <ProjectsEmpty onCreate={() => setShowCreate(true)} />
-          )}
-
-          {!loading && !error && filtered.length > 0 && (
-            <div className="grid grid-cols-1 gap-3">
-              {filtered.map((p) => (
-                <ProjectListItem
-                  key={p._id || p.id}
-                  project={p}
-                  onClick={() => navigate(`/projects/${p._id || p.id}`)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT: Rail */}
-        <div className="hidden lg:block">
-          <RightRail
-            onQuickStatus={(s) => setStatus(s)}
-            onQuickOwner={(o) => setOwner(o)}
-            onQuickUpdated={(u) => setUpdated(u)}
-          />
-        </div>
-      </div>
-
-      {showCreate && (
-        <ProjectsCreate
-          onClose={() => setShowCreate(false)}
-          onProjectCreated={handleProjectCreated}
+    <main id="main" role="main" tabIndex={-1}>
+      <div
+        data-accent="emerald"
+        className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-100 dark:bg-gray-800 min-h-screen max-w-6xl mx-auto"
+      >
+        <ProjectsHeader
+          query={query}
+          onQueryChange={setQuery}
+          status={status}
+          onStatusChange={setStatus}
+          owner={owner}
+          onOwnerChange={setOwner}
+          updated={updated}
+          onUpdatedChange={setUpdated}
+          onCreateProject={() => setShowCreate(true)}
         />
-      )}
-    </div>
+
+        {/* Two-column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mt-4">
+          {/* LEFT: Project list */}
+          <div className="space-y-4">
+            {loading && (
+              <div className="grid grid-cols-1 gap-3" aria-busy="true" aria-live="polite">
+                {[...Array(4)].map((_, i) => (
+                  <ProjectSkeleton key={i} />
+                ))}
+              </div>
+            )}
+
+            {!!error && !loading && (
+              <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-rose-200/60 dark:border-rose-400/20">
+                <p className="text-rose-600 dark:text-rose-400 mb-3">{error}</p>
+                <button
+                  onClick={fetchProjects}
+                  className="btn btn-primary"
+                  aria-label="Retry loading projects"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {!loading && !error && filtered.length === 0 && (
+              <ProjectsEmpty onCreate={() => setShowCreate(true)} />
+            )}
+
+            {!loading && !error && filtered.length > 0 && (
+              <div className="grid grid-cols-1 gap-3">
+                {filtered.map((p) => (
+                  <ProjectListItem
+                    key={p._id || p.id}
+                    project={p}
+                    onClick={() => goToProject(p._id || p.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT: Rail */}
+          <div className="hidden lg:block">
+            <RightRail
+              onQuickStatus={(s) => setStatus(s)}
+              onQuickOwner={(o) => setOwner(o)}
+              onQuickUpdated={(u) => setUpdated(u)}
+            />
+          </div>
+        </div>
+
+        {/* Create modal */}
+        {showCreate && (
+          <ProjectsCreate
+            onClose={() => setShowCreate(false)}
+            onProjectCreated={handleProjectCreated}
+          />
+        )}
+      </div>
+    </main>
   );
 }
