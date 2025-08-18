@@ -5,10 +5,11 @@
   "scripts": {
     "start": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "lh:home": "lighthouse http://localhost:54693/home --only-categories=performance,accessibility,best-practices,seo --output html --output-path ./lhr-home.html",
-    "lh:projects": "lighthouse http://localhost:54693/projects --only-categories=performance,accessibility,best-practices,seo --output html --output-path ./lhr-projects.html",
-    "lh:projectId": "node -e \"const id=process.env.SS_PROJECT_ID||'REPLACE_ME'; if(id==='REPLACE_ME'){console.error('Set SS_PROJECT_ID'); process.exit(1)}; console.log('Running Lighthouse for', id)\" && lighthouse http://localhost:54693/projects/$SS_PROJECT_ID --only-categories=performance,accessibility,best-practices,seo --output html --output-path ./lhr-project.html",
+    "serve:dist": "vite preview --port 4173 --strictPort",
+    "lh:prep": "npm run build && npm run serve:dist",
+    "lh:home": "lighthouse http://localhost:4173/home --only-categories=performance,accessibility,best-practices,seo --output=json --output=html --output-path ./lighthouse/home_after",
+    "lh:projects": "lighthouse http://localhost:4173/projects --only-categories=performance,accessibility,best-practices,seo --output=json --output=html --output-path ./lighthouse/projects_after",
+    "lh:projectId": "node -e \"const id=process.env.SS_PROJECT_ID||'REPLACE_ME'; if(id==='REPLACE_ME'){console.error('Set SS_PROJECT_ID'); process.exit(1)}; console.log('Running Lighthouse for', id)\" && lighthouse http://localhost:4173/projects/$SS_PROJECT_ID --only-categories=performance,accessibility,best-practices,seo --output=json --output=html --output-path ./lighthouse/project_id_after",
     "lh:all": "npm run lh:home && npm run lh:projects && npm run lh:projectId"
   },
   "dependencies": {
@@ -32,6 +33,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.1",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "lighthouse": "^12.8.1",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "vite": "^4.5.14"

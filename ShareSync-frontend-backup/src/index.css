@@ -5,7 +5,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import './theme.css';
 
 :root {
   --primary-color: #5b6cff;

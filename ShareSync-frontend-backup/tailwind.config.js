@@ -7,9 +7,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'dark-navy': '#1a1a2e',
-        'vibrant-pink': '#ff2e63',
-        'neon-blue': '#08f7fe',
+        primary: '#0B5FFF',
+        success: '#16A34A',
+        danger: '#DC2626',
       },
       fontFamily: {
         'display': ['"Poppins"', 'sans-serif'],

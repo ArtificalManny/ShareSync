@@ -1,6 +1,18 @@
 // /src/App.jsx
-import React, { useState, useReducer, useEffect, useContext, Suspense, lazy } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import React, {
+  useState,
+  useReducer,
+  useEffect,
+  useContext,
+  Suspense,
+  lazy,
+} from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate, // ⬅ for redirects
+} from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import { AuthProvider, AuthContext } from "./AuthContext";
@@ -13,7 +25,7 @@ const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Login = lazy(() => import("./pages/Login"));
-const Profile = lazy(() => import("./pages/Profile"));
+const Profile = lazy(() => import("./pages/Profile"));        // used for /me and /u/:username
 const ProjectHome = lazy(() => import("./pages/ProjectHome"));
 const CreateAccount = lazy(() => import("./pages/CreateAccount"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -36,7 +48,10 @@ const AppRoutes = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
-  const [searchState, dispatchSearch] = useReducer(searchReducer, { query: "", suggestions: [] });
+  const [searchState, dispatchSearch] = useReducer(searchReducer, {
+    query: "",
+    suggestions: [],
+  });
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [accentColor, setAccentColor] = useState("purple");
   const [feedItems, setFeedItems] = useState([]);
@@ -102,21 +117,39 @@ const AppRoutes = () => {
         <div id="main" role="main" className="main-content">
           <Suspense
             fallback={
-              <div className="px-6 py-10 text-center text-slate-500" role="status" aria-live="polite">
+              <div
+                className="px-6 py-10 text-center text-slate-500"
+                role="status"
+                aria-live="polite"
+              >
                 Loading page…
               </div>
             }
           >
             <Routes>
+              {/* Redirect root to /home */}
+              <Route path="/" element={<Navigate to="/home" replace />} />
+
+              {/* Core pages */}
               <Route path="/home" element={<Home />} />
-              <Route path="/profile/:username" element={<Profile />} />
               <Route path="/projects" element={<Projects />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/login" element={<Login />} />
               <Route path="/projects/:id" element={<ProjectHome />} />
+              <Route path="/settings" element={<Settings />} />
+
+              {/* Auth */}
+              <Route path="/login" element={<Login />} />
               <Route path="/create-account" element={<CreateAccount />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
 
+              {/* Profile routes */}
+              {/* Back-compat route you already had */}
+              <Route path="/profile/:username" element={<Profile />} />
+              {/* NEW: public profile */}
+              <Route path="/u/:username" element={<Profile />} />
+              {/* NEW: owner profile */}
+              <Route path="/me" element={<Profile />} />
+
+              {/* Public cadence feed */}
               <Route
                 path="/streak"
                 element={
@@ -124,12 +157,18 @@ const AppRoutes = () => {
                     <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">
                       Public Cadence Feed
                     </h1>
-                    <PublicStreakFeed initialType="all" initialSince="7d" initialSort="newest" pageSize={20} />
+                    <PublicStreakFeed
+                      initialType="all"
+                      initialSince="7d"
+                      initialSort="newest"
+                      pageSize={20}
+                    />
                   </div>
                 }
               />
 
-              <Route path="*" element={<Home />} />
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
           </Suspense>
         </div>

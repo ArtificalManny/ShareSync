@@ -15,6 +15,7 @@ import { DigestModule } from './digest/digest.module';
 import { MailerConfigModule } from './mailer/mailer.module';
 
 import { AppController } from './app.controller';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AppController } from './app.controller';
     ProfileModule,
     ActivitiesModule,
     RealtimeModule,
+    AnalyticsModule,
     // Mail + Digest
     MailerConfigModule,
     DigestModule,

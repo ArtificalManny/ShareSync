@@ -1,155 +1,200 @@
 // /src/pages/Profile.jsx
-import React, { useState, useEffect, useContext } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { AuthContext } from '../AuthContext';
-import { fetchLeaderboard } from '../services/project';
-import { fetchUser } from '../services/auth';
-import axios from 'axios';
-import { Award } from 'lucide-react';
-import "../index.css";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useParams, Link } from "react-router-dom";
+import client from "../api/client";
+import formatProfilePicture from "../utils/formatProfilePicture";
 
-// Utility
-const getTierFromXP = (xp) => {
-  if (xp >= 2000) return "Legend";
-  if (xp >= 1000) return "Elite";
-  if (xp >= 500) return "Rising Star";
-  return "Novice";
-};
+const Avatar = ({ src, alt }) => (
+  <img
+    src={formatProfilePicture(src)}
+    alt={alt || ""}
+    className="h-16 w-16 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+  />
+);
 
-const XPProgressRing = ({ xp }) => {
-  const radius = 40;
-  const stroke = 8;
-  const normalizedRadius = radius - stroke * 0.5;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const progress = Math.min(xp / 2000, 1);
-  const strokeDashoffset = circumference - progress * circumference;
+export default function Profile() {
+  const { username: routeUsername } = useParams();
+  const location = useLocation();
 
-  return (
-    <svg height={radius * 2} width={radius * 2} className="mx-auto block">
-      <circle stroke="#ccc" fill="transparent" strokeWidth={stroke} r={normalizedRadius} cx={radius} cy={radius} />
-      <circle stroke="#FFD700" fill="transparent" strokeWidth={stroke} r={normalizedRadius} cx={radius} cy={radius}
-        strokeDasharray={circumference} style={{ strokeDashoffset, transition: 'stroke-dashoffset 0.5s ease' }} />
-      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle"
-        className="text-xs font-bold text-gray-800">{xp} XP</text>
-    </svg>
+  // public routes are /u/:username or (legacy) /profile/:username
+  const isPublicRoute = useMemo(
+    () => Boolean(routeUsername) && (location.pathname.startsWith("/u/") || location.pathname.startsWith("/profile/")),
+    [routeUsername, location.pathname]
   );
-};
 
-const Profile = () => {
-  const { username } = useParams();
-  const { user, socket } = useContext(AuthContext);
-  const [profile, setProfile] = useState(null);
-  const [userPoints, setUserPoints] = useState(0);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [error, setError] = useState('');
-  const [hasFailed, setHasFailed] = useState(false);
-
-  const isOwner = user?.username?.toLowerCase() === username?.toLowerCase();
+  const [loading, setLoading] = useState(true);
+  const [locked, setLocked] = useState(false);
+  const [error, setError] = useState("");
+  const [me, setMe] = useState(null);         // owner data for /me
+  const [publicUser, setPublicUser] = useState(null); // public data for /u/:username
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    let ignore = false;
+
+    async function run() {
+      setLoading(true);
+      setLocked(false);
+      setError("");
+
       try {
-        let response;
+        if (isPublicRoute) {
+          // PUBLIC: /u/:username or /profile/:username
+          const res = await client.get(`/users/public/${encodeURIComponent(routeUsername)}`);
+          if (ignore) return;
 
-        if (isOwner) {
-          response = await fetchUser(); // own profile
+          // If API returns a flag for locked/hidden, respect it
+          const u = res.data || {};
+          if (u.publicProfile === false) {
+            setLocked(true);
+            setPublicUser(null);
+          } else {
+            setPublicUser(u);
+          }
         } else {
-          const res = await axios.get(`/api/users/public/${username}`);
-          response = res.data;
+          // OWNER: /me
+          const res = await client.get("/users/me");
+          if (ignore) return;
+          setMe(res.data || null);
         }
+      } catch (e) {
+        if (ignore) return;
 
-        setProfile(response);
-        setUserPoints(response.points || 0);
-
-        if (response.projects?.length > 0) {
-          const boards = await Promise.all(response.projects.map(p => fetchLeaderboard(p._id)));
-          const flat = boards.flat();
-          const aggregated = {};
-
-          flat.forEach(entry => {
-            if (aggregated[entry.email]) {
-              aggregated[entry.email].points += entry.points;
-            } else {
-              aggregated[entry.email] = { ...entry };
-            }
-          });
-
-          const top = Object.values(aggregated).sort((a, b) => b.points - a.points).slice(0, 3);
-          setLeaderboard(top);
+        // If public route is private or not found, show "locked"
+        if (isPublicRoute) {
+          setLocked(true);
+        } else {
+          setError(String(e?.message || e));
         }
-
-      } catch (err) {
-        setError('Profile failed to load: ' + (err.response?.data?.message || err.message));
-        setHasFailed(true);
+      } finally {
+        if (!ignore) setLoading(false);
       }
-    };
-
-    fetchProfile();
-
-    if (socket) {
-      socket.on('profile-updated', (data) => {
-        if (data.user.username === username) fetchProfile();
-      });
-      socket.on('project-updated', fetchProfile);
-      return () => {
-        socket.off('profile-updated');
-        socket.off('project-updated');
-      };
     }
-  }, [username, user, socket]);
 
-  if (hasFailed) {
+    run();
+    return () => {
+      ignore = true;
+    };
+  }, [isPublicRoute, routeUsername]);
+
+  // ---------- Render helpers ----------
+
+  const Header = ({ user, isOwner }) => {
+    const name = user?.firstName || user?.name || "User";
+    const at = user?.username ? `@${user.username}` : "";
+    const pic = user?.profilePicture || "/default-profile.png";
+    const privacy = isOwner
+      ? user?.publicProfile ? "Public profile" : "Private profile"
+      : user?.publicProfile ? "Public" : "Private";
+
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <p className="text-red-500 text-lg font-orbitron mb-4">{error}</p>
-          <Link to="/" className="text-indigo-500 hover:underline">← Back to Home</Link>
-        </div>
-      </div>
-    );
-  }
+      <div className="flex items-start gap-4">
+        <Avatar src={pic} alt={name} />
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+              {name}
+            </h1>
+            {at && <span className="text-slate-500">{at}</span>}
+            <span
+              className={[
+                "ml-2 rounded-full border px-2 py-0.5 text-xs",
+                user?.publicProfile
+                  ? "border-emerald-300 text-emerald-700 bg-emerald-50"
+                  : "border-slate-300 text-slate-600 bg-slate-50",
+              ].join(" ")}
+              title={privacy}
+            >
+              {privacy}
+            </span>
+          </div>
 
-  if (!profile) return null; // blank until loaded
+          {user?.bio && (
+            <p className="mt-1 text-slate-600 dark:text-slate-300">{user.bio}</p>
+          )}
 
-  if (!isOwner && !profile.publicProfile) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-gray-500 text-lg font-orbitron mb-4">This profile is private.</p>
-          <Link to="/" className="text-indigo-500 hover:underline">← Back to Home</Link>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen p-6">
-      <div className="relative glassmorphic text-center py-8 px-4">
-        <img src={profile.profilePicture || 'https://via.placeholder.com/150'} alt="Profile"
-          className="w-24 h-24 rounded-full border-4 mx-auto shadow-md" />
-        <XPProgressRing xp={userPoints} />
-        <div className="mt-2 font-orbitron text-lg text-indigo-600">🎖️ Tier: {getTierFromXP(userPoints)}</div>
-        <div className="text-yellow-500 font-orbitron">🔥 Streak: {profile.streakDays || 0} days</div>
-      </div>
-
-      <div className="mt-6">
-        <h3 className="font-orbitron text-xl text-center text-gray-700 dark:text-gray-300 mb-4">Top Projects</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 px-4">
-          {leaderboard.map((entry, index) => (
-            <div key={index} className="p-4 rounded-lg glassmorphic border border-gray-200 shadow-md">
-              <div className="flex items-center gap-3">
-                <Award className="text-indigo-500" />
-                <div>
-                  <p className="font-bold text-gray-800 dark:text-white">{entry.firstName || entry.email}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-300">{entry.points} XP</p>
-                </div>
-              </div>
+          {isOwner && (
+            <div className="mt-3 flex items-center gap-2">
+              <Link
+                to="/settings"
+                className="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-white text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                Edit profile
+              </Link>
+              <Link
+                to="/projects"
+                className="inline-flex items-center rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                View projects
+              </Link>
             </div>
-          ))}
+          )}
         </div>
       </div>
+    );
+  };
+
+  const LockedCard = () => (
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 text-center">
+      <div className="text-3xl mb-2">🔒</div>
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+        This profile is private
+      </h2>
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        The owner hasn’t made their profile public.
+      </p>
     </div>
   );
-};
 
-export default Profile;
+  // ---------- Main render ----------
+
+  return (
+    <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-100 dark:bg-gray-800 min-h-screen max-w-5xl mx-auto space-y-6">
+      {loading ? (
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+          <div className="animate-pulse flex items-start gap-4">
+            <div className="h-16 w-16 rounded-full bg-slate-200 dark:bg-slate-700" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-slate-200 dark:bg-slate-700 w-40" />
+              <div className="h-3 bg-slate-200 dark:bg-slate-700 w-64" />
+              <div className="h-3 bg-slate-200 dark:bg-slate-700 w-48" />
+            </div>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+          {String(error)}
+        </div>
+      ) : isPublicRoute ? (
+        locked ? (
+          <LockedCard />
+        ) : (
+          <>
+            <Header user={publicUser} isOwner={false} />
+            {/* Public sections (add more when available) */}
+            <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+              <h3 className="text-sm font-semibold mb-2">Recent activity</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Coming soon.</p>
+            </section>
+          </>
+        )
+      ) : (
+        <>
+          <Header user={me} isOwner />
+          {/* Owner-only panels */}
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+              <h3 className="text-sm font-semibold mb-2">Your stats</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Coming soon.</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+              <h3 className="text-sm font-semibold mb-2">Notifications</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Manage in <Link to="/settings" className="text-indigo-600 underline">Settings</Link>.
+              </p>
+            </div>
+          </section>
+        </>
+      )}
+    </div>
+  );
+}

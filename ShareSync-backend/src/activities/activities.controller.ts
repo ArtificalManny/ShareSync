@@ -1,41 +1,46 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+// src/activities/activities.controller.ts
+import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt.guard'; // <- keep this path consistent with your repo
 import { ActivitiesService } from './activities.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { CreateActivityDto } from './dto/create-activity.dto';
+
+type AnyObj = Record<string, any>;
 
 @Controller('activities')
 export class ActivitiesController {
-  constructor(private readonly activitiesService: ActivitiesService) {}
+  constructor(
+    private readonly activities: ActivitiesService,
+    private readonly realtime: RealtimeGateway,
+  ) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   async create(
-    @Body('userId') userId: string,
-    @Body('projectId') projectId: string,
-    @Body('action') action: string,
+    @Req() req: any,
+    @Body() dto: CreateActivityDto,
   ) {
-    try {
-      return await this.activitiesService.create(userId, projectId, action);
-    } catch (error) {
-      console.error('Error in create activity:', error);
-      throw error;
-    }
-  }
+    const userId: string = req.user?.sub || req.user?.id || req.user?._id;
 
-  @Get('user/:userId')
-  async findByUser(@Param('userId') userId: string) {
-    try {
-      return await this.activitiesService.findByUser(userId);
-    } catch (error) {
-      console.error('Error in findByUser:', error);
-      throw error;
-    }
-  }
+    // ✅ Match service signature exactly: (projectId, userId, dto)
+    const created = await this.activities.create(dto.projectId, userId, dto);
 
-  @Get('project/:projectId')
-  async findByProject(@Param('projectId') projectId: string) {
-    try {
-      return await this.activitiesService.findByProject(projectId);
-    } catch (error) {
-      console.error('Error in findByProject:', error);
-      throw error;
-    }
+    const createdAny = created as AnyObj;
+    const payload = {
+      _id: String(createdAny?._id ?? ''),
+      type: createdAny?.type ?? dto.type ?? 'update',
+      text: createdAny?.text ?? dto.text ?? '',
+      meta: createdAny?.meta ?? dto.meta ?? {},
+      userId,
+      projectId: String(dto.projectId),
+      createdAt: createdAny?.createdAt ?? new Date().toISOString(),
+    };
+
+    // Realtime fan-out
+    this.realtime.emitToProject(dto.projectId, 'activity:new', payload);
+    this.realtime.emitToProject(dto.projectId, 'project:statsUpdated', { projectId: dto.projectId });
+    this.realtime.emitToUser(userId, 'user:statsUpdated', { userId });
+
+    return created;
   }
 }

@@ -1,5 +1,5 @@
 // /src/components/project/ProjectActivityFeed.jsx
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useSocket from '../../hooks/useSocket';
 import EmptyState from '../EmptyState';
 
@@ -17,15 +17,11 @@ export default function ProjectActivityFeed({
   useEffect(() => {
     if (!firstRenderRef.current && items && items.length > 0) {
       firstRenderRef.current = true;
-      performance.mark('first_activity_render');
+      performance.mark?.('first_activity_render');
       const start = performance.getEntriesByName('project_data_ready').at(-1)?.startTime;
       if (start) {
-        // helpful console metric during QA
         // eslint-disable-next-line no-console
-        console.log(
-          '[Render] First activity after data ms:',
-          (performance.now() - start).toFixed(0)
-        );
+        console.log('[Render] First activity after data ms:', (performance.now() - start).toFixed(0));
       }
     }
   }, [items]);
@@ -42,12 +38,69 @@ export default function ProjectActivityFeed({
       'task:completed': () => onRefetch?.(),
       'task:due_changed': () => onRefetch?.(),
       'invite:accepted': () => onRefetch?.(),
+      'activity:new': () => onRefetch?.(), // ← catch-all if backend emits this
     },
     poller,
   });
 
+  // ---------------- Filters (local) ----------------
+  const [filter, setFilter] = useState('all'); // 'all' | 'updates' | 'tasks' | 'files'
+
+  // Best-effort classifier so we don’t need API changes:
+  const classify = (u) => {
+    const kind = (u.kind || u.type || '').toString().toLowerCase();
+    if (kind.includes('file')) return 'files';
+    if (kind.includes('task')) return 'tasks';
+    if (kind.includes('update') || kind === '' /* many simple text updates */) return 'updates';
+    // Heuristics fallback:
+    const txt = (u.text || '').toLowerCase();
+    if (txt.includes('uploaded') || txt.includes('.pdf') || txt.includes('.png') || txt.includes('.doc')) return 'files';
+    if (txt.includes('task') || txt.includes('completed') || txt.includes('assigned')) return 'tasks';
+    return 'updates';
+  };
+
+  const filteredItems = useMemo(() => {
+    if (filter === 'all') return items || [];
+    return (items || []).filter((u) => classify(u) === filter);
+  }, [items, filter]);
+
+  // ---------------- Render ----------------
   return (
     <section aria-label="Project activity feed" className="space-y-3">
+      {/* Filter bar */}
+      <div className="flex items-center gap-2">
+        {[
+          { key: 'all', label: 'All' },
+          { key: 'updates', label: 'Updates' },
+          { key: 'tasks', label: 'Tasks' },
+          { key: 'files', label: 'Files' },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setFilter(key)}
+            className={[
+              'inline-flex items-center rounded-xl px-3 py-1 text-sm border',
+              filter === key
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/70 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800',
+            ].join(' ')}
+            aria-pressed={filter === key}
+          >
+            {label}
+          </button>
+        ))}
+        <div className="flex-1" />
+        {/* Optional manual refresh */}
+        {onRefetch && (
+          <button
+            onClick={() => onRefetch()}
+            className="inline-flex items-center rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-1 text-sm text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
+          >
+            Refresh
+          </button>
+        )}
+      </div>
+
       {/* Composer (optional) */}
       {onPostUpdate && (
         <Composer onSubmit={onPostUpdate} />
@@ -62,9 +115,9 @@ export default function ProjectActivityFeed({
             <div className="h-4 bg-slate-200 rounded w-1/3" />
           </div>
         </div>
-      ) : items?.length ? (
+      ) : filteredItems?.length ? (
         <>
-          {items.map((u) => (
+          {filteredItems.map((u) => (
             <article
               key={u._id}
               className="rounded-xl border border-slate-200/70 dark:border-slate-700 p-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md"
@@ -91,10 +144,14 @@ export default function ProjectActivityFeed({
       ) : (
         <EmptyState
           icon="🧵"
-          title="No updates yet"
-          body="Kick things off with a quick update so everyone knows the plan."
+          title={filter === 'all' ? 'No updates yet' : 'No items in this filter'}
+          body={
+            filter === 'all'
+              ? 'Kick things off with a quick update so everyone knows the plan.'
+              : 'Try switching filters or posting an update.'
+          }
           action={
-            onPostUpdate ? (
+            onPostUpdate && filter === 'all' ? (
               <button
                 onClick={() => onPostUpdate('First update 👋')}
                 className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -129,6 +186,7 @@ function Composer({ onSubmit }) {
           type="text"
           placeholder="What’s the latest?"
           className="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+          onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
         />
         <button
           onClick={handleSend}

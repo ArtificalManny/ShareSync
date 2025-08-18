@@ -6,48 +6,56 @@ import {
     MessageBody,
     ConnectedSocket,
   } from '@nestjs/websockets';
+  import { Logger } from '@nestjs/common';
   import { Server, Socket } from 'socket.io';
   
   @WebSocketGateway({
-    cors: { origin: ['http://localhost:54693'], credentials: true },
-    namespace: '/',
+    cors: {
+      origin: '*',
+      credentials: true,
+    },
   })
   export class RealtimeGateway {
     @WebSocketServer() server: Server;
+    private readonly logger = new Logger(RealtimeGateway.name);
   
-    handleConnection(client: Socket) {
-      // no-op; could auth here later
-    }
-  
-    handleDisconnect(client: Socket) {
-      // no-op
-    }
-  
-    /** Client asks to join a room: { room: 'project:<id>' | 'user:<id>' } */
+    // ---- Room helpers (used by FE to join/leave) ----
     @SubscribeMessage('join')
-    onJoin(@ConnectedSocket() client: Socket, @MessageBody() data: { room: string }) {
-      const room = String(data?.room || '');
-      if (!room) return;
-      client.join(room);
-      client.emit('joined', { room });
+    handleJoin(
+      @MessageBody() data: { room: string },
+      @ConnectedSocket() client: Socket,
+    ) {
+      if (!data?.room) return;
+      client.join(data.room);
+      this.logger.debug(`Client ${client.id} joined ${data.room}`);
     }
   
-    /** Client asks to leave a room */
     @SubscribeMessage('leave')
-    onLeave(@ConnectedSocket() client: Socket, @MessageBody() data: { room: string }) {
-      const room = String(data?.room || '');
-      if (!room) return;
-      client.leave(room);
-      client.emit('left', { room });
+    handleLeave(
+      @MessageBody() data: { room: string },
+      @ConnectedSocket() client: Socket,
+    ) {
+      if (!data?.room) return;
+      client.leave(data.room);
+      this.logger.debug(`Client ${client.id} left ${data.room}`);
     }
   
-    /** Emitters used by services */
+    // ---- Emission helpers (used by controllers/services) ----
+    /** Emit to a whole room (generic) */
+    emitToRoom(room: string, event: string, payload: any) {
+      this.server.to(room).emit(event, payload);
+    }
+  
+    /** Emit to a specific project room: project:{projectId} */
     emitToProject(projectId: string, event: string, payload: any) {
-      this.server.to(`project:${projectId}`).emit(event, payload);
+      if (!projectId) return;
+      this.emitToRoom(`project:${projectId}`, event, payload);
     }
   
+    /** Emit to a specific user room: user:{userId} */
     emitToUser(userId: string, event: string, payload: any) {
-      this.server.to(`user:${userId}`).emit(event, payload);
+      if (!userId) return;
+      this.emitToRoom(`user:${userId}`, event, payload);
     }
   }
   

@@ -1,6 +1,6 @@
 // /src/components/home/ProjectsRail.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 /**
  * ProjectsRail
@@ -10,15 +10,16 @@ import { useNavigate } from "react-router-dom";
  * - Blue ring if unread in last 24h (unreadCount > 0 AND lastActivityAt < 24h)
  *
  * props:
- *  - items: Array<{ _id, title, avatar?, lastActivityAt?, unreadCount? }>
+ *  - items: Array<{ _id?, id?, title, avatar?, lastActivityAt?, unreadCount? }>
  *  - loading: boolean
  */
 export default function ProjectsRail({ items = [], loading = false }) {
-  const nav = useNavigate();
   const scrollerRef = useRef(null);
   const [hoverId, setHoverId] = useState(null);
 
-  // simple helpers
+  // helpers
+  const getId = (p) => p?._id || p?.id || null;
+
   const hasUnread = (p) => {
     if (!p?.lastActivityAt) return false;
     const since = Date.now() - new Date(p.lastActivityAt).getTime();
@@ -27,7 +28,6 @@ export default function ProjectsRail({ items = [], loading = false }) {
 
   const displayEmoji = (p) => {
     if (p?.avatar && /^https?:\/\//i.test(p.avatar)) return null; // it's an image URL
-    // pull a nice emoji from title if present, else first letter
     const m = (p?.title || "").match(/[\p{Emoji}\p{Extended_Pictographic}]/u);
     return m ? m[0] : (p?.title || "P").trim()[0]?.toUpperCase() || "P";
   };
@@ -65,7 +65,7 @@ export default function ProjectsRail({ items = [], loading = false }) {
       if (!isDown) return;
       e.preventDefault();
       const x = (e.touches ? e.touches[0].pageX : e.pageX) - el.offsetLeft;
-      const walk = (x - startX) * 1; // speed
+      const walk = (x - startX) * 1;
       el.scrollLeft = scrollLeft - walk;
     };
 
@@ -115,17 +115,20 @@ export default function ProjectsRail({ items = [], loading = false }) {
         className="flex items-stretch gap-3"
       >
         {items.map((p) => {
+          const id = getId(p);
+          if (!id) return null; // skip items without an id
           const isUnread = hasUnread(p);
           const emoji = displayEmoji(p);
           const isImage = p?.avatar && /^https?:\/\//i.test(p.avatar);
 
           return (
-            <li key={p._id} role="option" aria-selected={false}>
-              <button
-                onClick={() => nav(`/projects/${p._id}`)}
-                onMouseEnter={() => setHoverId(p._id)}
-                onMouseLeave={() => setHoverId((id) => (id === p._id ? null : id))}
+            <li key={id} role="option" aria-selected={false}>
+              <Link
+                to={`/projects/${id}`}
+                onMouseEnter={() => setHoverId(id)}
+                onMouseLeave={() => setHoverId((curr) => (curr === id ? null : curr))}
                 className="relative w-[92px] shrink-0 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 p-2 flex flex-col items-center gap-1"
+                aria-label={`Open project ${p.title || "Untitled"}`}
               >
                 <span
                   className={[
@@ -138,31 +141,30 @@ export default function ProjectsRail({ items = [], loading = false }) {
                 >
                   {isImage ? (
                     <img
-                      src={p.avatar}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      draggable={false}
-                    />
+                    src={p.avatar}
+                    alt=""
+                    width={48}
+                    height={48}
+                    className="h-full w-full object-cover"
+                  />                  
                   ) : (
                     <span>{emoji}</span>
                   )}
                 </span>
                 <span className="text-[11px] text-slate-700 dark:text-slate-300 text-center line-clamp-2">
-                  {p.title}
+                  {p.title || "Untitled"}
                 </span>
 
                 {/* Quick Peek hover card */}
-                {hoverId === p._id && (
+                {hoverId === id && (
                   <div
                     role="dialog"
-                    aria-label={`${p.title} quick peek`}
+                    aria-label={`${p.title || "Untitled"} quick peek`}
                     className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-56 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 shadow-xl p-3 z-10"
                   >
                     <div className="text-xs text-slate-500 mb-1">Last activity</div>
                     <div className="text-sm text-slate-800 dark:text-slate-100">
-                      {p.lastActivityAt
-                        ? new Date(p.lastActivityAt).toLocaleString()
-                        : "—"}
+                      {p.lastActivityAt ? new Date(p.lastActivityAt).toLocaleString() : "—"}
                     </div>
                     {p.unreadCount > 0 && (
                       <div className="mt-2 text-xs text-blue-600">
@@ -171,13 +173,13 @@ export default function ProjectsRail({ items = [], loading = false }) {
                     )}
                   </div>
                 )}
-              </button>
+              </Link>
             </li>
           );
         })}
       </ul>
     );
-  }, [items, loading, nav, hoverId]);
+  }, [items, loading, hoverId]);
 
   return (
     <section

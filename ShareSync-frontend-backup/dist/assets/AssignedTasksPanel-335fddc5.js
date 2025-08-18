@@ -1,0 +1,11 @@
+import{c as r,j as e}from"./index-69706c91.js";/**
+ * @license lucide-react v0.395.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const l=r("CalendarDays",[["path",{d:"M8 2v4",key:"1cmpym"}],["path",{d:"M16 2v4",key:"4m81vk"}],["rect",{width:"18",height:"18",x:"3",y:"4",rx:"2",key:"1hopcy"}],["path",{d:"M3 10h18",key:"8toen8"}],["path",{d:"M8 14h.01",key:"6423bh"}],["path",{d:"M12 14h.01",key:"1etili"}],["path",{d:"M16 14h.01",key:"1gbofw"}],["path",{d:"M8 18h.01",key:"lrp35t"}],["path",{d:"M12 18h.01",key:"mhygvu"}],["path",{d:"M16 18h.01",key:"kzsmim"}]]);/**
+ * @license lucide-react v0.395.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const i=r("Clock",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["polyline",{points:"12 6 12 12 16 14",key:"68esgv"}]]);function c({tasks:t=[]}){return t.length?e.jsxs("section",{className:"bg-white dark:bg-gray-900 rounded-3xl shadow-lg p-6 transition",children:[e.jsx("h2",{className:"text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4",children:"📋 Assigned Tasks"}),e.jsx("ul",{className:"space-y-4",children:t.slice(0,5).map(a=>e.jsxs("li",{className:"border-l-4 border-indigo-500 pl-4 py-3 px-3 bg-gray-50 dark:bg-gray-800 rounded-xl shadow hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between",children:[e.jsxs("div",{className:"flex flex-col gap-1",children:[e.jsx("p",{className:"text-base font-medium text-gray-900 dark:text-white",children:a.title}),e.jsxs("div",{className:"flex items-center text-sm text-gray-600 dark:text-gray-400 gap-4",children:[e.jsxs("span",{className:"flex items-center",children:[e.jsx(l,{className:"w-4 h-4 mr-1"}),"Due: ",a.dueDateFormatted]}),a.priority&&e.jsxs("span",{className:"flex items-center",children:[e.jsx(i,{className:"w-4 h-4 mr-1"}),"Priority: ",a.priority]})]})]}),e.jsx("div",{className:"flex -space-x-2 mt-3 sm:mt-0",children:a.assignees.map(s=>e.jsx("img",{src:s.avatarUrl,alt:s.name,title:s.name,className:"w-8 h-8 rounded-full border-2 border-white dark:border-gray-900 object-cover transition-transform hover:scale-105"},s.id))})]},a.id))})]}):null}export{c as default};

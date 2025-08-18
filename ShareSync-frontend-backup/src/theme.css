@@ -6,20 +6,22 @@
 
 /* ---------- Root (Light) ---------- */
 :root {
-  /* Palette */
-  --blue-600: #2457F5;
-  --blue-700: #1B46C8;
+  /* Palette (updated) */
+  --blue-600: #0B5FFF;  /* primary */
+  --blue-700: #0A53EA;  /* hover */
 
-  --green-500: #17B26A; /* success */
+  --green-500: #16A34A; /* success */
   --amber-500: #F59E0B; /* warn */
-  --red-500:   #EF4444; /* danger */
+  --red-500:   #DC2626; /* danger */
 
-  --ink-900: #111827;   /* text strong */
-  --ink-600: #4B5563;   /* text secondary */
-  --ink-100: #F3F4F6;   /* subtle bg */
+  /* Neutrals (updated) */
+  --ink-900: #0F172A;   /* text strong */
+  --ink-600: #64748B;   /* text secondary */
+  --ink-100: #EEF2F7;   /* subtle bg */
 
+  /* Surfaces (updated) */
   --bg-elevated: #FFFFFF;
-  --bg-canvas:   #F7F9FC;
+  --bg-canvas:   #F8FAFC;
 
   /* Type scale (font-size/line-height) */
   --h1-size: 24px;
@@ -37,7 +39,7 @@
   --radius-sm: 10px;
 
   /* Shadow (CNBC-ish, soft & long) */
-  --shadow-elev: 0 8px 24px rgba(16, 24, 40, 0.08);
+  --shadow-elev: 0 8px 24px rgba(15, 23, 42, 0.08);
 
   /* Motion */
   --ease-standard: cubic-bezier(.2,.7,.3,1);
@@ -50,8 +52,8 @@
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.35);
 
-  /* --Ally focus rings (visible, consistent)--*/
-  --focus-ring: 2px solid var(--blue-600, #2467F5);
+  /* A11y focus rings (visible, consistent) */
+  --focus-ring: 2px solid var(--blue-600, #0B5FFF);
   --focus-offset: 2px;
 }
 
@@ -159,6 +161,8 @@ html, body, #root, .app-container {
   color: var(--ink-600);
   transition: background var(--motion-quick), color var(--motion-quick);
 }
+
+/* color-mix has wide modern support; safe to keep for soft tints */
 .chip--success { background: color-mix(in srgb, var(--green-500) 14%, white); color: var(--green-500); }
 .chip--warn    { background: color-mix(in srgb, var(--amber-500) 18%, white); color: var(--amber-500); }
 .chip--danger  { background: color-mix(in srgb, var(--red-500)   16%, white); color: var(--red-500); }
@@ -194,7 +198,6 @@ textarea:focus-visible,
   border-radius: 10px;
 }
 
-
 /* Improve contrast for disabled but focusable elements */
 [tabindex]:focus-visible {
   outline: var(--focus-ring);
@@ -209,4 +212,9 @@ textarea:focus-visible,
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+/* Ensure outline-none doesn’t hide a11y ring for keyboard users */
+*:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }

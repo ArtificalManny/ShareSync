@@ -1,0 +1,16 @@
+import{c as s,j as e}from"./index-69706c91.js";/**
+ * @license lucide-react v0.395.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const c=s("MessageCircle",[["path",{d:"M7.9 20A9 9 0 1 0 4 16.1L2 22Z",key:"vv11sd"}]]);/**
+ * @license lucide-react v0.395.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const l=s("Share2",[["circle",{cx:"18",cy:"5",r:"3",key:"gq8acd"}],["circle",{cx:"6",cy:"12",r:"3",key:"w7nqdw"}],["circle",{cx:"18",cy:"19",r:"3",key:"1xt0gg"}],["line",{x1:"8.59",x2:"15.42",y1:"13.51",y2:"17.49",key:"47mynk"}],["line",{x1:"15.41",x2:"8.59",y1:"6.51",y2:"10.49",key:"1n3mei"}]]);/**
+ * @license lucide-react v0.395.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const i=s("ThumbsUp",[["path",{d:"M7 10v12",key:"1qc93n"}],["path",{d:"M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z",key:"emmmcr"}]]);function d({feedItems:a=[]}){if(!a.length)return e.jsx("div",{className:"text-center text-gray-500 dark:text-gray-400 py-8",children:"No activity yet. Start by creating a project or posting an update!"});const r={task:"bg-yellow-400 text-yellow-900",comment:"bg-blue-500 text-white",completed:"bg-green-500 text-white",overdue:"bg-red-500 text-white",update:"bg-indigo-500 text-white"};return e.jsxs("section",{className:"w-full",children:[e.jsx("h2",{className:"text-2xl font-semibold text-gray-800 dark:text-white mb-4",children:"🔴 Live Activity Feed"}),e.jsx("div",{className:"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6",children:a.map(t=>e.jsxs("div",{className:"flex flex-col p-5 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow hover:shadow-md transition-all",children:[e.jsxs("div",{className:"flex items-center gap-3 mb-3",children:[e.jsx("img",{src:t.user.avatarUrl,alt:t.user.name,className:"w-10 h-10 rounded-full ring-2 ring-indigo-500 object-cover"}),e.jsxs("div",{children:[e.jsxs("p",{className:"text-sm font-medium text-gray-900 dark:text-gray-100",children:[t.user.name," ",e.jsx("span",{className:"text-indigo-500 font-normal",children:t.type==="update"?`updated ${t.projectName}`:t.title})]}),e.jsx("p",{className:"text-xs text-gray-500 dark:text-gray-400",children:t.timestamp})]})]}),e.jsx("div",{className:"mb-4",children:e.jsx("span",{className:`inline-block px-3 py-1 rounded-full text-xs font-semibold ${r[t.type]||"bg-gray-200 text-gray-700"}`,children:t.type})}),e.jsxs("div",{className:"mt-auto flex items-center justify-between text-sm text-gray-600 dark:text-gray-400",children:[e.jsxs("button",{className:"flex items-center gap-1 hover:text-indigo-500",children:[e.jsx(i,{className:"w-4 h-4"}),e.jsx("span",{children:t.likes})]}),e.jsxs("button",{className:"flex items-center gap-1 hover:text-indigo-500",children:[e.jsx(c,{className:"w-4 h-4"}),e.jsx("span",{children:t.comments})]}),e.jsxs("button",{className:"flex items-center gap-1 hover:text-indigo-500",children:[e.jsx(l,{className:"w-4 h-4"}),e.jsx("span",{children:t.shares})]})]})]},t.id))})]})}export{d as default};

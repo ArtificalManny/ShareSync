@@ -16,6 +16,6 @@
     "typeRoots": ["node_modules/@types"],
     "types": ["node", "express", "multer"]
   },
-  "include": ["src/**/*", "../ShareSync-frontend-backup/src/utils/usePrefersReducedMotion.js", "../ShareSync-frontend-backup/src/api/http.js"],
+  "include": ["src/**/*", "../ShareSync-frontend-backup/src/utils/usePrefersReducedMotion.js", "../ShareSync-frontend-backup/src/api/http.js", "../ShareSync-frontend-backup/src/api/stats.js"],
   "exclude": ["node_modules", "dist"]
 }

@@ -2,28 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>ShareSync</title>
-
+  
     <!-- SEO -->
     <meta name="description" content="ShareSync — plan projects, track daily goals, and celebrate team progress with a public cadence feed." />
     <link rel="canonical" href="https://example.com/" />
-
+  
     <!-- PWA-ish basics -->
     <meta name="theme-color" content="#0f172a" />
     <link rel="manifest" href="/manifest.webmanifest" />
-
+  
+    <!-- Icons -->
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
     <!-- Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  </head>
+  
+    <!-- Fonts (preload + stylesheet) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  </head>  
   <body>
     <!-- Skip link should be first focusable element -->
     <a href="#main"

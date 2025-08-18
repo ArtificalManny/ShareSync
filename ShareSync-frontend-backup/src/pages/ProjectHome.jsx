@@ -10,6 +10,12 @@ import {
   patchTask,
 } from "../api/projects";
 
+// ✅ REMOVE static import of perfLog (kept dev-only below)
+// import { perfLog } from "../utils/perfLog";
+
+import { getProjectStats } from "../api/stats";
+import ActivityOverTimeLive from "../components/analytics/ActivityOverTimeLive";
+
 import ProjectHeader from "../components/project/ProjectHeader";
 import ProjectKpis from "../components/project/ProjectKpis";
 import ProjectActivityFeed from "../components/project/ProjectActivityFeed";
@@ -18,11 +24,18 @@ import RisksPanel from "../components/project/RisksPanel";
 import MembersPanel from "../components/project/MembersPanel";
 import AuditLog from "../components/project/AuditLog";
 
-// --- tiny helpers for User Timing API ---
+// tiny helpers
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
-const measure = (name, start, end) => {
-  try { performance?.measure?.(name, start, end); } catch {}
-};
+const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
+
+// dev-only perf logger shim
+async function perfLogDev(name, start) {
+  if (import.meta.env.MODE === 'production') return;
+  try {
+    const mod = await import("../utils/perfLog.js");
+    mod.perfLog?.(name, start);
+  } catch {}
+}
 
 export default function ProjectHome() {
   const { id } = useParams();
@@ -33,17 +46,16 @@ export default function ProjectHome() {
   const [feedLoading, setFeedLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // mark mount (useful if you ever want to measure from mount)
-  useEffect(() => {
-    mark("ss:projecthome:mounted");
-  }, []);
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState("");
 
-  // load project
+  useEffect(() => { mark("ss:projecthome:mounted"); }, []);
+
   useEffect(() => {
     let ignore = false;
     (async () => {
-      setLoading(true);
-      setError("");
+      setLoading(true); setError("");
       try {
         const data = await getProject(id);
         if (!ignore) setProject(data);
@@ -53,28 +65,35 @@ export default function ProjectHome() {
         if (!ignore) setLoading(false);
       }
     })();
-    return () => {
-      ignore = true;
-    };
+    return () => { ignore = true; };
   }, [id]);
 
-  // PERF: when project has loaded, record data-ready and a measure from nav-click if present
+  useEffect(() => {
+    if (!id) return;
+    let ignore = false;
+    const start = performance.now();
+    (async () => {
+      setStatsLoading(true); setStatsError("");
+      try {
+        const data = await getProjectStats(id, { range: 30 });
+        if (!ignore) setStats(data || null);
+        perfLogDev('perf:project:kpi-tti', start);
+      } catch (e) {
+        if (!ignore) setStatsError(e?.message || "Failed to load stats");
+      } finally {
+        if (!ignore) setStatsLoading(false);
+      }
+    })();
+    return () => { ignore = true; };
+  }, [id]);
+
   useEffect(() => {
     if (!loading && project) {
       mark("ss:projecthome:data-ready");
       measure("perf:projecthome:data", "ss:nav-project-click", "ss:projecthome:data-ready");
-      try {
-        const entries = performance.getEntriesByName("perf:projecthome:data");
-        const last = entries[entries.length - 1];
-        if (last) {
-          // eslint-disable-next-line no-console
-          console.log(`[Perf] ProjectHome data ready: ${Math.round(last.duration)} ms`);
-        }
-      } catch {}
     }
   }, [loading, project]);
 
-  // load feed
   const loadFeed = async (cursor) => {
     setFeedLoading(true);
     try {
@@ -84,53 +103,32 @@ export default function ProjectHome() {
           ? { items: [...prev.items, ...res.items], nextCursor: res.nextCursor }
           : { items: res.items, nextCursor: res.nextCursor }
       );
-    } catch (e) {
-      // non-fatal
-    } finally {
-      setFeedLoading(false);
-    }
+    } catch {}
+    finally { setFeedLoading(false); }
   };
 
   useEffect(() => {
     if (!id) return;
     loadFeed();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // PERF: first activity render measure
   useEffect(() => {
     if (!feedLoading && feed.items.length > 0) {
       mark("ss:projecthome:first-activity");
       measure("perf:projecthome:first-activity", "ss:nav-project-click", "ss:projecthome:first-activity");
-      try {
-        const entries = performance.getEntriesByName("perf:projecthome:first-activity");
-        const last = entries[entries.length - 1];
-        if (last) {
-          // eslint-disable-next-line no-console
-          console.log(`[Perf] First activity render: ${Math.round(last.duration)} ms`);
-        }
-      } catch {}
     }
   }, [feedLoading, feed.items.length]);
 
   const handlePostUpdate = async (text) => {
     if (!text.trim()) return;
-    const optimistic = {
-      _id: `tmp-${Date.now()}`,
-      text,
-      userId: user?._id,
-      createdAt: new Date().toISOString(),
-    };
+    const optimistic = { _id: `tmp-${Date.now()}`, text, userId: user?._id, createdAt: new Date().toISOString() };
     setFeed((prev) => ({ ...prev, items: [optimistic, ...prev.items] }));
     try {
       const created = await postProjectUpdate(id, { text, mentions: [], files: [] });
-      setFeed((prev) => ({
-        ...prev,
-        items: prev.items.map((it) => (it._id === optimistic._id ? created : it)),
-      }));
-    } catch (e) {
+      setFeed((prev) => ({ ...prev, items: prev.items.map((it) => (it._id === optimistic._id ? created : it)) }));
+    } catch {
       setFeed((prev) => ({ ...prev, items: prev.items.filter((it) => it._id !== optimistic._id) }));
-      throw e;
+      throw new Error('Failed to post update');
     }
   };
 
@@ -169,10 +167,7 @@ export default function ProjectHome() {
           <div className="rounded-2xl border border-rose-200/60 bg-white p-6">
             <h1 className="text-lg font-semibold text-rose-600">Failed to load project</h1>
             <p className="mt-2 text-sm text-slate-600">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-white"
-            >
+            <button onClick={() => window.location.reload()} className="mt-4 inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-white">
               Retry
             </button>
           </div>
@@ -183,20 +178,56 @@ export default function ProjectHome() {
 
   if (!project) return null;
 
+  const KpiCards = () => {
+    if (statsLoading) {
+      return (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[0,1,2,3].map(i => (
+            <div key={i} className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 animate-pulse h-[88px]" />
+          ))}
+        </div>
+      );
+    }
+    if (statsError || !stats) return null;
+
+    const fmtPct = (v) => `${Math.round((v ?? 0) * 100)}%`;
+    const card = (label, value, sub) => (
+      <div className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+        <div className="text-xs text-slate-500">{label}</div>
+        <div className="text-xl font-semibold text-slate-900 dark:text-slate-100">{value}</div>
+        {sub ? <div className="text-xs text-slate-500 mt-1">{sub}</div> : null}
+      </div>
+    );
+
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {card("Cadence (14d)", stats?.cadence?.value ?? 0, "Rolling, recency-weighted")}
+        {card("Throughput / wk", stats?.throughputPerWeek?.value ?? 0, "Completed tasks / 7d")}
+        {card("Active Days (28d)", stats?.activeDays?.value ?? 0)}
+        {card("On-time (30d)", fmtPct(stats?.onTimeCompletion?.value))}
+      </div>
+    );
+  };
+
   return (
     <main id="main" role="main" tabIndex={-1}>
       <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-ink-100 dark:bg-gray-900 min-h-screen max-w-6xl mx-auto">
-        {/* Header */}
         <ProjectHeader project={project} onAddTask={handleAddTask} />
 
-        {/* KPIs */}
         <div className="mt-4">
           <ProjectKpis project={project} />
         </div>
 
-        {/* Main grid */}
+        <div className="mt-4">
+          <KpiCards />
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Activity Over Time</h2>
+          <ActivityOverTimeLive projectId={project._id} defaultRange="30" />
+        </div>
+
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Main: Activity feed (8 cols) */}
           <div className="lg:col-span-8">
             <ProjectActivityFeed
               items={feed.items}
@@ -204,10 +235,10 @@ export default function ProjectHome() {
               onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
               hasMore={!!feed.nextCursor}
               onPostUpdate={handlePostUpdate}
+              onRefetch={() => loadFeed()}
             />
           </div>
 
-          {/* Side rail (4 cols) */}
           <div className="lg:col-span-4 space-y-6">
             <MyNextActions tasks={tasks} meId={user?._id} onPatchTask={handlePatchTask} />
             <RisksPanel project={project} />

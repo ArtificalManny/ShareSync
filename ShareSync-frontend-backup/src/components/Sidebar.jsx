@@ -1,67 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import './Sidebar.css';
-import { formatProfilePicture } from '../utils/imageUtils';
+// /src/components/Sidebar.jsx
+import React from 'react';
+import { NavLink } from 'react-router-dom';
 
-const Sidebar = () => {
-  const [user, setUser] = useState(null);
-  const location = useLocation();
-
-  useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
-    } catch (error) {
-      setUser(null);
-    }
-    const handleStorageChange = () => {
-      try {
-        const updatedUser = localStorage.getItem('user');
-        setUser(updatedUser ? JSON.parse(updatedUser) : null);
-      } catch (error) {
-        setUser(null);
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
+export default function Sidebar() {
   return (
-    <div className="sidebar gradient-bg">
-      <div className="sidebar-profile">
-        {user && (
-          <>
-            <Link to="/profile">
-            <img
-  src={formatProfilePicture(user?.profilePicture) || '/default-profile.png'}
-  alt={user?.firstName || 'User'}
-  className="avatar"
-/>
-            </Link>
-            <div className="sidebar-profile-name">
-              {user.firstName} {user.lastName}
-            </div>
-          </>
-        )}
-      </div>
-      <nav className="sidebar-nav">
-        <Link to="/home" className={`sidebar-link ${location.pathname === '/home' ? 'active' : ''}`}>
-          <span>Home</span>
-        </Link>
-        <Link to="/projects" className={`sidebar-link ${location.pathname.startsWith('/projects') ? 'active' : ''}`}>
-          <span>Projects</span>
-        </Link>
-        <Link to="/settings" className={`sidebar-link ${location.pathname === '/settings' ? 'active' : ''}`}>
-          <span>Settings</span>
-        </Link>
-        <Link to="/profile" className={`sidebar-link ${location.pathname === '/profile' ? 'active' : ''}`}>
-          <span>Profile</span>
-        </Link>
+    <aside className="w-64 p-4 border-r border-slate-200">
+      <nav className="space-y-2">
+        <NavLink to="/home" className="block px-3 py-2 rounded hover:bg-slate-100">
+          Home
+        </NavLink>
+        <NavLink to="/projects" className="block px-3 py-2 rounded hover:bg-slate-100">
+          Projects
+        </NavLink>
+        {/* Updated: Profile points to /me */}
+        <NavLink to="/me" className="block px-3 py-2 rounded hover:bg-slate-100">
+          Profile
+        </NavLink>
+        <NavLink to="/settings" className="block px-3 py-2 rounded hover:bg-slate-100">
+          Settings
+        </NavLink>
       </nav>
-    </div>
+    </aside>
   );
-};
-
-export default Sidebar;
+}

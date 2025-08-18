@@ -1,22 +1,43 @@
+// src/activities/activities.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Activity } from '../schemas/activity.schema';
+import { CreateActivityDto } from './dto/create-activity.dto';
+
+// If you have a typed Activity schema/interface, import it here.
+// To keep things permissive (and avoid TS errors), we’ll use Any types.
+type AnyObj = Record<string, any>;
 
 @Injectable()
 export class ActivitiesService {
-  constructor(@InjectModel('Activity') private readonly activityModel: Model<Activity>) {}
+  constructor(
+    @InjectModel('Activity')
+    private readonly activityModel: Model<AnyObj>,
+  ) {}
 
-  async create(userId: string, projectId: string, action: string): Promise<Activity> {
-    const activity = new this.activityModel({ userId, projectId, action, timestamp: new Date() });
-    return activity.save();
-  }
+  /**
+   * Create a new activity document.
+   * Contract: (projectId, userId, dto)
+   */
+  async create(
+    projectId: string,
+    userId: string,
+    dto: CreateActivityDto,
+  ): Promise<AnyObj> {
+    const now = new Date();
 
-  async findByUser(userId: string): Promise<Activity[]> {
-    return this.activityModel.find({ userId }).exec();
-  }
+    const payload: AnyObj = {
+      projectId,
+      userId,
+      type: dto.type ?? 'update',
+      text: dto.text ?? '',
+      meta: dto.meta ?? {},
+      createdAt: now,
+      updatedAt: now,
+    };
 
-  async findByProject(projectId: string): Promise<Activity[]> {
-    return this.activityModel.find({ projectId }).exec();
+    const doc = await this.activityModel.create(payload);
+    // Normalize return to plain object
+    return typeof (doc as any).toObject === 'function' ? (doc as any).toObject() : doc;
   }
 }
