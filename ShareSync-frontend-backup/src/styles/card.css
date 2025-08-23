@@ -1,27 +1,57 @@
-/* Card helpers driven by theme tokens */
+/* /src/styles/card.css
+   Card helpers + intent accents
+   Uses tokens from theme.css (bg + motion vars)
+*/
 
+/* Base card */
 .card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  box-shadow: var(--card-shadow);
+  background: var(--bg-elevated, #fff);
+  border: 1px solid rgba(2, 6, 23, 0.06);
+  border-radius: 16px; /* rounded-2xl */
+  box-shadow: var(--shadow-elev, 0 8px 24px rgba(15, 23, 42, 0.08));
 }
 
+/* Dark mode tweaks (kept subtle) */
+:root.dark .card {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(51, 65, 85, 0.7);
+}
+
+/* ---- Intent accents (top inset bar) ----
+   Use alongside .card, e.g. class="card accent-kpi"
+*/
+.accent-kpi { box-shadow: inset 0 4px 0 0 rgba(59, 130, 246, 0.25); }       /* blue-500/25 */
+.accent-risk { box-shadow: inset 0 4px 0 0 rgba(245, 158, 11, 0.28); }      /* amber-500/28 */
+.accent-activity { box-shadow: inset 0 4px 0 0 rgba(100, 116, 139, 0.35); } /* slate-500/35 */
+
+/* Optional hover lift (respects reduced motion) */
 .card.hoverable {
-  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+  transition:
+    transform var(--motion-quick, 150ms) ease,
+    box-shadow var(--motion-quick, 150ms) ease,
+    border-color var(--motion-quick, 150ms) ease;
 }
 .card.hoverable:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
-  border-color: var(--color-ring);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .05);
 }
 
+/* Section helpers inside cards */
 .card-header {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
   padding: 16px 16px 0 16px;
+  font-weight: 600;
+  color: #0f172a; /* slate-900 */
 }
-.card-body {
-  padding: 16px;
-}
-.card-footer {
-  padding: 0 16px 16px 16px;
+:root.dark .card-header { color: #f1f5f9; } /* slate-100 */
+
+.card-body { padding: 16px; }
+.card-footer { padding: 0 16px 16px 16px; }
+
+/* Subtle text helper */
+.card-subtle {
+  font-size: .8125rem;
+  color: #64748b; /* slate-500 */
 }

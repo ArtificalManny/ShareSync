@@ -1,11 +1,10 @@
 // src/activities/activities.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import type { Model } from 'mongoose';
 import { CreateActivityDto } from './dto/create-activity.dto';
 
-// If you have a typed Activity schema/interface, import it here.
-// To keep things permissive (and avoid TS errors), we’ll use Any types.
+// If you have a typed Activity interface/model, import it and replace AnyObj
 type AnyObj = Record<string, any>;
 
 @Injectable()
@@ -37,7 +36,8 @@ export class ActivitiesService {
     };
 
     const doc = await this.activityModel.create(payload);
-    // Normalize return to plain object
-    return typeof (doc as any).toObject === 'function' ? (doc as any).toObject() : doc;
+    return typeof (doc as any).toObject === 'function'
+      ? (doc as any).toObject()
+      : doc;
   }
 }

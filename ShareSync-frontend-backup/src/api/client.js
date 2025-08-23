@@ -1,16 +1,13 @@
 // /src/api/client.js
 import axios from "axios";
-import { getAccessToken } from "../utils/tokenUtils";
 
-// All requests go to /api (Vite dev proxy forwards to http://localhost:5000)
-const client = axios.create({
+const api = axios.create({
   baseURL: "/api",
-  withCredentials: true,
-  headers: { "Content-Type": "application/json" },
+  timeout: 12000,
 });
 
-client.interceptors.request.use((config) => {
-  const token = getAccessToken?.();
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("ss.jwt");
   if (token) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
@@ -18,16 +15,25 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
-client.interceptors.response.use(
+api.interceptors.response.use(
   (res) => res,
   (err) => {
-    const resp = err?.response;
-    if (resp?.data && typeof resp.data === "object") {
-      err.message =
-        resp.data.error || resp.data.message || err.message || "Request failed";
+    const status = err?.response?.status;
+    const url = err?.config?.url || "";
+    // ❗️Do NOT redirect for auth endpoints so the form can show errors
+    const isAuthRoute = url.includes("/auth/login") || url.includes("/auth/verify");
+
+    if ((status === 401 || status === 403) && !isAuthRoute) {
+      try {
+        localStorage.removeItem("ss.jwt");
+        localStorage.removeItem("ss.user");
+      } catch {}
+      if (window.location.pathname !== "/login") {
+        window.location.assign("/login");
+      }
     }
     return Promise.reject(err);
   }
 );
 
-export default client;
+export default api;

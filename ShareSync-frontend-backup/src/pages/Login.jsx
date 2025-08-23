@@ -1,72 +1,88 @@
-// src/pages/Login.jsx
-import React, { useState } from 'react';
-import client from '../api/client';
-import { useNavigate } from 'react-router-dom';
+// /src/pages/Login.jsx
+import React, { useContext, useState } from "react";
+import { useNavigate, Navigate } from "react-router-dom";
+import { AuthContext } from "../AuthContext";
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const nav = useNavigate();
+  const { user, login } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
+  // If already logged in, bounce to home
+  if (user) {
+    return <Navigate to="/home" replace />;
+  }
+
+  async function onSubmit(e) {
     e.preventDefault();
-
-    try {
-      const response = await client.post('http://localhost:3000/api/auth/login', {
-        email,
-        password,
-      });
-
-      const data = response.data;
-
-      // ✅ Match the key returned by your backend: `token`
-      if (!data.token) {
-        console.error('❌ token missing in backend response');
-        alert('Login succeeded but no token returned.');
-        return;
-      }
-
-      // ✅ Save using the expected key
-      localStorage.setItem('access_token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      console.log('✅ Logged in. Token saved:', data.token);
-      nav('/home');
-    } catch (err) {
-      console.error('Login failed:', err);
-      alert('Login failed: ' + (err.response?.data?.message || err.message));
+    setError("");
+    if (!email || !password) {
+      setError("Enter your email and password.");
+      return;
     }
-  };
+    setSubmitting(true);
+    try {
+      await login({ email, password }); // sets ss.jwt + ss.user
+      navigate("/home", { replace: true });
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Login failed. Check your credentials.";
+      setError(String(msg));
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-sm mx-auto p-6">
-      <h1 className="text-2xl mb-4">Log In</h1>
-      <label className="block mb-2">
-        Email
+    <main className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-8 min-h-screen grid place-items-start">
+      <form
+        onSubmit={onSubmit}
+        className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 rounded-2xl p-6 shadow-sm"
+      >
+        <h1 className="text-xl font-semibold mb-4">Log In</h1>
+
+        {error && (
+          <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-800 text-sm px-3 py-2">
+            {error}
+          </div>
+        )}
+
+        <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">
+          Email
+        </label>
         <input
           type="email"
+          autoComplete="email"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 mb-3"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          required
-          className="w-full p-2 border rounded"
         />
-      </label>
-      <label className="block mb-4">
-        Password
+
+        <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">
+          Password
+        </label>
         <input
           type="password"
+          autoComplete="current-password"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 mb-4"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required
-          className="w-full p-2 border rounded"
         />
-      </label>
-      <button
-        type="submit"
-        className="w-full py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-      >
-        Log In
-      </button>
-    </form>
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white py-2 font-medium disabled:opacity-70"
+        >
+          {submitting ? "Signing in…" : "Log In"}
+        </button>
+      </form>
+    </main>
   );
 }

@@ -1,8 +1,10 @@
 // /src/pages/Profile.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams, Link } from "react-router-dom";
-import client from "../api/client";
+import { getMe, getPublicUser } from "../api/user";
 import formatProfilePicture from "../utils/formatProfilePicture";
+import AuditList from "../components/audit/AuditList.jsx";
+import { Lock } from "lucide-react";
 
 const Avatar = ({ src, alt }) => (
   <img
@@ -16,75 +18,69 @@ export default function Profile() {
   const { username: routeUsername } = useParams();
   const location = useLocation();
 
-  // public routes are /u/:username or (legacy) /profile/:username
   const isPublicRoute = useMemo(
-    () => Boolean(routeUsername) && (location.pathname.startsWith("/u/") || location.pathname.startsWith("/profile/")),
+    () =>
+      Boolean(routeUsername) &&
+      (location.pathname.startsWith("/u/") ||
+        location.pathname.startsWith("/profile/")),
     [routeUsername, location.pathname]
   );
 
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
   const [error, setError] = useState("");
-  const [me, setMe] = useState(null);         // owner data for /me
-  const [publicUser, setPublicUser] = useState(null); // public data for /u/:username
+  const [me, setMe] = useState(null);
+  const [publicUser, setPublicUser] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    setLocked(false);
+    setError("");
+    try {
+      if (isPublicRoute) {
+        const u = await getPublicUser(routeUsername);
+        if (u?.publicProfile === false) {
+          setLocked(true);
+          setPublicUser(null);
+        } else {
+          setPublicUser(u || null);
+        }
+      } else {
+        const data = await getMe();
+        setMe(data || null);
+      }
+    } catch (e) {
+      if (isPublicRoute) {
+        setLocked(true);
+      } else {
+        const status = e?.response?.status;
+        if (status === 401 || status === 403) {
+          setError("Please sign in to view your profile.");
+        } else {
+          setError(String(e?.message || "Could not load your profile from the server."));
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let ignore = false;
-
-    async function run() {
-      setLoading(true);
-      setLocked(false);
-      setError("");
-
-      try {
-        if (isPublicRoute) {
-          // PUBLIC: /u/:username or /profile/:username
-          const res = await client.get(`/users/public/${encodeURIComponent(routeUsername)}`);
-          if (ignore) return;
-
-          // If API returns a flag for locked/hidden, respect it
-          const u = res.data || {};
-          if (u.publicProfile === false) {
-            setLocked(true);
-            setPublicUser(null);
-          } else {
-            setPublicUser(u);
-          }
-        } else {
-          // OWNER: /me
-          const res = await client.get("/users/me");
-          if (ignore) return;
-          setMe(res.data || null);
-        }
-      } catch (e) {
-        if (ignore) return;
-
-        // If public route is private or not found, show "locked"
-        if (isPublicRoute) {
-          setLocked(true);
-        } else {
-          setError(String(e?.message || e));
-        }
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    }
-
-    run();
-    return () => {
-      ignore = true;
-    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPublicRoute, routeUsername]);
-
-  // ---------- Render helpers ----------
 
   const Header = ({ user, isOwner }) => {
     const name = user?.firstName || user?.name || "User";
     const at = user?.username ? `@${user.username}` : "";
     const pic = user?.profilePicture || "/default-profile.png";
     const privacy = isOwner
-      ? user?.publicProfile ? "Public profile" : "Private profile"
-      : user?.publicProfile ? "Public" : "Private";
+      ? user?.publicProfile
+        ? "Public profile"
+        : "Private profile"
+      : user?.publicProfile
+      ? "Public"
+      : "Private";
 
     return (
       <div className="flex items-start gap-4">
@@ -134,8 +130,10 @@ export default function Profile() {
   };
 
   const LockedCard = () => (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 text-center">
-      <div className="text-3xl mb-2">🔒</div>
+    <div className="card accent-activity rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 text-center">
+      <div className="flex items-center justify-center mb-2">
+        <Lock size={24} className="text-slate-600 dark:text-slate-300" />
+      </div>
       <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
         This profile is private
       </h2>
@@ -144,8 +142,6 @@ export default function Profile() {
       </p>
     </div>
   );
-
-  // ---------- Main render ----------
 
   return (
     <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-100 dark:bg-gray-800 min-h-screen max-w-5xl mx-auto space-y-6">
@@ -162,7 +158,14 @@ export default function Profile() {
         </div>
       ) : error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
-          {String(error)}
+          <div className="font-medium">Profile failed to load.</div>
+          <div className="text-sm opacity-80">{String(error)}</div>
+          <button
+            onClick={load}
+            className="mt-2 inline-flex items-center rounded-lg bg-rose-600 px-3 py-1.5 text-white text-sm hover:bg-rose-700"
+          >
+            Retry
+          </button>
         </div>
       ) : isPublicRoute ? (
         locked ? (
@@ -170,24 +173,27 @@ export default function Profile() {
         ) : (
           <>
             <Header user={publicUser} isOwner={false} />
-            {/* Public sections (add more when available) */}
-            <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
-              <h3 className="text-sm font-semibold mb-2">Recent activity</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-300">Coming soon.</p>
+            <section className="card accent-activity rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+              <h3 className="card-header">Recent public activity</h3>
+              {/* Future: <AuditList scope="user" userId={publicUser?.id} publicOnly /> */}
+              <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                Coming soon.
+              </p>
             </section>
           </>
         )
       ) : (
         <>
           <Header user={me} isOwner />
-          {/* Owner-only panels */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
-              <h3 className="text-sm font-semibold mb-2">Your stats</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-300">Coming soon.</p>
+            <div className="card accent-activity rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+              <h3 className="card-header">Your recent activity</h3>
+              <div className="mt-2">
+                <AuditList scope="user" />
+              </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
-              <h3 className="text-sm font-semibold mb-2">Notifications</h3>
+            <div className="card accent-kpi rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+              <h3 className="card-header">Notifications</h3>
               <p className="text-sm text-slate-600 dark:text-slate-300">
                 Manage in <Link to="/settings" className="text-indigo-600 underline">Settings</Link>.
               </p>

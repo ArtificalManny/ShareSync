@@ -1,5 +1,5 @@
 // /src/pages/Settings.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getMe, updateProfile, updateNotifications } from '../api/user';
 
 export default function Settings() {
@@ -15,16 +15,60 @@ export default function Settings() {
   const [emailDigest, setEmailDigest] = useState(true);
   const [twoFA, setTwoFA] = useState(false); // placeholder switch
 
+  // ---- THEME HANDLING (applies instantly) ----
+  const mqlRef = useRef(null); // MediaQueryList for system theme listener
+
+  const applyTheme = (mode) => {
+    const root = document.documentElement;
+    const setDark = (isDark) => {
+      root.classList.toggle('dark', isDark);
+      // optional: expose current theme for CSS/use
+      root.dataset.theme = isDark ? 'dark' : 'light';
+    };
+
+    // Clean up any existing system listener
+    if (mqlRef.current?.removeEventListener) {
+      mqlRef.current.removeEventListener('change', mqlRef.current._handler);
+      mqlRef.current = null;
+    }
+
+    if (mode === 'dark') {
+      setDark(true);
+      localStorage.setItem('ss.theme', 'dark');
+      return;
+    }
+    if (mode === 'light') {
+      setDark(false);
+      localStorage.setItem('ss.theme', 'light');
+      return;
+    }
+    // system
+    const mql = window.matchMedia?.('(prefers-color-scheme: dark)');
+    const sync = () => setDark(Boolean(mql?.matches));
+    if (mql) {
+      sync();
+      const handler = () => sync();
+      mql.addEventListener?.('change', handler);
+      mql._handler = handler;
+      mqlRef.current = mql;
+    } else {
+      // fallback: default light
+      setDark(false);
+    }
+    localStorage.setItem('ss.theme', 'system');
+  };
+
+  // hydrate
   useEffect(() => {
     let ignore = false;
     setLoading(true);
     getMe()
       .then((me) => {
         if (ignore) return;
-        // hydrate from known fields; fall back sensibly
         setPublicProfile(Boolean(me?.publicProfile ?? true));
-        // pick a theme source you store; fallback to 'system'
-        setTheme(me?.appearance?.theme ?? 'system');
+        const initialTheme = me?.appearance?.theme ?? localStorage.getItem('ss.theme') ?? 'system';
+        setTheme(initialTheme);
+        applyTheme(initialTheme);
 
         const n = me?.notifications || {};
         setEmailActivity(Boolean(n.emailActivity ?? true));
@@ -33,8 +77,24 @@ export default function Settings() {
       })
       .catch((e) => !ignore && setErr(String(e?.message || e)))
       .finally(() => !ignore && setLoading(false));
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, []);
+
+  // apply theme as soon as user changes the select (don’t wait for save)
+  useEffect(() => {
+    // avoid running before first hydrate finished? It’s fine—applyTheme is idempotent.
+    try { applyTheme(theme); } catch {}
+    // cleanup listener on unmount
+    return () => {
+      if (mqlRef.current?.removeEventListener) {
+        mqlRef.current.removeEventListener('change', mqlRef.current._handler);
+        mqlRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme]);
 
   const handleSave = async (e) => {
     e?.preventDefault?.();
@@ -53,9 +113,6 @@ export default function Settings() {
         emailActivity,
         emailDigest,
       });
-
-      // Optional: 2FA would usually be a separate flow (enroll/verify)
-      // Here we just reflect the toggle locally.
 
       setOk('Settings saved.');
     } catch (e) {
@@ -87,12 +144,20 @@ export default function Settings() {
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Settings</h1>
 
         {err && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-3 py-2">
+          <div
+            role="status"
+            aria-live="assertive"
+            className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-3 py-2"
+          >
             {err}
           </div>
         )}
         {ok && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-2">
+          <div
+            role="status"
+            aria-live="polite"
+            className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-2"
+          >
             {ok}
           </div>
         )}

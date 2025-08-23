@@ -73,6 +73,9 @@ export default function Projects() {
   const abortRef = useRef(null);
 
   async function fetchProjects() {
+    // perf mark for “first list paint” SLA
+    try { performance?.mark?.('ss:projects:fetch:start'); } catch {}
+
     setLoading(true);
     setError('');
 
@@ -87,13 +90,28 @@ export default function Projects() {
         status,
         owner,
         updated,
+        signal: controller.signal,
       });
-      setProjects(items);
+
+      // incremental-ish: first 10 asap, rest next tick
+      const first = Array.isArray(items) ? items.slice(0, 10) : [];
+      const rest  = Array.isArray(items) ? items.slice(10) : [];
+      setProjects(first);
+      setTimeout(() => {
+        if (!controller.signal.aborted) {
+          setProjects((prev) => [...prev, ...rest]);
+          try {
+            performance?.mark?.('ss:projects:fetch:end');
+            performance?.measure?.('perf:projects:list-first-chunk', 'ss:projects:fetch:start', 'ss:projects:fetch:end');
+          } catch {}
+        }
+      }, 0);
     } catch (e) {
+      if (controller.signal.aborted) return;
       console.error('[Projects] load error', e);
       setError('Failed to load projects.');
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }
 
@@ -185,7 +203,7 @@ export default function Projects() {
             )}
 
             {!!error && !loading && (
-              <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-rose-200/60 dark:border-rose-400/20">
+              <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-rose-200/60 dark:border-rose-400/20 motion-quick">
                 <p className="text-rose-600 dark:text-rose-400 mb-3">{error}</p>
                 <button
                   onClick={fetchProjects}

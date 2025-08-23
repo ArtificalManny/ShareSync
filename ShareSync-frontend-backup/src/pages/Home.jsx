@@ -17,8 +17,11 @@ import { fetchAISuggestion } from '../api/ai';
 import { AuthContext } from '../AuthContext';
 import HomeHeader from '../components/home/HomeHeader.jsx';
 
+// Recent Activity (user scope)
+import AuditList from '../components/audit/AuditList.jsx';
+
 // ✅ Lazy chunks (keeps initial JS light for /home)
-const MomentumRing        = React.lazy(() => import('../components/MomentumRing.jsx'));
+const MomentumRing         = React.lazy(() => import('../components/MomentumRing.jsx'));
 const ActivityOverTimeLive = React.lazy(() => import('../components/analytics/ActivityOverTimeLive.jsx'));
 const MomentumForecast     = React.lazy(() => import('../components/analytics/MomentumForecast'));
 const ChartModal           = React.lazy(() => import('../components/analytics/ChartModal.jsx'));
@@ -67,8 +70,9 @@ export default function Home() {
   const [quickProjects, setQuickProjects] = useState([]);
   const [quickLoading, setQuickLoading] = useState(false);
 
-  // live stats
+  // live stats (with project filter)
   const [statsRange, setStatsRange] = useState(30);
+  const [statsProjectId, setStatsProjectId] = useState('all'); // 'all' or a project _id
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState('');
@@ -77,7 +81,7 @@ export default function Home() {
 
   // initial data
   useEffect(() => {
-    Promise.all([client.get('/projects'), client.get('/feed'), client.get('/user/me')])
+    Promise.all([client.get('/projects'), client.get('/feed'), client.get('/users/me').catch(() => client.get('/user/me'))])
       .then(([projRes, feedRes, userRes]) => {
         setProjects(projRes.data);
         setFeedItems(feedRes.data);
@@ -85,7 +89,7 @@ export default function Home() {
 
         const today = new Date();
         const isMonday = today.getDay() === 1;
-        const lastLoginDate = new Date(userRes.data.lastLogin);
+        const lastLoginDate = new Date(userRes.data?.lastLogin || Date.now());
         const isTodayLogin = lastLoginDate.toDateString() === today.toDateString();
 
         if (isMonday && isTodayLogin) {
@@ -151,7 +155,7 @@ export default function Home() {
     return () => { ignore = true; };
   }, []);
 
-  // sockets (idle-load socket.io-client)
+  // sockets (idle-load socket.io-client) for misc feeds + stats soft refresh
   useEffect(() => {
     let cleanup = () => {};
     const id = onIdle(async () => {
@@ -159,6 +163,12 @@ export default function Home() {
         const { io } = await import('socket.io-client');
         const socket = io();
         socket.on('newActivity', (a) => setFeedItems((prev) => [a, ...prev]));
+        socket.on('user:statsUpdated', () => {
+          // Soft refresh stats (debounced below anyway)
+          setStatsError('');
+          setStatsLoading(true);
+          fetchStatsDebounced(statsRange, statsProjectId);
+        });
         cleanup = () => socket.disconnect();
       } catch {}
     });
@@ -166,19 +176,31 @@ export default function Home() {
       typeof cancelIdleCallback === 'function' ? cancelIdleCallback(id) : clearTimeout(id);
       cleanup();
     };
-  }, []);
+  }, [statsRange, statsProjectId]);
 
-  // live stats
+  // debounced fetcher
+  let statsTimer = null;
+  const fetchStatsDebounced = (range, projectId) => {
+    if (statsTimer) clearTimeout(statsTimer);
+    statsTimer = setTimeout(() => {
+      let cancelled = false;
+      setStatsLoading(true);
+      setStatsError('');
+      const params = { range };
+      if (projectId && projectId !== 'all') params.projectId = projectId;
+      client.get('/users/me/stats', { params })
+        .then((res) => { if (!cancelled) setStats(res.data); })
+        .catch((e) => { if (!cancelled) setStatsError(String(e?.message || e)); })
+        .finally(() => { if (!cancelled) setStatsLoading(false); });
+      return () => { cancelled = true; };
+    }, 200);
+  };
+
+  // live stats on change
   useEffect(() => {
-    let cancelled = false;
-    setStatsLoading(true);
-    setStatsError('');
-    getUserStats(statsRange)
-      .then((data) => { if (!cancelled) setStats(data); })
-      .catch((e) => { if (!cancelled) setStatsError(String(e)); })
-      .finally(() => { if (!cancelled) setStatsLoading(false); });
-    return () => { cancelled = true; };
-  }, [statsRange]);
+    fetchStatsDebounced(statsRange, statsProjectId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statsRange, statsProjectId]);
 
   const handleProjectCreated = (newProj) => {
     setShowProjectModal(false);
@@ -210,44 +232,75 @@ export default function Home() {
       <ProjectsRail items={quickProjects} loading={quickLoading} />
 
       {/* KPI row (live) */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">Your KPIs</h2>
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500">Range</label>
-          <select
-            value={statsRange}
-            onChange={(e) => setStatsRange(Number(e.target.value))}
-            className="text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1"
-            aria-label="Stats time range"
-          >
-            <option value={7}>7d</option>
-            <option value={30}>30d</option>
-            <option value={90}>90d</option>
-          </select>
+      <div className="card accent-kpi rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="card-header">Your KPIs</h2>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-slate-500">Project</label>
+            <select
+              value={statsProjectId}
+              onChange={(e) => setStatsProjectId(e.target.value)}
+              className="text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1"
+              aria-label="Project filter"
+            >
+              <option value="all">All projects</option>
+              {projects.map((p) => <option key={p._id} value={p._id}>{p.title}</option>)}
+            </select>
+
+            <label className="text-xs text-slate-500 ml-2">Range</label>
+            <select
+              value={statsRange}
+              onChange={(e) => setStatsRange(Number(e.target.value))}
+              className="text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1"
+              aria-label="Stats time range"
+            >
+              <option value={7}>7d</option>
+              <option value={30}>30d</option>
+              <option value={90}>90d</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          {statsLoading ? (
+            <div className="rounded-xl border border-slate-200/70 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 p-4 animate-pulse">
+              Loading KPIs…
+            </div>
+          ) : statsError ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 p-3">
+              Failed to load stats: {statsError}
+            </div>
+          ) : (
+            <KpiRow
+              cadence={stats?.cadence}
+              onTimeCompletion={stats?.onTimeCompletion}
+              activeDays={stats?.activeDays}
+              throughputPerWeek={stats?.throughputPerWeek}
+            />
+          )}
         </div>
       </div>
 
-      {statsLoading ? (
-        <div className="rounded-xl border border-slate-200/70 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 p-4 animate-pulse">
-          Loading KPIs…
-        </div>
-      ) : statsError ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 p-3">
-          Failed to load stats: {statsError}
-        </div>
-      ) : (
-        <KpiRow
-          cadence={stats?.cadence}
-          onTimeCompletion={stats?.onTimeCompletion}
-          activeDays={stats?.activeDays}
-          throughputPerWeek={stats?.throughputPerWeek}
-        />
-      )}
+      {/* Activity Over Time */}
+      <div className="card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
+        <div className="card-header">Activity Over Time</div>
+        <Suspense fallback={<div className="h-28 rounded-2xl bg-white/60 dark:bg-slate-900/60 animate-pulse" />}>
+          {/* If your chart supports per-project, pass projectId via statsProjectId (except 'all') */}
+          <ActivityOverTimeLive
+            series={stats?.activitySeries ?? []}
+            range={statsRange}
+            projectId={statsProjectId !== 'all' ? statsProjectId : undefined}
+          />
+        </Suspense>
+      </div>
 
-      {/* Chart & heavier panels deferred via Suspense */}
-      <Suspense fallback={<div className="h-28 rounded-2xl bg-white/60 dark:bg-slate-900/60 animate-pulse" />}>
-        <ActivityOverTimeLive series={stats?.activitySeries ?? []} range={statsRange} />
-      </Suspense>
+      {/* Recent Activity */}
+      <div className="card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
+        <div className="card-header">Recent Activity</div>
+        <div className="mt-2">
+          <AuditList scope="user" />
+        </div>
+      </div>
 
       <Suspense fallback={<div className="h-24 rounded-2xl bg-white/60 dark:bg-slate-900/60 animate-pulse" />}>
         <WelcomeCard
@@ -268,9 +321,13 @@ export default function Home() {
         <Suspense fallback={<div className="h-40 rounded-2xl bg-white/60 dark:bg-slate-900/60 animate-pulse" />}>
           <MomentumRing streakDays={streakDays} xp={xp} tier={tier} onClick={() => setShowChart(true)} />
         </Suspense>
-        <Suspense fallback={<div className="h-36 rounded-2xl bg-white/60 dark:bg-slate-900/60 animate-pulse" />}>
-          <LeaderboardCard currentUserId={user?.id} />
-        </Suspense>
+        {/* Copy: Leaderboard → Milestones & People (simple header above card) */}
+        <div>
+          <div className="card-header mb-2">Milestones &amp; People</div>
+          <Suspense fallback={<div className="h-36 rounded-2xl bg-white/60 dark:bg-slate-900/60 animate-pulse" />}>
+            <LeaderboardCard currentUserId={user?.id} />
+          </Suspense>
+        </div>
         <Suspense fallback={<div className="h-36 rounded-2xl bg-white/60 dark:bg-slate-900/60 animate-pulse" />}>
           <SocialPanel />
         </Suspense>

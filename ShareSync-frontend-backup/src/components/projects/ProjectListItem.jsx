@@ -1,134 +1,151 @@
-// src/components/projects/ProjectListItem.jsx
-import React, { useMemo } from 'react';
+// /src/components/projects/ProjectListItem.jsx
+import React, { useEffect, useMemo, useRef } from "react";
+import { Users, Clock } from "lucide-react";
+import AvatarGroup from "../AvatarGroup.jsx";
 
-function timeAgo(date) {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  const ts = d?.getTime?.();
-  const diff = Math.max(0, Date.now() - (Number.isFinite(ts) ? ts : Date.now()));
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return `${s}s ago`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const dys = Math.floor(h / 24);
-  if (dys < 30) return `${dys}d ago`;
-  const mo = Math.floor(dys / 30);
-  if (mo < 12) return `${mo}mo ago`;
-  const y = Math.floor(mo / 12);
-  return `${y}y ago`;
+// lazy import so first paint is fast; we call this on hover/focus
+let _prefetchStats = null;
+async function prefetchStats(projectId) {
+  try {
+    if (!_prefetchStats) {
+      const mod = await import("../../api/stats");
+      _prefetchStats = mod.getProjectStats;
+    }
+    _prefetchStats && _prefetchStats(projectId, { range: 30 });
+  } catch {}
 }
 
-const STATUS_STYLES = {
-  'Not Started': 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-100',
-  'In Progress': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
-  'Completed': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-};
-
 export default function ProjectListItem({ project, onClick }) {
-  const updatedAt = useMemo(() => {
-    return new Date(
-      project?.updatedAt ||
-      project?.lastActivityAt ||
-      project?.createdAt ||
-      Date.now()
-    );
-  }, [project?.updatedAt, project?.lastActivityAt, project?.createdAt]);
+  const id = project?._id || project?.id;
+  const title = project?.title || project?.name || "Untitled";
+  const lastActivityAt = project?.lastActivityAt || project?.updatedAt || project?.createdAt;
+  const status = (project?.status || "Active").toString();
 
-  const title = project?.title || 'Untitled Project';
-  const status = project?.status || 'Not Started';
-  const statusClass = STATUS_STYLES[status] || STATUS_STYLES['Not Started'];
+  // Use API members if present; otherwise make safe placeholders.
+  const members = Array.isArray(project?.members) && project.members.length
+    ? normalizeMembers(project.members)
+    : fallbackMembers(project);
 
-  const members = Array.isArray(project?.members) ? project.members : [];
-  const visible = members.slice(0, 5);
-  const overflow = Math.max(0, members.length - visible.length);
+  const rel = useMemo(() => formatRelativeTime(lastActivityAt), [lastActivityAt]);
+  const statusCls = useMemo(() => statusClass(status), [status]);
+
+  // Debounced prefetch on hover/focus
+  const hoverTimer = useRef(null);
+  const handleEnter = () => {
+    if (!id) return;
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => prefetchStats(id), 120);
+  };
+  const handleLeave = () => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+  };
+  useEffect(() => handleLeave, []); // cleanup on unmount
 
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => id && onClick?.(id)}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      onFocus={handleEnter}
+      onBlur={handleLeave}
+      className="motion-quick w-full text-left rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
       aria-label={`Open project ${title}`}
-      className="w-full text-left rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:shadow-md hover:ring-1 hover:ring-slate-200 dark:hover:ring-slate-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
     >
-      <div className="flex items-start justify-between gap-4">
-        {/* Left: title, category, desc, avatars */}
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="truncate text-lg font-semibold text-slate-900 dark:text-white">
-              {title}
-            </h3>
-
-            {project?.category ? (
-              <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                {project.category}
-              </span>
-            ) : null}
-
-            {project?.hasPendingInvite && (
-              <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/40">
-                Invited
-              </span>
-            )}
-          </div>
-
-          {project?.description ? (
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
-              {project.description}
-            </p>
-          ) : null}
-
-          {visible.length > 0 && (
-            <div className="mt-3 flex -space-x-2">
-              {visible.map((m, i) => {
-                const label = m?.username || m?.email || 'Member';
-                const initials =
-                  (label.replace(/@.*$/, '').match(/[A-Za-z]/g) || [])
-                    .slice(0, 2)
-                    .join('')
-                    .toUpperCase() || '??';
-
-                // If you later add member photos, swap div->img and keep width/height+lazy
-                return (
-                  <div
-                    key={`${label}-${i}`}
-                    title={label}
-                    aria-label={label}
-                    className="h-7 w-7 rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-100 flex items-center justify-center text-[11px] font-medium border border-white dark:border-slate-900 shadow-sm"
-                  >
-                    {initials}
-                  </div>
-                );
-              })}
-              {overflow > 0 && (
-                <div
-                  title={`${overflow} more`}
-                  aria-label={`${overflow} more`}
-                  className="h-7 w-7 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 text-[11px] border border-white dark:border-slate-900 flex items-center justify-center"
-                >
-                  +{overflow}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Right: status, timestamps, due date */}
-        <div className="shrink-0 text-right">
-          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${statusClass}`}>
-            {status}
-          </span>
-
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-            Updated {timeAgo(updatedAt)}
-          </div>
-
-          {project?.dueDate && (
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              Due {new Date(project.dueDate).toLocaleDateString()}
-            </div>
-          )}
+      {/* Header: title + avatars */}
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-white line-clamp-1">
+          {title}
+        </h3>
+        <div className="flex items-center gap-2 shrink-0">
+          <Users className="w-4 h-4 text-slate-400" aria-hidden="true" />
+          <AvatarGroup users={members} max={4} size={26} />
         </div>
       </div>
+
+      {/* Subtext: status pill + last update */}
+      <div className="mt-2 flex items-center justify-between">
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCls}`}>
+          {status}
+        </span>
+
+        <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+          <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+          {rel || "—"}
+        </span>
+      </div>
+
+      {/* Optional description */}
+      {project?.description ? (
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
+          {project.description}
+        </p>
+      ) : null}
     </button>
   );
+}
+
+/* ---------- helpers ---------- */
+
+function normalizeMembers(list) {
+  // Normalize various shapes → { id, name, avatarUrl }
+  return list.map((u, i) => ({
+    id: u?.id || u?._id || `m${i}`,
+    name: u?.name || u?.displayName || u?.username || "Member",
+    avatarUrl: u?.avatarUrl || u?.avatar || u?.profilePicture || "",
+  }));
+}
+
+function fallbackMembers(project) {
+  const ownerName = project?.owner?.name || project?.ownerName || "Owner";
+  const owner = {
+    id: project?.owner?.id || project?.ownerId || "owner",
+    name: ownerName,
+    avatarUrl: project?.owner?.avatarUrl || project?.ownerAvatarUrl || "",
+  };
+  const maybe = project?.collaborators || project?.users || [];
+  const others = Array.isArray(maybe)
+    ? maybe.slice(0, 2).map((u, i) => ({
+        id: u?.id || `u${i}`,
+        name: u?.name || u?.username || "Member",
+        avatarUrl: u?.avatarUrl || u?.profilePicture || "",
+      }))
+    : [];
+  return [owner, ...others].filter(Boolean);
+}
+
+function statusClass(status) {
+  const s = (status || "").toLowerCase();
+  if (s.includes("blocked") || s.includes("risk")) {
+    return "bg-amber-50 text-amber-700 border border-amber-200";
+  }
+  if (s.includes("done") || s.includes("complete")) {
+    return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+  }
+  if (s.includes("paused")) {
+    return "bg-slate-100 text-slate-700 border border-slate-200";
+  }
+  // default active
+  return "bg-blue-50 text-blue-700 border border-blue-200";
+}
+
+function formatRelativeTime(dateish) {
+  if (!dateish) return "";
+  const ts = typeof dateish === "string" ? Date.parse(dateish) : +new Date(dateish);
+  if (!Number.isFinite(ts)) return "";
+  const diff = Date.now() - ts;
+  const sec = Math.round(diff / 1000);
+  const min = Math.round(sec / 60);
+  const hr = Math.round(min / 60);
+  const day = Math.round(hr / 24);
+
+  if (sec < 45) return "just now";
+  if (min < 60) return `${min}m ago`;
+  if (hr < 24) return `${hr}h ago`;
+  if (day < 8) return `${day}d ago`;
+  try {
+    return new Date(ts).toLocaleDateString();
+  } catch {
+    return "";
+  }
 }

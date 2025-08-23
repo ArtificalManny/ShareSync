@@ -57,6 +57,7 @@
   },
   "scripts": {
     "start": "nest start",
+    "mock": "node server.js",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
     "build": "nest build",

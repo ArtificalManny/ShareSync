@@ -1,22 +1,72 @@
-// /src/api/users.js
-import client from './client';
+// /ShareSync-backend/src/api/user.js
+const express = require('express');
+const router = express.Router();
 
-// Load the current user (you already use /user/me elsewhere)
-export async function getMe() {
-  const { data } = await client.get('/user/me');
-  return data;
-}
+// Reuse the in-memory user from server.js through a tiny singleton.
+// In real code, you’d pull from DB/services instead.
+const store = {
+  user: {
+    _id: 'u_1',
+    username: 'manny',
+    firstName: 'Manny',
+    lastName: '',
+    bio: 'Trying to ship daily.',
+    publicProfile: true,
+    profilePicture: '',
+    appearance: { theme: 'system' },
+    notifications: { emailActivity: true, emailDigest: true },
+    lastLogin: new Date().toISOString(),
+  },
+};
 
-// Update profile-ish things (publicProfile, appearance/theme, display name, etc)
-export async function updateProfile(payload) {
-  // matches your existing controller mapping: /api/api/users/profile (PUT)
-  const { data } = await client.put('/api/users/profile', payload);
-  return data;
-}
+// ---------- helpers ----------
+const publicShape = (u) => {
+  const { notifications, ...rest } = u;
+  return rest;
+};
 
-// Update notification prefs
-export async function updateNotifications(payload) {
-  // matches: /api/api/users/notifications (PUT)
-  const { data } = await client.put('/api/users/notifications', payload);
-  return data;
-}
+// ---------- owner endpoints ----------
+router.get(['/user/me', '/users/me', '/me', '/auth/me'], (req, res) => {
+  res.json(store.user);
+});
+
+router.patch(['/user/me', '/users/me'], (req, res) => {
+  const patch = req.body || {};
+  const u = store.user;
+
+  if (typeof patch.firstName === 'string') u.firstName = patch.firstName;
+  if (typeof patch.lastName === 'string') u.lastName = patch.lastName;
+  if (typeof patch.bio === 'string') u.bio = patch.bio;
+  if (typeof patch.publicProfile === 'boolean') u.publicProfile = patch.publicProfile;
+  if (patch.appearance && typeof patch.appearance === 'object') {
+    u.appearance = { ...u.appearance, ...patch.appearance };
+  }
+
+  res.json(u);
+});
+
+router.patch(
+  ['/user/me/notifications', '/users/me/notifications'],
+  (req, res) => {
+    const patch = req.body || {};
+    store.user.notifications = { ...store.user.notifications, ...patch };
+    res.json({ ok: true, notifications: store.user.notifications });
+  }
+);
+
+// ---------- public profiles ----------
+router.get(
+  ['/user/public/:username', '/users/public/:username', '/profile/public/:username'],
+  (req, res) => {
+    const { username } = req.params;
+    if (username !== store.user.username) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (!store.user.publicProfile) {
+      return res.status(403).json({ message: 'Profile is private' });
+    }
+    return res.json(publicShape(store.user));
+  }
+);
+
+module.exports = router;

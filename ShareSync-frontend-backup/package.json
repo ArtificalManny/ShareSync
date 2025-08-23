@@ -7,10 +7,10 @@
     "build": "vite build",
     "serve:dist": "vite preview --port 4173 --strictPort",
     "lh:prep": "npm run build && npm run serve:dist",
-    "lh:home": "lighthouse http://localhost:4173/home --only-categories=performance,accessibility,best-practices,seo --output=json --output=html --output-path ./lighthouse/home_after",
-    "lh:projects": "lighthouse http://localhost:4173/projects --only-categories=performance,accessibility,best-practices,seo --output=json --output=html --output-path ./lighthouse/projects_after",
-    "lh:projectId": "node -e \"const id=process.env.SS_PROJECT_ID||'REPLACE_ME'; if(id==='REPLACE_ME'){console.error('Set SS_PROJECT_ID'); process.exit(1)}; console.log('Running Lighthouse for', id)\" && lighthouse http://localhost:4173/projects/$SS_PROJECT_ID --only-categories=performance,accessibility,best-practices,seo --output=json --output=html --output-path ./lighthouse/project_id_after",
-    "lh:all": "npm run lh:home && npm run lh:projects && npm run lh:projectId"
+    "lh:home": "lighthouse http://localhost:4173/home --only-categories=performance,accessibility,best-practices,seo --output=json --output=html --output-path ./lighthouse/home_after --chrome-flags='--headless=new'",
+    "lh:projects": "lighthouse http://localhost:4173/projects --only-categories=performance,accessibility,best-practices,seo --output=json --output=html --output-path ./lighthouse/projects_after --chrome-flags='--headless=new'",
+    "lh:projectId": "node -e \"const id=process.env.SS_PROJECT_ID||'REPLACE_ME'; if(id==='REPLACE_ME'){console.error('Set SS_PROJECT_ID'); process.exit(1)}; console.log('Running Lighthouse for', id)\" && lighthouse http://localhost:4173/projects/$SS_PROJECT_ID --only-categories=performance,accessibility,best-practices,seo --output=json --output=html --output-path ./lighthouse/project_id_after --chrome-flags='--headless=new'",
+    "lh:all": "node scripts/lh-run.js"
   },
   "dependencies": {
     "@tsparticles/react": "^3.0.0",
@@ -36,6 +36,7 @@
     "lighthouse": "^12.8.1",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
-    "vite": "^4.5.14"
+    "vite": "^4.5.14",
+    "vite-plugin-compression": "^0.5.1"
   }
 }

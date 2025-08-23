@@ -10,9 +10,6 @@ import {
   patchTask,
 } from "../api/projects";
 
-// ✅ REMOVE static import of perfLog (kept dev-only below)
-// import { perfLog } from "../utils/perfLog";
-
 import { getProjectStats } from "../api/stats";
 import ActivityOverTimeLive from "../components/analytics/ActivityOverTimeLive";
 
@@ -24,11 +21,9 @@ import RisksPanel from "../components/project/RisksPanel";
 import MembersPanel from "../components/project/MembersPanel";
 import AuditLog from "../components/project/AuditLog";
 
-// tiny helpers
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
 const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
 
-// dev-only perf logger shim
 async function perfLogDev(name, start) {
   if (import.meta.env.MODE === 'production') return;
   try {
@@ -103,8 +98,7 @@ export default function ProjectHome() {
           ? { items: [...prev.items, ...res.items], nextCursor: res.nextCursor }
           : { items: res.items, nextCursor: res.nextCursor }
       );
-    } catch {}
-    finally { setFeedLoading(false); }
+    } catch {} finally { setFeedLoading(false); }
   };
 
   useEffect(() => {
@@ -134,10 +128,32 @@ export default function ProjectHome() {
 
   const tasks = useMemo(() => project?.tasks ?? [], [project]);
 
+  // ✅ Optimistic task add
   const handleAddTask = async (title) => {
-    const created = await createTask(id, { title, status: "Not Started" });
-    setProject((p) => ({ ...p, tasks: [created, ...(p?.tasks || [])] }));
-  };
+    const optimistic = {
+      _id: `tmp-${Date.now()}`,
+      title,
+      status: "Not Started",
+      createdAt: new Date().toISOString(),
+      __optimistic: true,
+    };
+    setProject((p) => ({ ...p, tasks: [optimistic, ...(p?.tasks || [])] }));
+  
+    try {
+      const created = await createTask(id, { title, status: "Not Started" });
+      setProject((p) => ({
+        ...p,
+        tasks: (p?.tasks || []).map((t) => (t._id === optimistic._id ? created : t)),
+      }));
+    } catch (e) {
+      // roll back optimistic
+      setProject((p) => ({
+        ...p,
+        tasks: (p?.tasks || []).filter((t) => t._id !== optimistic._id),
+      }));
+      throw e;
+    }
+  };  
 
   const handlePatchTask = async (taskId, patch) => {
     const updated = await patchTask(id, taskId, patch);
@@ -214,16 +230,20 @@ export default function ProjectHome() {
       <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-ink-100 dark:bg-gray-900 min-h-screen max-w-6xl mx-auto">
         <ProjectHeader project={project} onAddTask={handleAddTask} />
 
-        <div className="mt-4">
-          <ProjectKpis project={project} />
+        {/* Project KPIs */}
+        <div className="mt-4 card accent-kpi rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
+          <div className="card-header">Project KPIs</div>
+          <div className="mt-3">
+            <ProjectKpis project={project} />
+          </div>
+          <div className="mt-4">
+            <KpiCards />
+          </div>
         </div>
 
-        <div className="mt-4">
-          <KpiCards />
-        </div>
-
-        <div className="mt-6 rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Activity Over Time</h2>
+        {/* Activity Over Time */}
+        <div className="mt-6 card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
+          <h2 className="card-header">Activity Over Time</h2>
           <ActivityOverTimeLive projectId={project._id} defaultRange="30" />
         </div>
 
@@ -240,10 +260,21 @@ export default function ProjectHome() {
           </div>
 
           <div className="lg:col-span-4 space-y-6">
-            <MyNextActions tasks={tasks} meId={user?._id} onPatchTask={handlePatchTask} />
-            <RisksPanel project={project} />
+            <div className="card accent-risk rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+              <h3 className="card-header">Risks &amp; Blockers</h3>
+              <div className="mt-3">
+                <RisksPanel project={project} />
+              </div>
+            </div>
+
             <MembersPanel members={project.members || []} />
-            <AuditLog projectId={project._id} />
+
+            <div className="card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+              <h3 className="card-header">Recent Activity</h3>
+              <div className="mt-2">
+                <AuditLog projectId={project._id} />
+              </div>
+            </div>
           </div>
         </div>
       </div>

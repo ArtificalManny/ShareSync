@@ -1,6 +1,7 @@
 // /src/components/home/ProjectsRail.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /**
  * ProjectsRail
@@ -16,6 +17,7 @@ import { Link } from "react-router-dom";
 export default function ProjectsRail({ items = [], loading = false }) {
   const scrollerRef = useRef(null);
   const [hoverId, setHoverId] = useState(null);
+  const hoverTimer = useRef(null);
 
   // helpers
   const getId = (p) => p?._id || p?.id || null;
@@ -27,7 +29,7 @@ export default function ProjectsRail({ items = [], loading = false }) {
   };
 
   const displayEmoji = (p) => {
-    if (p?.avatar && /^https?:\/\//i.test(p.avatar)) return null; // it's an image URL
+    if (p?.avatar && /^https?:\/\//i.test(p.avatar)) return null; // it’s an image URL
     const m = (p?.title || "").match(/[\p{Emoji}\p{Extended_Pictographic}]/u);
     return m ? m[0] : (p?.title || "P").trim()[0]?.toUpperCase() || "P";
   };
@@ -90,6 +92,20 @@ export default function ProjectsRail({ items = [], loading = false }) {
     };
   }, []);
 
+  // ✅ Prefetch stats on hover/focus (debounced)
+  useEffect(() => {
+    if (!hoverId) return;
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => {
+      import("../../api/stats")
+        .then((mod) => mod.getProjectStats?.(hoverId, { range: 30 }))
+        .catch(() => {});
+    }, 120);
+    return () => {
+      if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    };
+  }, [hoverId]);
+
   const content = useMemo(() => {
     if (loading) {
       return (
@@ -116,7 +132,7 @@ export default function ProjectsRail({ items = [], loading = false }) {
       >
         {items.map((p) => {
           const id = getId(p);
-          if (!id) return null; // skip items without an id
+          if (!id) return null;
           const isUnread = hasUnread(p);
           const emoji = displayEmoji(p);
           const isImage = p?.avatar && /^https?:\/\//i.test(p.avatar);
@@ -127,7 +143,9 @@ export default function ProjectsRail({ items = [], loading = false }) {
                 to={`/projects/${id}`}
                 onMouseEnter={() => setHoverId(id)}
                 onMouseLeave={() => setHoverId((curr) => (curr === id ? null : curr))}
-                className="relative w-[92px] shrink-0 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 p-2 flex flex-col items-center gap-1"
+                onFocus={() => setHoverId(id)}
+                onBlur={() => setHoverId((curr) => (curr === id ? null : curr))}
+                className="motion-quick relative w-[92px] shrink-0 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 p-2 flex flex-col items-center gap-1"
                 aria-label={`Open project ${p.title || "Untitled"}`}
               >
                 <span
@@ -141,12 +159,12 @@ export default function ProjectsRail({ items = [], loading = false }) {
                 >
                   {isImage ? (
                     <img
-                    src={p.avatar}
-                    alt=""
-                    width={48}
-                    height={48}
-                    className="h-full w-full object-cover"
-                  />                  
+                      src={p.avatar}
+                      alt=""
+                      width={48}
+                      height={48}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <span>{emoji}</span>
                   )}
@@ -160,7 +178,7 @@ export default function ProjectsRail({ items = [], loading = false }) {
                   <div
                     role="dialog"
                     aria-label={`${p.title || "Untitled"} quick peek`}
-                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-56 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 shadow-xl p-3 z-10"
+                    className="motion-quick absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-56 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 shadow-xl p-3 z-10"
                   >
                     <div className="text-xs text-slate-500 mb-1">Last activity</div>
                     <div className="text-sm text-slate-800 dark:text-slate-100">
@@ -195,17 +213,17 @@ export default function ProjectsRail({ items = [], loading = false }) {
             type="button"
             aria-label="Scroll left"
             onClick={() => scrollBy(-240)}
-            className="h-8 w-8 rounded-lg border border-slate-200/70 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600"
+            className="motion-quick h-8 w-8 rounded-lg border border-slate-200/70 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 grid place-items-center"
           >
-            ←
+            <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             type="button"
             aria-label="Scroll right"
             onClick={() => scrollBy(240)}
-            className="h-8 w-8 rounded-lg border border-slate-200/70 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600"
+            className="motion-quick h-8 w-8 rounded-lg border border-slate-200/70 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 grid place-items-center"
           >
-            →
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>

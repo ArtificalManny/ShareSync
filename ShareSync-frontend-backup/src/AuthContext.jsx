@@ -1,73 +1,65 @@
-// src/AuthContext.jsx
-import React, { createContext, useState, useEffect } from 'react';
-import client from './api/client'; // axios instance
-import { getAccessToken, setTokens, clearTokens } from './utils/tokenUtils';
+import React, { createContext, useEffect, useMemo, useState } from "react";
+import api from "./api/client";
 
-const AuthContext = createContext();
-export { AuthContext };
+export const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [ready, setReady] = useState(false);
 
-  // Load auth state from localStorage on mount
+  // Restore session from localStorage
   useEffect(() => {
-    const token = getAccessToken();
-    const storedUser = localStorage.getItem('user');
-    if (token && storedUser) {
-      setIsAuthenticated(true);
-      setUser(JSON.parse(storedUser));
-    } else {
-      setIsAuthenticated(false);
-      setUser(null);
-    }
+    try {
+      const raw = localStorage.getItem("ss.user");
+      if (raw) setUser(JSON.parse(raw));
+    } catch {}
+    setReady(true);
   }, []);
 
-  // Login: calls backend, stores tokens, fetches user
-  const login = async (email, password) => {
+  // Fetch /api/users/me to verify token & hydrate user
+  async function refreshMe() {
     try {
-      const { data } = await client.post('/auth/login', { email, password });
-
-      // Save tokens
-      setTokens(data.access_token, data.refresh_token);
-
-      // Fetch updated user with streaks, etc.
-      const userRes = await client.get('/api/users/me', {
-        headers: {
-          Authorization: `Bearer ${data.access_token}`,
-        },
-      });
-
-      const userData = userRes.data;
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-      setIsAuthenticated(true);
-
-      return userData;
-    } catch (err) {
-      console.error('AuthContext - login failed:', err);
-      logout();
-      throw err;
+      const { data } = await api.get("/users/me");
+      setUser(data || null);
+      localStorage.setItem("ss.user", JSON.stringify(data || null));
+      return data;
+    } catch (e) {
+      // token might be invalid; client interceptor will redirect on 401
+      setUser(null);
+      localStorage.removeItem("ss.user");
+      return null;
     }
-  };
+  }
 
-  // Logout
-  const logout = () => {
-    clearTokens();
-    localStorage.removeItem('user');
-    setIsAuthenticated(false);
+  async function login({ email, password }) {
+    // Your backend’s /api/auth/login should return { token, user }
+    const { data } = await api.post("/auth/login", { email, password });
+    const token = data?.token;
+    const me = data?.user;
+    if (token) localStorage.setItem("ss.jwt", token);
+    if (me) {
+      setUser(me);
+      localStorage.setItem("ss.user", JSON.stringify(me));
+    } else {
+      // fall back to fetching /users/me if backend didn’t include user
+      await refreshMe();
+    }
+    return data;
+  }
+
+  function logout() {
+    try {
+      localStorage.removeItem("ss.jwt");
+      localStorage.removeItem("ss.user");
+    } catch {}
     setUser(null);
-  };
+    // We don’t navigate here because Auth-aware routes or Navbar will.
+  }
 
-  // Update user profile in state and storage
-  const updateProfile = (updatedUser) => {
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    setUser(updatedUser);
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, updateProfile }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ user, ready, login, logout, refreshMe }),
+    [user, ready]
   );
-};
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './user.schema';
@@ -11,11 +11,28 @@ export class UserService {
     private readonly projects: ProjectsService,
   ) {}
 
-  // Public profile support
+  /** -- Lookups -- */
+  async findById(id: string): Promise<UserDocument | null> {
+    return this.userModel.findById(id).exec();
+  }
+
   async findByUsername(username: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ username }).exec();
   }
 
+  /** Public profile view (respect publicProfile flag) */
+  async findPublicByUsername(username: string): Promise<UserDocument | null> {
+    const user = await this.userModel
+      .findOne({ username })
+      .select('-password -resetToken -verificationToken')
+      .exec();
+
+    if (!user) return null;
+    if ((user as any).publicProfile === false) return null;
+    return user;
+  }
+
+  /** -- Create/Update -- */
   async create(createUserDto: {
     email: string;
     username: string;
@@ -27,19 +44,23 @@ export class UserService {
     return createdUser.save();
   }
 
-  async findOneByEmail(email: string): Promise<UserDocument | undefined> {
+  async findOneByEmail(email: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ email }).exec();
   }
 
-  async findById(id: string): Promise<UserDocument | undefined> {
-    return this.userModel.findById(id).exec();
+  /** Generic update by id (used by controller’s PATCH /users/me) */
+  async updateById(id: string, patch: Partial<User>): Promise<UserDocument> {
+    const updated = await this.userModel
+      .findByIdAndUpdate(id, { $set: patch }, { new: true })
+      .exec();
+    if (!updated) throw new NotFoundException('User not found');
+    return updated;
   }
 
+  /** Existing update helper (kept for compatibility) */
   async update(id: string, updateUserDto: any): Promise<UserDocument> {
     const user = await this.userModel.findById(id).exec();
-    if (!user) {
-      throw new Error('User not found');
-    }
+    if (!user) throw new NotFoundException('User not found');
     Object.assign(user, updateUserDto);
     return user.save();
   }
@@ -52,16 +73,24 @@ export class UserService {
       school?: string;
       job?: string;
       publicProfile?: boolean;
+      appearance?: any;
     },
   ): Promise<UserDocument> {
     return this.update(id, profileData);
   }
 
-  async updateNotificationPreferences(id: string, preferences: string[]): Promise<UserDocument> {
-    return this.update(id, { notificationPreferences: preferences });
+  async updateNotificationPreferences(
+    id: string,
+    preferences: string[] | { emailActivity?: boolean; emailDigest?: boolean },
+  ): Promise<UserDocument> {
+    const patch =
+      Array.isArray(preferences)
+        ? { notificationPreferences: preferences }
+        : { notifications: preferences };
+    return this.update(id, patch);
   }
 
-  // ⬇️ Fixed to use ProjectsService.findAll(userId)
+  /** -- Projects aggregation helper -- */
   async getProjectsByCategory(userId: string): Promise<any> {
     const projects = await this.projects.findAll(userId);
     return {
@@ -71,6 +100,7 @@ export class UserService {
     };
   }
 
+  /** -- Auth helpers -- */
   async updatePassword(email: string, newPasswordHash: string): Promise<UserDocument | null> {
     return this.userModel
       .findOneAndUpdate({ email }, { password: newPasswordHash }, { new: true })
@@ -79,21 +109,21 @@ export class UserService {
 
   async trackLoginActivity(email: string): Promise<UserDocument> {
     const user = await this.userModel.findOne({ email });
-    if (!user) throw new Error('User not found');
+    if (!user) throw new NotFoundException('User not found');
 
     const now = new Date();
     const last = user.lastLogin ? new Date(user.lastLogin) : null;
     const diffDays = last ? Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24)) : null;
 
     if (diffDays === 1) {
-      user.streakDays = (user.streakDays || 0) + 1;
+      (user as any).streakDays = ((user as any).streakDays || 0) + 1;
     } else if (diffDays === 0) {
-      // same day login — no change
+      // same-day login: no change
     } else {
-      user.streakDays = 1;
+      (user as any).streakDays = 1;
     }
 
-    user.lastLogin = now;
+    (user as any).lastLogin = now;
     return user.save();
   }
 

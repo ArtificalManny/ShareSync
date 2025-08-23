@@ -12,7 +12,7 @@ export default function Sidebar() {
         <NavLink to="/projects" className="block px-3 py-2 rounded hover:bg-slate-100">
           Projects
         </NavLink>
-        {/* Updated: Profile points to /me */}
+        {/* Profile -> /me */}
         <NavLink to="/me" className="block px-3 py-2 rounded hover:bg-slate-100">
           Profile
         </NavLink>

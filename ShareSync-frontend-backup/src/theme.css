@@ -1,68 +1,62 @@
 /* /src/theme.css
    ShareSync Design Tokens (CNBC-ish)
-   - Colors, Type Scale, Card Surface, Motion
-   - Safe with Tailwind (scoped to CSS variables + light utilities)
+   - Colors, Type Scale, Card Surface, Motion, A11y
 */
 
 /* ---------- Root (Light) ---------- */
 :root {
-  /* Palette (updated) */
-  --blue-600: #0B5FFF;  /* primary */
-  --blue-700: #0A53EA;  /* hover */
+  /* Palette */
+  --blue-600: #0B5FFF;
+  --blue-700: #0A53EA;
 
-  --green-500: #16A34A; /* success */
-  --amber-500: #F59E0B; /* warn */
-  --red-500:   #DC2626; /* danger */
+  --green-500: #16A34A;
+  --amber-500: #F59E0B;
+  --red-500:   #DC2626;
 
-  /* Neutrals (updated) */
-  --ink-900: #0F172A;   /* text strong */
-  --ink-600: #64748B;   /* text secondary */
-  --ink-100: #EEF2F7;   /* subtle bg */
+  /* Neutrals */
+  --ink-900: #0F172A;
+  --ink-600: #64748B;
+  --ink-100: #EEF2F7;
 
-  /* Surfaces (updated) */
+  /* Surfaces */
   --bg-elevated: #FFFFFF;
   --bg-canvas:   #F8FAFC;
 
-  /* Type scale (font-size/line-height) */
-  --h1-size: 24px;
-  --h1-leading: 32px;
-
-  --h2-size: 18px;
-  --h2-leading: 28px;
-
-  --body-size: 14px;
-  --body-leading: 22px;
+  /* Type scale */
+  --h1-size: 24px;  --h1-leading: 32px;
+  --h2-size: 18px;  --h2-leading: 28px;
+  --body-size: 14px; --body-leading: 22px;
 
   /* Radii */
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 10px;
 
-  /* Shadow (CNBC-ish, soft & long) */
+  /* Shadow */
   --shadow-elev: 0 8px 24px rgba(15, 23, 42, 0.08);
 
-  /* Motion */
+  /* Motion tokens */
   --ease-standard: cubic-bezier(.2,.7,.3,1);
   --motion-quick: 150ms var(--ease-standard);
   --motion-std:   200ms var(--ease-standard);
   --motion-slow:  300ms var(--ease-standard);
 
-  /* Glass (backdrop blur) */
+  /* Glass */
   --glass-blur: 8px;
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.35);
 
-  /* A11y focus rings (visible, consistent) */
+  /* A11y focus */
   --focus-ring: 2px solid var(--blue-600, #0B5FFF);
   --focus-offset: 2px;
 }
 
 /* ---------- Dark Mode ---------- */
 :root.dark {
-  --bg-elevated: #0B1220; /* near-slate */
+  --bg-elevated: #0B1220;
   --bg-canvas:   #0A0F1A;
 
-  --ink-900: #E5E7EB; /* flip text */
+  --ink-900: #E5E7EB;
   --ink-600: #94A3B8;
   --ink-100: #111827;
 
@@ -71,13 +65,13 @@
   --shadow-elev: 0 8px 24px rgba(2, 6, 23, 0.6);
 }
 
-/* ---------- Base Application Canvas ---------- */
+/* ---------- Base Canvas ---------- */
 html, body, #root, .app-container {
   background: var(--bg-canvas);
   color: var(--ink-900);
 }
 
-/* ---------- Type Utilities (opt-in; Tailwind still works) ---------- */
+/* ---------- Type Utilities ---------- */
 .ds-h1 {
   font-size: var(--h1-size);
   line-height: var(--h1-leading);
@@ -85,29 +79,25 @@ html, body, #root, .app-container {
   letter-spacing: -0.01em;
   color: var(--ink-900);
 }
-
 .ds-h2 {
   font-size: var(--h2-size);
   line-height: var(--h2-leading);
   font-weight: 600;
   color: var(--ink-900);
 }
-
 .ds-body {
   font-size: var(--body-size);
   line-height: var(--body-leading);
   color: var(--ink-600);
 }
 
-/* ---------- Card Surface (glassy + standard) ---------- */
+/* ---------- Card Surface (standard + glass) ---------- */
 .card {
   background: var(--bg-elevated);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-elev);
   border: 1px solid rgba(2, 6, 23, 0.06);
 }
-
-/* Glass variant: use when you want frosted look (header/rails) */
 .card--glass {
   background: var(--glass-bg);
   border-radius: var(--radius-lg);
@@ -117,35 +107,25 @@ html, body, #root, .app-container {
   backdrop-filter: blur(var(--glass-blur));
 }
 
-/* ---------- Motion (apply to nav tabs, chips, toasts, etc.) ---------- */
-.motion-std {
-  transition: all var(--motion-std);
-}
-.motion-quick {
-  transition: all var(--motion-quick);
-}
-.motion-slow {
-  transition: all var(--motion-slow);
-}
+/* ---------- Motion Utilities ---------- */
+.motion-std   { transition: all var(--motion-std); }
+.motion-quick { transition: all var(--motion-quick); }
+.motion-slow  { transition: all var(--motion-slow); }
 
-/* Respect reduced-motion */
+/* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .motion-std, .motion-quick, .motion-slow {
-    transition: none !important;
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
 /* ---------- Accent Helpers ---------- */
-.accent {
-  color: var(--blue-600);
-}
-.bg-accent {
-  background: var(--blue-600);
-  color: #fff;
-}
-.bg-accent:hover {
-  background: var(--blue-700);
-}
+.accent { color: var(--blue-600); }
+.bg-accent { background: var(--blue-600); color: #fff; }
+.bg-accent:hover { background: var(--blue-700); }
 
 /* Status chips */
 .chip {
@@ -161,13 +141,11 @@ html, body, #root, .app-container {
   color: var(--ink-600);
   transition: background var(--motion-quick), color var(--motion-quick);
 }
-
-/* color-mix has wide modern support; safe to keep for soft tints */
 .chip--success { background: color-mix(in srgb, var(--green-500) 14%, white); color: var(--green-500); }
 .chip--warn    { background: color-mix(in srgb, var(--amber-500) 18%, white); color: var(--amber-500); }
 .chip--danger  { background: color-mix(in srgb, var(--red-500)   16%, white); color: var(--red-500); }
 
-/* ---------- Buttons (minimal, for spots outside Tailwind) ---------- */
+/* ---------- Buttons ---------- */
 .btn-primary {
   background: var(--blue-600);
   color: #fff;
@@ -180,14 +158,11 @@ html, body, #root, .app-container {
 .btn-primary:active { transform: translateY(0); }
 
 /* ---------- Focus Ring ---------- */
-/* Visible focus for keyboard users */
 :focus-visible {
-  outline: 2px solid var(--blue-600);
-  outline-offset: 2px;
-  border-radius: 8px;
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-radius: 10px;
 }
-
-/* Use :focus-visible so mouse users don't see it */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
@@ -196,25 +171,4 @@ textarea:focus-visible,
   outline: var(--focus-ring);
   outline-offset: var(--focus-offset);
   border-radius: 10px;
-}
-
-/* Improve contrast for disabled but focusable elements */
-[tabindex]:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-offset);
-}
-
-/* --- Reduced motion: dampen animations & transitions --- */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-/* Ensure outline-none doesn’t hide a11y ring for keyboard users */
-*:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-offset);
 }
