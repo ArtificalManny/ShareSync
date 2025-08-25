@@ -1,5 +1,8 @@
+// src/AuthContext.jsx (your current simple version)
 import React, { createContext, useEffect, useMemo, useState } from "react";
 import api from "./api/client";
+// ADD:
+import { io } from "socket.io-client";
 
 export const AuthContext = createContext(null);
 
@@ -7,7 +10,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
 
-  // Restore session from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem("ss.user");
@@ -16,15 +18,49 @@ export function AuthProvider({ children }) {
     setReady(true);
   }, []);
 
-  // Fetch /api/users/me to verify token & hydrate user
+  // 🔄 Live avatar/name updates with almost no extra code
+  useEffect(() => {
+    const token = localStorage.getItem("ss.jwt");
+    if (!token || !user) return;
+
+    const socket = io("/", {
+      path: "/socket.io",
+      transports: ["websocket"],
+      withCredentials: true,
+      auth: { token },
+    });
+
+    socket.on("connect", () => {
+      const me = user._id || user.id;
+      if (me) socket.emit("join", { room: `user:${me}` });
+    });
+
+    socket.on("user:updated", (payload) => {
+      setUser((prev) => {
+        if (!prev) return prev;
+        if (String(prev._id || prev.id) !== String(payload.userId)) return prev;
+        const nextPic = payload.profilePicture
+          ? `${payload.profilePicture}${payload.profilePicture.includes("?") ? "&" : "?"}v=${Date.now()}`
+          : prev.profilePicture;
+        const merged = { ...prev, ...payload, profilePicture: nextPic };
+        try { localStorage.setItem("ss.user", JSON.stringify(merged)); } catch {}
+        return merged;
+      });
+      // nudge components that cache avatars
+      try { window.__SS_AVATAR_VERSION__ = Date.now(); } catch {}
+    });
+
+    return () => { try { socket.disconnect(); } catch {} };
+  }, [user]);
+  // END minimal socket
+
   async function refreshMe() {
     try {
       const { data } = await api.get("/users/me");
       setUser(data || null);
       localStorage.setItem("ss.user", JSON.stringify(data || null));
       return data;
-    } catch (e) {
-      // token might be invalid; client interceptor will redirect on 401
+    } catch {
       setUser(null);
       localStorage.removeItem("ss.user");
       return null;
@@ -32,7 +68,6 @@ export function AuthProvider({ children }) {
   }
 
   async function login({ email, password }) {
-    // Your backend’s /api/auth/login should return { token, user }
     const { data } = await api.post("/auth/login", { email, password });
     const token = data?.token;
     const me = data?.user;
@@ -41,7 +76,6 @@ export function AuthProvider({ children }) {
       setUser(me);
       localStorage.setItem("ss.user", JSON.stringify(me));
     } else {
-      // fall back to fetching /users/me if backend didn’t include user
       await refreshMe();
     }
     return data;
@@ -53,13 +87,9 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("ss.user");
     } catch {}
     setUser(null);
-    // We don’t navigate here because Auth-aware routes or Navbar will.
   }
 
-  const value = useMemo(
-    () => ({ user, ready, login, logout, refreshMe }),
-    [user, ready]
-  );
+  const value = useMemo(() => ({ user, ready, login, logout, refreshMe }), [user, ready]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
