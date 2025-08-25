@@ -10,10 +10,10 @@ export interface ListParams {
   scope: 'user' | 'project';
   userId?: string;
   projectId?: string;
-  type?: string;          // optional filter, e.g. 'task.create'
+  type?: string;                 // e.g. 'task.create' or comma-separated
   range?: '24h' | '7d' | '30d' | 'all';
-  cursor?: string | null; // ISO timestamp string
-  limit?: number;         // page size
+  cursor?: string | null;        // ISO timestamp (createdAt) to paginate older
+  limit?: number;                // page size
 }
 
 @Injectable()
@@ -39,7 +39,7 @@ export class ActivitiesService {
     return typeof (doc as any).toObject === 'function' ? (doc as any).toObject() : doc;
   }
 
-  /** List with simple cursor pagination (by createdAt desc). */
+  /** List with cursor pagination (createdAt DESC). */
   async list(params: ListParams): Promise<{ items: AnyObj[]; nextCursor: string | null }> {
     const {
       scope,
@@ -52,34 +52,44 @@ export class ActivitiesService {
     } = params;
 
     const q: FilterQuery<AnyObj> = {};
+
     if (scope === 'user') {
       if (userId) q.userId = userId;
     } else if (scope === 'project') {
       if (projectId) q.projectId = projectId;
     }
 
-    if (type) q.type = type;
+    // type can be a single value or comma-separated list
+    if (type) {
+      const types = String(type)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (types.length === 1) q.type = types[0];
+      else if (types.length > 1) q.type = { $in: types };
+    }
 
     // Range filter (by createdAt)
-    const now = Date.now();
-    let sinceMs = 0;
-    if (range === '24h') sinceMs = 24 * 60 * 60 * 1000;
-    else if (range === '7d') sinceMs = 7 * 24 * 60 * 60 * 1000;
-    else if (range === '30d') sinceMs = 30 * 24 * 60 * 60 * 1000;
     if (range !== 'all') {
+      const now = Date.now();
+      let sinceMs = 0;
+      if (range === '24h') sinceMs = 24 * 60 * 60 * 1000;
+      else if (range === '7d') sinceMs = 7 * 24 * 60 * 60 * 1000;
+      else if (range === '30d') sinceMs = 30 * 24 * 60 * 60 * 1000;
       q.createdAt = { ...(q.createdAt || {}), $gte: new Date(now - sinceMs) };
     }
 
-    // Cursor (fetch older than cursor)
+    // Cursor (older than given createdAt)
     if (cursor) {
       q.createdAt = { ...(q.createdAt || {}), $lt: new Date(cursor) };
     }
 
     const pageSize = Math.min(Math.max(Number(limit) || 20, 1), 100);
+
     const rows = await this.activityModel
       .find(q)
       .sort({ createdAt: -1 })
-      .limit(pageSize + 1)
+      .limit(pageSize + 1) // overfetch to know if next page exists
       .lean()
       .exec();
 
@@ -92,5 +102,24 @@ export class ActivitiesService {
     }
 
     return { items, nextCursor };
+  }
+
+  /** Produce a simple CSV export for the current query results. */
+  toCsv(items: AnyObj[]): string {
+    const header = [
+      'createdAt',
+      'type',
+      'userId',
+      'projectId',
+      'message',
+    ];
+    const rows = items.map((it) => [
+      new Date(it.createdAt ?? Date.now()).toISOString(),
+      JSON.stringify(it.type ?? ''),
+      JSON.stringify(it.userId ?? ''),
+      JSON.stringify(it.projectId ?? ''),
+      JSON.stringify(it.text ?? it.message ?? ''),
+    ]);
+    return [header.join(','), ...rows.map((r) => r.join(','))].join('\n');
   }
 }
