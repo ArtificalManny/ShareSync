@@ -22,7 +22,7 @@ import MembersPanel from "../components/project/MembersPanel";
 // Replace the basic audit log with the filtered AuditList
 import AuditList from "../components/audit/AuditList.jsx";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
-import { Section } from "lucide-react";
+import { io } from "socket.io-client";
 
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
 const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
@@ -115,6 +115,38 @@ export default function ProjectHome() {
       measure("perf:projecthome:first-activity", "ss:nav-project-click", "ss:projecthome:first-activity");
     }
   }, [feedLoading, feed.items.length]);
+
+  // 🔴 Realtime: join project room and prepend live activity
+  useEffect(() => {
+    if (!id) return;
+    const socket = io("/", {
+      path: "/socket.io",
+      transports: ["websocket"],
+      withCredentials: true,
+    });
+    socket.emit("join", { room: `project:${id}` });
+
+    socket.on("activity:new", (evt) => {
+      // prepend live activity if it belongs to this project
+      if (String(evt?.projectId) === String(id)) {
+        setFeed((prev) => ({ ...prev, items: [evt, ...prev.items] }));
+      }
+    });
+
+    socket.on("project:statsUpdated", (payload) => {
+      if (String(payload?.projectId) === String(id)) {
+        // optional: soft refetch KPIs here if you want live KPIs
+        // getProjectStats(id, { range: 30 }).then(setStats).catch(() => {});
+      }
+    });
+
+    return () => {
+      try {
+        socket.emit("leave", { room: `project:${id}` });
+        socket.disconnect();
+      } catch {}
+    };
+  }, [id]);
 
   const handlePostUpdate = async (text) => {
     if (!text.trim()) return;
