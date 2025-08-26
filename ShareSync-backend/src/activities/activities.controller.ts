@@ -15,13 +15,14 @@ import { ActivitiesService, ListParams } from './activities.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { NotifyService } from '../notifications/notify.service';
 
 type AnyObj = Record<string, any>;
 
 function coerceRange(input: unknown): '24h' | '7d' | '30d' | 'all' {
   const v = String(input ?? '').trim().toLowerCase();
   if (v === '24h' || v === '7d' || v === '30d' || v === 'all') return v as any;
-  // common numeric shorthands
+  // numeric shorthands
   if (v === '1' || v === '1d' || v === '24') return '24h';
   if (v === '7' || v === '07' || v === '7d') return '7d';
   if (v === '30' || v === '30d') return '30d';
@@ -33,6 +34,7 @@ export class ActivitiesController {
   constructor(
     private readonly activities: ActivitiesService,
     private readonly realtime: RealtimeGateway,
+    private readonly notify: NotifyService,
   ) {}
 
   // POST /api/activities
@@ -58,10 +60,39 @@ export class ActivitiesController {
       createdAt: (created as AnyObj)?.createdAt ?? new Date().toISOString(),
     };
 
-    // Fan-out
+    // Fan-out to sockets
     this.realtime.emitToProject(projectId, 'activity:new', payload);
     this.realtime.emitToProject(projectId, 'project:statsUpdated', { projectId });
     this.realtime.emitToUser(userId, 'user:statsUpdated', { userId });
+
+    // Mentions → in-app + queue email (MVP)
+    // Prefer explicit meta.mentions: string[] of userIds from client.
+    const text: string = dto.text || '';
+    const mentionedUserIds: string[] =
+      (dto as AnyObj)?.meta?.mentions && Array.isArray((dto as AnyObj).meta.mentions)
+        ? (dto as AnyObj).meta.mentions
+        : [];
+
+    // (Optional) also parse @handles in text if you later resolve username->userId
+    // const handles = Array.from(text.matchAll(/@([\w.\-]+)/g)).map((m) => m[1]);
+
+    for (const uid of mentionedUserIds) {
+      if (!uid) continue;
+      this.notify.inApp({
+        userId: uid,
+        title: 'Mention',
+        message: `You were mentioned in a project update`,
+        href: `/projects/${projectId}`,
+        priority: 'mention',
+        meta: { projectId, activityId: (created as AnyObj)?._id },
+      });
+      this.notify.queueEmail({
+        userId: uid,
+        message: `You were mentioned: "${text}"`,
+        href: `/projects/${projectId}`,
+        priority: 'mention',
+      });
+    }
 
     return created;
   }

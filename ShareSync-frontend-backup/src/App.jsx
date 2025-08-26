@@ -16,7 +16,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const ProjectHome = lazy(() => import("./pages/ProjectHome"));
 const CreateAccount = lazy(() => import("./pages/CreateAccount"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
-const PublicStreakFeed = lazy(() => import("./components/feed/PublicStreakFeed.jsx"));
+const PublicProject = lazy(() => import("./pages/PublicProject"));
 
 function GuardedRoutes() {
   const { user, ready } = useContext(AuthContext);
@@ -59,15 +59,7 @@ function GuardedRoutes() {
         <Route path="/me" element={<Profile />} />
 
         {/* Public feed (open) */}
-        <Route
-          path="/streak"
-          element={
-            <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-50 dark:bg-gray-900 min-h-screen max-w-4xl mx-auto">
-              <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">Public Cadence Feed</h1>
-              <PublicStreakFeed initialType="all" initialSince="7d" initialSort="newest" pageSize={20} />
-            </div>
-          }
-        />
+        <Route path="/p/:token" element={<PublicProject />} />
 
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>

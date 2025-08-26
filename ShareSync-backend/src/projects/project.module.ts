@@ -5,14 +5,24 @@ import { AuthModule } from '../auth/auth.module';
 import { ProjectController } from './project.controller';
 import { ProjectsService } from './project.service';
 import { Project, ProjectSchema } from './schemas/project.schema';
+import { ProjectShareSchema } from './share.schema';
+import { ProjectShareService } from './share.service';
 
 @Module({
   imports: [
-    AuthModule,
-    MongooseModule.forFeature([{ name: Project.name, schema: ProjectSchema }]),
+    // ...existing
+    MongooseModule.forFeature([
+      { name: 'ProjectShare', schema: ProjectShareSchema },
+    ]),
   ],
-  controllers: [ProjectController],
-  providers: [ProjectsService],
-  exports: [ProjectsService],
+  // ...
+  providers: [
+    // ...existing
+    ProjectShareService,
+  ],
+  exports: [
+    // ...existing
+    ProjectShareService,
+  ],
 })
 export class ProjectModule {}

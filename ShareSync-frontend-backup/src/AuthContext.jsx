@@ -2,6 +2,7 @@
 import React, { createContext, useEffect, useMemo, useState } from "react";
 import api from "./api/client";
 import { io } from "socket.io-client";
+import { toast } from "./components/ui/toast";
 
 export const AuthContext = createContext(null);
 
@@ -59,6 +60,24 @@ export function AuthProvider({ children }) {
           localStorage.setItem("ss.user", JSON.stringify(merged));
         } catch {}
         return merged;
+      });
+
+      socket.on("notify:new", (n) => {
+        try {
+          //minimal: message + optional link
+          if (n?.href) {
+            toast({
+              title: n?.title || "Notification",
+              description: n?.message || "",
+              action: { label: "Open", href: n.href },         
+            });
+          } else {
+            toast({
+              title: n?.title || "Notification",
+              description: n?.message || "",
+            })
+          }
+        } catch {}
       });
 
       // Nudge components that memoize avatars
