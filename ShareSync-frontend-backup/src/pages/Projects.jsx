@@ -9,6 +9,7 @@ import ProjectSkeleton from '../components/projects/ProjectSkeleton.jsx';
 import ProjectsEmpty from '../components/projects/ProjectsEmpty.jsx';
 import RightRail from '../components/projects/RightRail.jsx';
 import { listProjects } from '../api/projects';
+import SectionHeader from '../components/ui/SectionHeader.jsx';
 
 /** Debounce a value to limit API calls while typing */
 function useDebounce(value, delay = 350) {

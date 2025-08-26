@@ -19,6 +19,8 @@ import HomeHeader from '../components/home/HomeHeader.jsx';
 
 // Recent Activity (user scope) — now with filters/export inside component
 import AuditList from '../components/audit/AuditList.jsx';
+import SectionHeader from '../components/ui/SectionHeader.jsx';
+
 
 // ✅ Lazy chunks (keeps initial JS light for /home)
 const MomentumRing         = React.lazy(() => import('../components/MomentumRing.jsx'));
@@ -234,7 +236,7 @@ export default function Home() {
       {/* KPI row (live) */}
       <div className="card accent-kpi rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="card-header">Your KPIs</h2>
+          <SectionHeader icon="BarChartBig">Your KPIs</SectionHeader>
           <div className="flex items-center gap-2">
             <label className="text-xs text-slate-500">Project</label>
             <select
@@ -283,7 +285,7 @@ export default function Home() {
 
       {/* Activity Over Time */}
       <div className="card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
-        <div className="card-header">Activity Over Time</div>
+        <SectionHeader icon="ActivitySquare">Activity Over Time</SectionHeader>
         <Suspense fallback={<div className="h-28 rounded-2xl bg-white/60 dark:bg-slate-900/60 animate-pulse" />}>
           <ActivityOverTimeLive
             series={stats?.activitySeries ?? []}
@@ -295,7 +297,7 @@ export default function Home() {
 
       {/* Recent Activity (user scope; includes filters/range/export internally) */}
       <div className="card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
-        <div className="card-header">Recent Activity</div>
+        <SectionHeader icon="History">Recent Activity</SectionHeader>
         <div className="mt-2">
           <AuditList scope="user" />
         </div>

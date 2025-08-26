@@ -21,6 +21,8 @@ import RisksPanel from "../components/project/RisksPanel";
 import MembersPanel from "../components/project/MembersPanel";
 // Replace the basic audit log with the filtered AuditList
 import AuditList from "../components/audit/AuditList.jsx";
+import SectionHeader from "../components/ui/SectionHeader.jsx";
+import { Section } from "lucide-react";
 
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
 const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
@@ -233,7 +235,7 @@ export default function ProjectHome() {
 
         {/* Project KPIs */}
         <div className="mt-4 card accent-kpi rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
-          <div className="card-header">Project KPIs</div>
+          <SectionHeader icon="Gauge">Project KPIs</SectionHeader>
           <div className="mt-3">
             <ProjectKpis project={project} />
           </div>
@@ -244,7 +246,7 @@ export default function ProjectHome() {
 
         {/* Activity Over Time */}
         <div className="mt-6 card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
-          <h2 className="card-header">Activity Over Time</h2>
+          <SectionHeader icon="ActivitySquare">Activity Over Time</SectionHeader>
           <ActivityOverTimeLive projectId={project._id} defaultRange="30" />
         </div>
 
@@ -264,7 +266,7 @@ export default function ProjectHome() {
           {/* Right rail with filtered audit feed, risks, members */}
           <div className="lg:col-span-4 space-y-6">
             <div className="card accent-risk rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-              <h3 className="card-header">Risks &amp; Blockers</h3>
+              <SectionHeader icon="AlertTriangle">Risks &amp; Blockers</SectionHeader>
               <div className="mt-3">
                 <RisksPanel project={project} />
               </div>
@@ -274,7 +276,7 @@ export default function ProjectHome() {
 
             {/* Filterable "Recent Activity" using AuditList (project scope) */}
             <div className="card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-              <h3 className="card-header">Recent Activity</h3>
+              <SectionHeader icon="History">Recent Activity</SectionHeader>
               <div className="mt-2">
                 <AuditList scope="project" projectId={project._id} />
               </div>

@@ -5,6 +5,7 @@ import { getMe, getPublicUser } from "../api/user";
 import formatProfilePicture from "../utils/formatProfilePicture";
 import AuditList from "../components/audit/AuditList.jsx";
 import { Lock } from "lucide-react";
+import SectionHeader from "../components/ui/SectionHeader.jsx";
 
 const Avatar = ({ src, alt }) => (
   <img
@@ -179,7 +180,7 @@ export default function Profile() {
           <>
             <Header user={publicUser} isOwner={false} />
             <section className="card accent-activity rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
-              <h3 className="card-header">Recent public activity</h3>
+              <SectionHeader icon="Megaphone">Recent public activity</SectionHeader>
               <div className="mt-2">
                 {publicUserId ? (
                   <AuditList
@@ -203,13 +204,13 @@ export default function Profile() {
           <Header user={me} isOwner />
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="card accent-activity rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
-              <h3 className="card-header">Your recent activity</h3>
+              <SectionHeader icon="UserRoundSearch">Your recent activity</SectionHeader>
               <div className="mt-2">
                 <AuditList scope="user" />
               </div>
             </div>
             <div className="card accent-kpi rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
-              <h3 className="card-header">Notifications</h3>
+              <SectionHeader icon="Bell">Notifications</SectionHeader>
               <p className="text-sm text-slate-600 dark:text-slate-300">
                 Manage in{" "}
                 <Link to="/settings" className="text-indigo-600 underline">
