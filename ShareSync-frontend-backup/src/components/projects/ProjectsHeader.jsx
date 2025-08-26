@@ -1,3 +1,4 @@
+// src/components/projects/ProjectsHeader.jsx
 import React from 'react';
 
 export default function ProjectsHeader({
@@ -21,33 +22,69 @@ export default function ProjectsHeader({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <input
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Search projects…"
-          className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 px-3 py-2"
-          aria-label="Search projects"
-        />
+      {/* Filter controls */}
+      <div
+        className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+        role="group"
+        aria-label="Project filters"
+      >
+        {/* Search */}
+        <div className="flex flex-col">
+          <label htmlFor="projects-search" className="sr-only">Search projects</label>
+          <input
+            id="projects-search"
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder="Search projects…"
+            className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 px-3 py-2"
+          />
+        </div>
 
-        <select value={status} onChange={(e) => onStatusChange(e.target.value)} className="rounded-xl border px-3 py-2">
-          <option value="all">All status</option>
-          <option value="not_started">Not Started</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-        </select>
+        {/* Status */}
+        <div className="flex flex-col">
+          <label htmlFor="projects-status" className="sr-only">Filter by status</label>
+          <select
+            id="projects-status"
+            value={status}
+            onChange={(e) => onStatusChange(e.target.value)}
+            className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 px-3 py-2"
+          >
+            <option value="all">All status</option>
+            <option value="not_started">Not Started</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
 
-        <select value={owner} onChange={(e) => onOwnerChange(e.target.value)} className="rounded-xl border px-3 py-2">
-          <option value="all">All owners</option>
-          <option value="me">Owned by me</option>
-          <option value="team">Owned by team</option>
-        </select>
+        {/* Owner */}
+        <div className="flex flex-col">
+          <label htmlFor="projects-owner" className="sr-only">Filter by owner</label>
+          <select
+            id="projects-owner"
+            value={owner}
+            onChange={(e) => onOwnerChange(e.target.value)}
+            className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 px-3 py-2"
+          >
+            <option value="all">All owners</option>
+            <option value="me">Owned by me</option>
+            <option value="team">Owned by team</option>
+          </select>
+        </div>
 
-        <select value={updated} onChange={(e) => onUpdatedChange(e.target.value)} className="rounded-xl border px-3 py-2">
-          <option value="7d">Updated in 7 days</option>
-          <option value="30d">Updated in 30 days</option>
-          <option value="all">Any time</option>
-        </select>
+        {/* Updated */}
+        <div className="flex flex-col">
+          <label htmlFor="projects-updated" className="sr-only">Filter by last updated</label>
+          <select
+            id="projects-updated"
+            value={updated}
+            onChange={(e) => onUpdatedChange(e.target.value)}
+            className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 px-3 py-2"
+          >
+            <option value="7d">Updated in 7 days</option>
+            <option value="30d">Updated in 30 days</option>
+            <option value="all">Any time</option>
+          </select>
+        </div>
       </div>
     </div>
   );

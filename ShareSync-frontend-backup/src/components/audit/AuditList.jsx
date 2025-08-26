@@ -55,7 +55,7 @@ export default function AuditList({ scope = 'user', userId, projectId, pageSize 
       setItems(merged);
       setCursor(res.nextCursor);
       setHasMore(Boolean(res.nextCursor));
-    } catch (e) {
+    } catch {
       // swallow; page has its own error banners if needed
     } finally {
       setLoading(false);
@@ -99,11 +99,17 @@ export default function AuditList({ scope = 'user', userId, projectId, pageSize 
     <div className="space-y-3">
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-2 justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2">
           <span className="inline-flex items-center gap-1 text-xs text-slate-500">
             <Filter className="w-4 h-4" /> Filters
           </span>
-          <div className="flex gap-1">
+
+          {/* Type filter chips */}
+          <div
+            role="toolbar"
+            aria-label="Activity type filters"
+            className="flex gap-1"
+          >
             {TYPES.map(t => (
               <button
                 key={t.key}
@@ -116,12 +122,19 @@ export default function AuditList({ scope = 'user', userId, projectId, pageSize 
                     : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800",
                 ].join(' ')}
                 aria-pressed={typeKey === t.key}
+                aria-label={`Filter by ${t.label}`}
               >
                 {t.label}
               </button>
             ))}
           </div>
-          <div className="ml-2 flex gap-1">
+
+          {/* Range filter chips */}
+          <div
+            role="toolbar"
+            aria-label="Activity date range filters"
+            className="flex gap-1 mt-1"
+          >
             {RANGES.map(r => (
               <button
                 key={r.key}
@@ -134,6 +147,7 @@ export default function AuditList({ scope = 'user', userId, projectId, pageSize 
                     : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800",
                 ].join(' ')}
                 aria-pressed={range === r.key}
+                aria-label={`Show ${r.label} of activity`}
               >
                 {r.label}
               </button>
@@ -157,8 +171,11 @@ export default function AuditList({ scope = 'user', userId, projectId, pageSize 
         {items.map((it) => (
           <li key={String(it._id || it.id)}>
             <div className="py-2 flex items-start gap-2">
-              <div className="shrink-0 h-6 w-6 grid place-items-center rounded-full bg-slate-100 dark:bg-slate-800">
-                <span aria-hidden>{rowIcon(it.type)}</span>
+              <div
+                className="shrink-0 h-6 w-6 grid place-items-center rounded-full bg-slate-100 dark:bg-slate-800"
+                aria-hidden="true"
+              >
+                {rowIcon(it.type)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm text-slate-800 dark:text-slate-100">
