@@ -1,11 +1,31 @@
 // src/user/user.controller.ts
 import {
-  Controller, Get, Patch, Body, UseGuards, Req, Param, NotFoundException,
+  Controller,
+  Get,
+  Patch,
+  Body,
+  UseGuards,
+  Req,
+  Param,
+  NotFoundException,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserService } from './user.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+
+function avatarFilename(original = 'avatar.png') {
+  const base = Date.now().toString(36);
+  return `${base}${extname(original) || '.png'}`;
+}
 
 @Controller('users')
 export class UserController {
@@ -46,6 +66,39 @@ export class UserController {
       });
     }
     return updated;
+  }
+
+  // POST /api/users/me/avatar  (multer upload + socket fan-out)
+  @UseGuards(JwtAuthGuard)
+  @Post('me/avatar')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: join(process.cwd(), 'uploads', 'avatars'),
+        filename: (_req, file, cb) => cb(null, avatarFilename(file?.originalname)),
+      }),
+      limits: { fileSize: 3 * 1024 * 1024 }, // 3 MB
+    }),
+  )
+  async uploadAvatar(@Req() req: any, @UploadedFile() file?: Express.Multer.File) {
+    const userId = req?.user?.sub || req?.user?.id;
+    if (!userId) throw new BadRequestException('Unauthorized');
+    if (!file) throw new BadRequestException('No file uploaded');
+
+    const url = `/uploads/avatars/${file.filename}`;
+    const updated = await this.users.update(userId, { profilePicture: url });
+
+    // Broadcast so UI updates instantly
+    this.realtime.emitToUser(userId, 'user:updated', {
+      userId,
+      profilePicture: url,
+      firstName: (updated as any)?.firstName,
+      lastName: (updated as any)?.lastName,
+      username: (updated as any)?.username,
+      ts: new Date().toISOString(),
+    });
+
+    return { ok: true, profilePicture: url };
   }
 
   // GET /api/users/public/:username
