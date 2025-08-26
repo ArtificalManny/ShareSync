@@ -15,6 +15,10 @@ export default function Settings() {
   const [emailDigest, setEmailDigest] = useState(true);
   const [twoFA, setTwoFA] = useState(false); // placeholder switch
 
+  // NEW: Social & Sharing toggles
+  const [allowShareLinks, setAllowShareLinks] = useState(false);
+  const [allowFollow, setAllowFollow] = useState(false);
+
   // ---- THEME HANDLING (applies instantly) ----
   const mqlRef = useRef(null); // MediaQueryList for system theme listener
 
@@ -74,6 +78,11 @@ export default function Settings() {
         setEmailActivity(Boolean(n.emailActivity ?? true));
         setEmailDigest(Boolean(n.emailDigest ?? true));
         setTwoFA(Boolean(me?.security?.twoFA ?? false));
+
+        // NEW: Social & Sharing hydrate
+        const sharing = me?.sharing || {};
+        setAllowShareLinks(Boolean(sharing.links ?? false));
+        setAllowFollow(Boolean(sharing.follow ?? false));
       })
       .catch((e) => !ignore && setErr(String(e?.message || e)))
       .finally(() => !ignore && setLoading(false));
@@ -84,9 +93,7 @@ export default function Settings() {
 
   // apply theme as soon as user changes the select (don’t wait for save)
   useEffect(() => {
-    // avoid running before first hydrate finished? It’s fine—applyTheme is idempotent.
     try { applyTheme(theme); } catch {}
-    // cleanup listener on unmount
     return () => {
       if (mqlRef.current?.removeEventListener) {
         mqlRef.current.removeEventListener('change', mqlRef.current._handler);
@@ -102,10 +109,18 @@ export default function Settings() {
     setOk('');
     setSaving(true);
     try {
-      // 1) profile-ish settings
+      // 1) profile-ish settings (+ NEW: sharing)
       await updateProfile({
         publicProfile,
         appearance: { theme },
+        sharing: {
+          links: allowShareLinks,
+          follow: allowFollow,
+        },
+        // Optionally: security flags like twoFA can live here if your backend supports it
+        security: {
+          twoFA,
+        },
       });
 
       // 2) notifications
@@ -223,6 +238,29 @@ export default function Settings() {
                 label="Weekly email digest"
                 checked={emailDigest}
                 onChange={setEmailDigest}
+              />
+            </div>
+          </section>
+
+          {/* NEW: Social & Sharing */}
+          <section className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Social &amp; Sharing</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Control how others interact with your profile and projects.
+            </p>
+
+            <div className="mt-3 space-y-3">
+              <Toggle
+                id="allowShareLinks"
+                label="Allow public share links to project pages"
+                checked={allowShareLinks}
+                onChange={setAllowShareLinks}
+              />
+              <Toggle
+                id="allowFollow"
+                label="Allow follow on my profile"
+                checked={allowFollow}
+                onChange={setAllowFollow}
               />
             </div>
           </section>

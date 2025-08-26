@@ -19,7 +19,8 @@ import ProjectActivityFeed from "../components/project/ProjectActivityFeed";
 import MyNextActions from "../components/project/MyNextActions";
 import RisksPanel from "../components/project/RisksPanel";
 import MembersPanel from "../components/project/MembersPanel";
-import AuditLog from "../components/project/AuditLog";
+// Replace the basic audit log with the filtered AuditList
+import AuditList from "../components/audit/AuditList.jsx";
 
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
 const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
@@ -248,6 +249,7 @@ export default function ProjectHome() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Main feed (keeps composer + optimistic posting) */}
           <div className="lg:col-span-8">
             <ProjectActivityFeed
               items={feed.items}
@@ -259,6 +261,7 @@ export default function ProjectHome() {
             />
           </div>
 
+          {/* Right rail with filtered audit feed, risks, members */}
           <div className="lg:col-span-4 space-y-6">
             <div className="card accent-risk rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
               <h3 className="card-header">Risks &amp; Blockers</h3>
@@ -269,10 +272,11 @@ export default function ProjectHome() {
 
             <MembersPanel members={project.members || []} />
 
+            {/* Filterable "Recent Activity" using AuditList (project scope) */}
             <div className="card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
               <h3 className="card-header">Recent Activity</h3>
               <div className="mt-2">
-                <AuditLog projectId={project._id} />
+                <AuditList scope="project" projectId={project._id} />
               </div>
             </div>
           </div>

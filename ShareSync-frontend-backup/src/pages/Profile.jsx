@@ -51,13 +51,16 @@ export default function Profile() {
       }
     } catch (e) {
       if (isPublicRoute) {
+        // treat unknown users / fetch failures as locked for now
         setLocked(true);
       } else {
         const status = e?.response?.status;
         if (status === 401 || status === 403) {
           setError("Please sign in to view your profile.");
         } else {
-          setError(String(e?.message || "Could not load your profile from the server."));
+          setError(
+            String(e?.message || "Could not load your profile from the server.")
+          );
         }
       }
     } finally {
@@ -143,6 +146,8 @@ export default function Profile() {
     </div>
   );
 
+  const publicUserId = publicUser?._id || publicUser?.id || null;
+
   return (
     <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-100 dark:bg-gray-800 min-h-screen max-w-5xl mx-auto space-y-6">
       {loading ? (
@@ -175,10 +180,21 @@ export default function Profile() {
             <Header user={publicUser} isOwner={false} />
             <section className="card accent-activity rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
               <h3 className="card-header">Recent public activity</h3>
-              {/* Future: <AuditList scope="user" userId={publicUser?.id} publicOnly /> */}
-              <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                Coming soon.
-              </p>
+              <div className="mt-2">
+                {publicUserId ? (
+                  <AuditList
+                    scope="user"
+                    userId={publicUserId}
+                    /* If your API supports a public-only filter, uncomment:
+                    publicOnly
+                    */
+                  />
+                ) : (
+                  <div className="text-sm text-slate-600 dark:text-slate-300">
+                    This user was not found.
+                  </div>
+                )}
+              </div>
             </section>
           </>
         )
@@ -195,7 +211,11 @@ export default function Profile() {
             <div className="card accent-kpi rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
               <h3 className="card-header">Notifications</h3>
               <p className="text-sm text-slate-600 dark:text-slate-300">
-                Manage in <Link to="/settings" className="text-indigo-600 underline">Settings</Link>.
+                Manage in{" "}
+                <Link to="/settings" className="text-indigo-600 underline">
+                  Settings
+                </Link>
+                .
               </p>
             </div>
           </section>
