@@ -7,6 +7,7 @@ import { AuthProvider, AuthContext } from "./AuthContext";
 import "./theme.css";
 import "./styles/card.css";
 import { ToastHost } from "./components/ui/toast";
+import ErrorBoundary from "./ErrorBoundary";
 
 const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
@@ -82,17 +83,19 @@ const AppRoutes = () => {
 
 const App = () => (
   <AuthProvider>
-    <Router>
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 bg-white text-ink-900 px-3 py-2 rounded-lg shadow"
-      >
-        Skip to content
-      </a>
-      <div className="app-container" data-accent="indigo">
-        <AppRoutes />
-      </div>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 bg-white text-ink-900 px-3 py-2 rounded-lg shadow"
+        >
+          Skip to content
+        </a>
+        <div className="app-container" data-accent="indigo">
+          <AppRoutes />
+        </div>
+      </Router>
+    </ErrorBoundary>
   </AuthProvider>
 );
 

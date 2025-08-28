@@ -11,16 +11,16 @@ async function bootstrap() {
   // Single, global "/api" prefix for every controller
   app.setGlobalPrefix('api');
 
-  // CORS for your Vite/preview dev servers (and preflights)
+  // CORS for dev/preview
   app.enableCors({
     origin: [
-      'http://localhost:54693', // your Vite port
-      'http://localhost:5173',  // common Vite default
-      'http://localhost:4173',  // vite preview (Lighthouse)
+      'http://localhost:54693',
+      'http://localhost:5173',
+      'http://localhost:4173',
     ],
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,  // fine even with bearer tokens
+    credentials: true,
     maxAge: 86400,
   });
 

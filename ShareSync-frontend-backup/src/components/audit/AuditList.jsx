@@ -55,14 +55,13 @@ export default function AuditList({ scope = 'user', userId, projectId, pageSize 
       setItems(merged);
       setCursor(res.nextCursor);
       setHasMore(Boolean(res.nextCursor));
-    } catch {
-      // swallow; page has its own error banners if needed
+    } catch (e) {
+      console.error("[AuditList] load error", e);
     } finally {
       setLoading(false);
     }
   }
 
-  // initial + refetch on filters change
   useEffect(() => {
     setItems([]);
     setCursor(null);
@@ -71,7 +70,6 @@ export default function AuditList({ scope = 'user', userId, projectId, pageSize 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, userId, projectId, typeParam, range]);
 
-  // infinite scroll
   useEffect(() => {
     if (!sentinelRef.current || !hasMore) return;
     const io = new IntersectionObserver((entries) => {

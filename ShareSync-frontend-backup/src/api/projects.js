@@ -29,8 +29,6 @@ export async function listProjects(params = {}) {
  * Create project
  */
 export async function createProject(payload) {
-  // If your backend expects boolean privacy, map here:
-  // const mapped = { ...payload, privacy: payload.privacy === "Public" };
   const { data } = await client.post("/projects", payload);
   return data;
 }
@@ -52,13 +50,19 @@ export async function getProjectsQuick() {
 }
 
 /**
- * Feed
+ * Project feed via Activities endpoint
+ * GET /api/activities?scope=project&projectId=...&range=30d&cursor=&limit=
  */
 export async function getProjectFeed(id, { limit = 20, cursor } = {}) {
-  const u = new URL(`/api/projects/${id}/feed`, window.location.origin);
-  u.searchParams.set("limit", String(limit));
-  if (cursor) u.searchParams.set("cursor", cursor);
-  const { data } = await client.get(u.pathname + u.search);
+  const { data } = await client.get("/activities", {
+    params: {
+      scope: "project",
+      projectId: id,
+      range: "30d",
+      limit,
+      cursor: cursor || undefined,
+    },
+  });
   return data; // { items, nextCursor }
 }
 
@@ -66,10 +70,13 @@ export async function getProjectFeed(id, { limit = 20, cursor } = {}) {
  * Post update
  */
 export async function postProjectUpdate(id, payload) {
-  const { data } = await client.post(`/projects/${id}/updates`, payload);
+  const { data } = await client.post("/activities", {
+    projectId: id,
+    type: "update",
+    ...payload,            // { text, mentions, files }
+  });
   return data;
 }
-
 /**
  * Tasks
  */

@@ -19,10 +19,9 @@ import ProjectActivityFeed from "../components/project/ProjectActivityFeed";
 import MyNextActions from "../components/project/MyNextActions";
 import RisksPanel from "../components/project/RisksPanel";
 import MembersPanel from "../components/project/MembersPanel";
-// Replace the basic audit log with the filtered AuditList
 import AuditList from "../components/audit/AuditList.jsx";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
-import { io } from "socket.io-client";
+import useSocket from "../hooks/useSocket";
 
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
 const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
@@ -101,7 +100,11 @@ export default function ProjectHome() {
           ? { items: [...prev.items, ...res.items], nextCursor: res.nextCursor }
           : { items: res.items, nextCursor: res.nextCursor }
       );
-    } catch {} finally { setFeedLoading(false); }
+    } catch (e) {
+      console.error("[ProjectHome] feed load error", e);
+    } finally {
+      setFeedLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -116,37 +119,22 @@ export default function ProjectHome() {
     }
   }, [feedLoading, feed.items.length]);
 
-  // 🔴 Realtime: join project room and prepend live activity
-  useEffect(() => {
-    if (!id) return;
-    const socket = io("/", {
-      path: "/socket.io",
-      transports: ["websocket"],
-      withCredentials: true,
-    });
-    socket.emit("join", { room: `project:${id}` });
-
-    socket.on("activity:new", (evt) => {
-      // prepend live activity if it belongs to this project
-      if (String(evt?.projectId) === String(id)) {
-        setFeed((prev) => ({ ...prev, items: [evt, ...prev.items] }));
-      }
-    });
-
-    socket.on("project:statsUpdated", (payload) => {
-      if (String(payload?.projectId) === String(id)) {
-        // optional: soft refetch KPIs here if you want live KPIs
-        // getProjectStats(id, { range: 30 }).then(setStats).catch(() => {});
-      }
-    });
-
-    return () => {
-      try {
-        socket.emit("leave", { room: `project:${id}` });
-        socket.disconnect();
-      } catch {}
-    };
-  }, [id]);
+  // 🔴 Realtime via shared hook (auth + room join)
+  useSocket(id ? `project:${id}` : null, {
+    onEvents: {
+      "activity:new": (evt) => {
+        if (String(evt?.projectId) === String(id)) {
+          setFeed((prev) => ({ ...prev, items: [evt, ...prev.items] }));
+        }
+      },
+      "project:statsUpdated": (payload) => {
+        if (String(payload?.projectId) === String(id)) {
+          // Optional live refresh:
+          // getProjectStats(id, { range: 30 }).then(setStats).catch(() => {});
+        }
+      },
+    },
+  });
 
   const handlePostUpdate = async (text) => {
     if (!text.trim()) return;
@@ -306,7 +294,6 @@ export default function ProjectHome() {
 
             <MembersPanel members={project.members || []} />
 
-            {/* Filterable "Recent Activity" using AuditList (project scope) */}
             <div className="card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
               <SectionHeader icon="History">Recent Activity</SectionHeader>
               <div className="mt-2">

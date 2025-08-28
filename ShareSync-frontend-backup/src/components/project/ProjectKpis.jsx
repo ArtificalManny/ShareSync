@@ -4,13 +4,14 @@ import KpiDrilldownModal from "../modals/KpiDrilldownModal.jsx";
 
 const RANGE_KEY = "ss.kpi.range";
 
-function KpiCard({ title, value, sub, onClick }) {
+function KpiCard({ title, value, sub, onClick, tooltip }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className="text-left rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 p-4 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
       aria-label={`${title} details`}
+      title={tooltip}
     >
       <div className="text-sm text-slate-500 dark:text-slate-400">{title}</div>
       <div className="text-2xl font-semibold text-slate-900 dark:text-white">{value}</div>
@@ -30,13 +31,12 @@ export default function ProjectKpis({ project }) {
     } catch {}
   }, [modalOpen]);
 
-  // Fake series if backend doesn't provide one on project; fall back to simple 14d spark
+  // Build sparkline series (fallback if BE doesn’t provide)
   useEffect(() => {
     const src = project?.stats?.activitySeries || project?.activitySeries || [];
     if (Array.isArray(src) && src.length) {
       setSeries(src.map((d) => ({ date: d.date || d.ts || d.day, value: d.value ?? d.count ?? 0 })));
     } else {
-      // generate a soft placeholder so the modal isn't empty
       const today = new Date();
       const arr = Array.from({ length: 28 }, (_, i) => {
         const dt = new Date(today.getTime() - (27 - i) * 86400000);
@@ -59,22 +59,25 @@ export default function ProjectKpis({ project }) {
     <>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KpiCard
-          title="Cadence Score"
+          title="Cadence"
           value={`${Math.round(cadence)}`}
           sub={sub}
           onClick={() => setModalOpen(true)}
+          tooltip="Cadence: recent activity score (recency-weighted over time)."
         />
         <KpiCard
           title="On-time Completion"
           value={`${Math.round(onTime)}%`}
           sub="Last 30 days"
           onClick={() => setModalOpen(true)}
+          tooltip="On-time Completion: % of tasks completed by or before due date in the last 30 days."
         />
         <KpiCard
           title="Throughput"
           value={`${Math.round(throughput)}/wk`}
           sub="Tasks per week"
           onClick={() => setModalOpen(true)}
+          tooltip="Throughput: average completed tasks per week (rolling)."
         />
       </div>
 

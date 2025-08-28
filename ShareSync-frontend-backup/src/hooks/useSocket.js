@@ -1,54 +1,44 @@
-// /src/hooks/useSocket.js (frontend)
-import { useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
+import { useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3000'; // same as Nest
+const WS_URL = import.meta.env.VITE_WS_URL || "/"; // same origin by default
 
-/**
- * useSocket(room, options)
- * - room: string | null  (e.g. "project:123" or null to disable)
- * - options.onEvents: { [eventName: string]: (...args:any[]) => void }
- * - options.poller: () => void   (optional safety poller)
- */
-export default function useSocket(room, options = {}) {
+export default function useSocket(room, { onEvents = {}, poller } = {}) {
   const socketRef = useRef(null);
-  const handlersRef = useRef(options.onEvents || {});
-  handlersRef.current = options.onEvents || {};
+  const handlersRef = useRef(onEvents);
+  handlersRef.current = onEvents;
 
   useEffect(() => {
     if (!room) return;
 
-    // connect once per room change
+    const token = localStorage.getItem("ss.jwt") || undefined;
     const socket = io(WS_URL, {
+      path: "/socket.io",
+      transports: ["websocket"],
       withCredentials: true,
-      transports: ['websocket'],
+      auth: token ? { token } : undefined,
     });
     socketRef.current = socket;
 
-    // join the logical room
-    socket.emit('join', { room });
+    socket.on("connect", () => socket.emit("join", { room }));
 
-    // wire event handlers
     const handlers = handlersRef.current;
     Object.entries(handlers).forEach(([event, fn]) => {
-      if (typeof fn === 'function') socket.on(event, fn);
+      if (typeof fn === "function") socket.on(event, fn);
     });
 
-    // optional backstop poller in case events are missed
     let pollTimer = null;
-    if (typeof options.poller === 'function') {
-      pollTimer = setInterval(() => options.poller(), 30_000);
+    if (typeof poller === "function") {
+      pollTimer = setInterval(() => poller?.(), 30000);
     }
 
     return () => {
-      // unwire handlers
       Object.entries(handlers).forEach(([event, fn]) => {
-        if (typeof fn === 'function') socket.off(event, fn);
+        if (typeof fn === "function") socket.off(event, fn);
       });
-      // leave room + disconnect
-      socket.emit('leave', { room });
-      socket.disconnect();
+      try { socket.emit("leave", { room }); } catch {}
+      try { socket.disconnect(); } catch {}
       if (pollTimer) clearInterval(pollTimer);
     };
-  }, [room]); // re-connect when room changes
+  }, [room]);
 }
