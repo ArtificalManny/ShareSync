@@ -22,12 +22,13 @@ import MembersPanel from "../components/project/MembersPanel";
 import AuditList from "../components/audit/AuditList.jsx";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
 import useSocket from "../hooks/useSocket";
+import { MoreHorizontal } from "lucide-react";
 
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
 const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
 
 async function perfLogDev(name, start) {
-  if (import.meta.env.MODE === 'production') return;
+  if (import.meta.env.MODE === "production") return;
   try {
     const mod = await import("../utils/perfLog.js");
     mod.perfLog?.(name, start);
@@ -74,7 +75,7 @@ export default function ProjectHome() {
       try {
         const data = await getProjectStats(id, { range: 30 });
         if (!ignore) setStats(data || null);
-        perfLogDev('perf:project:kpi-tti', start);
+        perfLogDev("perf:project:kpi-tti", start);
       } catch (e) {
         if (!ignore) setStatsError(e?.message || "Failed to load stats");
       } finally {
@@ -145,7 +146,7 @@ export default function ProjectHome() {
       setFeed((prev) => ({ ...prev, items: prev.items.map((it) => (it._id === optimistic._id ? created : it)) }));
     } catch {
       setFeed((prev) => ({ ...prev, items: prev.items.filter((it) => it._id !== optimistic._id) }));
-      throw new Error('Failed to post update');
+      throw new Error("Failed to post update");
     }
   };
 
@@ -161,7 +162,7 @@ export default function ProjectHome() {
       __optimistic: true,
     };
     setProject((p) => ({ ...p, tasks: [optimistic, ...(p?.tasks || [])] }));
-  
+
     try {
       const created = await createTask(id, { title, status: "Not Started" });
       setProject((p) => ({
@@ -176,7 +177,7 @@ export default function ProjectHome() {
       }));
       throw e;
     }
-  };  
+  };
 
   const handlePatchTask = async (taskId, patch) => {
     const updated = await patchTask(id, taskId, patch);
@@ -221,8 +222,11 @@ export default function ProjectHome() {
     if (statsLoading) {
       return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[0,1,2,3].map(i => (
-            <div key={i} className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 animate-pulse h-[88px]" />
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-dashed border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 animate-pulse h-[88px]"
+            />
           ))}
         </div>
       );
@@ -231,7 +235,9 @@ export default function ProjectHome() {
 
     const fmtPct = (v) => `${Math.round((v ?? 0) * 100)}%`;
     const card = (label, value, sub) => (
-      <div className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+      <div
+        className="rounded-2xl border border-dashed border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 p-4 shadow-sm"
+      >
         <div className="text-xs text-slate-500">{label}</div>
         <div className="text-xl font-semibold text-slate-900 dark:text-slate-100">{value}</div>
         {sub ? <div className="text-xs text-slate-500 mt-1">{sub}</div> : null}
@@ -254,21 +260,51 @@ export default function ProjectHome() {
         <ProjectHeader project={project} onAddTask={handleAddTask} />
 
         {/* Project KPIs */}
-        <div className="mt-4 card accent-kpi rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
-          <SectionHeader icon="Gauge">Project KPIs</SectionHeader>
+        <section
+          className="mt-4 card accent-kpi rounded-2xl border border-dashed border-slate-300/70 dark:border-slate-700 bg-gradient-to-br from-white to-slate-50/60 dark:from-slate-900 dark:to-slate-900/80 p-4"
+          role="region"
+          aria-label="Project KPIs"
+          aria-busy={statsLoading ? "true" : "false"}
+        >
+          <div className="flex items-start justify-between">
+            <SectionHeader icon="Gauge">Project KPIs</SectionHeader>
+            <button
+              type="button"
+              className="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-label="KPI options"
+              title="KPI options"
+            >
+              <MoreHorizontal className="w-5 h-5 text-slate-500" />
+            </button>
+          </div>
+
           <div className="mt-3">
             <ProjectKpis project={project} />
           </div>
           <div className="mt-4">
             <KpiCards />
           </div>
-        </div>
+        </section>
 
         {/* Activity Over Time */}
-        <div className="mt-6 card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
-          <SectionHeader icon="ActivitySquare">Activity Over Time</SectionHeader>
+        <section
+          className="mt-6 card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4"
+          role="region"
+          aria-label="Activity over time"
+        >
+          <div className="flex items-start justify-between">
+            <SectionHeader icon="ActivitySquare">Activity Over Time</SectionHeader>
+            <button
+              type="button"
+              className="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-label="Activity section options"
+              title="Activity section options"
+            >
+              <MoreHorizontal className="w-5 h-5 text-slate-500" />
+            </button>
+          </div>
           <ActivityOverTimeLive projectId={project._id} defaultRange="30" />
-        </div>
+        </section>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main feed (keeps composer + optimistic posting) */}
