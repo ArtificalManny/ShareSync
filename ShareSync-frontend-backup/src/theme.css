@@ -158,3 +158,18 @@ html, body, #root, .app-container {
 }
 .avatar-stack .avatar:not(:first-child) { margin-left: -10px; } /* overlap */
 .avatar-stack .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Soft animated accent gradient shell */
+.gradient-shell {
+  background: radial-gradient(120% 120% at 0% 0%, rgba(99,102,241,0.12) 0%, rgba(236,72,153,0.10) 35%, rgba(16,185,129,0.06) 100%),
+              linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.65));
+  backdrop-filter: blur(6px);
+  transition: background 300ms ease;
+}
+@media (prefers-color-scheme: dark) {
+  .gradient-shell {
+    background: radial-gradient(120% 120% at 0% 0%, rgba(99,102,241,0.16) 0%, rgba(236,72,153,0.12) 35%, rgba(16,185,129,0.08) 100%),
+                linear-gradient(180deg, rgba(2,6,23,0.8), rgba(2,6,23,0.7));
+    backdrop-filter: blur(8px);
+  }
+}

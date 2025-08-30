@@ -32,6 +32,7 @@ export default function ProjectsRail({ items = [], loading = false }) {
     if (p?.avatar && /^https?:\/\//i.test(p.avatar)) return null; // it’s an image URL
     const m = (p?.title || "").match(/[\p{Emoji}\p{Extended_Pictographic}]/u);
     return m ? m[0] : (p?.title || "P").trim()[0]?.toUpperCase() || "P";
+    // falls back to first letter
   };
 
   const scrollBy = (dx) => {
@@ -113,7 +114,7 @@ export default function ProjectsRail({ items = [], loading = false }) {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="w-[88px] shrink-0 rounded-2xl bg-slate-100 dark:bg-slate-800 h-[92px] animate-pulse"
+              className="w-[92px] shrink-0 rounded-2xl bg-slate-100 dark:bg-slate-800 h-[92px] animate-pulse"
               aria-hidden
             />
           ))}
@@ -145,15 +146,32 @@ export default function ProjectsRail({ items = [], loading = false }) {
                 onMouseLeave={() => setHoverId((curr) => (curr === id ? null : curr))}
                 onFocus={() => setHoverId(id)}
                 onBlur={() => setHoverId((curr) => (curr === id ? null : curr))}
-                className="motion-quick relative w-[92px] shrink-0 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 p-2 flex flex-col items-center gap-1"
+                className={[
+                  "motion-quick relative w-[100px] shrink-0 rounded-2xl",
+                  "bg-gradient-to-br from-indigo-50/80 via-white to-sky-50/80",
+                  "dark:from-slate-900 dark:via-slate-900 dark:to-slate-900",
+                  "border border-slate-200/70 dark:border-slate-700",
+                  "shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500",
+                  "p-2 flex flex-col items-center gap-1",
+                ].join(" ")}
                 aria-label={`Open project ${p.title || "Untitled"}`}
               >
+                {/* left accent bar */}
+                <span
+                  aria-hidden="true"
+                  className={[
+                    "absolute left-0 top-0 h-full w-1 rounded-l-2xl",
+                    isUnread ? "bg-blue-500" : "bg-indigo-500/70 dark:bg-indigo-400/60",
+                  ].join(" ")}
+                />
+
                 <span
                   className={[
                     "block h-12 w-12 rounded-full overflow-hidden grid place-items-center text-lg font-semibold",
+                    "ring-1 ring-slate-200/70 dark:ring-slate-700",
                     isUnread
                       ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900"
-                      : "ring-1 ring-slate-200/70 dark:ring-slate-700",
+                      : "",
                   ].join(" ")}
                   aria-hidden="true"
                 >
@@ -169,16 +187,24 @@ export default function ProjectsRail({ items = [], loading = false }) {
                     <span>{emoji}</span>
                   )}
                 </span>
+
                 <span className="text-[11px] text-slate-700 dark:text-slate-300 text-center line-clamp-2">
                   {p.title || "Untitled"}
                 </span>
 
-                {/* Quick Peek hover card */}
+                {/* Quick Peek hover card (glass w/ ring) */}
                 {hoverId === id && (
                   <div
                     role="dialog"
                     aria-label={`${p.title || "Untitled"} quick peek`}
-                    className="motion-quick absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-56 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 shadow-xl p-3 z-10"
+                    className={[
+                      "motion-quick absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full",
+                      "w-60 rounded-xl",
+                      "backdrop-blur bg-white/85 dark:bg-slate-900/85",
+                      "border border-slate-200/70 dark:border-slate-700",
+                      "ring-1 ring-indigo-200/50 dark:ring-indigo-400/20",
+                      "shadow-xl p-3 z-10",
+                    ].join(" ")}
                   >
                     <div className="text-xs text-slate-500 mb-1">Last activity</div>
                     <div className="text-sm text-slate-800 dark:text-slate-100">
@@ -202,18 +228,27 @@ export default function ProjectsRail({ items = [], loading = false }) {
   return (
     <section
       aria-label="Projects quick rail"
-      className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 shadow-sm"
+      className={[
+        "rounded-2xl shadow-sm overflow-hidden",
+        // shell gradient + soft ring to match KPI tonality
+        "bg-gradient-to-br from-indigo-50 via-white to-sky-50",
+        "dark:from-slate-900 dark:via-slate-900 dark:to-slate-900",
+        "border border-slate-200/70 dark:border-slate-700 ring-1 ring-indigo-200/60 dark:ring-indigo-400/20",
+      ].join(" ")}
     >
       <div className="flex items-center justify-between px-3 sm:px-4 md:px-5 py-2">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-          Your Projects
-        </h2>
+        <div className="inline-flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Your Projects
+          </h2>
+        </div>
         <div className="flex gap-1">
           <button
             type="button"
             aria-label="Scroll left"
             onClick={() => scrollBy(-240)}
-            className="motion-quick h-8 w-8 rounded-lg border border-slate-200/70 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 grid place-items-center"
+            className="motion-quick h-8 w-8 rounded-lg border border-slate-200/70 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 grid place-items-center bg-white/70 dark:bg-slate-900/70"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -221,7 +256,7 @@ export default function ProjectsRail({ items = [], loading = false }) {
             type="button"
             aria-label="Scroll right"
             onClick={() => scrollBy(240)}
-            className="motion-quick h-8 w-8 rounded-lg border border-slate-200/70 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 grid place-items-center"
+            className="motion-quick h-8 w-8 rounded-lg border border-slate-200/70 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 grid place-items-center bg-white/70 dark:bg-slate-900/70"
           >
             <ChevronRight className="w-4 h-4" />
           </button>

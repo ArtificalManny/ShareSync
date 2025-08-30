@@ -10,6 +10,7 @@ import KpiRow from '../components/analytics/KpiRow.jsx';
 import SectionHeader from '../components/ui/SectionHeader.jsx';
 import AuditList from '../components/audit/AuditList.jsx';
 import InviteModal from '../components/invite/InviteModal';
+import FocusSprint from '../components/home/FocusSprint.jsx'; // ✅ NEW
 
 // lazy: keeps initial bundle light
 const ActivityOverTimeLive = React.lazy(() => import('../components/analytics/ActivityOverTimeLive.jsx'));
@@ -114,6 +115,15 @@ export default function Home() {
         tier={user?.tier || 'Newcomer'}
         xp={user?.totalXP || 0}
         onInvite={() => setInviteOpen(true)}
+      />
+
+      {/* ✅ Focus Sprint (signature feature) */}
+      <FocusSprint
+        nextTask={null}
+        onFinish={() => {
+          // optional: toast or small celebration
+          // e.g., window.dispatchEvent(new CustomEvent('toast', { detail: 'Nice sprint! +1 cadence' }));
+        }}
       />
 
       {/* Your Projects: quick rail (cards link to detail) */}

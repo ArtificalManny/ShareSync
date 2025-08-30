@@ -1,6 +1,13 @@
 // /src/App.jsx
 import React, { useContext, Suspense, lazy, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import { AuthProvider, AuthContext } from "./AuthContext";
@@ -8,6 +15,10 @@ import "./theme.css";
 import "./styles/card.css";
 import { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
+
+// ⬇️ NEW: Sprint context + global widget
+import { SprintProvider } from "./context/SprintContext";
+import MiniSprintWidget from "./components/global/MiniSprintWidget";
 
 const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
@@ -38,7 +49,11 @@ function GuardedRoutes() {
   return (
     <Suspense
       fallback={
-        <div className="px-6 py-10 text-center text-slate-500" role="status" aria-live="polite">
+        <div
+          className="px-6 py-10 text-center text-slate-500"
+          role="status"
+          aria-live="polite"
+        >
           Loading page…
         </div>
       }
@@ -91,9 +106,17 @@ const App = () => (
         >
           Skip to content
         </a>
-        <div className="app-container" data-accent="indigo">
-          <AppRoutes />
-        </div>
+
+        {/* ⬇️ Wrap app content in SprintProvider so sprint state is global.
+            Keep it INSIDE Router so MiniSprintWidget can use useNavigate. */}
+        <SprintProvider>
+          <div className="app-container" data-accent="indigo">
+            <AppRoutes />
+          </div>
+
+          {/* ⬇️ Global compact sprint widget (shows when sprint active) */}
+          <MiniSprintWidget />
+        </SprintProvider>
       </Router>
     </ErrorBoundary>
   </AuthProvider>
