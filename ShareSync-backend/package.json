@@ -11,7 +11,10 @@
     "@nestjs/mongoose": "^10.1.0",
     "@nestjs/passport": "^10.0.0",
     "@nestjs/platform-express": "^10.4.19",
+    "@nestjs/platform-socket.io": "^10.4.20",
     "@nestjs/schedule": "^6.0.0",
+    "@nestjs/throttler": "^5.2.0",
+    "@nestjs/websockets": "^10.4.20",
     "@prisma/client": "^6.13.0",
     "@types/passport-local": "^1.0.38",
     "bcrypt": "^5.1.1",
@@ -52,7 +55,7 @@
     "eslint-plugin-react": "^7.37.5",
     "globals": "^16.2.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2",
+    "typescript": "^5.8.3",
     "typescript-eslint": "^8.35.0"
   },
   "scripts": {

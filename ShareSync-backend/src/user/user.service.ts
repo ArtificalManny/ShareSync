@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+// src/user/user.service.ts
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './user.schema';
@@ -8,9 +9,10 @@ import { ProjectsService } from '../projects/project.service';
 export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @Inject(forwardRef(() => ProjectsService))
     private readonly projects: ProjectsService,
   ) {}
-
+  
   /** -- Lookups -- */
   async findById(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id).exec();

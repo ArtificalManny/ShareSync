@@ -1,8 +1,9 @@
+// src/realtime/realtime.module.ts
 import { Module } from '@nestjs/common';
 import { RealtimeGateway } from './realtime.gateway';
 
 @Module({
   providers: [RealtimeGateway],
-  exports: [RealtimeGateway], // <-- make it available to other modules
+  exports: [RealtimeGateway], // 👈 export so other modules can inject it
 })
 export class RealtimeModule {}

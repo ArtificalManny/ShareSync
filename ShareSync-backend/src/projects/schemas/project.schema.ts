@@ -11,8 +11,10 @@ export class Project {
   @Prop() category: string;
   @Prop() status: string;
   @Prop() privacy: string;
+
   @Prop({ type: [{ email: String, role: String }], default: [] })
   members: { email: string; role: string }[];
+
   @Prop({ required: true }) userId: string;
 }
 

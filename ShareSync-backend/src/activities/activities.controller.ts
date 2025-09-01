@@ -86,7 +86,7 @@ export class ActivitiesController {
         priority: 'mention',
         meta: { projectId, activityId: (created as AnyObj)?._id },
       });
-      this.notify.queueEmail({
+      this.notify.inApp({
         userId: uid,
         message: `You were mentioned: "${text}"`,
         href: `/projects/${projectId}`,
