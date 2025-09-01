@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Patch,
   UseGuards,
   Req,
   HttpException,
@@ -14,12 +15,17 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectsService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import {
+  CanManageProject,
+  CanViewProject,
+  ProjectPermissionGuard,
+} from './guards/project-permission.guard';
 
 @Controller('projects')
+@UseGuards(JwtAuthGuard)
 export class ProjectController {
   constructor(private readonly projects: ProjectsService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Req() req, @Body() dto: CreateProjectDto) {
     const userId = req?.user?.sub;
@@ -37,41 +43,47 @@ export class ProjectController {
       category: dto.category ?? '',
       status: dto.status ?? 'Not Started',
       privacy: dto.privacy ?? 'Private',
-      members: Array.isArray(dto.members) ? dto.members : [],
-      userId, // link to owner
+      members: Array.isArray(dto.members)
+        ? dto.members.map((m: any) => ({
+            email: m?.email,
+            userId: m?.userId, // may be undefined in your current DTO; 'any' avoids TS error
+            role: (['owner', 'member', 'viewer'] as const).includes(
+              String(m?.role || 'member').toLowerCase() as any,
+            )
+              ? (String(m.role).toLowerCase() as 'owner' | 'member' | 'viewer')
+              : 'member',
+          }))
+        : [],
+      userId, // owner
     });
 
     return doc;
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   async list(@Req() req) {
     const userId = req?.user?.sub;
     return this.projects.findAll(userId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
+  @UseGuards(ProjectPermissionGuard)
+  @CanViewProject()
   async getOne(@Req() req, @Param('id') id: string) {
     const userId = req?.user?.sub;
-    const project = await this.projects.findOneOwned(userId, id);
+    const project = await this.projects.findOneForUser(userId, id);
     if (!project) throw new HttpException('Not found', HttpStatus.NOT_FOUND);
     return project;
   }
 
   // Minimal quick list used by the Home "Your Projects" rail
-  // GET /api/projects/quick?limit=6
-  @UseGuards(JwtAuthGuard)
   @Get('quick')
   async quick(@Req() req, @Query('limit') limit = '6') {
     const userId = req?.user?.sub;
     const n = Math.max(1, Math.min(12, parseInt(limit as string, 10) || 6));
 
-    // Prefer a dedicated findMany if you have it; fall back to findAll + slice
     let items: any[] = [];
     try {
-      // @ts-ignore if you have findMany, use it; else this will throw and we fallback
       items = (await (this.projects as any).findMany?.({ userId, limit: n })) ?? [];
     } catch (_) {
       items = await this.projects.findAll(userId);
@@ -86,5 +98,23 @@ export class ProjectController {
         lastActivityAt: p.updatedAt ?? p.createdAt ?? new Date().toISOString(),
         unreadCount: 0,
       }));
+  }
+
+  /** Update members/roles — owner-only */
+  @Patch(':id/members')
+  @UseGuards(ProjectPermissionGuard)
+  @CanManageProject()
+  async updateMembers(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: { members: Array<{ userId?: string; email?: string; role?: 'owner' | 'member' | 'viewer' }> },
+  ) {
+    const userId = req?.user?.sub;
+    if (!Array.isArray(body?.members)) {
+      throw new HttpException('members[] is required', HttpStatus.BAD_REQUEST);
+    }
+    const updated = await this.projects.updateMembers(id, userId, body.members as any);
+    if (!updated) throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    return updated;
   }
 }

@@ -17,12 +17,18 @@ import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { NotifyService } from '../notifications/notify.service';
 
+// NEW: permissions
+import {
+  ProjectPermissionGuard,
+  CanEditProject,
+  CanViewProject,
+} from '../projects/guards/project-permission.guard';
+
 type AnyObj = Record<string, any>;
 
 function coerceRange(input: unknown): '24h' | '7d' | '30d' | 'all' {
   const v = String(input ?? '').trim().toLowerCase();
   if (v === '24h' || v === '7d' || v === '30d' || v === 'all') return v as any;
-  // numeric shorthands
   if (v === '1' || v === '1d' || v === '24') return '24h';
   if (v === '7' || v === '07' || v === '7d') return '7d';
   if (v === '30' || v === '30d') return '30d';
@@ -30,6 +36,7 @@ function coerceRange(input: unknown): '24h' | '7d' | '30d' | 'all' {
 }
 
 @Controller('activities')
+@UseGuards(JwtAuthGuard) // all routes require auth
 export class ActivitiesController {
   constructor(
     private readonly activities: ActivitiesService,
@@ -37,12 +44,14 @@ export class ActivitiesController {
     private readonly notify: NotifyService,
   ) {}
 
-  // POST /api/activities
-  @UseGuards(JwtAuthGuard)
+  // POST /api/activities  (project-scoped create → must be able to EDIT the project)
+  // Guard will read projectId from body (fallbacks to params/query if present).
+  @UseGuards(ProjectPermissionGuard)
+  @CanEditProject()
   @Post()
   async create(@Req() req: any, @Body() dto: CreateActivityDto) {
     const userId: string = req.user?.sub || req.user?.id || req.user?._id;
-    const projectId: string = dto.projectId;
+    const projectId: string = (dto as AnyObj)?.projectId;
 
     if (!projectId) {
       throw new BadRequestException('projectId is required');
@@ -65,41 +74,44 @@ export class ActivitiesController {
     this.realtime.emitToProject(projectId, 'project:statsUpdated', { projectId });
     this.realtime.emitToUser(userId, 'user:statsUpdated', { userId });
 
-    // Mentions → in-app + queue email (MVP)
-    // Prefer explicit meta.mentions: string[] of userIds from client.
-    const text: string = dto.text || '';
-    const mentionedUserIds: string[] =
-      (dto as AnyObj)?.meta?.mentions && Array.isArray((dto as AnyObj).meta.mentions)
-        ? (dto as AnyObj).meta.mentions
-        : [];
+    // Mentions → in-app notifications (best-effort; never block the request)
+    const text: string = dto?.text || '';
+    const metaObj: AnyObj = (dto && typeof dto.meta === 'object' ? dto.meta : {}) || {};
+    const mentionedUserIds: string[] = Array.isArray(metaObj.mentions) ? metaObj.mentions : [];
 
-    // (Optional) also parse @handles in text if you later resolve username->userId
-    // const handles = Array.from(text.matchAll(/@([\w.\-]+)/g)).map((m) => m[1]);
-
-    for (const uid of mentionedUserIds) {
-      if (!uid) continue;
-      this.notify.inApp({
-        userId: uid,
-        title: 'Mention',
-        message: `You were mentioned in a project update`,
-        href: `/projects/${projectId}`,
-        priority: 'mention',
-        meta: { projectId, activityId: (created as AnyObj)?._id },
-      });
-      this.notify.inApp({
-        userId: uid,
-        message: `You were mentioned: "${text}"`,
-        href: `/projects/${projectId}`,
-        priority: 'mention',
-      });
+    if (mentionedUserIds.length) {
+      for (const uid of mentionedUserIds) {
+        if (!uid) continue;
+        try {
+          this.notify.inApp({
+            userId: uid,
+            title: 'Mention',
+            message: 'You were mentioned in a project update',
+            href: `/projects/${projectId}`,
+            priority: 'mention',
+            meta: { projectId, activityId: (created as AnyObj)?._id },
+          });
+          this.notify.inApp({
+            userId: uid,
+            message: `You were mentioned: "${text}"`,
+            href: `/projects/${projectId}`,
+            priority: 'mention',
+          });
+        } catch {
+          // swallow notify errors; logging can live inside NotifyService
+        }
+      }
     }
 
     return created;
   }
 
   // GET /api/activities?scope=user|project&projectId=&userId=&type=&range=&cursor=&limit=
-  @UseGuards(JwtAuthGuard)
+  // - user scope: just needs auth (already enforced)
+  // - project scope: must be able to VIEW the project
   @Get()
+  @UseGuards(ProjectPermissionGuard)
+  @CanViewProject() // Guard will no-op when there's no projectId (user scope)
   async list(@Req() req: any, @Query() query: AnyObj) {
     const scope = ((query.scope as string) || 'user').toLowerCase();
     if (scope !== 'user' && scope !== 'project') {
@@ -125,9 +137,10 @@ export class ActivitiesController {
     return this.activities.list(params);
   }
 
-  // GET /api/activities/export.csv?scope=...&(...)
-  @UseGuards(JwtAuthGuard)
+  // GET /api/activities/export.csv?... (same permission rules as list)
   @Get('export.csv')
+  @UseGuards(ProjectPermissionGuard)
+  @CanViewProject()
   async export(@Req() req: any, @Query() query: AnyObj, @Res() res: Response) {
     const scope = ((query.scope as string) || 'user').toLowerCase();
     if (scope !== 'user' && scope !== 'project') {

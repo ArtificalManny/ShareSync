@@ -68,9 +68,25 @@ async function perfLogDev(name, start) {
   } catch {}
 }
 
+// --- Role helpers (mirror logic used in ProjectHeader) ---
+function getRoleForUser(project, userId) {
+  if (!project || !userId) return "viewer";
+  if (String(project.userId || "") === String(userId)) return "owner";
+  const hit =
+    Array.isArray(project.members) &&
+    project.members.find(
+      (m) => m?.userId && String(m.userId) === String(userId)
+    );
+  return (hit?.role === "owner" || hit?.role === "member" || hit?.role === "viewer")
+    ? hit.role
+    : "viewer";
+}
+
 export default function ProjectHome() {
   const { id } = useParams();
   const { user } = useContext(AuthContext) || {};
+  const meId = user?._id || user?.id;
+
   const [project, setProject] = useState(null);
   const [feed, setFeed] = useState({ items: [], nextCursor: null });
   const [loading, setLoading] = useState(true);
@@ -200,8 +216,14 @@ export default function ProjectHome() {
     },
   });
 
+  // --- Role + permissions ---
+  const myRole = useMemo(() => getRoleForUser(project, meId), [project, meId]);
+  const canEdit = myRole === "owner" || myRole === "member";
+  const canManage = myRole === "owner"; // for settings/invite if you want stricter control later
+
   // Composer (string or {text, attachments[]})
   const handlePostUpdate = async (payload) => {
+    if (!canEdit) return; // guard
     const text = typeof payload === "string" ? payload : payload?.text || "";
     const attachments = typeof payload === "string" ? [] : payload?.attachments || [];
     if (!text.trim() && attachments.length === 0) return;
@@ -224,14 +246,13 @@ export default function ProjectHome() {
         text,
         mentions: [],
         files: attachments.map((a) => a.id || a.tempId).filter(Boolean),
-        clientTempId: optimistic._id, // harmless if server ignores; helpful if it echoes back
+        clientTempId: optimistic._id,
       });
       setFeed((prev) => ({
         ...prev,
         items: prev.items.map((it) => (it._id === optimistic._id ? created : it)),
       }));
     } catch {
-      // roll back optimistic
       setFeed((prev) => ({
         ...prev,
         items: prev.items.filter((it) => it._id !== optimistic._id),
@@ -244,6 +265,7 @@ export default function ProjectHome() {
 
   // ✅ Optimistic task add
   const handleAddTask = async (title) => {
+    if (!canEdit) return; // guard
     const optimistic = {
       _id: `tmp-${Date.now()}`,
       title,
@@ -269,6 +291,7 @@ export default function ProjectHome() {
   };
 
   const handlePatchTask = async (taskId, patch) => {
+    if (!canEdit) return; // guard
     const updated = await patchTask(id, taskId, patch);
     setProject((p) => ({
       ...p,
@@ -380,18 +403,24 @@ export default function ProjectHome() {
     );
   };
 
+  // Styles for disabled buttons
+  const disabledBtn =
+    "opacity-60 cursor-not-allowed hover:bg-transparent hover:opacity-60";
+
   return (
     <main id="main" role="main" tabIndex={-1}>
       <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
         {/* Header */}
-        <ProjectHeader project={project} onAddTask={() => setShowTaskSheet(true)} />
+        <ProjectHeader project={project} onAddTask={() => canEdit && setShowTaskSheet(true)} />
 
         {/* Action Bar */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowTaskSheet(true)}
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700"
+            onClick={() => canEdit && setShowTaskSheet(true)}
+            disabled={!canEdit}
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 ${!canEdit ? disabledBtn : ""}`}
+            title={!canEdit ? "Viewers cannot add tasks" : "Add task"}
           >
             <Plus className="w-4 h-4" />
             Add task
@@ -399,8 +428,10 @@ export default function ProjectHome() {
 
           <button
             type="button"
-            onClick={() => setShowInvite(true)}
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface"
+            onClick={() => canManage && setShowInvite(true)}
+            disabled={!canManage}
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface ${!canManage ? disabledBtn : ""}`}
+            title={!canManage ? "Only owners can invite" : "Invite"}
           >
             <UserPlus className="w-4 h-4" />
             Invite
@@ -408,8 +439,10 @@ export default function ProjectHome() {
 
           <button
             type="button"
-            onClick={() => setShowSettings(true)}
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface"
+            onClick={() => canManage && setShowSettings(true)}
+            disabled={!canManage}
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface ${!canManage ? disabledBtn : ""}`}
+            title={!canManage ? "Only owners can manage settings" : "Settings"}
           >
             <SettingsIcon className="w-4 h-4" />
             Settings
@@ -500,10 +533,9 @@ export default function ProjectHome() {
         <div className="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main column */}
           <div className="lg:col-span-8 space-y-4">
-            {(activeTab === "all" || activeTab === "updates") && (
+            {(activeTab === "all" || activeTab === "updates") && canEdit && (
               <UpdateComposer
                 onSubmit={handlePostUpdate}
-                // ✅ full round-trip uploads
                 onUploadFiles={(flist) => uploadFiles(flist, { projectId: id })}
               />
             )}
@@ -514,7 +546,7 @@ export default function ProjectHome() {
                 loading={feedLoading}
                 onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
                 hasMore={!!feed.nextCursor}
-                onPostUpdate={handlePostUpdate}
+                onPostUpdate={canEdit ? handlePostUpdate : undefined}
                 onRefetch={() => loadFeed()}
               />
             )}

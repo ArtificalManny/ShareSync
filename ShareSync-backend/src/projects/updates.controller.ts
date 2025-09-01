@@ -5,10 +5,17 @@ import {
     Param,
     Post,
     BadRequestException,
+    UseGuards,
   } from '@nestjs/common';
   import { Throttle } from '@nestjs/throttler';
+  
   import { ModerationService } from '../moderation/moderation.service';
   import { NotificationsGateway } from '../notifications/gateway';
+  import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+  import {
+    ProjectPermissionGuard,
+    CanEditProject,
+  } from './guards/project-permission.guard';
   
   type CreateUpdateDto = {
     text: string;
@@ -17,6 +24,7 @@ import {
   };
   
   @Controller('projects/:id/updates')
+  @UseGuards(JwtAuthGuard) // must be authenticated first
   export class UpdatesController {
     constructor(
       private readonly moderation: ModerationService,
@@ -32,6 +40,8 @@ import {
      *   @Throttle({ default: { limit: number, ttl?: number } })
      */
     @Throttle({ default: { limit: 10 } })
+    @UseGuards(ProjectPermissionGuard) // then enforce project-level permission
+    @CanEditProject()                  // specifically: must be editor/owner
     @Post()
     async create(
       @Param('id') projectId: string,

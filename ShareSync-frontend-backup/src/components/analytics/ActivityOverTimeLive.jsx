@@ -1,12 +1,11 @@
 // /src/components/analytics/ActivityOverTimeLive.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { getUserStats, getProjectStats } from '../../api/stats';
 
 // very lightweight line chart using <svg> so we don't add deps
 function MiniLine({ points = [], width = 640, height = 140, padding = 16 }) {
-  if (!points.length) return <div className="text-sm text-slate-500">No data</div>;
+  if (!points?.length) return <div className="text-sm text-slate-500">No data</div>;
 
-  const xs = points.map((_, i) => i);
   const ys = points.map(p => (p.tasks || 0) + (p.updates || 0));
   const minY = 0;
   const maxY = Math.max(1, Math.max(...ys));
@@ -27,19 +26,50 @@ function MiniLine({ points = [], width = 640, height = 140, padding = 16 }) {
   );
 }
 
+/**
+ * Props:
+ * - projectId?: string | null
+ * - range?: number|string (controlled)  // if provided, component won't keep its own state
+ * - defaultRange?: '7' | '30' | '90'    // used only when range is uncontrolled
+ * - series?: Array<{tasks?:number,updates?:number}> | undefined
+ * - onRangeChange?: (next: string) => void
+ */
 export default function ActivityOverTimeLive({
-  projectId = null,         // if provided → project scoped
-  defaultRange = '30',      // '7' | '30' | '90'
+  projectId = null,
+  range: rangeProp,                 // controlled
+  defaultRange = '30',              // uncontrolled initial
+  series: seriesProp,               // if provided, we render this and SKIP fetching
+  onRangeChange,
 }) {
-  const [range, setRange] = useState(String(defaultRange || '30'));
-  const [series, setSeries] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const controlled = rangeProp !== undefined && rangeProp !== null;
+
+  // Uncontrolled internal state (ignored when controlled)
+  const [rangeState, setRangeState] = useState(String(defaultRange || '30'));
+  const range = String(controlled ? rangeProp : rangeState);
+
+  const [seriesState, setSeriesState] = useState([]);
+  const [loading, setLoading] = useState(!seriesProp); // if series provided, no loading
   const [err, setErr] = useState('');
 
+  // The data we actually show
+  const points = useMemo(() => {
+    const raw = seriesProp ?? seriesState;
+    return Array.isArray(raw) ? raw : [];
+  }, [seriesProp, seriesState]);
+
+  // Fetch only when we DON'T get series from props
   useEffect(() => {
+    if (Array.isArray(seriesProp)) {
+      // External series wins; ensure loading false/error clear
+      setLoading(false);
+      setErr('');
+      return;
+    }
+
     let ignore = false;
     setLoading(true);
     setErr('');
+
     const fetcher = projectId
       ? () => getProjectStats(projectId, { range })
       : () => getUserStats({ range });
@@ -49,13 +79,21 @@ export default function ActivityOverTimeLive({
         if (ignore) return;
         // Some backends name this "activitySeries" – handle both defensively
         const list = data?.activitySeries || data?.series || [];
-        setSeries(Array.isArray(list) ? list : []);
+        setSeriesState(Array.isArray(list) ? list : []);
       })
       .catch((e) => !ignore && setErr(e?.message || 'Failed to load activity'))
       .finally(() => !ignore && setLoading(false));
 
     return () => { ignore = true; };
-  }, [projectId, range]);
+  }, [projectId, range, seriesProp]);
+
+  const handleRangeChange = (next) => {
+    if (controlled) {
+      onRangeChange?.(next);
+    } else {
+      setRangeState(next);
+    }
+  };
 
   return (
     <div>
@@ -64,8 +102,9 @@ export default function ActivityOverTimeLive({
         <select
           id="range"
           value={range}
-          onChange={(e) => setRange(e.target.value)}
+          onChange={(e) => handleRangeChange(e.target.value)}
           className="text-sm rounded-lg border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1"
+          aria-label="Activity range"
         >
           <option value="7">7d</option>
           <option value="30">30d</option>
@@ -79,7 +118,7 @@ export default function ActivityOverTimeLive({
         ) : err ? (
           <div className="text-sm text-rose-600">Error: {err}</div>
         ) : (
-          <MiniLine points={series} />
+          <MiniLine points={points} />
         )}
       </div>
     </div>
