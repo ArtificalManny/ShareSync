@@ -9,6 +9,7 @@ import {
   createTask,
   patchTask,
 } from "../api/projects";
+import { uploadFiles } from "../api/uploads";
 
 import { getProjectStats } from "../api/stats";
 import ActivityOverTimeLive from "../components/analytics/ActivityOverTimeLive";
@@ -16,16 +17,48 @@ import ActivityOverTimeLive from "../components/analytics/ActivityOverTimeLive";
 import ProjectHeader from "../components/project/ProjectHeader";
 import ProjectKpis from "../components/project/ProjectKpis";
 import ProjectActivityFeed from "../components/project/ProjectActivityFeed";
-import MyNextActions from "../components/project/MyNextActions";
 import RisksPanel from "../components/project/RisksPanel";
 import MembersPanel from "../components/project/MembersPanel";
 import AuditList from "../components/audit/AuditList.jsx";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
 import useSocket from "../hooks/useSocket";
-import { MoreHorizontal } from "lucide-react";
+import {
+  MoreHorizontal,
+  Share2,
+  Copy,
+  Check,
+  Link as LinkIcon,
+  Plus,
+  UserPlus,
+  Settings as SettingsIcon,
+} from "lucide-react";
+import { buildPublicStatusUrl } from "../api/public";
 
+// ✅ REAL components
+import TaskSheet from "../components/tasks/TaskSheet";
+import InviteModal from "../components/project/InviteModal";
+import ProjectSettingsModal from "../components/project/ProjectSettingsModal";
+import UpdateComposer from "../components/compose/UpdateComposer";
+import FileGrid from "../components/files/FileGrid";
+
+// ---- small helpers ----
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
 const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
+
+// Simple de-dupe by stable key (id/_id/tempId fallback)
+function dedupeById(items = []) {
+  const seen = new Set();
+  const out = [];
+  for (const it of items) {
+    const key =
+      String(it?._id ?? it?.id ?? it?.tempId ?? "") ||
+      `${it?.type || "?"}:${it?.createdAt || ""}:${(it?.text || "").slice(0, 16)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(it);
+  }
+  return out;
+}
 
 async function perfLogDev(name, start) {
   if (import.meta.env.MODE === "production") return;
@@ -48,6 +81,17 @@ export default function ProjectHome() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState("");
 
+  // Modal/drawer state
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showTaskSheet, setShowTaskSheet] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Tabs & files
+  const [activeTab, setActiveTab] = useState("all"); // 'all' | 'updates' | 'tasks' | 'files'
+  const [files, setFiles] = useState([]);
+
   useEffect(() => { mark("ss:projecthome:mounted"); }, []);
 
   useEffect(() => {
@@ -56,7 +100,10 @@ export default function ProjectHome() {
       setLoading(true); setError("");
       try {
         const data = await getProject(id);
-        if (!ignore) setProject(data);
+        if (!ignore) {
+          setProject(data);
+          if (Array.isArray(data?.files)) setFiles(data.files);
+        }
       } catch (e) {
         if (!ignore) setError(e?.message || "Failed to load project");
       } finally {
@@ -96,11 +143,10 @@ export default function ProjectHome() {
     setFeedLoading(true);
     try {
       const res = await getProjectFeed(id, { limit: 20, cursor });
-      setFeed((prev) =>
-        cursor
-          ? { items: [...prev.items, ...res.items], nextCursor: res.nextCursor }
-          : { items: res.items, nextCursor: res.nextCursor }
-      );
+      setFeed((prev) => {
+        const nextItems = cursor ? [...prev.items, ...res.items] : res.items;
+        return { items: dedupeById(nextItems), nextCursor: res.nextCursor || null };
+      });
     } catch (e) {
       console.error("[ProjectHome] feed load error", e);
     } finally {
@@ -125,27 +171,71 @@ export default function ProjectHome() {
     onEvents: {
       "activity:new": (evt) => {
         if (String(evt?.projectId) === String(id)) {
-          setFeed((prev) => ({ ...prev, items: [evt, ...prev.items] }));
+          setFeed((prev) => ({ ...prev, items: dedupeById([evt, ...prev.items]) }));
         }
       },
       "project:statsUpdated": (payload) => {
         if (String(payload?.projectId) === String(id)) {
-          // Optional live refresh:
-          // getProjectStats(id, { range: 30 }).then(setStats).catch(() => {});
+          // Optionally fetch fresh KPIs
+        }
+      },
+      // members updated
+      "project:membersUpdated": (payload) => {
+        if (String(payload?.projectId) === String(id)) {
+          setProject((p) => ({ ...p, members: payload.members || p?.members || [] }));
+        }
+      },
+      // files added
+      "project:filesAdded": (payload) => {
+        if (String(payload?.projectId) === String(id) && Array.isArray(payload?.files)) {
+          setFiles((prev) => dedupeById([...payload.files, ...prev]));
+        }
+      },
+      // task created
+      "tasks:created": (payload) => {
+        if (String(payload?.projectId) === String(id) && payload?.task) {
+          setProject((p) => ({ ...p, tasks: [payload.task, ...(p?.tasks || [])] }));
         }
       },
     },
   });
 
-  const handlePostUpdate = async (text) => {
-    if (!text.trim()) return;
-    const optimistic = { _id: `tmp-${Date.now()}`, text, userId: user?._id, createdAt: new Date().toISOString() };
+  // Composer (string or {text, attachments[]})
+  const handlePostUpdate = async (payload) => {
+    const text = typeof payload === "string" ? payload : payload?.text || "";
+    const attachments = typeof payload === "string" ? [] : payload?.attachments || [];
+    if (!text.trim() && attachments.length === 0) return;
+
+    const optimistic = {
+      _id: `tmp-${Date.now()}`,
+      type: "update.posted",
+      text,
+      attachments,
+      userId: user?._id,
+      projectId: id,
+      createdAt: new Date().toISOString(),
+      __optimistic: true,
+    };
+
     setFeed((prev) => ({ ...prev, items: [optimistic, ...prev.items] }));
+
     try {
-      const created = await postProjectUpdate(id, { text, mentions: [], files: [] });
-      setFeed((prev) => ({ ...prev, items: prev.items.map((it) => (it._id === optimistic._id ? created : it)) }));
+      const created = await postProjectUpdate(id, {
+        text,
+        mentions: [],
+        files: attachments.map((a) => a.id || a.tempId).filter(Boolean),
+        clientTempId: optimistic._id, // harmless if server ignores; helpful if it echoes back
+      });
+      setFeed((prev) => ({
+        ...prev,
+        items: prev.items.map((it) => (it._id === optimistic._id ? created : it)),
+      }));
     } catch {
-      setFeed((prev) => ({ ...prev, items: prev.items.filter((it) => it._id !== optimistic._id) }));
+      // roll back optimistic
+      setFeed((prev) => ({
+        ...prev,
+        items: prev.items.filter((it) => it._id !== optimistic._id),
+      }));
       throw new Error("Failed to post update");
     }
   };
@@ -170,7 +260,6 @@ export default function ProjectHome() {
         tasks: (p?.tasks || []).map((t) => (t._id === optimistic._id ? created : t)),
       }));
     } catch (e) {
-      // roll back optimistic
       setProject((p) => ({
         ...p,
         tasks: (p?.tasks || []).filter((t) => t._id !== optimistic._id),
@@ -187,13 +276,49 @@ export default function ProjectHome() {
     }));
   };
 
+  // --- Public status link helpers ---
+  const publicToken = project?.publicToken || project?.token || project?._id;
+  const publicStatusPath = publicToken ? buildPublicStatusUrl(publicToken) : null;
+  const fullPublicUrl =
+    typeof window !== "undefined" && publicStatusPath
+      ? `${window.location.origin}${publicStatusPath}`
+      : publicStatusPath || "";
+
+  const copyLink = async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(fullPublicUrl);
+      } else {
+        const el = document.createElement("input");
+        el.value = fullPublicUrl;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  // Feed filtering
+  const filteredFeedItems = useMemo(() => {
+    if (activeTab === "all") return feed.items;
+    if (activeTab === "updates") return feed.items.filter((it) => (it.type || "").includes("update"));
+    if (activeTab === "tasks") return feed.items.filter((it) => (it.type || "").includes("task"));
+    if (activeTab === "files") return feed.items.filter((it) => (it.type || "").includes("file"));
+    return feed.items;
+  }, [feed.items, activeTab]);
+
   if (loading) {
     return (
       <main id="main" role="main" tabIndex={-1}>
         <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto">
           <div className="animate-pulse space-y-4">
-            <div className="h-24 rounded-2xl bg-slate-200/60" />
-            <div className="h-24 rounded-2xl bg-slate-200/60" />
+            <div className="h-24 rounded-2xl bg-surface" />
+            <div className="h-24 rounded-2xl bg-surface" />
           </div>
         </div>
       </main>
@@ -204,10 +329,13 @@ export default function ProjectHome() {
     return (
       <main id="main" role="main" tabIndex={-1}>
         <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-10 max-w-2xl mx-auto">
-          <div className="rounded-2xl border border-rose-200/60 bg-white p-6">
+          <div className="rounded-2xl border border-rose-200/60 bg-surface p-6">
             <h1 className="text-lg font-semibold text-rose-600">Failed to load project</h1>
-            <p className="mt-2 text-sm text-slate-600">{error}</p>
-            <button onClick={() => window.location.reload()} className="mt-4 inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-white">
+            <p className="mt-2 text-sm text-muted">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+            >
               Retry
             </button>
           </div>
@@ -225,7 +353,7 @@ export default function ProjectHome() {
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="rounded-2xl border border-dashed border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 animate-pulse h-[88px]"
+              className="rounded-2xl border border-dashed border-border bg-surface p-4 animate-pulse h-[88px]"
             />
           ))}
         </div>
@@ -235,12 +363,10 @@ export default function ProjectHome() {
 
     const fmtPct = (v) => `${Math.round((v ?? 0) * 100)}%`;
     const card = (label, value, sub) => (
-      <div
-        className="rounded-2xl border border-dashed border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 p-4 shadow-sm"
-      >
-        <div className="text-xs text-slate-500">{label}</div>
-        <div className="text-xl font-semibold text-slate-900 dark:text-slate-100">{value}</div>
-        {sub ? <div className="text-xs text-slate-500 mt-1">{sub}</div> : null}
+      <div className="rounded-2xl border border-dashed border-border bg-surface p-4 shadow-sm">
+        <div className="text-xs text-muted">{label}</div>
+        <div className="text-xl font-semibold text-text">{value}</div>
+        {sub ? <div className="text-xs text-muted mt-1">{sub}</div> : null}
       </div>
     );
 
@@ -256,12 +382,53 @@ export default function ProjectHome() {
 
   return (
     <main id="main" role="main" tabIndex={-1}>
-      <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-ink-100 dark:bg-gray-900 min-h-screen max-w-6xl mx-auto">
-        <ProjectHeader project={project} onAddTask={handleAddTask} />
+      <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
+        {/* Header */}
+        <ProjectHeader project={project} onAddTask={() => setShowTaskSheet(true)} />
+
+        {/* Action Bar */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowTaskSheet(true)}
+            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700"
+          >
+            <Plus className="w-4 h-4" />
+            Add task
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowInvite(true)}
+            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface"
+          >
+            <UserPlus className="w-4 h-4" />
+            Invite
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowSettings(true)}
+            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface"
+          >
+            <SettingsIcon className="w-4 h-4" />
+            Settings
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowStatusModal(true)}
+            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface"
+            title="Copy public status link"
+          >
+            <Share2 className="w-4 h-4" />
+            Public status
+          </button>
+        </div>
 
         {/* Project KPIs */}
         <section
-          className="mt-4 card accent-kpi rounded-2xl border border-dashed border-slate-300/70 dark:border-slate-700 bg-gradient-to-br from-white to-slate-50/60 dark:from-slate-900 dark:to-slate-900/80 p-4"
+          className="mt-4 card accent-kpi rounded-2xl border border-dashed border-border bg-surface p-4"
           role="region"
           aria-label="Project KPIs"
           aria-busy={statsLoading ? "true" : "false"}
@@ -270,11 +437,11 @@ export default function ProjectHome() {
             <SectionHeader icon="Gauge">Project KPIs</SectionHeader>
             <button
               type="button"
-              className="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="rounded-lg p-1.5 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               aria-label="KPI options"
               title="KPI options"
             >
-              <MoreHorizontal className="w-5 h-5 text-slate-500" />
+              <MoreHorizontal className="w-5 h-5 text-muted" />
             </button>
           </div>
 
@@ -288,7 +455,7 @@ export default function ProjectHome() {
 
         {/* Activity Over Time */}
         <section
-          className="mt-6 card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4"
+          className="mt-6 card accent-activity rounded-2xl border border-border bg-surface p-4"
           role="region"
           aria-label="Activity over time"
         >
@@ -296,32 +463,90 @@ export default function ProjectHome() {
             <SectionHeader icon="ActivitySquare">Activity Over Time</SectionHeader>
             <button
               type="button"
-              className="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="rounded-lg p-1.5 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               aria-label="Activity section options"
               title="Activity section options"
             >
-              <MoreHorizontal className="w-5 h-5 text-slate-500" />
+              <MoreHorizontal className="w-5 h-5 text-muted" />
             </button>
           </div>
           <ActivityOverTimeLive projectId={project._id} defaultRange="30" />
         </section>
 
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Main feed (keeps composer + optimistic posting) */}
-          <div className="lg:col-span-8">
-            <ProjectActivityFeed
-              items={feed.items}
-              loading={feedLoading}
-              onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
-              hasMore={!!feed.nextCursor}
-              onPostUpdate={handlePostUpdate}
-              onRefetch={() => loadFeed()}
-            />
+        {/* Tabs */}
+        <div className="mt-6">
+          <div className="inline-flex rounded-xl border border-border overflow-hidden">
+            {[
+              { key: "all", label: "All" },
+              { key: "updates", label: "Updates" },
+              { key: "tasks", label: "Tasks" },
+              { key: "files", label: "Files" },
+            ].map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={`px-3 py-1.5 text-sm ${
+                  activeTab === t.key
+                    ? "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300"
+                    : "text-muted"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Main column */}
+          <div className="lg:col-span-8 space-y-4">
+            {(activeTab === "all" || activeTab === "updates") && (
+              <UpdateComposer
+                onSubmit={handlePostUpdate}
+                // ✅ full round-trip uploads
+                onUploadFiles={(flist) => uploadFiles(flist, { projectId: id })}
+              />
+            )}
+
+            {(activeTab === "all" || activeTab === "updates") && (
+              <ProjectActivityFeed
+                items={filteredFeedItems}
+                loading={feedLoading}
+                onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
+                hasMore={!!feed.nextCursor}
+                onPostUpdate={handlePostUpdate}
+                onRefetch={() => loadFeed()}
+              />
+            )}
+
+            {activeTab === "tasks" && (
+              <div className="rounded-2xl border border-border bg-surface p-4">
+                <SectionHeader icon="ListTodo">Tasks</SectionHeader>
+                <div className="mt-3 space-y-2">
+                  {(tasks || []).map((t) => (
+                    <div key={t._id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                      <div className="text-sm">{t.title}</div>
+                      <div className="text-xs text-muted">{t.status || "Not Started"}</div>
+                    </div>
+                  ))}
+                  {!tasks?.length && <div className="text-sm text-muted">No tasks yet.</div>}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "files" && (
+              <div className="rounded-2xl border border-border bg-surface p-4">
+                <SectionHeader icon="Folder">Files</SectionHeader>
+                <div className="mt-3">
+                  <FileGrid files={files} />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Right rail with filtered audit feed, risks, members */}
+          {/* Right rail */}
           <div className="lg:col-span-4 space-y-6">
-            <div className="card accent-risk rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+            <div className="card accent-risk rounded-2xl border border-border bg-surface p-4">
               <SectionHeader icon="AlertTriangle">Risks &amp; Blockers</SectionHeader>
               <div className="mt-3">
                 <RisksPanel project={project} />
@@ -330,7 +555,7 @@ export default function ProjectHome() {
 
             <MembersPanel members={project.members || []} />
 
-            <div className="card accent-activity rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+            <div className="card accent-activity rounded-2xl border border-border bg-surface p-4">
               <SectionHeader icon="History">Recent Activity</SectionHeader>
               <div className="mt-2">
                 <AuditList scope="project" projectId={project._id} />
@@ -339,6 +564,86 @@ export default function ProjectHome() {
           </div>
         </div>
       </div>
+
+      {/* ---- Public Status Modal ---- */}
+      {showStatusModal && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/30 dark:bg-black/50"
+            onClick={() => setShowStatusModal(false)}
+            aria-hidden="true"
+          />
+          <div
+            className="fixed z-50 inset-x-4 top-24 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(560px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Public status link"
+          >
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div className="inline-flex items-center gap-2">
+                <LinkIcon className="w-4 h-4 text-indigo-600" />
+                <h3 className="text-sm font-semibold text-text">
+                  Copy public status link
+                </h3>
+              </div>
+              <button
+                className="text-sm rounded-lg px-2 py-1 hover:bg-surface"
+                onClick={() => setShowStatusModal(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3">
+              {!publicStatusPath ? (
+                <p className="text-sm text-muted">
+                  This project doesn’t have a public token yet. Once enabled, you’ll see a shareable link here.
+                </p>
+              ) : (
+                <>
+                  <label className="block text-xs text-muted mb-1">
+                    Share this read-only status page:
+                  </label>
+                  <div className="flex items-stretch gap-2">
+                    <input
+                      readOnly
+                      value={fullPublicUrl}
+                      className="flex-1 text-sm rounded-lg border border-border bg-surface px-3 py-2"
+                      onFocus={(e) => e.currentTarget.select()}
+                    />
+                    <button
+                      onClick={copyLink}
+                      className="inline-flex items-center gap-2 rounded-lg px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-700"
+                    >
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copied ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-muted">
+                    Visitors can view KPIs and recent activity summaries. No login required.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ---- Drawers / Modals ---- */}
+      <TaskSheet
+        open={showTaskSheet}
+        onClose={() => setShowTaskSheet(false)}
+        onCreate={handleAddTask}
+      />
+      <InviteModal open={showInvite} onClose={() => setShowInvite(false)} />
+      <ProjectSettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        project={project}
+        onSaved={(updated) => {
+          if (updated) setProject((p) => ({ ...(p || {}), ...(updated || {}) }));
+        }}
+      />
     </main>
   );
 }

@@ -16,9 +16,28 @@ import "./styles/card.css";
 import { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
 
-// ⬇️ NEW: Sprint context + global widget
+// Sprint context + widget
 import { SprintProvider } from "./context/SprintContext";
 import MiniSprintWidget from "./components/global/MiniSprintWidget";
+
+// Break (global short-break timer)
+import { BreakProvider } from "./context/BreakContext";
+
+// Notes + Pinned global layers
+import { NotesProvider } from "./context/NotesContext";
+import { PinnedProvider } from "./context/PinnedContext";
+import QuickNotesDrawer from "./components/global/QuickNotesDrawer";
+import PinnedTaskPanel from "./components/global/PinnedTaskPanel";
+
+// Command Palette
+import { CommandPaletteProvider } from "./hooks/useCommandPalette";
+import CommandPalette from "./components/global/CommandPalette";
+
+// 🔗 Hash scrolling
+import { scrollToAnchorFromHash } from "./utils/anchor";
+
+// ✅ NEW: global user context for avatar propagation & socket updates
+import UserProvider, { UserContext } from "./context/UserContext";
 
 const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
@@ -29,14 +48,29 @@ const ProjectHome = lazy(() => import("./pages/ProjectHome"));
 const CreateAccount = lazy(() => import("./pages/CreateAccount"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const PublicProject = lazy(() => import("./pages/PublicProject"));
+// Public status page
+const PublicProjectStatus = lazy(() => import("./pages/PublicProjectStatus"));
+
+/** Smooth-scroll to #hash elements whenever path or hash changes */
+function ScrollToHash() {
+  const location = useLocation();
+  useEffect(() => {
+    const ok = scrollToAnchorFromHash(location.hash);
+    if (!ok && location.hash) {
+      const t = setTimeout(() => scrollToAnchorFromHash(location.hash), 120);
+      return () => clearTimeout(t);
+    }
+  }, [location.pathname, location.hash]);
+  return null;
+}
 
 function GuardedRoutes() {
   const { user, ready } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Paths that never require auth
-  const openRoutes = ["/login", "/create-account", "/forgot-password"];
+  // Paths that never require auth (prefix checks)
+  const openRoutes = ["/login", "/create-account", "/forgot-password", "/p/", "/status"];
 
   useEffect(() => {
     if (!ready) return;
@@ -49,15 +83,12 @@ function GuardedRoutes() {
   return (
     <Suspense
       fallback={
-        <div
-          className="px-6 py-10 text-center text-slate-500"
-          role="status"
-          aria-live="polite"
-        >
+        <div className="px-6 py-10 text-center text-slate-500" role="status" aria-live="polite">
           Loading page…
         </div>
       }
     >
+      <ScrollToHash />
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<Home />} />
@@ -74,8 +105,9 @@ function GuardedRoutes() {
         <Route path="/u/:username" element={<Profile />} />
         <Route path="/me" element={<Profile />} />
 
-        {/* Public feed (open) */}
+        {/* Public (open) */}
         <Route path="/p/:token" element={<PublicProject />} />
+        <Route path="/status/:token" element={<PublicProjectStatus />} />
 
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
@@ -84,10 +116,13 @@ function GuardedRoutes() {
 }
 
 const AppRoutes = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user: authUser, logout } = useContext(AuthContext);
+  const { user: profileUser } = useContext(UserContext); // ✅ live-updating user (socket/cache-busted)
+  const navbarUser = profileUser || authUser;
+
   return (
     <>
-      <Navbar user={user} onLogout={logout} />
+      <Navbar user={navbarUser} onLogout={logout} />
       <div id="main" role="main" className="main-content">
         <GuardedRoutes />
       </div>
@@ -98,27 +133,43 @@ const AppRoutes = () => {
 
 const App = () => (
   <AuthProvider>
-    <ErrorBoundary>
-      <Router>
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 bg-white text-ink-900 px-3 py-2 rounded-lg shadow"
-        >
-          Skip to content
-        </a>
+    {/* ✅ Wrap the app so avatars/names update everywhere in real-time */}
+    <UserProvider>
+      <ErrorBoundary>
+        <Router>
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 bg-white text-ink-900 px-3 py-2 rounded-lg shadow"
+          >
+            Skip to content
+          </a>
 
-        {/* ⬇️ Wrap app content in SprintProvider so sprint state is global.
-            Keep it INSIDE Router so MiniSprintWidget can use useNavigate. */}
-        <SprintProvider>
-          <div className="app-container" data-accent="indigo">
-            <AppRoutes />
-          </div>
+          {/* Global Command Palette provider (handles ⌘K / Ctrl-K) */}
+          <CommandPaletteProvider>
+            {/* Providers for global, persistent UI layers */}
+            <SprintProvider>
+              <BreakProvider>
+                <NotesProvider>
+                  <PinnedProvider>
+                    <div className="app-container" data-accent="indigo">
+                      <AppRoutes />
+                    </div>
 
-          {/* ⬇️ Global compact sprint widget (shows when sprint active) */}
-          <MiniSprintWidget />
-        </SprintProvider>
-      </Router>
-    </ErrorBoundary>
+                    {/* Global floating tools */}
+                    <MiniSprintWidget />
+                    <QuickNotesDrawer />
+                    <PinnedTaskPanel />
+                  </PinnedProvider>
+                </NotesProvider>
+              </BreakProvider>
+            </SprintProvider>
+
+            {/* Rendered once at root so it overlays everything */}
+            <CommandPalette />
+          </CommandPaletteProvider>
+        </Router>
+      </ErrorBoundary>
+    </UserProvider>
   </AuthProvider>
 );
 

@@ -1,3 +1,4 @@
+// src/uploads/uploads.controller.ts
 import {
   BadRequestException,
   Controller,
@@ -12,7 +13,7 @@ import { UploadsService } from './uploads.service';
 import { ModerationService } from '../moderation/moderation.service';
 import { policyForUpload } from '../moderation/policy';
 
-@Controller('api/uploads')
+@Controller('uploads') // global 'api' prefix is set in main.ts
 export class UploadsController {
   constructor(
     private readonly uploadsService: UploadsService,
@@ -44,15 +45,23 @@ export class UploadsController {
     const mime = file.mimetype || 'application/octet-stream';
     const size = file.size || 0;
 
-    const virus = await this.moderationService.virusScan((file as any).path || '');
-    const image =
-      mime.startsWith('image/') ? await this.moderationService.checkImage((file as any).path || '') : null;
+    // If you're using disk storage, Multer sets file.path; with memory storage it may be undefined.
+    // Your ModerationService currently expects one arg, so we pass the fs path (or empty string).
+    const fsPath = (file as any).path || '';
+
+    // 1) Safety pipeline (best-effort)
+    const virus = await this.moderationService.virusScan(fsPath);
+    const image = mime.startsWith('image/')
+      ? await this.moderationService.checkImage(fsPath)
+      : null;
 
     const decision = policyForUpload({ ext, sizeBytes: size, mime, virus, image });
 
     await this.moderationService.logDecision({
       kind: 'upload',
-      ext, size, mime,
+      ext,
+      size,
+      mime,
       decision: decision.decision,
       reason: decision.reason,
       ts: Date.now(),
@@ -68,11 +77,13 @@ export class UploadsController {
       };
     }
 
-    // NOTE: your service might currently return only { url }
+    // 2) Persist file (service may currently only return { url })
     const stored: any = await this.uploadsService.uploadFile(file);
 
-    const moderationStatus = decision.decision === 'REVIEW' ? 'pending' : 'allowed';
+    const moderationStatus: 'allowed' | 'pending' =
+      decision.decision === 'REVIEW' ? 'pending' : 'allowed';
 
+    // 3) Response normalized for the frontend
     return {
       ok: true,
       file: {

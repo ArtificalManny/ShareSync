@@ -1,0 +1,47 @@
+:root {
+    /* base */
+    --bg:            255 255 255;
+    --card:          248 250 252;   /* slate-50-ish */
+    --text:          15 23 42;      /* slate-900 */
+    --muted:         100 116 139;   /* slate-500 */
+    --border:        226 232 240;   /* slate-200 */
+    --ring:          99 102 241;    /* indigo-500 */
+  
+    /* accent (default) */
+    --accent:              79 70 229;   /* indigo-600 */
+    --accent-foreground:   255 255 255;
+  
+    /* statuses */
+    --success:  5 150 105;   /* emerald-600 */
+    --warning:  217 119 6;   /* amber-600 */
+    --danger:   225 29 72;   /* rose-600 */
+    --info:     2 132 199;   /* sky-600 */
+  
+    /* charts */
+    --chart-1:  79 70 229;
+    --chart-2:  2 132 199;
+    --chart-3:  16 185 129;
+    --chart-4:  234 179 8;
+    --chart-5:  244 63 94;
+  }
+  
+  [data-theme="dark"] {
+    --bg:       15 23 42;     /* slate-900 */
+    --card:     2 6 23;       /* slate-950-ish */
+    --text:     241 245 249;  /* slate-100 */
+    --muted:    148 163 184;  /* slate-400 */
+    --border:   51 65 85;     /* slate-700 */
+    --ring:     165 180 252;  /* indigo-300 */
+  
+    /* accent stays; or nudge lighter for contrast */
+    --accent-foreground: 255 255 255;
+  }
+  
+  /* per-surface accent overrides e.g. data-accent="emerald" */
+  [data-accent="emerald"] {
+    --accent:  5 150 105;
+  }
+  [data-accent="rose"]   { --accent: 225 29 72; }
+  [data-accent="sky"]    { --accent: 2 132 199; }
+  [data-accent="amber"]  { --accent: 217 119 6; }
+  

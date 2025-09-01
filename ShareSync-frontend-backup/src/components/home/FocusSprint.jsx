@@ -1,12 +1,15 @@
 // /src/components/home/FocusSprint.jsx
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Play, Pause, RotateCcw, Sparkles } from "lucide-react";
 import { useSprint } from "../../context/SprintContext";
+import { useBreak } from "../../context/BreakContext";
+import CadenceCoachTip from "../sprint/CadenceCoachTip";
+import BreakModal from "../sprint/BreakModal";
 
 export default function FocusSprint({
   nextTask = null,     // { _id, title } or null
-  onFinish = () => {}, // callback when timer completes
-  initialDurationMin,  // optional: if provided, sets duration when idle/completed
+  onFinish = () => {}, // external callback when timer completes
+  initialDurationMin,  // optional preset: applied when idle/completed
 }) {
   const {
     intent,
@@ -22,7 +25,13 @@ export default function FocusSprint({
     formatRemaining,
   } = useSprint();
 
-  // One-time duration initializer (only if caller provides it)
+  const { startBreak } = useBreak();
+
+  // Local UI state: show post-sprint Break modal once per completion
+  const [showBreak, setShowBreak] = useState(false);
+  const prevStatusRef = useRef(status);
+
+  // Initialize duration (once) if provided
   useEffect(() => {
     if (typeof initialDurationMin === "number" && initialDurationMin > 0) {
       if (status === "idle" || status === "completed") {
@@ -32,9 +41,14 @@ export default function FocusSprint({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDurationMin]);
 
-  // Fire external completion callback
+  // External completion callback + open Break modal once
   useEffect(() => {
-    if (status === "completed") onFinish();
+    const prev = prevStatusRef.current;
+    if (status === "completed" && prev !== "completed") {
+      try { onFinish(); } catch {}
+      setShowBreak(true);
+    }
+    prevStatusRef.current = status;
   }, [status, onFinish]);
 
   // Derived display values
@@ -51,16 +65,41 @@ export default function FocusSprint({
   const isPaused = status === "paused";
   const isIdleOrDone = status === "idle" || status === "completed";
 
-  const handleStart = () => {
-    // Start with current intent & duration
-    start({ intent });
-  };
+  const handleStart = () => start({ intent });
   const handlePause = () => pause();
   const handleResume = () => resume();
   const handleReset = () => reset({}); // keep intent; pass {clearIntent:true} to wipe
 
+  // Break modal callbacks
+  const handleStartBreak = ({ minutes, reason }) => {
+    try {
+      startBreak?.({ minutes, reason });
+    } finally {
+      // Close modal after starting the global break timer
+      setShowBreak(false);
+    }
+  };
+
+  const handleReflectionSave = (text) => {
+    // For now, store locally; can be posted to project updates later
+    try {
+      const key = "sharesync.reflections.v1";
+      const arr = JSON.parse(localStorage.getItem(key) || "[]");
+      arr.unshift({
+        text,
+        at: new Date().toISOString(),
+        intentAtCompletion: intent || null,
+        durationMin,
+      });
+      localStorage.setItem(key, JSON.stringify(arr.slice(0, 100)));
+    } catch {
+      /* non-fatal */
+    }
+  };
+
   return (
     <section
+      id="focus-sprint"
       className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/85 shadow-sm overflow-hidden"
       aria-label="Focus Sprint"
     >
@@ -166,13 +205,18 @@ export default function FocusSprint({
             </div>
           </div>
 
-          {/* micro-tip */}
-          <p className="mt-3 text-xs text-slate-800/80 dark:text-slate-300">
-            <span className="font-semibold">Cadence Coach:</span> Keep sprints
-            small. Finishing one thing reliably beats starting three.
-          </p>
+          {/* Cadence Coach (AI-lite insight) */}
+          <CadenceCoachTip />
         </div>
       </div>
+
+      {/* Post-sprint Break Modal */}
+      <BreakModal
+        isOpen={showBreak}
+        onClose={() => setShowBreak(false)}
+        onStartBreak={handleStartBreak}
+        onReflectionSave={handleReflectionSave}
+      />
     </section>
   );
 }

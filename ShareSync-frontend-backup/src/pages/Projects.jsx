@@ -43,6 +43,91 @@ function writeParams({ query, status, owner, updated }) {
   return s ? `?${s}` : '';
 }
 
+/** --- Small helpers for the new UI bits --- */
+function timeAgo(iso) {
+  if (!iso) return 'just now';
+  const s = Math.max(1, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  const units = [
+    ['y', 31536000],
+    ['mo', 2592000],
+    ['w', 604800],
+    ['d', 86400],
+    ['h', 3600],
+    ['m', 60],
+    ['s', 1],
+  ];
+  for (const [label, sec] of units) {
+    if (s >= sec) {
+      const v = Math.floor(s / sec);
+      const map = { y: 'yr', mo: 'mo', w: 'wk', d: 'd', h: 'h', m: 'm', s: 's' };
+      return `${v}${map[label]} ago`;
+    }
+  }
+  return 'just now';
+}
+
+function initials(nameOrEmail = '') {
+  const name = String(nameOrEmail || '').trim();
+  if (!name) return '•';
+  const parts = name.split(/\s+/);
+  if (parts.length === 1) {
+    const at = name.indexOf('@');
+    if (at > 0) return name.slice(0, 2).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+}
+
+function Avatar({ user, size = 24 }) {
+  const { avatarUrl, displayName, name, username, email } = user || {};
+  const label = displayName || name || username || email || '';
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={label}
+        className="inline-block rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
+        style={{ width: size, height: size }}
+        loading="lazy"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+  return (
+    <div
+      className="inline-grid place-items-center rounded-full bg-surface text-text ring-2 ring-white dark:ring-slate-900 text-[11px] font-semibold"
+      style={{ width: size, height: size }}
+      aria-label={label}
+      title={label}
+    >
+      {initials(label)}
+    </div>
+  );
+}
+
+function AvatarGroup({ members = [], max = 5 }) {
+  const shown = members.slice(0, max);
+  const extra = Math.max(0, members.length - shown.length);
+  return (
+    <div className="flex -space-x-2">
+      {shown.map((m, i) => (
+        <div key={m.id || m._id || m.username || m.email || i} className="inline-block">
+          <Avatar user={m} />
+        </div>
+      ))}
+      {extra > 0 && (
+        <div
+          className="inline-grid place-items-center rounded-full bg-surface text-text ring-2 ring-white dark:ring-slate-900 text-[11px] font-semibold"
+          style={{ width: 24, height: 24 }}
+          title={`+${extra} more`}
+        >
+          +{extra}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Projects() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -74,13 +159,11 @@ export default function Projects() {
   const abortRef = useRef(null);
 
   async function fetchProjects() {
-    // perf mark for “first list paint” SLA
     try { performance?.mark?.('ss:projects:fetch:start'); } catch {}
 
     setLoading(true);
     setError('');
 
-    // cancel any in-flight request
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -94,7 +177,6 @@ export default function Projects() {
         signal: controller.signal,
       });
 
-      // incremental-ish: first 10 asap, rest next tick
       const first = Array.isArray(items) ? items.slice(0, 10) : [];
       const rest  = Array.isArray(items) ? items.slice(10) : [];
       setProjects(first);
@@ -177,7 +259,7 @@ export default function Projects() {
     <main id="main" role="main" tabIndex={-1}>
       <div
         data-accent="emerald"
-        className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-gray-100 dark:bg-gray-800 min-h-screen max-w-6xl mx-auto"
+        className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto"
       >
         <ProjectsHeader
           query={query}
@@ -204,7 +286,7 @@ export default function Projects() {
             )}
 
             {!!error && !loading && (
-              <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-rose-200/60 dark:border-rose-400/20 motion-quick">
+              <div className="rounded-2xl p-4 bg-surface border border-rose-200/60 dark:border-rose-400/20 motion-quick">
                 <p className="text-rose-600 dark:text-rose-400 mb-3">{error}</p>
                 <button
                   onClick={fetchProjects}
@@ -222,13 +304,35 @@ export default function Projects() {
 
             {!loading && !error && filtered.length > 0 && (
               <div className="grid grid-cols-1 gap-3">
-                {filtered.map((p) => (
-                  <ProjectListItem
-                    key={p._id || p.id}
-                    project={p}
-                    onClick={() => goToProject(p._id || p.id)}
-                  />
-                ))}
+                {filtered.map((p) => {
+                  const pid = p._id || p.id;
+                  const lastTs = p.lastActivityAt || p.updatedAt || p.createdAt;
+                  return (
+                    <div
+                      key={pid}
+                      className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden"
+                    >
+                      {/* Existing clickable list item */}
+                      <ProjectListItem
+                        project={p}
+                        onClick={() => goToProject(pid)}
+                      />
+
+                      {/* New footer: AvatarGroup + last activity */}
+                      <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-t border-border">
+                        <div className="min-w-0">
+                          <AvatarGroup members={Array.isArray(p.members) ? p.members : []} />
+                        </div>
+                        <div
+                          className="text-xs text-muted whitespace-nowrap"
+                          title={lastTs ? new Date(lastTs).toLocaleString() : undefined}
+                        >
+                          Updated {timeAgo(lastTs)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

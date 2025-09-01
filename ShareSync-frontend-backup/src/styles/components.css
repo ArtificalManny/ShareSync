@@ -1,0 +1,19 @@
+.card {
+    @apply rounded-2xl border bg-card text-text border-border;
+  }
+  
+  .btn {
+    @apply inline-flex items-center gap-2 rounded-lg px-3 py-1.5;
+  }
+  
+  .btn-primary {
+    background: rgb(var(--accent));
+    color: rgb(var(--accent-foreground));
+  }
+  .btn-primary:hover { background: rgb(var(--accent) / 0.9); }
+  
+  .btn-outline {
+    @apply border border-border bg-transparent text-text;
+  }
+  .btn-outline:hover { background: rgb(var(--text) / 0.04); }
+  
