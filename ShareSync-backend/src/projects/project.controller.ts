@@ -34,7 +34,10 @@ export class ProjectController {
     }
 
     if (!dto?.title || !dto?.description) {
-      throw new HttpException('title and description are required', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'title and description are required',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const doc = await this.projects.create({
@@ -43,21 +46,38 @@ export class ProjectController {
       category: dto.category ?? '',
       status: dto.status ?? 'Not Started',
       privacy: dto.privacy ?? 'Private',
-      members: Array.isArray(dto.members)
-        ? dto.members.map((m: any) => ({
-            email: m?.email,
-            userId: m?.userId, // may be undefined in your current DTO; 'any' avoids TS error
-            role: (['owner', 'member', 'viewer'] as const).includes(
-              String(m?.role || 'member').toLowerCase() as any,
-            )
-              ? (String(m.role).toLowerCase() as 'owner' | 'member' | 'viewer')
-              : 'member',
-          }))
-        : [],
-      userId, // owner
+      // pass raw members, service will normalize
+      members: (dto as any).members ?? [],
+      userId, // legacy owner link
     });
 
     return doc;
+  }
+
+  // Put "quick" before ":id" so param route doesn’t catch it
+  @Get('quick')
+  async quick(@Req() req, @Query('limit') limit = '6') {
+    const userId = req?.user?.sub;
+    const n = Math.max(1, Math.min(12, parseInt(limit as string, 10) || 6));
+
+    let items: any[] = [];
+    try {
+      items =
+        (await (this.projects as any).findMany?.({ userId, limit: n })) ?? [];
+    } catch {
+      items = await this.projects.findAll(userId);
+    }
+
+    return (items || [])
+      .slice(0, n)
+      .map((p: any) => ({
+        _id: String(p._id ?? p.id ?? ''),
+        title: p.title ?? 'Untitled',
+        avatar: p.avatar ?? p.projectImage ?? '',
+        lastActivityAt:
+          p.updatedAt ?? p.createdAt ?? new Date().toISOString(),
+        unreadCount: 0,
+      }));
   }
 
   @Get()
@@ -72,32 +92,10 @@ export class ProjectController {
   async getOne(@Req() req, @Param('id') id: string) {
     const userId = req?.user?.sub;
     const project = await this.projects.findOneForUser(userId, id);
-    if (!project) throw new HttpException('Not found', HttpStatus.NOT_FOUND);
-    return project;
-  }
-
-  // Minimal quick list used by the Home "Your Projects" rail
-  @Get('quick')
-  async quick(@Req() req, @Query('limit') limit = '6') {
-    const userId = req?.user?.sub;
-    const n = Math.max(1, Math.min(12, parseInt(limit as string, 10) || 6));
-
-    let items: any[] = [];
-    try {
-      items = (await (this.projects as any).findMany?.({ userId, limit: n })) ?? [];
-    } catch (_) {
-      items = await this.projects.findAll(userId);
+    if (!project) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
     }
-
-    return (items || [])
-      .slice(0, n)
-      .map((p: any) => ({
-        _id: String(p._id ?? p.id ?? ''),
-        title: p.title ?? 'Untitled',
-        avatar: p.avatar ?? p.projectImage ?? '',
-        lastActivityAt: p.updatedAt ?? p.createdAt ?? new Date().toISOString(),
-        unreadCount: 0,
-      }));
+    return project;
   }
 
   /** Update members/roles — owner-only */
@@ -107,14 +105,27 @@ export class ProjectController {
   async updateMembers(
     @Req() req,
     @Param('id') id: string,
-    @Body() body: { members: Array<{ userId?: string; email?: string; role?: 'owner' | 'member' | 'viewer' }> },
+    @Body()
+    body: {
+      members: Array<{
+        userId?: string;
+        email?: string;
+        role?: 'owner' | 'member' | 'viewer';
+      }>;
+    },
   ) {
     const userId = req?.user?.sub;
     if (!Array.isArray(body?.members)) {
       throw new HttpException('members[] is required', HttpStatus.BAD_REQUEST);
     }
-    const updated = await this.projects.updateMembers(id, userId, body.members as any);
-    if (!updated) throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    const updated = await this.projects.updateMembers(
+      id,
+      userId,
+      body.members as any,
+    );
+    if (!updated) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
     return updated;
   }
 }

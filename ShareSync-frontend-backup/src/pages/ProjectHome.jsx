@@ -570,7 +570,7 @@ export default function ProjectHome() {
               <div className="rounded-2xl border border-border bg-surface p-4">
                 <SectionHeader icon="Folder">Files</SectionHeader>
                 <div className="mt-3">
-                  <FileGrid files={files} />
+                  <FileGrid projectId={project._id} initialFiles={project.files || []} canEdit={role !== 'viewer'} />
                 </div>
               </div>
             )}

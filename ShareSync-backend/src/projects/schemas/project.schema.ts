@@ -4,26 +4,27 @@ import { Document } from 'mongoose';
 
 export type ProjectDocument = Project & Document;
 
-/** Member subdocument (role-based access) */
-@Schema({ _id: false })
-export class ProjectMember {
-  /** Optional: internal user id (string ObjectId or external id) */
-  @Prop({ type: String })
-  userId?: string;
+export type ProjectRole = 'owner' | 'member' | 'viewer';
 
-  /** Optional: email (useful before the user accepts an invite) */
-  @Prop({ type: String })
-  email?: string;
-
-  /** Role within the project */
-  @Prop({ type: String, enum: ['owner', 'member', 'viewer'], default: 'member' })
-  role: 'owner' | 'member' | 'viewer';
-
-  /** Audit convenience */
-  @Prop({ type: Date, default: Date.now })
-  addedAt?: Date;
+export interface ProjectMember {
+  userId?: string;      // preferred when user exists
+  email?: string;       // fallback for invited emails
+  role: ProjectRole;    // owner | member | viewer
+  addedAt: Date;
 }
-export const ProjectMemberSchema = SchemaFactory.createForClass(ProjectMember);
+
+export type ProjectInviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
+
+export interface ProjectInvite {
+  email: string;
+  role: Exclude<ProjectRole, 'owner'>; // 'member' | 'viewer'
+  token: string;
+  status: ProjectInviteStatus;
+  invitedBy?: string;         // actingUserId
+  createdAt: Date;
+  expiresAt?: Date;
+  acceptedByUserId?: string;
+}
 
 @Schema({ timestamps: true })
 export class Project {
@@ -33,21 +34,34 @@ export class Project {
   @Prop() status: string;
   @Prop() privacy: string;
 
-  /**
-   * Members with roles. You can keep using the legacy `userId` (owner)
-   * while gradually filling this array. We’ll enforce permissions via guards.
-   */
-  @Prop({ type: [ProjectMemberSchema], default: [] })
+  @Prop({
+    type: [{
+      userId: String,
+      email: String,
+      role: { type: String, enum: ['owner', 'member', 'viewer'], default: 'member' },
+      addedAt: { type: Date, default: Date.now },
+    }],
+    default: [],
+  })
   members: ProjectMember[];
 
-  /** Legacy owner id (kept for backward compatibility) */
-  @Prop({ required: true })
-  userId: string;
+  // Owner (legacy field; also duplicated in members[0] with role=owner)
+  @Prop({ required: true }) userId: string;
+
+  @Prop({
+    type: [{
+      email: { type: String, required: true },
+      role: { type: String, enum: ['member', 'viewer'], default: 'member' },
+      token: { type: String, required: true },
+      status: { type: String, enum: ['pending', 'accepted', 'revoked', 'expired'], default: 'pending' },
+      invitedBy: String,
+      createdAt: { type: Date, default: Date.now },
+      expiresAt: Date,
+      acceptedByUserId: String,
+    }],
+    default: [],
+  })
+  invites: ProjectInvite[];
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
-
-/** Helpful indexes for common queries */
-ProjectSchema.index({ userId: 1, updatedAt: -1 });
-ProjectSchema.index({ 'members.userId': 1 });
-ProjectSchema.index({ 'members.email': 1 });

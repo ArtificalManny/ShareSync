@@ -1,0 +1,148 @@
+// src/files/files.service.ts
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
+import { File, FileDocument, ModerationStatus } from './schemas/file.schema';
+import { Project, ProjectDocument } from '../projects/schemas/project.schema';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
+
+type CreateFileInput = {
+  url: string;
+  thumbUrl?: string;
+  name: string;
+  size: number;
+  mime: string;
+  projectId: string;
+  moderationStatus?: ModerationStatus;
+};
+
+@Injectable()
+export class FilesService {
+  constructor(
+    @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
+    @InjectModel(Project.name) private readonly projectModel: Model<ProjectDocument>,
+    private readonly realtime: RealtimeGateway,
+  ) {}
+
+  /** Get role of a user in a project ('owner' | 'member' | 'viewer' | null) */
+  private async getUserRole(projectId: string, userId: string): Promise<'owner' | 'member' | 'viewer' | null> {
+    if (!Types.ObjectId.isValid(projectId)) return null;
+    const proj = await this.projectModel
+      .findById(projectId)
+      .select({ userId: 1, members: 1 })
+      .lean();
+
+    if (!proj) return null;
+    if (String(proj.userId) === String(userId)) return 'owner';
+    const m = (proj.members || []).find((x: any) => x?.userId && String(x.userId) === String(userId));
+    return (m?.role as any) || null;
+  }
+
+  private async assertCanView(projectId: string, userId: string) {
+    const role = await this.getUserRole(projectId, userId);
+    if (!role) throw new ForbiddenException('You do not have access to this project.');
+  }
+
+  private async assertCanEdit(projectId: string, userId: string) {
+    const role = await this.getUserRole(projectId, userId);
+    if (!role || (role !== 'owner' && role !== 'member')) {
+      throw new ForbiddenException('You do not have permission to add/remove files.');
+    }
+  }
+
+  /** Create a single file record and emit realtime. */
+  async createOne(input: CreateFileInput, actingUserId: string) {
+    await this.assertCanEdit(input.projectId, actingUserId);
+
+    const doc = await this.fileModel.create({
+      url: input.url,
+      thumbUrl: input.thumbUrl,
+      name: input.name,
+      size: input.size,
+      mime: input.mime,
+      projectId: input.projectId,
+      userId: actingUserId,
+      moderationStatus: input.moderationStatus ?? 'allowed',
+    });
+
+    // Broadcast best-effort
+    try {
+      this.realtime.emitToProject(input.projectId, 'project:filesAdded', {
+        projectId: input.projectId,
+        files: [this.toPublic(doc)],
+      });
+    } catch {/* ignore */}
+
+    return this.toPublic(doc);
+  }
+
+  /** Bulk create and emit in one payload. */
+  async createMany(projectId: string, items: CreateFileInput[], actingUserId: string) {
+    await this.assertCanEdit(projectId, actingUserId);
+
+    const docs = await this.fileModel.insertMany(
+      (items || []).map((i) => ({
+        url: i.url,
+        thumbUrl: i.thumbUrl,
+        name: i.name,
+        size: i.size,
+        mime: i.mime,
+        projectId,
+        userId: actingUserId,
+        moderationStatus: i.moderationStatus ?? 'allowed',
+      })),
+      { ordered: false },
+    );
+
+    const payload = docs.map((d) => this.toPublic(d));
+    try {
+      this.realtime.emitToProject(projectId, 'project:filesAdded', { projectId, files: payload });
+    } catch {/* ignore */}
+
+    return payload;
+  }
+
+  async listByProject(projectId: string, actingUserId: string) {
+    await this.assertCanView(projectId, actingUserId);
+    const q: FilterQuery<FileDocument> = { projectId };
+    const docs = await this.fileModel.find(q).sort({ createdAt: -1 }).lean();
+    return docs.map((d) => this.toPublic(d));
+  }
+
+  async remove(fileId: string, actingUserId: string) {
+    if (!Types.ObjectId.isValid(fileId)) throw new NotFoundException('File not found');
+    const doc = await this.fileModel.findById(fileId);
+    if (!doc) throw new NotFoundException('File not found');
+
+    await this.assertCanEdit(doc.projectId, actingUserId);
+
+    await this.fileModel.deleteOne({ _id: doc._id });
+
+    // Optionally broadcast removal (if you add a listener)
+    try {
+      this.realtime.emitToProject(doc.projectId, 'project:filesRemoved', {
+        projectId: doc.projectId,
+        fileIds: [String(doc._id)],
+      });
+    } catch {/* ignore */}
+
+    return { ok: true };
+  }
+
+  /** Presentation shape for FE */
+  private toPublic(d: File | (File & { _id?: any })) {
+    const anyd: any = typeof (d as any).toObject === 'function' ? (d as any).toObject() : d;
+    return {
+      id: String(anyd._id ?? ''),
+      url: anyd.url,
+      thumbUrl: anyd.thumbUrl,
+      name: anyd.name,
+      size: Number(anyd.size || 0),
+      mime: anyd.mime,
+      projectId: anyd.projectId,
+      userId: anyd.userId,
+      moderationStatus: anyd.moderationStatus as ModerationStatus,
+      createdAt: anyd.createdAt,
+    };
+  }
+}

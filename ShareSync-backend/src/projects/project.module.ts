@@ -1,21 +1,28 @@
 // src/projects/project.module.ts
 import { Module, forwardRef } from '@nestjs/common';
-import { ProjectsService } from './project.service';
-import { UpdatesController } from './updates.controller';
+import { MongooseModule } from '@nestjs/mongoose';
+
 import { ProjectController } from './project.controller';
-import { ModerationModule } from '../moderation/moderation.module';
-import { NotificationsModule } from '../notifications/notifications.module';
-import { UserModule } from '../user/user.module';
+import { UpdatesController } from './updates.controller';
+import { InvitesController } from './invites.controller';
+
+import { ProjectsService } from './project.service';
+import { InvitesService } from './invites.service';
+
+import { Project, ProjectSchema } from './schemas/project.schema';
 import { ProjectPermissionGuard } from './guards/project-permission.guard';
+
+import { RealtimeModule } from '../realtime/realtime.module';
+import { NotifyModule } from '../notifications/notify.module';
 
 @Module({
   imports: [
-    ModerationModule,
-    NotificationsModule,
-    forwardRef(() => UserModule),
+    MongooseModule.forFeature([{ name: Project.name, schema: ProjectSchema }]),
+    forwardRef(() => RealtimeModule),
+    NotifyModule,
   ],
-  controllers: [UpdatesController, ProjectController],
-  providers: [ProjectsService, ProjectPermissionGuard],
+  controllers: [ProjectController, UpdatesController, InvitesController],
+  providers: [ProjectsService, InvitesService, ProjectPermissionGuard],
   exports: [ProjectsService],
 })
 export class ProjectModule {}

@@ -1,59 +1,71 @@
-// /src/components/files/FileGrid.jsx
-import React from "react";
-import FileCard from "./FileCard";
+// src/components/files/FileGrid.jsx
+import React, { useEffect, useState } from 'react';
+import FileCard from './FileCard';
+import { listFiles, deleteFile } from '../../api/files';
 
 /**
- * FileGrid
- *
  * Props:
- * - files?: Array<FileLike>
- *   FileLike: { id?/_id?, name, size?, mime?, url?, thumbUrl?, createdAt?, owner/uploader? }
- * - onOpen?: (file) => void
- * - isLoading?: boolean
- * - emptyMessage?: string
- * - className?: string
- *
- * Behavior:
- * - Responsive grid (2 cols on small, 3 on sm+, 4 on lg+).
- * - Shows skeletons when loading.
- * - Shows friendly empty state when no files.
+ * - projectId (required)
+ * - initialFiles?: array (optional—if you already have some)
+ * - canEdit?: boolean   (role ≥ member)
  */
-export default function FileGrid({
-  files = [],
-  onOpen,
-  isLoading = false,
-  emptyMessage = "No files yet.",
-  className = "",
-}) {
-  if (isLoading) {
+export default function FileGrid({ projectId, initialFiles = [], canEdit = false }) {
+  const [files, setFiles] = useState(() => initialFiles);
+  const [loading, setLoading] = useState(!initialFiles.length);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let ignore = false;
+    if (!projectId) return;
+
+    setLoading(true);
+    setError('');
+    listFiles(projectId)
+      .then((list) => { if (!ignore) setFiles(Array.isArray(list) ? list : []); })
+      .catch((e) => { if (!ignore) setError(e?.message || 'Failed to load files'); })
+      .finally(() => { if (!ignore) setLoading(false); });
+
+    return () => { ignore = true; };
+  }, [projectId]);
+
+  const handleRemove = async (id) => {
+    const prev = files;
+    setFiles((f) => f.filter((x) => x.id !== id));
+    try {
+      await deleteFile(id);
+    } catch (e) {
+      // rollback on failure
+      setFiles(prev);
+      alert(e?.response?.data?.message || e?.message || 'Failed to delete file.');
+    }
+  };
+
+  if (loading) {
     return (
-      <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 ${className}`}>
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={`sk-${i}`}
-            className="h-40 rounded-xl border border-slate-200/70 dark:border-slate-700 bg-white/70 dark:bg-slate-900/60 animate-pulse"
-          />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="rounded-xl border border-border bg-surface h-28 animate-pulse" />
         ))}
       </div>
     );
   }
 
-  if (!files || files.length === 0) {
+  if (error) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-200/70 dark:border-slate-700 p-6 text-center">
-        <p className="text-sm text-slate-600 dark:text-slate-300">{emptyMessage}</p>
+      <div className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 p-3">
+        {error}
       </div>
     );
   }
 
+  if (!files.length) {
+    return <div className="text-sm text-muted">No files yet.</div>;
+  }
+
   return (
-    <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 ${className}`}>
-      {files.map((f, idx) => (
-        <FileCard
-          key={f.id || f._id || f.url || `${f.name}-${idx}`}
-          file={f}
-          onOpen={onOpen}
-        />
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      {files.map((f) => (
+        <FileCard key={f.id} file={f} onRemove={handleRemove} canEdit={canEdit} />
       ))}
     </div>
   );
