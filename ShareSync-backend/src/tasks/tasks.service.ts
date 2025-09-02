@@ -1,34 +1,65 @@
+// src/tasks/tasks.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Task, TaskDocument } from '../schemas/task.schema';
+import { FilterQuery, Model, Types } from 'mongoose';
+import { Task, TaskDocument } from './schemas/task.schema';
+
+export type CreateTaskDto = {
+  title: string;
+  status?: 'Not Started' | 'In Progress' | 'Completed';
+  description?: string;
+  dueDate?: string | Date | null;
+};
+
+export type PatchTaskDto = Partial<CreateTaskDto>;
 
 @Injectable()
 export class TasksService {
   constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) {}
 
-  async createTask(taskData: Partial<Task>): Promise<Task> {
-    const createdTask = new this.taskModel(taskData);
-    return createdTask.save();
+  async create(projectId: string, createdBy: string, dto: CreateTaskDto) {
+    const t = new this.taskModel({
+      title: (dto.title || '').trim(),
+      status: dto.status || 'Not Started',
+      description: dto.description ?? '',
+      dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+      projectId,
+      createdBy,
+    });
+    return t.save();
   }
 
-  async getTasksByProject(projectId: string): Promise<Task[]> {
-    return this.taskModel.find({ projectId }).exec();
-  }
+  async list(projectId: string, limit = 50, cursor?: string | null) {
+    const q: FilterQuery<TaskDocument> = { projectId };
+    const find = this.taskModel.find(q).sort({ createdAt: -1 }).limit(Math.min(200, Math.max(1, limit)));
 
-  async updateTask(id: string, updateData: Partial<Task>): Promise<Task> {
-    const task = await this.taskModel.findById(id).exec();
-    if (!task) {
-      throw new NotFoundException(`Task with ID ${id} not found`);
+    if (cursor && Types.ObjectId.isValid(cursor)) {
+      // naive cursor by _id for descending createdAt
+      find.where({ _id: { $lt: new Types.ObjectId(cursor) } });
     }
-    Object.assign(task, updateData);
-    return task.save();
+
+    const items = await find.lean();
+    const nextCursor = items.length ? String((items[items.length - 1] as any)?._id) : null;
+    return { items, nextCursor };
   }
 
-  async deleteTask(id: string): Promise<void> {
-    const result = await this.taskModel.deleteOne({ _id: id }).exec();
-    if (result.deletedCount === 0) {
-      throw new NotFoundException(`Task with ID ${id} not found`);
+  async patch(projectId: string, taskId: string, patch: PatchTaskDto) {
+    if (!Types.ObjectId.isValid(taskId)) throw new NotFoundException('Task not found');
+    const update: any = {};
+    if (typeof patch.title === 'string') update.title = patch.title.trim();
+    if (patch.status) update.status = patch.status;
+    if (typeof patch.description === 'string') update.description = patch.description;
+    if (patch.dueDate !== undefined) {
+      update.dueDate = patch.dueDate ? new Date(patch.dueDate as any) : undefined;
     }
+    update.updatedAt = new Date();
+
+    const doc = await this.taskModel.findOneAndUpdate(
+      { _id: taskId, projectId },
+      { $set: update },
+      { new: true },
+    );
+    if (!doc) throw new NotFoundException('Task not found');
+    return doc.toObject();
   }
 }

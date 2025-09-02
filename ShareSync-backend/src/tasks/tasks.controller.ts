@@ -1,41 +1,82 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
-import { TasksService } from './tasks.service';
-import { Task } from '../schemas/task.schema';
+// src/tasks/tasks.controller.ts
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Query,
+  Param,
+  UseGuards,
+  Req,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { TasksService, CreateTaskDto, PatchTaskDto } from './tasks.service';
+import { ProjectPermissionGuard, CanViewProject, CanEditProject } from '../projects/guards/project-permission.guard';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
-@Controller('tasks')
+@Controller('projects/:projectId/tasks')
+@UseGuards(JwtAuthGuard, ProjectPermissionGuard)
 export class TasksController {
-  constructor(private readonly tasksService: TasksService) {}
+  constructor(
+    private readonly tasks: TasksService,
+    private readonly realtime: RealtimeGateway,
+  ) {}
 
-  @UseGuards(JwtAuthGuard)
+  /** List tasks for a project (viewer/member/owner) */
+  @Get()
+  @CanViewProject()
+  async list(
+    @Param('projectId') projectId: string,
+    @Query('limit') limit = '50',
+    @Query('cursor') cursor?: string,
+  ) {
+    const n = Math.min(200, Math.max(1, parseInt(String(limit), 10) || 50));
+    return this.tasks.list(projectId, n, cursor || null);
+  }
+
+  /** Create task (member/owner) */
   @Post()
-  async createTask(@Body() taskData: Partial<Task>, @Request() req): Promise<Task> {
-    return this.tasksService.createTask({
-      ...taskData,
-      assignedTo: req.user.userId,
+  @CanEditProject()
+  async create(
+    @Req() req: any,
+    @Param('projectId') projectId: string,
+    @Body() dto: CreateTaskDto,
+  ) {
+    if (!dto?.title || !dto.title.trim()) {
+      throw new BadRequestException('title is required');
+    }
+    const userId = req?.user?.sub || req?.user?.id || req?.user?._id;
+    const created = await this.tasks.create(projectId, userId, dto);
+
+    // realtime
+    this.realtime.emitToProject(projectId, 'tasks:created', {
+      projectId,
+      task: {
+        ...(created?.toObject?.() ?? created),
+      },
     });
+
+    return created;
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get(':projectId')
-  async getTasksByProject(@Param('projectId') projectId: string): Promise<Task[]> {
-    return this.tasksService.getTasksByProject(projectId);
-  }
+  /** Patch task (member/owner) */
+  @Patch(':taskId')
+  @CanEditProject()
+  async patch(
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Body() patch: PatchTaskDto,
+  ) {
+    const updated = await this.tasks.patch(projectId, taskId, patch);
 
-  @UseGuards(JwtAuthGuard)
-  @Put(':id')
-  async updateTask(
-    @Param('id') id: string,
-    @Body('status') status: string,
-    @Body('assignedTo') assignedTo: string, // Fixed property name
-    @Body('dueDate') dueDate?: string,
-  ): Promise<Task> {
-    return this.tasksService.updateTask(id, { status, assignedTo, dueDate: dueDate ? new Date(dueDate) : undefined });
-  }
+    // realtime
+    this.realtime.emitToProject(projectId, 'tasks:updated', {
+      projectId,
+      task: updated,
+    });
 
-  @UseGuards(JwtAuthGuard)
-  @Delete(':id')
-  async deleteTask(@Param('id') id: string): Promise<void> {
-    return this.tasksService.deleteTask(id);
+    return updated;
   }
 }
