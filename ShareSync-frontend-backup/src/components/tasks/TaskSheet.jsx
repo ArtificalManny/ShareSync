@@ -1,68 +1,80 @@
 // /src/components/tasks/TaskSheet.jsx
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { X, PlusCircle } from "lucide-react";
-import { createTask as apiCreateTask } from "../../api/projects";
+import { X, PlusCircle, Save } from "lucide-react";
+import { createTask as apiCreateTask, patchTask as apiPatchTask } from "../../api/tasks";
 
 /**
  * TaskSheet
- * Right-side sheet for quick task creation.
+ * Right-side sheet for quick task creation and basic edit.
  *
  * Props:
  * - open: boolean
  * - onClose: () => void
- * - projectId?: string               // if provided and no onCreate, will call API
+ * - projectId?: string                         // required for default API calls
+ * - canEdit?: boolean                          // disables form if false
  * - onCreate?: (payload) => Promise<any> | void
- *   (If provided, this is called on submit. Return created task or nothing.)
- * - defaultStatus?: string           // "Not Started" | "In Progress" | "Blocked" | "Done"
+ * - onUpdate?: (taskId, patch) => Promise<any> | void
+ * - defaultStatus?: string
  * - initialTitle?: string
- * - initialLabels?: string[]         // optional prefilled labels
+ * - initialLabels?: string[]
  * - afterCreate?: (createdTask) => void
- *
- * Behavior:
- * - Enter (Cmd/Ctrl + Enter) submits.
- * - Esc closes.
- * - Focus trap within the sheet.
- * - Minimal validation (title required).
+ * - afterUpdate?: (updatedTask) => void
+ * - existingTask?: { _id?: string, id?: string, ... }   // when present → edit mode
  */
 export default function TaskSheet({
   open,
   onClose,
   projectId,
+  canEdit = true,
   onCreate,
+  onUpdate,
   defaultStatus = "Not Started",
   initialTitle = "",
   initialLabels = [],
   afterCreate,
+  afterUpdate,
+  existingTask = null,
 }) {
+  const isEdit = !!existingTask;
+  const taskId = existingTask?._id || existingTask?.id || null;
+
   const [title, setTitle] = useState(initialTitle);
-  const [status, setStatus] = useState(defaultStatus);
-  const [assignee, setAssignee] = useState(""); // freeform for now (email or name)
-  const [dueDate, setDueDate] = useState("");   // yyyy-mm-dd
-  const [labels, setLabels] = useState(initialLabels.join(", "));
-  const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState(existingTask?.status || defaultStatus);
+  const [assignee, setAssignee] = useState(existingTask?.assignee || "");
+  const [dueDate, setDueDate] = useState(existingTask?.dueDate ? existingTask.dueDate.slice(0, 10) : "");
+  const [labels, setLabels] = useState(
+    (Array.isArray(existingTask?.labels) ? existingTask.labels : initialLabels).join(", ")
+  );
+  const [notes, setNotes] = useState(existingTask?.notes || "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const containerRef = useRef(null);
   const firstFieldRef = useRef(null);
-  const closeBtnRef = useRef(null);
 
-  // Reset form when opened
+  // Reset when opened or when switching mode/task
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+    if (isEdit) {
+      setTitle(existingTask?.title || "");
+      setStatus(existingTask?.status || defaultStatus);
+      setAssignee(existingTask?.assignee || "");
+      setDueDate(existingTask?.dueDate ? existingTask.dueDate.slice(0, 10) : "");
+      setLabels(Array.isArray(existingTask?.labels) ? existingTask.labels.join(", ") : "");
+      setNotes(existingTask?.notes || "");
+    } else {
       setTitle(initialTitle || "");
       setStatus(defaultStatus);
       setAssignee("");
       setDueDate("");
       setLabels(initialLabels.join(", "));
       setNotes("");
-      setError("");
-      // Focus title after mount
-      setTimeout(() => firstFieldRef.current?.focus(), 10);
     }
-  }, [open, initialTitle, initialLabels, defaultStatus]);
+    setError("");
+    setTimeout(() => firstFieldRef.current?.focus(), 10);
+  }, [open, isEdit, existingTask, initialTitle, initialLabels, defaultStatus]);
 
-  // Escape to close
+  // Esc / Cmd+Enter
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
@@ -70,7 +82,6 @@ export default function TaskSheet({
         e.preventDefault();
         onClose?.();
       }
-      // Cmd/Ctrl + Enter → submit
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
         handleSubmit();
@@ -80,14 +91,13 @@ export default function TaskSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Simple focus trap inside the sheet
+  // Focus trap
   useEffect(() => {
     if (!open) return;
     const el = containerRef.current;
     if (!el) return;
     const selectors =
       'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
-
     const handleKeyDown = (e) => {
       if (e.key !== "Tab") return;
       const focusables = Array.from(el.querySelectorAll(selectors)).filter(
@@ -110,54 +120,81 @@ export default function TaskSheet({
         }
       }
     };
-
     el.addEventListener("keydown", handleKeyDown);
     return () => el.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
-  const parsedLabels = useMemo(() => {
-    return labels
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }, [labels]);
+  const parsedLabels = useMemo(
+    () =>
+      labels
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    [labels]
+  );
+
+  const buildPayload = () => ({
+    title: title.trim(),
+    status,
+    assignee: assignee.trim() || undefined,
+    dueDate: dueDate || undefined,
+    labels: parsedLabels,
+    notes: notes.trim() || undefined,
+  });
 
   const handleSubmit = useCallback(async () => {
     if (submitting) return;
+    if (!canEdit) return;
     setError("");
+
     if (!title.trim()) {
       setError("Please enter a task title.");
       firstFieldRef.current?.focus();
       return;
     }
-    const payload = {
-      title: title.trim(),
-      status,
-      assignee: assignee.trim() || undefined,
-      dueDate: dueDate || undefined,
-      labels: parsedLabels,
-      notes: notes.trim() || undefined,
-    };
+
+    const payload = buildPayload();
 
     try {
       setSubmitting(true);
 
-      let created = null;
-      if (typeof onCreate === "function") {
-        created = (await onCreate(payload)) ?? null;
-      } else if (projectId) {
-        // default API path if parent didn't override
-        created = await apiCreateTask(projectId, payload);
+      if (isEdit && taskId) {
+        let updated = null;
+        if (typeof onUpdate === "function") {
+          updated = (await onUpdate(taskId, payload)) ?? null;
+        } else {
+          // Default API route (requires projectId for permission check on BE)
+          updated = await apiPatchTask(projectId, taskId, payload);
+        }
+        afterUpdate?.(updated ?? { _id: taskId, ...payload });
+      } else {
+        let created = null;
+        if (typeof onCreate === "function") {
+          created = (await onCreate(payload)) ?? null;
+        } else {
+          created = await apiCreateTask(projectId, payload);
+        }
+        afterCreate?.(created ?? payload);
       }
 
-      afterCreate?.(created ?? payload);
       onClose?.();
     } catch (e) {
-      setError(e?.message || "Failed to create task.");
+      setError(e?.message || "Failed to save task.");
     } finally {
       setSubmitting(false);
     }
-  }, [title, status, assignee, dueDate, parsedLabels, notes, onCreate, projectId, afterCreate, onClose, submitting]);
+  }, [
+    submitting,
+    canEdit,
+    title,
+    isEdit,
+    taskId,
+    onUpdate,
+    onCreate,
+    projectId,
+    afterCreate,
+    afterUpdate,
+  ]);
 
   if (!open) return null;
 
@@ -176,18 +213,21 @@ export default function TaskSheet({
         className="fixed right-0 top-0 bottom-0 z-50 w-[min(520px,100%)] bg-white dark:bg-slate-900 border-l border-slate-200/70 dark:border-slate-800 shadow-2xl flex flex-col"
         role="dialog"
         aria-modal="true"
-        aria-label="Create task"
+        aria-label={isEdit ? "Edit task" : "Create task"}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/70 dark:border-slate-800">
           <div className="inline-flex items-center gap-2">
-            <PlusCircle className="w-5 h-5 text-indigo-600" aria-hidden="true" />
+            {isEdit ? (
+              <Save className="w-5 h-5 text-indigo-600" aria-hidden="true" />
+            ) : (
+              <PlusCircle className="w-5 h-5 text-indigo-600" aria-hidden="true" />
+            )}
             <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              New Task
+              {isEdit ? "Edit Task" : "New Task"}
             </h2>
           </div>
           <button
-            ref={closeBtnRef}
             className="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
             onClick={onClose}
             aria-label="Close"
@@ -204,6 +244,12 @@ export default function TaskSheet({
             </div>
           ) : null}
 
+          {!canEdit && (
+            <div className="rounded-lg border border-amber-200/70 bg-amber-50 text-amber-900 text-sm px-3 py-2">
+              You have read-only access to this project.
+            </div>
+          )}
+
           <div>
             <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
               Title <span className="text-rose-500">*</span>
@@ -214,10 +260,11 @@ export default function TaskSheet({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Outline API tests"
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              disabled={!canEdit || submitting}
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
             />
             <p className="mt-1 text-[11px] text-slate-500">
-              Press <kbd className="px-1 border rounded">⌘</kbd>/<kbd className="px-1 border rounded">Ctrl</kbd>+<kbd className="px-1 border rounded">Enter</kbd> to create.
+              Press <kbd className="px-1 border rounded">⌘</kbd>/<kbd className="px-1 border rounded">Ctrl</kbd>+<kbd className="px-1 border rounded">Enter</kbd> to {isEdit ? "save" : "create"}.
             </p>
           </div>
 
@@ -229,7 +276,8 @@ export default function TaskSheet({
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                disabled={!canEdit || submitting}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               >
                 <option>Not Started</option>
                 <option>In Progress</option>
@@ -246,7 +294,8 @@ export default function TaskSheet({
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                disabled={!canEdit || submitting}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               />
             </div>
           </div>
@@ -261,7 +310,8 @@ export default function TaskSheet({
                 value={assignee}
                 onChange={(e) => setAssignee(e.target.value)}
                 placeholder="email or name"
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                disabled={!canEdit || submitting}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               />
             </div>
 
@@ -274,7 +324,8 @@ export default function TaskSheet({
                 value={labels}
                 onChange={(e) => setLabels(e.target.value)}
                 placeholder="backend, api, urgent"
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                disabled={!canEdit || submitting}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               />
             </div>
           </div>
@@ -288,7 +339,8 @@ export default function TaskSheet({
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
               placeholder="Any context for this task…"
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              disabled={!canEdit || submitting}
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
             />
           </div>
         </div>
@@ -303,11 +355,11 @@ export default function TaskSheet({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || !canEdit}
             className="inline-flex items-center gap-2 rounded-lg px-3 py-2 bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-60"
           >
-            <PlusCircle className="w-4 h-4" />
-            {submitting ? "Creating…" : "Create task"}
+            {isEdit ? <Save className="w-4 h-4" /> : <PlusCircle className="w-4 h-4" />}
+            {submitting ? (isEdit ? "Saving…" : "Creating…") : isEdit ? "Save changes" : "Create task"}
           </button>
         </div>
       </aside>

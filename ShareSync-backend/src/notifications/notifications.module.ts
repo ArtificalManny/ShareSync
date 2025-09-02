@@ -1,9 +1,12 @@
 // src/notifications/notifications.module.ts
 import { Module } from '@nestjs/common';
-import { NotificationsGateway } from './gateway';
+import { ScheduleModule } from '@nestjs/schedule';
+import { NotifyService } from './notify.service';
+import { NotifyCron } from './notify.cron';
 
 @Module({
-  providers: [NotificationsGateway],
-  exports: [NotificationsGateway], // 👈 good
+  imports: [ScheduleModule.forRoot()],
+  providers: [NotifyService, NotifyCron],
+  exports: [NotifyService],
 })
 export class NotificationsModule {}

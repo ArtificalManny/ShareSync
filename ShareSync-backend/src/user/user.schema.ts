@@ -47,6 +47,9 @@ export class User {
 
   @Prop({ default: 0 })
   streakDays: number;
+
+  @Prop({ type: Boolean, default: false })
+  emailOptOut: boolean;
 }
 
 export type UserDocument = User & Document;

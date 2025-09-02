@@ -1,4 +1,4 @@
-// /src/components/Profile/AvatarUploader.jsx
+// /src/components/profile/AvatarUploader.jsx
 import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
 
 /**
@@ -15,8 +15,8 @@ import React, { useCallback, useMemo, useRef, useState, useEffect } from "react"
  * - squareSize: number (default 512) — output size when autoSquare is true
  *
  * Notes:
- * - This component performs a center square crop in-memory (canvas) to keep avatars neat.
- * - It doesn’t implement a visual crop UI yet; that can be layered in later where noted.
+ * - Performs a center square crop in-memory (canvas) for neat avatars.
+ * - No visual crop UI yet; easy to add later where marked.
  */
 
 const DEFAULT_MAX_MB = 8;
@@ -33,7 +33,7 @@ function bytesHuman(b = 0) {
   return `${mb.toFixed(1)} MB`;
 }
 
-async function fileToImageBitmap(file) {
+async function fileToImage(file) {
   const dataUrl = await new Promise((resolve, reject) => {
     const fr = new FileReader();
     fr.onload = () => resolve(fr.result);
@@ -47,12 +47,14 @@ async function fileToImageBitmap(file) {
   return img;
 }
 
-/** Center-crop to square and export PNG Blob */
+/** Center-crop to square and export PNG File */
 async function autoSquareCrop(file, size = 512) {
-  const img = await fileToImageBitmap(file);
-  const minSide = Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
-  const sx = Math.max(0, Math.floor((img.width - minSide) / 2));
-  const sy = Math.max(0, Math.floor((img.height - minSide) / 2));
+  const img = await fileToImage(file);
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  const minSide = Math.max(1, Math.min(w, h));
+  const sx = Math.max(0, Math.floor((w - minSide) / 2));
+  const sy = Math.max(0, Math.floor((h - minSide) / 2));
 
   const canvas = document.createElement("canvas");
   canvas.width = size;
@@ -62,11 +64,10 @@ async function autoSquareCrop(file, size = 512) {
   ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
 
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 0.92));
-  // Give it a filename hint
   return new File([blob], "avatar.png", { type: "image/png" });
 }
 
-function classNames(...xs) {
+function cx(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
@@ -136,7 +137,7 @@ export default function AvatarUploader({
   if (size === "sm") {
     const smLabel = buttonLabel || "Change";
     return (
-      <div className={classNames("inline-block", className)}>
+      <div className={cx("inline-block", className)}>
         <input
           ref={inputRef}
           type="file"
@@ -152,7 +153,7 @@ export default function AvatarUploader({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          className={classNames(
+          className={cx(
             "px-2 py-0.5 text-[11px] rounded-full border border-transparent",
             "focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60",
             buttonClassName
@@ -179,7 +180,6 @@ export default function AvatarUploader({
     if (!f) return;
     if (!validate(f)) return;
 
-    // Set preview
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     const url = URL.createObjectURL(f);
     setPreviewUrl(url);
@@ -203,10 +203,10 @@ export default function AvatarUploader({
   };
 
   return (
-    <div className={classNames(className)}>
+    <div className={cx(className)}>
       {/* Dropzone */}
       <div
-        className={classNames(
+        className={cx(
           "rounded-2xl border-2 border-dashed p-4 text-center transition",
           dragging ? "border-indigo-400 bg-indigo-50/40" : "border-slate-300 dark:border-slate-600"
         )}
@@ -229,11 +229,7 @@ export default function AvatarUploader({
           {/* Preview */}
           <div className="h-28 w-28 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 grid place-items-center">
             {previewUrl ? (
-              <img
-                src={previewUrl}
-                alt="Preview"
-                className="h-full w-full object-cover"
-              />
+              <img src={previewUrl} alt="Preview" className="h-full w-full object-cover" />
             ) : (
               <span className="text-xs text-slate-500">No image</span>
             )}
@@ -251,18 +247,18 @@ export default function AvatarUploader({
             </button>
             .
             <div className="text-[11px] mt-1">
-              Max {maxSizeMB}MB. PNG/JPEG recommended. We’ll center-crop to square for you.
+              Max {maxSizeMB}MB. PNG/JPEG recommended. We’ll center-crop to a square.
             </div>
           </div>
 
-          {/* TODO: Insert a visual crop UI here later, before calling onUploaded. */}
+          {/* TODO: Insert a visual crop UI here later. */}
 
           <div className="flex items-center gap-2">
             <button
               type="button"
               disabled={!file || busy}
               onClick={() => processAndUpload(file)}
-              className={classNames(
+              className={cx(
                 "inline-flex items-center rounded-lg bg-indigo-600 text-white px-3 py-1.5 text-sm hover:bg-indigo-700",
                 "disabled:opacity-50"
               )}
