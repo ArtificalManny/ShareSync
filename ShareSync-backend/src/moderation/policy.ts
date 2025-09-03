@@ -1,41 +1,44 @@
-import { Decision, ModResult, UploadPolicyInput, TextPolicyInput } from './moderation.types';
+// src/moderation/policy.ts
+import { ImageModerationResult, VirusScanResult } from './moderation.service';
 
-const BAD_EXT = new Set(['exe','dmg','js','bat','cmd','sh']);
-const MAX_BYTES = 20 * 1024 * 1024; // 20MB
+export type UploadPolicyInput = {
+  ext: string;
+  mime: string;
+  sizeBytes: number;
+  virus: VirusScanResult;
+  image: ImageModerationResult | null;
+};
 
-export function policyForUpload(input: UploadPolicyInput): { decision: Decision; reason?: string; caseId?: string } {
-  const { ext, sizeBytes, virus, image } = input;
+export type UploadPolicyDecision = {
+  decision: 'ALLOW' | 'REVIEW' | 'BLOCK';
+  reason?: string;
+};
 
-  if (sizeBytes > MAX_BYTES) return { decision: 'BLOCK', reason: 'File too large' };
-  if (BAD_EXT.has((ext || '').toLowerCase())) return { decision: 'BLOCK', reason: `.${ext} files are not allowed` };
+const MAX_BYTES = 50 * 1024 * 1024; // 50MB
 
-  if (virus?.decision === 'BLOCK') {
-    return { decision: 'BLOCK', reason: virus.reason || 'Virus detected' };
+export function policyForUpload(input: UploadPolicyInput): UploadPolicyDecision {
+  const { ext, mime, sizeBytes, virus, image } = input;
+
+  if (sizeBytes > MAX_BYTES) {
+    return { decision: 'BLOCK', reason: `File too large (${Math.round(sizeBytes / (1024 * 1024))}MB).` };
   }
 
-  // If image scanner says REVIEW, bubble that up.
-  if (image?.decision === 'REVIEW') {
-    return { decision: 'REVIEW', reason: image.reason || 'Image requires review' };
+  if (virus?.infected) {
+    return { decision: 'BLOCK', reason: 'Virus detected by antivirus.' };
   }
 
-  return { decision: 'ALLOW' };
-}
-
-export function policyForText(input: TextPolicyInput): ModResult {
-  const txt = (input.text || '').toLowerCase();
-
-  // Extremely minimal, replace with real heuristics later.
-  if (!txt.trim()) return { decision: 'ALLOW' };
-
-  const banned = ['threat to kill', 'bomb', 'csam']; // placeholder examples
-  if (banned.some((w) => txt.includes(w))) {
-    return { decision: 'BLOCK', reason: 'Text appears to violate content policy' };
+  // Basic disallow list by extension if desired
+  const bannedExt = ['exe', 'bat', 'cmd', 'sh', 'ps1'];
+  if (bannedExt.includes((ext || '').toLowerCase())) {
+    return { decision: 'BLOCK', reason: `Files of type ".${ext}" are not allowed.` };
   }
 
-  // Stub: if contains “nsfw”, send to review
-  if (txt.includes('nsfw')) {
-    return { decision: 'REVIEW', reason: 'Text requires review' };
+  // If an image was scanned, honor its decision
+  if (image) {
+    if (image.decision === 'BLOCK') return { decision: 'BLOCK', reason: image.reason || 'Image blocked by policy.' };
+    if (image.decision === 'REVIEW') return { decision: 'REVIEW', reason: image.reason || 'Image requires review.' };
   }
 
+  // Default allow
   return { decision: 'ALLOW' };
 }

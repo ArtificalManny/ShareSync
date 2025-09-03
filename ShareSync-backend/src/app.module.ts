@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
@@ -18,8 +19,10 @@ import { ModerationModule } from './moderation/moderation.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
+// ✅ stats (new)
+import { StatsModule } from './stats/stats.module';
+
 import { AppController } from './app.controller';
-import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -39,14 +42,15 @@ import { APP_GUARD } from '@nestjs/core';
     RealtimeModule,
     AnalyticsModule,
 
-    // ✅ new: server-side safety + uploads + sockets
+    // ✅ server-side safety + uploads + notifications
     ModerationModule,
     UploadsModule,
     NotificationsModule,
+
+    // ✅ stats/insights
+    StatsModule,
   ],
   controllers: [AppController],
-  providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard}
-  ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

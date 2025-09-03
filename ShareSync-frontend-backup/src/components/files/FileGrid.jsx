@@ -7,9 +7,15 @@ import { listFiles, deleteFile } from '../../api/files';
  * Props:
  * - projectId (required)
  * - initialFiles?: array (optional—if you already have some)
- * - canEdit?: boolean   (role ≥ member)
+ * - canEdit?: boolean    (role ≥ member, can upload)
+ * - canManage?: boolean  (role = owner, can hard-delete)
  */
-export default function FileGrid({ projectId, initialFiles = [], canEdit = false }) {
+export default function FileGrid({
+  projectId,
+  initialFiles = [],
+  canEdit = false,
+  canManage = false,
+}) {
   const [files, setFiles] = useState(() => initialFiles);
   const [loading, setLoading] = useState(!initialFiles.length);
   const [error, setError] = useState('');
@@ -21,18 +27,26 @@ export default function FileGrid({ projectId, initialFiles = [], canEdit = false
     setLoading(true);
     setError('');
     listFiles(projectId)
-      .then((list) => { if (!ignore) setFiles(Array.isArray(list) ? list : []); })
-      .catch((e) => { if (!ignore) setError(e?.message || 'Failed to load files'); })
-      .finally(() => { if (!ignore) setLoading(false); });
+      .then((list) => {
+        if (!ignore) setFiles(Array.isArray(list) ? list : []);
+      })
+      .catch((e) => {
+        if (!ignore) setError(e?.message || 'Failed to load files');
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
 
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, [projectId]);
 
   const handleRemove = async (id) => {
     const prev = files;
     setFiles((f) => f.filter((x) => x.id !== id));
     try {
-      await deleteFile(id);
+      await deleteFile(projectId, id);
     } catch (e) {
       // rollback on failure
       setFiles(prev);
@@ -44,7 +58,10 @@ export default function FileGrid({ projectId, initialFiles = [], canEdit = false
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="rounded-xl border border-border bg-surface h-28 animate-pulse" />
+          <div
+            key={i}
+            className="rounded-xl border border-border bg-surface h-28 animate-pulse"
+          />
         ))}
       </div>
     );
@@ -65,7 +82,12 @@ export default function FileGrid({ projectId, initialFiles = [], canEdit = false
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       {files.map((f) => (
-        <FileCard key={f.id} file={f} onRemove={handleRemove} canEdit={canEdit} />
+        <FileCard
+          key={f.id}
+          file={f}
+          onDelete={canManage ? handleRemove : undefined} // 👈 only owners can delete
+          canEdit={canEdit}
+        />
       ))}
     </div>
   );

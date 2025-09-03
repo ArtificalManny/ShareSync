@@ -1,7 +1,7 @@
 // src/analytics/user-stats.controller.ts
 import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.guard';
-import { StatsService } from './stats.service';
+import { StatsService } from '../stats/stats.service';
 
 // Final route => /api/users/me/stats (global prefix 'api' applied elsewhere)
 @Controller('users')

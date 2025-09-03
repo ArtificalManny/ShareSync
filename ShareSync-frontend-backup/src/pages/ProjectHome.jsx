@@ -40,6 +40,7 @@ import InviteModal from "../components/project/InviteModal";
 import ProjectSettingsModal from "../components/project/ProjectSettingsModal";
 import UpdateComposer from "../components/compose/UpdateComposer";
 import FileGrid from "../components/files/FileGrid";
+import InsightsBlock from "../components/insights/InsightsBlock";
 
 // ---- small helpers ----
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
@@ -159,10 +160,13 @@ export default function ProjectHome() {
     setFeedLoading(true);
     try {
       const res = await getProjectFeed(id, { limit: 20, cursor });
-      setFeed((prev) => {
-        const nextItems = cursor ? [...prev.items, ...res.items] : res.items;
-        return { items: dedupeById(nextItems), nextCursor: res.nextCursor || null };
-      });
+      const items = Array.isArray(res?.items) ? res.items : [];
+      const nextCursor = res?.nextCursor || null;
+
+      setFeed((prev) => ({
+        items: dedupeById(cursor ? [...prev.items, ...items] : items),
+        nextCursor, // ✅ keep this
+      }));
     } catch (e) {
       console.error("[ProjectHome] feed load error", e);
     } finally {
@@ -213,19 +217,31 @@ export default function ProjectHome() {
           setProject((p) => ({ ...p, tasks: [payload.task, ...(p?.tasks || [])] }));
         }
       },
+      "tasks:updated": (payload) => {
+        if (String(payload?.projectId) === String(id) && payload?.task) {
+          setProject((p) => ({
+            ...p,
+            tasks: (p?.tasks || []).map((t) =>
+              String(t._id) === String(payload.task._id) ? payload.task : t
+            ),
+          }));
+        }
+      },
     },
   });
 
   // --- Role + permissions ---
   const myRole = useMemo(() => getRoleForUser(project, meId), [project, meId]);
   const canEdit = myRole === "owner" || myRole === "member";
-  const canManage = myRole === "owner"; // for settings/invite if you want stricter control later
+  const canManage = myRole === "owner";
 
-  // Composer (string or {text, attachments[]})
+  // Composer (string or {text, attachments[], mentions?, visibility?})
   const handlePostUpdate = async (payload) => {
     if (!canEdit) return; // guard
     const text = typeof payload === "string" ? payload : payload?.text || "";
     const attachments = typeof payload === "string" ? [] : payload?.attachments || [];
+    const mentions = Array.isArray(payload?.mentions) ? payload.mentions : [];
+    const visibility = (payload && payload.visibility) === "public" ? "public" : "private";
     if (!text.trim() && attachments.length === 0) return;
 
     const optimistic = {
@@ -233,6 +249,8 @@ export default function ProjectHome() {
       type: "update.posted",
       text,
       attachments,
+      mentions,
+      visibility,
       userId: user?._id,
       projectId: id,
       createdAt: new Date().toISOString(),
@@ -244,15 +262,17 @@ export default function ProjectHome() {
     try {
       const created = await postProjectUpdate(id, {
         text,
-        mentions: [],
+        mentions,
+        visibility,
         files: attachments.map((a) => a.id || a.tempId).filter(Boolean),
-        clientTempId: optimistic._id,
+        clientTempId: optimistic._id, // harmless if server ignores
       });
       setFeed((prev) => ({
         ...prev,
         items: prev.items.map((it) => (it._id === optimistic._id ? created : it)),
       }));
     } catch {
+      // roll back optimistic
       setFeed((prev) => ({
         ...prev,
         items: prev.items.filter((it) => it._id !== optimistic._id),
@@ -535,6 +555,7 @@ export default function ProjectHome() {
           <div className="lg:col-span-8 space-y-4">
             {(activeTab === "all" || activeTab === "updates") && canEdit && (
               <UpdateComposer
+                disabled={!canEdit}
                 onSubmit={handlePostUpdate}
                 onUploadFiles={(flist) => uploadFiles(flist, { projectId: id })}
               />
@@ -570,7 +591,12 @@ export default function ProjectHome() {
               <div className="rounded-2xl border border-border bg-surface p-4">
                 <SectionHeader icon="Folder">Files</SectionHeader>
                 <div className="mt-3">
-                  <FileGrid projectId={project._id} initialFiles={project.files || []} canEdit={role !== 'viewer'} />
+                  <FileGrid
+                    projectId={project._id}
+                    initialFiles={project.files || []}
+                    canEdit={canEdit}
+                    canManage={canManage}   // ✅ owners get delete controls
+                  />
                 </div>
               </div>
             )}
@@ -578,6 +604,14 @@ export default function ProjectHome() {
 
           {/* Right rail */}
           <div className="lg:col-span-4 space-y-6">
+            {/* ✅ Insights */}
+            <InsightsBlock
+              projectId={project._id}
+              insights={stats?.insights}
+              loading={statsLoading}
+              className=""
+            />
+
             <div className="card accent-risk rounded-2xl border border-border bg-surface p-4">
               <SectionHeader icon="AlertTriangle">Risks &amp; Blockers</SectionHeader>
               <div className="mt-3">

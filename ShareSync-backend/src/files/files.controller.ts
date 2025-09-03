@@ -6,18 +6,21 @@ import {
     Get,
     Param,
     Post,
-    Query,
     Req,
     UseGuards,
     BadRequestException,
   } from '@nestjs/common';
   import { JwtAuthGuard } from '../auth/jwt-auth.guard';
   import { FilesService } from './files.service';
+  import {
+    ProjectPermissionGuard,
+    CanViewProject,
+    CanEditProject,
+    CanManageProject,
+  } from '../projects/guards/project-permission.guard';
   
   type CreateFileBody =
     | {
-        // single
-        projectId: string;
         file: {
           url: string;
           thumbUrl?: string;
@@ -28,8 +31,6 @@ import {
         };
       }
     | {
-        // bulk
-        projectId: string;
         files: Array<{
           url: string;
           thumbUrl?: string;
@@ -40,19 +41,23 @@ import {
         }>;
       };
   
-  @Controller('files')
-  @UseGuards(JwtAuthGuard)
+  @Controller('projects/:projectId/files')
+  @UseGuards(JwtAuthGuard, ProjectPermissionGuard)
   export class FilesController {
     constructor(private readonly files: FilesService) {}
   
     /**
-     * Link an uploaded file (from /api/uploads/file) into a project.
-     * Accepts either { projectId, file: {...} } or { projectId, files: [...] }
+     * Upload/link files into a project
+     * Requires editor+ role
      */
     @Post()
-    async create(@Req() req, @Body() body: CreateFileBody) {
+    @CanEditProject()
+    async create(
+      @Req() req,
+      @Param('projectId') projectId: string,
+      @Body() body: CreateFileBody,
+    ) {
       const userId = req?.user?.sub;
-      const projectId = (body as any)?.projectId;
       if (!projectId) throw new BadRequestException('projectId is required');
   
       if ((body as any).file) {
@@ -91,18 +96,29 @@ import {
       throw new BadRequestException('Provide either {file} or {files[]}');
     }
   
-    /** List files for a project (role ≥ viewer). */
-    @Get('by-project/:projectId')
+    /**
+     * List project files
+     * Requires viewer+ role
+     */
+    @Get()
+    @CanViewProject()
     async listByProject(@Req() req, @Param('projectId') projectId: string) {
       const userId = req?.user?.sub;
       return this.files.listByProject(projectId, userId);
     }
   
-    /** Delete a file (role ≥ member). */
-    @Delete(':id')
-    async remove(@Req() req, @Param('id') id: string) {
+    /**
+     * Delete a file from project
+     * Requires owner role
+     */
+    @Delete(':fileId')
+    @CanManageProject()
+    async remove(
+      @Req() req,
+      @Param('projectId') projectId: string,
+      @Param('fileId') fileId: string,
+    ) {
       const userId = req?.user?.sub;
-      return this.files.remove(id, userId);
+      return this.files.remove(fileId, userId);
     }
-  }
-  
+  }  

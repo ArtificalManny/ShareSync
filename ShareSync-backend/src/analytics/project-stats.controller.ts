@@ -1,7 +1,7 @@
 // src/analytics/project-stats.controller.ts
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.guard';
-import { StatsService } from './stats.service';
+import { StatsService } from '../stats/stats.service';
 
 // Final route => /api/projects/:id/stats
 @Controller('projects')

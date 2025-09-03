@@ -1,425 +1,355 @@
 // /src/components/compose/UpdateComposer.jsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Image as ImageIcon,
-  Paperclip,
-  UploadCloud,
-  X,
-  AlertTriangle,
-  File as FileIcon,
-} from "lucide-react";
-import { uploadFiles as apiUploadFiles } from "../../api/uploads";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import { Paperclip, Send, X, Loader2, Globe, Lock } from "lucide-react";
+import { toast } from "../ui/toast";
 
-/**
- * UpdateComposer
- *
- * Props:
- * - onSubmit: async ({ text, attachments }) => void
- *     attachments[]: { id? (server), tempId?, kind:'image'|'file', name, size, mime, url, previewUrl? }
- * - onUploadFiles?: async (File[]) => Promise<AttachmentLike[]>
- *     Optional uploader; if absent we use the real API uploader (api/uploads.js).
- * - acceptImages?: boolean (default true)
- * - acceptFiles?: boolean (default true)
- * - maxSizeMB?: number (default 20)
- * - disallowedExt?: string[] (default ['exe','dmg','js','bat','cmd','sh'])
- * - placeholder?: string
- * - disabled?: boolean
- *
- * Notes:
- * - Paste images directly into textarea to attach.
- * - Drag-and-drop anywhere on composer.
- * - Client-side moderation tips + basic preflight validation.
- */
-
-const DEFAULT_MAX_MB = 20;
-const DEFAULT_BAD_EXT = ["exe", "dmg", "js", "bat", "cmd", "sh"];
-
-function bytesToHuman(b = 0) {
-  if (b < 1024) return `${b} B`;
-  const kb = b / 1024;
-  if (kb < 1024) return `${kb.toFixed(1)} KB`;
-  const mb = kb / 1024;
-  return `${mb.toFixed(1)} MB`;
+function clsx(...xs) {
+  return xs.filter(Boolean).join(" ");
 }
 
-function extOf(name = "") {
-  const i = name.lastIndexOf(".");
-  return i >= 0 ? name.slice(i + 1).toLowerCase() : "";
-}
-
-function isImage(fileOrMime) {
-  const type = typeof fileOrMime === "string" ? fileOrMime : fileOrMime?.type || "";
-  return type.startsWith("image/");
-}
-
-function validateFile(file, { maxSizeMB = DEFAULT_MAX_MB, disallowedExt = DEFAULT_BAD_EXT } = {}) {
-  const problems = [];
-  if (!file) {
-    problems.push("File missing.");
-    return problems;
+/** naive @mention parser: returns unique handles without @ */
+function extractMentionsFrom(text = "") {
+  const out = new Set();
+  for (const m of text.matchAll(/(^|\s)@([\w.\-]{2,32})\b/g)) {
+    out.add(m[2]);
   }
-  if (file.size > maxSizeMB * 1024 * 1024) {
-    problems.push(`Too large: ${bytesToHuman(file.size)} (limit ${maxSizeMB} MB).`);
-  }
-  const e = extOf(file.name);
-  if (disallowedExt.includes(e)) {
-    problems.push(`Blocked file type ".${e}".`);
-  }
-  // Basic MIME sanity
-  if (!file.type) {
-    problems.push("Unknown file type.");
-  }
-  return problems;
-}
-
-let tempCounter = 1;
-function makeTempAttachment(file) {
-  const tempId = `temp-${Date.now()}-${tempCounter++}`;
-  const objUrl = URL.createObjectURL(file);
-  return {
-    tempId,
-    kind: isImage(file) ? "image" : "file",
-    name: file.name,
-    size: file.size,
-    mime: file.type || "application/octet-stream",
-    url: objUrl, // for download/open
-    previewUrl: isImage(file) ? objUrl : null, // show image
-    _revokeOnUnmount: objUrl,
-  };
+  return Array.from(out);
 }
 
 export default function UpdateComposer({
-  onSubmit,
-  onUploadFiles, // optional; if not provided, we use apiUploadFiles
-  acceptImages = true,
-  acceptFiles = true,
-  maxSizeMB = DEFAULT_MAX_MB,
-  disallowedExt = DEFAULT_BAD_EXT,
-  placeholder = "What’s the latest? You can paste images or drop files…",
+  placeholder = "Share an update…",
+  onSubmit,                               // async (payload) => createdUpdate
+  onUploadFiles,                          // async (FileList|File[]) => [{id,url,moderationStatus?,name?,size?,mime?}]
   disabled = false,
+
+  // NEW (optional)
+  allowVisibility = true,
+  defaultVisibility = "private",          // 'public' | 'private'
+  allowManualMentions = true,             // lets user add mentions beyond auto-parse
 }) {
   const [text, setText] = useState("");
-  const [attachments, setAttachments] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [errors, setErrors] = useState([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const areaRef = useRef(null);
+  const [attachments, setAttachments] = useState([]); // [{id,url,name,size,mime,moderationStatus}]
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [visibility, setVisibility] = useState(
+    defaultVisibility === "public" ? "public" : "private"
+  );
 
-  // revoke any object URLs we created
-  useEffect(() => {
-    return () => {
-      attachments.forEach((a) => {
-        if (a._revokeOnUnmount) URL.revokeObjectURL(a._revokeOnUnmount);
-      });
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // micro-interaction flags
+  const [justPosted, setJustPosted] = useState(false);
+  const [justAttached, setJustAttached] = useState(false);
+
+  // Optional manual mentions (comma-separated, no @ needed)
+  const [mentionsInput, setMentionsInput] = useState("");
+
+  const fileInputRef = useRef(null);
 
   const canPost = useMemo(() => {
     const hasText = text.trim().length > 0;
     const hasFiles = attachments.length > 0;
-    return !disabled && !busy && (hasText || hasFiles);
-  }, [text, attachments, busy, disabled]);
+    return (hasText || hasFiles) && !submitting && !uploading && !disabled;
+  }, [text, attachments, submitting, uploading, disabled]);
 
-  const pushError = useCallback((msg) => {
-    setErrors((prev) => [...prev, String(msg)]);
-    // auto-clear after a bit
-    setTimeout(() => setErrors((prev) => prev.slice(1)), 4000);
-  }, []);
-
-  // Default uploader → uses /src/api/uploads.js
-  const defaultUpload = useCallback(async (filesArr) => {
-    const { ok, items, rejected, error } = await apiUploadFiles(filesArr);
-    // surface any client-side rejections first
-    (rejected || []).forEach((r) => pushError(`${r.file?.name || "file"}: ${r.reason}`));
-    if (!ok && error) pushError(error);
-
-    // Normalize to composer attachment shape
-    const normalized =
-      (items || []).map((it) => ({
-        id: it.id,
-        tempId: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        kind: isImage(it.mime) ? "image" : "file",
-        name: it.name,
-        size: it.size ?? 0,
-        mime: it.mime || "application/octet-stream",
-        url: it.url,
-        previewUrl: it.thumbUrl || (isImage(it.mime) ? it.url : null),
-      })) || [];
-
-    return normalized;
-  }, [pushError]);
-
-  const effectiveUploader = onUploadFiles || defaultUpload;
-
-  const handleFiles = useCallback(
-    async (filesList) => {
-      if (!filesList?.length) return;
-      const incoming = Array.from(filesList);
-
-      // Validation pass
-      const allowed = [];
-      for (const f of incoming) {
-        const problems = validateFile(f, { maxSizeMB, disallowedExt });
-        if (problems.length) {
-          problems.forEach((p) => pushError(`${f.name}: ${p}`));
-          continue;
-        }
-        if (!acceptImages && isImage(f)) {
-          pushError(`${f.name}: images currently disabled.`);
-          continue;
-        }
-        if (!acceptFiles && !isImage(f)) {
-          pushError(`${f.name}: files currently disabled.`);
-          continue;
-        }
-        allowed.push(f);
-      }
-      if (!allowed.length) return;
-
-      try {
-        // Prefer real API upload; fall back to local object URLs if needed
-        const uploaded = await effectiveUploader(allowed);
-        if (uploaded && uploaded.length) {
-          setAttachments((prev) => [...prev, ...uploaded]);
-        } else {
-          // absolute fallback (should be rare)
-          const temps = allowed.map(makeTempAttachment);
-          setAttachments((prev) => [...prev, ...temps]);
-        }
-      } catch (e) {
-        pushError(e?.message || "Failed to attach files.");
-      }
-    },
-    [acceptFiles, acceptImages, disallowedExt, effectiveUploader, maxSizeMB, pushError]
-  );
-
-  // Paste images into the textarea
-  const onPaste = useCallback(
-    (e) => {
-      const files = e.clipboardData?.files;
-      if (files && files.length) {
-        const imgs = Array.from(files).filter((f) => isImage(f));
-        if (imgs.length) {
-          e.preventDefault();
-          handleFiles(imgs);
-        }
-      }
-    },
-    [handleFiles]
-  );
-
-  // Drag & drop
-  const onDragOver = useCallback((e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-  const onDragLeave = useCallback((e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-  const onDrop = useCallback(
-    (e) => {
-      e.preventDefault();
-      setIsDragging(false);
-      const files = e.dataTransfer?.files;
-      if (files?.length) handleFiles(files);
-    },
-    [handleFiles]
-  );
-
-  // Click-to-pick
-  const fileInputRef = useRef(null);
-  const triggerFilePick = () => fileInputRef.current?.click();
-
-  const removeAttachment = useCallback((tempIdOrId) => {
-    setAttachments((prev) => {
-      const toRemove = prev.find((a) => a.tempId === tempIdOrId || a.id === tempIdOrId);
-      if (toRemove?._revokeOnUnmount) {
-        URL.revokeObjectURL(toRemove._revokeOnUnmount);
-      }
-      return prev.filter((a) => a !== toRemove);
-    });
-  }, []);
-
-  const submit = useCallback(async () => {
-    if (!canPost) return;
-    setBusy(true);
+  const handlePickFiles = async (files) => {
+    if (!files || !files.length || !onUploadFiles) return;
     try {
-      await onSubmit?.({
-        text: text.trim(),
-        attachments,
-      });
-      setText("");
-      // Do not revoke uploaded attachments that may be used by feed; parent will reconcile.
-      setAttachments([]);
-    } catch (e) {
-      pushError(e?.message || "Failed to post update.");
-    } finally {
-      setBusy(false);
-    }
-  }, [attachments, canPost, onSubmit, pushError, text]);
+      setUploading(true);
+      const uploaded = await onUploadFiles(files);
+      const arr = Array.isArray(uploaded) ? uploaded : [];
+      if (arr.some((f) => (f?.moderationStatus || "").toLowerCase() === "pending")) {
+        toast?.({
+          title: "Upload pending review",
+          description:
+            "Some images/files require a quick moderation review. They’ll be visible once cleared.",
+        });
+      }
+      setAttachments((prev) => [
+        ...prev,
+        ...arr.map((f) => ({
+          id: f.id || f._id || f.url,
+          url: f.url,
+          name: f.name,
+          size: f.size,
+          mime: f.mime,
+          moderationStatus: f.moderationStatus, // 'allowed' | 'pending'
+        })),
+      ]);
 
-  // Keyboard: Cmd/Ctrl+Enter to submit
-  const onKeyDown = (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-      e.preventDefault();
-      submit();
+      // tiny pulse on successful attach
+      setJustAttached(true);
+      setTimeout(() => setJustAttached(false), 550);
+    } catch (e) {
+      const reason =
+        e?.response?.data?.moderation?.reason ||
+        e?.response?.data?.message ||
+        e?.message ||
+        "Upload failed.";
+      toast?.({
+        title: "Upload blocked",
+        description: reason,
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
-  // Allowed accept string for <input type="file">
-  const acceptStr = useMemo(() => {
-    if (acceptImages && !acceptFiles) return "image/*";
-    if (!acceptImages && acceptFiles) return "*/*";
-    return "*/*"; // allow all; validation will gate
-  }, [acceptFiles, acceptImages]);
+  const onFileInput = (e) => {
+    const files = e.currentTarget.files;
+    e.currentTarget.value = "";
+    if (files?.length) handlePickFiles(files);
+  };
+
+  const removeAttachment = (id) => {
+    setAttachments((prev) => prev.filter((f) => String(f.id) !== String(id)));
+  };
+
+  const manualMentions = useMemo(() => {
+    if (!allowManualMentions) return [];
+    return (mentionsInput || "")
+      .split(",")
+      .map((s) => s.trim().replace(/^@/, ""))
+      .filter(Boolean);
+  }, [mentionsInput, allowManualMentions]);
+
+  const autoMentions = useMemo(() => extractMentionsFrom(text), [text]);
+
+  const mergedMentions = useMemo(() => {
+    const set = new Set([...autoMentions, ...manualMentions]);
+    return Array.from(set);
+  }, [autoMentions, manualMentions]);
+
+  const handleSubmit = useCallback(
+    async (e) => {
+      e?.preventDefault?.();
+      if (!canPost || !onSubmit) return;
+
+      const payload = {
+        text: text.trim(),
+        attachments: attachments.map((a) => ({ id: a.id, url: a.url })),
+        mentions: mergedMentions,
+        visibility: allowVisibility ? visibility : undefined,
+      };
+
+      try {
+        setSubmitting(true);
+        const res = await onSubmit(payload);
+
+        // show pending note if any attached file is pending
+        if (attachments.some((a) => (a.moderationStatus || "").toLowerCase() === "pending")) {
+          toast?.({
+            title: "Posted (some media pending)",
+            description:
+              "Your update is live. Some attachments will appear once moderation finishes.",
+          });
+        } else {
+          toast?.({ title: "Update posted" });
+        }
+
+        // reset on success
+        setText("");
+        setAttachments([]);
+        setMentionsInput("");
+        setVisibility(defaultVisibility === "public" ? "public" : "private");
+
+        // brief success glow on the Post button
+        setJustPosted(true);
+        setTimeout(() => setJustPosted(false), 700);
+
+        return res;
+      } catch (err) {
+        const reason =
+          err?.response?.data?.moderation?.reason ||
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to post update.";
+        toast?.({
+          title: "Update blocked",
+          description: reason,
+          variant: "destructive",
+        });
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [
+      allowVisibility,
+      attachments,
+      canPost,
+      defaultVisibility,
+      mergedMentions,
+      onSubmit,
+      text,
+      visibility,
+    ]
+  );
 
   return (
-    <div
-      className={`rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/95 dark:bg-slate-900/90 p-3 transition-colors ${
-        isDragging ? "ring-2 ring-indigo-500/60" : ""
-      }`}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-    >
-      {/* Textarea */}
-      <div className="flex gap-3">
-        <div className="flex-1">
-          <textarea
-            ref={areaRef}
-            rows={3}
-            className="w-full rounded-lg border border-slate-300/80 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder={placeholder}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onPaste={onPaste}
-            onKeyDown={onKeyDown}
-            disabled={disabled}
-            aria-label="Write an update"
-          />
-          {/* Safety tip */}
-          <div className="mt-1 text-[11px] text-slate-500 flex items-center gap-1">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            Keep it professional. No explicit, illegal, or threatening content.
+    <div className="rounded-2xl border border-border bg-surface p-3 hover-glow">
+      <form onSubmit={handleSubmit}>
+        {/* Top row: visibility + attach */}
+        <div className="flex items-center justify-between mb-2">
+          {allowVisibility ? (
+            <div className="inline-flex items-center gap-1 text-xs">
+              <label className="text-muted">Visibility</label>
+              <div className="relative">
+                <select
+                  value={visibility}
+                  onChange={(e) => setVisibility(e.target.value)}
+                  className="rounded-md border border-border bg-white/90 dark:bg-slate-900/80 px-2 py-1 text-xs"
+                  aria-label="Post visibility"
+                >
+                  <option value="private">Private</option>
+                  <option value="public">Public</option>
+                </select>
+                <div className="pointer-events-none absolute right-2 top-1.5 text-muted">
+                  {visibility === "public" ? (
+                    <Globe className="w-3.5 h-3.5" />
+                  ) : (
+                    <Lock className="w-3.5 h-3.5" />
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <span />
+          )}
+
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={onFileInput}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={disabled || uploading}
+              className={clsx(
+                "inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface",
+                "transition-[box-shadow,transform] duration-150 ease-out hover:-translate-y-0.5 active:translate-y-0",
+                "hover-glow",
+                justAttached && "shadow-[0_0_0_3px_var(--ring)]"
+              )}
+              aria-live="polite"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Uploading…
+                </>
+              ) : (
+                <>
+                  <Paperclip className="w-4 h-4" />
+                  Attach
+                </>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Actions (attach) */}
-        <div className="shrink-0 flex flex-col gap-2 items-end">
-          <button
-            type="button"
-            onClick={triggerFilePick}
-            disabled={disabled}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200/70 dark:border-slate-700 px-2 py-1 text-xs hover:bg-white/70 dark:hover:bg-slate-800"
-            title="Attach files or images"
-          >
-            <Paperclip className="w-4 h-4" />
-            Attach
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept={acceptStr}
-            onChange={(e) => {
-              const files = e.currentTarget.files;
-              if (files?.length) handleFiles(files);
-              // reset so selecting same file again works
-              e.currentTarget.value = "";
-            }}
-            className="hidden"
-          />
-        </div>
-      </div>
-
-      {/* Attachments */}
-      {!!attachments.length && (
-        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {attachments.map((a) => (
-            <AttachmentChip key={a.tempId || a.id} a={a} onRemove={removeAttachment} />
-          ))}
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="mt-3 flex items-center justify-between">
-        <div className="text-[11px] text-slate-500">
-          <UploadCloud className="inline w-3.5 h-3.5 mr-1" />
-          Drag & drop files here, or paste images.
-        </div>
-        <button
-          onClick={submit}
-          disabled={!canPost}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 text-white px-3 py-1.5 text-sm hover:bg-indigo-700 disabled:opacity-50"
-        >
-          Post
-        </button>
-      </div>
-
-      {/* Error toasts (inline simple) */}
-      {!!errors.length && (
-        <div className="mt-2 space-y-1">
-          {errors.map((e, i) => (
-            <div
-              key={`${e}-${i}`}
-              className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-2 py-1"
-              role="alert"
-            >
-              {e}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AttachmentChip({ a, onRemove }) {
-  if (a.kind === "image" && a.previewUrl) {
-    return (
-      <div className="relative group rounded-lg overflow-hidden border border-slate-200/70 dark:border-slate-700">
-        <img
-          src={a.previewUrl}
-          alt={a.name}
-          className="h-24 w-full object-cover"
-          loading="lazy"
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={placeholder}
+          rows={3}
+          className="w-full rounded-xl border border-border bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-[box-shadow,transform] duration-150"
+          disabled={disabled}
         />
-        <div className="absolute bottom-0 left-0 right-0 bg-black/45 text-white text-[11px] px-2 py-1 truncate">
-          {a.name} • {bytesToHuman(a.size)}
-        </div>
-        <button
-          type="button"
-          onClick={() => onRemove(a.tempId || a.id)}
-          className="absolute top-1 right-1 rounded-full bg-black/60 text-white p-1 opacity-0 group-hover:opacity-100 transition"
-          aria-label={`Remove ${a.name}`}
-          title="Remove"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    );
-  }
 
-  return (
-    <div className="relative group rounded-lg border border-slate-200/70 dark:border-slate-700 bg-white/80 dark:bg-slate-900/70 px-3 py-2">
-      <div className="flex items-center gap-2 text-sm">
-        <FileIcon className="w-4 h-4 text-slate-500" />
-        <div className="min-w-0">
-          <div className="truncate">{a.name}</div>
-          <div className="text-[11px] text-slate-500">{bytesToHuman(a.size)}</div>
+        {/* Manual mentions (optional) */}
+        {allowManualMentions && (
+          <div className="mt-2">
+            <label className="block text-[11px] text-muted mb-1">
+              Mentions (optional) — comma separated (e.g.{" "}
+              <code className="px-1 border rounded">@alice, @bob</code>)
+            </label>
+            <input
+              type="text"
+              value={mentionsInput}
+              onChange={(e) => setMentionsInput(e.target.value)}
+              placeholder="@alice, @bob"
+              className="w-full rounded-lg border border-border bg-white/90 dark:bg-slate-900/80 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-[box-shadow,transform] duration-150"
+            />
+          </div>
+        )}
+
+        {/* Attachments preview */}
+        {attachments.length > 0 && (
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {attachments.map((f) => {
+              const isImg =
+                (f.mime || "").startsWith("image/") ||
+                /\.(png|jpe?g|gif|webp|svg)$/i.test(f.url || "");
+              const pending = (f.moderationStatus || "").toLowerCase() === "pending";
+              return (
+                <div
+                  key={f.id}
+                  className={clsx(
+                    "group relative rounded-lg border border-border overflow-hidden bg-white/60 dark:bg-slate-900/60",
+                    "transition-transform duration-150 ease-out hover:scale-[1.01]"
+                  )}
+                >
+                  {/* remove button */}
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(f.id)}
+                    className="absolute top-1 right-1 z-10 rounded-md bg-black/50 text-white p-1 opacity-0 group-hover:opacity-100 transition"
+                    aria-label="Remove attachment"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+
+                  {isImg ? (
+                    <img
+                      src={f.url}
+                      alt={f.name || "attachment"}
+                      className="w-full h-28 object-cover"
+                    />
+                  ) : (
+                    <div className="h-28 grid place-items-center text-sm text-muted">
+                      {f.name || "File"}
+                    </div>
+                  )}
+
+                  {pending && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-amber-50/95 text-amber-800 text-[11px] px-2 py-1 border-t border-amber-200">
+                      Pending review
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mt-3 flex items-center justify-end">
+          <button
+            type="submit"
+            disabled={!canPost}
+            className={clsx(
+              "relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60",
+              "transition-[box-shadow,transform] duration-150 ease-out hover:-translate-y-0.5 active:translate-y-0",
+              "hover-glow",
+              justPosted && "shadow-[0_0_0_4px_var(--ring)]"
+            )}
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Posting…
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Post
+              </>
+            )}
+          </button>
         </div>
-      </div>
-      <button
-        type="button"
-        onClick={() => onRemove(a.tempId || a.id)}
-        className="absolute top-1.5 right-1.5 rounded-full p-1 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition"
-        aria-label={`Remove ${a.name}`}
-        title="Remove"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
+      </form>
     </div>
   );
 }

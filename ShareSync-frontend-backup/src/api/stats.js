@@ -1,5 +1,5 @@
 // /src/api/stats.js
-import client from './client';
+import client from "./client";
 
 // User-scoped stats (Home)
 export async function getUserStats({ range = 30 } = {}) {
@@ -9,7 +9,12 @@ export async function getUserStats({ range = 30 } = {}) {
 
 // Project-scoped stats (ProjectHome)
 export async function getProjectStats(projectId, { range = 30 } = {}) {
-  if (!projectId) throw new Error('projectId is required');
+  if (!projectId) throw new Error("projectId is required");
   const r = await client.get(`/projects/${projectId}/stats?range=${range}`);
   return r.data;
+}
+
+export async function getProjectInsights(projectId, { range = 30 } = {}) {
+  const res = await getProjectStats(projectId, { range });
+  return res?.insights || [];
 }

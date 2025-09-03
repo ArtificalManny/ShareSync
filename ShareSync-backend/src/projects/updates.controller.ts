@@ -17,10 +17,13 @@ import {
     CanEditProject,
   } from './guards/project-permission.guard';
   
+  type Visibility = 'public' | 'private';
+  
   type CreateUpdateDto = {
     text: string;
     mentions?: string[];
     files?: string[]; // previously uploaded file IDs (already moderated in /uploads)
+    visibility?: Visibility; // new: post-level visibility
   };
   
   @Controller('projects/:id/updates')
@@ -41,7 +44,7 @@ import {
      */
     @Throttle({ default: { limit: 10 } })
     @UseGuards(ProjectPermissionGuard) // then enforce project-level permission
-    @CanEditProject()                  // specifically: must be editor/owner
+    @CanEditProject() // specifically: must be editor/owner
     @Post()
     async create(
       @Param('id') projectId: string,
@@ -56,6 +59,7 @@ import {
             text: string;
             mentions: string[];
             attachments: { id: string }[];
+            visibility: Visibility;
             moderationStatus: 'allowed' | 'pending';
             createdAt: string;
             type: 'update.posted';
@@ -65,6 +69,9 @@ import {
       if (!dto || (!dto.text && (!dto.files || !dto.files.length))) {
         throw new BadRequestException('Update must include text or attachments.');
       }
+  
+      const visibility: Visibility =
+        dto.visibility === 'public' ? 'public' : 'private';
   
       // 1) Text moderation
       const textMod = await this.moderation.checkText(dto.text || '');
@@ -91,6 +98,7 @@ import {
         text: dto.text || '',
         mentions: Array.isArray(dto.mentions) ? dto.mentions : [],
         attachments: (dto.files || []).map((id) => ({ id })),
+        visibility,
         moderationStatus,
         createdAt: new Date().toISOString(),
         type: 'update.posted' as const,
@@ -100,6 +108,7 @@ import {
         kind: 'update',
         projectId,
         decision: moderationStatus === 'allowed' ? 'ALLOW' : 'REVIEW',
+        reason: textMod.reason, // optional, can be undefined
         ts: Date.now(),
       });
   

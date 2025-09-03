@@ -1,90 +1,76 @@
-// src/components/files/FileCard.jsx
-import React from 'react';
-import { Trash2, FileText, Image as ImageIcon, File } from 'lucide-react';
+// /src/components/files/FileCard.jsx
+import React from "react";
+import { Trash2, Download } from "lucide-react";
 
-/** Small helper: format bytes → human-readable */
-function fmtBytes(n = 0) {
-  const b = Number(n || 0);
-  if (b < 1024) return `${b} B`;
-  const units = ['KB', 'MB', 'GB', 'TB'];
-  let i = -1, val = b;
-  do { val /= 1024; i++; } while (val >= 1024 && i < units.length - 1);
-  return `${val.toFixed(val >= 10 ? 0 : 1)} ${units[i]}`;
-}
+export default function FileCard({
+  file,
+  onRemove,           // renamed from onDelete to match FileGrid
+  onDownload,
+  canManage = false,   // only owners can hard-delete
+}) {
+  const isImage =
+    (file?.mime || "").startsWith("image/") ||
+    /\.(png|jpe?g|gif|webp|svg)$/i.test(file?.url || "");
 
-/** Choose an icon when no thumbnail is present */
-function MimeIcon({ mime = '' }) {
-  const m = String(mime);
-  if (m.startsWith('image/')) return <ImageIcon className="w-5 h-5 text-indigo-600" />;
-  if (m.includes('pdf') || m.includes('text') || m.includes('json')) {
-    return <FileText className="w-5 h-5 text-indigo-600" />;
-  }
-  return <File className="w-5 h-5 text-indigo-600" />;
-}
+  const pending = (file?.moderationStatus || "").toLowerCase() === "pending";
 
-/**
- * Props:
- * - file: { id, url, thumbUrl?, name, size, mime, moderationStatus, createdAt }
- * - onRemove?: (fileId) => Promise|void  // called when delete clicked
- * - canEdit?: boolean                     // controls delete visibility
- */
-export default function FileCard({ file, onRemove, canEdit = false }) {
-  const { id, url, thumbUrl, name, size, mime, moderationStatus } = file || {};
-
-  const badge =
-    moderationStatus === 'pending'
-      ? 'border-amber-300 text-amber-700 bg-amber-50'
-      : moderationStatus === 'blocked'
-      ? 'border-rose-300 text-rose-700 bg-rose-50'
-      : 'border-emerald-300 text-emerald-700 bg-emerald-50';
+  const sizeLabel =
+    typeof file?.size === "number" && file.size > 0
+      ? (file.size >= 1024 * 1024
+          ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+          : `${Math.round(file.size / 1024)} KB`)
+      : (file?.mime || "");
 
   return (
-    <div className="group rounded-xl border border-border bg-surface overflow-hidden hover:shadow-sm transition-shadow">
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="block aspect-[16/10] bg-surface/60 grid place-content-center overflow-hidden"
-        title={name}
-      >
-        {thumbUrl ? (
-          <img
-            src={thumbUrl}
-            alt={name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex items-center justify-center gap-2 text-muted">
-            <MimeIcon mime={mime} />
-          </div>
-        )}
-      </a>
-
-      <div className="p-3 flex items-start gap-3">
-        <div className="mt-0.5">
-          <MimeIcon mime={mime} />
+    <div className="card group relative overflow-hidden hover-glow">
+      {isImage ? (
+        <img
+          src={file.url}
+          alt={file.name || "file"}
+          className="w-full h-28 object-cover transition-transform duration-150 group-hover:scale-[1.01]"
+        />
+      ) : (
+        <div className="h-28 grid place-items-center text-sm text-muted">
+          {file.name || "File"}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-text" title={name}>
-            {name || 'Untitled'}
+      )}
+
+      {/* Pending chip */}
+      {pending && (
+        <div className="absolute top-2 left-2 chip chip--warn text-[11px] px-2 py-0.5">
+          Pending
+        </div>
+      )}
+
+      <div className="p-2 flex items-center justify-between">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium text-text">
+            {file.name || "Untitled file"}
           </div>
-          <div className="text-xs text-muted mt-0.5">{fmtBytes(size)} • {mime || 'file'}</div>
-          <div className={`inline-flex items-center mt-2 px-2 py-0.5 rounded-full text-[11px] border ${badge}`}>
-            {moderationStatus || 'allowed'}
-          </div>
+          <div className="text-[11px] text-muted">{sizeLabel}</div>
         </div>
 
-        {canEdit && (
+        <div className="flex items-center gap-2">
           <button
-            type="button"
-            onClick={() => onRemove?.(id)}
-            className="opacity-80 hover:opacity-100 text-rose-600 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 transition-colors"
-            title="Remove file"
+            className="btn btn--ghost hover-glow p-1 rounded-md"
+            onClick={() => onDownload?.(file)}
+            title="Download"
+            aria-label={`Download ${file?.name || "file"}`}
           >
-            <Trash2 className="w-4 h-4" />
+            <Download className="w-4 h-4" />
           </button>
-        )}
+
+          {canManage && (
+            <button
+              className="btn btn--ghost hover-glow p-1 rounded-md text-danger"
+              onClick={() => onRemove?.(file?.id || file)}
+              title="Delete"
+              aria-label={`Delete ${file?.name || "file"}`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

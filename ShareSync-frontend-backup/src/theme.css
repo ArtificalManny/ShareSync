@@ -173,3 +173,175 @@ html, body, #root, .app-container {
     backdrop-filter: blur(8px);
   }
 }
+/* ========= Token utility layer (additive) ========= */
+
+/* 1) Core tokens (light) – keep names aligned with existing classes you use */
+:root {
+  --bg:            #0b0c0f05;       /* page background */
+  --surface:       #ffffff;          /* card background */
+  --text:          #0f172a;          /* primary text */
+  --muted:         #64748b;          /* secondary text */
+  --border:        #e2e8f0;          /* subtle borders */
+
+  --accent:        #4f46e5;          /* indigo-600 */
+  --accent-50:     #eef2ff;
+  --accent-100:    #e0e7ff;
+
+  --success:       #16a34a;
+  --warning:       #d97706;
+  --danger:        #e11d48;
+
+  --ring:          rgba(79,70,229,0.35);
+  --shadow:        0 8px 24px rgba(16,24,40,0.08);
+}
+
+/* 2) Dark tokens – match your current dark classes */
+:root.dark {
+  --bg:            #0b1220;
+  --surface:       #0f172a;          /* slate-900 */
+  --text:          #e5e7eb;
+  --muted:         #94a3b8;
+  --border:        #1f2937;
+
+  --accent:        #818cf8;          /* indigo-400/500 range */
+  --accent-50:     rgba(30, 27, 75, 0.35);
+  --accent-100:    rgba(30, 27, 75, 0.55);
+
+  --success:       #22c55e;
+  --warning:       #f59e0b;
+  --danger:        #fb7185;
+
+  --ring:          rgba(129,140,248,0.35);
+  --shadow:        0 10px 28px rgba(2,6,23,0.45);
+}
+
+/* 3) Short-hand helpers that map to your tokeny Tailwind-like classes */
+.bg-bg        { background: var(--bg); }
+.bg-surface   { background: var(--surface); }
+.text-text    { color: var(--text); }
+.text-muted   { color: var(--muted); }
+.border-border{ border-color: var(--border); }
+
+/* 4) Cards & rails */
+.card {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.rail {
+  background: linear-gradient(135deg, var(--accent-50), #fff 30%, var(--accent-100));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+}
+
+/* 5) Buttons (primary / outline / ghost) */
+.btn {
+  --btn-bg: var(--surface);
+  --btn-text: var(--text);
+  --btn-border: var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .375rem .75rem;
+  border-radius: .75rem;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font-size: .875rem;
+  line-height: 1.25rem;
+  transition: transform .08s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.btn:active {
+  transform: translateY(0.5px) scale(0.995);
+}
+
+/* primary */
+.btn--primary {
+  --btn-bg: var(--accent);
+  --btn-text: white;
+  --btn-border: transparent;
+}
+.btn--primary:hover { filter: brightness(0.95); }
+
+/* outline */
+.btn--outline {
+  --btn-bg: color-mix(in srgb, var(--surface) 92%, transparent);
+  --btn-text: var(--text);
+  --btn-border: var(--border);
+}
+.btn--outline:hover { background: color-mix(in srgb, var(--surface) 86%, transparent); }
+
+/* ghost (borderless) */
+.btn--ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.btn--ghost:hover { background: color-mix(in srgb, var(--surface) 86%, transparent); }
+
+/* semantic accents */
+.btn--success { --btn-bg: var(--success); --btn-text: #fff; --btn-border: transparent; }
+.btn--warning { --btn-bg: var(--warning); --btn-text: #111827; --btn-border: transparent; }
+.btn--danger  { --btn-bg: var(--danger);  --btn-text: #fff; --btn-border: transparent; }
+
+/* 6) Chips/badges */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  padding: .125rem .5rem;
+  border-radius: 9999px;
+  font-size: .75rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  color: var(--text);
+}
+
+/* 7) Subtle hover glow (used for micro-interactions later too) */
+.hover-glow {
+  transition: box-shadow .18s ease, transform .12s ease;
+}
+.hover-glow:hover {
+  box-shadow:
+    0 0 0 3px var(--ring),
+    var(--shadow);
+  transform: translateY(-1px);
+}
+
+/* 8) Reduced motion respect */
+@media (prefers-reduced-motion: reduce) {
+  .btn, .hover-glow { transition: none; }
+}
+/* --- Micro-interactions --- */
+@keyframes win-glow {
+  0%   { box-shadow: 0 0 0 0 rgba(79,70,229,.00); }
+  30%  { box-shadow: 0 0 0 6px rgba(79,70,229,.18); }
+  100% { box-shadow: 0 0 0 0 rgba(79,70,229,.00); }
+}
+.win-glow {
+  animation: win-glow 900ms var(--ease-standard);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.hover-raise {
+  transition: transform var(--dur-quick) var(--ease-standard), box-shadow var(--dur-quick) var(--ease-standard);
+}
+.hover-raise:hover { transform: translateY(-1px); box-shadow: var(--shadow-elev); }
+
+.press-shrink {
+  transition: transform 90ms ease;
+}
+.press-shrink:active { transform: translateY(1px) scale(.998); }
+
+@media (prefers-reduced-motion: reduce) {
+  .win-glow, .hover-raise, .press-shrink { animation: none !important; transform: none !important; }
+}
