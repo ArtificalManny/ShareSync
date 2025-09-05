@@ -1,4 +1,3 @@
-// /src/components/tasks/TaskSheet.jsx
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { X, PlusCircle, Save } from "lucide-react";
 import { createTask as apiCreateTask, patchTask as apiPatchTask } from "../../api/tasks";
@@ -6,20 +5,6 @@ import { createTask as apiCreateTask, patchTask as apiPatchTask } from "../../ap
 /**
  * TaskSheet
  * Right-side sheet for quick task creation and basic edit.
- *
- * Props:
- * - open: boolean
- * - onClose: () => void
- * - projectId?: string                         // required for default API calls
- * - canEdit?: boolean                          // disables form if false
- * - onCreate?: (payload) => Promise<any> | void
- * - onUpdate?: (taskId, patch) => Promise<any> | void
- * - defaultStatus?: string
- * - initialTitle?: string
- * - initialLabels?: string[]
- * - afterCreate?: (createdTask) => void
- * - afterUpdate?: (updatedTask) => void
- * - existingTask?: { _id?: string, id?: string, ... }   // when present → edit mode
  */
 export default function TaskSheet({
   open,
@@ -30,7 +15,7 @@ export default function TaskSheet({
   onUpdate,
   defaultStatus = "Not Started",
   initialTitle = "",
-  initialLabels = [],
+  initialLabels,            // no default [] here (prevents new array every render)
   afterCreate,
   afterUpdate,
   existingTask = null,
@@ -41,9 +26,13 @@ export default function TaskSheet({
   const [title, setTitle] = useState(initialTitle);
   const [status, setStatus] = useState(existingTask?.status || defaultStatus);
   const [assignee, setAssignee] = useState(existingTask?.assignee || "");
-  const [dueDate, setDueDate] = useState(existingTask?.dueDate ? existingTask.dueDate.slice(0, 10) : "");
+  const [dueDate, setDueDate] = useState(
+    existingTask?.dueDate ? existingTask.dueDate.slice(0, 10) : ""
+  );
   const [labels, setLabels] = useState(
-    (Array.isArray(existingTask?.labels) ? existingTask.labels : initialLabels).join(", ")
+    Array.isArray(existingTask?.labels)
+      ? existingTask.labels.join(", ")
+      : Array.isArray(initialLabels) ? initialLabels.join(", ") : ""
   );
   const [notes, setNotes] = useState(existingTask?.notes || "");
   const [submitting, setSubmitting] = useState(false);
@@ -52,14 +41,21 @@ export default function TaskSheet({
   const containerRef = useRef(null);
   const firstFieldRef = useRef(null);
 
+  // Stable key so the reset effect doesn't retrigger on array identity changes
+  const initialLabelsKey = useMemo(
+    () => (Array.isArray(initialLabels) ? initialLabels.join("|") : ""),
+    [initialLabels]
+  );
+
   // Reset when opened or when switching mode/task
   useEffect(() => {
     if (!open) return;
+
     if (isEdit) {
       setTitle(existingTask?.title || "");
       setStatus(existingTask?.status || defaultStatus);
       setAssignee(existingTask?.assignee || "");
-      setDueDate(existingTask?.dueDate ? existingTask.dueDate.slice(0, 10) : "");
+      setDueDate(existingTask?.dueDate ? existingTask?.dueDate.slice(0, 10) : "");
       setLabels(Array.isArray(existingTask?.labels) ? existingTask.labels.join(", ") : "");
       setNotes(existingTask?.notes || "");
     } else {
@@ -67,14 +63,16 @@ export default function TaskSheet({
       setStatus(defaultStatus);
       setAssignee("");
       setDueDate("");
-      setLabels(initialLabels.join(", "));
+      setLabels(Array.isArray(initialLabels) ? initialLabels.join(", ") : "");
       setNotes("");
     }
+
     setError("");
     setTimeout(() => firstFieldRef.current?.focus(), 10);
-  }, [open, isEdit, existingTask, initialTitle, initialLabels, defaultStatus]);
+    // use the stable key instead of the raw array
+  }, [open, isEdit, existingTask, initialTitle, defaultStatus, initialLabelsKey]);
 
-  // Esc / Cmd+Enter
+  // Esc / Cmd+Enter (scoped to window, but only acts on those two combos)
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
@@ -91,7 +89,7 @@ export default function TaskSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Focus trap
+  // Focus trap (Tab only)
   useEffect(() => {
     if (!open) return;
     const el = containerRef.current;
@@ -123,6 +121,9 @@ export default function TaskSheet({
     el.addEventListener("keydown", handleKeyDown);
     return () => el.removeEventListener("keydown", handleKeyDown);
   }, [open]);
+
+  // Stop global hotkeys from swallowing typing inside fields
+  const stopBubble = (e) => e.stopPropagation();
 
   const parsedLabels = useMemo(
     () =>
@@ -251,14 +252,16 @@ export default function TaskSheet({
           )}
 
           <div>
-            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
+            <label htmlFor="task-title" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
               Title <span className="text-rose-500">*</span>
             </label>
             <input
+              id="task-title"
               ref={firstFieldRef}
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={stopBubble}
               placeholder="e.g., Outline API tests"
               disabled={!canEdit || submitting}
               className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
@@ -270,12 +273,14 @@ export default function TaskSheet({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
+              <label htmlFor="task-status" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
                 Status
               </label>
               <select
+                id="task-status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
+                onKeyDown={stopBubble}
                 disabled={!canEdit || submitting}
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               >
@@ -287,13 +292,15 @@ export default function TaskSheet({
             </div>
 
             <div>
-              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
+              <label htmlFor="task-due" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
                 Due date
               </label>
               <input
+                id="task-due"
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
+                onKeyDown={stopBubble}
                 disabled={!canEdit || submitting}
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               />
@@ -302,13 +309,15 @@ export default function TaskSheet({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
+              <label htmlFor="task-assignee" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
                 Assignee (optional)
               </label>
               <input
+                id="task-assignee"
                 type="text"
                 value={assignee}
                 onChange={(e) => setAssignee(e.target.value)}
+                onKeyDown={stopBubble}
                 placeholder="email or name"
                 disabled={!canEdit || submitting}
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
@@ -316,13 +325,15 @@ export default function TaskSheet({
             </div>
 
             <div>
-              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
+              <label htmlFor="task-labels" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
                 Labels (comma separated)
               </label>
               <input
+                id="task-labels"
                 type="text"
                 value={labels}
                 onChange={(e) => setLabels(e.target.value)}
+                onKeyDown={stopBubble}
                 placeholder="backend, api, urgent"
                 disabled={!canEdit || submitting}
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
@@ -331,12 +342,14 @@ export default function TaskSheet({
           </div>
 
           <div>
-            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
+            <label htmlFor="task-notes" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
               Notes (optional)
             </label>
             <textarea
+              id="task-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              onKeyDown={stopBubble}
               rows={4}
               placeholder="Any context for this task…"
               disabled={!canEdit || submitting}

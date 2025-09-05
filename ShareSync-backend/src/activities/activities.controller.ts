@@ -17,7 +17,6 @@ import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { NotifyService } from '../notifications/notify.service';
 
-// NEW: permissions
 import {
   ProjectPermissionGuard,
   CanEditProject,
@@ -45,7 +44,7 @@ export class ActivitiesController {
   ) {}
 
   // POST /api/activities  (project-scoped create → must be able to EDIT the project)
-  // Guard will read projectId from body (fallbacks to params/query if present).
+  // Guard reads projectId from body (or params/query if present).
   @UseGuards(ProjectPermissionGuard)
   @CanEditProject()
   @Post()
@@ -69,12 +68,12 @@ export class ActivitiesController {
       createdAt: (created as AnyObj)?.createdAt ?? new Date().toISOString(),
     };
 
-    // Fan-out to sockets
+    // Realtime fan-out
     this.realtime.emitToProject(projectId, 'activity:new', payload);
     this.realtime.emitToProject(projectId, 'project:statsUpdated', { projectId });
     this.realtime.emitToUser(userId, 'user:statsUpdated', { userId });
 
-    // Mentions → in-app notifications (best-effort; never block the request)
+    // Mentions → in-app notifications (best-effort; never block)
     const text: string = dto?.text || '';
     const metaObj: AnyObj = (dto && typeof dto.meta === 'object' ? dto.meta : {}) || {};
     const mentionedUserIds: string[] = Array.isArray(metaObj.mentions) ? metaObj.mentions : [];
@@ -98,20 +97,20 @@ export class ActivitiesController {
             priority: 'mention',
           });
         } catch {
-          // swallow notify errors; logging can live inside NotifyService
+          // swallow notify errors; logging lives inside NotifyService
         }
       }
     }
 
     return created;
-  }
+    }
 
   // GET /api/activities?scope=user|project&projectId=&userId=&type=&range=&cursor=&limit=
-  // - user scope: just needs auth (already enforced)
+  // - user scope: needs auth (already enforced)
   // - project scope: must be able to VIEW the project
   @Get()
   @UseGuards(ProjectPermissionGuard)
-  @CanViewProject() // Guard will no-op when there's no projectId (user scope)
+  @CanViewProject() // guard no-ops when there's no projectId (user scope)
   async list(@Req() req: any, @Query() query: AnyObj) {
     const scope = ((query.scope as string) || 'user').toLowerCase();
     if (scope !== 'user' && scope !== 'project') {

@@ -6,11 +6,11 @@ import {
   getProject,
   getProjectFeed,
   postProjectUpdate,
-  createTask,
-  patchTask,
 } from "../api/projects";
-import { uploadFiles } from "../api/uploads";
+// 🔧 FIX: import task APIs from ../api/tasks
+import { createTask, patchTask } from "../api/tasks";
 
+import { uploadFiles } from "../api/uploads";
 import { getProjectStats } from "../api/stats";
 import ActivityOverTimeLive from "../components/analytics/ActivityOverTimeLive";
 
@@ -34,7 +34,6 @@ import {
 } from "lucide-react";
 import { buildPublicStatusUrl } from "../api/public";
 
-// ✅ REAL components
 import TaskSheet from "../components/tasks/TaskSheet";
 import InviteModal from "../components/project/InviteModal";
 import ProjectSettingsModal from "../components/project/ProjectSettingsModal";
@@ -283,32 +282,37 @@ export default function ProjectHome() {
 
   const tasks = useMemo(() => project?.tasks ?? [], [project]);
 
-  // ✅ Optimistic task add
-  const handleAddTask = async (title) => {
-    if (!canEdit) return; // guard
-    const optimistic = {
-      _id: `tmp-${Date.now()}`,
-      title,
-      status: "Not Started",
-      createdAt: new Date().toISOString(),
-      __optimistic: true,
-    };
-    setProject((p) => ({ ...p, tasks: [optimistic, ...(p?.tasks || [])] }));
-
-    try {
-      const created = await createTask(id, { title, status: "Not Started" });
-      setProject((p) => ({
-        ...p,
-        tasks: (p?.tasks || []).map((t) => (t._id === optimistic._id ? created : t)),
-      }));
-    } catch (e) {
-      setProject((p) => ({
-        ...p,
-        tasks: (p?.tasks || []).filter((t) => t._id !== optimistic._id),
-      }));
-      throw e;
-    }
+  // Replace your old handleAddTask with this:
+const handleAddTask = async (payload) => {
+  if (!canEdit) return;
+  const optimistic = {
+    _id: `tmp-${Date.now()}`,
+    title: payload.title,
+    status: payload.status || "Not Started",
+    assignee: payload.assignee,
+    dueDate: payload.dueDate,
+    labels: payload.labels || [],
+    notes: payload.notes,
+    createdAt: new Date().toISOString(),
+    __optimistic: true,
   };
+
+  setProject((p) => ({ ...p, tasks: [optimistic, ...(p?.tasks || [])] }));
+
+  try {
+    const created = await createTask(id, payload);
+    setProject((p) => ({
+      ...p,
+      tasks: (p?.tasks || []).map((t) => (t._id === optimistic._id ? created : t)),
+    }));
+  } catch (e) {
+    setProject((p) => ({
+      ...p,
+      tasks: (p?.tasks || []).filter((t) => t._id !== optimistic._id),
+    }));
+    throw e;
+  }
+};
 
   const handlePatchTask = async (taskId, patch) => {
     if (!canEdit) return; // guard

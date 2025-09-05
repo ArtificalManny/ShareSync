@@ -6,6 +6,8 @@ import {
     ForbiddenException,
     Injectable,
     SetMetadata,
+    Inject,
+    forwardRef,
   } from '@nestjs/common';
   import { Reflector } from '@nestjs/core';
   import { ProjectsService } from '../project.service';
@@ -21,7 +23,10 @@ import {
   export const CanEditProject = () => RequireProjectPermission('edit');
   export const CanManageProject = () => RequireProjectPermission('manage');
   
-  function roleAllows(role: 'owner' | 'member' | 'viewer' | null, needed: ProjectPermission): boolean {
+  function roleAllows(
+    role: 'owner' | 'member' | 'viewer' | null,
+    needed: ProjectPermission,
+  ): boolean {
     if (!role) return false;
     if (needed === 'view') return role === 'owner' || role === 'member' || role === 'viewer';
     if (needed === 'edit') return role === 'owner' || role === 'member';
@@ -33,6 +38,7 @@ import {
   export class ProjectPermissionGuard implements CanActivate {
     constructor(
       private readonly reflector: Reflector,
+      @Inject(forwardRef(() => ProjectsService))
       private readonly projects: ProjectsService,
     ) {}
   
@@ -45,7 +51,7 @@ import {
   
       const req = ctx.switchToHttp().getRequest();
       const userId: string | undefined = req?.user?.sub || req?.user?.id || req?.user?._id;
-      const projectId: string | undefined = req?.params?.id || req?.params?.projectId;
+      const projectId: string | undefined = req?.params?.projectId || req?.params?.id;
   
       if (!userId) throw new ForbiddenException('Not authenticated');
       if (!projectId) throw new BadRequestException('Missing project id');
@@ -66,11 +72,10 @@ import {
         throw new ForbiddenException('Insufficient permissions');
       }
   
-      // make project + role available downstream (optional)
+      // expose project + role downstream (optional)
       req.project = project;
       req.projectRole = role;
   
       return true;
     }
-  }
-  
+  }  

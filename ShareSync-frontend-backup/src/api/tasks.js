@@ -1,4 +1,3 @@
-// /src/api/tasks.js
 import client from './client';
 
 /** Create a task in a project */

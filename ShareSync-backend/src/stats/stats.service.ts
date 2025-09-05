@@ -122,7 +122,6 @@ export class StatsService {
     // 1) Streak days (consecutive days with any activity, ending today if active today)
     const dayHasActivity = new Set(acts.map(a => startOfDay(a.createdAt).toISOString()));
     let streak = 0;
-    // If today has activity, count from today backwards; if not, streak=0
     let cursor = startOfDay(now);
     if (dayHasActivity.has(cursor.toISOString())) {
       streak = 1;
@@ -211,6 +210,56 @@ export class StatsService {
         peakDayOfWeek,
         throughputChangePct,
         summary,
+      },
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  //                PUBLIC WRAPPERS (used by analytics controllers)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Wrapper expected by ProjectStatsController.
+   * Currently just delegates to computeProjectStats.
+   */
+  async getProjectStats(projectId: string, opts?: { range?: number }): Promise<ProjectStats> {
+    // `opts` is accepted for forward-compat; current compute ignores it.
+    return this.computeProjectStats(projectId);
+  }
+
+  /**
+   * Wrapper expected by UserStatsController.
+   * Provide a stable shape even if you don’t have user-level analytics yet.
+   * If a projectId is supplied, we can piggyback the project KPIs for now.
+   */
+  async getUserStats(
+    userId: string,
+    opts?: { range?: number; projectId?: string },
+  ): Promise<any> {
+    const base = {
+      userId,
+      range: opts?.range ?? 30,
+      projectId: opts?.projectId ?? null,
+    };
+
+    if (opts?.projectId) {
+      const project = await this.getProjectStats(opts.projectId, { range: opts.range });
+      return { ...base, ...project };
+    }
+
+    // Minimal, neutral defaults
+    return {
+      ...base,
+      cadence: { value: 0 },
+      throughputPerWeek: { value: 0 },
+      activeDays: { value: 0 },
+      onTimeCompletion: { value: 0 },
+      insights: {
+        streakDays: 0,
+        peakHourLocal: null,
+        peakDayOfWeek: null,
+        throughputChangePct: 0,
+        summary: [],
       },
     };
   }

@@ -1,19 +1,16 @@
-// src/analytics/project-stats.controller.ts
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt.guard';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { StatsService } from '../stats/stats.service';
 
-// Final route => /api/projects/:id/stats
-@Controller('projects')
+@Controller('analytics/project')
 export class ProjectStatsController {
   constructor(private readonly stats: StatsService) {}
 
-  @UseGuards(JwtAuthGuard)
-  @Get(':id/stats')
-  async getProjectStats(
+  @Get(':id')
+  async get(
     @Param('id') id: string,
-    @Query('range') range: '7' | '30' | '90' = '30',
+    @Query('range') range = '30',
   ) {
-    return this.stats.projectStats(id, range);
+    const r = Math.max(1, parseInt(String(range), 10) || 30);
+    return this.stats.getProjectStats(id, { range: r });
   }
 }

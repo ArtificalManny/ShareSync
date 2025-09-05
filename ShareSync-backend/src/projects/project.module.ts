@@ -1,28 +1,29 @@
 // src/projects/project.module.ts
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-
-import { ProjectController } from './project.controller';
-import { UpdatesController } from './updates.controller';
-import { InvitesController } from './invites.controller';
-
 import { ProjectsService } from './project.service';
-import { InvitesService } from './invites.service';
-
+import { ProjectController } from './project.controller';
 import { Project, ProjectSchema } from './schemas/project.schema';
 import { ProjectPermissionGuard } from './guards/project-permission.guard';
 
-import { RealtimeModule } from '../realtime/realtime.module';
-import { NotifyModule } from '../notifications/notify.module';
+// ⬇️ bring in anything that ProjectsService/guards need (examples)
+import { UserModule } from '../user/user.module';
+import { ActivitiesModule } from '../activities/activities.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Project.name, schema: ProjectSchema }]),
-    forwardRef(() => RealtimeModule),
-    NotifyModule,
+    forwardRef(() => UserModule),
+    forwardRef(() => ActivitiesModule),
   ],
-  controllers: [ProjectController, UpdatesController, InvitesController],
-  providers: [ProjectsService, InvitesService, ProjectPermissionGuard],
-  exports: [ProjectsService],
+  controllers: [ProjectController],
+  providers: [
+    ProjectsService,
+    ProjectPermissionGuard,     // ⬅️ provide the guard here
+  ],
+  exports: [
+    ProjectsService,            // ⬅️ export service
+    ProjectPermissionGuard,     // ⬅️ export guard so other modules can use it
+  ],
 })
 export class ProjectModule {}

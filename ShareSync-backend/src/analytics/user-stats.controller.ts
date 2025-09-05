@@ -1,21 +1,17 @@
-// src/analytics/user-stats.controller.ts
-import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt.guard';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { StatsService } from '../stats/stats.service';
 
-// Final route => /api/users/me/stats (global prefix 'api' applied elsewhere)
-@Controller('users')
+@Controller('analytics/user')
 export class UserStatsController {
   constructor(private readonly stats: StatsService) {}
 
-  @UseGuards(JwtAuthGuard)
-  @Get('me/stats')
-  async getMyStats(
-    @Req() req: any,
-    @Query('range') range: '7' | '30' | '90' = '30',
-    @Query('projectId') projectId?: string, // optional filter
+  @Get(':userId')
+  async get(
+    @Param('userId') userId: string,
+    @Query('range') range = '30',
+    @Query('projectId') projectId?: string,
   ) {
-    const userId = req.user?.sub || req.user?.id || req.user?._id;
-    return this.stats.userStats(userId, range, projectId);
+    const r = Math.max(1, parseInt(String(range), 10) || 30);
+    return this.stats.getUserStats(userId, { range: r, projectId });
   }
 }

@@ -13,14 +13,15 @@ import { ProfileModule } from './profile/profile.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { AnalyticsModule } from './analytics/analytics.module';
-
-// ✅ new modules we added
 import { ModerationModule } from './moderation/moderation.module';
 import { UploadsModule } from './uploads/uploads.module';
-import { NotificationsModule } from './notifications/notifications.module';
-
-// ✅ stats (new)
+// ❌ REMOVE this line if present
+// import { NotificationsModule } from './notifications/notifications.module';
 import { StatsModule } from './stats/stats.module';
+import { TasksModule } from './tasks/tasks.module';
+
+// ✅ ADD this
+import { NotifyModule } from './notifications/notify.module';
 
 import { AppController } from './app.controller';
 
@@ -29,10 +30,8 @@ import { AppController } from './app.controller';
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRoot(process.env.MONGO_URI),
 
-    // ✅ global rate limiting: 20 requests per 60s per client by default
     ThrottlerModule.forRoot([{ ttl: 60, limit: 20 }]),
 
-    // Feature modules
     AuthModule,
     UserModule,
     ProjectModule,
@@ -41,14 +40,13 @@ import { AppController } from './app.controller';
     ActivitiesModule,
     RealtimeModule,
     AnalyticsModule,
-
-    // ✅ server-side safety + uploads + notifications
     ModerationModule,
     UploadsModule,
-    NotificationsModule,
-
-    // ✅ stats/insights
     StatsModule,
+    TasksModule,
+
+    // ✅ only the notify module
+    NotifyModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
