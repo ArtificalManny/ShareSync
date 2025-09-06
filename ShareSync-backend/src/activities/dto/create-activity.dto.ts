@@ -1,12 +1,21 @@
 // src/activities/dto/create-activity.dto.ts
+import { IsString, IsOptional, IsIn } from 'class-validator';
+
 export class CreateActivityDto {
+  @IsString()
   projectId!: string;
-  type?: string;           // e.g., 'update' | 'task.create' | ...
-  text?: string;           // message
+
+  @IsString()
+  type!: string; // e.g. "update" or "update.posted"
+
+  @IsString()
+  text!: string;
+
+  @IsOptional()
+  @IsIn(['public', 'private'])
+  visibility?: 'public' | 'private';
+
+  @IsOptional()
+  // allow any meta shape
   meta?: Record<string, any>;
-  entityId?: string;
-  entityType?: string;
-  // Optional snapshots (if you have them handy)
-  user?: { id: string; name?: string; avatarUrl?: string };
-  project?: { id: string; title?: string };
 }

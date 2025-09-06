@@ -1,6 +1,5 @@
 // src/projects/guards/project-permission.guard.ts
 import {
-    BadRequestException,
     CanActivate,
     ExecutionContext,
     ForbiddenException,
@@ -47,20 +46,30 @@ import {
         ctx.getHandler(),
         ctx.getClass(),
       ]);
-      if (!perm) return true; // no permission required
+      if (!perm) return true;
   
       const req = ctx.switchToHttp().getRequest();
-      const userId: string | undefined = req?.user?.sub || req?.user?.id || req?.user?._id;
-      const projectId: string | undefined = req?.params?.projectId || req?.params?.id;
+  
+      const userId: string | undefined =
+        req?.user?.sub || req?.user?.id || req?.user?._id;
+  
+      // Accept projectId from params, body, or query
+      const projectId: string | undefined =
+        req?.params?.projectId ||
+        req?.params?.id ||
+        (typeof req?.body?.projectId === 'string' ? req.body.projectId : undefined) ||
+        (typeof req?.query?.projectId === 'string' ? req.query.projectId : undefined);
+  
+      // Not a project-scoped call → skip guard (e.g., /activities?scope=user)
+      if (!projectId) return true;
   
       if (!userId) throw new ForbiddenException('Not authenticated');
-      if (!projectId) throw new BadRequestException('Missing project id');
   
-      // member-aware lookup (owner OR listed member)
+      // Member-aware check
       const project = await this.projects.findOneForUser(userId, projectId);
       if (!project) throw new ForbiddenException('No access to this project');
   
-      // resolve role (owner, member.role, or viewer if present)
+      // Derive role
       let role: 'owner' | 'member' | 'viewer' | null = null;
       if (String(project.userId) === String(userId)) role = 'owner';
       else if (Array.isArray(project.members)) {
@@ -72,10 +81,11 @@ import {
         throw new ForbiddenException('Insufficient permissions');
       }
   
-      // expose project + role downstream (optional)
+      // Optional: expose downstream
       req.project = project;
       req.projectRole = role;
   
       return true;
     }
-  }  
+  }
+  
