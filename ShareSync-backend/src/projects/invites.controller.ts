@@ -12,11 +12,17 @@ import {
   } from '@nestjs/common';
   import { JwtAuthGuard } from '../auth/jwt-auth.guard';
   import { InvitesService } from './invites.service';
-  import { ProjectPermissionGuard, CanManageProject } from './guards/project-permission.guard';
+  import {
+    ProjectPermissionGuard,
+    CanManageProject,
+  } from './guards/project-permission.guard';
   
   type InviteCreateDto = { email: string; role?: 'member' | 'viewer' };
   type InviteAcceptDto = { token: string };
   
+  /**
+   * Project-scoped routes (create/list/revoke + accept-with-id)
+   */
   @Controller('projects/:id/invites')
   export class InvitesController {
     constructor(private readonly invites: InvitesService) {}
@@ -66,3 +72,25 @@ import {
     }
   }
   
+  /**
+   * Global accept route for magic links: POST /invites/accept
+   * (mirrors the project-scoped accept above, but reads projectId from body)
+   */
+  @Controller('invites')
+  export class GlobalInvitesController {
+    constructor(private readonly invites: InvitesService) {}
+  
+    @UseGuards(JwtAuthGuard)
+    @Post('accept')
+    async accept(@Req() req: any, @Body() body: { projectId: string; token: string }) {
+      const userId = req?.user?.sub || req?.user?.id || req?.user?._id;
+      const email = req?.user?.email || '';
+      if (!userId) throw new BadRequestException('Unauthorized');
+      const projectId = String(body?.projectId || '').trim();
+      const token = String(body?.token || '').trim();
+      if (!projectId) throw new BadRequestException('Missing projectId');
+      if (!token) throw new BadRequestException('Missing invite token');
+      const out = await this.invites.acceptInvite(projectId, token, String(userId), email);
+      return { ok: true, members: out.members };
+    }
+  }  

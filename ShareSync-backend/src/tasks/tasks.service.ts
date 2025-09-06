@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
-import { Task, TaskDocument } from './schemas/task.schema';
+import { Task, TaskDocument, TaskStatus } from './schemas/task.schema';
 
 export type CreateTaskDto = {
   title: string;
-  status?: 'Not Started' | 'In Progress' | 'Blocked' | 'Done';
+  status?: TaskStatus;
   description?: string;
   dueDate?: string | Date | null;
-  assignee?: string;
+  assigneeId?: string;
   labels?: string[];
   notes?: string;
 };
@@ -25,7 +25,7 @@ export class TasksService {
       status: dto.status || 'Not Started',
       description: dto.description ?? '',
       dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
-      assignee: dto.assignee,
+      assigneeId: dto.assigneeId,
       labels: Array.isArray(dto.labels) ? dto.labels : [],
       notes: dto.notes,
       projectId,
@@ -42,7 +42,6 @@ export class TasksService {
       .limit(Math.min(200, Math.max(1, limit)));
 
     if (cursor && Types.ObjectId.isValid(cursor)) {
-      // naive cursor by _id for descending createdAt
       find.where({ _id: { $lt: new Types.ObjectId(cursor) } });
     }
 
@@ -63,8 +62,8 @@ export class TasksService {
       update.dueDate = patch.dueDate ? new Date(patch.dueDate as any) : undefined;
     }
 
-    if (typeof patch.assignee === 'string' || patch.assignee === null) {
-      update.assignee = patch.assignee || undefined;
+    if (typeof patch.assigneeId === 'string' || patch.assigneeId === null) {
+      update.assigneeId = patch.assigneeId || undefined;
     }
 
     if (Array.isArray(patch.labels)) update.labels = patch.labels;

@@ -26,9 +26,12 @@ export class InvitesService {
   }
 
   private assertOwnerOrThrow(project: Project, actingUserId: string) {
-    const isOwner = String(project.userId) === String(actingUserId) ||
+    const isOwner =
+      String(project.userId) === String(actingUserId) ||
       (Array.isArray(project.members) &&
-       project.members.some(m => m.userId && String(m.userId) === String(actingUserId) && m.role === 'owner'));
+        project.members.some(
+          (m) => m.userId && String(m.userId) === String(actingUserId) && m.role === 'owner',
+        ));
     if (!isOwner) throw new ForbiddenException('Only the owner can manage invites');
   }
 
@@ -50,17 +53,18 @@ export class InvitesService {
     if (!['member', 'viewer'].includes(role)) role = 'member';
 
     // If already a member, bail early
-    const alreadyMember = (doc.members || []).some(m =>
-      (m.email && normalizeEmail(m.email) === inviteEmail) ||
-      (m.userId && String(m.userId))
+    const alreadyMember = (doc.members || []).some(
+      (m) =>
+        (m.email && normalizeEmail(m.email) === inviteEmail) ||
+        !!m.userId, // if userId exists it's already a registered member entry
     );
     if (alreadyMember) {
       throw new BadRequestException('User is already a member of this project');
     }
 
     // Prevent duplicate pending invite to same email
-    const pending = (doc.invites || []).find(i =>
-      i.status === 'pending' && normalizeEmail(i.email) === inviteEmail,
+    const pending = (doc.invites || []).find(
+      (i) => i.status === 'pending' && normalizeEmail(i.email) === inviteEmail,
     );
     if (pending) {
       return { invite: pending };
@@ -83,15 +87,18 @@ export class InvitesService {
     doc.invites = [...(doc.invites || []), invite];
     await doc.save();
 
-    // Optional: send email/stub
+    // Optional email (stub logs via NotifyService)
     try {
       await this.notify.queueEmail({
+        // @ts-ignore queueEmail signature allows any in our stub
         to: inviteEmail,
         subject: `You're invited to join "${doc.title}" on ShareSync`,
         html: `
-          <p>You were invited to the project <b>${doc.title}</b> as a <b>${role}</b>.</p>
-          <p>Click to accept: <a href="${process.env.APP_ORIGIN || 'http://localhost:5173'}/accept-invite?projectId=${doc._id}&token=${token}">Accept invite</a></p>
-          <p>If you didn’t expect this, you can ignore it.</p>
+          <div style="font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif">
+            <p>You were invited to the project <b>${doc.title}</b> as a <b>${role}</b>.</p>
+            <p>Click to accept: <a href="${process.env.APP_ORIGIN || 'http://localhost:5173'}/accept-invite?projectId=${doc._id}&token=${token}">Accept invite</a></p>
+            <p>If you didn’t expect this, you can ignore it.</p>
+          </div>
         `,
       } as any);
     } catch {
@@ -112,7 +119,7 @@ export class InvitesService {
     const doc = await this.projectModel.findById(projectId).exec();
     if (!doc) throw new NotFoundException('Project not found');
 
-    const inv = (doc.invites || []).find(i => i.token === token);
+    const inv = (doc.invites || []).find((i) => i.token === token);
     if (!inv) throw new NotFoundException('Invite not found');
     if (inv.status !== 'pending') throw new BadRequestException(`Invite is ${inv.status}`);
     if (inv.expiresAt && inv.expiresAt.getTime() < Date.now()) {
@@ -122,9 +129,10 @@ export class InvitesService {
     }
 
     // If the user is already member, mark accepted and return
-    const alreadyMember = (doc.members || []).some(m => m.userId && String(m.userId) === String(acceptUserId));
+    const alreadyMember = (doc.members || []).some(
+      (m) => m.userId && String(m.userId) === String(acceptUserId),
+    );
     if (!alreadyMember) {
-      // Add new member using invite role
       doc.members = [
         ...(doc.members || []),
         {
@@ -140,10 +148,10 @@ export class InvitesService {
     inv.acceptedByUserId = String(acceptUserId);
     await doc.save();
 
-    // Fan-out: members updated
+    // Realtime: broadcast members update
     this.realtime.emitToProject(String(doc._id), 'project:membersUpdated', {
       projectId: String(doc._id),
-      members: (doc.members || []).map(m => ({
+      members: (doc.members || []).map((m) => ({
         userId: m.userId,
         email: m.email,
         role: m.role,
@@ -160,7 +168,7 @@ export class InvitesService {
     const doc = await this.projectModel.findById(projectId).lean();
     if (!doc) throw new NotFoundException('Project not found');
     this.assertOwnerOrThrow(doc as any, actingUserId);
-    return (doc.invites || []).map(i => ({
+    return (doc.invites || []).map((i) => ({
       email: i.email,
       role: i.role,
       status: i.status,
@@ -177,7 +185,7 @@ export class InvitesService {
     if (!doc) throw new NotFoundException('Project not found');
     this.assertOwnerOrThrow(doc, actingUserId);
 
-    const inv = (doc.invites || []).find(i => i.token === token);
+    const inv = (doc.invites || []).find((i) => i.token === token);
     if (!inv) throw new NotFoundException('Invite not found');
 
     inv.status = 'revoked';

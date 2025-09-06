@@ -705,7 +705,7 @@ const handleAddTask = async (payload) => {
         onClose={() => setShowTaskSheet(false)}
         onCreate={handleAddTask}
       />
-      <InviteModal open={showInvite} onClose={() => setShowInvite(false)} />
+      <InviteModal open={showInvite} onClose={() => setShowInvite(false)} projectId={project?._id}/>
       <ProjectSettingsModal
         open={showSettings}
         onClose={() => setShowSettings(false)}

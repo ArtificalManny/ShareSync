@@ -38,10 +38,59 @@
   }
   
   /* per-surface accent overrides e.g. data-accent="emerald" */
-  [data-accent="emerald"] {
-    --accent:  5 150 105;
+  [data-accent="emerald"] { --accent:  5 150 105; }
+  [data-accent="rose"]    { --accent: 225 29 72; }
+  [data-accent="sky"]     { --accent: 2 132 199; }
+  [data-accent="amber"]   { --accent: 217 119 6; }
+  
+  /* =========================================================
+     Files: status badges + pending pulse ring
+     ========================================================= */
+  
+  /* tiny badges that sit on cards (top-left) */
+  .ss-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    font-size: 10px;
+    line-height: 1;
+    padding: 4px 6px;
+    border-radius: 999px;
+    backdrop-filter: saturate(1.2) blur(4px);
+    border: 1px solid transparent;
   }
-  [data-accent="rose"]   { --accent: 225 29 72; }
-  [data-accent="sky"]    { --accent: 2 132 199; }
-  [data-accent="amber"]  { --accent: 217 119 6; }
+  
+  .ss-badge--pending {
+    color: rgb(var(--ring));
+    background: rgb(199 210 254 / 0.6); /* indigo-200/60 */
+    border-color: rgb(var(--ring) / 0.3);
+  }
+  
+  .ss-badge--approved,
+  .ss-badge--allowed {
+    color: rgb(6 95 70);                   /* emerald-800ish */
+    background: rgb(167 243 208 / 0.5);    /* emerald-200/50 */
+    border-color: rgb(16 185 129 / 0.3);   /* emerald-500/30 */
+  }
+  
+  .ss-badge--blocked {
+    color: rgb(155 28 28);                 /* rose-900ish */
+    background: rgb(254 205 211 / 0.55);   /* rose-200/55 */
+    border-color: rgb(244 63 94 / 0.35);   /* rose-500/35 */
+  }
+  
+  /* animated ring that indicates “processing/pending” */
+  @keyframes ss-pulse-ring {
+    0%   { transform: scale(0.9); opacity: 0.7; }
+    70%  { transform: scale(1.2); opacity: 0.15; }
+    100% { transform: scale(1.2); opacity: 0; }
+  }
+  .ss-pulse-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    box-shadow: 0 0 0 2px rgb(var(--ring) / 0.35);
+    animation: ss-pulse-ring 1.6s ease-out infinite;
+    pointer-events: none;
+  }
   

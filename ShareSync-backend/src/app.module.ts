@@ -1,4 +1,3 @@
-// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -15,13 +14,13 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { UploadsModule } from './uploads/uploads.module';
-// ❌ REMOVE this line if present
-// import { NotificationsModule } from './notifications/notifications.module';
 import { StatsModule } from './stats/stats.module';
 import { TasksModule } from './tasks/tasks.module';
 
-// ✅ ADD this
+// ✅ keep only the new notify module
 import { NotifyModule } from './notifications/notify.module';
+// ✅ add the files module
+import { FilesModule } from './files/files.module';
 
 import { AppController } from './app.controller';
 
@@ -45,8 +44,8 @@ import { AppController } from './app.controller';
     StatsModule,
     TasksModule,
 
-    // ✅ only the notify module
     NotifyModule,
+    FilesModule, // ✅ now wired
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -1,33 +1,65 @@
-// src/api/files.js
 import client from './client';
 
 /**
- * Link one or more already-uploaded files to a project.
- * Backend route: POST /projects/:projectId/files
- *
- * Each file: { url, thumbUrl?, name, size, mime, moderationStatus? }
+ * GET /projects/:projectId/files
+ * Supports cursor pagination.
+ * Returns { items, nextCursor }
  */
-export async function linkFilesToProject(projectId, files) {
+export async function listFiles(projectId, { cursor = null, limit = 20 } = {}) {
   if (!projectId) throw new Error('projectId is required');
+  const { data } = await client.get(`/projects/${projectId}/files`, {
+    params: {
+      cursor: cursor || undefined,
+      limit: Number(limit) || undefined,
+    },
+  });
+  // service returns { items, nextCursor }
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return { items, nextCursor: data?.nextCursor || null };
+}
 
-  // New controller reads projectId from the URL param, not from the body.
-  const payload = Array.isArray(files) ? { files } : { file: files };
+/**
+ * POST /projects/:projectId/files
+ * Link one or many already-uploaded files (use server’s shape).
+ *
+ * Each file should include, at minimum:
+ *  - storageKey (required)
+ *  - url? / thumbKey? / thumbUrl?
+ *  - name, size, mime, kind?
+ *  - status? ('pending'|'approved'|'blocked')
+ *  - moderation? ({ reason?, tags? })
+ *
+ * Accepts either a single object or an array.
+ * Returns created doc(s).
+ */
+export async function createFiles(projectId, files) {
+  if (!projectId) throw new Error('projectId is required');
+  if (!files) throw new Error('files payload is required');
+
+  const norm = (f) => ({
+    storageKey: f.storageKey,            // required
+    url: f.url,
+    thumbKey: f.thumbKey,
+    thumbUrl: f.thumbUrl,
+    name: f.name,
+    size: f.size,
+    mime: f.mime,
+    kind: f.kind,                        // 'image' | 'video' | 'doc' | 'audio' | 'other'
+    status: f.status,                    // optional
+    moderation: f.moderation,            // optional
+  });
+
+  const payload = Array.isArray(files)
+    ? { files: files.map(norm) }
+    : { file: norm(files) };
 
   const { data } = await client.post(`/projects/${projectId}/files`, payload);
-  return data; // service returns created doc(s)
+  return data; // array or object depending on input
 }
 
-/** List files for a project (role ≥ viewer)
- * Backend route: GET /projects/:projectId/files
- */
-export async function listFiles(projectId) {
-  if (!projectId) throw new Error('projectId is required');
-  const { data } = await client.get(`/projects/${projectId}/files`);
-  return Array.isArray(data) ? data : [];
-}
-
-/** Delete a file (role = owner)
- * Backend route: DELETE /projects/:projectId/files/:fileId
+/**
+ * DELETE /projects/:projectId/files/:fileId
+ * Owner-only by default (guarded by @CanManageProject)
  */
 export async function deleteFile(projectId, fileId) {
   if (!projectId) throw new Error('projectId is required');

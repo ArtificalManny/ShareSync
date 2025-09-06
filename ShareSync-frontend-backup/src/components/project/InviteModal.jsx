@@ -1,18 +1,34 @@
 // /src/components/project/InviteModal.jsx
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import client from "../../api/client";
+import { sendInvite, listInvites, revokeInvite } from "../../api/invite";
 
-export default function InviteModal({
-  open,
-  onClose,
-  projectId,
-}) {
+export default function InviteModal({ open, onClose, projectId }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("member"); // 'member' | 'viewer'
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
+  const [pending, setPending] = useState([]);
+  const [loadingList, setLoadingList] = useState(false);
+
+  const canSubmit = projectId && String(email || "").trim().length > 3;
+
+  const loadInvites = async () => {
+    if (!projectId) return;
+    setLoadingList(true);
+    setErr("");
+    try {
+      const rows = await listInvites(projectId);
+      const arr = Array.isArray(rows) ? rows : [];
+      setPending(arr);
+    } catch (e) {
+      // list is optional; surface softly
+      console.debug("[InviteModal] listInvites error", e);
+    } finally {
+      setLoadingList(false);
+    }
+  };
 
   useEffect(() => {
     if (!open) {
@@ -21,8 +37,12 @@ export default function InviteModal({
       setSubmitting(false);
       setErr("");
       setOk("");
+      setPending([]);
+      return;
     }
-  }, [open]);
+    loadInvites();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, projectId]);
 
   if (!open) return null;
 
@@ -30,21 +50,33 @@ export default function InviteModal({
     e.preventDefault();
     setErr(""); setOk("");
     const cleaned = String(email || "").trim().toLowerCase();
-    if (!cleaned || !projectId) {
+    if (!projectId || !cleaned) {
       setErr("Please enter an email.");
       return;
     }
     setSubmitting(true);
     try {
-      await client.post(`/projects/${projectId}/invites`, { email: cleaned, role });
+      await sendInvite(projectId, { email: cleaned, role });
       setOk("Invite sent.");
-      // Don’t close immediately; give visual confirmation
-      setTimeout(() => onClose?.(), 800);
+      setEmail("");
+      await loadInvites();
+      // keep modal open for confirmation
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || "Failed to send invite.";
       setErr(String(msg));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onRevoke = async (token) => {
+    if (!projectId || !token) return;
+    try {
+      await revokeInvite(projectId, token);
+      await loadInvites();
+    } catch (e) {
+      const msg = e?.response?.data?.message || e?.message || "Failed to revoke invite.";
+      setErr(String(msg));
     }
   };
 
@@ -56,13 +88,13 @@ export default function InviteModal({
         aria-hidden="true"
       />
       <div
-        className="fixed z-50 inset-x-4 top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(520px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
+        className="fixed z-50 inset-x-4 top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(560px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-label="Invite teammate"
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h3 className="text-sm font-semibold text-text">Invite teammate</h3>
+          <h3 className="text-sm font-semibold text-text">Invite teammates</h3>
           <button
             onClick={onClose}
             className="rounded-lg p-1.5 hover:bg-surface"
@@ -73,29 +105,31 @@ export default function InviteModal({
         </div>
 
         <form onSubmit={onSubmit} className="p-4 space-y-4">
-          <div>
-            <label className="block text-xs text-muted mb-1">Email</label>
-            <input
-              type="email"
-              inputMode="email"
-              placeholder="teammate@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
-              required
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="md:col-span-2">
+              <label className="block text-xs text-muted mb-1">Email</label>
+              <input
+                type="email"
+                inputMode="email"
+                placeholder="teammate@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs text-muted mb-1">Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
-            >
-              <option value="member">Member – can edit</option>
-              <option value="viewer">Viewer – read-only</option>
-            </select>
+            <div>
+              <label className="block text-xs text-muted mb-1">Role</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+              >
+                <option value="member">Member – can edit</option>
+                <option value="viewer">Viewer – read-only</option>
+              </select>
+            </div>
           </div>
 
           {err && (
@@ -116,20 +150,48 @@ export default function InviteModal({
               className="rounded-lg border border-border px-3 py-2 text-sm"
               disabled={submitting}
             >
-              Cancel
+              Close
             </button>
             <button
               type="submit"
               className="rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-60"
-              disabled={submitting}
+              disabled={submitting || !canSubmit}
             >
               {submitting ? "Sending…" : "Send invite"}
             </button>
           </div>
         </form>
 
-        <div className="px-4 pb-4 text-[11px] text-muted">
-          Invites expire in 30 days. Members can edit; viewers are read-only.
+        <div className="px-4 pb-4">
+          <h4 className="text-xs font-semibold text-muted mb-2">Pending invites</h4>
+          <div className="rounded-xl border border-border divide-y divide-border">
+            {loadingList ? (
+              <div className="p-3 text-sm text-muted">Loading…</div>
+            ) : pending?.length ? (
+              pending.map((i) => (
+                <div key={`${i.email}-${i.createdAt}`} className="flex items-center justify-between px-3 py-2">
+                  <div className="text-sm">
+                    <span className="font-medium">{i.email}</span>{" "}
+                    <span className="text-muted">· {i.role}</span>{" "}
+                    <span className="text-muted">· {i.status}</span>
+                  </div>
+                  {i.status === "pending" && (
+                    <button
+                      className="text-xs rounded-md px-2 py-1 border border-border hover:bg-surface"
+                      onClick={() => onRevoke(i.token)}
+                    >
+                      Revoke
+                    </button>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="p-3 text-sm text-muted">No pending invites.</div>
+            )}
+          </div>
+          <p className="mt-2 text-[11px] text-muted">
+            Invites expire in 30 days. Members can edit; viewers are read-only.
+          </p>
         </div>
       </div>
     </>

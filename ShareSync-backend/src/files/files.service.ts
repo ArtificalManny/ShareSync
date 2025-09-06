@@ -1,20 +1,25 @@
-// src/files/files.service.ts
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
-import { File, FileDocument, ModerationStatus } from './schemas/file.schema';
+import { File, FileDocument, FileStatus } from './schemas/file.schema';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 type CreateFileInput = {
-  url: string;
+  storageKey: string;
+  url?: string;
+  thumbKey?: string;
   thumbUrl?: string;
   name: string;
   size: number;
   mime: string;
+  kind?: 'image' | 'video' | 'doc' | 'audio' | 'other';
   projectId: string;
-  moderationStatus?: ModerationStatus;
+  status?: FileStatus; // defaults to 'approved' (or set 'pending' if moderation pipeline)
+  moderation?: { reason?: string; tags?: string[] };
 };
+
+type ListOpts = { cursor?: string | null; limit?: number | null };
 
 @Injectable()
 export class FilesService {
@@ -24,7 +29,7 @@ export class FilesService {
     private readonly realtime: RealtimeGateway,
   ) {}
 
-  /** Get role of a user in a project ('owner' | 'member' | 'viewer' | null) */
+  /** Resolve a user's role in a project. */
   private async getUserRole(projectId: string, userId: string): Promise<'owner' | 'member' | 'viewer' | null> {
     if (!Types.ObjectId.isValid(projectId)) return null;
     const proj = await this.projectModel
@@ -50,19 +55,44 @@ export class FilesService {
     }
   }
 
+  /** Shape returned to the FE */
+  private toPublic(d: File | (File & { _id?: any })) {
+    const anyd: any = typeof (d as any).toObject === 'function' ? (d as any).toObject() : d;
+    return {
+      id: String(anyd._id ?? ''),
+      storageKey: anyd.storageKey,
+      url: anyd.url,
+      thumbKey: anyd.thumbKey,
+      thumbUrl: anyd.thumbUrl,
+      name: anyd.name,
+      size: Number(anyd.size || 0),
+      mime: anyd.mime,
+      kind: anyd.kind,
+      projectId: anyd.projectId,
+      uploaderId: anyd.uploaderId,
+      status: anyd.status as FileStatus,
+      moderation: anyd.moderation || undefined,
+      createdAt: anyd.createdAt,
+    };
+  }
+
   /** Create a single file record and emit realtime. */
   async createOne(input: CreateFileInput, actingUserId: string) {
     await this.assertCanEdit(input.projectId, actingUserId);
 
     const doc = await this.fileModel.create({
+      storageKey: input.storageKey,
       url: input.url,
+      thumbKey: input.thumbKey,
       thumbUrl: input.thumbUrl,
       name: input.name,
       size: input.size,
       mime: input.mime,
+      kind: input.kind || 'other',
       projectId: input.projectId,
-      userId: actingUserId,
-      moderationStatus: input.moderationStatus ?? 'allowed',
+      uploaderId: actingUserId,
+      status: input.status ?? 'approved',
+      moderation: input.moderation,
     });
 
     // Broadcast best-effort
@@ -71,7 +101,7 @@ export class FilesService {
         projectId: input.projectId,
         files: [this.toPublic(doc)],
       });
-    } catch {/* ignore */}
+    } catch { /* ignore */ }
 
     return this.toPublic(doc);
   }
@@ -82,14 +112,18 @@ export class FilesService {
 
     const docs = await this.fileModel.insertMany(
       (items || []).map((i) => ({
+        storageKey: i.storageKey,
         url: i.url,
+        thumbKey: i.thumbKey,
         thumbUrl: i.thumbUrl,
         name: i.name,
         size: i.size,
         mime: i.mime,
+        kind: i.kind || 'other',
         projectId,
-        userId: actingUserId,
-        moderationStatus: i.moderationStatus ?? 'allowed',
+        uploaderId: actingUserId,
+        status: i.status ?? 'approved',
+        moderation: i.moderation,
       })),
       { ordered: false },
     );
@@ -97,16 +131,34 @@ export class FilesService {
     const payload = docs.map((d) => this.toPublic(d));
     try {
       this.realtime.emitToProject(projectId, 'project:filesAdded', { projectId, files: payload });
-    } catch {/* ignore */}
+    } catch { /* ignore */ }
 
     return payload;
   }
 
-  async listByProject(projectId: string, actingUserId: string) {
+  /** Paginated list by project (cursor = last seen _id; descending by created). */
+  async listByProject(projectId: string, actingUserId: string, opts: ListOpts = {}) {
     await this.assertCanView(projectId, actingUserId);
+
+    const limit = Math.min(Math.max(Number(opts.limit ?? 20), 1), 100);
     const q: FilterQuery<FileDocument> = { projectId };
-    const docs = await this.fileModel.find(q).sort({ createdAt: -1 }).lean();
-    return docs.map((d) => this.toPublic(d));
+    // use _id cursor pagination (newest first)
+    if (opts.cursor && Types.ObjectId.isValid(String(opts.cursor))) {
+      q._id = { $lt: new Types.ObjectId(String(opts.cursor)) };
+    }
+
+    const docs = await this.fileModel
+      .find(q)
+      .sort({ _id: -1 })
+      .limit(limit + 1)
+      .lean();
+
+    const hasMore = docs.length > limit;
+    const slice = hasMore ? docs.slice(0, limit) : docs;
+    const items = slice.map((d) => this.toPublic(d as any));
+    const nextCursor = hasMore ? String(slice[slice.length - 1]._id) : null;
+
+    return { items, nextCursor };
   }
 
   async remove(fileId: string, actingUserId: string) {
@@ -118,31 +170,27 @@ export class FilesService {
 
     await this.fileModel.deleteOne({ _id: doc._id });
 
-    // Optionally broadcast removal (if you add a listener)
+    // Optionally broadcast removal (if the FE listens)
     try {
       this.realtime.emitToProject(doc.projectId, 'project:filesRemoved', {
         projectId: doc.projectId,
         fileIds: [String(doc._id)],
       });
-    } catch {/* ignore */}
+    } catch { /* ignore */ }
 
     return { ok: true };
   }
 
-  /** Presentation shape for FE */
-  private toPublic(d: File | (File & { _id?: any })) {
-    const anyd: any = typeof (d as any).toObject === 'function' ? (d as any).toObject() : d;
-    return {
-      id: String(anyd._id ?? ''),
-      url: anyd.url,
-      thumbUrl: anyd.thumbUrl,
-      name: anyd.name,
-      size: Number(anyd.size || 0),
-      mime: anyd.mime,
-      projectId: anyd.projectId,
-      userId: anyd.userId,
-      moderationStatus: anyd.moderationStatus as ModerationStatus,
-      createdAt: anyd.createdAt,
-    };
+  /** Optional: moderation status update */
+  async updateStatus(fileId: string, status: FileStatus, reason?: string) {
+    if (!Types.ObjectId.isValid(fileId)) throw new NotFoundException('File not found');
+    const doc = await this.fileModel.findById(fileId);
+    if (!doc) throw new NotFoundException('File not found');
+
+    doc.status = status;
+    doc.moderation = { ...(doc.moderation || {}), reason };
+    await doc.save();
+
+    return this.toPublic(doc);
   }
 }

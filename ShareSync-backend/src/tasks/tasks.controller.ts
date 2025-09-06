@@ -19,7 +19,7 @@ import {
 } from '../projects/guards/project-permission.guard';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 
-// 🔧 Support both param names to avoid any mismatch
+// Support both param names (:projectId or :id)
 @Controller(['projects/:projectId/tasks', 'projects/:id/tasks'])
 @UseGuards(JwtAuthGuard, ProjectPermissionGuard)
 export class TasksController {

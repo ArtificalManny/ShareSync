@@ -48,6 +48,7 @@ export class Project {
   // Owner (legacy field; also duplicated in members[0] with role=owner)
   @Prop({ required: true }) userId: string;
 
+  // ✉️ Invites
   @Prop({
     type: [{
       email: { type: String, required: true },
