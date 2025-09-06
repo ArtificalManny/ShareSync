@@ -1,4 +1,3 @@
-// /src/pages/ProjectHome.jsx
 import React, { useEffect, useMemo, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
@@ -7,7 +6,6 @@ import {
   getProjectFeed,
   postProjectUpdate,
 } from "../api/projects";
-// 🔧 FIX: import task APIs from ../api/tasks
 import { createTask, patchTask } from "../api/tasks";
 
 import { uploadFiles } from "../api/uploads";
@@ -164,7 +162,7 @@ export default function ProjectHome() {
 
       setFeed((prev) => ({
         items: dedupeById(cursor ? [...prev.items, ...items] : items),
-        nextCursor, // ✅ keep this
+        nextCursor,
       }));
     } catch (e) {
       console.error("[ProjectHome] feed load error", e);
@@ -198,19 +196,17 @@ export default function ProjectHome() {
           // Optionally fetch fresh KPIs
         }
       },
-      // members updated
       "project:membersUpdated": (payload) => {
         if (String(payload?.projectId) === String(id)) {
           setProject((p) => ({ ...p, members: payload.members || p?.members || [] }));
         }
       },
-      // files added
       "project:filesAdded": (payload) => {
         if (String(payload?.projectId) === String(id) && Array.isArray(payload?.files)) {
           setFiles((prev) => dedupeById([...payload.files, ...prev]));
         }
       },
-      // task created
+      // tasks
       "tasks:created": (payload) => {
         if (String(payload?.projectId) === String(id) && payload?.task) {
           setProject((p) => ({ ...p, tasks: [payload.task, ...(p?.tasks || [])] }));
@@ -236,13 +232,14 @@ export default function ProjectHome() {
 
   // Composer (string or {text, attachments[], mentions?, visibility?})
   const handlePostUpdate = async (payload) => {
-    if (!canEdit) return; // guard
+    if (!canEdit) return;
     const text = typeof payload === "string" ? payload : payload?.text || "";
     const attachments = typeof payload === "string" ? [] : payload?.attachments || [];
     const mentions = Array.isArray(payload?.mentions) ? payload.mentions : [];
     const visibility = (payload && payload.visibility) === "public" ? "public" : "private";
     if (!text.trim() && attachments.length === 0) return;
 
+    // tiny optimistic UI for updates only
     const optimistic = {
       _id: `tmp-${Date.now()}`,
       type: "update.posted",
@@ -264,14 +261,13 @@ export default function ProjectHome() {
         mentions,
         visibility,
         files: attachments.map((a) => a.id || a.tempId).filter(Boolean),
-        clientTempId: optimistic._id, // harmless if server ignores
+        clientTempId: optimistic._id,
       });
       setFeed((prev) => ({
         ...prev,
         items: prev.items.map((it) => (it._id === optimistic._id ? created : it)),
       }));
     } catch {
-      // roll back optimistic
       setFeed((prev) => ({
         ...prev,
         items: prev.items.filter((it) => it._id !== optimistic._id),
@@ -282,40 +278,15 @@ export default function ProjectHome() {
 
   const tasks = useMemo(() => project?.tasks ?? [], [project]);
 
-  // Replace your old handleAddTask with this:
-const handleAddTask = async (payload) => {
-  if (!canEdit) return;
-  const optimistic = {
-    _id: `tmp-${Date.now()}`,
-    title: payload.title,
-    status: payload.status || "Not Started",
-    assignee: payload.assignee,
-    dueDate: payload.dueDate,
-    labels: payload.labels || [],
-    notes: payload.notes,
-    createdAt: new Date().toISOString(),
-    __optimistic: true,
+  // ✅ API-backed create (no local optimistic placeholder)
+  const handleAddTask = async (payload) => {
+    if (!canEdit) return;
+    const created = await createTask(id, payload);
+    setProject((p) => ({ ...p, tasks: [created, ...(p?.tasks || [])] }));
   };
 
-  setProject((p) => ({ ...p, tasks: [optimistic, ...(p?.tasks || [])] }));
-
-  try {
-    const created = await createTask(id, payload);
-    setProject((p) => ({
-      ...p,
-      tasks: (p?.tasks || []).map((t) => (t._id === optimistic._id ? created : t)),
-    }));
-  } catch (e) {
-    setProject((p) => ({
-      ...p,
-      tasks: (p?.tasks || []).filter((t) => t._id !== optimistic._id),
-    }));
-    throw e;
-  }
-};
-
   const handlePatchTask = async (taskId, patch) => {
-    if (!canEdit) return; // guard
+    if (!canEdit) return;
     const updated = await patchTask(id, taskId, patch);
     setProject((p) => ({
       ...p,
@@ -427,7 +398,6 @@ const handleAddTask = async (payload) => {
     );
   };
 
-  // Styles for disabled buttons
   const disabledBtn =
     "opacity-60 cursor-not-allowed hover:bg-transparent hover:opacity-60";
 
@@ -466,7 +436,7 @@ const handleAddTask = async (payload) => {
             onClick={() => canManage && setShowSettings(true)}
             disabled={!canManage}
             className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface ${!canManage ? disabledBtn : ""}`}
-            title={!canManage ? "Only owners can manage settings" : "Settings"}
+            title="Settings"
           >
             <SettingsIcon className="w-4 h-4" />
             Settings
@@ -567,6 +537,7 @@ const handleAddTask = async (payload) => {
 
             {(activeTab === "all" || activeTab === "updates") && (
               <ProjectActivityFeed
+                projectId={id}
                 items={filteredFeedItems}
                 loading={feedLoading}
                 onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
@@ -599,7 +570,7 @@ const handleAddTask = async (payload) => {
                     projectId={project._id}
                     initialFiles={project.files || []}
                     canEdit={canEdit}
-                    canManage={canManage}   // ✅ owners get delete controls
+                    canManage={canManage}
                   />
                 </div>
               </div>
@@ -608,7 +579,6 @@ const handleAddTask = async (payload) => {
 
           {/* Right rail */}
           <div className="lg:col-span-4 space-y-6">
-            {/* ✅ Insights */}
             <InsightsBlock
               projectId={project._id}
               insights={stats?.insights}

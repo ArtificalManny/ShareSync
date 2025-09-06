@@ -1,7 +1,7 @@
-// /src/components/project/ProjectActivityFeed.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useSocket from '../../hooks/useSocket';
 import EmptyState from '../EmptyState';
+import { ClipboardList, CheckCircle2, PencilLine, FileText, Image as ImageIcon } from 'lucide-react';
 
 export default function ProjectActivityFeed({
   projectId,
@@ -20,13 +20,11 @@ export default function ProjectActivityFeed({
       performance.mark?.('first_activity_render');
       const start = performance.getEntriesByName('project_data_ready').at(-1)?.startTime;
       if (start) {
-        // eslint-disable-next-line no-console
         console.log('[Render] First activity after data ms:', (performance.now() - start).toFixed(0));
       }
     }
   }, [items]);
 
-  // Backoff poller (if desired) just calls onRefetch
   const poller = useCallback(() => onRefetch?.(), [onRefetch]);
 
   // Subscribe to realtime room if we have a projectId
@@ -38,7 +36,7 @@ export default function ProjectActivityFeed({
       'task:completed': () => onRefetch?.(),
       'task:due_changed': () => onRefetch?.(),
       'invite:accepted': () => onRefetch?.(),
-      'activity:new': () => onRefetch?.(), // ← catch-all if backend emits this
+      'activity:new': () => onRefetch?.(),
     },
     poller,
   });
@@ -46,13 +44,11 @@ export default function ProjectActivityFeed({
   // ---------------- Filters (local) ----------------
   const [filter, setFilter] = useState('all'); // 'all' | 'updates' | 'tasks' | 'files'
 
-  // Best-effort classifier so we don’t need API changes:
   const classify = (u) => {
     const kind = (u.kind || u.type || '').toString().toLowerCase();
     if (kind.includes('file')) return 'files';
     if (kind.includes('task')) return 'tasks';
-    if (kind.includes('update') || kind === '' /* many simple text updates */) return 'updates';
-    // Heuristics fallback:
+    if (kind.includes('update') || kind === '') return 'updates';
     const txt = (u.text || '').toLowerCase();
     if (txt.includes('uploaded') || txt.includes('.pdf') || txt.includes('.png') || txt.includes('.doc')) return 'files';
     if (txt.includes('task') || txt.includes('completed') || txt.includes('assigned')) return 'tasks';
@@ -63,6 +59,33 @@ export default function ProjectActivityFeed({
     if (filter === 'all') return items || [];
     return (items || []).filter((u) => classify(u) === filter);
   }, [items, filter]);
+
+  // ---- tiny helpers for task chips
+  const isTaskEvent = (u) => ((u.type || '').toLowerCase().startsWith('task.'));
+  const taskLabel = (u) => {
+    const t = (u.type || '').toLowerCase();
+    const title = u.title || u.meta?.title || u.text || 'Task';
+    if (t.includes('created')) return `Task created: ${title}`;
+    if (t.includes('updated')) return `Task updated: ${title}`;
+    if (t.includes('completed') || (u.status && String(u.status).toLowerCase() === 'completed' )) return `Task completed: ${title}`;
+    return `Task: ${title}`;
+  };
+  const taskIcon = (u) => {
+    const t = (u.type || '').toLowerCase();
+    if (t.includes('created')) return <ClipboardList className="w-4 h-4" />;
+    if (t.includes('updated')) return <PencilLine className="w-4 h-4" />;
+    if (t.includes('completed')) return <CheckCircle2 className="w-4 h-4" />;
+    return <ClipboardList className="w-4 h-4" />;
+  };
+
+  const isFileEvent = (u) => ((u.type || '').toLowerCase().includes('file'));
+  const fileIcon = (u) => {
+    const mime = (u.mime || u.meta?.mime || '').toLowerCase();
+    if (mime.startsWith('image/')) return <ImageIcon className="w-4 h-4" />;
+    return <FileText className="w-4 h-4" />;
+  };
+
+  const when = (u) => (u.createdAt ? new Date(u.createdAt).toLocaleString() : '');
 
   // ---------------- Render ----------------
   return (
@@ -90,7 +113,6 @@ export default function ProjectActivityFeed({
           </button>
         ))}
         <div className="flex-1" />
-        {/* Optional manual refresh */}
         {onRefetch && (
           <button
             onClick={() => onRefetch()}
@@ -117,17 +139,58 @@ export default function ProjectActivityFeed({
         </div>
       ) : filteredItems?.length ? (
         <>
-          {filteredItems.map((u) => (
-            <article
-              key={u._id}
-              className="rounded-xl border border-slate-200/70 dark:border-slate-700 p-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md"
-            >
-              <div className="text-sm text-slate-800 dark:text-slate-100">{u.text}</div>
-              <div className="text-xs text-slate-500 mt-1">
-                {u.createdAt ? new Date(u.createdAt).toLocaleString() : ''}
-              </div>
-            </article>
-          ))}
+          {filteredItems.map((u) => {
+            const k = u._id || `${u.type}:${u.createdAt}:${u.text?.slice(0,12)}`;
+            const cl = classify(u);
+
+            // Task chip
+            if (isTaskEvent(u)) {
+              return (
+                <article
+                  key={k}
+                  className="flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70"
+                >
+                  <span className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-900/60">
+                    {taskIcon(u)}
+                    Task
+                  </span>
+                  <span className="text-sm text-slate-800 dark:text-slate-100">{taskLabel(u)}</span>
+                  <span className="ml-auto text-[11px] text-slate-500">{when(u)}</span>
+                </article>
+              );
+            }
+
+            // File event (simple)
+            if (cl === 'files' || isFileEvent(u)) {
+              const name = u.name || u.filename || u.text || 'File';
+              return (
+                <article
+                  key={k}
+                  className="flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70"
+                >
+                  <span className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-1 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-900/60">
+                    {fileIcon(u)}
+                    File
+                  </span>
+                  <span className="text-sm text-slate-800 dark:text-slate-100 truncate">{name}</span>
+                  <span className="ml-auto text-[11px] text-slate-500">{when(u)}</span>
+                </article>
+              );
+            }
+
+            // Default: plain update text
+            return (
+              <article
+                key={k}
+                className="rounded-xl border border-slate-200/70 dark:border-slate-700 p-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md"
+              >
+                <div className="text-sm text-slate-800 dark:text-slate-100">{u.text}</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {when(u)}
+                </div>
+              </article>
+            );
+          })}
 
           {hasMore && (
             <div className="pt-2">
@@ -166,7 +229,7 @@ export default function ProjectActivityFeed({
   );
 }
 
-// very small inline composer to keep moving
+// tiny inline composer
 function Composer({ onSubmit }) {
   const inputRef = useRef(null);
   const handleSend = () => {
