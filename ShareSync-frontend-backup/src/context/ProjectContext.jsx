@@ -1,4 +1,4 @@
-// /src/context/ProjectContext.jsx
+// src/context/ProjectContext.jsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import useSocket from "../hooks/useSocket";
 
@@ -11,7 +11,11 @@ export function ProjectProvider({ projectId, initialProject, children }) {
     onEvents: {
       "project:membersUpdated": (payload) => {
         if (String(payload?.projectId) !== String(projectId)) return;
-        setProject((p) => ({ ...(p || {}), members: payload.members || [] }));
+        setProject((p) => ({
+          ...(p || {}),
+          members: payload.members || [],
+          invites: payload.invites || (p?.invites || []),
+        }));
       },
     },
   });

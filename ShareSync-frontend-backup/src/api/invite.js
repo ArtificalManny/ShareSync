@@ -1,37 +1,37 @@
 // src/api/invites.js
-import client from "./client"; // same axios instance you use elsewhere
+import client from "./client"; // your shared axios instance
 
 /**
  * Create an invite for a project (owner/manage required)
- * POST /api/projects/:id/invites  body: { email, role }
+ * POST /projects/:id/invites  body: { email, role }
+ * Returns: { projectId, invites }
  */
 export async function sendInvite(projectId, { email, role = "member" }) {
   const { data } = await client.post(`/projects/${projectId}/invites`, {
     email: String(email || "").trim().toLowerCase(),
     role: role === "viewer" ? "viewer" : "member",
   });
-  return data; // { ok: true, invite }
+  return data; // { projectId, invites }
 }
 
 /**
- * Accept an invite (global) using token from email/link
- * POST /api/invites/accept  body: { projectId, token }
+ * Accept an invite with a token (global)
+ * POST /invites/accept  body: { token }
+ * Returns: { projectId, members, invites }
  */
-export async function acceptInvite({ projectId, token }) {
-  const { data } = await client.post(`/invites/accept`, {
-    projectId,
-    token,
-  });
-  return data; // { ok: true, members: [...] }
+export async function acceptInvite(token) {
+  const { data } = await client.post(`/invites/accept`, { token });
+  return data;
 }
 
-/** (Optional) List invites (owner/manage) */
+/** List invites for a project */
 export async function listInvites(projectId) {
   const { data } = await client.get(`/projects/${projectId}/invites`);
-  return Array.isArray(data) ? data : data?.items || data;
+  // Backend returns an array already
+  return Array.isArray(data) ? data : data?.items || data || [];
 }
 
-/** (Optional) Revoke a pending invite (owner/manage) */
+/** Revoke a pending invite by token */
 export async function revokeInvite(projectId, token) {
   const { data } = await client.delete(`/projects/${projectId}/invites/${token}`);
   return data; // { ok: true }

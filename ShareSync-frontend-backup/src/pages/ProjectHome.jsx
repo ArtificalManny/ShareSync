@@ -203,7 +203,11 @@ export default function ProjectHome() {
       },
       "project:membersUpdated": (payload) => {
         if (String(payload?.projectId) === String(id)) {
-          setProject((p) => ({ ...p, members: payload.members || p?.members || [] }));
+          setProject((p) => ({
+            ...p,
+            members: payload.members || p?.members || [],
+            invites: payload.invites || p?.invites || [],
+          }));
         }
       },
       "project:filesAdded": (payload) => {
@@ -681,7 +685,8 @@ export default function ProjectHome() {
         </div>
       </div>
 
-      {/* ---- Public Status Modal ---- */}
+      {/* ---- Public Status Modal ---- */
+      /* (unchanged) */}
       {showStatusModal && (
         <>
           <div

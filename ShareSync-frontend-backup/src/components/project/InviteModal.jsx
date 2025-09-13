@@ -1,4 +1,4 @@
-// /src/components/project/InviteModal.jsx
+// src/components/project/InviteModal.jsx
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { sendInvite, listInvites, revokeInvite } from "../../api/invite";
@@ -12,7 +12,7 @@ export default function InviteModal({ open, onClose, projectId }) {
   const [pending, setPending] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
 
-  const canSubmit = projectId && String(email || "").trim().length > 3;
+  const canSubmit = !!projectId && String(email || "").trim().length > 3;
 
   const loadInvites = async () => {
     if (!projectId) return;
@@ -20,8 +20,7 @@ export default function InviteModal({ open, onClose, projectId }) {
     setErr("");
     try {
       const rows = await listInvites(projectId);
-      const arr = Array.isArray(rows) ? rows : [];
-      setPending(arr);
+      setPending(Array.isArray(rows) ? rows : []);
     } catch (e) {
       // list is optional; surface softly
       console.debug("[InviteModal] listInvites error", e);
@@ -60,7 +59,6 @@ export default function InviteModal({ open, onClose, projectId }) {
       setOk("Invite sent.");
       setEmail("");
       await loadInvites();
-      // keep modal open for confirmation
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || "Failed to send invite.";
       setErr(String(msg));
@@ -91,7 +89,7 @@ export default function InviteModal({ open, onClose, projectId }) {
         className="fixed z-50 inset-x-4 top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(560px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
         role="dialog"
         aria-modal="true"
-        aria-label="Invite teammate"
+        aria-label="Invite teammates"
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="text-sm font-semibold text-text">Invite teammates</h3>
@@ -169,7 +167,7 @@ export default function InviteModal({ open, onClose, projectId }) {
               <div className="p-3 text-sm text-muted">Loading…</div>
             ) : pending?.length ? (
               pending.map((i) => (
-                <div key={`${i.email}-${i.createdAt}`} className="flex items-center justify-between px-3 py-2">
+                <div key={`${i.token}`} className="flex items-center justify-between px-3 py-2">
                   <div className="text-sm">
                     <span className="font-medium">{i.email}</span>{" "}
                     <span className="text-muted">· {i.role}</span>{" "}
@@ -190,7 +188,7 @@ export default function InviteModal({ open, onClose, projectId }) {
             )}
           </div>
           <p className="mt-2 text-[11px] text-muted">
-            Invites expire in 30 days. Members can edit; viewers are read-only.
+            Invites expire after a short period. Members can edit; viewers are read-only.
           </p>
         </div>
       </div>

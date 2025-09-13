@@ -1,195 +1,185 @@
 // src/projects/invites.service.ts
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { randomBytes } from 'node:crypto';
-import { Model, Types } from 'mongoose';
-import { Project, ProjectDocument, ProjectInvite, ProjectMember } from './schemas/project.schema';
+import { Model, FilterQuery } from 'mongoose';
+import crypto from 'crypto';
+
+import { Project, ProjectDocument, ProjectInvite, ProjectRole } from './schemas/project.schema';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
-import { NotifyService } from '../notifications/notify.service';
 
-type Role = Exclude<ProjectMember['role'], 'owner'>; // 'member' | 'viewer'
+type InviteRole = Exclude<ProjectRole, 'owner'>;
 
-function normalizeEmail(email: string) {
-  return String(email || '').trim().toLowerCase();
+export interface CreateInviteDto {
+  email: string;
+  role: InviteRole; // 'member' | 'viewer'
 }
+
+export interface AcceptInviteDto {
+  token: string;
+  // We assume the caller is authenticated; use userId from req.user
+}
+
+const INVITE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days default
 
 @Injectable()
 export class InvitesService {
   constructor(
     @InjectModel(Project.name) private readonly projectModel: Model<ProjectDocument>,
     private readonly realtime: RealtimeGateway,
-    private readonly notify: NotifyService,
   ) {}
 
-  private ensureObjectId(id: string) {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Project not found');
+  private static genToken() {
+    return crypto.randomBytes(24).toString('hex');
   }
 
-  private assertOwnerOrThrow(project: Project, actingUserId: string) {
+  private assertOwnerOrThrow(project: ProjectDocument, actingUserId: string) {
     const isOwner =
-      String(project.userId) === String(actingUserId) ||
-      (Array.isArray(project.members) &&
-        project.members.some(
-          (m) => m.userId && String(m.userId) === String(actingUserId) && m.role === 'owner',
-        ));
-    if (!isOwner) throw new ForbiddenException('Only the owner can manage invites');
+      project.userId === actingUserId ||
+      project.members?.some(m => m.userId === actingUserId && m.role === 'owner');
+    if (!isOwner) throw new ForbiddenException('Only owners can manage invites.');
   }
 
-  /** Create an invite (owner-only). */
-  async createInvite(
-    projectId: string,
-    actingUserId: string,
-    email: string,
-    role: Role = 'member',
-  ): Promise<{ invite: ProjectInvite }> {
-    this.ensureObjectId(projectId);
-    const doc = await this.projectModel.findById(projectId).exec();
-    if (!doc) throw new NotFoundException('Project not found');
+  async createInvite(projectId: string, actingUserId: string, dto: CreateInviteDto) {
+    const { email, role } = dto;
+    if (!email || !role) throw new BadRequestException('email and role are required');
+    const normalizedEmail = String(email).trim().toLowerCase();
 
-    this.assertOwnerOrThrow(doc, actingUserId);
+    const project = await this.projectModel.findById(projectId);
+    if (!project) throw new NotFoundException('Project not found');
 
-    const inviteEmail = normalizeEmail(email);
-    if (!inviteEmail) throw new BadRequestException('Valid email is required');
-    if (!['member', 'viewer'].includes(role)) role = 'member';
+    this.assertOwnerOrThrow(project, actingUserId);
 
-    // If already a member, bail early
-    const alreadyMember = (doc.members || []).some(
-      (m) =>
-        (m.email && normalizeEmail(m.email) === inviteEmail) ||
-        !!m.userId, // if userId exists it's already a registered member entry
+    // Reject if already a member
+    const alreadyMember = (project.members || []).some(
+      m => (m.userId && m.userId === actingUserId) || (m.email && m.email.toLowerCase() === normalizedEmail),
     );
-    if (alreadyMember) {
-      throw new BadRequestException('User is already a member of this project');
+    if (alreadyMember) throw new BadRequestException('User/email is already a member of this project.');
+
+    // Reuse pending invite, otherwise create a new one
+    const now = Date.now();
+    const expiresAt = new Date(now + INVITE_TTL_MS);
+
+    const existing = (project.invites || []).find(
+      inv => inv.email?.toLowerCase() === normalizedEmail && inv.status === 'pending',
+    );
+
+    if (existing) {
+      existing.role = role;
+      existing.invitedBy = actingUserId;
+      existing.createdAt = new Date(now);
+      existing.expiresAt = expiresAt;
+    } else {
+      const token = InvitesService.genToken();
+      const invite: ProjectInvite = {
+        email: normalizedEmail,
+        role,
+        token,
+        status: 'pending',
+        invitedBy: actingUserId,
+        createdAt: new Date(now),
+        expiresAt,
+      };
+      project.invites.push(invite);
     }
 
-    // Prevent duplicate pending invite to same email
-    const pending = (doc.invites || []).find(
-      (i) => i.status === 'pending' && normalizeEmail(i.email) === inviteEmail,
-    );
-    if (pending) {
-      return { invite: pending };
-    }
+    await project.save();
 
-    const token = randomBytes(16).toString('hex');
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30d
+    // (Optional) send email/notification here
 
-    const invite: ProjectInvite = {
-      email: inviteEmail,
-      role,
-      token,
-      status: 'pending',
-      invitedBy: String(actingUserId),
-      createdAt: now,
-      expiresAt,
+    return {
+      projectId: project.id,
+      invites: project.invites,
     };
-
-    doc.invites = [...(doc.invites || []), invite];
-    await doc.save();
-
-    // Optional email (stub logs via NotifyService)
-    try {
-      await this.notify.queueEmail({
-        // @ts-ignore queueEmail signature allows any in our stub
-        to: inviteEmail,
-        subject: `You're invited to join "${doc.title}" on ShareSync`,
-        html: `
-          <div style="font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif">
-            <p>You were invited to the project <b>${doc.title}</b> as a <b>${role}</b>.</p>
-            <p>Click to accept: <a href="${process.env.APP_ORIGIN || 'http://localhost:5173'}/accept-invite?projectId=${doc._id}&token=${token}">Accept invite</a></p>
-            <p>If you didn’t expect this, you can ignore it.</p>
-          </div>
-        `,
-      } as any);
-    } catch {
-      // Non-fatal; ignore email errors in MVP
-    }
-
-    return { invite };
   }
 
-  /** Accept an invite (auth required, but not yet a member). */
-  async acceptInvite(
-    projectId: string,
-    token: string,
-    acceptUserId: string,
-    acceptUserEmail?: string,
-  ): Promise<{ members: ProjectMember[] }> {
-    this.ensureObjectId(projectId);
-    const doc = await this.projectModel.findById(projectId).exec();
-    if (!doc) throw new NotFoundException('Project not found');
-
-    const inv = (doc.invites || []).find((i) => i.token === token);
-    if (!inv) throw new NotFoundException('Invite not found');
-    if (inv.status !== 'pending') throw new BadRequestException(`Invite is ${inv.status}`);
-    if (inv.expiresAt && inv.expiresAt.getTime() < Date.now()) {
-      inv.status = 'expired';
-      await doc.save();
-      throw new BadRequestException('Invite has expired');
-    }
-
-    // If the user is already member, mark accepted and return
-    const alreadyMember = (doc.members || []).some(
-      (m) => m.userId && String(m.userId) === String(acceptUserId),
-    );
-    if (!alreadyMember) {
-      doc.members = [
-        ...(doc.members || []),
-        {
-          userId: String(acceptUserId),
-          email: normalizeEmail(acceptUserEmail || inv.email),
-          role: inv.role,
-          addedAt: new Date(),
-        } as ProjectMember,
-      ];
-    }
-
-    inv.status = 'accepted';
-    inv.acceptedByUserId = String(acceptUserId);
-    await doc.save();
-
-    // Realtime: broadcast members update
-    this.realtime.emitToProject(String(doc._id), 'project:membersUpdated', {
-      projectId: String(doc._id),
-      members: (doc.members || []).map((m) => ({
-        userId: m.userId,
-        email: m.email,
-        role: m.role,
-        addedAt: m.addedAt,
-      })),
-    });
-
-    return { members: doc.members || [] };
-  }
-
-  /** (Optional) List invites (owner-only). */
   async listInvites(projectId: string, actingUserId: string) {
-    this.ensureObjectId(projectId);
-    const doc = await this.projectModel.findById(projectId).lean();
-    if (!doc) throw new NotFoundException('Project not found');
-    this.assertOwnerOrThrow(doc as any, actingUserId);
-    return (doc.invites || []).map((i) => ({
+    const project = await this.projectModel.findById(projectId).lean();
+    if (!project) throw new NotFoundException('Project not found');
+    // Any member can see invites? If you want stricter:
+    // this.assertOwnerOrThrow(project as any, actingUserId);
+    return (project.invites || []).map(i => ({
       email: i.email,
       role: i.role,
       status: i.status,
+      token: i.token,
       createdAt: i.createdAt,
       expiresAt: i.expiresAt,
       invitedBy: i.invitedBy,
     }));
   }
 
-  /** (Optional) Revoke an invite (owner-only). */
-  async revokeInvite(projectId: string, actingUserId: string, token: string) {
-    this.ensureObjectId(projectId);
-    const doc = await this.projectModel.findById(projectId).exec();
-    if (!doc) throw new NotFoundException('Project not found');
-    this.assertOwnerOrThrow(doc, actingUserId);
+  async revokeInvite(projectId: string, token: string, actingUserId: string) {
+    const project = await this.projectModel.findOne({ _id: projectId });
+    if (!project) throw new NotFoundException('Project not found');
 
-    const inv = (doc.invites || []).find((i) => i.token === token);
+    this.assertOwnerOrThrow(project, actingUserId);
+
+    const inv = (project.invites || []).find(i => i.token === token);
     if (!inv) throw new NotFoundException('Invite not found');
 
+    if (inv.status !== 'pending') {
+      throw new BadRequestException('Only pending invites can be revoked.');
+    }
+
     inv.status = 'revoked';
-    await doc.save();
+    await project.save();
+
+    this.realtime.emitToProject(project.id, 'project:membersUpdated', {
+      projectId: project.id,
+      members: project.members,
+      invites: project.invites,
+    });
+
     return { ok: true };
+  }
+
+  async acceptInvite(token: string, userId: string, userEmail?: string) {
+    if (!token) throw new BadRequestException('token is required');
+
+    // Find the project containing this invite
+    const query: FilterQuery<ProjectDocument> = { 'invites.token': token };
+    const project = await this.projectModel.findOne(query);
+    if (!project) throw new NotFoundException('Invite not found');
+
+    const invite = (project.invites || []).find(i => i.token === token);
+    if (!invite) throw new NotFoundException('Invite not found');
+
+    if (invite.status !== 'pending') {
+      throw new BadRequestException(`Invite is ${invite.status} and cannot be accepted.`);
+    }
+    if (invite.expiresAt && invite.expiresAt.getTime() < Date.now()) {
+      invite.status = 'expired';
+      await project.save();
+      throw new BadRequestException('Invite has expired.');
+    }
+
+    // If user is already a member, just mark accepted and return
+    const alreadyMember = (project.members || []).some(m => m.userId === userId);
+    if (!alreadyMember) {
+      project.members.push({
+        userId,
+        email: userEmail || invite.email,
+        role: invite.role,
+        addedAt: new Date(),
+      });
+    }
+
+    invite.status = 'accepted';
+    invite.acceptedByUserId = userId;
+
+    await project.save();
+
+    // Realtime fanout
+    this.realtime.emitToProject(project.id, 'project:membersUpdated', {
+      projectId: project.id,
+      members: project.members,
+      invites: project.invites,
+    });
+
+    return {
+      projectId: project.id,
+      members: project.members,
+      invites: project.invites,
+    };
   }
 }
