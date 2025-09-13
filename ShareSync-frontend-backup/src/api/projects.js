@@ -76,11 +76,7 @@ export async function postProjectUpdate(projectId, payload) {
     type: "update",
     text,
     visibility,
-    meta: {
-      mentions,
-      files,
-      clientTempId,
-    },
+    meta: { mentions, files, clientTempId },
   };
 
   const { data } = await client.post(`/activities`, body);
@@ -96,4 +92,11 @@ export async function createTask(id, payload) {
 export async function patchTask(id, taskId, payload) {
   const { data } = await client.patch(`/projects/${id}/tasks/${taskId}`, payload);
   return data;
+}
+
+/** 🔹 Patch project icon (owner-only on backend) */
+export async function patchProjectIcon(projectId, icon /* { kind, value } or null */) {
+  if (!projectId) throw new Error("projectId is required");
+  const { data } = await client.patch(`/projects/${projectId}/icon`, icon ?? null);
+  return data; // updated project
 }

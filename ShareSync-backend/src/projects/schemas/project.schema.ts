@@ -26,6 +26,8 @@ export interface ProjectInvite {
   acceptedByUserId?: string;
 }
 
+type ProjectIcon = { kind: 'emoji' | 'svg'; value: string };
+
 @Schema({ timestamps: true })
 export class Project {
   @Prop({ required: true }) title: string;
@@ -33,6 +35,16 @@ export class Project {
   @Prop() category: string;
   @Prop() status: string;
   @Prop() privacy: string;
+
+  /** Small visual mark for the project (emoji or preset SVG key) */
+  @Prop({
+    type: {
+      kind: { type: String, enum: ['emoji', 'svg'] },
+      value: { type: String },
+    },
+    default: null,
+  })
+  icon?: ProjectIcon | null;
 
   @Prop({
     type: [{

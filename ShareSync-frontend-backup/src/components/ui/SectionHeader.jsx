@@ -1,21 +1,21 @@
-// /src/components/ui/SectionHeader.jsx
 import React from "react";
 import * as Icons from "lucide-react";
 
 /**
  * SectionHeader
- * Usage:
+ *
+ * Examples:
  *   <SectionHeader icon="BarChartBig">Your KPIs</SectionHeader>
- *   <SectionHeader icon={Icons.ActivitySquare} actions={<MyMenu />}>
- *     Recent Activity
- *   </SectionHeader>
+ *   <SectionHeader icon={Icons.ActivitySquare} actions={<MyMenu />}>Recent Activity</SectionHeader>
+ *   <SectionHeader dotColor="var(--accent)">Projects</SectionHeader>
  *
  * Props:
- * - icon: string name from lucide-react or an Icon component
- * - actions: ReactNode rendered on the right (e.g. kebab / buttons)
- * - subtitle: optional helper text under the title
- * - level: heading level for aria (defaults to 3)
- * - className, iconClassName: style hooks
+ * - icon: string name from lucide-react or an Icon component (optional)
+ * - dotColor: CSS color string for the tiny dot (used when no icon is provided)
+ * - actions: ReactNode rendered on the right
+ * - subtitle: string/ReactNode under the title
+ * - level: aria heading level (default 3)
+ * - className, iconClassName
  */
 export function SectionHeader({
   icon,
@@ -25,25 +25,27 @@ export function SectionHeader({
   level = 3,
   className = "",
   iconClassName = "h-4 w-4",
+  dotColor = "var(--accent)",
   ...rest
 }) {
-  const IconCmp =
-    typeof icon === "string" ? Icons[icon] : icon || Icons.Dot;
+  const IconCmp = typeof icon === "string" ? Icons[icon] : icon;
 
   return (
     <div
-      className={[
-        "card-header",
-        "flex items-start justify-between gap-2",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={["card-header", "flex items-start justify-between gap-2", className].filter(Boolean).join(" ")}
       {...rest}
     >
-      {/* Left: icon + title */}
+      {/* Left: icon/dot + title */}
       <div role="heading" aria-level={level} className="inline-flex items-center gap-2">
-        {IconCmp ? <IconCmp className={iconClassName} aria-hidden="true" /> : null}
+        {IconCmp ? (
+          <IconCmp className={iconClassName} aria-hidden="true" />
+        ) : (
+          <span
+            className="inline-block h-1.5 w-1.5 rounded-full"
+            style={{ background: dotColor }}
+            aria-hidden="true"
+          />
+        )}
         <span className="leading-none">{children}</span>
       </div>
 
@@ -53,12 +55,11 @@ export function SectionHeader({
       {/* Optional subtitle */}
       {subtitle ? (
         <div className="basis-full pl-6 -mt-1">
-          <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
+          <p className="text-xs text-muted">{subtitle}</p>
         </div>
       ) : null}
     </div>
   );
 }
 
-// Provide a default export for default-import style
 export default SectionHeader;

@@ -1,0 +1,106 @@
+/* Motion layer: keyframes + utilities.
+   Honors prefers-reduced-motion to disable non-essential movement. */
+
+   @keyframes pulse-ring {
+    0%   { transform: scale(.9); opacity: .7; }
+    70%  { transform: scale(1.2); opacity: .15; }
+    100% { transform: scale(1.2); opacity: 0; }
+  }
+  
+  @keyframes spin-slow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  @keyframes marquee-sprint {
+    0%   { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+  
+  /* Generic ring animation wrapper (for chips, KPI cards, etc.) */
+  .ring-anim {
+    position: relative;
+  }
+  .ring-anim::after {
+    content: "";
+    position: absolute;
+    inset: calc(-1 * var(--ring-thickness));
+    border-radius: inherit;
+    box-shadow: 0 0 0 var(--ring-thickness) rgb(var(--accent) / .35);
+    animation: pulse-ring 1.6s var(--easing-standard) infinite;
+    pointer-events: none;
+  }
+  
+  /* Avatar ring: concentric animated halo around a circular avatar */
+  .avatar-ring {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+  }
+  .avatar-ring::before,
+  .avatar-ring::after {
+    content: "";
+    position: absolute;
+    width: var(--ring-size);
+    height: var(--ring-size);
+    border-radius: 9999px;
+    box-shadow:
+      0 0 0 var(--ring-thickness) rgb(var(--accent) / .25),
+      0 0 var(--ring-blur) var(--ring-blur) rgb(var(--accent) / .18);
+    pointer-events: none;
+  }
+  .avatar-ring::before {
+    animation: pulse-ring 1.8s var(--easing-standard) infinite;
+  }
+  .avatar-ring::after {
+    animation: pulse-ring 2.4s var(--easing-standard) infinite;
+    animation-delay: .3s;
+  }
+  
+  /* KPI glow on hover/focus */
+  .kpi-glow {
+    transition: box-shadow var(--motion-normal) var(--easing-standard),
+                transform var(--motion-normal) var(--easing-standard);
+    will-change: transform, box-shadow;
+  }
+  .kpi-glow:hover,
+  .kpi-glow:focus-visible {
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-1px);
+  }
+  
+  /* Sprint marquee (for active sprint labels/banners) */
+  .sprint-marquee {
+    overflow: hidden;
+    position: relative;
+  }
+  .sprint-marquee > .track {
+    display: inline-flex;
+    gap: 2rem;
+    white-space: nowrap;
+    will-change: transform;
+    animation: marquee-sprint 18s linear infinite;
+  }
+  
+  /* Slow spin (e.g., loading indicators) */
+  .spin-slow {
+    animation: spin-slow 12s linear infinite;
+  }
+  
+  /* Reduced motion: disable animations */
+  @media (prefers-reduced-motion: reduce) {
+    .ring-anim::after,
+    .avatar-ring::before,
+    .avatar-ring::after,
+    .sprint-marquee > .track,
+    .spin-slow,
+    .kpi-glow,
+    .kpi-glow:hover,
+    .kpi-glow:focus-visible {
+      animation: none !important;
+      transition: none !important;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+  }
+  

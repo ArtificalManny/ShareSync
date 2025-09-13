@@ -1,174 +1,236 @@
-:root {
-  --purple-accent: #6B46C1;
-  --teal-accent: #38B2AC;
-  --rose-accent: #E53E3E;
-  --amber-accent: #D69E2E;
-  --emerald-accent: #2F855A;
-  --frosted-bg: rgba(255, 255, 255, 0.98);
-  --dark-bg: rgba(15, 23, 42, 0.98);
-  --white: #ffffff;
-  --black: #0F172A;
-}
+/* /src/pages/Home.css
+   Home page color canvas + tasteful section glow + Hyper Mode.
+   Scoped to .home-page on the outer container.
+*/
 
-html.dark {
-  --white: #1E293B;
-  --black: #F9FAFB;
-  --frosted-bg: var(--dark-bg);
-}
-
-body {
-  font-family: 'Inter', 'Lato', sans-serif;
-  background: var(--white);
-  color: var(--black);
-  min-height: 100vh;
-  transition: background-color 0.15s ease, color 0.15s ease;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-html.dark body {
-  background: var(--dark-bg);
-  color: var(--white);
-}
-
-.home-container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.main-content {
-  flex: 1;
-}
-
-.welcome-banner {
+/* ===== Page canvas (soft color blobs behind content) ===== */
+.home-page {
   position: relative;
-  overflow: hidden;
+  isolation: isolate;            /* keeps pseudo elements behind content */
 }
 
-.welcome-banner::before {
-  content: '';
+/* top-left blob */
+.home-page::before {
+  content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(45deg, var(--purple-accent), var(--teal-accent), var(--rose-accent), var(--amber-accent));
-  opacity: 0.25;
-  z-index: 0;
-  animation: gradientFlow 12s ease infinite;
+  inset: -120px auto auto -10%;
+  width: 520px;
+  height: 420px;
+  z-index: -1;
+  border-radius: 9999px;
+  filter: blur(48px);
+  opacity: .30; /* toned down from .42 */
+  background: radial-gradient(
+      60% 60% at 50% 50%,
+      color-mix(in srgb, var(--accent) 38%, white) 0%,
+      rgba(236, 72, 153, 0.35) 45%,
+      rgba(99, 102, 241, 0.28) 100%
+  );
 }
 
-@keyframes gradientFlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* right-center blob */
+.home-page::after {
+  content: "";
+  position: absolute;
+  inset: 35% -12% auto auto;
+  width: 560px;
+  height: 520px;
+  z-index: -1;
+  border-radius: 9999px;
+  filter: blur(52px);
+  opacity: .26; /* toned down from .36 */
+  background: radial-gradient(
+      60% 60% at 50% 50%,
+      rgba(16, 185, 129, 0.35) 0%,
+      rgba(14, 165, 233, 0.30) 55%,
+      rgba(59, 130, 246, 0.24) 100%
+  );
 }
 
-.welcome-banner > * {
+/* Respect dark mode */
+:root.dark .home-page::before {
+  opacity: .24;
+  filter: blur(56px);
+  background: radial-gradient(
+      60% 60% at 50% 50%,
+      rgba(129, 140, 248, 0.25) 0%,
+      rgba(217, 70, 239, 0.20) 50%,
+      rgba(236, 72, 153, 0.18) 100%
+  );
+}
+:root.dark .home-page::after {
+  opacity: .22;
+  filter: blur(60px);
+  background: radial-gradient(
+      60% 60% at 50% 50%,
+      rgba(16, 185, 129, 0.22) 0%,
+      rgba(14, 165, 233, 0.18) 55%,
+      rgba(59, 130, 246, 0.16) 100%
+  );
+}
+
+/* ===== Section glow (a subtle aura behind each card) ===== */
+.home-page .card {
   position: relative;
-  z-index: 1;
+  z-index: 0; /* create a stacking context for the aura */
 }
 
-.border-gradient-purple-teal {
-  border-image: linear-gradient(to right, var(--purple-accent), var(--teal-accent)) 1;
+.home-page .card::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  z-index: -1;
+  border-radius: 24px;
+  filter: blur(20px);  /* toned down from 26px */
+  opacity: .32;       /* toned down from .45 */
+  /* default violet → pink wash */
+  background: linear-gradient(90deg, rgba(99,102,241,.18), rgba(236,72,153,.16));
 }
 
-.border-gradient-teal-rose {
-  border-image: linear-gradient(to right, var(--teal-accent), var(--rose-accent)) 1;
+/* Slightly varied tints for certain sections if you want them */
+.home-page .card--cyan::before {
+  background: linear-gradient(90deg, rgba(6,182,212,.18), rgba(16,185,129,.16));
+}
+.home-page .card--amber::before {
+  background: linear-gradient(90deg, rgba(245,158,11,.18), rgba(236,72,153,.16));
 }
 
-.ring-gradient {
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1), 0 0 0 4px var(--purple-accent), 0 0 0 6px var(--teal-accent);
+/* Row auras (ONE gradient per row) */
+.row-accent {
+  position: relative;
+}
+.row-accent::before {
+  content: "";
+  position: absolute;
+  inset: -8px 0;
+  z-index: -1;
+  border-radius: 28px;
+  filter: blur(18px);
+  opacity: .22;
+  pointer-events: none;
+}
+.row-accent-violet::before {
+  background: linear-gradient(90deg, rgba(99,102,241,.18), rgba(236,72,153,.16));
+}
+.row-accent-cyan::before {
+  background: linear-gradient(90deg, rgba(6,182,212,.18), rgba(16,185,129,.16));
 }
 
-.loader {
-  border: 2px solid rgba(243, 244, 246, 0.5);
-  border-top: 2px solid var(--purple-accent);
-  border-radius: 50%;
-  width: 6px;
-  height: 6px;
-  animation: spin 0.6s linear infinite;
+/* Make the left accent bar a tad more visible on Home only */
+.home-page .accent-bar__left {
+  width: 7px;
+  background: linear-gradient(180deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .home-page .accent-bar:hover .accent-bar__left { width: 9px; }
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+/* Hover raise for clickable KPI tiles */
+.hover-raise { transition: transform .15s ease, box-shadow .15s ease; }
+.hover-raise:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(2,6,23,.06); }
 
-.animated-bg {
-  background: radial-gradient(circle at 30% 30%, var(--purple-accent) 0%, var(--teal-accent) 50%, var(--rose-accent) 100%);
-  animation: pulse 8s ease-in-out infinite;
-}
-
-.dot-pattern {
-  background-image: radial-gradient(var(--purple-accent) 0.3px, transparent 0.3px);
-  background-size: 8px 8px;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.1; }
-  50% { opacity: 0.35; }
-  100% { opacity: 0.1; }
-}
-
-.project-stories {
-  scrollbar-width: thin;
-  scrollbar-color: var(--purple-accent) transparent;
-}
-
-.project-stories::-webkit-scrollbar {
-  height: 2px;
-}
-
-.project-stories::-webkit-scrollbar-track {
+/* Thin top progress bar for active sprint */
+.top-progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 1000;
   background: transparent;
 }
-
-.project-stories::-webkit-scrollbar-thumb {
-  background-color: var(--purple-accent);
-  border-radius: 1px;
+.top-progress > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg,#6366f1,#a855f7,#ec4899);
+  background-size: 200% 100%;
+  animation: topprogress 1.2s linear infinite;
+}
+@keyframes topprogress {
+  0% { background-position: 0% 0; transform: translateX(-30%); }
+  100% { background-position: 200% 0; transform: translateX(30%); }
 }
 
-.animate-pulse-slow {
-  animation: pulse-slow 1s infinite;
+/* =================================================================== */
+/*                           H Y P E R  M O D E                        */
+/*   Higher contrast, punchier glow, gentle animated color drift.      */
+/*   Activate by adding `hyper-mode` to the same .home-page element.   */
+/* =================================================================== */
+
+.home-page.hyper-mode::before,
+.home-page.hyper-mode::after {
+  opacity: .58;
+  filter: blur(44px);
 }
 
-@keyframes pulse-slow {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+.home-page.hyper-mode::before {
+  background: radial-gradient(
+      62% 62% at 45% 45%,
+      color-mix(in srgb, var(--accent) 48%, white) 0%,
+      rgba(168, 85, 247, 0.42) 42%,
+      rgba(236, 72, 153, 0.36) 100%
+  );
+}
+.home-page.hyper-mode::after {
+  background: radial-gradient(
+      62% 62% at 50% 50%,
+      rgba(34, 197, 94, 0.40) 0%,
+      rgba(14, 165, 233, 0.34) 55%,
+      rgba(59, 130, 246, 0.28) 100%
+  );
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.15s ease-in;
+/* Slight hue drift for the canvas (respects reduced motion) */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes hyper-hue {
+    0%   { filter: hue-rotate(0deg) blur(44px); }
+    50%  { filter: hue-rotate(10deg) blur(46px); }
+    100% { filter: hue-rotate(0deg) blur(44px); }
+  }
+  .home-page.hyper-mode::before,
+  .home-page.hyper-mode::after {
+    animation: hyper-hue 8s ease-in-out infinite;
+  }
 }
 
-@keyframes fadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+/* Cards glow stronger, a bit tighter radius */
+.home-page.hyper-mode .card::before {
+  inset: -8px;
+  border-radius: 22px;
+  filter: blur(22px);
+  opacity: .60;
+  background: linear-gradient(90deg, rgba(99,102,241,.22), rgba(236,72,153,.20));
 }
 
-.hover-glow {
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+/* Cyan + Amber variants get a bump too */
+.home-page.hyper-mode .card--cyan::before {
+  background: linear-gradient(90deg, rgba(6,182,212,.24), rgba(16,185,129,.22));
+}
+.home-page.hyper-mode .card--amber::before {
+  background: linear-gradient(90deg, rgba(245,158,11,.24), rgba(236,72,153,.20));
 }
 
-.hover-glow:hover {
-  box-shadow: 0 0 15px var(--purple-accent), 0 0 5px var(--teal-accent);
-  transform: translateY(-1px) scale(1.01);
+/* Accent rail a bit thicker & brighter */
+.home-page.hyper-mode .accent-bar__left {
+  width: 8px;
+  background: linear-gradient(180deg, #818cf8 0%, #a78bfa 40%, #ec4899 100%);
 }
 
-.feed-item {
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+/* Primary buttons get a soft glow only on Home in Hyper Mode */
+.home-page.hyper-mode .btn.btn--primary {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent),
+    0 10px 24px rgba(79,70,229,.28);
+  transform: translateZ(0);
 }
 
-.feed-item:hover {
-  box-shadow: 0 0 10px var(--purple-accent), 0 0 3px var(--teal-accent);
-  transform: translateY(-1px);
+/* Subtle outline button lift to match the stronger background */
+.home-page.hyper-mode .btn.btn--outline:hover {
+  box-shadow: 0 8px 18px rgba(2,6,23,.08);
 }
 
-.comment-input:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--purple-accent);
+/* Dark mode tweaks for Hyper Mode */
+:root.dark .home-page.hyper-mode::before { opacity: .40; }
+:root.dark .home-page.hyper-mode::after  { opacity: .34; }
+:root.dark .home-page.hyper-mode .card::before {
+  opacity: .58;
+  background: linear-gradient(90deg, rgba(129,140,248,.26), rgba(217,70,239,.22));
 }

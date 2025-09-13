@@ -1,4 +1,3 @@
-// /src/components/project/RisksPanel.jsx
 import React, { useMemo } from "react";
 
 export default function RisksPanel({ project }) {

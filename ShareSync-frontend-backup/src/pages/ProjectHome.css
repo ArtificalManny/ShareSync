@@ -7,11 +7,95 @@
   background: transparent;
 }
 
-.post-item, .task-item, .subtask-item, .comment-item, .file-item, .team-item, .suggestion-item {
+/* ------------------------------------------------------------------ */
+/* List tiles (posts/tasks/subtasks/comments/files/team/suggestions)   */
+/* ------------------------------------------------------------------ */
+.post-item,
+.task-item,
+.subtask-item,
+.comment-item,
+.file-item,
+.team-item,
+.suggestion-item {
+  position: relative;                /* needed for shine */
+  overflow: hidden;                  /* clip shine */
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  will-change: transform;
 }
 
-.post-item:hover, .task-item:hover, .subtask-item:hover, .comment-item:hover, .file-item:hover, .team-item:hover, .suggestion-item:hover {
+.post-item:hover,
+.task-item:hover,
+.subtask-item:hover,
+.comment-item:hover,
+.file-item:hover,
+.team-item:hover,
+.suggestion-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(45, 212, 191, 0.3);
+  box-shadow: 0 5px 10px rgba(45, 212, 191, 0.30);
+}
+
+/* Visible keyboard focus */
+.post-item:focus-visible,
+.task-item:focus-visible,
+.subtask-item:focus-visible,
+.comment-item:focus-visible,
+.file-item:focus-visible,
+.team-item:focus-visible,
+.suggestion-item:focus-visible,
+[data-shine]:focus-visible {
+  outline: 2px solid var(--accent, #6366f1);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Cursor-tracking BLUE SHINE (same treatment as Projects)            */
+/* Bind via bindShine(root) in your ProjectHome component file        */
+/* ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: no-preference) {
+  .post-item::after,
+  .task-item::after,
+  .subtask-item::after,
+  .comment-item::after,
+  .file-item::after,
+  .team-item::after,
+  .suggestion-item::after,
+  [data-shine]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(160px 160px at var(--mx, 50%) var(--my, 50%),
+        rgba(59, 130, 246, 0.18),
+        rgba(59, 130, 246, 0.10) 35%,
+        rgba(59, 130, 246, 0.00) 65%);
+    opacity: 0;
+    transition: opacity .18s ease-out;
+    z-index: 0;
+  }
+
+  .post-item:hover::after,
+  .task-item:hover::after,
+  .subtask-item:hover::after,
+  .comment-item:hover::after,
+  .file-item:hover::after,
+  .team-item:hover::after,
+  .suggestion-item:hover::after,
+  .post-item:focus-visible::after,
+  .task-item:focus-visible::after,
+  .subtask-item:focus-visible::after,
+  .comment-item:focus-visible::after,
+  .file-item:focus-visible::after,
+  .team-item:focus-visible::after,
+  .suggestion-item:focus-visible::after,
+  [data-shine]:hover::after,
+  [data-shine]:focus-visible::after {
+    opacity: 1;
+  }
+
+  /* keep content above the shine layer */
+  .post-item > *, .task-item > *, .subtask-item > *,
+  .comment-item > *, .file-item > *, .team-item > *,
+  .suggestion-item > *, [data-shine] > * { position: relative; z-index: 1; }
 }

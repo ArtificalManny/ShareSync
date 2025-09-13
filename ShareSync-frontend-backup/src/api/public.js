@@ -1,11 +1,6 @@
-// /src/api/public.js
-
 const DEFAULT_TIMEOUT_MS = 8000;
 
-/**
- * Build the public, shareable status URL for a given token.
- * Example: /status/<token>
- */
+/** Build the public, shareable status URL for a given token. */
 export function buildPublicStatusUrl(token) {
   return `/status/${encodeURIComponent(String(token))}`;
 }
@@ -44,24 +39,54 @@ export async function copyPublicStatusLink(token) {
   }
 }
 
+/* ---------- New: enable/disable/regenerate ---------- */
+
+/** POST /api/public/projects/:projectId/enable -> { token } */
+export async function enablePublic(projectId, { signal } = {}) {
+  if (!projectId) throw new Error("projectId is required");
+  const res = await fetch(`/api/public/projects/${encodeURIComponent(projectId)}/enable`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    credentials: "include",
+    signal,
+  });
+  if (!res.ok) throw new Error(await _safeErr(res, "Failed to enable public status"));
+  const json = await res.json();
+  return { token: json?.token };
+}
+
+/** POST /api/public/projects/:projectId/disable -> { ok:true } */
+export async function disablePublic(projectId, { signal } = {}) {
+  if (!projectId) throw new Error("projectId is required");
+  const res = await fetch(`/api/public/projects/${encodeURIComponent(projectId)}/disable`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    credentials: "include",
+    signal,
+  });
+  if (!res.ok) throw new Error(await _safeErr(res, "Failed to disable public status"));
+  return { ok: true };
+}
+
+/** POST /api/public/projects/:projectId/regenerate -> { token } */
+export async function regeneratePublicToken(projectId, { signal } = {}) {
+  if (!projectId) throw new Error("projectId is required");
+  const res = await fetch(`/api/public/projects/${encodeURIComponent(projectId)}/regenerate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    credentials: "include",
+    signal,
+  });
+  if (!res.ok) throw new Error(await _safeErr(res, "Failed to regenerate public token"));
+  const json = await res.json();
+  return { token: json?.token };
+}
+
+/* ---------- Public status fetchers ---------- */
+
 /**
- * Fetch public project status by token (or id).
- * Expected backend route (adjust if needed):
- *   GET /api/public/projects/:token/status
- *
- * Returns shape:
- * {
- *   title: string,
- *   owner: { name: string, avatarUrl?: string },
- *   lastUpdatedAt: string, // ISO
- *   summary?: string,
- *   kpis: {
- *     onTime30d: number,        // 0..1
- *     throughputPerWeek: number,
- *     activeDays28d: number,
- *     cadence14d: number
- *   }
- * }
+ * GET /api/public/projects/:token/status
+ * Returns a sanitized snapshot for public viewing.
  */
 export async function fetchPublicProjectStatus(
   tokenOrId,
@@ -71,7 +96,7 @@ export async function fetchPublicProjectStatus(
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  const compositeSignal = mergeSignals(signal, controller.signal);
+  const compositeSignal = _mergeSignals(signal, controller.signal);
 
   const url = `/api/public/projects/${encodeURIComponent(String(tokenOrId))}/status`;
 
@@ -84,27 +109,23 @@ export async function fetchPublicProjectStatus(
     });
 
     if (res.status === 404) {
-      // Dev DX: return mock if backend not wired yet
       if (import.meta?.env?.MODE !== "production") {
-        console.warn("[public] 404 from backend; returning mock data for development.");
-        return mockStatus();
+        console.warn("[public] 404; returning dev mock.");
+        return _mockStatus();
       }
       throw new Error("Public status link not found or has been revoked.");
     }
 
     if (!res.ok) {
-      const text = await safeText(res);
-      throw new Error(
-        `Failed to fetch public status (${res.status}). ${text || ""}`.trim()
-      );
+      throw new Error(await _safeErr(res, `Failed to fetch public status (${res.status})`));
     }
 
     const json = await res.json();
-    return normalizeStatus(json);
+    return _normalizeStatus(json);
   } catch (err) {
     if (import.meta?.env?.MODE !== "production") {
-      console.warn("[public] fetchPublicProjectStatus failed; returning mock in dev.", err);
-      return mockStatus();
+      console.warn("[public] fetchPublicProjectStatus failed; returning dev mock.", err);
+      return _mockStatus();
     }
     throw err;
   } finally {
@@ -112,9 +133,12 @@ export async function fetchPublicProjectStatus(
   }
 }
 
-// -------- helpers --------
+/** Alias that matches your spec name. */
+export const getPublicStatus = fetchPublicProjectStatus;
 
-function mergeSignals(a, b) {
+/* ---------- internals ---------- */
+
+function _mergeSignals(a, b) {
   if (!a) return b;
   if (!b) return a;
   const ctrl = new AbortController();
@@ -125,16 +149,16 @@ function mergeSignals(a, b) {
   return ctrl.signal;
 }
 
-async function safeText(res) {
+async function _safeErr(res, fallback) {
   try {
-    return await res.text();
+    const text = await res.text();
+    return text || fallback || "Request failed";
   } catch {
-    return "";
+    return fallback || "Request failed";
   }
 }
 
-function normalizeStatus(raw) {
-  // Make sure required fields exist; fill safe defaults
+function _normalizeStatus(raw) {
   return {
     title: raw?.title ?? "Untitled Project",
     owner: {
@@ -144,26 +168,26 @@ function normalizeStatus(raw) {
     lastUpdatedAt: raw?.lastUpdatedAt ?? new Date().toISOString(),
     summary: raw?.summary ?? "",
     kpis: {
-      onTime30d: num0to1(raw?.kpis?.onTime30d),
-      throughputPerWeek: num(raw?.kpis?.throughputPerWeek),
-      activeDays28d: num(raw?.kpis?.activeDays28d),
-      cadence14d: num(raw?.kpis?.cadence14d),
+      onTime30d: _num01(raw?.kpis?.onTime30d),
+      throughputPerWeek: _num(raw?.kpis?.throughputPerWeek),
+      activeDays28d: _num(raw?.kpis?.activeDays28d),
+      cadence14d: _num(raw?.kpis?.cadence14d),
     },
+    // Optional public activity list if backend sends it:
+    activity: Array.isArray(raw?.activity) ? raw.activity : [],
   };
 }
 
-function num(v, def = 0) {
+function _num(v, def = 0) {
   const n = Number(v);
   return Number.isFinite(n) ? n : def;
 }
-function num0to1(v, def = 0) {
-  const n = num(v, def);
+function _num01(v, def = 0) {
+  const n = _num(v, def);
   return Math.max(0, Math.min(1, n));
 }
 
-// -------- dev mock --------
-
-function mockStatus() {
+function _mockStatus() {
   const now = new Date();
   return {
     title: "Demo Project",
@@ -176,5 +200,9 @@ function mockStatus() {
       activeDays28d: 19,
       cadence14d: 12,
     },
+    activity: [
+      { type: "update", text: "Kicked off Q4 roadmap", createdAt: now.toISOString() },
+      { type: "task.completed", text: "Finalize dashboard layout", createdAt: now.toISOString() },
+    ],
   };
 }

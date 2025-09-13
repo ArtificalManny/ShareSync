@@ -1,0 +1,59 @@
+/* Public status page polish */
+
+.public-shell {
+    --public-max: 900px;
+    max-width: var(--public-max);
+    margin-inline: auto;
+    padding: 1rem;
+  }
+  
+  .public-watermark {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(1200px 1200px at 110% -10%, rgb(79 70 229 / 0.06), transparent 60%) no-repeat,
+      radial-gradient(1000px 1000px at -10% 110%, rgb(16 185 129 / 0.06), transparent 60%) no-repeat;
+    mix-blend-mode: normal;
+    z-index: 0;
+  }
+  
+  .public-card {
+    position: relative;
+    z-index: 1;
+    border-radius: 1rem;
+    border: 1px solid rgb(var(--border));
+    background: rgb(var(--card));
+    padding: 1rem;
+  }
+  
+  .public-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: .75rem;
+  }
+  @media (min-width: 640px) {
+    .public-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  @media (min-width: 1024px) {
+    .public-grid {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+  
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .public-watermark { background: none; }
+  }
+  
+  /* Link styles */
+  .public-link {
+    color: rgb(37 99 235);
+    text-decoration: underline;
+  }
+  .public-link:hover {
+    text-decoration: none;
+  }
+  

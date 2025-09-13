@@ -1,0 +1,99 @@
+/* Habits visuals */
+:root {
+    --habits-blue:  56 189 248;  /* sky-400 */
+    --habits-violet: 139 92 246; /* violet-500 */
+    --habits-rose: 244 63 94;    /* rose-500 */
+    --habits-emerald: 16 185 129;/* emerald-500 */
+  
+    --bar-radius: 10px;
+    --bar-gap: 6px;
+  
+    --pulse-dur: 1.6s;
+  }
+  
+  .habits-meter {
+    position: relative;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,.06));
+  }
+  
+  .habits-meter__ring {
+    stroke-linecap: round;
+    transition: stroke-dashoffset 260ms cubic-bezier(.2,.7,.2,1);
+  }
+  
+  .habits-meter__glow {
+    filter: blur(8px);
+    opacity: .45;
+  }
+  
+  .habits-meter__label {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  
+  /* Weekly bars */
+  .habits-bars {
+    display: grid;
+    grid-auto-flow: column;
+    gap: var(--bar-gap);
+    align-items: end;
+  }
+  
+  .habits-bar {
+    width: 10px;
+    border-radius: var(--bar-radius);
+    background: linear-gradient(
+      180deg,
+      rgba(var(--habits-violet), .9),
+      rgba(var(--habits-blue), .9)
+    );
+    transition: transform 220ms ease, opacity 220ms ease, height 220ms ease;
+    will-change: transform, height;
+  }
+  .habits-bar[data-highlight="true"] {
+    outline: 2px solid rgba(var(--habits-emerald), .5);
+  }
+  
+  /* Nudges */
+  .nudge-card {
+    border-radius: 14px;
+    border: 1px solid rgb(226 232 240 / .6);
+    background: rgba(255,255,255,.85);
+    backdrop-filter: saturate(1.2) blur(6px);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  .nudge-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(17, 24, 39, .08);
+  }
+  
+  /* subtle pulse used in meters */
+  @keyframes habits-pulse {
+    0% { transform: scale(.95); opacity: .6; }
+    70% { transform: scale(1.15); opacity: .15; }
+    100% { transform: scale(1.15); opacity: 0; }
+  }
+  
+  .habits-pulse-ring {
+    position: absolute;
+    inset: -3px;
+    border-radius: 999px;
+    box-shadow: 0 0 0 2px rgba(var(--habits-violet), .35);
+    animation: habits-pulse var(--pulse-dur) ease-out infinite;
+    pointer-events: none;
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .habits-bar,
+    .habits-meter__ring {
+      transition: none !important;
+    }
+    .habits-pulse-ring {
+      animation: none !important;
+    }
+  }
+  

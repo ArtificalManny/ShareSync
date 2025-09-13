@@ -1,7 +1,7 @@
-// src/activities/activities.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery } from 'mongoose';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 type AnyObj = Record<string, any>;
 
@@ -19,6 +19,7 @@ export interface ListParams {
 export class ActivitiesService {
   constructor(
     @InjectModel('Activity') private readonly activityModel: Model<AnyObj>,
+    private readonly rt: RealtimeGateway,
   ) {}
 
   /**
@@ -36,20 +37,24 @@ export class ActivitiesService {
       userId: event.userId ?? null,
       projectId: event.projectId ?? null,
       type: event.type,
-      // normalize a few common shapes for convenience:
       text: event.payload?.text ?? '',
       meta: event.payload ?? {},
       createdAt: now,
       updatedAt: now,
     });
 
+    // Emit feed & habits pings (fire-and-forget)
+    try {
+      const pid = event.projectId ? String(event.projectId) : '';
+      const uid = event.userId ? String(event.userId) : '';
+      if (pid) this.rt.emitToProject(pid, 'activity:new', { projectId: pid });
+      if (uid) this.rt.emitToUser(uid, 'habits:updated', { projectId: pid, kind: 'activity' });
+    } catch {}
+
     return typeof (doc as any).toObject === 'function' ? (doc as any).toObject() : doc;
   }
 
-  /**
-   * Back-compat wrapper used by ActivitiesController:
-   * create(projectId, userId, dto) -> record({...})
-   */
+  /** Back-compat wrapper used by ActivitiesController */
   async create(
     projectId: string,
     userId: string,
@@ -64,8 +69,6 @@ export class ActivitiesService {
         ...(dto?.meta ?? {}),
       },
     });
-    // If you want the controller to receive a slightly different shape,
-    // you could transform the return here as needed.
   }
 
   /**
@@ -84,7 +87,6 @@ export class ActivitiesService {
     } = params;
 
     const q: FilterQuery<AnyObj> = {};
-
     if (scope === 'user' && userId) q.userId = userId;
     if (scope === 'project' && projectId) q.projectId = projectId;
 
@@ -117,7 +119,7 @@ export class ActivitiesService {
     const rows = await this.activityModel
       .find(q)
       .sort({ createdAt: -1 })
-      .limit(pageSize + 1) // overfetch to detect next page
+      .limit(pageSize + 1)
       .lean()
       .exec();
 
@@ -133,9 +135,7 @@ export class ActivitiesService {
     return { items, nextCursor };
   }
 
-  /**
-   * Basic CSV exporter for a set of activity rows.
-   */
+  /** Convenience: light-weight CSV exporter */
   toCsv(items: AnyObj[]): string {
     const header = ['createdAt', 'type', 'userId', 'projectId', 'message'];
     const rows = items.map((it) => [

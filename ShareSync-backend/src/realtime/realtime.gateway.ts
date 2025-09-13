@@ -1,4 +1,3 @@
-// src/realtime/realtime.gateway.ts
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -36,9 +35,7 @@ export class RealtimeGateway {
     this.server.to(room).emit(event, payload);
   }
 
-  /** Emit to a specific project room: project:{projectId}
-   *  Invites acceptance uses: event = 'project:membersUpdated'
-   */
+  /** Emit to a specific project room: project:{projectId} */
   emitToProject(projectId: string, event: string, payload: any) {
     if (!projectId) return;
     this.emitToRoom(`project:${projectId}`, event, payload);
@@ -48,5 +45,10 @@ export class RealtimeGateway {
   emitToUser(userId: string, event: string, payload: any) {
     if (!userId) return;
     this.emitToRoom(`user:${userId}`, event, payload);
+  }
+
+  /** Convenience specifically for habits UI */
+  emitHabitsUpdated(userId: string, projectId?: string) {
+    if (userId) this.emitToUser(userId, 'habits:updated', { projectId: projectId || null });
   }
 }

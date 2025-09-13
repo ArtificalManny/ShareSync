@@ -1,4 +1,3 @@
-// /src/App.jsx
 import React, { useContext, Suspense, lazy, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -13,6 +12,11 @@ import Navbar from "./components/Navbar";
 import { AuthProvider, AuthContext } from "./AuthContext";
 import "./theme.css";
 import "./styles/card.css";
+/* 🔗 Global design layers (tokens/gradients/motion) */
+import "./styles/tokens.css";
+import "./styles/gradients.css";
+import "./styles/motion.css";
+
 import { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
 
@@ -48,7 +52,6 @@ const ProjectHome = lazy(() => import("./pages/ProjectHome"));
 const CreateAccount = lazy(() => import("./pages/CreateAccount"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const PublicProject = lazy(() => import("./pages/PublicProject"));
-// Public status page
 const PublicProjectStatus = lazy(() => import("./pages/PublicProjectStatus"));
 
 /** Smooth-scroll to #hash elements whenever path or hash changes */

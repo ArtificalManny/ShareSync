@@ -1,5 +1,5 @@
 // src/projects/project.service.ts
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import {
@@ -56,6 +56,7 @@ export class ProjectsService {
       category: data.category ?? '',
       status: data.status ?? 'Not Started',
       privacy: data.privacy ?? 'Private',
+      icon: data.icon ?? null,
       userId: data.userId, // legacy owner field
       members: normalizedMembers,
       updatedAt: new Date(),
@@ -138,6 +139,45 @@ export class ProjectsService {
       .findByIdAndUpdate(
         projectId,
         { $set: { members, updatedAt: new Date() } },
+        { new: true },
+      )
+      .lean();
+
+    return updated;
+  }
+
+  /** Update project icon — owner only (pass null to clear). */
+  async updateIcon(
+    projectId: string,
+    actingUserId: string,
+    icon: { kind: 'emoji' | 'svg'; value: string } | null,
+  ) {
+    if (!Types.ObjectId.isValid(projectId)) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const proj = await this.projectModel.findById(projectId).lean();
+    if (!proj) throw new NotFoundException('Project not found');
+
+    if (String(proj.userId) !== String(actingUserId)) {
+      throw new ForbiddenException('Only the owner can change the icon');
+    }
+
+    if (icon) {
+      const kind = icon.kind;
+      const value = String(icon.value || '').trim();
+      if (!['emoji', 'svg'].includes(kind)) {
+        throw new BadRequestException('icon.kind must be emoji or svg');
+      }
+      if (!value) {
+        throw new BadRequestException('icon.value is required');
+      }
+    }
+
+    const updated = await this.projectModel
+      .findByIdAndUpdate(
+        projectId,
+        { $set: { icon: icon ?? null, updatedAt: new Date() } },
         { new: true },
       )
       .lean();

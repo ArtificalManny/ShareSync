@@ -1,9 +1,9 @@
-// /src/components/global/MiniSprintWidget.jsx
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Play, Pause, RotateCcw, Maximize2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSprint } from "../../context/SprintContext";
 import Draggable from "../ui/Draggable";
+import NudgeCard from "../habits/NudgeCard";
 
 export default function MiniSprintWidget() {
   const navigate = useNavigate();
@@ -23,9 +23,17 @@ export default function MiniSprintWidget() {
   const pct = useMemo(() => 1 - clampedRemaining / totalMs, [clampedRemaining, totalMs]);
   const dash = 100 * Math.max(0, Math.min(1, pct));
   const timeLabel = formatRemaining();
+
   const isRunning = status === "running";
   const isPaused  = status === "paused";
-  const visible   = isRunning || isPaused;
+  const isDone    = status === "completed";
+  const visible   = isRunning || isPaused || isDone;
+
+  // show one-time nudge when sprint completes
+  const [showNudge, setShowNudge] = useState(false);
+  useEffect(() => {
+    if (isDone) setShowNudge(true);
+  }, [isDone]);
 
   if (!visible) return null;
 
@@ -34,6 +42,17 @@ export default function MiniSprintWidget() {
     setTimeout(() => {
       document.getElementById("focus-sprint")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 0);
+  };
+
+  const logQuickUpdate = () => {
+    // Route to Home where composer / updates are commonly available
+    navigate("/home#recent-activity");
+  };
+
+  const startAnother = () => {
+    // Soft reset and jump to full sprint block
+    reset({});
+    goToFull();
   };
 
   return (
@@ -51,11 +70,29 @@ export default function MiniSprintWidget() {
         aria-live="polite"
       >
         <div className="flex items-center gap-3">
-          {/* Progress ring */}
+          {/* Progress ring (pure SVG; no external helpers) */}
           <div className="relative h-10 w-10">
             <svg viewBox="0 0 40 40" className="h-10 w-10 -rotate-90 pointer-events-none">
-              <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="4" className="text-slate-200 dark:text-slate-800" fill="none" />
-              <circle cx="20" cy="20" r="16" stroke="url(#miniGrad)" strokeWidth="4" strokeDasharray="100" strokeDashoffset={100 - dash} fill="none" />
+              <circle
+                cx="20"
+                cy="20"
+                r="16"
+                stroke="currentColor"
+                strokeWidth="4"
+                className="text-slate-200 dark:text-slate-800"
+                fill="none"
+              />
+              <circle
+                cx="20"
+                cy="20"
+                r="16"
+                stroke="url(#miniGrad)"
+                strokeWidth="4"
+                strokeDasharray="100"
+                strokeDashoffset={100 - (isDone ? 100 : dash)}
+                style={{ transition: "stroke-dashoffset 220ms cubic-bezier(.2,.7,.2,1)" }}
+                fill="none"
+              />
               <defs>
                 <linearGradient id="miniGrad" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0%" stopColor="rgb(99,102,241)" />
@@ -64,7 +101,7 @@ export default function MiniSprintWidget() {
               </defs>
             </svg>
             <div className="absolute inset-0 grid place-items-center text-[11px] font-semibold text-slate-900 dark:text-white pointer-events-none">
-              {timeLabel}
+              {isDone ? "00:00" : timeLabel}
             </div>
           </div>
 
@@ -81,7 +118,7 @@ export default function MiniSprintWidget() {
             </div>
           </div>
 
-          {/* Controls — marked as interactive; drag is auto-blocked on buttons */}
+          {/* Controls — drag-safe via data-no-drag */}
           <div className="shrink-0 flex items-center gap-1" data-no-drag>
             {isRunning && (
               <button
@@ -121,6 +158,22 @@ export default function MiniSprintWidget() {
             </button>
           </div>
         </div>
+
+        {/* Post-sprint nudge */}
+        {showNudge && isDone && (
+          <div className="mt-2" data-no-drag>
+            <NudgeCard
+              kind="update"
+              title="Nice sprint! Close the loop?"
+              message="Share a quick update or queue up your next focused block."
+              actions={[
+                { label: "Log quick update", onClick: logQuickUpdate },
+                { label: "Start another sprint", onClick: startAnother },
+              ]}
+              onDismiss={() => setShowNudge(false)}
+            />
+          </div>
+        )}
       </aside>
     </Draggable>
   );

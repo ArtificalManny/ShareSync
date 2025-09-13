@@ -1,16 +1,8 @@
-// /src/components/AvatarGroup.jsx
 import React, { useMemo } from "react";
 
 /**
  * AvatarGroup
- * - Consistent, accessible avatar stack with overlap +N overflow
- * - Props:
- *    users: Array<{ id?, name?, avatarUrl? }>
- *    max: number (default 4)
- *    size: number px (default 28)
- *    overlap: boolean (default true)
- *    showOverflow: boolean (default true) – show "+N"
- *    className: string
+ * - Accessible avatar stack with overlap +N overflow
  */
 export default function AvatarGroup({
   users = [],
@@ -24,7 +16,6 @@ export default function AvatarGroup({
   const clean = Array.isArray(users) ? users.filter(Boolean) : [];
   const visibleCount = Math.max(0, Math.min(clean.length, max));
   const overflow = Math.max(0, clean.length - visibleCount);
-
   const visible = useMemo(() => clean.slice(0, visibleCount), [clean, visibleCount]);
 
   const style = useMemo(
@@ -37,8 +28,7 @@ export default function AvatarGroup({
   );
 
   const containerCls = [
-    "avatar-stack",
-    overlap ? "" : "gap-1",
+    overlap ? "flex -space-x-2" : "flex gap-1",
     className,
   ]
     .filter(Boolean)
@@ -49,9 +39,7 @@ export default function AvatarGroup({
       {visible.map((u, i) => (
         <AvatarCircle key={u.id || i} user={u} style={style} />
       ))}
-      {showOverflow && overflow > 0 && (
-        <OverflowCircle count={overflow} style={style} />
-      )}
+      {showOverflow && overflow > 0 && <OverflowCircle count={overflow} style={style} />}
     </div>
   );
 }
@@ -66,11 +54,16 @@ function AvatarCircle({ user, style }) {
   const bg = colorFromString(user?.id || name);
 
   return (
-    <span className="avatar" role="listitem" title={name} style={{ ...style, background: bg }}>
+    <span
+      className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-slate-900 overflow-hidden transition-transform duration-200"
+      style={{ ...style, background: bg }}
+      role="listitem"
+      title={name}
+    >
       {url ? (
-        <img src={url} alt={name} />
+        <img src={url} alt={name} className="w-full h-full object-cover" />
       ) : (
-        <span aria-hidden="true">{initial}</span>
+        <span aria-hidden="true" className="text-white/95 font-semibold">{initial}</span>
       )}
     </span>
   );
@@ -79,9 +72,9 @@ function AvatarCircle({ user, style }) {
 function OverflowCircle({ count, style }) {
   return (
     <span
-      className="avatar"
+      className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-800/50 text-white"
+      style={style}
       title={`${count} more`}
-      style={{ ...style, background: "rgba(2,6,23,0.18)", color: "#fff" }}
     >
       <span aria-hidden="true">+{count}</span>
     </span>
@@ -105,8 +98,8 @@ function colorFromString(str) {
   let hash = 0;
   for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
   const hue = Math.abs(hash) % 360;
-  const sat = 55; // %
-  const light = 55; // %
+  const sat = 55;
+  const light = 55;
   return `hsl(${hue}deg ${sat}% ${light}%)`;
 }
 

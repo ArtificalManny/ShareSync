@@ -1,7 +1,7 @@
-// /src/components/projects/ProjectListItem.jsx
 import React, { useEffect, useMemo, useRef } from "react";
 import { Users, Clock } from "lucide-react";
 import AvatarGroup from "../AvatarGroup.jsx";
+import StatusPill from "./StatusPill.jsx";
 
 // lazy import so first paint is fast; we call this on hover/focus
 let _prefetchStats = null;
@@ -19,15 +19,14 @@ export default function ProjectListItem({ project, onClick }) {
   const id = project?._id || project?.id;
   const title = project?.title || project?.name || "Untitled";
   const lastActivityAt = project?.lastActivityAt || project?.updatedAt || project?.createdAt;
-  const status = (project?.status || "Active").toString();
+  const status = (project?.status || "In Progress").toString();
 
-  // Use API members if present; otherwise make safe placeholders.
   const members = Array.isArray(project?.members) && project.members.length
     ? normalizeMembers(project.members)
     : fallbackMembers(project);
 
   const rel = useMemo(() => formatRelativeTime(lastActivityAt), [lastActivityAt]);
-  const statusCls = useMemo(() => statusClass(status), [status]);
+  const { barCls } = useMemo(() => accentForStatus(status), [status]);
 
   // Debounced prefetch on hover/focus
   const hoverTimer = useRef(null);
@@ -39,7 +38,7 @@ export default function ProjectListItem({ project, onClick }) {
   const handleLeave = () => {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
   };
-  useEffect(() => handleLeave, []); // cleanup on unmount
+  useEffect(() => handleLeave, []);
 
   return (
     <button
@@ -49,9 +48,17 @@ export default function ProjectListItem({ project, onClick }) {
       onMouseLeave={handleLeave}
       onFocus={handleEnter}
       onBlur={handleLeave}
-      className="motion-quick w-full text-left rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+      className="group relative w-full text-left rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 overflow-hidden marching"
       aria-label={`Open project ${title}`}
     >
+      {/* left gradient bar */}
+      <span className={`absolute left-0 top-0 h-full w-1.5 rounded-l-2xl ${barCls} transition-[width] duration-200 group-hover:w-2`} />
+
+      {/* shine sweep */}
+      <span className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        <span className="absolute -left-24 top-0 h-full w-20 rotate-12 bg-white/10 group-hover:animate-[shine_900ms_ease-out]" />
+      </span>
+
       {/* Header: title + avatars */}
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-slate-900 dark:text-white line-clamp-1">
@@ -59,16 +66,15 @@ export default function ProjectListItem({ project, onClick }) {
         </h3>
         <div className="flex items-center gap-2 shrink-0">
           <Users className="w-4 h-4 text-slate-400" aria-hidden="true" />
-          <AvatarGroup users={members} max={4} size={26} />
+          <div className="transition-transform duration-200 group-hover:scale-[1.04]">
+            <AvatarGroup users={members} max={4} size={26} />
+          </div>
         </div>
       </div>
 
       {/* Subtext: status pill + last update */}
       <div className="mt-2 flex items-center justify-between">
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCls}`}>
-          {status}
-        </span>
-
+        <StatusPill status={status} />
         <span className="inline-flex items-center gap-1 text-xs text-slate-500">
           <Clock className="w-3.5 h-3.5" aria-hidden="true" />
           {rel || "—"}
@@ -88,7 +94,6 @@ export default function ProjectListItem({ project, onClick }) {
 /* ---------- helpers ---------- */
 
 function normalizeMembers(list) {
-  // Normalize various shapes → { id, name, avatarUrl }
   return list.map((u, i) => ({
     id: u?.id || u?._id || `m${i}`,
     name: u?.name || u?.displayName || u?.username || "Member",
@@ -114,19 +119,18 @@ function fallbackMembers(project) {
   return [owner, ...others].filter(Boolean);
 }
 
-function statusClass(status) {
+function accentForStatus(status) {
   const s = (status || "").toLowerCase();
-  if (s.includes("blocked") || s.includes("risk")) {
-    return "bg-amber-50 text-amber-700 border border-amber-200";
+  if (s.includes("complete") || s.includes("done")) {
+    return { barCls: "bg-gradient-to-b from-emerald-500 via-teal-500 to-cyan-500" };
   }
-  if (s.includes("done") || s.includes("complete")) {
-    return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+  if (s.includes("blocked") || s.includes("risk")) {
+    return { barCls: "bg-gradient-to-b from-amber-500 via-orange-500 to-rose-500" };
   }
   if (s.includes("paused")) {
-    return "bg-slate-100 text-slate-700 border border-slate-200";
+    return { barCls: "bg-gradient-to-b from-slate-400 via-slate-500 to-slate-600" };
   }
-  // default active
-  return "bg-blue-50 text-blue-700 border border-blue-200";
+  return { barCls: "bg-gradient-to-b from-indigo-500 via-fuchsia-500 to-pink-500" };
 }
 
 function formatRelativeTime(dateish) {

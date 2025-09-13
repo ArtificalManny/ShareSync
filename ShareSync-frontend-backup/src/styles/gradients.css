@@ -1,0 +1,109 @@
+/* Gradient helpers.
+   Uses tokens from tokens.css; provides bg + text gradient utilities. */
+
+   :root {
+    /* fallbacks as CSS color-mix if tokens missing */
+  }
+  
+  /* -------- Background gradients -------- */
+  .bg-grad-blue {
+    background-image:
+      radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-blue-b) / .25), transparent 60%),
+      linear-gradient(135deg, rgb(var(--grad-blue-a)), rgb(var(--grad-blue-b)));
+    color: white;
+  }
+  .bg-grad-purple {
+    background-image:
+      radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-purple-b) / .25), transparent 60%),
+      linear-gradient(135deg, rgb(var(--grad-purple-a)), rgb(var(--grad-purple-b)));
+    color: white;
+  }
+  .bg-grad-emerald {
+    background-image:
+      radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-emerald-b) / .25), transparent 60%),
+      linear-gradient(135deg, rgb(var(--grad-emerald-a)), rgb(var(--grad-emerald-b)));
+    color: white;
+  }
+  
+  /* Subtle elevated card using gradient border */
+  .grad-border {
+    position: relative;
+  }
+  .grad-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg,
+      rgb(var(--grad-blue-a) / .5),
+      rgb(var(--grad-purple-a) / .5),
+      rgb(var(--grad-emerald-a) / .5)
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  
+  /* -------- Text gradients -------- */
+  .text-grad-blue,
+  .text-grad-purple,
+  .text-grad-emerald {
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  
+  .text-grad-blue {
+    background-image: linear-gradient(135deg, rgb(var(--grad-blue-a)), rgb(var(--grad-blue-b)));
+  }
+  .text-grad-purple {
+    background-image: linear-gradient(135deg, rgb(var(--grad-purple-a)), rgb(var(--grad-purple-b)));
+  }
+  .text-grad-emerald {
+    background-image: linear-gradient(135deg, rgb(var(--grad-emerald-a)), rgb(var(--grad-emerald-b)));
+  }
+  
+  /* -------- Icon stroke/fill helpers --------
+     NOTE: True gradient strokes for SVG require a <defs><linearGradient/></defs>
+     and referencing via stroke="url(#id)". These classes provide a graceful
+     fallback by using gradient text clipping which works for glyph icons and
+     many inline SVGs that inherit currentColor.
+  */
+  .stroke-grad-blue,
+  .stroke-grad-purple,
+  .stroke-grad-emerald {
+    /* fallback solid color */
+    color: rgb(var(--accent));
+  }
+  .stroke-grad-blue {
+    background-image: linear-gradient(135deg, rgb(var(--grad-blue-a)), rgb(var(--grad-blue-b)));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .stroke-grad-purple {
+    background-image: linear-gradient(135deg, rgb(var(--grad-purple-a)), rgb(var(--grad-purple-b)));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .stroke-grad-emerald {
+    background-image: linear-gradient(135deg, rgb(var(--grad-emerald-a)), rgb(var(--grad-emerald-b)));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  
+  /* -------- Badges (optional extension to feed.css) -------- */
+  .badge--grad-blue    { background-image: linear-gradient(135deg, rgb(var(--grad-blue-a) / .14), rgb(var(--grad-blue-b) / .18)); color: rgb(var(--grad-blue-a)); }
+  .badge--grad-purple  { background-image: linear-gradient(135deg, rgb(var(--grad-purple-a) / .14), rgb(var(--grad-purple-b) / .18)); color: rgb(var(--grad-purple-a)); }
+  .badge--grad-emerald { background-image: linear-gradient(135deg, rgb(var(--grad-emerald-a) / .14), rgb(var(--grad-emerald-b) / .18)); color: rgb(var(--grad-emerald-a)); }
+  
+  .badge--grad {
+    border: 1px solid rgb(var(--border));
+    backdrop-filter: saturate(1.2) blur(6px);
+  }
+  
+  /* Reduced motion: no hover transforms/animated shines here, so no-op */
+  @media (prefers-reduced-motion: reduce) {
+    /* reserved for future animated gradient helpers */
+  }
+  

@@ -1,9 +1,11 @@
-// /src/components/insights/InsightsBlock.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Lightbulb, TrendingUp, Clock, Flame } from "lucide-react";
+import GradientText from "../ui/GradientText";
 
-// Optional: pass `fetchInsights` if you want custom fetching.
-// Otherwise it will try `import('../../api/stats').then(m => m.getProjectInsights)`
+/**
+ * InsightsBlock
+ * Adds gradient accent on icon/title + subtle entry fade (respects reduced-motion).
+ */
 export default function InsightsBlock({
   projectId,
   insights,              // optional pre-fetched array of strings
@@ -68,10 +70,14 @@ export default function InsightsBlock({
 
   if (!data?.length) {
     return (
-      <section className={`card rounded-2xl border border-border bg-surface p-4 ${className}`}>
+      <section className={`card rounded-2xl border border-border bg-surface p-4 ${className} fade-in-soft`}>
         <div className="flex items-center gap-2">
-          <Lightbulb className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-sm font-semibold text-text">Insights</h3>
+          <span className="text-grad-emerald">
+            <Lightbulb className="w-5 h-5" />
+          </span>
+          <h3 className="text-sm font-semibold">
+            <GradientText variant="emerald">Insights</GradientText>
+          </h3>
         </div>
         <p className="mt-2 text-sm text-muted">No insights yet. Keep working and we’ll summarize patterns here.</p>
       </section>
@@ -88,15 +94,19 @@ export default function InsightsBlock({
   };
 
   return (
-    <section className={`card rounded-2xl border border-border bg-surface p-4 ${className}`}>
+    <section className={`card rounded-2xl border border-border bg-surface p-4 fade-in-soft ${className}`}>
       <div className="flex items-center gap-2">
-        <Lightbulb className="w-5 h-5 text-indigo-600" />
-        <h3 className="text-sm font-semibold text-text">Insights</h3>
+        <span className="text-grad-emerald">
+          <Lightbulb className="w-5 h-5" />
+        </span>
+        <h3 className="text-sm font-semibold">
+          <GradientText variant="emerald">Insights</GradientText>
+        </h3>
       </div>
       <ul className="mt-3 space-y-2">
         {data.map((line, i) => (
           <li key={i} className="flex items-start gap-2">
-            <span className="mt-[3px] text-indigo-600">{pickIcon(line)}</span>
+            <span className="mt-[3px] text-grad-purple">{pickIcon(line)}</span>
             <span className="text-sm text-text">{line}</span>
           </li>
         ))}

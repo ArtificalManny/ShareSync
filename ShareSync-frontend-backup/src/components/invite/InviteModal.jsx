@@ -1,7 +1,6 @@
-// /src/components/modals/InviteModal.jsx
 import React, { useState } from 'react';
 import { Dialog } from '@headlessui/react';
-import { X, Send } from 'lucide-react';
+import { X, Send, Mail } from 'lucide-react';
 import { sendInvite } from '../../api/invite';
 import { toast } from '../ui/toast';
 
@@ -23,26 +22,22 @@ const InviteModal = ({ isOpen, onClose, defaultProjectId, inviterId, onInvited }
         projectId: projectId || undefined,
       });
 
-      // success toast
       toast({
         title: 'Invite sent',
         description: `Invitation sent to ${email}${projectId ? ` for project ${projectId}` : ''}.`,
         variant: 'success',
       });
 
-      // Let parent mark row as "Invited"
       if (typeof onInvited === 'function') {
         onInvited({ email, projectId, inviteId: res?.inviteId });
       }
 
-      // reset and close
       setEmail('');
       setRole('Member');
       setProjectId(defaultProjectId || '');
       setMessage('');
       onClose?.();
     } catch (err) {
-      // error toast
       const msg =
         err?.response?.data?.error ||
         err?.message ||
@@ -60,20 +55,32 @@ const InviteModal = ({ isOpen, onClose, defaultProjectId, inviterId, onInvited }
   return (
     <Dialog open={isOpen} onClose={onClose} className="fixed z-50 inset-0 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen p-4 bg-black/50">
-        <Dialog.Panel className="bg-white dark:bg-charcoal-gray p-6 rounded-xl max-w-md w-full shadow-lg">
-          <div className="flex justify-between items-center mb-4">
-            <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">Invite Collaborator</Dialog.Title>
-            <button onClick={onClose} className="text-gray-500 hover:text-red-500" aria-label="Close">
-              <X size={20} />
+        <Dialog.Panel
+          className="relative w-full max-w-md rounded-2xl border border-border bg-surface shadow-[var(--shadow)] accent-bar shine"
+        >
+          <span className="accent-bar__left" aria-hidden="true" />
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <Dialog.Title className="card-header inline-flex items-center gap-2">
+              <Mail className="w-4 h-4 text-indigo-600" />
+              Invite Collaborator
+            </Dialog.Title>
+            <button
+              onClick={onClose}
+              className="btn btn--ghost"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5 text-muted" />
             </button>
           </div>
 
-          <div className="space-y-4">
+          {/* Body */}
+          <div className="p-4 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+              <label className="block text-sm text-muted">Email</label>
               <input
                 type="email"
-                className="w-full mt-1 px-3 py-2 rounded-md border shadow-sm focus:ring focus:ring-indigo-500"
+                className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-surface"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="user@example.com"
@@ -81,11 +88,11 @@ const InviteModal = ({ isOpen, onClose, defaultProjectId, inviterId, onInvited }
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
+              <label className="block text-sm text-muted">Role</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full mt-1 px-3 py-2 rounded-md border shadow-sm"
+                className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-surface"
               >
                 <option value="Member">Member</option>
                 <option value="Manager">Manager</option>
@@ -94,10 +101,10 @@ const InviteModal = ({ isOpen, onClose, defaultProjectId, inviterId, onInvited }
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Project ID (optional)</label>
+              <label className="block text-sm text-muted">Project ID (optional)</label>
               <input
                 type="text"
-                className="w-full mt-1 px-3 py-2 rounded-md border shadow-sm"
+                className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-surface"
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
                 placeholder="e.g. 64e4a..."
@@ -105,9 +112,9 @@ const InviteModal = ({ isOpen, onClose, defaultProjectId, inviterId, onInvited }
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Message (optional)</label>
+              <label className="block text-sm text-muted">Message (optional)</label>
               <textarea
-                className="w-full mt-1 px-3 py-2 rounded-md border shadow-sm h-20"
+                className="w-full mt-1 px-3 py-2 rounded-md border border-border bg-surface h-20"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Add a note for the invite…"
@@ -117,11 +124,9 @@ const InviteModal = ({ isOpen, onClose, defaultProjectId, inviterId, onInvited }
             <button
               onClick={handleInvite}
               disabled={!email || submitting}
-              className={`w-full inline-flex items-center justify-center gap-2 bg-emerald-green hover:bg-emerald-700 text-white py-2 px-4 rounded-md font-bold ${
-                submitting ? 'opacity-70 cursor-wait' : ''
-              }`}
+              className={`w-full btn btn--primary marching ${submitting ? 'opacity-70 cursor-wait' : ''}`}
             >
-              <Send size={16} />
+              <Send className="w-4 h-4" />
               {submitting ? 'Sending…' : 'Send Invite'}
             </button>
           </div>

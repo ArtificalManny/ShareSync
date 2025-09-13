@@ -20,11 +20,15 @@ import {
   CanViewProject,
   ProjectPermissionGuard,
 } from './guards/project-permission.guard';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectController {
-  constructor(private readonly projects: ProjectsService) {}
+  constructor(
+    private readonly projects: ProjectsService,
+    private readonly realtime: RealtimeGateway,
+  ) {}
 
   @Post()
   async create(@Req() req, @Body() dto: CreateProjectDto) {
@@ -126,6 +130,40 @@ export class ProjectController {
     if (!updated) {
       throw new HttpException('Not found', HttpStatus.NOT_FOUND);
     }
+    return updated;
+  }
+
+  /** Update icon — owner-only; emits realtime project:updated */
+  @Patch(':id/icon')
+  @UseGuards(ProjectPermissionGuard)
+  @CanManageProject()
+  async updateIcon(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: { kind?: 'emoji' | 'svg'; value?: string } | null,
+  ) {
+    const userId = req?.user?.sub;
+
+    // Allow clearing with null body, otherwise require kind/value
+    const icon =
+      body && typeof body === 'object'
+        ? (body.kind && body.value
+            ? { kind: body.kind, value: String(body.value || '').trim() }
+            : null)
+        : null;
+
+    const updated = await this.projects.updateIcon(id, userId, icon);
+
+    // Realtime fan-out (non-blocking)
+    try {
+      this.realtime.emitToProject(String(id), 'project:updated', {
+        projectId: String(id),
+        patch: { icon: updated?.icon ?? null },
+      });
+    } catch {
+      /* noop */
+    }
+
     return updated;
   }
 }

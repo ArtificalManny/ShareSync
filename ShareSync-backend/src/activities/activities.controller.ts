@@ -1,4 +1,3 @@
-// src/activities/activities.controller.ts
 import {
   Body,
   Controller,

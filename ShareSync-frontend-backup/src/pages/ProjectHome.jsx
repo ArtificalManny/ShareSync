@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useContext } from "react";
+import React, { useEffect, useMemo, useState, useContext, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
 import {
@@ -17,7 +17,6 @@ import ProjectKpis from "../components/project/ProjectKpis";
 import ProjectActivityFeed from "../components/project/ProjectActivityFeed";
 import RisksPanel from "../components/project/RisksPanel";
 import MembersPanel from "../components/project/MembersPanel";
-import AuditList from "../components/audit/AuditList.jsx";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
 import useSocket from "../hooks/useSocket";
 import {
@@ -29,15 +28,21 @@ import {
   Plus,
   UserPlus,
   Settings as SettingsIcon,
+  RefreshCcw,
 } from "lucide-react";
 import { buildPublicStatusUrl } from "../api/public";
 
 import TaskSheet from "../components/tasks/TaskSheet";
 import InviteModal from "../components/project/InviteModal";
 import ProjectSettingsModal from "../components/project/ProjectSettingsModal";
-import UpdateComposer from "../components/compose/UpdateComposer";
 import FileGrid from "../components/files/FileGrid";
 import InsightsBlock from "../components/insights/InsightsBlock";
+
+// NEW: KPI graphs
+import KpiGroup from "../components/analytics/KpiGroup";
+// NEW: series hook + chart styles
+import useKpiSeries from "../hooks/useKpiSeries";
+import "../styles/charts.css";
 
 // ---- small helpers ----
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
@@ -98,12 +103,12 @@ export default function ProjectHome() {
   // Modal/drawer state
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [regenLoading, setRegenLoading] = useState(false);
   const [showTaskSheet, setShowTaskSheet] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Tabs & files
-  const [activeTab, setActiveTab] = useState("all"); // 'all' | 'updates' | 'tasks' | 'files'
+  // Files (still used by Files section)
   const [files, setFiles] = useState([]);
 
   useEffect(() => { mark("ss:projecthome:mounted"); }, []);
@@ -206,7 +211,17 @@ export default function ProjectHome() {
           setFiles((prev) => dedupeById([...payload.files, ...prev]));
         }
       },
-      // tasks
+      // ✅ project patch (icon updates etc.)
+      "project:updated": (payload) => {
+        if (String(payload?.projectId) === String(id) && payload?.patch) {
+          if (Object.prototype.hasOwnProperty.call(payload.patch, "icon")) {
+            setProject((p) => ({ ...p, icon: payload.patch.icon }));
+          } else {
+            setProject((p) => ({ ...p, ...payload.patch }));
+          }
+        }
+      },
+      // tasks: normalize to feed via server or separate UI if needed
       "tasks:created": (payload) => {
         if (String(payload?.projectId) === String(id) && payload?.task) {
           setProject((p) => ({ ...p, tasks: [payload.task, ...(p?.tasks || [])] }));
@@ -220,6 +235,12 @@ export default function ProjectHome() {
               String(t._id) === String(payload.task._id) ? payload.task : t
             ),
           }));
+        }
+      },
+      // public toggle (optional backend emit)
+      "project:publicChanged": (payload) => {
+        if (String(payload?.projectId) === String(id)) {
+          setProject((p) => ({ ...p, publicToken: payload?.publicToken || "" }));
         }
       },
     },
@@ -239,7 +260,6 @@ export default function ProjectHome() {
     const visibility = (payload && payload.visibility) === "public" ? "public" : "private";
     if (!text.trim() && attachments.length === 0) return;
 
-    // tiny optimistic UI for updates only
     const optimistic = {
       _id: `tmp-${Date.now()}`,
       type: "update.posted",
@@ -294,9 +314,10 @@ export default function ProjectHome() {
     }));
   };
 
-  // --- Public status link helpers ---
-  const publicToken = project?.publicToken || project?.token || project?._id;
-  const publicStatusPath = publicToken ? buildPublicStatusUrl(publicToken) : null;
+  // --- Public status helpers ---
+  const publicToken = project?.publicToken || "";
+  const publicEnabled = !!publicToken;
+  const publicStatusPath = publicEnabled ? buildPublicStatusUrl(publicToken) : null;
   const fullPublicUrl =
     typeof window !== "undefined" && publicStatusPath
       ? `${window.location.origin}${publicStatusPath}`
@@ -321,14 +342,67 @@ export default function ProjectHome() {
     }
   };
 
-  // Feed filtering
-  const filteredFeedItems = useMemo(() => {
-    if (activeTab === "all") return feed.items;
-    if (activeTab === "updates") return feed.items.filter((it) => (it.type || "").includes("update"));
-    if (activeTab === "tasks") return feed.items.filter((it) => (it.type || "").includes("task"));
-    if (activeTab === "files") return feed.items.filter((it) => (it.type || "").includes("file"));
-    return feed.items;
-  }, [feed.items, activeTab]);
+  // Toggle public on/off from header
+  const handleTogglePublic = useCallback(async (nextEnabled) => {
+    if (!canManage || !project?._id) return;
+
+    // dynamic import if available
+    let mod = {};
+    try { mod = await import("../api/public"); } catch {}
+
+    try {
+      if (nextEnabled) {
+        let token = null;
+        if (typeof mod.enablePublic === "function") {
+          const res = await mod.enablePublic(project._id);
+          token = res?.token || res?.publicToken || null;
+        } else {
+          const res = await fetch(`/api/public/projects/${project._id}/enable`, { method: "POST" });
+          const json = await res.json();
+          token = json?.token || json?.publicToken || null;
+        }
+        setProject((p) => ({ ...p, publicToken: token || p?.publicToken || "" }));
+      } else {
+        if (typeof mod.disablePublic === "function") {
+          await mod.disablePublic(project._id);
+        } else {
+          await fetch(`/api/public/projects/${project._id}/disable`, { method: "POST" });
+        }
+        setProject((p) => ({ ...p, publicToken: "" }));
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || "Failed to update public status.");
+    }
+  }, [canManage, project?._id]);
+
+  // Regenerate token from modal
+  const handleRegenerate = async () => {
+    if (!canManage || !project?._id) return;
+    setRegenLoading(true);
+    let mod = {};
+    try { mod = await import("../api/public"); } catch {}
+    try {
+      let token = null;
+      if (typeof mod.regeneratePublicToken === "function") {
+        const res = await mod.regeneratePublicToken(project._id);
+        token = res?.token || res?.publicToken || null;
+      } else {
+        const res = await fetch(`/api/public/projects/${project._id}/regenerate`, { method: "POST" });
+        const json = await res.json();
+        token = json?.token || json?.publicToken || null;
+      }
+      if (token) setProject((p) => ({ ...p, publicToken: token }));
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || "Failed to regenerate link.");
+    } finally {
+      setRegenLoading(false);
+    }
+  };
+
+  // 🔹 Build KPI trend series via hook
+  const kpiTrends = useKpiSeries(stats);
 
   if (loading) {
     return (
@@ -404,8 +478,12 @@ export default function ProjectHome() {
   return (
     <main id="main" role="main" tabIndex={-1}>
       <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
-        {/* Header */}
-        <ProjectHeader project={project} onAddTask={() => canEdit && setShowTaskSheet(true)} />
+        {/* Header (now shows public toggle if owner) */}
+        <ProjectHeader
+          project={project}
+          onAddTask={() => canEdit && setShowTaskSheet(true)}
+          onTogglePublic={handleTogglePublic}
+        />
 
         {/* Action Bar */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -446,7 +524,7 @@ export default function ProjectHome() {
             type="button"
             onClick={() => setShowStatusModal(true)}
             className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface"
-            title="Copy public status link"
+            title="Share public status link"
           >
             <Share2 className="w-4 h-4" />
             Public status
@@ -480,6 +558,86 @@ export default function ProjectHome() {
           </div>
         </section>
 
+        {/* NEW: KPI Trends (inline charts) */}
+        {kpiTrends.length > 0 && (
+          <section
+            className="mt-6 card accent-activity rounded-2xl border border-border bg-surface p-4"
+            role="region"
+            aria-label="KPI Trends"
+          >
+            <div className="flex items-start justify-between">
+              <SectionHeader icon="Activity">KPI Trends</SectionHeader>
+              <button
+                type="button"
+                className="rounded-lg p-1.5 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                aria-label="KPI chart options"
+                title="KPI chart options"
+              >
+                <MoreHorizontal className="w-5 h-5 text-muted" />
+              </button>
+            </div>
+
+            <div className="mt-3">
+              <KpiGroup
+                data={kpiTrends /* [{label, series:[{t, v}], color?}] */}
+                height={160}
+                showLegend={false}
+              />
+            </div>
+          </section>
+        )}
+
+        {/* Unified Activity Feed */}
+        <section
+          className="mt-6 card rounded-2xl border border-border bg-surface p-4"
+          role="region"
+          aria-label="Activity"
+        >
+          <div className="flex items-start justify-between">
+            <SectionHeader icon="History">Activity</SectionHeader>
+            <button
+              type="button"
+              className="rounded-lg p-1.5 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-label="Activity options"
+              title="Activity options"
+              onClick={() => loadFeed()}
+            >
+              <MoreHorizontal className="w-5 h-5 text-muted" />
+            </button>
+          </div>
+
+          <div className="mt-3">
+            <ProjectActivityFeed
+              projectId={id}
+              items={feed.items}
+              loading={feedLoading}
+              onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
+              hasMore={!!feed.nextCursor}
+              onPostUpdate={canEdit ? handlePostUpdate : undefined}
+              onRefetch={() => loadFeed()}
+            />
+          </div>
+        </section>
+
+        {/* Files */}
+        <section
+          className="mt-6 card rounded-2xl border border-border bg-surface p-4"
+          role="region"
+          aria-label="Files"
+        >
+          <div className="flex items-start justify-between">
+            <SectionHeader icon="Folder">Files</SectionHeader>
+          </div>
+          <div className="mt-3">
+            <FileGrid
+              projectId={project._id}
+              initialFiles={project.files || []}
+              canEdit={canEdit}
+              canManage={canManage}
+            />
+          </div>
+        </section>
+
         {/* Activity Over Time */}
         <section
           className="mt-6 card accent-activity rounded-2xl border border-border bg-surface p-4"
@@ -500,90 +658,14 @@ export default function ProjectHome() {
           <ActivityOverTimeLive projectId={project._id} defaultRange="30" />
         </section>
 
-        {/* Tabs */}
-        <div className="mt-6">
-          <div className="inline-flex rounded-xl border border-border overflow-hidden">
-            {[
-              { key: "all", label: "All" },
-              { key: "updates", label: "Updates" },
-              { key: "tasks", label: "Tasks" },
-              { key: "files", label: "Files" },
-            ].map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setActiveTab(t.key)}
-                className={`px-3 py-1.5 text-sm ${
-                  activeTab === t.key
-                    ? "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300"
-                    : "text-muted"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Main column */}
-          <div className="lg:col-span-8 space-y-4">
-            {(activeTab === "all" || activeTab === "updates") && canEdit && (
-              <UpdateComposer
-                disabled={!canEdit}
-                onSubmit={handlePostUpdate}
-                onUploadFiles={(flist) => uploadFiles(flist, { projectId: id })}
-              />
-            )}
-
-            {(activeTab === "all" || activeTab === "updates") && (
-              <ProjectActivityFeed
-                projectId={id}
-                items={filteredFeedItems}
-                loading={feedLoading}
-                onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
-                hasMore={!!feed.nextCursor}
-                onPostUpdate={canEdit ? handlePostUpdate : undefined}
-                onRefetch={() => loadFeed()}
-              />
-            )}
-
-            {activeTab === "tasks" && (
-              <div className="rounded-2xl border border-border bg-surface p-4">
-                <SectionHeader icon="ListTodo">Tasks</SectionHeader>
-                <div className="mt-3 space-y-2">
-                  {(tasks || []).map((t) => (
-                    <div key={t._id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
-                      <div className="text-sm">{t.title}</div>
-                      <div className="text-xs text-muted">{t.status || "Not Started"}</div>
-                    </div>
-                  ))}
-                  {!tasks?.length && <div className="text-sm text-muted">No tasks yet.</div>}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "files" && (
-              <div className="rounded-2xl border border-border bg-surface p-4">
-                <SectionHeader icon="Folder">Files</SectionHeader>
-                <div className="mt-3">
-                  <FileGrid
-                    projectId={project._id}
-                    initialFiles={project.files || []}
-                    canEdit={canEdit}
-                    canManage={canManage}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Right rail */}
+        {/* Right rail */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-8" />
           <div className="lg:col-span-4 space-y-6">
             <InsightsBlock
               projectId={project._id}
               insights={stats?.insights}
               loading={statsLoading}
-              className=""
             />
 
             <div className="card accent-risk rounded-2xl border border-border bg-surface p-4">
@@ -594,13 +676,7 @@ export default function ProjectHome() {
             </div>
 
             <MembersPanel members={project.members || []} />
-
-            <div className="card accent-activity rounded-2xl border border-border bg-surface p-4">
-              <SectionHeader icon="History">Recent Activity</SectionHeader>
-              <div className="mt-2">
-                <AuditList scope="project" projectId={project._id} />
-              </div>
-            </div>
+            {/* NOTE: the separate "Recent Activity" card has been removed in favor of the unified feed above */}
           </div>
         </div>
       </div>
@@ -623,7 +699,7 @@ export default function ProjectHome() {
               <div className="inline-flex items-center gap-2">
                 <LinkIcon className="w-4 h-4 text-indigo-600" />
                 <h3 className="text-sm font-semibold text-text">
-                  Copy public status link
+                  Public status link
                 </h3>
               </div>
               <button
@@ -637,7 +713,7 @@ export default function ProjectHome() {
             <div className="p-4 space-y-3">
               {!publicStatusPath ? (
                 <p className="text-sm text-muted">
-                  This project doesn’t have a public token yet. Once enabled, you’ll see a shareable link here.
+                  This project is currently <strong>Private</strong>. Use the toggle in the header or Project Settings to enable the public status page.
                 </p>
               ) : (
                 <>
@@ -658,9 +734,18 @@ export default function ProjectHome() {
                       {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       {copied ? "Copied" : "Copy"}
                     </button>
+                    <button
+                      onClick={handleRegenerate}
+                      disabled={regenLoading}
+                      className="inline-flex items-center gap-2 rounded-lg px-3 py-2 border border-border hover:bg-surface disabled:opacity-60"
+                      title="Regenerate link (invalidates the old one)"
+                    >
+                      {regenLoading ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+                      Regenerate
+                    </button>
                   </div>
                   <p className="text-[11px] text-muted">
-                    Visitors can view KPIs and recent activity summaries. No login required.
+                    Regenerating creates a new token and invalidates the old link.
                   </p>
                 </>
               )}

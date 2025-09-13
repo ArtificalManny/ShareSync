@@ -19,15 +19,19 @@ import { TasksModule } from './tasks/tasks.module';
 
 // ✅ keep only the new notify module
 import { NotifyModule } from './notifications/notify.module';
-// ✅ add the files module
+// ✅ files module
 import { FilesModule } from './files/files.module';
+// ✅ habits module
+import { HabitsModule } from './habits/habits.module';
 
 import { AppController } from './app.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    MongooseModule.forRoot(process.env.MONGO_URI),
+
+    // Use env or sensible local default
+    MongooseModule.forRoot(process.env.MONGO_URI || 'mongodb://localhost:27017/sharesync'),
 
     ThrottlerModule.forRoot([{ ttl: 60, limit: 20 }]),
 
@@ -45,7 +49,8 @@ import { AppController } from './app.controller';
     TasksModule,
 
     NotifyModule,
-    FilesModule, // ✅ now wired
+    FilesModule,
+    HabitsModule, // ✅ now wired
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

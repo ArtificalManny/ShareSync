@@ -1,21 +1,43 @@
-// /src/components/project/ProjectSettingsModal.jsx
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { X, Settings, Loader2, Globe, Shield, Copy, Check, Link as LinkIcon } from "lucide-react";
+import {
+  X,
+  Settings,
+  Loader2,
+  Globe,
+  Shield,
+  Copy,
+  Check,
+  Link as LinkIcon,
+  ImagePlus,
+  RefreshCcw,
+} from "lucide-react";
+import ProjectIconPicker from "./ProjectIconPicker";
+import Switch from "../ui/Switch";
+import ConfirmDialog from "../ui/ConfirmDialog";
+import { copyToClipboard } from "../../utils/clipboard";
+import TraceOutline from "../ui/TraceOutline";
 
 let patchProjectApi = null;
 let enablePublicApi = null;
+let disablePublicApi = null;
+let regeneratePublicApi = null;
+let patchProjectIconApi = null;
 try {
-  // Optional imports — if your helpers exist we’ll use them
-  // export patchProject(id, body)
-  // export enablePublicStatus(projectId) -> { token }
+  // Optional dynamic imports — if your helpers exist we’ll use them
   // eslint-disable-next-line import/no-unresolved
   // @ts-ignore
   const mod = await import("../../api/projects");
   patchProjectApi = mod?.patchProject || null;
-  enablePublicApi = mod?.enablePublicStatus || null;
-} catch {
-  /* use fetch fallbacks */
-}
+  patchProjectIconApi = mod?.patchProjectIcon || null;
+} catch {}
+try {
+  // eslint-disable-next-line import/no-unresolved
+  // @ts-ignore
+  const pub = await import("../../api/public");
+  enablePublicApi = pub?.enablePublic || null;
+  disablePublicApi = pub?.disablePublic || null;
+  regeneratePublicApi = pub?.regeneratePublicToken || null;
+} catch {}
 
 // Utility: builds /status/:token (same as buildPublicStatusUrl, but inline-safe)
 const statusPath = (token) => (token ? `/status/${encodeURIComponent(token)}` : "");
@@ -23,17 +45,28 @@ const statusPath = (token) => (token ? `/status/${encodeURIComponent(token)}` : 
 export default function ProjectSettingsModal({
   open,
   onClose,
-  project,             // { _id, name, description?, visibility?: 'private'|'public', publicToken? }
-  onSaved,             // (updatedProject) => void (optimistic UI in parent)
+  project, // { _id, name, description?, visibility?, publicToken?, icon? }
+  onSaved, // (updatedProject) => void
 }) {
-  const [name, setName] = useState(project?.name || "");
+  const [name, setName] = useState(project?.name || project?.title || "");
   const [description, setDescription] = useState(project?.description || "");
   const [visibility, setVisibility] = useState(project?.visibility || "private");
-  const [publicEnabled, setPublicEnabled] = useState(!!project?.publicToken || project?.visibility === "public");
+  const [publicEnabled, setPublicEnabled] = useState(
+    !!project?.publicToken || project?.visibility === "public"
+  );
   const [publicToken, setPublicToken] = useState(project?.publicToken || "");
+  const [icon, setIcon] = useState(project?.icon || null);
+
   const [submitting, setSubmitting] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [regenLoading, setRegenLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Confirmation modals
+  const [confirmDisableOpen, setConfirmDisableOpen] = useState(false);
+  const [confirmRegenOpen, setConfirmRegenOpen] = useState(false);
+
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
 
   const containerRef = useRef(null);
   const firstFieldRef = useRef(null);
@@ -41,14 +74,17 @@ export default function ProjectSettingsModal({
   // Reset values each time it opens or project changes
   useEffect(() => {
     if (!open) return;
-    setName(project?.name || "");
+    setName(project?.name || project?.title || "");
     setDescription(project?.description || "");
     setVisibility(project?.visibility || "private");
     setPublicEnabled(!!project?.publicToken || project?.visibility === "public");
     setPublicToken(project?.publicToken || "");
+    setIcon(project?.icon || null);
     setError("");
     setSubmitting(false);
     setLinkCopied(false);
+    setConfirmDisableOpen(false);
+    setConfirmRegenOpen(false);
     setTimeout(() => firstFieldRef.current?.focus(), 20);
   }, [open, project]);
 
@@ -109,76 +145,77 @@ export default function ProjectSettingsModal({
 
   const copyLink = async () => {
     if (!publicUrl) return;
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 1500);
-    } catch {
-      setLinkCopied(false);
-    }
+    const ok = await copyToClipboard(publicUrl);
+    setLinkCopied(!!ok);
+    setTimeout(() => setLinkCopied(false), 1500);
   };
 
   const ensurePublicToken = useCallback(async () => {
-    // If already have token, nothing to do
     if (publicToken) return publicToken;
-
-    // Try helper, otherwise fallback
     try {
       if (enablePublicApi && project?._id) {
         const res = await enablePublicApi(project._id);
-        if (res?.token) {
-          setPublicToken(res.token);
-          return res.token;
+        if (res?.token || res?.publicToken) {
+          const t = res.token || res.publicToken;
+          setPublicToken(t);
+          return t;
         }
       } else if (project?._id) {
-        // Fallback route: POST -> /api/public/projects/:id/enable
         const res = await fetch(`/api/public/projects/${project._id}/enable`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         });
         if (!res.ok) throw new Error("Failed to enable public status.");
         const json = await res.json();
-        if (json?.token) {
-          setPublicToken(json.token);
-          return json.token;
+        if (json?.token || json?.publicToken) {
+          const t = json.token || json.publicToken;
+          setPublicToken(t);
+          return t;
         }
       }
     } catch (e) {
       setError(e?.message || "Failed to enable public status.");
       throw e;
     }
-    // If backend isn’t ready, generate a temporary client-side token (dev only)
     const devToken = `dev_${project?._id || "project"}_${Date.now().toString(36)}`;
     setPublicToken(devToken);
     return devToken;
   }, [enablePublicApi, project, publicToken]);
 
   const save = useCallback(async () => {
-    if (!name.trim()) {
+    const newName = name.trim();
+    if (!newName) {
       setError("Project name is required.");
       return;
     }
     setSubmitting(true);
     setError("");
 
-    // Prepare payload
     const body = {
-      name: name.trim(),
+      name: newName,
       description: description || "",
       visibility: visibility === "public" ? "public" : "private",
     };
 
     try {
-      // If public is enabled and no token exists, ensure one (best-effort)
       if (publicEnabled && !publicToken) {
         await ensurePublicToken();
       }
-      // Try helper first
+      // If toggled OFF explicitly, also disable public server-side (best-effort)
+      if (!publicEnabled && publicToken && project?._id) {
+        try {
+          if (disablePublicApi) await disablePublicApi(project._id);
+          else await fetch(`/api/public/projects/${project._id}/disable`, { method: "POST" });
+        } catch {
+          /* non-fatal */
+        }
+        setPublicToken("");
+      }
+
       let updated = null;
       if (patchProjectApi && project?._id) {
         updated = await patchProjectApi(project._id, body);
       } else if (project?._id) {
-        // Fallback PATCH
         const res = await fetch(`/api/projects/${project._id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -190,18 +227,13 @@ export default function ProjectSettingsModal({
         }
         updated = await res.json();
       } else {
-        // No id? Just synthesize object for optimistic UI
         updated = { ...(project || {}), ...body };
       }
 
-      // Also reflect public token locally if enabled
-      if (publicEnabled && publicToken) {
-        updated = { ...(updated || {}), publicToken };
-      }
-      if (!publicEnabled) {
-        // If toggled off, hide token in FE (leave server to actually disable later)
-        updated = { ...(updated || {}), publicToken: "" };
-      }
+      // reflect public token & icon locally for optimistic UI
+      if (publicEnabled && publicToken) updated = { ...updated, publicToken };
+      if (!publicEnabled) updated = { ...updated, publicToken: "" };
+      if (icon !== undefined) updated = { ...updated, icon };
 
       onSaved?.(updated);
       onClose?.();
@@ -220,197 +252,413 @@ export default function ProjectSettingsModal({
     ensurePublicToken,
     publicEnabled,
     publicToken,
+    icon,
   ]);
+
+  // --- Icon change handler (calls API immediately; still reflected in Save preview) ---
+  const handleIconChange = async (sel /* {kind,value} or null */) => {
+    try {
+      if (patchProjectIconApi && project?._id) {
+        const updated = await patchProjectIconApi(project._id, sel ?? null);
+        setIcon(updated?.icon ?? sel ?? null);
+        onSaved?.(updated); // let parent refresh right away
+      } else if (project?._id) {
+        const res = await fetch(`/api/projects/${project._id}/icon`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(sel ?? null),
+        });
+        if (!res.ok) {
+          const msg = await safeErrorMessage(res);
+          throw new Error(msg || "Failed to update icon.");
+        }
+        const updated = await res.json();
+        setIcon(updated?.icon ?? sel ?? null);
+        onSaved?.(updated);
+      } else {
+        setIcon(sel ?? null); // no id yet; local only
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || "Failed to update icon.");
+    } finally {
+      setIconPickerOpen(false);
+    }
+  };
+
+  // Disable public (confirmed)
+  const confirmDisable = async () => {
+    setConfirmDisableOpen(false);
+    if (!project?._id) return;
+    try {
+      if (disablePublicApi) await disablePublicApi(project._id);
+      else await fetch(`/api/public/projects/${project._id}/disable`, { method: "POST" });
+      setPublicEnabled(false);
+      setPublicToken("");
+      // reflect to parent right away
+      onSaved?.({ ...(project || {}), visibility: "private", publicToken: "" });
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || "Failed to disable public status.");
+    }
+  };
+
+  // Regenerate link (confirmed)
+  const regenerate = async () => {
+    if (!project?._id) return;
+    setRegenLoading(true);
+    try {
+      let token = null;
+      if (regeneratePublicApi) {
+        const res = await regeneratePublicApi(project._id);
+        token = res?.token || res?.publicToken || null;
+      } else {
+        const res = await fetch(`/api/public/projects/${project._id}/regenerate`, {
+          method: "POST",
+        });
+        const json = await res.json();
+        token = json?.token || json?.publicToken || null;
+      }
+      if (token) {
+        setPublicToken(token);
+        onSaved?.({ ...(project || {}), publicToken: token });
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || "Failed to regenerate link.");
+    } finally {
+      setRegenLoading(false);
+      setConfirmRegenOpen(false);
+    }
+  };
 
   if (!open) return null;
 
   return (
     <>
+      {/* Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-black/30 dark:bg-black/50"
         onClick={onClose}
         aria-hidden="true"
       />
-      <div
-        ref={containerRef}
-        className="fixed z-50 inset-x-4 top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(720px,calc(100%-2rem))] rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Project settings"
-      >
-        {/* Header */}
-        <div className="p-4 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between">
-          <div className="inline-flex items-center gap-2">
-            <Settings className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Project Settings
-            </h3>
-          </div>
-          <button
-            className="text-sm rounded-lg px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800"
-            onClick={onClose}
-            aria-label="Close settings"
-          >
-            <X className="w-5 h-5 text-slate-600" />
-          </button>
-        </div>
 
-        {/* Body */}
-        <div className="p-4 space-y-5">
-          {error ? (
-            <div className="rounded-lg border border-rose-200/70 bg-rose-50 text-rose-800 text-sm px-3 py-2">
-              {error}
+      {/* Modal Panel wrapped with TraceOutline for premium glow */}
+      <TraceOutline radius={18} speedMs={3200}>
+        <div
+          ref={containerRef}
+          className="fixed z-50 inset-x-4 top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(720px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-[var(--shadow)] accent-bar shine"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Project settings"
+        >
+          <span className="accent-bar__left" aria-hidden="true" />
+
+          {/* Header */}
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <div className="inline-flex items-center gap-2">
+              <Settings className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-sm font-semibold text-text">Project Settings</h3>
             </div>
-          ) : null}
-
-          {/* Name */}
-          <div>
-            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
-              Project name <span className="text-rose-600">*</span>
-            </label>
-            <input
-              ref={firstFieldRef}
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Infra Revamp Q4"
-              className="w-full text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              placeholder="One or two sentences about goals, scope, or milestones."
-              className="w-full text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2"
-            />
-          </div>
-
-          {/* Visibility */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
-              type="button"
-              onClick={() => setVisibility("private")}
-              className={`rounded-xl border px-3 py-3 text-left hover:bg-white/70 dark:hover:bg-slate-800 ${
-                visibility === "private"
-                  ? "border-slate-800 ring-2 ring-indigo-500"
-                  : "border-slate-300 dark:border-slate-700"
-              }`}
-              aria-pressed={visibility === "private"}
+              className="btn btn--ghost press-shrink"
+              onClick={onClose}
+              aria-label="Close settings"
             >
-              <div className="inline-flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                <span className="text-sm font-semibold">Private</span>
-              </div>
-              <p className="mt-1 text-xs text-slate-500">
-                Only project members can view and contribute.
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setVisibility("public")}
-              className={`rounded-xl border px-3 py-3 text-left hover:bg-white/70 dark:hover:bg-slate-800 ${
-                visibility === "public"
-                  ? "border-slate-800 ring-2 ring-indigo-500"
-                  : "border-slate-300 dark:border-slate-700"
-              }`}
-              aria-pressed={visibility === "public"}
-            >
-              <div className="inline-flex items-center gap-2">
-                <Globe className="w-4 h-4" />
-                <span className="text-sm font-semibold">Public</span>
-              </div>
-              <p className="mt-1 text-xs text-slate-500">
-                Read-only status snapshots can be shared externally.
-              </p>
+              <X className="w-5 h-5 text-muted" />
             </button>
           </div>
 
-          {/* Public status toggle */}
-          <div className="rounded-xl border border-slate-300 dark:border-slate-700 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <label className="inline-flex items-center gap-2 text-sm font-semibold">
-                  <LinkIcon className="w-4 h-4 text-indigo-600" />
-                  Public status page
-                </label>
-                <p className="text-xs text-slate-500">
-                  Generate a tokenized, read-only status page for stakeholders.
-                </p>
-              </div>
-              <label className="inline-flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-indigo-600"
-                  checked={publicEnabled}
-                  onChange={(e) => setPublicEnabled(e.target.checked)}
-                />
-                <span className="text-xs text-slate-600">Enable</span>
-              </label>
-            </div>
-
-            {publicEnabled ? (
-              <div className="mt-3 space-y-2">
-                <div className="flex items-stretch gap-2">
-                  <input
-                    readOnly
-                    value={publicUrl || "Will be created on Save…"}
-                    className="flex-1 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2"
-                    onFocus={(e) => e.currentTarget.select()}
-                  />
-                  <button
-                    type="button"
-                    onClick={copyLink}
-                    disabled={!publicUrl}
-                    className="inline-flex items-center gap-2 rounded-lg px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-                    title={publicUrl ? "Copy link" : "No link yet"}
-                  >
-                    {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {linkCopied ? "Copied" : "Copy"}
-                  </button>
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  The link is tokenized; anyone with the URL can view the status page.
-                </p>
+          {/* Body */}
+          <div className="p-4 space-y-5">
+            {error ? (
+              <div className="rounded-lg border border-rose-200/70 bg-rose-50 text-rose-800 text-sm px-3 py-2">
+                {error}
               </div>
             ) : null}
+
+            {/* Name */}
+            <div>
+              <label className="block text-xs text-muted mb-1">
+                Project name <span className="text-rose-600">*</span>
+              </label>
+              <input
+                ref={firstFieldRef}
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Infra Revamp Q4"
+                className="w-full text-sm rounded-lg border border-border bg-surface px-3 py-2"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs text-muted mb-1">Description</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                placeholder="One or two sentences about goals, scope, or milestones."
+                className="w-full text-sm rounded-lg border border-border bg-surface px-3 py-2"
+              />
+            </div>
+
+            {/* 🔷 Project Icon */}
+            <div className="rounded-xl border border-border p-3">
+              <div className="flex items-center justify-between">
+                <div className="inline-flex items-center gap-2">
+                  <ImagePlus className="w-4 h-4 text-indigo-600" />
+                  <span className="text-sm font-semibold text-text">Project Icon</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIconPickerOpen(true)}
+                  className="btn btn--outline press-shrink"
+                >
+                  {icon ? "Change" : "Add"} icon
+                </button>
+              </div>
+              <div className="mt-2 text-sm">
+                {icon ? (
+                  <span className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-surface border border-border">
+                    {icon.kind === "emoji" ? (
+                      <span className="text-xl" role="img" aria-label="icon">
+                        {icon.value}
+                      </span>
+                    ) : (
+                      <span className="text-indigo-600">
+                        {icon.value === "rocket" && (
+                          <svg viewBox="0 0 24 24" className="w-5 h-5">
+                            <path
+                              d="M12 2c3 0 6 2 8 4l-6 6-2-2-6 6-2-2 6-6-2-2 6-6z"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        )}
+                        {icon.value === "bolt" && (
+                          <svg viewBox="0 0 24 24" className="w-5 h-5">
+                            <path d="M13 2L3 14h7l-1 8 11-12h-7l0-8z" fill="currentColor" />
+                          </svg>
+                        )}
+                        {icon.value === "target" && (
+                          <svg viewBox="0 0 24 24" className="w-5 h-5">
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="9"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              fill="none"
+                            />
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="5"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              fill="none"
+                            />
+                            <circle cx="12" cy="12" r="2" fill="currentColor" />
+                          </svg>
+                        )}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleIconChange(null)}
+                      className="btn btn--outline press-shrink"
+                      title="Remove icon"
+                    >
+                      Remove
+                    </button>
+                  </span>
+                ) : (
+                  <span className="text-muted">No icon set.</span>
+                )}
+              </div>
+            </div>
+
+            {/* Visibility choice cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setVisibility("private")}
+                className={`rounded-xl border px-3 py-3 text-left hover-raise ${
+                  visibility === "private"
+                    ? "win-glow border-slate-800"
+                    : "border-border"
+                }`}
+                aria-pressed={visibility === "private"}
+              >
+                <div className="inline-flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  <span className="text-sm font-semibold">Private</span>
+                </div>
+                <p className="mt-1 text-xs text-muted">
+                  Only project members can view and contribute.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setVisibility("public")}
+                className={`rounded-xl border px-3 py-3 text-left hover-raise ${
+                  visibility === "public"
+                    ? "win-glow border-slate-800"
+                    : "border-border"
+                }`}
+                aria-pressed={visibility === "public"}
+              >
+                <div className="inline-flex items-center gap-2">
+                  <Globe className="w-4 h-4" />
+                  <span className="text-sm font-semibold">Public</span>
+                </div>
+                <p className="mt-1 text-xs text-muted">
+                  Read-only status snapshots can be shared externally.
+                </p>
+              </button>
+            </div>
+
+            {/* Public status toggle */}
+            <div className="rounded-xl border border-border p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <label className="inline-flex items-center gap-2 text-sm font-semibold">
+                    <LinkIcon className="w-4 h-4 text-indigo-600" />
+                    Public status page
+                  </label>
+                  <p className="text-xs text-muted">
+                    Generate a tokenized, read-only status page for stakeholders.
+                  </p>
+                </div>
+
+                <Switch
+                  checked={publicEnabled}
+                  onChange={async (next) => {
+                    if (!next && publicToken) {
+                      // Ask for confirmation before disabling
+                      setConfirmDisableOpen(true);
+                    } else {
+                      setPublicEnabled(next);
+                      if (next && !publicToken) {
+                        try {
+                          await ensurePublicToken();
+                        } catch {
+                          // already surfaced by setError
+                          setPublicEnabled(false);
+                        }
+                      }
+                    }
+                  }}
+                  ariaLabel="Enable public status"
+                />
+              </div>
+
+              {publicEnabled ? (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-stretch gap-2">
+                    <input
+                      readOnly
+                      value={publicUrl || "Will be created on Save…"}
+                      className="flex-1 text-sm rounded-lg border border-border bg-surface px-3 py-2"
+                      onFocus={(e) => e.currentTarget.select()}
+                      aria-label="Public status URL"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={copyLink}
+                      disabled={!publicUrl}
+                      className="btn btn--primary press-shrink disabled:opacity-50"
+                      title={publicUrl ? "Copy link" : "No link yet"}
+                    >
+                      {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {linkCopied ? "Copied" : "Copy"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmRegenOpen(true)}
+                      disabled={!publicToken || regenLoading}
+                      className="btn btn--outline press-shrink disabled:opacity-50"
+                      title="Regenerate link (invalidates the old one)"
+                    >
+                      {regenLoading ? (
+                        <RefreshCcw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCcw className="w-4 h-4" />
+                      )}
+                      Regenerate
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-muted">
+                    The link is tokenized; anyone with the URL can view the status page.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-4 py-3 border-t border-border flex items-center justify-end gap-2">
+            <button
+              className="btn btn--ghost press-shrink"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={save}
+              disabled={submitting}
+              className="btn btn--primary press-shrink marching disabled:opacity-60"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <Settings className="w-4 h-4" />
+                  Save changes
+                </>
+              )}
+            </button>
           </div>
         </div>
+      </TraceOutline>
 
-        {/* Footer */}
-        <div className="px-4 py-3 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-end gap-2">
-          <button
-            className="rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={save}
-            disabled={submitting}
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-60"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving…
-              </>
-            ) : (
-              <>
-                <Settings className="w-4 h-4" />
-                Save changes
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+      {/* Icon Picker modal */}
+      <ProjectIconPicker
+        open={iconPickerOpen}
+        onClose={() => setIconPickerOpen(false)}
+        onSelect={handleIconChange}
+      />
+
+      {/* Confirm: Disable public */}
+      <ConfirmDialog
+        open={confirmDisableOpen}
+        title="Disable public status?"
+        description="This will revoke access to the public status page immediately."
+        confirmLabel="Disable"
+        confirmTone="danger"
+        onCancel={() => setConfirmDisableOpen(false)}
+        onConfirm={confirmDisable}
+      />
+
+      {/* Confirm: Regenerate link */}
+      <ConfirmDialog
+        open={confirmRegenOpen}
+        title="Regenerate public link?"
+        description="The current public link will stop working. A new tokenized URL will be created."
+        confirmLabel="Regenerate"
+        confirmTone="warning"
+        onCancel={() => setConfirmRegenOpen(false)}
+        onConfirm={regenerate}
+      />
     </>
   );
 }

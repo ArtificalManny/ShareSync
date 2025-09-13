@@ -1,7 +1,6 @@
-// /src/pages/ProjectsCreate.jsx
 import React, { useState } from "react";
 import { Dialog } from "@headlessui/react";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Shield, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createProject } from "../api/projects";
 import { toast } from "../components/ui/toast";
@@ -9,7 +8,7 @@ import { toast } from "../components/ui/toast";
 export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const navigate = useNavigate();
 
-  // Form state (keep fields you actually render in your layout)
+  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -46,8 +45,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
         description: description.trim(),
         category: category.trim() || undefined,
         status,
-        privacy,       // if your backend expects boolean, map here
-        members,       // [{ email, role }]
+        privacy,
+        members, // [{ email, role }]
       };
 
       const project = await createProject(payload);
@@ -62,8 +61,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
       onClose?.();
     } catch (err) {
       const msg =
-        err?.normalizedMessage ||           // from interceptor
-        err?.response?.data?.message ||     // Nest error shape
+        err?.normalizedMessage ||
+        err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
         "Failed to create project";
@@ -77,19 +76,19 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
     <Dialog open={true} onClose={onClose} className="fixed inset-0 z-50">
       <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-4xl rounded-2xl bg-white dark:bg-slate-800 shadow-xl">
+        <Dialog.Panel className="relative w-full max-w-4xl rounded-2xl border border-border bg-surface shadow-[var(--shadow)] accent-bar shine">
+          <span className="accent-bar__left" aria-hidden="true" />
+
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-slate-200/70 dark:border-slate-700">
-            <Dialog.Title className="text-xl font-bold text-ink-900 dark:text-white">
-              Create New Project
-            </Dialog.Title>
+          <div className="flex items-center justify-between p-5 border-b border-border">
+            <Dialog.Title className="card-header">Create New Project</Dialog.Title>
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="btn btn--ghost"
               aria-label="Close create project dialog"
             >
-              <X size={18} />
+              <X className="w-5 h-5 text-muted" />
             </button>
           </div>
 
@@ -98,54 +97,46 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
             {/* Top row: Title / Description */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Title *
-                </label>
+                <label className="block text-sm text-muted">Title *</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Project title"
-                  className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2"
                   aria-required="true"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Description *
-                </label>
+                <label className="block text-sm text-muted">Description *</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What are you building? Why now?"
-                  className="mt-1 w-full h-[84px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                  className="mt-1 w-full h-[84px] rounded-lg border border-border bg-surface px-3 py-2"
                 />
               </div>
             </div>
 
-            {/* Middle row: Category / Status / Privacy */}
+            {/* Middle row: Category / Status */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Category
-                </label>
+                <label className="block text-sm text-muted">Category</label>
                 <input
                   type="text"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   placeholder="e.g., Personal, School, Work"
-                  className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Status
-                </label>
+                <label className="block text-sm text-muted">Status</label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2"
                 >
                   <option>Not Started</option>
                   <option>In Progress</option>
@@ -153,27 +144,53 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 </select>
               </div>
 
+              {/* Privacy – cards with subtle hover-raise */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Privacy
-                </label>
-                <select
-                  value={privacy}
-                  onChange={(e) => setPrivacy(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
-                >
-                  <option>Private</option>
-                  <option>Public</option>
-                </select>
+                <label className="block text-sm text-muted mb-1">Privacy</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPrivacy("Private")}
+                    className={`rounded-xl border px-3 py-2 text-left hover-raise ${
+                      privacy === "Private" ? "win-glow border-slate-800" : "border-border"
+                    }`}
+                    aria-pressed={privacy === "Private"}
+                    aria-label="Set privacy to Private"
+                  >
+                    <div className="inline-flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      <span className="text-sm font-semibold">Private</span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted">
+                      Only invited members can access.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPrivacy("Public")}
+                    className={`rounded-xl border px-3 py-2 text-left hover-raise ${
+                      privacy === "Public" ? "win-glow border-slate-800" : "border-border"
+                    }`}
+                    aria-pressed={privacy === "Public"}
+                    aria-label="Set privacy to Public"
+                  >
+                    <div className="inline-flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      <span className="text-sm font-semibold">Public</span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted">
+                      Share read-only status externally.
+                    </p>
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Add members */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Add Members
-                </span>
+                <span className="card-header">Add Members</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-[1fr_160px_120px] gap-3">
@@ -182,12 +199,12 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   value={memberEmail}
                   onChange={(e) => setMemberEmail(e.target.value)}
                   placeholder="member@email.com"
-                  className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                  className="rounded-lg border border-border bg-surface px-3 py-2"
                 />
                 <select
                   value={memberRole}
                   onChange={(e) => setMemberRole(e.target.value)}
-                  className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"
+                  className="rounded-lg border border-border bg-surface px-3 py-2"
                 >
                   <option>Member</option>
                   <option>Manager</option>
@@ -196,10 +213,10 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 <button
                   type="button"
                   onClick={addMember}
-                  className="btn btn-primary flex justify-center"
+                  className="btn btn--outline press-shrink flex justify-center"
                   aria-label="Add member"
                 >
-                  <Plus size={16} />
+                  <Plus className="w-4 h-4" />
                   <span className="ml-1">Add</span>
                 </button>
               </div>
@@ -209,10 +226,10 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   {members.map((m) => (
                     <li
                       key={m.email}
-                      className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2"
+                      className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
                     >
                       <span className="text-sm">
-                        {m.email} <span className="text-slate-500">({m.role})</span>
+                        {m.email} <span className="text-muted">({m.role})</span>
                       </span>
                       <button
                         type="button"
@@ -229,10 +246,10 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
             </div>
 
             {/* Footer buttons */}
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200/70 dark:border-slate-700">
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
               <button
                 type="button"
-                className="btn btn-ghost"
+                className="btn btn--ghost"
                 onClick={onClose}
                 disabled={submitting}
               >
@@ -240,7 +257,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               </button>
               <button
                 type="submit"
-                className={`btn btn-primary ${submitting ? "opacity-70 cursor-wait" : ""}`}
+                className={`btn btn--primary marching ${submitting ? "opacity-70 cursor-wait" : ""}`}
                 disabled={submitting}
               >
                 {submitting ? "Creating…" : "Create Project"}

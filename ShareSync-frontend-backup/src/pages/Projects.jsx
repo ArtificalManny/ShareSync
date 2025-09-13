@@ -1,4 +1,3 @@
-// /src/pages/Projects.jsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -10,6 +9,11 @@ import ProjectsEmpty from '../components/projects/ProjectsEmpty.jsx';
 import RightRail from '../components/projects/RightRail.jsx';
 import { listProjects } from '../api/projects';
 import SectionHeader from '../components/ui/SectionHeader.jsx';
+import TraceOutline from '../components/ui/TraceOutline.jsx';
+import { bindShine } from '../utils/shine';
+import './Projects.css';
+
+import { FolderKanban, Users, Clock } from 'lucide-react';
 
 /** Debounce a value to limit API calls while typing */
 function useDebounce(value, delay = 350) {
@@ -26,9 +30,9 @@ function readParams(search) {
   const p = new URLSearchParams(search);
   return {
     query: p.get('query') ?? '',
-    status: p.get('status') ?? 'all',   // 'all' | 'not_started' | 'in_progress' | 'completed'
-    owner:  p.get('owner')  ?? 'all',   // 'all' | 'me' | 'team'
-    updated:p.get('updated')?? '7d',    // '7d' | '30d' | 'all'
+    status: p.get('status') ?? 'all',
+    owner:  p.get('owner')  ?? 'all',
+    updated:p.get('updated')?? '7d',
   };
 }
 
@@ -48,13 +52,8 @@ function timeAgo(iso) {
   if (!iso) return 'just now';
   const s = Math.max(1, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
   const units = [
-    ['y', 31536000],
-    ['mo', 2592000],
-    ['w', 604800],
-    ['d', 86400],
-    ['h', 3600],
-    ['m', 60],
-    ['s', 1],
+    ['y', 31536000], ['mo', 2592000], ['w', 604800],
+    ['d', 86400], ['h', 3600], ['m', 60], ['s', 1],
   ];
   for (const [label, sec] of units) {
     if (s >= sec) {
@@ -81,12 +80,13 @@ function initials(nameOrEmail = '') {
 function Avatar({ user, size = 24 }) {
   const { avatarUrl, displayName, name, username, email } = user || {};
   const label = displayName || name || username || email || '';
+  const scaleHover = 'transition-transform duration-200 ease-out group-hover:scale-[1.06]';
   if (avatarUrl) {
     return (
       <img
         src={avatarUrl}
         alt={label}
-        className="inline-block rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
+        className={`inline-block rounded-full ring-2 ring-white dark:ring-slate-900 object-cover ${scaleHover}`}
         style={{ width: size, height: size }}
         loading="lazy"
         referrerPolicy="no-referrer"
@@ -95,7 +95,7 @@ function Avatar({ user, size = 24 }) {
   }
   return (
     <div
-      className="inline-grid place-items-center rounded-full bg-surface text-text ring-2 ring-white dark:ring-slate-900 text-[11px] font-semibold"
+      className={`inline-grid place-items-center rounded-full bg-surface text-text ring-2 ring-white dark:ring-slate-900 text-[11px] font-semibold ${scaleHover}`}
       style={{ width: size, height: size }}
       aria-label={label}
       title={label}
@@ -117,7 +117,7 @@ function AvatarGroup({ members = [], max = 5 }) {
       ))}
       {extra > 0 && (
         <div
-          className="inline-grid place-items-center rounded-full bg-surface text-text ring-2 ring-white dark:ring-slate-900 text-[11px] font-semibold"
+          className="inline-grid place-items-center rounded-full bg-surface text-text ring-2 ring-white dark:ring-slate-900 text-[11px] font-semibold transition-transform duration-200 ease-out group-hover:scale-[1.06]"
           style={{ width: 24, height: 24 }}
           title={`+${extra} more`}
         >
@@ -128,9 +128,27 @@ function AvatarGroup({ members = [], max = 5 }) {
   );
 }
 
+/** Map status -> colorful accent */
+function statusAccent(status) {
+  const key = (status || '').toString().toLowerCase().replace(/\s+/g, '_');
+  switch (key) {
+    case 'in_progress':
+    case 'inprogress':
+    case 'in progress':
+      return { bar: 'from-indigo-500 via-fuchsia-500 to-pink-500', chip: 'bg-indigo-50 text-indigo-700 border-indigo-200', label: 'In Progress' };
+    case 'completed':
+      return { bar: 'from-emerald-500 via-teal-500 to-cyan-500', chip: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Completed' };
+    case 'not_started':
+    case 'not started':
+    default:
+      return { bar: 'from-slate-400 via-slate-500 to-slate-600', chip: 'bg-slate-50 text-slate-700 border-slate-200', label: 'Not Started' };
+  }
+}
+
 export default function Projects() {
   const navigate = useNavigate();
   const location = useLocation();
+  const rootRef = useRef(null);
   const init = readParams(location.search);
 
   // UI + filter state
@@ -143,6 +161,15 @@ export default function Projects() {
   const [status, setStatus]   = useState(init.status);
   const [owner, setOwner]     = useState(init.owner);
   const [updated, setUpdated] = useState(init.updated);
+
+  // marching-outline hover control
+  const [hoverId, setHoverId] = useState(null);
+
+  // Bind blue-shine to this page only
+  useEffect(() => {
+    const unbind = bindShine(rootRef.current || document);
+    return () => unbind();
+  }, []);
 
   // keep URL in sync
   useEffect(() => {
@@ -215,11 +242,7 @@ export default function Projects() {
       const windowMs = updated === '7d' ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
       return now - dt <= windowMs;
     };
-    const statusMap = {
-      not_started: 'Not Started',
-      in_progress: 'In Progress',
-      completed: 'Completed',
-    };
+    const statusMap = { not_started: 'Not Started', in_progress: 'In Progress', completed: 'Completed' };
 
     return (projects || []).filter((p) => {
       const matchQ =
@@ -258,9 +281,23 @@ export default function Projects() {
   return (
     <main id="main" role="main" tabIndex={-1}>
       <div
+        ref={rootRef}
         data-accent="emerald"
         className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto"
       >
+        {/* Page banner */}
+        <div className="rounded-2xl border border-border bg-gradient-to-r from-indigo-50 via-fuchsia-50 to-pink-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 p-4 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white shadow-sm dark:bg-slate-900">
+              <FolderKanban className="w-4 h-4 text-indigo-600" />
+            </span>
+            <div className="text-sm">
+              <div className="font-semibold">Projects</div>
+              <div className="text-muted">Organize work by outcomes, not just tasks.</div>
+            </div>
+          </div>
+        </div>
+
         <ProjectsHeader
           query={query}
           onQueryChange={setQuery}
@@ -277,6 +314,10 @@ export default function Projects() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mt-4">
           {/* LEFT: Project list */}
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <SectionHeader icon="FolderKanban">All Projects</SectionHeader>
+            </div>
+
             {loading && (
               <div className="grid grid-cols-1 gap-3" aria-busy="true" aria-live="polite">
                 {[...Array(4)].map((_, i) => (
@@ -288,11 +329,7 @@ export default function Projects() {
             {!!error && !loading && (
               <div className="rounded-2xl p-4 bg-surface border border-rose-200/60 dark:border-rose-400/20 motion-quick">
                 <p className="text-rose-600 dark:text-rose-400 mb-3">{error}</p>
-                <button
-                  onClick={fetchProjects}
-                  className="btn btn-primary"
-                  aria-label="Retry loading projects"
-                >
+                <button onClick={fetchProjects} className="btn btn-primary" aria-label="Retry loading projects">
                   Retry
                 </button>
               </div>
@@ -307,30 +344,61 @@ export default function Projects() {
                 {filtered.map((p) => {
                   const pid = p._id || p.id;
                   const lastTs = p.lastActivityAt || p.updatedAt || p.createdAt;
-                  return (
-                    <div
-                      key={pid}
-                      className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden"
-                    >
-                      {/* Existing clickable list item */}
-                      <ProjectListItem
-                        project={p}
-                        onClick={() => goToProject(pid)}
-                      />
 
-                      {/* New footer: AvatarGroup + last activity */}
-                      <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-t border-border">
-                        <div className="min-w-0">
-                          <AvatarGroup members={Array.isArray(p.members) ? p.members : []} />
-                        </div>
+                  const rawStatus = p.status || '';
+                  const key =
+                    rawStatus === 'In Progress' ? 'in_progress' :
+                    rawStatus === 'Completed'   ? 'completed'   : 'not_started';
+                  const accent = statusAccent(key);
+
+                  const isHovered = hoverId === pid;
+
+                  return (
+                    <TraceOutline key={pid} radius={16} paused={!isHovered}>
+                      {/* OUTER CARD: the hover surface with the blue spotlight */}
+                      <div
+                        className="group project-card relative rounded-2xl border border-border bg-surface shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(16,24,40,0.12)]"
+                        data-shine
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Open project ${p.title || 'untitled'}`}
+                        onMouseEnter={() => setHoverId(pid)}
+                        onMouseLeave={() => setHoverId(null)}
+                        onClick={() => goToProject(pid)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') goToProject(pid); }}
+                      >
+                        {/* Color bar (left) with gentle widen on hover */}
                         <div
-                          className="text-xs text-muted whitespace-nowrap"
-                          title={lastTs ? new Date(lastTs).toLocaleString() : undefined}
-                        >
-                          Updated {timeAgo(lastTs)}
+                          className={`absolute left-0 top-0 h-full w-1 origin-left bg-gradient-to-b ${accent.bar} transition-transform duration-300 ease-out group-hover:scale-x-[1.4]`}
+                          aria-hidden="true"
+                        />
+
+                        {/* Optional linear sweep for extra polish */}
+                        <div
+                          className="pointer-events-none absolute inset-0 -translate-x-full opacity-0 bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/10 transition duration-700 ease-out group-hover:opacity-100 group-hover:translate-x-full"
+                          aria-hidden="true"
+                        />
+
+                        {/* Content */}
+                        <ProjectListItem project={p} />
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-t border-border bg-white/60 dark:bg-slate-900/40">
+                          <div className="min-w-0 flex items-center gap-3">
+                            <AvatarGroup members={Array.isArray(p.members) ? p.members : []} />
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${accent.chip}`}>
+                              <Users className="w-3 h-3" />
+                              {accent.label}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted whitespace-nowrap inline-flex items-center gap-1"
+                               title={lastTs ? new Date(lastTs).toLocaleString() : undefined}>
+                            <Clock className="w-3 h-3" />
+                            Updated {timeAgo(lastTs)}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </TraceOutline>
                   );
                 })}
               </div>
@@ -339,6 +407,9 @@ export default function Projects() {
 
           {/* RIGHT: Rail */}
           <div className="hidden lg:block">
+            <div className="mb-2">
+              <SectionHeader icon="Users">Your workspace</SectionHeader>
+            </div>
             <RightRail
               onQuickStatus={(s) => setStatus(s)}
               onQuickOwner={(o) => setOwner(o)}

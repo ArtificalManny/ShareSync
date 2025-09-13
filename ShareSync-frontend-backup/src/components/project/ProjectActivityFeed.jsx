@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useSocket from '../../hooks/useSocket';
 import EmptyState from '../EmptyState';
-import { ClipboardList, CheckCircle2, PencilLine, FileText, Image as ImageIcon } from 'lucide-react';
+import ProjectActivityItem from './ProjectActivityItem';
+import NudgeCard from '../habits/NudgeCard';           // ✅ NEW
+import "../../styles/feed.css";
 
 export default function ProjectActivityFeed({
   projectId,
@@ -42,13 +44,15 @@ export default function ProjectActivityFeed({
   });
 
   // ---------------- Filters (local) ----------------
-  const [filter, setFilter] = useState('all'); // 'all' | 'updates' | 'tasks' | 'files'
+  const [filter, setFilter] = useState('all'); // 'all' | 'updates' | 'tasks' | 'files' | 'system'
 
   const classify = (u) => {
     const kind = (u.kind || u.type || '').toString().toLowerCase();
+    if (kind.includes('audit') || kind.includes('system')) return 'system';
     if (kind.includes('file')) return 'files';
     if (kind.includes('task')) return 'tasks';
     if (kind.includes('update') || kind === '') return 'updates';
+
     const txt = (u.text || '').toLowerCase();
     if (txt.includes('uploaded') || txt.includes('.pdf') || txt.includes('.png') || txt.includes('.doc')) return 'files';
     if (txt.includes('task') || txt.includes('completed') || txt.includes('assigned')) return 'tasks';
@@ -60,32 +64,11 @@ export default function ProjectActivityFeed({
     return (items || []).filter((u) => classify(u) === filter);
   }, [items, filter]);
 
-  // ---- tiny helpers for task chips
-  const isTaskEvent = (u) => ((u.type || '').toLowerCase().startsWith('task.'));
-  const taskLabel = (u) => {
-    const t = (u.type || '').toLowerCase();
-    const title = u.title || u.meta?.title || u.text || 'Task';
-    if (t.includes('created')) return `Task created: ${title}`;
-    if (t.includes('updated')) return `Task updated: ${title}`;
-    if (t.includes('completed') || (u.status && String(u.status).toLowerCase() === 'completed' )) return `Task completed: ${title}`;
-    return `Task: ${title}`;
+  // ---------------- Nudges (local) ----------------
+  const [showSprintNudge, setShowSprintNudge] = useState(false);
+  const handleAfterPost = () => {
+    setShowSprintNudge(true);
   };
-  const taskIcon = (u) => {
-    const t = (u.type || '').toLowerCase();
-    if (t.includes('created')) return <ClipboardList className="w-4 h-4" />;
-    if (t.includes('updated')) return <PencilLine className="w-4 h-4" />;
-    if (t.includes('completed')) return <CheckCircle2 className="w-4 h-4" />;
-    return <ClipboardList className="w-4 h-4" />;
-  };
-
-  const isFileEvent = (u) => ((u.type || '').toLowerCase().includes('file'));
-  const fileIcon = (u) => {
-    const mime = (u.mime || u.meta?.mime || '').toLowerCase();
-    if (mime.startsWith('image/')) return <ImageIcon className="w-4 h-4" />;
-    return <FileText className="w-4 h-4" />;
-  };
-
-  const when = (u) => (u.createdAt ? new Date(u.createdAt).toLocaleString() : '');
 
   // ---------------- Render ----------------
   return (
@@ -97,6 +80,7 @@ export default function ProjectActivityFeed({
           { key: 'updates', label: 'Updates' },
           { key: 'tasks', label: 'Tasks' },
           { key: 'files', label: 'Files' },
+          { key: 'system', label: 'System' },
         ].map(({ key, label }) => (
           <button
             key={key}
@@ -125,7 +109,27 @@ export default function ProjectActivityFeed({
 
       {/* Composer (optional) */}
       {onPostUpdate && (
-        <Composer onSubmit={onPostUpdate} />
+        <>
+          <Composer onSubmit={(val) => { onPostUpdate(val); handleAfterPost(); }} />
+          {showSprintNudge && (
+            <NudgeCard
+              kind="sprint"
+              title="Nice update — want to focus next?"
+              message="Kick off a 25-min sprint to push this forward."
+              actions={[
+                {
+                  label: "Start sprint",
+                  onClick: () => {
+                    // jump to sprint widget location on Home (works well with MiniSprintWidget UX)
+                    window.location.assign("/home#focus-sprint");
+                  },
+                },
+              ]}
+              onDismiss={() => setShowSprintNudge(false)}
+              className="mt-2"
+            />
+          )}
+        </>
       )}
 
       {/* List */}
@@ -141,55 +145,7 @@ export default function ProjectActivityFeed({
         <>
           {filteredItems.map((u) => {
             const k = u._id || `${u.type}:${u.createdAt}:${u.text?.slice(0,12)}`;
-            const cl = classify(u);
-
-            // Task chip
-            if (isTaskEvent(u)) {
-              return (
-                <article
-                  key={k}
-                  className="flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70"
-                >
-                  <span className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-900/60">
-                    {taskIcon(u)}
-                    Task
-                  </span>
-                  <span className="text-sm text-slate-800 dark:text-slate-100">{taskLabel(u)}</span>
-                  <span className="ml-auto text-[11px] text-slate-500">{when(u)}</span>
-                </article>
-              );
-            }
-
-            // File event (simple)
-            if (cl === 'files' || isFileEvent(u)) {
-              const name = u.name || u.filename || u.text || 'File';
-              return (
-                <article
-                  key={k}
-                  className="flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70"
-                >
-                  <span className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-1 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-900/60">
-                    {fileIcon(u)}
-                    File
-                  </span>
-                  <span className="text-sm text-slate-800 dark:text-slate-100 truncate">{name}</span>
-                  <span className="ml-auto text-[11px] text-slate-500">{when(u)}</span>
-                </article>
-              );
-            }
-
-            // Default: plain update text
-            return (
-              <article
-                key={k}
-                className="rounded-xl border border-slate-200/70 dark:border-slate-700 p-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md"
-              >
-                <div className="text-sm text-slate-800 dark:text-slate-100">{u.text}</div>
-                <div className="text-xs text-slate-500 mt-1">
-                  {when(u)}
-                </div>
-              </article>
-            );
+            return <ProjectActivityItem key={k} event={u} classify={classify} />;
           })}
 
           {hasMore && (
@@ -216,7 +172,7 @@ export default function ProjectActivityFeed({
           action={
             onPostUpdate && filter === 'all' ? (
               <button
-                onClick={() => onPostUpdate('First update 👋')}
+                onClick={() => { onPostUpdate('First update 👋'); handleAfterPost(); }}
                 className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 Post an update

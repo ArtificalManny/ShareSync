@@ -1,4 +1,3 @@
-// /src/components/project/MembersPanel.jsx
 import React from "react";
 
 export default function MembersPanel({ members = [] }) {

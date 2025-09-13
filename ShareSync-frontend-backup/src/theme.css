@@ -30,7 +30,7 @@
   --tint-warning:     color-mix(in srgb, var(--warning) 15%, white);
   --tint-danger:      color-mix(in srgb, var(--danger) 14%, white);
 
-  /* Motion (respect reduced motion below) */
+  /* Motion */
   --ease-standard:    cubic-bezier(.2,.7,.3,1);
   --dur-quick:        150ms;
   --dur-std:          200ms;
@@ -41,7 +41,7 @@
   --radius-sm:        10px;
   --shadow-elev:      0 8px 24px rgba(15, 23, 42, 0.08);
 
-  /* Gradients (very subtle) */
+  /* Gradients */
   --grad-header:      linear-gradient(180deg, rgba(11,95,255,0.08), rgba(110,123,255,0.06));
   --grad-accent:      linear-gradient(180deg, rgba(11,95,255,0.06), rgba(11,95,255,0.03));
 
@@ -173,17 +173,18 @@ html, body, #root, .app-container {
     backdrop-filter: blur(8px);
   }
 }
+
 /* ========= Token utility layer (additive) ========= */
 
-/* 1) Core tokens (light) – keep names aligned with existing classes you use */
+/* 1) Core tokens (light) */
 :root {
-  --bg:            #0b0c0f05;       /* page background */
-  --surface:       #ffffff;          /* card background */
-  --text:          #0f172a;          /* primary text */
-  --muted:         #64748b;          /* secondary text */
-  --border:        #e2e8f0;          /* subtle borders */
+  --bg:            #0b0c0f05;
+  --surface:       #ffffff;
+  --text:          #0f172a;
+  --muted:         #64748b;
+  --border:        #e2e8f0;
 
-  --accent:        #4f46e5;          /* indigo-600 */
+  --accent:        #4f46e5;
   --accent-50:     #eef2ff;
   --accent-100:    #e0e7ff;
 
@@ -195,15 +196,15 @@ html, body, #root, .app-container {
   --shadow:        0 8px 24px rgba(16,24,40,0.08);
 }
 
-/* 2) Dark tokens – match your current dark classes */
+/* 2) Dark tokens */
 :root.dark {
   --bg:            #0b1220;
-  --surface:       #0f172a;          /* slate-900 */
+  --surface:       #0f172a; /* slate-900 */
   --text:          #e5e7eb;
   --muted:         #94a3b8;
   --border:        #1f2937;
 
-  --accent:        #818cf8;          /* indigo-400/500 range */
+  --accent:        #818cf8; /* indigo-400/500 */
   --accent-50:     rgba(30, 27, 75, 0.35);
   --accent-100:    rgba(30, 27, 75, 0.55);
 
@@ -215,7 +216,7 @@ html, body, #root, .app-container {
   --shadow:        0 10px 28px rgba(2,6,23,0.45);
 }
 
-/* 3) Short-hand helpers that map to your tokeny Tailwind-like classes */
+/* 3) Utility classes */
 .bg-bg        { background: var(--bg); }
 .bg-surface   { background: var(--surface); }
 .text-text    { color: var(--text); }
@@ -230,7 +231,6 @@ html, body, #root, .app-container {
   border-radius: 16px;
   box-shadow: var(--shadow);
 }
-
 .rail {
   background: linear-gradient(135deg, var(--accent-50), #fff 30%, var(--accent-100));
   border: 1px solid var(--border);
@@ -238,7 +238,7 @@ html, body, #root, .app-container {
   box-shadow: 0 1px 0 rgba(0,0,0,0.02);
 }
 
-/* 5) Buttons (primary / outline / ghost) */
+/* 5) Buttons */
 .btn {
   --btn-bg: var(--surface);
   --btn-text: var(--text);
@@ -255,40 +255,14 @@ html, body, #root, .app-container {
   line-height: 1.25rem;
   transition: transform .08s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
 }
-
-.btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--ring);
-}
-
-.btn:active {
-  transform: translateY(0.5px) scale(0.995);
-}
-
-/* primary */
-.btn--primary {
-  --btn-bg: var(--accent);
-  --btn-text: white;
-  --btn-border: transparent;
-}
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--ring); }
+.btn:active { transform: translateY(0.5px) scale(0.995); }
+.btn--primary { --btn-bg: var(--accent); --btn-text: white; --btn-border: transparent; }
 .btn--primary:hover { filter: brightness(0.95); }
-
-/* outline */
-.btn--outline {
-  --btn-bg: color-mix(in srgb, var(--surface) 92%, transparent);
-  --btn-text: var(--text);
-  --btn-border: var(--border);
-}
+.btn--outline { --btn-bg: color-mix(in srgb, var(--surface) 92%, transparent); --btn-text: var(--text); --btn-border: var(--border); }
 .btn--outline:hover { background: color-mix(in srgb, var(--surface) 86%, transparent); }
-
-/* ghost (borderless) */
-.btn--ghost {
-  border-color: transparent;
-  background: transparent;
-}
+.btn--ghost { border-color: transparent; background: transparent; }
 .btn--ghost:hover { background: color-mix(in srgb, var(--surface) 86%, transparent); }
-
-/* semantic accents */
 .btn--success { --btn-bg: var(--success); --btn-text: #fff; --btn-border: transparent; }
 .btn--warning { --btn-bg: var(--warning); --btn-text: #111827; --btn-border: transparent; }
 .btn--danger  { --btn-bg: var(--danger);  --btn-text: #fff; --btn-border: transparent; }
@@ -306,21 +280,10 @@ html, body, #root, .app-container {
   color: var(--text);
 }
 
-/* 7) Subtle hover glow (used for micro-interactions later too) */
-.hover-glow {
-  transition: box-shadow .18s ease, transform .12s ease;
-}
-.hover-glow:hover {
-  box-shadow:
-    0 0 0 3px var(--ring),
-    var(--shadow);
-  transform: translateY(-1px);
-}
+/* 7) Subtle hover glow */
+.hover-glow { transition: box-shadow .18s ease, transform .12s ease; }
+.hover-glow:hover { box-shadow: 0 0 0 3px var(--ring), var(--shadow); transform: translateY(-1px); }
 
-/* 8) Reduced motion respect */
-@media (prefers-reduced-motion: reduce) {
-  .btn, .hover-glow { transition: none; }
-}
 /* --- Micro-interactions --- */
 @keyframes win-glow {
   0%   { box-shadow: 0 0 0 0 rgba(79,70,229,.00); }
@@ -332,16 +295,99 @@ html, body, #root, .app-container {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
-.hover-raise {
-  transition: transform var(--dur-quick) var(--ease-standard), box-shadow var(--dur-quick) var(--ease-standard);
-}
+.hover-raise { transition: transform var(--dur-quick) var(--ease-standard), box-shadow var(--dur-quick) var(--ease-standard); }
 .hover-raise:hover { transform: translateY(-1px); box-shadow: var(--shadow-elev); }
 
-.press-shrink {
-  transition: transform 90ms ease;
-}
+.press-shrink { transition: transform 90ms ease; }
 .press-shrink:active { transform: translateY(1px) scale(.998); }
 
 @media (prefers-reduced-motion: reduce) {
   .win-glow, .hover-raise, .press-shrink { animation: none !important; transform: none !important; }
+}
+
+/* ---------- NEW: shared accent bar + shine + icon ring ---------- */
+.accent-bar { position: relative; overflow: hidden; }
+.accent-bar__left {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 6px; border-top-left-radius: 16px; border-bottom-left-radius: 16px;
+  background: linear-gradient(180deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .accent-bar:hover .accent-bar__left { width: 8px; transition: width 160ms var(--ease-standard); }
+}
+
+.shine { position: relative; overflow: hidden; }
+.shine::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 64px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+  transform: translateX(-140%); opacity: 0; pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes shine-sweep { from { transform: translateX(-140%);} to { transform: translateX(160%);} }
+  .shine:hover::after { animation: shine-sweep 900ms var(--ease-standard) 1; opacity: 1; }
+}
+
+/* subtle icon background ring */
+.icon-ring {
+  background: radial-gradient(120% 120% at 30% 30%, rgba(255,255,255,0.12), transparent 50%), var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* Tiny utility dot */
+.dot { display:inline-block; width:6px; height:6px; border-radius:999px; }
+
+/* ---------- NEW: TraceOutline (SVG runner dot) ---------- */
+@keyframes trace-dash { from { stroke-dashoffset: 0; } to { stroke-dashoffset: var(--trace-len, 600px); } }
+.trace-wrapper { filter: none; }
+
+/* ---------- NEW: CSS-only marching border (visible pulse) ---------- */
+/* Default variables (override per element if needed) */
+:root {
+  --march-stroke: 3px;                 /* thickness of the runner */
+  --march-color: var(--accent);        /* hue of the runner */
+  --march-speed: 2400ms;               /* rotation period */
+  --march-arc: 18%;                    /* arc length of the lit segment */
+  --march-opacity: 1;                  /* overall visibility */
+}
+.marching {
+  position: relative;
+  isolation: isolate;
+  border-radius: 12px;                 /* inherits if element has larger radius */
+}
+.marching::after {
+  content: "";
+  position: absolute;
+  inset: 0;                            /* draw inside the edge to avoid overflow clipping */
+  border-radius: inherit;
+  padding: var(--march-stroke);
+  background:
+    conic-gradient(
+      from 0deg,
+      var(--march-color) 0 var(--march-arc),
+      transparent var(--march-arc) 100%
+    ) border-box;
+  /* Hollow center so only a ring remains */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  transform: rotate(0deg);
+  animation: marching-rotate var(--march-speed) linear infinite;
+  opacity: var(--march-opacity);
+  z-index: 1;                          /* above element background/border, below content */
+}
+@keyframes marching-rotate { to { transform: rotate(360deg); } }
+
+/* Helpful variants */
+.marching--fast   { --march-speed: 1600ms; }
+.marching--slow   { --march-speed: 3600ms; }
+.marching--strong { --march-stroke: 4px; --march-arc: 24%; }
+.marching--calm   { --march-stroke: 2px; --march-arc: 12%; --march-opacity: .85; }
+
+/* Reduce motion: keep the ring, stop rotation */
+@media (prefers-reduced-motion: reduce) {
+  .marching::after { animation: none !important; }
 }
