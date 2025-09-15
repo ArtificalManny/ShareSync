@@ -1,5 +1,5 @@
 import React from "react";
-import { Megaphone, FileText, Image as ImageIcon } from "lucide-react";
+import { Megaphone, FileText } from "lucide-react";
 
 /**
  * UpdateItem
@@ -11,15 +11,20 @@ import { Megaphone, FileText, Image as ImageIcon } from "lucide-react";
  *      createdAt?
  *    }
  *  - when: formatted timestamp string (optional; computed upstream)
+ *  - isFresh?: boolean (highlight row when true)
+ *  - className?: string (extra classes for root)
  */
-export default function UpdateItem({ event, when }) {
+export default function UpdateItem({ event, when, isFresh = false, className = "" }) {
   const u = event || {};
   const text = u.text || u.title || "Update";
   const attachments = Array.isArray(u.attachments) ? u.attachments : [];
   const whenText = when || (u.createdAt ? new Date(u.createdAt).toLocaleString() : "");
 
   return (
-    <article className="rounded-xl border border-slate-200/70 dark:border-slate-700 p-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md">
+    <article
+      className={`feed-row relative overflow-hidden rounded-xl border border-slate-200/70 dark:border-slate-700 p-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md ${isFresh ? "row-new" : ""} ${className}`}
+    >
+      {isFresh && <span className="row-pulse-ring" aria-hidden />}
       <div className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-900/60">
         <Megaphone className="w-4 h-4" />
         Update

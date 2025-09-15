@@ -19,6 +19,7 @@
     background: var(--feed-row-bg);
     border-radius: var(--feed-radius);
     backdrop-filter: blur(6px);
+    position: relative; /* so .row-pulse-ring can anchor */
   }
   
   /* Timestamp */
@@ -92,6 +93,58 @@
     .feed-row:hover {
       box-shadow: none !important;
       transform: none !important;
+    }
+  }
+  
+  /* ─────────────────────────────────────────────
+     NEW: "Fresh" row treatment for ~10s window
+     Apply .row-new along with .feed-row.
+     If you need a non-animated variant, add .row-new--quiet.
+     ───────────────────────────────────────────── */
+  .row-new {
+    /* Soft tint via gradient overlay */
+    background:
+      linear-gradient(180deg, rgb(var(--accent) / .06), transparent 55%),
+      var(--feed-row-bg);
+    /* Gradient perimeter line using a mask trick */
+    --_grad: linear-gradient(135deg,
+                rgb(var(--accent) / .35),
+                rgb(56 189 248 / .35),
+                rgb(16 185 129 / .35));
+    position: relative;
+  }
+  .row-new::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: var(--feed-radius);
+    background: var(--_grad);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  
+  /* Quiet variant (used by reduced motion flows or when you opt-in) */
+  .row-new--quiet {
+    background:
+      linear-gradient(180deg, rgb(var(--accent) / .04), transparent 55%),
+      var(--feed-row-bg);
+  }
+  .row-new--quiet::before {
+    background: linear-gradient(135deg, rgb(var(--accent) / .28), rgb(var(--accent) / .18));
+  }
+  
+  /* Under reduced motion, suppress any visual pulsing;
+     we keep the tint/border so "newness" is still conveyed. */
+  @media (prefers-reduced-motion: reduce) {
+    .row-new {
+      background:
+        linear-gradient(180deg, rgb(var(--accent) / .04), transparent 55%),
+        var(--feed-row-bg);
     }
   }
   

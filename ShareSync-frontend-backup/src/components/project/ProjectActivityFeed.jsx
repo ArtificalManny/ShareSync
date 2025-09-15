@@ -7,6 +7,7 @@ import TaskItem from "./items/TaskItem";
 import FileItem from "./items/FileItem";
 import SystemItem from "./items/SystemItem";
 
+import useFreshHighlight from "../../hooks/useFreshHighlight";
 import "../../styles/feed.css";
 
 /**
@@ -64,15 +65,24 @@ export default function ProjectActivityFeed({
 
     // fallback heuristics
     const txt = String(evt?.text || "").toLowerCase();
-    if (txt.includes("uploaded") || txt.includes(".png") || txt.includes(".pdf")) return "files";
-    if (txt.includes("task") || txt.includes("assigned") || txt.includes("completed")) return "tasks";
+    if (txt.includes("uploaded") || txt.includes(".png") || txt.includes(".pdf"))
+      return "files";
+    if (
+      txt.includes("task") ||
+      txt.includes("assigned") ||
+      txt.includes("completed")
+    )
+      return "tasks";
     return "updates";
   };
 
   // Filter + sort
   const filtered = useMemo(() => {
     const list = Array.isArray(items) ? items : [];
-    const byCat = activeFilter === "all" ? list : list.filter((i) => classify(i) === activeFilter);
+    const byCat =
+      activeFilter === "all"
+        ? list
+        : list.filter((i) => classify(i) === activeFilter);
     return [...byCat].sort((a, b) => {
       const ta = +new Date(a.createdAt || a.ts || 0);
       const tb = +new Date(b.createdAt || b.ts || 0);
@@ -86,22 +96,31 @@ export default function ProjectActivityFeed({
     await onPostUpdate?.(val.trim());
   };
 
-  // Render a single item by class
-  const renderItem = (evt) => {
-    const cat = classify(evt);
+  // Row renderer with fresh highlight
+  const Row = ({ evt }) => {
     const when = formatWhen(evt?.createdAt || evt?.ts);
-    const key = evt?._id || evt?.id || `${evt?.type || "evt"}:${evt?.createdAt || evt?.ts}:${evt?.text?.slice?.(0, 16) || ""}`;
+    const key =
+      evt?._id ||
+      evt?.id ||
+      `${evt?.type || "evt"}:${evt?.createdAt || evt?.ts}:${
+        evt?.text?.slice?.(0, 16) || ""
+      }`;
+
+    const { isFresh } = useFreshHighlight(evt?.freshUntil);
+
+    const cat = classify(evt);
+    const commonProps = { event: evt, when, isFresh };
 
     switch (cat) {
       case "tasks":
-        return <TaskItem key={key} event={evt} when={when} />;
+        return <TaskItem key={key} {...commonProps} />;
       case "files":
-        return <FileItem key={key} event={evt} when={when} />;
+        return <FileItem key={key} {...commonProps} />;
       case "system":
-        return <SystemItem key={key} event={evt} when={when} />;
+        return <SystemItem key={key} {...commonProps} />;
       case "updates":
       default:
-        return <UpdateItem key={key} event={evt} when={when} />;
+        return <UpdateItem key={key} {...commonProps} />;
     }
   };
 
@@ -141,13 +160,21 @@ export default function ProjectActivityFeed({
       )}
 
       {/* List */}
-      {!loading && filtered.length > 0 && <div className="space-y-2">{filtered.map(renderItem)}</div>}
+      {!loading && filtered.length > 0 && (
+        <div className="space-y-2">
+          {filtered.map((evt) => (
+            <Row key={evt.id || evt._id} evt={evt} />
+          ))}
+        </div>
+      )}
 
       {/* Empty */}
       {!loading && filtered.length === 0 && (
         <FeedEmptyState
           icon="🧵"
-          title={activeFilter === "all" ? "No activity yet" : "No items in this filter"}
+          title={
+            activeFilter === "all" ? "No activity yet" : "No items in this filter"
+          }
           body={
             activeFilter === "all"
               ? "Kick things off with a quick update so everyone knows the plan."

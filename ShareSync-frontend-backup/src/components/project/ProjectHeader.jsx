@@ -6,6 +6,8 @@ import ProjectIconPicker from "./ProjectIconPicker";
 import AnimatedRing from "../ui/AnimatedRing";
 import GradientText from "../ui/GradientText";
 import StatusPill from "../projects/StatusPill.jsx"; // ✅ shared pill
+import useRecentFlag from "../../hooks/useRecentFlag";
+import useReducedMotion from "../../hooks/useReducedMotion";
 
 function getRoleForUser(project, userId) {
   if (!project || !userId) return "viewer";
@@ -55,7 +57,7 @@ function SVGIcon({ name, className = "w-6 h-6" }) {
   }
 }
 
-export default function ProjectHeader({ project, onAddTask, onTogglePublic }) {
+export default function ProjectHeader({ project, onAddTask, onTogglePublic, recentWindowMs = 10 * 60 * 1000 }) {
   const { user } = useContext(AuthContext) || {};
   const role = useMemo(
     () => getRoleForUser(project, user?._id || user?.id),
@@ -95,6 +97,11 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic }) {
   // Public toggle state (derived)
   const publicEnabled = !!project?.publicToken;
 
+  // Recent activity → animate ring only when recent + not reduced motion
+  const hasRecent = useRecentFlag(project?.lastActivityAt, recentWindowMs);
+  const prefersReduced = useReducedMotion();
+  const ringAnimated = hasRecent && !prefersReduced;
+
   return (
     <section className="card shine accent-bar rounded-2xl border border-border bg-surface shadow-[var(--shadow-elev)]">
       <span className="accent-bar__left" aria-hidden="true" />
@@ -107,9 +114,18 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic }) {
           </Link>
 
           <div className="min-w-0 flex items-center gap-3">
-            {/* 🔷 Project Icon with animated ring (auto-respects reduced motion) */}
-            <AnimatedRing size="48px" thickness="2px" className="shrink-0" animated>
-              <div className="h-8 w-8 rounded-lg grid place-content-center icon-ring text-xl">
+            {/* 🔷 Project Icon with conditional animated ring (auto-respects reduced motion) */}
+            <div className="relative shrink-0">
+              {ringAnimated && (
+                <AnimatedRing size="48px" thickness="2px" className="absolute -inset-[6px]" animated />
+              )}
+              {!ringAnimated && hasRecent && (
+                <span
+                  className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
+                  aria-hidden
+                />
+              )}
+              <div className="h-8 w-8 rounded-lg grid place-content-center icon-ring text-xl bg-white dark:bg-slate-800">
                 {icon?.kind === "emoji" && (
                   <span role="img" aria-label="project icon">{icon.value}</span>
                 )}
@@ -124,7 +140,7 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic }) {
                   </span>
                 )}
               </div>
-            </AnimatedRing>
+            </div>
 
             <div className="min-w-0">
               <div className="flex items-center gap-2">

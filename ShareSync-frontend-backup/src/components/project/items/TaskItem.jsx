@@ -8,8 +8,10 @@ import { ClipboardList, CheckCircle2, PencilLine } from "lucide-react";
  * Props:
  *  - event: { type?, title?, meta?, status?, createdAt? }
  *  - when: formatted timestamp string (optional; computed upstream)
+ *  - isFresh?: boolean (highlight row when true)
+ *  - className?: string (extra classes for root)
  */
-export default function TaskItem({ event, when }) {
+export default function TaskItem({ event, when, isFresh = false, className = "" }) {
   const u = event || {};
   const t = (u.type || "").toLowerCase();
   const title = u.title || u.meta?.title || u.text || "Task";
@@ -36,7 +38,10 @@ export default function TaskItem({ event, when }) {
         : `Task created: ${title}`;
 
   return (
-    <article className="flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70">
+    <article
+      className={`feed-row relative overflow-hidden flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70 ${isFresh ? "row-new" : ""} ${className}`}
+    >
+      {isFresh && <span className="row-pulse-ring" aria-hidden />}
       <span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-1 border ${badge}`}>
         {icon}
         Task

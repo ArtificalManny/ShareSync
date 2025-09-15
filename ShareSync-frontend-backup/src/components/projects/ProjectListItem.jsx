@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useRef } from "react";
 import { Users, Clock } from "lucide-react";
 import AvatarGroup from "../AvatarGroup.jsx";
 import StatusPill from "./StatusPill.jsx";
+import AnimatedRing from "../ui/AnimatedRing";
+import useRecentFlag from "../../hooks/useRecentFlag";
+import useReducedMotion from "../../hooks/useReducedMotion";
 
 // lazy import so first paint is fast; we call this on hover/focus
 let _prefetchStats = null;
@@ -44,7 +47,7 @@ function SVGIcon({ name, className = "w-5 h-5" }) {
   }
 }
 
-export default function ProjectListItem({ project, onClick }) {
+export default function ProjectListItem({ project, onClick, recentWindowMs = 10 * 60 * 1000 }) {
   const id = project?._id || project?.id;
   const title = project?.title || project?.name || "Untitled";
   const lastActivityAt = project?.lastActivityAt || project?.updatedAt || project?.createdAt;
@@ -59,6 +62,10 @@ export default function ProjectListItem({ project, onClick }) {
 
   const rel = useMemo(() => formatRelativeTime(lastActivityAt), [lastActivityAt]);
   const { barCls } = useMemo(() => accentForStatus(status), [status]);
+
+  // Recent activity indicator
+  const hasRecent = useRecentFlag(lastActivityAt, recentWindowMs);
+  const prefersReduced = useReducedMotion();
 
   // Debounced prefetch on hover/focus
   const hoverTimer = useRef(null);
@@ -92,8 +99,25 @@ export default function ProjectListItem({ project, onClick }) {
       {/* Header: icon + title + avatars */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex items-center gap-2">
-          {/* 🔷 Icon (emoji/svg) */}
-          <span className="shrink-0 h-7 w-7 rounded-lg grid place-content-center bg-slate-50 dark:bg-slate-800 text-xl">
+          {/* 🔷 Icon (emoji/svg) with recent halo */}
+          <span className="relative shrink-0 h-7 w-7 rounded-lg grid place-content-center bg-slate-50 dark:bg-slate-800 text-xl">
+            {/* Animated ring around icon if recent + not reduced motion */}
+            {hasRecent && !prefersReduced && (
+              <AnimatedRing
+                size="36px"
+                thickness="2px"
+                animated
+                className="absolute -inset-[5px] pointer-events-none rounded-xl"
+              />
+            )}
+            {/* Static tiny dot when reduced motion */}
+            {hasRecent && prefersReduced && (
+              <span
+                className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
+                aria-hidden
+              />
+            )}
+
             {icon?.kind === "emoji" && (
               <span role="img" aria-label="project icon" className="leading-none">
                 {icon.value}
@@ -119,7 +143,13 @@ export default function ProjectListItem({ project, onClick }) {
         <div className="flex items-center gap-2 shrink-0">
           <Users className="w-4 h-4 text-slate-400" aria-hidden="true" />
           <div className="transition-transform duration-200 group-hover:scale-[1.04]">
-            <AvatarGroup users={members} max={4} size={26} />
+            {/* Highlight owner/avatar when recent */}
+            <AvatarGroup
+              users={members}
+              max={4}
+              size={26}
+              highlightFirstRecent={hasRecent}
+            />
           </div>
         </div>
       </div>

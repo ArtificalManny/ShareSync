@@ -5,14 +5,15 @@
  * {
  *   id: string,
  *   type: 'update' | 'task' | 'file' | 'system',
- *   subtype?: string,         // e.g. 'task.created', 'task.updated', 'files.added'
+ *   subtype?: string,
  *   projectId: string,
  *   userId?: string,
- *   ts: string,               // ISO timestamp
- *   text?: string,            // for updates/system notes
- *   task?: object,            // for task items (id/title/status/assignee/dueDate/etc)
- *   files?: Array<object>,    // for file items
- *   meta?: Record<string,any>
+ *   ts: string,
+ *   text?: string,
+ *   task?: object,
+ *   files?: Array<object>,
+ *   meta?: Record<string,any>,
+ *   freshUntil?: number        // ⬅️ NEW: client-side "fresh" window (ms epoch)
  * }
  */
 
@@ -41,7 +42,11 @@ export function fromApiActivity(raw = {}) {
   const userId = String(raw.userId || raw.actorId || raw.meta?.userId || '') || undefined;
   const ts = iso(raw.createdAt || raw.ts || Date.now());
 
-  // Updates (status posts / notes)
+  // NOTE: API-loaded items are not considered "fresh" (no freshUntil),
+  // but if server ever sends one, preserve it.
+  const freshUntil = typeof raw.freshUntil === 'number' ? raw.freshUntil : undefined;
+
+  // Updates
   if (
     rawType.startsWith('update') ||
     rawType === 'update' ||
@@ -67,10 +72,11 @@ export function fromApiActivity(raw = {}) {
       text,
       files,
       meta: raw.meta || {},
+      freshUntil,
     };
   }
 
-  // Tasks (created/updated/completed)
+  // Tasks
   if (rawType.includes('task') || raw.task || raw.meta?.task) {
     const task = raw.task || raw.meta?.task || {};
     const title = task.title || raw.title || raw.text || '';
@@ -97,10 +103,11 @@ export function fromApiActivity(raw = {}) {
         notes: val(task.notes, raw.notes),
       },
       meta: raw.meta || {},
+      freshUntil,
     };
   }
 
-  // Files (added/removed)
+  // Files
   if (rawType.includes('file') || Array.isArray(raw.files) || Array.isArray(raw.meta?.files)) {
     const files =
       Array.isArray(raw.files) ? raw.files :
@@ -121,10 +128,11 @@ export function fromApiActivity(raw = {}) {
       text,
       files,
       meta: raw.meta || {},
+      freshUntil,
     };
   }
 
-  // System / audit (members, icon, public visibility, settings)
+  // System / audit
   if (
     rawType.includes('system') ||
     rawType.includes('audit') ||
@@ -147,6 +155,7 @@ export function fromApiActivity(raw = {}) {
       ts,
       text,
       meta: raw.meta || {},
+      freshUntil,
     };
   }
 
@@ -160,21 +169,18 @@ export function fromApiActivity(raw = {}) {
     ts,
     text: raw.text || raw.title || '',
     meta: raw.meta || {},
+    freshUntil,
   };
 }
 
 /**
  * Map a socket event + payload to unified shape.
- * Supported events:
- *  - 'tasks:created'  payload: { projectId, task }
- *  - 'tasks:updated'  payload: { projectId, task }
- *  - 'project:filesAdded' payload: { projectId, files }
- *  - 'project:updated' payload: { projectId, patch }
- *  - 'activity:new'   payload: <server activity doc>
+ * On socket/creation, attach `freshUntil = now + 10_000`.
  */
 export function fromSocketEvent(event, payload = {}) {
   const name = String(event || '').toLowerCase();
   const ts = iso(payload.createdAt || payload.ts || Date.now());
+  const freshUntil = Date.now() + 10_000; // ⬅️ NEW
 
   if (name === 'tasks:created' && payload.task) {
     const t = payload.task;
@@ -188,6 +194,7 @@ export function fromSocketEvent(event, payload = {}) {
       text: t.title || 'Task created',
       task: pickTaskFields(t),
       meta: { socket: true },
+      freshUntil,
     };
   }
 
@@ -204,6 +211,7 @@ export function fromSocketEvent(event, payload = {}) {
       text: t.title || 'Task updated',
       task: pickTaskFields(t),
       meta: { socket: true },
+      freshUntil,
     };
   }
 
@@ -220,6 +228,7 @@ export function fromSocketEvent(event, payload = {}) {
       text,
       files,
       meta: { socket: true },
+      freshUntil,
     };
   }
 
@@ -239,12 +248,14 @@ export function fromSocketEvent(event, payload = {}) {
       ts,
       text,
       meta: { patch, socket: true },
+      freshUntil,
     };
   }
 
   if (name === 'activity:new') {
-    // Server may already send same doc as REST; reuse the API normalizer.
-    return fromApiActivity(payload);
+    // Reuse API normalizer (no auto-fresh), then *add* fresh window client-side.
+    const base = fromApiActivity(payload);
+    return { ...base, freshUntil: Date.now() + 10_000 };
   }
 
   // Unknown socket event → best-effort system item
@@ -257,6 +268,7 @@ export function fromSocketEvent(event, payload = {}) {
     ts,
     text: payload.text || `Event: ${event}`,
     meta: payload,
+    freshUntil,
   };
 }
 
@@ -281,7 +293,7 @@ function inferSystemMessage({ type = '', meta = {} }) {
   if (t.includes('public') || 'publicToken' in meta || 'publicEnabled' in meta) {
     const on = !!(meta.publicEnabled || meta.publicToken);
     return on ? 'Public status enabled' : 'Public status disabled';
-  }
+    }
 
   // icon change
   if (t.includes('icon') || meta.patch?.icon || meta.icon) {
@@ -322,7 +334,10 @@ export function mergeRealtime(items = [], realtimeItem) {
   const exists = items.findIndex((x) => x.id === id);
   if (exists >= 0) {
     const clone = items.slice();
-    clone[exists] = { ...items[exists], ...realtimeItem };
+    // Preserve whichever freshUntil is later (keeps highlight if a newer event refreshes)
+    const prev = items[exists];
+    const nextFresh = Math.max(Number(prev.freshUntil || 0), Number(realtimeItem.freshUntil || 0)) || undefined;
+    clone[exists] = { ...prev, ...realtimeItem, ...(nextFresh ? { freshUntil: nextFresh } : {}) };
     return clone;
   }
   return [realtimeItem, ...items];

@@ -1,5 +1,5 @@
 import React from "react";
-import { Shield, UserPlus, Settings, Globe2, Image as ImageIcon, Bell } from "lucide-react";
+import { Shield, UserPlus, Settings, Globe2, Image as ImageIcon } from "lucide-react";
 
 /**
  * SystemItem
@@ -8,21 +8,27 @@ import { Shield, UserPlus, Settings, Globe2, Image as ImageIcon, Bell } from "lu
  * Props:
  *  - event: { type?, text?, meta?, createdAt? }
  *  - when?: string (pre-formatted)
+ *  - isFresh?: boolean (highlight row when true)
+ *  - className?: string (extra classes for root)
  */
-export default function SystemItem({ event, when }) {
+export default function SystemItem({ event, when, isFresh = false, className = "" }) {
   const u = event || {};
   const t = String(u.type || u.kind || "system").toLowerCase();
   const whenText = when || (u.createdAt ? new Date(u.createdAt).toLocaleString() : "");
 
   const { icon, labelClass, badgeText } = pickBadge(t, u);
 
-  const label = u.text ||
+  const label =
+    u.text ||
     u.meta?.message ||
     inferMessageFromMeta(t, u.meta) ||
     "System activity";
 
   return (
-    <article className="flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70">
+    <article
+      className={`feed-row relative overflow-hidden flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70 ${isFresh ? "row-new" : ""} ${className}`}
+    >
+      {isFresh && <span className="row-pulse-ring" aria-hidden />}
       <span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-1 border ${labelClass}`}>
         {icon}
         {badgeText}
@@ -86,7 +92,7 @@ function inferMessageFromMeta(type, meta = {}) {
     const kind = meta.icon?.kind || "emoji";
     const v = meta.icon?.value || "";
     return kind === "emoji" ? `Project icon set to ${v}` : `Project icon changed`;
-  }
+    }
 
   // Public visibility toggles
   if (type.includes("public") || "publicEnabled" in meta || "publicToken" in meta) {

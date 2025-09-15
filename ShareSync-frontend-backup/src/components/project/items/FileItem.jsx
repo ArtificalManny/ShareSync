@@ -8,8 +8,10 @@ import { FileText, Image as ImageIcon } from "lucide-react";
  * Props:
  *  - event: { name?, filename?, text?, mime?, meta?, url?, createdAt? }
  *  - when: formatted timestamp string (optional; computed upstream)
+ *  - isFresh?: boolean (highlight row when true)
+ *  - className?: string (extra classes for root)
  */
-export default function FileItem({ event, when }) {
+export default function FileItem({ event, when, isFresh = false, className = "" }) {
   const u = event || {};
   const name = u.name || u.filename || u.text || "File";
   const mime = (u.mime || u.meta?.mime || "").toLowerCase();
@@ -17,7 +19,10 @@ export default function FileItem({ event, when }) {
   const whenText = when || (u.createdAt ? new Date(u.createdAt).toLocaleString() : "");
 
   return (
-    <article className="flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70">
+    <article
+      className={`feed-row relative overflow-hidden flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70 ${isFresh ? "row-new" : ""} ${className}`}
+    >
+      {isFresh && <span className="row-pulse-ring" aria-hidden />}
       <span className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-1 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-900/60">
         {icon}
         File

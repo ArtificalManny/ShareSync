@@ -5,6 +5,12 @@ import useReducedMotion from "../hooks/useReducedMotion";
 /**
  * AvatarGroup
  * - Accessible avatar stack with overlap +N overflow
+ *
+ * Props:
+ *  - users: array of { id, name, avatarUrl, role? }
+ *  - max, size, overlap, showOverflow, className
+ *  - highlightFirstRecent?: boolean (adds ring to first/owner avatar)
+ *  - ownerRecent?: boolean (alias for highlightFirstRecent)
  */
 export default function AvatarGroup({
   users = [],
@@ -14,6 +20,8 @@ export default function AvatarGroup({
   showOverflow = true,
   className = "",
   "aria-label": ariaLabel,
+  highlightFirstRecent = false,
+  ownerRecent = false,
 }) {
   const clean = Array.isArray(users) ? users.filter(Boolean) : [];
   const visibleCount = Math.max(0, Math.min(clean.length, max));
@@ -37,24 +45,39 @@ export default function AvatarGroup({
     .join(" ");
 
   const prefersReduced = useReducedMotion();
+  const showOwnerHighlight = !!(highlightFirstRecent || ownerRecent);
 
   return (
     <div className={containerCls} role="list" aria-label={ariaLabel || "Participants"}>
       {visible.map((u, i) => {
-        const circle = <AvatarCircle key={u.id || i} user={u} style={style} />;
         const isOwner = u?.role === "owner" || i === 0; // heuristic: first/avatar with role
-        if (!isOwner) return circle;
-        // Owner halo — smaller ring that respects reduced motion
+        const circle = <AvatarCircle key={u.id || i} user={u} style={style} />;
+
+        if (!isOwner || !showOwnerHighlight) return circle;
+
+        // Owner halo — small ring, respects reduced motion (falls back to static mini dot)
+        if (!prefersReduced) {
+          return (
+            <AnimatedRing
+              key={u.id || i}
+              size={`${size + 6}px`}
+              thickness="2px"
+              animated
+              className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-slate-900"
+            >
+              {circle}
+            </AnimatedRing>
+          );
+        }
+        // Static tiny dot (top-right) when reduced motion preferred
         return (
-          <AnimatedRing
-            key={u.id || i}
-            size={`${size + 6}px`}
-            thickness="2px"
-            animated={!prefersReduced}
-            className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-slate-900"
-          >
+          <span key={u.id || i} className="relative inline-grid place-items-center">
             {circle}
-          </AnimatedRing>
+            <span
+              className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
+              aria-hidden
+            />
+          </span>
         );
       })}
       {showOverflow && overflow > 0 && <OverflowCircle count={overflow} style={style} />}
