@@ -48,7 +48,6 @@
   
     /* ================================
        Gradient palette tokens
-       (used by gradients.css + components)
        ================================ */
     /* Blue (indigo → sky) */
     --grad-blue-a: 79 70 229;   /* indigo-600 */

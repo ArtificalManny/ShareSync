@@ -44,10 +44,8 @@ export default function FeedFilterBar({
               className={[
                 "inline-flex items-center rounded-xl px-3 py-1 text-sm border transition-colors focus-visible:outline-none",
                 active
-                  ? // Active: gradient backplate + gradient-ish ring on focus
-                    "bg-grad-purple text-white border-transparent shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
-                  : // Inactive: neutral, with hover
-                    "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/70 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-slate-300/60",
+                  ? "bg-grad-purple text-white border-transparent shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
+                  : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/70 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-slate-300/60",
               ].join(" ")}
               aria-pressed={active}
             >

@@ -1,5 +1,7 @@
-import { Module } from '@nestjs/common';
+// src/habits/habits.module.ts
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { HabitsController } from './habits.controller';
 import { HabitsService } from './habits.service';
 import {
@@ -7,9 +9,9 @@ import {
   Reflection, ReflectionSchema,
   NudgeDismissal, NudgeDismissalSchema
 } from './habits.schemas';
-import { ActivitiesService } from '../activities/activities.service';
-import { SprintsService } from '../sprints/sprints.service';
-import { RealtimeGateway } from '../realtime/realtime.gateway';
+
+import { ActivitiesModule } from '../activities/activities.module';
+import { RealtimeModule } from '../realtime/realtime.module';
 
 @Module({
   imports: [
@@ -18,9 +20,13 @@ import { RealtimeGateway } from '../realtime/realtime.gateway';
       { name: 'Reflection', schema: ReflectionSchema },
       { name: 'NudgeDismissal', schema: NudgeDismissalSchema },
     ]),
+    forwardRef(() => ActivitiesModule), // gives ActivitiesService + Activity model
+    RealtimeModule,                     // gives RealtimeGateway (exported)
   ],
   controllers: [HabitsController],
-  providers: [HabitsService, ActivitiesService, SprintsService, RealtimeGateway],
+  providers: [
+    HabitsService, // only local provider
+  ],
   exports: [HabitsService],
 })
 export class HabitsModule {}

@@ -82,7 +82,8 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic }) {
   async function handleIconSelect(sel) {
     try {
       const updated = await patchProjectIcon(project._id, sel); // sel or null (clear)
-      setIconOverride(updated?.icon ?? sel ?? null);
+      // BE returns { projectId, patch: { icon } }; fall back to sel to reflect immediately
+      setIconOverride(updated?.icon ?? updated?.patch?.icon ?? sel ?? null);
     } catch (e) {
       // eslint-disable-next-line no-alert
       alert(e?.response?.data?.message || e?.message || "Failed to update icon.");
@@ -106,7 +107,7 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic }) {
           </Link>
 
           <div className="min-w-0 flex items-center gap-3">
-            {/* 🔷 Project Icon with animated ring */}
+            {/* 🔷 Project Icon with animated ring (auto-respects reduced motion) */}
             <AnimatedRing size="48px" thickness="2px" className="shrink-0" animated>
               <div className="h-8 w-8 rounded-lg grid place-content-center icon-ring text-xl">
                 {icon?.kind === "emoji" && (

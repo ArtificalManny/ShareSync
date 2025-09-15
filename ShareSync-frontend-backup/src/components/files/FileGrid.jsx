@@ -1,5 +1,4 @@
-// src/components/files/FileGrid.jsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import FileCard from './FileCard';
 import { listFiles, deleteFile } from '../../api/files';
 
@@ -16,7 +15,7 @@ export default function FileGrid({
   canEdit = false,
   canManage = false,
 }) {
-  const [files, setFiles] = useState(() => initialFiles);
+  const [files, setFiles] = useState(() => initialFiles.map(normalizeFile));
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(!initialFiles.length);
@@ -25,10 +24,11 @@ export default function FileGrid({
 
   // Keep in sync if parent pushes new files via realtime (ProjectHome updates `initialFiles`)
   useEffect(() => {
-    // Simple de-dupe by id
     setFiles((prev) => {
       const byId = new Map();
-      [...initialFiles, ...prev].forEach((f) => byId.set(String(f.id || f._id), normalizeFile(f)));
+      [...initialFiles.map(normalizeFile), ...prev].forEach((f) =>
+        byId.set(String(f.id), f)
+      );
       return Array.from(byId.values());
     });
   }, [initialFiles]);
@@ -41,12 +41,12 @@ export default function FileGrid({
       setLoading(true);
       setError('');
       try {
-        const res = await listFiles(projectId); // supports both array or { items, nextCursor }
-        const normalized = normalizeList(res);
+        const res = await listFiles(projectId);
+        const { items, nextCursor } = normalizeList(res);
         if (ignore) return;
-        setFiles(normalized.items);
-        setCursor(normalized.nextCursor);
-        setHasMore(Boolean(normalized.nextCursor));
+        setFiles(items);
+        setCursor(nextCursor);
+        setHasMore(Boolean(nextCursor));
       } catch (e) {
         if (!ignore) setError(e?.message || 'Failed to load files');
       } finally {
@@ -125,7 +125,7 @@ export default function FileGrid({
           position: absolute;
           inset: 0;
           border-radius: 12px;
-          box-shadow: 0 0 0 2px rgba(99,102,241,0.35); /* indigo-ish */
+          box-shadow: 0 0 0 2px rgba(99,102,241,0.35);
           animation: ss-pulse-ring 1.6s ease-out infinite;
           pointer-events: none;
         }
@@ -139,18 +139,18 @@ export default function FileGrid({
           backdrop-filter: saturate(1.2) blur(4px);
         }
         .ss-badge--pending {
-          color: #4338CA;               /* indigo-700 */
-          background: rgba(199,210,254,0.6); /* indigo-200/60 */
+          color: #4338CA;
+          background: rgba(199,210,254,0.6);
           border: 1px solid rgba(99,102,241,0.3);
         }
         .ss-badge--approved {
-          color: #065F46;               /* emerald-800 */
-          background: rgba(167,243,208,0.5); /* emerald-200/50 */
+          color: #065F46;
+          background: rgba(167,243,208,0.5);
           border: 1px solid rgba(16,185,129,0.3);
         }
         .ss-badge--blocked {
-          color: #9B1C1C;               /* rose-900-ish */
-          background: rgba(254,205,211,0.55); /* rose-200/55 */
+          color: #9B1C1C;
+          background: rgba(254,205,211,0.55);
           border: 1px solid rgba(244,63,94,0.35);
         }
       `}</style>
@@ -166,24 +166,24 @@ export default function FileGrid({
               ? 'ss-badge ss-badge--approved'
               : 'ss-badge ss-badge--pending';
 
-        return (
-          <div key={f.id} className="relative">
-            {/* Status badge */}
-            <span className={badgeClass}>
-              {status || 'pending'}
-            </span>
+          return (
+            <div key={f.id} className="relative">
+              {/* Status badge */}
+              <span className={badgeClass}>
+                {status || 'pending'}
+              </span>
 
-            {/* Pending ring */}
-            {isPending && <span className="ss-pulse-ring" />}
+              {/* Pending ring */}
+              {isPending && <span className="ss-pulse-ring" />}
 
-            {/* Card (your existing visual) */}
-            <FileCard
-              file={f}
-              canEdit={canEdit}
-              onDelete={canManage ? () => handleRemove(f.id) : undefined}
-            />
-          </div>
-        );
+              {/* Card (your existing visual) */}
+              <FileCard
+                file={f}
+                canEdit={canEdit}
+                onDelete={canManage ? () => handleRemove(f.id) : undefined}
+              />
+            </div>
+          );
         })}
       </div>
 
@@ -215,10 +215,11 @@ function normalizeFile(f) {
     size: Number(f.size || 0),
     mime: f.mime || 'application/octet-stream',
     kind: f.kind || guessKind(f.mime || ''),
+    status: f.status || 'pending',
     moderationStatus: f.moderationStatus || f.status || 'pending',
     createdAt: f.createdAt || new Date().toISOString(),
     projectId: f.projectId,
-    userId: f.userId,
+    uploaderId: f.uploaderId, // ← backend field name
   };
 }
 

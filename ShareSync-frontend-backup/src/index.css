@@ -5,6 +5,15 @@
 /* 1) Theme tokens first (CSS variables) */
 @import './styles/tokens.css';
 
+/* Color/Motion layers */
+@import './styles/motion.css';
+@import './styles/gradients.css';
+@import './styles/shine.css';
+
+/* Charts + Feed skins (use tokens/motion) */
+@import './styles/charts.css';
+@import './styles/feed.css';
+
 /* 2) Tailwind layers */
 @tailwind base;
 @tailwind components;

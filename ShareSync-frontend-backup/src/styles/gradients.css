@@ -2,7 +2,7 @@
    Uses tokens from tokens.css; provides bg + text gradient utilities. */
 
    :root {
-    /* fallbacks as CSS color-mix if tokens missing */
+    /* fallbacks reserved; tokens.css provides variables */
   }
   
   /* -------- Background gradients -------- */
@@ -67,16 +67,10 @@
     background-image: linear-gradient(135deg, rgb(var(--grad-emerald-a)), rgb(var(--grad-emerald-b)));
   }
   
-  /* -------- Icon stroke/fill helpers --------
-     NOTE: True gradient strokes for SVG require a <defs><linearGradient/></defs>
-     and referencing via stroke="url(#id)". These classes provide a graceful
-     fallback by using gradient text clipping which works for glyph icons and
-     many inline SVGs that inherit currentColor.
-  */
+  /* -------- Icon stroke/fill helpers -------- */
   .stroke-grad-blue,
   .stroke-grad-purple,
   .stroke-grad-emerald {
-    /* fallback solid color */
     color: rgb(var(--accent));
   }
   .stroke-grad-blue {
@@ -102,8 +96,6 @@
     backdrop-filter: saturate(1.2) blur(6px);
   }
   
-  /* Reduced motion: no hover transforms/animated shines here, so no-op */
-  @media (prefers-reduced-motion: reduce) {
-    /* reserved for future animated gradient helpers */
-  }
+  /* Reduced motion: (no animated gradients here yet) */
+  @media (prefers-reduced-motion: reduce) {}
   

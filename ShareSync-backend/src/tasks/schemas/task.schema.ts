@@ -17,29 +17,20 @@ export class Task {
   })
   status: TaskStatus;
 
-  @Prop()
-  description?: string;
-
-  @Prop()
-  dueDate?: Date;
-
-  @Prop([String])
-  labels?: string[];
-
-  @Prop()
-  notes?: string;
+  @Prop() description?: string;
+  @Prop() dueDate?: Date;
+  @Prop([String]) labels?: string[];
+  @Prop() notes?: string;
 
   /** Project this task belongs to */
   @Prop({ required: true })
   projectId: string;
 
   /** Optional assignee */
-  @Prop()
-  assigneeId?: string;
+  @Prop() assigneeId?: string;
 
   /** Who created it */
-  @Prop()
-  createdBy?: string;
+  @Prop() createdBy?: string;
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);

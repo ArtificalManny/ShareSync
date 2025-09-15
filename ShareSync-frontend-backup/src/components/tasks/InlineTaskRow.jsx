@@ -1,4 +1,3 @@
-// src/components/tasks/InlineTaskRow.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, X, Loader2, CalendarDays, Pencil } from "lucide-react";
 import { patchTask as apiPatchTask } from "../../api/tasks";
@@ -106,7 +105,6 @@ export default function InlineTaskRow({
       return;
     }
     if (e.key === "Enter" && e.target?.id === "title") {
-      // plain Enter in title also saves
       e.preventDefault();
       save();
       return;

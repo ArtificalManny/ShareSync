@@ -10,6 +10,7 @@ import {
     UseGuards,
     BadRequestException,
   } from '@nestjs/common';
+  
   import { JwtAuthGuard } from '../auth/jwt-auth.guard';
   import { FilesService } from './files.service';
   import {
@@ -36,14 +37,14 @@ import {
     | { file: FileInputCommon }
     | { files: Array<FileInputCommon> };
   
-  @Controller('projects/:projectId/files')
   @UseGuards(JwtAuthGuard, ProjectPermissionGuard)
+  @Controller('projects/:projectId/files')
   export class FilesController {
     constructor(private readonly files: FilesService) {}
   
     /**
-     * Upload/link files into a project
-     * Requires editor+ role
+     * Upload/link files into a project (after upload returns URLs/keys).
+     * Requires editor+ role.
      */
     @Post()
     @CanEditProject()
@@ -99,10 +100,7 @@ import {
       throw new BadRequestException('Provide either {file} or {files[]}');
     }
   
-    /**
-     * List project files (cursor pagination)
-     * Requires viewer+ role
-     */
+    /** List project files (cursor pagination). Requires viewer+ role. */
     @Get()
     @CanViewProject()
     async listByProject(
@@ -119,14 +117,14 @@ import {
     }
   
     /**
-     * Delete a file from project
-     * Requires owner role (manage). You can relax to @CanEditProject if desired.
+     * Delete a file from project.
+     * Using @CanManageProject (owner) here; relax to @CanEditProject if desired.
      */
     @Delete(':fileId')
     @CanManageProject()
     async remove(
       @Req() req,
-      @Param('projectId') projectId: string,
+      @Param('projectId') _projectId: string,
       @Param('fileId') fileId: string,
     ) {
       const userId = req?.user?.sub || req?.user?.id || req?.user?._id;

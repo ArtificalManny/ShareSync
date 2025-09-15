@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ActivitiesService } from '../activities/activities.service';
-import { SprintsService } from '../sprints/sprints.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 type AnyObj = Record<string, any>;
@@ -37,7 +36,6 @@ export class HabitsService {
 
   constructor(
     private readonly activities: ActivitiesService,
-    private readonly sprints: SprintsService,
     private readonly rt: RealtimeGateway,
     @InjectModel('HabitsPrefs') private readonly prefsModel?: Model<HabitsPrefs>,
     @InjectModel('Reflection') private readonly reflectionModel?: Model<Reflection>,
@@ -106,15 +104,54 @@ export class HabitsService {
   }
 
   // ---------- Sprint Momentum ----------
-
+  // No hard dependency on SprintsService. We infer “completions” from activity types:
+  // e.g., 'sprint.completed', 'focus.completed', or any event whose type includes both
+  // 'sprint' and 'complete' (case-insensitive).
   async getSprintMomentum({
     userId,
     projectId,
     range = 28,
   }: { userId: string; projectId?: string; range?: number }) {
-    const bars = await this.sprints.completionsByDay({ userId, projectId, range });
-    // bars expected: [{ date:'YYYY-MM-DD', count:number }]
-    const total = (bars || []).reduce((acc, b) => acc + (Number(b.count) || 0), 0);
+    const since = new Date();
+    since.setDate(since.getDate() - (range - 1));
+
+    const { items } = await this.activities.list({
+      scope: projectId ? 'project' : 'user',
+      projectId,
+      userId,
+      range: 'all',   // we filter by date below
+      limit: 1000,    // generous upper bound; we filter/aggregate in memory
+    });
+
+    const byDay = new Map<string, number>();
+    const isCompletion = (t: string) => {
+      const s = t.toLowerCase();
+      return (
+        s === 'sprint.completed' ||
+        s === 'focus.completed' ||
+        (s.includes('sprint') && (s.includes('complete') || s.includes('finish')))
+      );
+    };
+
+    for (const ev of items || []) {
+      const t = String(ev?.type || ev?.kind || '');
+      if (!isCompletion(t)) continue;
+      const ts = new Date(ev?.createdAt ?? Date.now());
+      if (ts < since) continue;
+      const d = this.dayKey(ts);
+      byDay.set(d, (byDay.get(d) || 0) + 1);
+    }
+
+    // build contiguous bars for the requested range (oldest → newest)
+    const bars: Array<{ date: string; count: number }> = [];
+    for (let i = range - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = this.dayKey(d);
+      bars.push({ date: key, count: byDay.get(key) || 0 });
+    }
+
+    const total = bars.reduce((acc, b) => acc + b.count, 0);
     return { range, total, bars };
   }
 
@@ -196,5 +233,13 @@ export class HabitsService {
     const weekNo = Math.ceil((((date as any) - (yearStart as any)) / 86400000 + 1) / 7);
     const y = date.getUTCFullYear();
     return `${y}-${String(weekNo).padStart(2,'0')}`;
+  }
+
+  private dayKey(d: Date) {
+    // YYYY-MM-DD in local time (aligns with UI charts that use local dates)
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
   }
 }

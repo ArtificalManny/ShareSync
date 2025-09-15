@@ -44,6 +44,13 @@ import KpiGroup from "../components/analytics/KpiGroup";
 import useKpiSeries from "../hooks/useKpiSeries";
 import "../styles/charts.css";
 
+// 🔷 Unified feed normalizers
+import {
+  fromApiList,
+  fromSocketEvent,
+  mergeRealtime,
+} from "../utils/feed/normalizeActivity";
+
 // ---- small helpers ----
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
 const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
@@ -54,8 +61,8 @@ function dedupeById(items = []) {
   const out = [];
   for (const it of items) {
     const key =
-      String(it?._id ?? it?.id ?? it?.tempId ?? "") ||
-      `${it?.type || "?"}:${it?.createdAt || ""}:${(it?.text || "").slice(0, 16)}`;
+      String(it?.id ?? it?._id ?? it?.tempId ?? "") ||
+      `${it?.type || "?"}:${it?.ts || it?.createdAt || ""}:${(it?.text || "").slice(0, 16)}`;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(it);
@@ -162,7 +169,8 @@ export default function ProjectHome() {
     setFeedLoading(true);
     try {
       const res = await getProjectFeed(id, { limit: 20, cursor });
-      const items = Array.isArray(res?.items) ? res.items : [];
+      const rawItems = Array.isArray(res?.items) ? res.items : [];
+      const items = fromApiList(rawItems); // 🔹 normalize API items
       const nextCursor = res?.nextCursor || null;
 
       setFeed((prev) => ({
@@ -191,14 +199,15 @@ export default function ProjectHome() {
   // 🔴 Realtime via shared hook (auth + room join)
   useSocket(id ? `project:${id}` : null, {
     onEvents: {
+      // Server-sent unified activity -> normalize & prepend
       "activity:new": (evt) => {
-        if (String(evt?.projectId) === String(id)) {
-          setFeed((prev) => ({ ...prev, items: dedupeById([evt, ...prev.items]) }));
-        }
+        if (String(evt?.projectId) !== String(id)) return;
+        const norm = fromSocketEvent("activity:new", evt);
+        setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
       "project:statsUpdated": (payload) => {
         if (String(payload?.projectId) === String(id)) {
-          // Optionally fetch fresh KPIs
+          // Optional: could refetch KPIs here
         }
       },
       "project:membersUpdated": (payload) => {
@@ -208,43 +217,50 @@ export default function ProjectHome() {
             members: payload.members || p?.members || [],
             invites: payload.invites || p?.invites || [],
           }));
+          // You might also surface a system item if BE doesn't emit activity:new
         }
       },
+      // Files added → keep file grid + feed in sync
       "project:filesAdded": (payload) => {
-        if (String(payload?.projectId) === String(id) && Array.isArray(payload?.files)) {
-          setFiles((prev) => dedupeById([...payload.files, ...prev]));
-        }
+        if (String(payload?.projectId) !== String(id) || !Array.isArray(payload?.files)) return;
+        setFiles((prev) => dedupeById([...payload.files, ...prev]));
+        const norm = fromSocketEvent("project:filesAdded", payload);
+        setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
-      // ✅ project patch (icon updates etc.)
+      // ✅ project patch (icon updates etc.) — also emit as system feed item
       "project:updated": (payload) => {
-        if (String(payload?.projectId) === String(id) && payload?.patch) {
-          if (Object.prototype.hasOwnProperty.call(payload.patch, "icon")) {
-            setProject((p) => ({ ...p, icon: payload.patch.icon }));
-          } else {
-            setProject((p) => ({ ...p, ...payload.patch }));
-          }
+        if (String(payload?.projectId) !== String(id) || !payload?.patch) return;
+        if (Object.prototype.hasOwnProperty.call(payload.patch, "icon")) {
+          setProject((p) => ({ ...p, icon: payload.patch.icon }));
+        } else {
+          setProject((p) => ({ ...p, ...payload.patch }));
         }
+        const norm = fromSocketEvent("project:updated", payload);
+        setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
-      // tasks: normalize to feed via server or separate UI if needed
+      // Tasks → keep project.tasks and feed unified
       "tasks:created": (payload) => {
-        if (String(payload?.projectId) === String(id) && payload?.task) {
-          setProject((p) => ({ ...p, tasks: [payload.task, ...(p?.tasks || [])] }));
-        }
+        if (String(payload?.projectId) !== String(id) || !payload?.task) return;
+        setProject((p) => ({ ...p, tasks: [payload.task, ...(p?.tasks || [])] }));
+        const norm = fromSocketEvent("tasks:created", payload);
+        setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
       "tasks:updated": (payload) => {
-        if (String(payload?.projectId) === String(id) && payload?.task) {
-          setProject((p) => ({
-            ...p,
-            tasks: (p?.tasks || []).map((t) =>
-              String(t._id) === String(payload.task._id) ? payload.task : t
-            ),
-          }));
-        }
+        if (String(payload?.projectId) !== String(id) || !payload?.task) return;
+        setProject((p) => ({
+          ...p,
+          tasks: (p?.tasks || []).map((t) =>
+            String(t._id) === String(payload.task._id) ? payload.task : t
+          ),
+        }));
+        const norm = fromSocketEvent("tasks:updated", payload);
+        setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
       // public toggle (optional backend emit)
       "project:publicChanged": (payload) => {
         if (String(payload?.projectId) === String(id)) {
           setProject((p) => ({ ...p, publicToken: payload?.publicToken || "" }));
+          // If BE doesn't emit activity:new, we could synthesize a system event here too
         }
       },
     },
@@ -430,9 +446,10 @@ export default function ProjectHome() {
             <p className="mt-2 text-sm text-muted">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+              className="mt-4 relative inline-flex items-center gap-2 rounded-xl px-4 py-2 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 bg-grad-blue"
             >
               Retry
+              <span className="shine pointer-events-none" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -491,47 +508,63 @@ export default function ProjectHome() {
 
         {/* Action Bar */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
+          {/* Primary CTA: gradient + shine; focus ring preserved */}
           <button
             type="button"
             onClick={() => canEdit && setShowTaskSheet(true)}
             disabled={!canEdit}
-            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 ${!canEdit ? disabledBtn : ""}`}
+            className={[
+              "relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
+              "bg-grad-blue hover:opacity-[.96]",
+              !canEdit ? disabledBtn : "",
+            ].join(" ")}
             title={!canEdit ? "Viewers cannot add tasks" : "Add task"}
           >
             <Plus className="w-4 h-4" />
             Add task
+            <span className="shine pointer-events-none" aria-hidden="true" />
           </button>
 
+          {/* Neutral CTAs: solid with subtle shine sweep */}
           <button
             type="button"
             onClick={() => canManage && setShowInvite(true)}
             disabled={!canManage}
-            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface ${!canManage ? disabledBtn : ""}`}
+            className={[
+              "relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
+              !canManage ? disabledBtn : "",
+            ].join(" ")}
             title={!canManage ? "Only owners can invite" : "Invite"}
           >
             <UserPlus className="w-4 h-4" />
             Invite
+            <span className="shine pointer-events-none" aria-hidden="true" />
           </button>
 
           <button
             type="button"
             onClick={() => canManage && setShowSettings(true)}
             disabled={!canManage}
-            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface ${!canManage ? disabledBtn : ""}`}
+            className={[
+              "relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
+              !canManage ? disabledBtn : "",
+            ].join(" ")}
             title="Settings"
           >
             <SettingsIcon className="w-4 h-4" />
             Settings
+            <span className="shine pointer-events-none" aria-hidden="true" />
           </button>
 
           <button
             type="button"
             onClick={() => setShowStatusModal(true)}
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface"
+            className="relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             title="Share public status link"
           >
             <Share2 className="w-4 h-4" />
             Public status
+            <span className="shine pointer-events-none" aria-hidden="true" />
           </button>
         </div>
 
@@ -685,8 +718,7 @@ export default function ProjectHome() {
         </div>
       </div>
 
-      {/* ---- Public Status Modal ---- */
-      /* (unchanged) */}
+      {/* ---- Public Status Modal ---- */}
       {showStatusModal && (
         <>
           <div
@@ -734,19 +766,21 @@ export default function ProjectHome() {
                     />
                     <button
                       onClick={copyLink}
-                      className="inline-flex items-center gap-2 rounded-lg px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-700"
+                      className="relative inline-flex items-center gap-2 rounded-lg px-3 py-2 text-white bg-grad-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     >
                       {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       {copied ? "Copied" : "Copy"}
+                      <span className="shine pointer-events-none" aria-hidden="true" />
                     </button>
                     <button
                       onClick={handleRegenerate}
                       disabled={regenLoading}
-                      className="inline-flex items-center gap-2 rounded-lg px-3 py-2 border border-border hover:bg-surface disabled:opacity-60"
+                      className="relative inline-flex items-center gap-2 rounded-lg px-3 py-2 border border-border hover:bg-surface disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                       title="Regenerate link (invalidates the old one)"
                     >
                       {regenLoading ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
                       Regenerate
+                      <span className="shine pointer-events-none" aria-hidden="true" />
                     </button>
                   </div>
                   <p className="text-[11px] text-muted">
@@ -764,6 +798,9 @@ export default function ProjectHome() {
         open={showTaskSheet}
         onClose={() => setShowTaskSheet(false)}
         onCreate={handleAddTask}
+        // pass-through for API fallback + permissions inside the sheet
+        projectId={id}
+        canEdit={canEdit}
       />
       <InviteModal open={showInvite} onClose={() => setShowInvite(false)} projectId={project?._id}/>
       <ProjectSettingsModal

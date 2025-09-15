@@ -15,9 +15,9 @@ export async function patchTask(projectId, taskId, patch) {
   return data;
 }
 
-/** List tasks for a project (optional: filters) */
+/** List tasks for a project (optional: cursor/limit) */
 export async function listTasks(projectId, params = {}) {
   if (!projectId) throw new Error('projectId is required');
   const { data } = await client.get(`/projects/${projectId}/tasks`, { params });
-  return data;
+  return data; // { items, nextCursor }
 }

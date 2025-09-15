@@ -60,18 +60,32 @@ export function pickSeries(stats, key) {
  *
  * Returns: [{ label, series:[{t,v}], color? }]
  */
-export default function useKpiSeries(stats, keys = [
-  { label: "Cadence", key: "cadence" },
-  { label: "Throughput / wk", key: "throughputPerWeek" },
-  { label: "Active Days", key: "activeDays" },
-  { label: "On-time %", key: "onTimeCompletion" },
-]) {
+export default function useKpiSeries(
+  stats,
+  keys = [
+    { label: "Cadence", key: "cadence" },
+    { label: "Throughput / wk", key: "throughputPerWeek" },
+    { label: "Active Days", key: "activeDays" },
+    { label: "On-time %", key: "onTimeCompletion" },
+  ]
+) {
   return useMemo(() => {
     if (!stats) return [];
     return keys
       .map(({ label, key, color }) => {
         const series = pickSeries(stats, key);
-        return series.length ? { label, series, color } : null;
+        // Sort by time (just in case) and de-dupe same timestamp
+        const seen = new Set();
+        const sorted = series
+          .slice()
+          .sort((a, b) => new Date(a.t) - new Date(b.t))
+          .filter((p) => {
+            const k = String(p.t);
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          });
+        return sorted.length ? { label, series: sorted, color } : null;
       })
       .filter(Boolean);
   }, [stats, keys]);

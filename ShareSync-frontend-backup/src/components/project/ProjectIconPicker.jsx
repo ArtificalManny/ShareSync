@@ -1,4 +1,3 @@
-// /src/components/project/ProjectIconPicker.jsx
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 

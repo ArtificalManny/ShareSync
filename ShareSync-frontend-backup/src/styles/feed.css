@@ -86,3 +86,12 @@
     transition: box-shadow .2s ease, transform .2s ease;
   }
   
+  /* Prefer reduced motion: remove hover elevation/shift */
+  @media (prefers-reduced-motion: reduce) {
+    .feed-row { transition: none !important; }
+    .feed-row:hover {
+      box-shadow: none !important;
+      transform: none !important;
+    }
+  }
+  

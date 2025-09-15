@@ -1,4 +1,3 @@
-// /src/api/projects.js
 import client from "./client"; // axios instance with /api base + auth interceptor
 
 function toQS(params = {}) {
@@ -98,5 +97,5 @@ export async function patchTask(id, taskId, payload) {
 export async function patchProjectIcon(projectId, icon /* { kind, value } or null */) {
   if (!projectId) throw new Error("projectId is required");
   const { data } = await client.patch(`/projects/${projectId}/icon`, icon ?? null);
-  return data; // updated project
+  return data; // { projectId, patch: { icon } }
 }

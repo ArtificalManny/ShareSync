@@ -1,4 +1,6 @@
 import React, { useMemo } from "react";
+import AnimatedRing from "./ui/AnimatedRing";
+import useReducedMotion from "../hooks/useReducedMotion";
 
 /**
  * AvatarGroup
@@ -34,11 +36,27 @@ export default function AvatarGroup({
     .filter(Boolean)
     .join(" ");
 
+  const prefersReduced = useReducedMotion();
+
   return (
     <div className={containerCls} role="list" aria-label={ariaLabel || "Participants"}>
-      {visible.map((u, i) => (
-        <AvatarCircle key={u.id || i} user={u} style={style} />
-      ))}
+      {visible.map((u, i) => {
+        const circle = <AvatarCircle key={u.id || i} user={u} style={style} />;
+        const isOwner = u?.role === "owner" || i === 0; // heuristic: first/avatar with role
+        if (!isOwner) return circle;
+        // Owner halo — smaller ring that respects reduced motion
+        return (
+          <AnimatedRing
+            key={u.id || i}
+            size={`${size + 6}px`}
+            thickness="2px"
+            animated={!prefersReduced}
+            className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-slate-900"
+          >
+            {circle}
+          </AnimatedRing>
+        );
+      })}
       {showOverflow && overflow > 0 && <OverflowCircle count={overflow} style={style} />}
     </div>
   );

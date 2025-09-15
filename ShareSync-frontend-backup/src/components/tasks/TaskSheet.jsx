@@ -25,9 +25,12 @@ export default function TaskSheet({
 
   const [title, setTitle] = useState(initialTitle);
   const [status, setStatus] = useState(existingTask?.status || defaultStatus);
-  const [assignee, setAssignee] = useState(existingTask?.assignee || "");
+
+  // ⚠️ align with backend field name: assigneeId
+  const [assigneeId, setAssigneeId] = useState(existingTask?.assigneeId || "");
+
   const [dueDate, setDueDate] = useState(
-    existingTask?.dueDate ? existingTask.dueDate.slice(0, 10) : ""
+    existingTask?.dueDate ? toDateInput(existingTask.dueDate) : ""
   );
   const [labels, setLabels] = useState(
     Array.isArray(existingTask?.labels)
@@ -54,14 +57,14 @@ export default function TaskSheet({
     if (isEdit) {
       setTitle(existingTask?.title || "");
       setStatus(existingTask?.status || defaultStatus);
-      setAssignee(existingTask?.assignee || "");
-      setDueDate(existingTask?.dueDate ? existingTask?.dueDate.slice(0, 10) : "");
+      setAssigneeId(existingTask?.assigneeId || "");
+      setDueDate(existingTask?.dueDate ? toDateInput(existingTask?.dueDate) : "");
       setLabels(Array.isArray(existingTask?.labels) ? existingTask.labels.join(", ") : "");
       setNotes(existingTask?.notes || "");
     } else {
       setTitle(initialTitle || "");
       setStatus(defaultStatus);
-      setAssignee("");
+      setAssigneeId("");
       setDueDate("");
       setLabels(Array.isArray(initialLabels) ? initialLabels.join(", ") : "");
       setNotes("");
@@ -72,7 +75,7 @@ export default function TaskSheet({
     // use the stable key instead of the raw array
   }, [open, isEdit, existingTask, initialTitle, defaultStatus, initialLabelsKey]);
 
-  // Esc / Cmd+Enter (scoped to window, but only acts on those two combos)
+  // Esc / Cmd+Enter
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
@@ -122,7 +125,6 @@ export default function TaskSheet({
     return () => el.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
-  // Stop global hotkeys from swallowing typing inside fields
   const stopBubble = (e) => e.stopPropagation();
 
   const parsedLabels = useMemo(
@@ -137,7 +139,7 @@ export default function TaskSheet({
   const buildPayload = () => ({
     title: title.trim(),
     status,
-    assignee: assignee.trim() || undefined,
+    assigneeId: assigneeId.trim() || undefined, // ✅ correct field name
     dueDate: dueDate || undefined,
     labels: parsedLabels,
     notes: notes.trim() || undefined,
@@ -164,7 +166,6 @@ export default function TaskSheet({
         if (typeof onUpdate === "function") {
           updated = (await onUpdate(taskId, payload)) ?? null;
         } else {
-          // Default API route (requires projectId for permission check on BE)
           updated = await apiPatchTask(projectId, taskId, payload);
         }
         afterUpdate?.(updated ?? { _id: taskId, ...payload });
@@ -180,7 +181,7 @@ export default function TaskSheet({
 
       onClose?.();
     } catch (e) {
-      setError(e?.message || "Failed to save task.");
+      setError(e?.response?.data?.message || e?.message || "Failed to save task.");
     } finally {
       setSubmitting(false);
     }
@@ -284,10 +285,10 @@ export default function TaskSheet({
                 disabled={!canEdit || submitting}
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               >
+                {/* ✅ align with backend enum */}
                 <option>Not Started</option>
                 <option>In Progress</option>
-                <option>Blocked</option>
-                <option>Done</option>
+                <option>Completed</option>
               </select>
             </div>
 
@@ -310,15 +311,15 @@ export default function TaskSheet({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label htmlFor="task-assignee" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
-                Assignee (optional)
+                Assignee ID (optional)
               </label>
               <input
                 id="task-assignee"
                 type="text"
-                value={assignee}
-                onChange={(e) => setAssignee(e.target.value)}
+                value={assigneeId}
+                onChange={(e) => setAssigneeId(e.target.value)}
                 onKeyDown={stopBubble}
-                placeholder="email or name"
+                placeholder="user id"
                 disabled={!canEdit || submitting}
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               />
@@ -378,4 +379,18 @@ export default function TaskSheet({
       </aside>
     </>
   );
+}
+
+/** Helpers */
+function toDateInput(d) {
+  try {
+    const dt = typeof d === "string" ? new Date(d) : d;
+    if (!dt || isNaN(dt.getTime())) return "";
+    const yyyy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, "0");
+    const dd = String(dt.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  } catch {
+    return "";
+  }
 }

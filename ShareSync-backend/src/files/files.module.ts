@@ -1,18 +1,22 @@
+// src/files/files.module.ts
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
+
 import { File, FileSchema } from './schemas/file.schema';
-import { Project, ProjectSchema } from '../projects/schemas/project.schema';
-import { RealtimeModule } from '../realtime/realtime.module'; // ✅ use existing gateway instance
+import { Project, ProjectSchema } from '../projects/schemas/project.schema'; // ⬅️ bring back
+import { ProjectModule } from '../projects/project.module';
+import { RealtimeModule } from '../realtime/realtime.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: File.name, schema: FileSchema },
-      { name: Project.name, schema: ProjectSchema },
+      { name: Project.name, schema: ProjectSchema }, // ⬅️ re-add this so @InjectModel(Project) works
     ]),
-    // bring the gateway in via its module so we don't create duplicate providers
+    forwardRef(() => ProjectModule), // ⬅️ for ProjectsService / guards
     forwardRef(() => RealtimeModule),
   ],
   controllers: [FilesController],

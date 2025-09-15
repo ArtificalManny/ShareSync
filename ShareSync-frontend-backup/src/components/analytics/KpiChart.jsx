@@ -50,6 +50,12 @@ export default function KpiChart({
   const id = useId().replace(/:/g, "");
   const strokeColor = color || "rgb(var(--accent))";
 
+  // Respect reduced motion (disable Recharts anims)
+  const prefersReduced =
+    typeof window !== "undefined" &&
+    !!window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   // pick gradient stops by variant (used when `color` not provided)
   const stops = useMemo(() => {
     if (color) {
@@ -93,12 +99,11 @@ export default function KpiChart({
             <defs>
               {/* Area fill gradient */}
               <linearGradient id={`area-grad-${id}`} x1="0" y1="0" x2="0" y2="1">
-                {/* area uses the 'to' color at top, fades to 0 */}
                 <stop offset="5%" stopColor={stops.to} stopOpacity={0.35} />
                 <stop offset="95%" stopColor={stops.to} stopOpacity={0} />
               </linearGradient>
 
-              {/* Line stroke gradient (only visible when no solid color override) */}
+              {/* Line stroke gradient */}
               <linearGradient id={`line-grad-${id}`} x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor={stops.from} />
                 <stop offset="100%" stopColor={stops.to} />
@@ -134,7 +139,7 @@ export default function KpiChart({
               stroke={color ? strokeColor : `url(#line-grad-${id})`}
               strokeWidth={2}
               fill={`url(#area-grad-${id})`}
-              isAnimationActive
+              isAnimationActive={!prefersReduced}
               animationDuration={700}
             />
             <Line
@@ -143,7 +148,7 @@ export default function KpiChart({
               stroke={color ? strokeColor : `url(#line-grad-${id})`}
               strokeWidth={2}
               dot={false}
-              isAnimationActive
+              isAnimationActive={!prefersReduced}
               animationDuration={700}
             />
           </AreaChart>

@@ -49,3 +49,17 @@
     animation: chart-fade-in 280ms ease-out;
   }
   
+  /* Hover glow helper (optional) */
+  .kpi-glow {
+    box-shadow: 0 10px 35px rgba(79, 70, 229, 0.12), 0 2px 10px rgba(79, 70, 229, 0.08);
+  }
+  
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .chart-fade-in { animation: none !important; }
+    /* Recharts still animates series by default; most components accept an
+       isAnimationActive={false} prop (which we pass in code). This block just
+       ensures any remaining CSS transitions are inert. */
+    .recharts-wrapper * { transition: none !important; }
+  }
+  

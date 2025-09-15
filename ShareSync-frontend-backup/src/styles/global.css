@@ -1,3 +1,12 @@
+/* If this file is used in your build, import the shared layers here too */
+@import './tokens.css';
+@import './motion.css';
+@import './gradients.css';
+@import './shine.css';
+@import './charts.css';
+@import './feed.css';
+
+/* Existing layout styles (kept) */
 body {
   margin: 0;
   font-family: 'Roboto', sans-serif;
@@ -74,23 +83,10 @@ sidebar .profile-section img {
   margin-bottom: 0.5rem;
 }
 
-sidebar ul {
-  list-style: none;
-  padding: 0;
-}
-
-sidebar ul li {
-  margin: 0.5rem 0;
-}
-
-sidebar ul li a {
-  color: #6A5ACD;
-  text-decoration: none;
-}
-
-sidebar ul li a:hover {
-  text-decoration: underline;
-}
+sidebar ul { list-style: none; padding: 0; }
+sidebar ul li { margin: 0.5rem 0; }
+sidebar ul li a { color: #6A5ACD; text-decoration: none; }
+sidebar ul li a:hover { text-decoration: underline; }
 
 main {
   grid-area: main;
@@ -109,19 +105,19 @@ main.full-screen {
   background: rgba(42, 42, 62, 0.95);
   z-index: 1000;
   padding: 0;
-  overflow-y: auto; /* Ensure scrolling is enabled */
+  overflow-y: auto;
 }
 
 main.full-screen form {
   max-width: 500px;
-  width: 90%; /* Adjust for smaller screens */
+  width: 90%;
   margin: 2rem auto;
   background: rgba(42, 42, 62, 0.8);
   padding: 2rem;
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(106, 90, 205, 0.5);
-  min-height: 0; /* Allow form to shrink */
-  overflow-y: auto; /* Enable scrolling within form if needed */
+  min-height: 0;
+  overflow-y: auto;
 }
 
 main.full-screen h2 {
@@ -156,24 +152,12 @@ main.full-screen .birthday-container {
 }
 
 main.full-screen .name-container input,
-main.full-screen .birthday-container select {
-  flex: 1;
-}
+main.full-screen .birthday-container select { flex: 1; }
 
 @media (max-width: 600px) {
-  main.full-screen form {
-    width: 85%;
-    padding: 1rem;
-  }
-
-  main.full-screen h2 {
-    font-size: 2rem;
-  }
-
-  main.full-screen .subtitle {
-    font-size: 1rem;
-    margin: 0 0.5rem 1rem 0.5rem;
-  }
+  main.full-screen form { width: 85%; padding: 1rem; }
+  main.full-screen h2 { font-size: 2rem; }
+  main.full-screen .subtitle { font-size: 1rem; margin: 0 0.5rem 1rem 0.5rem; }
 }
 
 footer {

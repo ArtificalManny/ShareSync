@@ -15,11 +15,43 @@ async function prefetchStats(projectId) {
   } catch {}
 }
 
+/** Small SVG renderer for the preset keys used across the app */
+function SVGIcon({ name, className = "w-5 h-5" }) {
+  const common = { className, "aria-hidden": true };
+  switch (name) {
+    case "rocket":
+      return (
+        <svg viewBox="0 0 24 24" {...common}>
+          <path d="M12 2c3 0 6 2 8 4l-6 6-2-2-6 6-2-2 6-6-2-2 6-6z" fill="currentColor" />
+        </svg>
+      );
+    case "bolt":
+      return (
+        <svg viewBox="0 0 24 24" {...common}>
+          <path d="M13 2L3 14h7l-1 8 11-12h-7l0-8z" fill="currentColor" />
+        </svg>
+      );
+    case "target":
+      return (
+        <svg viewBox="0 0 24 24" {...common}>
+          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" fill="none" />
+          <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" fill="none" />
+          <circle cx="12" cy="12" r="2" fill="currentColor" />
+        </svg>
+      );
+    default:
+      return <div className={className} />;
+  }
+}
+
 export default function ProjectListItem({ project, onClick }) {
   const id = project?._id || project?.id;
   const title = project?.title || project?.name || "Untitled";
   const lastActivityAt = project?.lastActivityAt || project?.updatedAt || project?.createdAt;
   const status = (project?.status || "In Progress").toString();
+
+  // 🔷 icon support (emoji or preset svg)
+  const icon = project?.icon || null;
 
   const members = Array.isArray(project?.members) && project.members.length
     ? normalizeMembers(project.members)
@@ -54,16 +86,36 @@ export default function ProjectListItem({ project, onClick }) {
       {/* left gradient bar */}
       <span className={`absolute left-0 top-0 h-full w-1.5 rounded-l-2xl ${barCls} transition-[width] duration-200 group-hover:w-2`} />
 
-      {/* shine sweep */}
-      <span className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-        <span className="absolute -left-24 top-0 h-full w-20 rotate-12 bg-white/10 group-hover:animate-[shine_900ms_ease-out]" />
-      </span>
+      {/* shine sweep (disabled under reduced motion via .shine rules) */}
+      <span className="shine pointer-events-none" aria-hidden="true" />
 
-      {/* Header: title + avatars */}
+      {/* Header: icon + title + avatars */}
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-base font-semibold text-slate-900 dark:text-white line-clamp-1">
-          {title}
-        </h3>
+        <div className="min-w-0 flex items-center gap-2">
+          {/* 🔷 Icon (emoji/svg) */}
+          <span className="shrink-0 h-7 w-7 rounded-lg grid place-content-center bg-slate-50 dark:bg-slate-800 text-xl">
+            {icon?.kind === "emoji" && (
+              <span role="img" aria-label="project icon" className="leading-none">
+                {icon.value}
+              </span>
+            )}
+            {icon?.kind === "svg" && (
+              <span className="text-indigo-600">
+                <SVGIcon name={icon.value} className="w-4.5 h-4.5" />
+              </span>
+            )}
+            {!icon && (
+              <span className="text-indigo-600">
+                <SVGIcon name="target" className="w-4.5 h-4.5" />
+              </span>
+            )}
+          </span>
+
+          <h3 className="truncate text-base font-semibold text-slate-900 dark:text-white">
+            {title}
+          </h3>
+        </div>
+
         <div className="flex items-center gap-2 shrink-0">
           <Users className="w-4 h-4 text-slate-400" aria-hidden="true" />
           <div className="transition-transform duration-200 group-hover:scale-[1.04]">

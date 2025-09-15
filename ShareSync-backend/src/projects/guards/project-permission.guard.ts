@@ -1,4 +1,3 @@
-// src/projects/guards/project-permission.guard.ts
 import {
     CanActivate,
     ExecutionContext,
@@ -87,5 +86,4 @@ import {
   
       return true;
     }
-  }
-  
+  }  

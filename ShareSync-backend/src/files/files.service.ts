@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
+
 import { File, FileDocument, FileStatus } from './schemas/file.schema';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
@@ -15,7 +16,7 @@ type CreateFileInput = {
   mime: string;
   kind?: 'image' | 'video' | 'doc' | 'audio' | 'other';
   projectId: string;
-  status?: FileStatus; // defaults to 'approved' (or set 'pending' if moderation pipeline)
+  status?: FileStatus; // 'approved' default; use 'pending' if moderation pipeline
   moderation?: { reason?: string; tags?: string[] };
 };
 
@@ -55,7 +56,7 @@ export class FilesService {
     }
   }
 
-  /** Shape returned to the FE */
+  /** FE-facing shape */
   private toPublic(d: File | (File & { _id?: any })) {
     const anyd: any = typeof (d as any).toObject === 'function' ? (d as any).toObject() : d;
     return {
@@ -95,7 +96,6 @@ export class FilesService {
       moderation: input.moderation,
     });
 
-    // Broadcast best-effort
     try {
       this.realtime.emitToProject(input.projectId, 'project:filesAdded', {
         projectId: input.projectId,
@@ -136,13 +136,13 @@ export class FilesService {
     return payload;
   }
 
-  /** Paginated list by project (cursor = last seen _id; descending by created). */
+  /** Paginated list by project (cursor = last seen _id; newest first). */
   async listByProject(projectId: string, actingUserId: string, opts: ListOpts = {}) {
     await this.assertCanView(projectId, actingUserId);
 
     const limit = Math.min(Math.max(Number(opts.limit ?? 20), 1), 100);
     const q: FilterQuery<FileDocument> = { projectId };
-    // use _id cursor pagination (newest first)
+
     if (opts.cursor && Types.ObjectId.isValid(String(opts.cursor))) {
       q._id = { $lt: new Types.ObjectId(String(opts.cursor)) };
     }
@@ -170,7 +170,6 @@ export class FilesService {
 
     await this.fileModel.deleteOne({ _id: doc._id });
 
-    // Optionally broadcast removal (if the FE listens)
     try {
       this.realtime.emitToProject(doc.projectId, 'project:filesRemoved', {
         projectId: doc.projectId,
@@ -181,7 +180,7 @@ export class FilesService {
     return { ok: true };
   }
 
-  /** Optional: moderation status update */
+  /** Optional moderation API */
   async updateStatus(fileId: string, status: FileStatus, reason?: string) {
     if (!Types.ObjectId.isValid(fileId)) throw new NotFoundException('File not found');
     const doc = await this.fileModel.findById(fileId);

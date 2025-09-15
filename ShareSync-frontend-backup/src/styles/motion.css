@@ -87,6 +87,12 @@
     animation: spin-slow 12s linear infinite;
   }
   
+  /* A utility to force-disable motion (handy for debug/dev) */
+  .motion-none, .reduce-motion {
+    animation: none !important;
+    transition: none !important;
+  }
+  
   /* Reduced motion: disable animations */
   @media (prefers-reduced-motion: reduce) {
     .ring-anim::after,

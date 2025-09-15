@@ -1,0 +1,67 @@
+/* Shine utilities: glossy highlight + diagonal shimmer for cards/CTAs. */
+
+/* --- Diagonal sweep ("shine") --- */
+@keyframes ss-shine-sweep {
+    0%   { transform: translateX(-120%) skewX(15deg); opacity: 0; }
+    10%  { opacity: .65; }
+    50%  { opacity: .45; }
+    100% { transform: translateX(200%) skewX(15deg); opacity: 0; }
+  }
+  
+  .shine {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  
+  .shine::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    left: -25%;
+    width: 20%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,255,255,0.55),
+      transparent
+    );
+    transform: translateX(-120%) skewX(15deg);
+    opacity: 0;
+    pointer-events: none;
+  }
+  
+  .shine:hover::after,
+  .shine:focus-visible::after {
+    animation: ss-shine-sweep 900ms ease-out forwards;
+  }
+  
+  /* --- Marching ants (subtle border animation for “coming soon”) --- */
+  @keyframes ss-marching {
+    to { background-position: 100% 0, 0 0, 0 100%, 0 0; }
+  }
+  
+  .marching {
+    position: relative;
+    border: 1px solid transparent;
+    background:
+      linear-gradient(#0000, #0000) padding-box,
+      linear-gradient(90deg, rgba(99,102,241,.55) 0 30%, transparent 30% 50%, rgba(99,102,241,.55) 50% 80%, transparent 80% 100%) border-box,
+      linear-gradient(0deg, transparent 0 100%) border-box,
+      linear-gradient(0deg, transparent 0 100%) border-box;
+    background-size:
+      100% 100%,
+      16px 1px,
+      1px 16px,
+      1px 16px;
+    background-repeat: repeat, repeat-x, repeat-y, repeat-y;
+    animation: ss-marching 1.4s linear infinite;
+    border-radius: 0.75rem; /* match card radius */
+  }
+  
+  /* Reduced motion: disable shimmer + marching */
+  @media (prefers-reduced-motion: reduce) {
+    .shine::after { animation: none !important; opacity: 0 !important; }
+    .marching { animation: none !important; }
+  }
+  

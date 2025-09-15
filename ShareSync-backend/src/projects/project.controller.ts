@@ -1,4 +1,3 @@
-// src/projects/project.controller.ts
 import {
   Body,
   Controller,
@@ -21,6 +20,7 @@ import {
   ProjectPermissionGuard,
 } from './guards/project-permission.guard';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { UpdateProjectIconDto } from './dto/update-project-icon.dto';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
@@ -133,23 +133,23 @@ export class ProjectController {
     return updated;
   }
 
-  /** Update icon — owner-only; emits realtime project:updated */
+  /** Update icon — owner-only; emits realtime project:updated
+   *  - Send { kind, value } to set/update the icon
+   *  - Send an empty body (or null) to clear the icon
+   */
   @Patch(':id/icon')
   @UseGuards(ProjectPermissionGuard)
   @CanManageProject()
   async updateIcon(
     @Req() req,
     @Param('id') id: string,
-    @Body() body: { kind?: 'emoji' | 'svg'; value?: string } | null,
+    @Body() body: UpdateProjectIconDto | null,
   ) {
     const userId = req?.user?.sub;
 
-    // Allow clearing with null body, otherwise require kind/value
     const icon =
-      body && typeof body === 'object'
-        ? (body.kind && body.value
-            ? { kind: body.kind, value: String(body.value || '').trim() }
-            : null)
+      body && typeof body === 'object' && (body as any).kind && (body as any).value
+        ? { kind: body.kind as 'emoji' | 'svg', value: String(body.value || '').trim() }
         : null;
 
     const updated = await this.projects.updateIcon(id, userId, icon);
@@ -164,6 +164,6 @@ export class ProjectController {
       /* noop */
     }
 
-    return updated;
+    return { projectId: String(id), patch: { icon: updated?.icon ?? null } };
   }
 }
