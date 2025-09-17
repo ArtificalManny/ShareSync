@@ -47,6 +47,11 @@ export class RealtimeGateway {
     this.emitToRoom(`user:${userId}`, event, payload);
   }
 
+  /** Convenience for public status change broadcasts */
+  emitProjectPublicChanged(projectId: string, payload: { projectId: string; publicEnabled: boolean; publicToken: boolean }) {
+    this.emitToProject(projectId, 'project:publicChanged', payload);
+  }
+
   /** Convenience specifically for habits UI */
   emitHabitsUpdated(userId: string, projectId?: string) {
     if (userId) this.emitToUser(userId, 'habits:updated', { projectId: projectId || null });

@@ -7,15 +7,10 @@
     --border:        226 232 240;   /* slate-200 */
     --ring:          99 102 241;    /* indigo-500 */
   
-    /* accent (default) */
+    /* accent & intent (defaults) */
     --accent:              79 70 229;   /* indigo-600 */
     --accent-foreground:   255 255 255;
-  
-    /* statuses */
-    --success:  5 150 105;   /* emerald-600 */
-    --warning:  217 119 6;   /* amber-600 */
-    --danger:   225 29 72;   /* rose-600 */
-    --info:     2 132 199;   /* sky-600 */
+    --info:                2 132 199;   /* sky-600 */
   
     /* charts */
     --chart-1:  79 70 229;
@@ -27,6 +22,32 @@
     /* project icon sizing (used in cards/headers) */
     --project-icon-size: 28px;
     --project-icon-radius: 10px;
+  
+    /* ================================
+       Typography tokens
+       ================================ */
+    --font-display: "Inter Tight", Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+    --font-body: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  
+    /* sizes (clamped for responsiveness) */
+    --fs-xs: clamp(0.75rem, 0.72rem + 0.1vw, 0.80rem);
+    --fs-sm: clamp(0.875rem, 0.84rem + 0.2vw, 0.95rem);
+    --fs-md: clamp(1rem, 0.96rem + 0.3vw, 1.08rem);
+    --fs-lg: clamp(1.125rem, 1.06rem + 0.5vw, 1.32rem);
+    --fs-xl: clamp(1.25rem, 1.16rem + 0.7vw, 1.58rem);
+    --fs-2xl: clamp(1.5rem, 1.34rem + 1.1vw, 1.95rem);
+    --fs-3xl: clamp(1.875rem, 1.62rem + 1.6vw, 2.45rem);
+  
+    /* line-heights */
+    --lh-tight: 1.15;
+    --lh-snug: 1.25;
+    --lh-normal: 1.45;
+  
+    /* weights */
+    --fw-regular: 400;
+    --fw-medium: 500;
+    --fw-semibold: 600;
+    --fw-bold: 700;
   
     /* ================================
        Motion tokens (layer-wide)
@@ -47,19 +68,52 @@
     --shadow-soft: 0 2px 10px rgb(15 23 42 / .06);
   
     /* ================================
-       Gradient palette tokens
+       Gradient palette tokens (base)
        ================================ */
-    /* Blue (indigo → sky) */
-    --grad-blue-a: 79 70 229;   /* indigo-600 */
-    --grad-blue-b: 56 189 248;  /* sky-400 */
+    /* Existing triads used across the app */
+    --grad-blue-a:    79 70 229;   /* indigo-600 */
+    --grad-blue-b:    56 189 248;  /* sky-400 */
   
-    /* Purple (violet → fuchsia) */
-    --grad-purple-a: 124 58 237; /* violet-600 */
-    --grad-purple-b: 232 121 249; /* fuchsia-400 */
+    --grad-purple-a:  124 58 237;  /* violet-600 */
+    --grad-purple-b:  232 121 249; /* fuchsia-400 */
   
-    /* Emerald (green → teal) */
-    --grad-emerald-a: 16 185 129; /* emerald-500 */
-    --grad-emerald-b: 20 184 166; /* teal-500 */
+    --grad-emerald-a: 16 185 129;  /* emerald-500 */
+    --grad-emerald-b: 20 184 166;  /* teal-500 */
+  
+    /* Brand-style blends */
+    /* Pandora: deep violet → electric cyan */
+    --grad-pandora-a: 124 58 237;   /* violet-600 */
+    --grad-pandora-b: 34 211 238;   /* cyan-400 */
+    --grad-pandora: linear-gradient(135deg,
+      rgb(var(--grad-pandora-a)) 0%,
+      rgb(var(--grad-pandora-b)) 100%
+    );
+  
+    /* CNBC: cobalt → jade */
+    --grad-cnbc-a: 37 99 235;      /* blue-600 */
+    --grad-cnbc-b: 34 197 94;      /* green-500 */
+    --grad-cnbc: linear-gradient(135deg,
+      rgb(var(--grad-cnbc-a)) 0%,
+      rgb(var(--grad-cnbc-b)) 100%
+    );
+  
+    /* Instagram: orange → pink/purple sweep */
+    --grad-ig-a: 245 133 41;       /* #F58529 */
+    --grad-ig-b: 221 42 123;       /* #DD2A7B */
+    --grad-ig-c: 129 52 175;       /* #8134AF */
+    --grad-ig-d: 81 91 212;        /* #515BD4 */
+    --grad-ig: linear-gradient(135deg,
+      rgb(var(--grad-ig-a)) 0%,
+      rgb(var(--grad-ig-b)) 33%,
+      rgb(var(--grad-ig-c)) 66%,
+      rgb(var(--grad-ig-d)) 100%
+    );
+  
+    /* === Gradient companions for intents ===
+       These keep older components (TraceOutline, shine, etc.) consistent
+       without rewriting them—use var(--grad-accent) / var(--grad-info). */
+    --grad-accent: var(--grad-pandora);
+    --grad-info: var(--grad-cnbc);
   }
   
   [data-theme="dark"] {
@@ -75,6 +129,22 @@
   
     /* slightly stronger glow in dark */
     --shadow-glow: 0 8px 28px rgb(var(--accent) / .28);
+  
+    /* Dark-tuned gradient stops (slightly brighter for contrast) */
+    --grad-pandora-a: 139 92 246;    /* violet-500/600 blend */
+    --grad-pandora-b: 56 189 248;    /* sky-400 */
+  
+    --grad-cnbc-a: 59 130 246;       /* blue-500 */
+    --grad-cnbc-b: 34 197 94;        /* green-500 */
+  
+    --grad-ig-a: 249 115 22;         /* orange-500 */
+    --grad-ig-b: 236 72 153;         /* pink-500 */
+    --grad-ig-c: 139 92 246;         /* violet-500 */
+    --grad-ig-d: 99 102 241;         /* indigo-500 */
+  
+    /* Keep the intent mappings the same in dark mode */
+    --grad-accent: var(--grad-pandora);
+    --grad-info: var(--grad-cnbc);
   }
   
   /* per-surface accent overrides e.g. data-accent="emerald" */
@@ -161,7 +231,7 @@
   }
   
   /* =========================================================
-     Reduced motion: swap timings & disable key animations
+     Reduced motion
      ========================================================= */
   @media (prefers-reduced-motion: reduce) {
     :root {

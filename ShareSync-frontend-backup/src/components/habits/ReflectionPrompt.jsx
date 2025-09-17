@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { CalendarCheck2, Send, X } from "lucide-react";
+import GradientText from "../ui/GradientText";
 
 /**
  * ReflectionPrompt
@@ -30,9 +31,15 @@ export default function ReflectionPrompt({
       <div className="flex items-center justify-between">
         <div className="inline-flex items-center gap-2">
           <CalendarCheck2 className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-sm font-semibold">Weekly Reflection</h3>
+          <h3 className="text-sm font-semibold font-display">
+            <GradientText variant="ig">Weekly Reflection</GradientText>
+          </h3>
         </div>
-        <button className="p-1 rounded-md hover:bg-surface/70" aria-label="Close" onClick={onClose}>
+        <button
+          className="p-1 rounded-md hover:bg-surface/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          aria-label="Close"
+          onClick={onClose}
+        >
           <X className="w-4 h-4 text-muted" />
         </button>
       </div>
@@ -61,7 +68,10 @@ export default function ReflectionPrompt({
       </div>
 
       <div className="mt-3 flex items-center justify-end gap-2">
-        <button onClick={onClose} className="text-sm rounded-lg px-3 py-2 border border-border hover:bg-surface/70">
+        <button
+          onClick={onClose}
+          className="btn btn--outline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        >
           Later
         </button>
         <button
@@ -70,9 +80,11 @@ export default function ReflectionPrompt({
               setSubmitting(true);
               await onSubmit?.({ wins: wins.trim(), nextFocus: nextFocus.trim() });
               onClose?.();
-            } finally { setSubmitting(false); }
+            } finally {
+              setSubmitting(false);
+            }
           }}
-          className="inline-flex items-center gap-2 text-sm rounded-lg px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
+          className="btn btn--primary shine inline-flex items-center gap-2 disabled:opacity-60"
           disabled={submitting}
         >
           <Send className="w-4 h-4" />

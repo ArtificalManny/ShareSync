@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { Users, Clock } from "lucide-react";
+import { Users, Clock, Link2 } from "lucide-react";
 import AvatarGroup from "../AvatarGroup.jsx";
 import StatusPill from "./StatusPill.jsx";
 import AnimatedRing from "../ui/AnimatedRing";
 import useRecentFlag from "../../hooks/useRecentFlag";
 import useReducedMotion from "../../hooks/useReducedMotion";
+import { formatRelativeTime } from "../../utils/formatters";
 
 // lazy import so first paint is fast; we call this on hover/focus
 let _prefetchStats = null;
@@ -52,6 +53,7 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
   const title = project?.title || project?.name || "Untitled";
   const lastActivityAt = project?.lastActivityAt || project?.updatedAt || project?.createdAt;
   const status = (project?.status || "In Progress").toString();
+  const publicEnabled = !!(project?.publicEnabled || project?.publicToken);
 
   // 🔷 icon support (emoji or preset svg)
   const icon = project?.icon || null;
@@ -135,15 +137,27 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
             )}
           </span>
 
-          <h3 className="truncate text-base font-semibold text-slate-900 dark:text-white">
-            {title}
-          </h3>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="truncate text-base font-semibold text-slate-900 dark:text-white">
+                {title}
+              </h3>
+              {publicEnabled && (
+                <span
+                  className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-900/60"
+                  title="Public link enabled"
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  Public
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <Users className="w-4 h-4 text-slate-400" aria-hidden="true" />
           <div className="transition-transform duration-200 group-hover:scale-[1.04]">
-            {/* Highlight owner/avatar when recent */}
             <AvatarGroup
               users={members}
               max={4}
@@ -213,25 +227,4 @@ function accentForStatus(status) {
     return { barCls: "bg-gradient-to-b from-slate-400 via-slate-500 to-slate-600" };
   }
   return { barCls: "bg-gradient-to-b from-indigo-500 via-fuchsia-500 to-pink-500" };
-}
-
-function formatRelativeTime(dateish) {
-  if (!dateish) return "";
-  const ts = typeof dateish === "string" ? Date.parse(dateish) : +new Date(dateish);
-  if (!Number.isFinite(ts)) return "";
-  const diff = Date.now() - ts;
-  const sec = Math.round(diff / 1000);
-  const min = Math.round(sec / 60);
-  const hr = Math.round(min / 60);
-  const day = Math.round(hr / 24);
-
-  if (sec < 45) return "just now";
-  if (min < 60) return `${min}m ago`;
-  if (hr < 24) return `${hr}h ago`;
-  if (day < 8) return `${day}d ago`;
-  try {
-    return new Date(ts).toLocaleDateString();
-  } catch {
-    return "";
-  }
 }

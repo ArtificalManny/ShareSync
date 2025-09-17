@@ -1,7 +1,8 @@
 /**
- * Simple formatting helpers for axes, tooltips, and labels.
+ * Simple formatting helpers for axes, tooltips, labels, and timestamps.
  */
 
+/* ===== Numbers ===== */
 export const fmtNumber = (n, opts) =>
   new Intl.NumberFormat(undefined, opts).format(Number(n) || 0);
 
@@ -23,7 +24,6 @@ export const fmtAxisNumber = (n) => {
 };
 
 export const fmtAxisPercent = (n) => {
-  // n may be already 0..1 or 0..100; show compact and clamp
   const v = Number(n) || 0;
   const asUnit = v > 1 ? v / 100 : v;
   return fmtPercent(asUnit, 0);
@@ -38,8 +38,7 @@ export const fmtDateLabel = (ts) => {
   }
 };
 
-/* ====== Feed-specific helpers (new) ===================================== */
-
+/* ===== Feed-specific helpers (kept) ===== */
 export const fmtWhen = (ts) => {
   try {
     const d = new Date(ts);
@@ -49,7 +48,6 @@ export const fmtWhen = (ts) => {
   }
 };
 
-/** Build a reasonable event title from a heterogeneous activity. */
 export const titleFromActivity = (evt) => {
   const t = (evt?.type || "").toLowerCase();
   if (t.startsWith("task.")) {
@@ -70,7 +68,6 @@ export const titleFromActivity = (evt) => {
   return evt?.text || evt?.title || "Update";
 };
 
-/** Optional: summarize a diff/patch object into small badges like “status → Done”. */
 export const summarizeDiff = (patch = {}) => {
   const out = [];
   for (const [k, v] of Object.entries(patch)) {
@@ -82,3 +79,64 @@ export const summarizeDiff = (patch = {}) => {
   }
   return out;
 };
+
+/* ===== Centralized timestamp microcopy ===== */
+
+/** “just now”, “Xm ago”, “Yh ago”, else “Mon DD” */
+export function formatRelativeTime(dateish) {
+  if (!dateish) return "";
+  const ts = typeof dateish === "string" ? Date.parse(dateish) : +new Date(dateish);
+  if (!Number.isFinite(ts)) return "";
+  const diff = Date.now() - ts;
+  const sec = Math.round(diff / 1000);
+  const min = Math.round(sec / 60);
+  const hr = Math.round(min / 60);
+  const day = Math.round(hr / 24);
+
+  if (sec < 45) return "just now";
+  if (min < 60) return `${min}m ago`;
+  if (hr < 24) return `${hr}h ago`;
+  if (day < 8) return `${day}d ago`;
+
+  try {
+    const d = new Date(ts);
+    const month = d.toLocaleString(undefined, { month: "short" });
+    const dd = d.getDate();
+    return `${month} ${dd}`;
+  } catch {
+    return "";
+  }
+}
+
+/** “MMM d” e.g., “Jan 5” */
+export function formatShortDate(dateish) {
+  try {
+    const d = new Date(dateish);
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
+}
+
+/** Long datetime (locale-aware) */
+export function formatLongDateTime(dateish) {
+  try {
+    const d = new Date(dateish);
+    return d.toLocaleString(undefined, {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+}
+
+/** “Updated 2h ago” (prefix configurable) */
+export function labelledTimestamp(dateish, prefix = "Updated") {
+  const rel = formatRelativeTime(dateish);
+  return rel ? `${prefix} ${rel}` : "";
+}

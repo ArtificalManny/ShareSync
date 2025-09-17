@@ -1,6 +1,6 @@
-// src/components/LiveActivityFeed.jsx
 import React from 'react'
 import { ThumbsUp, MessageCircle, Share2 } from 'lucide-react'
+import { formatRelativeTime } from '../utils/formatters'
 
 export default function LiveActivityFeed({ feedItems = [] }) {
   if (!feedItems.length) {
@@ -48,7 +48,7 @@ export default function LiveActivityFeed({ feedItems = [] }) {
                   </span>
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {item.timestamp}
+                  {formatRelativeTime(item.timestamp)}
                 </p>
               </div>
             </div>

@@ -29,7 +29,7 @@ export function SectionHeader({
     <div
       className={[
         "card-header",
-        "flex items-start justify-between gap-3 chart-fade-in",
+        "flex items-start justify-between gap-2 sm:gap-3 chart-fade-in",
         className,
       ]
         .filter(Boolean)
@@ -53,7 +53,15 @@ export function SectionHeader({
             aria-hidden="true"
           />
         )}
-        <span className="leading-none font-semibold">{children}</span>
+        <span
+          className="font-display leading-none tracking-tight font-semibold"
+          style={{
+            fontSize: "var(--fs-lg)",
+            lineHeight: "var(--lh-tight)",
+          }}
+        >
+          {children}
+        </span>
       </div>
 
       {/* Right: actions */}
@@ -61,8 +69,17 @@ export function SectionHeader({
 
       {/* Optional subtitle */}
       {subtitle ? (
-        <div className="basis-full pl-9 -mt-1">
-          <p className="text-xs text-muted">{subtitle}</p>
+        <div className="basis-full pl-8 sm:pl-9 -mt-1">
+          <p
+            className="text-muted"
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--fs-xs)",
+              lineHeight: "var(--lh-normal)",
+            }}
+          >
+            {subtitle}
+          </p>
         </div>
       ) : null}
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ThumbsUp, MessageSquare, Share2, FileText, CheckSquare, User, Heart } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Share2, FileText, CheckSquare, User, Heart, Send } from 'lucide-react';
 
 const FeedItem = ({
   item,
@@ -65,23 +65,45 @@ const FeedItem = ({
   };
 
   return (
-    <div className="feed-item bg-white/98 dark:bg-gray-900/98 border border-gray-50 dark:border-gray-800 rounded-lg p-1 sm:p-2 shadow-sm hover:shadow-md hover-glow transition-all duration-150 cursor-pointer" onClick={() => console.log(`View ${item.type} in ${item.projectTitle}`)} onDoubleClick={handleDoubleClick}>
+    <div
+      className="feed-item bg-white/98 dark:bg-gray-900/98 border border-gray-50 dark:border-gray-800 rounded-lg p-1 sm:p-2 shadow-sm hover:shadow-md hover-glow transition-all duration-150 cursor-pointer"
+      onClick={() => console.log(`View ${item.type} in ${item.projectTitle}`)}
+      onDoubleClick={handleDoubleClick}
+    >
       <div className="flex items-start gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
         <div className="relative">
-          <img src={item.profilePicture} alt={`${item.user}'s profile`} className="w-6 sm:w-7 h-6 sm:h-7 rounded-full border-2 border-gradient-purple-teal object-cover" onError={(e) => { e.target.src = '/default-avatar.png'; }} loading="lazy" />
+          <img
+            src={item.profilePicture}
+            alt={`${item.user}'s profile`}
+            className="w-6 sm:w-7 h-6 sm:h-7 rounded-full border-2 border-gradient-purple-teal object-cover"
+            onError={(e) => { e.target.src = '/default-avatar.png'; }}
+            loading="lazy"
+          />
           <div className="absolute inset-0 rounded-full ring-2 ring-purple-500 animate-pulse-slow"></div>
         </div>
         <div className="flex-1">{renderContent()}</div>
       </div>
       <div className="flex items-center gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
-        <button onClick={(e) => { e.stopPropagation(); handleLike(index); }} className="flex items-center gap-0.5 sm:gap-1 text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors duration-150">
-          <ThumbsUp className="w-3 sm:w-3.5 h-3 sm:h-3.5" /><span className="text-xs sm:text-sm font-sans">{item.likes || 0}</span>
+        <button
+          onClick={(e) => { e.stopPropagation(); handleLike(index); }}
+          className="flex items-center gap-0.5 sm:gap-1 text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors duration-150"
+        >
+          <ThumbsUp className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+          <span className="text-xs sm:text-sm font-sans">{item.likes || 0}</span>
         </button>
-        <button onClick={(e) => { e.stopPropagation(); toggleComments(index); }} className="flex items-center gap-0.5 sm:gap-1 text-gray-700 dark:text-gray-300 hover:text-teal-500 transition-colors duration-150">
-          <MessageSquare className="w-3 sm:w-3.5 h-3 sm:h-3.5" /><span className="text-xs sm:text-sm font-sans">{(item.comments || []).length}</span>
+        <button
+          onClick={(e) => { e.stopPropagation(); toggleComments(index); }}
+          className="flex items-center gap-0.5 sm:gap-1 text-gray-700 dark:text-gray-300 hover:text-teal-500 transition-colors duration-150"
+        >
+          <MessageSquare className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+          <span className="text-xs sm:text-sm font-sans">{(item.comments || []).length}</span>
         </button>
-        <button onClick={handleShareClick} className="flex items-center gap-0.5 sm:gap-1 text-gray-700 dark:text-gray-300 hover:text-rose-500 transition-colors duration-150">
-          <Share2 className="w-3 sm:w-3.5 h-3 sm:h-3.5" /><span className="text-xs sm:text-sm font-sans">{item.shares || 0}</span>
+        <button
+          onClick={handleShareClick}
+          className="flex items-center gap-0.5 sm:gap-1 text-gray-700 dark:text-gray-300 hover:text-rose-500 transition-colors duration-150"
+        >
+          <Share2 className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+          <span className="text-xs sm:text-sm font-sans">{item.shares || 0}</span>
         </button>
         {likeAnimation && <Heart className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-rose-500 animate-pulse-fast" />}
         {shareAnimation && <Share2 className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-rose-500 animate-pulse-fast" />}
@@ -90,13 +112,35 @@ const FeedItem = ({
         <div className="comments mt-0.5 sm:mt-1 space-y-0.5 sm:space-y-1">
           {(item.comments || []).map((comment, i) => (
             <div key={i} className="flex items-start gap-0.5 sm:gap-1 animate-fade-in">
-              <img src={comment.profilePicture} alt={`${comment.user}'s profile`} className="w-5 sm:w-6 h-5 sm:h-6 rounded-full border-2 border-gradient-teal-rose object-cover" onError={(e) => { e.target.src = '/default-avatar.png'; }} />
-              <div><p className="text-gray-800 dark:text-gray-300 font-sans text-xs sm:text-sm">{comment.username}</p><p className="text-gray-700 dark:text-gray-400 text-xs sm:text-sm comment-input">{comment.text}</p></div>
+              <img
+                src={comment.profilePicture}
+                alt={`${comment.user}'s profile`}
+                className="w-5 sm:w-6 h-5 sm:h-6 rounded-full border-2 border-gradient-teal-rose object-cover"
+                onError={(e) => { e.target.src = '/default-avatar.png'; }}
+              />
+              <div>
+                <p className="text-gray-800 dark:text-gray-300 font-sans text-xs sm:text-sm">{comment.username}</p>
+                <p className="text-gray-700 dark:text-gray-400 text-xs sm:text-sm comment-input">{comment.text}</p>
+              </div>
             </div>
           ))}
-          <form onSubmit={(e) => { e.stopPropagation(); handleCommentSubmit(index, e); }} className="mt-0.5 sm:mt-1 flex gap-0.5 sm:gap-1">
-            <input type="text" value={newComment[index] || ''} onChange={e => setNewComment(prev => ({ ...prev, [index]: e.target.value }))} className="flex-1 p-1 sm:p-2 border border-gray-200 dark:border-gray-600 rounded-full text-xs sm:text-sm font-sans text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white dark:bg-gray-900 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Add a comment..." />
-            <button type="submit" className="bg-purple-600 text-white p-1 sm:p-2 rounded-full hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 transition-all duration-150"><Send className="w-2 sm:w-3 h-2 sm:h-3" /></button>
+          <form
+            onSubmit={(e) => { e.stopPropagation(); handleCommentSubmit(index, e); }}
+            className="mt-0.5 sm:mt-1 flex gap-0.5 sm:gap-1"
+          >
+            <input
+              type="text"
+              value={newComment[index] || ''}
+              onChange={e => setNewComment(prev => ({ ...prev, [index]: e.target.value }))}
+              className="flex-1 p-1 sm:p-2 border border-gray-200 dark:border-gray-600 rounded-full text-xs sm:text-sm font-sans text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white dark:bg-gray-900 placeholder-gray-400 dark:placeholder-gray-500"
+              placeholder="Add a comment..."
+            />
+            <button
+              type="submit"
+              className="bg-purple-600 text-white p-1 sm:p-2 rounded-full hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 transition-all duration-150"
+            >
+              <Send className="w-2 sm:w-3 h-2 sm:h-3" />
+            </button>
           </form>
         </div>
       )}

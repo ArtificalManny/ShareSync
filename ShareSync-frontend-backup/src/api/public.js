@@ -39,7 +39,7 @@ export async function copyPublicStatusLink(token) {
   }
 }
 
-/* ---------- New: enable/disable/regenerate ---------- */
+/* ---------- Enable / Disable / Regenerate ---------- */
 
 /** POST /api/public/projects/:projectId/enable -> { token } */
 export async function enablePublic(projectId, { signal } = {}) {
@@ -52,7 +52,8 @@ export async function enablePublic(projectId, { signal } = {}) {
   });
   if (!res.ok) throw new Error(await _safeErr(res, "Failed to enable public status"));
   const json = await res.json();
-  return { token: json?.token };
+  // Normalized to {token}; callers may also check .publicToken if backend returns that shape
+  return { token: json?.token ?? json?.publicToken };
 }
 
 /** POST /api/public/projects/:projectId/disable -> { ok:true } */
@@ -79,7 +80,7 @@ export async function regeneratePublicToken(projectId, { signal } = {}) {
   });
   if (!res.ok) throw new Error(await _safeErr(res, "Failed to regenerate public token"));
   const json = await res.json();
-  return { token: json?.token };
+  return { token: json?.token ?? json?.publicToken };
 }
 
 /* ---------- Public status fetchers ---------- */
@@ -133,7 +134,7 @@ export async function fetchPublicProjectStatus(
   }
 }
 
-/** Alias that matches your spec name. */
+/** Alias matching the spec name in your note. */
 export const getPublicStatus = fetchPublicProjectStatus;
 
 /* ---------- internals ---------- */
@@ -173,7 +174,6 @@ function _normalizeStatus(raw) {
       activeDays28d: _num(raw?.kpis?.activeDays28d),
       cadence14d: _num(raw?.kpis?.cadence14d),
     },
-    // Optional public activity list if backend sends it:
     activity: Array.isArray(raw?.activity) ? raw.activity : [],
   };
 }

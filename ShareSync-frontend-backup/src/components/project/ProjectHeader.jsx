@@ -1,7 +1,9 @@
 import React, { useContext, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Link2, RefreshCcw, Copy as CopyIcon, Check as CheckIcon } from "lucide-react";
 import { AuthContext } from "../../AuthContext";
 import { patchProjectIcon } from "../../api/projects";
+import { enablePublic, disablePublic, regeneratePublicToken, buildPublicStatusUrl } from "../../api/public";
 import ProjectIconPicker from "./ProjectIconPicker";
 import AnimatedRing from "../ui/AnimatedRing";
 import GradientText from "../ui/GradientText";
@@ -70,6 +72,14 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
   // Local override so header reflects immediately after change
   const [iconOverride, setIconOverride] = useState(project?.icon ?? null);
 
+  // Local public state mirrors server payload so header updates instantly
+  const initialEnabled = !!(project?.publicEnabled || project?.publicToken);
+  const [publicEnabled, setPublicEnabled] = useState(initialEnabled);
+  const [publicToken, setPublicToken] = useState(project?.publicToken || null);
+  const [busyToggle, setBusyToggle] = useState(false);
+  const [busyRegen, setBusyRegen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const icon = iconOverride ?? project?.icon ?? null;
 
   const handleQuickAdd = async (e) => {
@@ -94,13 +104,64 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
     }
   }
 
-  // Public toggle state (derived)
-  const publicEnabled = !!project?.publicToken;
+  // Public actions
+  async function handleTogglePublic(nextChecked) {
+    if (!isOwner || !project?._id) return;
+    setBusyToggle(true);
+    try {
+      if (nextChecked) {
+        const res = await enablePublic(project._id);
+        setPublicEnabled(!!res?.publicEnabled);
+        setPublicToken(res?.publicToken || null);
+        onTogglePublic?.(true, res); // notify parent if provided
+      } else {
+        const res = await disablePublic(project._id);
+        setPublicEnabled(false);
+        setPublicToken(null);
+        onTogglePublic?.(false, res);
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.response?.data?.message || e?.message || "Failed to update public status.");
+    } finally {
+      setBusyToggle(false);
+    }
+  }
+
+  async function handleRegenerate() {
+    if (!isOwner || !project?._id) return;
+    if (!publicEnabled) return;
+    setBusyRegen(true);
+    try {
+      const res = await regeneratePublicToken(project._id);
+      setPublicEnabled(!!res?.publicEnabled);
+      setPublicToken(res?.publicToken || null);
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.response?.data?.message || e?.message || "Failed to regenerate link.");
+    } finally {
+      setBusyRegen(false);
+    }
+  }
+
+  const publicUrl = publicToken ? buildPublicStatusUrl(publicToken) : "";
 
   // Recent activity → animate ring only when recent + not reduced motion
   const hasRecent = useRecentFlag(project?.lastActivityAt, recentWindowMs);
   const prefersReduced = useReducedMotion();
   const ringAnimated = hasRecent && !prefersReduced;
+
+  async function copyPublicUrl() {
+    if (!publicUrl) return;
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // eslint-disable-next-line no-alert
+      alert("Could not copy to clipboard.");
+    }
+  }
 
   return (
     <section className="card shine accent-bar rounded-2xl border border-border bg-surface shadow-[var(--shadow-elev)]">
@@ -185,9 +246,10 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
                     </span>
                     <input
                       type="checkbox"
-                      className="h-4 w-7 appearance-none rounded-full bg-slate-300 checked:bg-indigo-600 relative transition-colors outline-none cursor-pointer"
+                      className="h-4 w-7 appearance-none rounded-full bg-slate-300 checked:bg-indigo-600 relative transition-colors outline-none cursor-pointer disabled:opacity-60"
                       checked={publicEnabled}
-                      onChange={(e) => onTogglePublic?.(e.target.checked)}
+                      disabled={busyToggle}
+                      onChange={(e) => handleTogglePublic(e.target.checked)}
                       aria-label="Toggle public status"
                     />
                   </label>
@@ -195,6 +257,41 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
                   <span className={`px-2 py-0.5 text-xs rounded-full ${publicEnabled ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`}>
                     {publicEnabled ? "Public" : "Private"}
                   </span>
+                )}
+
+                {/* When public, show copy + regenerate controls */}
+                {publicEnabled && (
+                  <div className="inline-flex items-center gap-1 text-xs">
+                    <a
+                      href={publicUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      title="Open public link"
+                    >
+                      <Link2 className="w-3.5 h-3.5" />
+                      Public link
+                    </a>
+                    <button
+                      type="button"
+                      onClick={copyPublicUrl}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      title="Copy public link"
+                    >
+                      {copied ? <CheckIcon className="w-3.5 h-3.5" /> : <CopyIcon className="w-3.5 h-3.5" />}
+                      {copied ? "Copied" : "Copy"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRegenerate}
+                      disabled={busyRegen}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
+                      title="Regenerate public link"
+                    >
+                      <RefreshCcw className="w-3.5 h-3.5" />
+                      {busyRegen ? "…" : "Regenerate"}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

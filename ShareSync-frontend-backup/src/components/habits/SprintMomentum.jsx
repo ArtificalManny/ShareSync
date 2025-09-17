@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import SectionHeader from "../ui/SectionHeader";
+import GradientText from "../ui/GradientText";
 import TraceOutline from "../ui/TraceOutline";
 
 /**
@@ -11,7 +12,12 @@ import TraceOutline from "../ui/TraceOutline";
 export default function SprintMomentum({ data = [], range = 7 }) {
   const days = useMemo(() => {
     // normalize to exactly `range` bars (oldest -> newest)
-    const map = new Map((data || []).map((d) => [new Date(d.date).toDateString(), Number(d.count) || 0]));
+    const map = new Map(
+      (data || []).map((d) => [
+        new Date(d.date).toDateString(),
+        Number(d.count) || 0,
+      ])
+    );
     const out = [];
     for (let i = range - 1; i >= 0; i--) {
       const day = new Date(Date.now() - i * 86400000);
@@ -31,7 +37,9 @@ export default function SprintMomentum({ data = [], range = 7 }) {
         <span className="accent-bar__left" aria-hidden="true" />
         <div className="p-4">
           <SectionHeader icon="Timer" subtitle="Daily completed sprints">
-            Sprint Momentum
+            <span className="font-display">
+              <GradientText variant="pandora">Sprint Momentum</GradientText>
+            </span>
           </SectionHeader>
 
           <div className="mt-3 grid grid-cols-7 gap-2 min-h-[86px] items-end">
@@ -42,7 +50,7 @@ export default function SprintMomentum({ data = [], range = 7 }) {
                   style={{
                     height: `${Math.max(6, d.h)}%`,
                     background:
-                      "linear-gradient(180deg, var(--info) 0%, color-mix(in srgb, var(--accent) 60%, var(--info)) 100%)",
+                      "linear-gradient(180deg, rgb(var(--info)) 0%, color-mix(in srgb, rgb(var(--accent)) 60%, rgb(var(--info))) 100%)",
                   }}
                   title={`${d.label}: ${d.v}`}
                   aria-label={`${d.label} ${d.v} sprints`}

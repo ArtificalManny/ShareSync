@@ -74,6 +74,20 @@ export class Project {
     default: [],
   })
   invites: ProjectInvite[];
+
+  /** 🔓 Public transparency layer */
+  @Prop({ type: Boolean, default: false })
+  publicEnabled: boolean;
+
+  @Prop({ type: String, default: null, index: true, sparse: true })
+  publicToken: string | null;
+
+  @Prop({ type: Date })
+  publicLastEnabledAt?: Date;
+
+  /** ✅ Explicit timestamps so TS sees them on lean docs */
+  @Prop() createdAt?: Date;
+  @Prop() updatedAt?: Date;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

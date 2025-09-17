@@ -1,5 +1,6 @@
 import React from "react";
 import SectionHeader from "../ui/SectionHeader";
+import GradientText from "../ui/GradientText";
 import TraceOutline from "../ui/TraceOutline";
 
 /**
@@ -17,18 +18,29 @@ export default function CadenceMeter({ activeDays = 0, range = 14 }) {
       <div className="card accent-bar shine rounded-2xl border border-border overflow-hidden">
         <span className="accent-bar__left" aria-hidden="true" />
         <div className="p-4">
-          <SectionHeader icon="Activity" subtitle={`${activeDays}/${range} active days`}>
-            Cadence
+          <SectionHeader
+            icon="Activity"
+            subtitle={`${activeDays}/${range} active days`}
+          >
+            <span className="font-display">
+              <GradientText variant="emerald">Cadence</GradientText>
+            </span>
           </SectionHeader>
 
           <div className="mt-3">
-            <div className="h-3 w-full rounded-full bg-[color-mix(in_srgb,var(--accent-50)_60%,transparent)] overflow-hidden">
+            <div
+              className="h-3 w-full rounded-full overflow-hidden"
+              style={{
+                background:
+                  "color-mix(in srgb, rgb(var(--accent)) 16%, transparent)",
+              }}
+            >
               <div
                 className="h-3 rounded-full"
                 style={{
                   width: `${percentLabel}%`,
                   background:
-                    "linear-gradient(90deg, var(--accent) 0%, var(--info) 100%)",
+                    "linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--info)) 100%)",
                 }}
                 aria-label={`Cadence ${percentLabel}%`}
               />

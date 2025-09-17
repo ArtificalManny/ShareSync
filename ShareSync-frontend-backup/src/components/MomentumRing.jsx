@@ -1,4 +1,3 @@
-// /src/components/MomentumRing.jsx
 import React, { useMemo, useState } from "react";
 
 /**

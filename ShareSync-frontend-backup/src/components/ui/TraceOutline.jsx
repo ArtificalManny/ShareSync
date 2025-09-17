@@ -1,20 +1,18 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 
 /**
  * TraceOutline
  * Wrap arbitrary content and render an animated "runner dot" tracing its border.
  *
  * Props:
- *  - color: CSS color string (defaults to var(--accent))
+ *  - color: CSS color string (defaults to var(--accent)) — accepts solid color
+ *           OR gradient tokens like `var(--grad-pandora)` / `var(--grad-cnbc)` / `var(--grad-ig)`
  *  - stroke: border thickness in px (defaults 2)
  *  - radius: border radius in px (defaults 12)
  *  - speedMs: duration of one lap (defaults 2400)
  *  - inset: how far inside the wrapper the trace sits (defaults 1)
  *  - paused: boolean to pause animation
  *  - className: extra classes on the wrapper
- *
- * Usage:
- *  <TraceOutline><button className="btn btn--primary press-shrink">Start</button></TraceOutline>
  */
 export default function TraceOutline({
   children,
@@ -38,7 +36,6 @@ export default function TraceOutline({
       const r = el.getBoundingClientRect();
       const w = Math.max(0, Math.round(r.width));
       const h = Math.max(0, Math.round(r.height));
-      // Rounded-rect perimeter approximation (true rounded perimeter = 2πr for 4 corners + edges)
       const corner = Math.max(0, Math.min(radius, Math.min(w, h) / 2));
       const straight = 2 * (w + h - 4 * corner);
       const round = 2 * Math.PI * corner;
@@ -49,10 +46,15 @@ export default function TraceOutline({
     return () => ro.disconnect();
   }, [radius]);
 
-  // We render an absolutely-positioned SVG on top with pointer-events none.
+  // Geometry
   const pad = inset + stroke / 2;
   const rectW = Math.max(0, box.w - pad * 2);
   const rectH = Math.max(0, box.h - pad * 2);
+
+  // Gradient support: if `color` references a var(--grad-xxx), we render an SVG gradient stroke
+  const gradMatch = typeof color === "string" && color.includes("var(--grad-");
+  const gradKey = gradMatch ? color.match(/var\(--(grad-[a-zA-Z0-9-]+)\)/)?.[1] : null;
+  const gradId = gradKey ? `trace-${gradKey}` : null;
 
   return (
     <span
@@ -63,7 +65,6 @@ export default function TraceOutline({
     >
       {children}
 
-      {/* overlay */}
       <svg
         className="pointer-events-none absolute inset-0"
         width="100%"
@@ -71,6 +72,24 @@ export default function TraceOutline({
         aria-hidden="true"
         focusable="false"
       >
+        {/* Define a generic linearGradient when using gradient tokens.
+            We use CSS variables for the stops so this works in light/dark. */}
+        {gradKey && (
+          <defs>
+            <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+              {/* Pandora/CNBC use -a/-b; IG has multi-stop (a→b→c→d) */}
+              <stop offset="0%"  stopColor={`rgb(var(--${gradKey}-a, 79 70 229))`} />
+              <stop offset={gradKey === "grad-ig" ? "33%" : "100%"} stopColor={`rgb(var(--${gradKey}-b, 56 189 248))`} />
+              {gradKey === "grad-ig" && (
+                <>
+                  <stop offset="66%" stopColor={`rgb(var(--grad-ig-c, 129 52 175))`} />
+                  <stop offset="100%" stopColor={`rgb(var(--grad-ig-d, 81 91 212))`} />
+                </>
+              )}
+            </linearGradient>
+          </defs>
+        )}
+
         <g transform={`translate(${pad}, ${pad})`}>
           <rect
             x="0"
@@ -80,21 +99,16 @@ export default function TraceOutline({
             rx={radius}
             ry={radius}
             fill="none"
-            stroke={color}
+            stroke={gradKey ? `url(#${gradId})` : color}
             strokeWidth={stroke}
             strokeLinecap="round"
             strokeLinejoin="round"
-            // Make the stroke a single "dot" using dasharray: [dotLength, gapLength]
-            // The gap uses the measured perimeter so only one dot shows.
             strokeDasharray={`${Math.max(1, stroke * 2)}, ${Math.max(1, box.len)}`}
             style={{
-              // One full lap every speedMs
               animation: paused ? "none" : `trace-dash ${Math.max(800, speedMs)}ms linear infinite`,
-              // The total length controls apparent speed; align with our measured value
-              // The keyframe animates dashoffset from 0 -> len, we pass len via CSS var to keep it cheap.
-              // (We also set a fallback so SSR doesn't flash)
               "--trace-len": `${Math.max(1, box.len)}px`,
-              filter: "drop-shadow(0 0 6px color-mix(in srgb, currentColor 55%, transparent))",
+              /* keep subtle glow only for solid color; gradients already pop */
+              filter: gradKey ? "none" : "drop-shadow(0 0 6px color-mix(in srgb, currentColor 55%, transparent))",
               opacity: 0.95,
             }}
           />

@@ -6,14 +6,82 @@
     @apply inline-flex items-center gap-2 rounded-lg px-3 py-1.5;
   }
   
-  .btn-primary {
-    background: rgb(var(--accent));
+  /* Primary (accent) now uses gradient-friendly token by default */
+  .btn-primary,
+  .btn--primary {
+    background-image: var(--grad-pandora);
     color: rgb(var(--accent-foreground));
+    border: 1px solid rgb(var(--accent) / 0.12);
   }
-  .btn-primary:hover { background: rgb(var(--accent) / 0.9); }
+  .btn-primary:hover,
+  .btn--primary:hover {
+    filter: brightness(0.98);
+  }
   
-  .btn-outline {
+  /* Outline keeps neutral styling */
+  .btn-outline,
+  .btn--outline {
     @apply border border-border bg-transparent text-text;
   }
-  .btn-outline:hover { background: rgb(var(--text) / 0.04); }
+  .btn-outline:hover,
+  .btn--outline:hover,
+  .btn--outline:hover {
+    background: rgb(var(--text) / 0.04);
+  }
+  
+  /* Info-intent helper that opts into CNBC blend */
+  .btn-info,
+  .badge-info {
+    background-image: var(--grad-cnbc);
+    color: #fff;
+    border: 1px solid rgb(var(--border) / 0.2);
+  }
+  
+  /* Subtle utility to opt into IG blend (e.g., for hero CTAs) */
+  .btn-ig {
+    background-image: var(--grad-ig);
+    color: #fff;
+    border: 1px solid rgb(var(--border) / 0.2);
+  }
+  .btn-ig:hover { filter: brightness(0.98); }
+  
+  /* ================================
+     Copy surface helpers
+     ================================ */
+  
+  /* Consistent muted label text (e.g., small captions before values) */
+  .label-muted {
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+    color: rgb(var(--muted));
+  }
+  
+  /* Timestamp microcopy: small, caps, slightly transparent, even spacing */
+  .timestamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;            /* spacing around “Updated …” */
+    font-size: var(--fs-xs);
+    line-height: var(--lh-normal);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgb(var(--muted));
+    opacity: 0.9;
+  }
+  
+  /* Optional dot for inline separators */
+  .timestamp .dot {
+    width: 0.25rem;
+    height: 0.25rem;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.6;
+  }
+  
+  /* Optional prefix styling (e.g., “Updated”) */
+  .timestamp .prefix {
+    color: rgb(var(--muted));
+    opacity: 0.95;
+    margin-right: 2px;
+  }
   

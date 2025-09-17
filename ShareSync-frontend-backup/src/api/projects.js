@@ -99,3 +99,42 @@ export async function patchProjectIcon(projectId, icon /* { kind, value } or nul
   const { data } = await client.patch(`/projects/${projectId}/icon`, icon ?? null);
   return data; // { projectId, patch: { icon } }
 }
+
+/* =======================================================================
+ *  🔓 Transparency Layer (optional thin wrappers; mirrors src/api/public.js)
+ *  These call the Express/Nest public endpoints so callers can import from
+ *  either './public' or './projects' without caring.
+ * ======================================================================= */
+
+/** POST /api/public/projects/:id/enable -> { token } */
+export async function enablePublic(projectId) {
+  if (!projectId) throw new Error("projectId is required");
+  const { data } = await client.post(`/public/projects/${encodeURIComponent(projectId)}/enable`);
+  return { token: data?.token };
+}
+
+/** POST /api/public/projects/:id/disable -> { ok:true } */
+export async function disablePublic(projectId) {
+  if (!projectId) throw new Error("projectId is required");
+  const { data } = await client.post(`/public/projects/${encodeURIComponent(projectId)}/disable`);
+  return data ?? { ok: true };
+}
+
+/** POST /api/public/projects/:id/regenerate -> { token } */
+export async function regeneratePublicToken(projectId) {
+  if (!projectId) throw new Error("projectId is required");
+  const { data } = await client.post(`/public/projects/${encodeURIComponent(projectId)}/regenerate`);
+  return { token: data?.token };
+}
+
+/** GET /api/public/projects/:token/status -> sanitized public snapshot */
+export async function getPublicStatus(token) {
+  if (!token) throw new Error("token is required");
+  const { data } = await client.get(`/public/projects/${encodeURIComponent(token)}/status`);
+  return data;
+}
+
+/** Build a relative public status URL (client may absolutize it if needed). */
+export function buildPublicStatusUrl(token) {
+  return `/status/${encodeURIComponent(String(token))}`;
+}

@@ -14,8 +14,8 @@ export default {
         muted:  'rgb(var(--muted) / <alpha-value>)',
         border: 'rgb(var(--border) / <alpha-value>)',
 
-        accent:            'rgb(var(--accent) / <alpha-value>)',
-        'accent-foreground':'rgb(var(--accent-foreground) / <alpha-value>)',
+        accent:              'rgb(var(--accent) / <alpha-value>)',
+        'accent-foreground': 'rgb(var(--accent-foreground) / <alpha-value>)',
 
         success: 'rgb(var(--success) / <alpha-value>)',
         warning: 'rgb(var(--warning) / <alpha-value>)',
@@ -30,6 +30,10 @@ export default {
       },
       ringColor: {
         DEFAULT: 'rgb(var(--ring) / <alpha-value>)',
+      },
+      fontFamily: {
+        display: ['"Inter Tight"', 'Inter', 'ui-sans-serif', 'system-ui'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui'],
       },
     },
   },

@@ -225,7 +225,7 @@ export default function ProjectHome() {
         if (String(payload?.projectId) !== String(id) || !Array.isArray(payload?.files)) return;
         setFiles((prev) => dedupeById([...payload.files, ...prev]));
         const norm = fromSocketEvent("project:filesAdded", payload);
-        if (!norm.freshUntil) norm.freshUntil- Date.now() +10_000;
+        if (!norm.freshUntil) norm.freshUntil = Date.now() + 10_000; // ✅ small bug fix
         setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
       // ✅ project patch (icon updates etc.) — also emit as system feed item

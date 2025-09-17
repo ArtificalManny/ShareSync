@@ -1,4 +1,9 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import {
@@ -6,6 +11,8 @@ import {
   ProjectDocument,
   ProjectMember,
 } from './schemas/project.schema';
+import { randomBytes } from 'crypto';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 type Role = ProjectMember['role'];
 const VALID_ROLES: Role[] = ['owner', 'member', 'viewer'];
@@ -31,6 +38,7 @@ function normalizeMembers(input?: any[]): ProjectMember[] {
 export class ProjectsService {
   constructor(
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
+    private readonly realtime: RealtimeGateway,
   ) {}
 
   /** Create with safe member normalization; ensures owner presence (by userId). */
@@ -60,6 +68,7 @@ export class ProjectsService {
       members: normalizedMembers,
       updatedAt: new Date(),
       createdAt: new Date(),
+      // public fields defaulted by schema
     });
 
     return created.save();
@@ -182,5 +191,133 @@ export class ProjectsService {
       .lean();
 
     return updated;
+  }
+
+  /* ===========================
+   *  🔓 Public Transparency
+   * =========================== */
+
+  private generatePublicToken() {
+    // 32 hex chars
+    return randomBytes(16).toString('hex');
+  }
+
+  /** Enable public status and (if needed) create a token. */
+  async enablePublic(projectId: string, actingUserId?: string) {
+    if (!Types.ObjectId.isValid(projectId)) {
+      throw new NotFoundException('Project not found');
+    }
+    const proj = await this.projectModel.findById(projectId).lean();
+    if (!proj) throw new NotFoundException('Project not found');
+
+    // Only owner can toggle public
+    if (actingUserId && String(proj.userId) !== String(actingUserId)) {
+      throw new ForbiddenException('Only the owner can change public status');
+    }
+
+    const token = proj.publicToken || this.generatePublicToken();
+    const patch = {
+      publicEnabled: true,
+      publicToken: token,
+      publicLastEnabledAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const updated = await this.projectModel
+      .findByIdAndUpdate(projectId, { $set: patch }, { new: true })
+      .lean();
+
+    // Realtime broadcast
+    this.realtime.emitProjectPublicChanged(String(projectId), {
+      projectId: String(projectId),
+      publicEnabled: true,
+      publicToken: !!token,
+    });
+
+    return { publicEnabled: true, publicToken: token, project: updated };
+  }
+
+  /** Disable public status and clear token. */
+  async disablePublic(projectId: string, actingUserId?: string) {
+    if (!Types.ObjectId.isValid(projectId)) {
+      throw new NotFoundException('Project not found');
+    }
+    const proj = await this.projectModel.findById(projectId).lean();
+    if (!proj) throw new NotFoundException('Project not found');
+
+    if (actingUserId && String(proj.userId) !== String(actingUserId)) {
+      throw new ForbiddenException('Only the owner can change public status');
+    }
+
+    const patch = {
+      publicEnabled: false,
+      publicToken: null,
+      updatedAt: new Date(),
+    };
+
+    const updated = await this.projectModel
+      .findByIdAndUpdate(projectId, { $set: patch }, { new: true })
+      .lean();
+
+    this.realtime.emitProjectPublicChanged(String(projectId), {
+      projectId: String(projectId),
+      publicEnabled: false,
+      publicToken: false,
+    });
+
+    return { publicEnabled: false, publicToken: null, project: updated };
+  }
+
+  /** Regenerate token (ensures publicEnabled=true). */
+  async regeneratePublicToken(projectId: string, actingUserId?: string) {
+    if (!Types.ObjectId.isValid(projectId)) {
+      throw new NotFoundException('Project not found');
+    }
+    const proj = await this.projectModel.findById(projectId).lean();
+    if (!proj) throw new NotFoundException('Project not found');
+
+    if (actingUserId && String(proj.userId) !== String(actingUserId)) {
+      throw new ForbiddenException('Only the owner can change public status');
+    }
+
+    const token = this.generatePublicToken();
+    const patch = {
+      publicEnabled: true,
+      publicToken: token,
+      publicLastEnabledAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const updated = await this.projectModel
+      .findByIdAndUpdate(projectId, { $set: patch }, { new: true })
+      .lean();
+
+    this.realtime.emitProjectPublicChanged(String(projectId), {
+      projectId: String(projectId),
+      publicEnabled: true,
+      publicToken: true,
+    });
+
+    return { publicEnabled: true, publicToken: token, project: updated };
+  }
+
+  /** Resolve a project by public token (public snapshot). */
+  async getPublicSnapshotByToken(token: string) {
+    if (!token) return null;
+    const proj = await this.projectModel
+      .findOne({ publicToken: token, publicEnabled: true })
+      .lean();
+
+    if (!proj) return null;
+
+    // Minimal, public-safe snapshot (extend with KPIs/events if you store them)
+    return {
+      title: proj.title || 'Untitled Project',
+      icon: proj.icon ?? null,
+      lastUpdatedAt: proj.updatedAt || proj.createdAt,
+      // Optionally include sanitized KPIs / activity here
+      kpis: {},
+      activity: [],
+    };
   }
 }

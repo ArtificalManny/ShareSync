@@ -261,7 +261,7 @@ function SmartSearch({ onAsk }) {
           <span className="px-2 py-1 rounded-md border border-border bg-surface">
             {answers[0]} · <a href="#recent-activity" className="underline">open report</a>
           </span>
-          {answers.slice(1).map((a,i) => <Chip key={i}>{a}</Chip>)}
+          {answers.slice(1).map((a,i) => <span key={i} className="px-2 py-1 rounded-md border border-border bg-surface text-xs">{a}</span>)}
         </div>
       )}
 
@@ -321,7 +321,7 @@ function MicroFeed({ items = MOCK_FEED, onOpen }) {
             title="Open details"
           >
             <div className="truncate flex items-center gap-2">
-              <Chip tone="neutral" className="uppercase tracking-wide">{i.type}</Chip>
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 uppercase tracking-wide">{i.type}</span>
               <span className="font-medium">{i.who}</span>
               <span className="text-muted">{i.action}</span>
             </div>
@@ -656,8 +656,8 @@ export default function Home() {
               </button>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <Chip tone="neutral">updated just now</Chip>
-              <Chip tone="neutral">viewers: 0</Chip>
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300">updated just now</span>
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300">viewers: 0</span>
             </div>
           </div>
         </div>
@@ -735,8 +735,8 @@ export default function Home() {
               Loading KPIs…
             </div>
           ) : statsError ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 p-3 flex items-center justify-between">
-              <span>Couldn’t load KPIs.</span>
+            <div className="rounded-2xl border border-rose-200/60 bg-surface p-3 flex items-center justify-between">
+              <span className="text-rose-600">Couldn’t load KPIs.</span>
               <button className="btn btn--outline focus-ring" onClick={() => setStatsRange(r => r)} title="Retry (Ctrl+R)">Retry</button>
             </div>
           ) : !stats ? (
@@ -803,7 +803,7 @@ export default function Home() {
               <button ref={drawerFirstBtnRef} className="btn btn--ghost focus-ring" onClick={() => setDrawerItem(null)}>Close</button>
             </div>
             <div className="mt-3 text-sm">
-              <div><Chip tone="neutral" className="uppercase">{drawerItem.type}</Chip></div>
+              <div><span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 uppercase">type</span></div>
               <div className="mt-2"><span className="font-medium">{drawerItem.who}</span> {drawerItem.action}</div>
               {drawerItem.project && <div className="text-muted mt-1">Project: {drawerItem.project}</div>}
               <div className="text-muted mt-1">{drawerItem.when}</div>

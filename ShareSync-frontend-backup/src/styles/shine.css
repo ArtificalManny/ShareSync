@@ -12,6 +12,14 @@
     position: relative;
     overflow: hidden;
     isolation: isolate;
+    /* token-aware defaults for the sheen */
+    --shine-spot: rgba(255,255,255,0.55);
+    --shine-soft: rgba(255,255,255,0.25);
+  }
+  [data-theme="dark"] .shine {
+    /* in dark, use text token (which is light) at low alpha to avoid harsh white */
+    --shine-spot: rgb(var(--text) / 0.18);
+    --shine-soft: rgb(var(--text) / 0.10);
   }
   
   .shine::after {
@@ -23,7 +31,8 @@
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255,255,255,0.55),
+      var(--shine-spot),
+      var(--shine-soft),
       transparent
     );
     transform: translateX(-120%) skewX(15deg);
@@ -33,7 +42,36 @@
   
   .shine:hover::after,
   .shine:focus-visible::after {
-    animation: ss-shine-sweep 900ms ease-out forwards;
+    animation: ss-shine-sweep 900ms var(--easing-emph) forwards;
+  }
+  
+  /* Optional: variant-tinted sheens pulled from gradient tokens */
+  .shine--pandora::after {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--grad-pandora-b) / 0.50),
+      rgb(var(--grad-pandora-a) / 0.30),
+      transparent
+    );
+  }
+  .shine--cnbc::after {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--grad-cnbc-b) / 0.45),
+      rgb(var(--grad-cnbc-a) / 0.28),
+      transparent
+    );
+  }
+  .shine--ig::after {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--grad-ig-b) / 0.40),
+      rgb(var(--grad-ig-d) / 0.28),
+      transparent
+    );
   }
   
   /* --- Marching ants (subtle border animation for “coming soon”) --- */
@@ -46,7 +84,7 @@
     border: 1px solid transparent;
     background:
       linear-gradient(#0000, #0000) padding-box,
-      linear-gradient(90deg, rgba(99,102,241,.55) 0 30%, transparent 30% 50%, rgba(99,102,241,.55) 50% 80%, transparent 80% 100%) border-box,
+      linear-gradient(90deg, rgb(var(--accent) / .55) 0 30%, transparent 30% 50%, rgb(var(--accent) / .55) 50% 80%, transparent 80% 100%) border-box,
       linear-gradient(0deg, transparent 0 100%) border-box,
       linear-gradient(0deg, transparent 0 100%) border-box;
     background-size:

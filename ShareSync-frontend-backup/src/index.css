@@ -14,6 +14,9 @@
 @import './styles/charts.css';
 @import './styles/feed.css';
 
+/* Typography + themed background */
+@import './styles/theme.css';
+
 /* 2) Tailwind layers */
 @tailwind base;
 @tailwind components;
@@ -23,10 +26,20 @@
 
 @tailwind utilities;
 
-/* 4) App-wide base tokens → actual colors */
+/* 4) App-wide base tokens → actual colors + base typography */
 @layer base {
   html, body, #root {
     @apply bg-bg text-text;
+  }
+
+  html, body {
+    font-family: var(--font-body);
+    font-size: var(--fs-md);
+    line-height: var(--lh-normal);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
   }
 }
 

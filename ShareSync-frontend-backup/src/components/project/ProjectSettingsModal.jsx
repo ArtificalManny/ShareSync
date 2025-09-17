@@ -23,7 +23,7 @@ let disablePublicApi = null;
 let regeneratePublicApi = null;
 let patchProjectIconApi = null;
 try {
-  // Optional dynamic imports — if your helpers exist we’ll use them
+  // Optional dynamic imports — use if available
   // eslint-disable-next-line import/no-unresolved
   // @ts-ignore
   const mod = await import("../../api/projects");
@@ -39,13 +39,13 @@ try {
   regeneratePublicApi = pub?.regeneratePublicToken || null;
 } catch {}
 
-// Utility: builds /status/:token (same as buildPublicStatusUrl, but inline-safe)
+// Build /status/:token (keeps it in sync with buildPublicStatusUrl)
 const statusPath = (token) => (token ? `/status/${encodeURIComponent(token)}` : "");
 
 export default function ProjectSettingsModal({
   open,
   onClose,
-  project, // { _id, name, description?, visibility?, publicToken?, icon? }
+  project, // { _id, name/title, description?, visibility?, publicToken?, icon? }
   onSaved, // (updatedProject) => void
 }) {
   const [name, setName] = useState(project?.name || project?.title || "");
@@ -71,7 +71,7 @@ export default function ProjectSettingsModal({
   const containerRef = useRef(null);
   const firstFieldRef = useRef(null);
 
-  // Reset values each time it opens or project changes
+  // Reset values on open / project change
   useEffect(() => {
     if (!open) return;
     setName(project?.name || project?.title || "");
@@ -101,7 +101,7 @@ export default function ProjectSettingsModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  // Focus trap
+  // Basic focus trap
   useEffect(() => {
     if (!open) return;
     const el = containerRef.current;
@@ -255,13 +255,13 @@ export default function ProjectSettingsModal({
     icon,
   ]);
 
-  // --- Icon change handler (calls API immediately; still reflected in Save preview) ---
+  // Immediate icon change
   const handleIconChange = async (sel /* {kind,value} or null */) => {
     try {
       if (patchProjectIconApi && project?._id) {
         const updated = await patchProjectIconApi(project._id, sel ?? null);
         setIcon(updated?.icon ?? sel ?? null);
-        onSaved?.(updated); // let parent refresh right away
+        onSaved?.(updated);
       } else if (project?._id) {
         const res = await fetch(`/api/projects/${project._id}/icon`, {
           method: "PATCH",
@@ -276,7 +276,7 @@ export default function ProjectSettingsModal({
         setIcon(updated?.icon ?? sel ?? null);
         onSaved?.(updated);
       } else {
-        setIcon(sel ?? null); // no id yet; local only
+        setIcon(sel ?? null);
       }
     } catch (e) {
       // eslint-disable-next-line no-alert
@@ -295,7 +295,6 @@ export default function ProjectSettingsModal({
       else await fetch(`/api/public/projects/${project._id}/disable`, { method: "POST" });
       setPublicEnabled(false);
       setPublicToken("");
-      // reflect to parent right away
       onSaved?.({ ...(project || {}), visibility: "private", publicToken: "" });
     } catch (e) {
       // eslint-disable-next-line no-alert
@@ -343,7 +342,7 @@ export default function ProjectSettingsModal({
         aria-hidden="true"
       />
 
-      {/* Modal Panel wrapped with TraceOutline for premium glow */}
+      {/* Modal */}
       <TraceOutline radius={18} speedMs={3200}>
         <div
           ref={containerRef}
@@ -479,15 +478,13 @@ export default function ProjectSettingsModal({
               </div>
             </div>
 
-            {/* Visibility choice cards */}
+            {/* Visibility choice */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setVisibility("private")}
                 className={`rounded-xl border px-3 py-3 text-left hover-raise ${
-                  visibility === "private"
-                    ? "win-glow border-slate-800"
-                    : "border-border"
+                  visibility === "private" ? "win-glow border-slate-800" : "border-border"
                 }`}
                 aria-pressed={visibility === "private"}
               >
@@ -504,9 +501,7 @@ export default function ProjectSettingsModal({
                 type="button"
                 onClick={() => setVisibility("public")}
                 className={`rounded-xl border px-3 py-3 text-left hover-raise ${
-                  visibility === "public"
-                    ? "win-glow border-slate-800"
-                    : "border-border"
+                  visibility === "public" ? "win-glow border-slate-800" : "border-border"
                 }`}
                 aria-pressed={visibility === "public"}
               >
@@ -520,7 +515,7 @@ export default function ProjectSettingsModal({
               </button>
             </div>
 
-            {/* Public status toggle */}
+            {/* Public status controls */}
             <div className="rounded-xl border border-border p-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -537,7 +532,6 @@ export default function ProjectSettingsModal({
                   checked={publicEnabled}
                   onChange={async (next) => {
                     if (!next && publicToken) {
-                      // Ask for confirmation before disabling
                       setConfirmDisableOpen(true);
                     } else {
                       setPublicEnabled(next);
@@ -545,7 +539,6 @@ export default function ProjectSettingsModal({
                         try {
                           await ensurePublicToken();
                         } catch {
-                          // already surfaced by setError
                           setPublicEnabled(false);
                         }
                       }
@@ -604,10 +597,7 @@ export default function ProjectSettingsModal({
 
           {/* Footer */}
           <div className="px-4 py-3 border-t border-border flex items-center justify-end gap-2">
-            <button
-              className="btn btn--ghost press-shrink"
-              onClick={onClose}
-            >
+            <button className="btn btn--ghost press-shrink" onClick={onClose}>
               Cancel
             </button>
             <button

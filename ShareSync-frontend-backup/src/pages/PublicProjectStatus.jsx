@@ -1,9 +1,38 @@
-// /src/pages/PublicProjectStatus.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { fetchPublicProjectStatus } from "../api/public";
-import StatusCard from "../components/public/StatusCard";
 import { ArrowLeft } from "lucide-react";
+import GradientText from "../components/ui/GradientText.jsx";
+import { labelledTimestamp, formatLongDateTime } from "../utils/formatters.js";
+
+/** Simple KPI card */
+function Kpi({ label, value, hint }) {
+  return (
+    <div className="rounded-xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className="text-xl font-semibold text-slate-900 dark:text-slate-100 mt-1">
+        {value}
+      </div>
+      {hint ? <div className="text-[11px] text-slate-500 mt-1">{hint}</div> : null}
+    </div>
+  );
+}
+
+/** Compact activity row (public-safe) */
+function ActivityRow({ a }) {
+  const when = a?.createdAt ? formatLongDateTime(a.createdAt) : "";
+  return (
+    <div className="flex items-start gap-3 py-2">
+      <span className="mt-1 h-2 w-2 rounded-full bg-indigo-500" aria-hidden />
+      <div className="min-w-0">
+        <div className="text-sm text-slate-800 dark:text-slate-100 break-words">
+          {a?.text || a?.type || "Update"}
+        </div>
+        <div className="text-[11px] text-slate-500">{when}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function PublicProjectStatus() {
   const { token } = useParams();
@@ -28,17 +57,27 @@ export default function PublicProjectStatus() {
     return () => { ignore = true; };
   }, [token]);
 
+  const title = data?.title || "Project";
+  const updated = data?.lastUpdatedAt ? labelledTimestamp(data.lastUpdatedAt, "Updated") : null;
+
+  const onTimePct =
+    typeof data?.kpis?.onTime30d === "number"
+      ? `${Math.round(data.kpis.onTime30d * 100)}%`
+      : "—";
+
   return (
     <main id="main" role="main" tabIndex={-1}>
       <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-4xl mx-auto min-h-screen bg-ink-100/40 dark:bg-gray-900">
         {/* Header */}
         <header className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-              Project Status
+            <h1 className="text-xl font-bold font-display">
+              <GradientText variant="cnbc">{title}</GradientText>
             </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Read-only snapshot for transparency. Last 7–30 days.
+            <p className="mt-1 timestamp">
+              <span className="prefix">Read-only</span>
+              <span className="dot" />
+              {updated || "Updated just now"}
             </p>
           </div>
           <Link
@@ -75,13 +114,29 @@ export default function PublicProjectStatus() {
             </p>
           </div>
         ) : (
-          <StatusCard
-            title={data.title}
-            owner={data.owner}
-            lastUpdatedAt={data.lastUpdatedAt}
-            kpis={data.kpis}
-            summary={data.summary}
-          />
+          <>
+            {/* KPIs */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Kpi label="On-time (30d)" value={onTimePct} hint="Share of work finished on schedule" />
+              <Kpi label="Throughput / wk" value={data.kpis?.throughputPerWeek ?? "—"} />
+              <Kpi label="Active days (28d)" value={data.kpis?.activeDays28d ?? "—"} />
+              <Kpi label="Cadence (14d)" value={data.kpis?.cadence14d ?? "—"} />
+            </section>
+
+            {/* Activity */}
+            {Array.isArray(data.activity) && data.activity.length > 0 ? (
+              <section className="mt-6 rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Recent activity
+                </h2>
+                <div className="mt-2 divide-y divide-slate-200/70 dark:divide-slate-800">
+                  {data.activity.map((a, i) => (
+                    <ActivityRow key={i} a={a} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </>
         )}
 
         {/* Footer note */}

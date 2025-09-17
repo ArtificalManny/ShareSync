@@ -6,7 +6,10 @@ import React from "react";
  *
  * Props:
  *  - as: tag name to render (default "span")
- *  - variant: "indigo" | "blue" | "purple" | "emerald" | "pink" (default "indigo")
+ *  - variant:
+ *      "indigo" | "blue" | "purple" | "emerald" | "pink"
+ *      "pandora" | "cnbc" | "ig"
+ *    (default "indigo")
  *  - fallbackColor: CSS color when gradient-clip is unavailable (default: currentColor)
  *  - className: extra classes
  */
@@ -18,15 +21,23 @@ export default function GradientText({
   style,
   children,
 }) {
-  const v = (variant || "indigo").toLowerCase();
+  const v = String(variant || "indigo").toLowerCase();
+
+  // Map variants to gradient utility classes (from gradients.css)
   const variantClass =
     v === "purple"
       ? "text-grad-purple"
       : v === "emerald"
       ? "text-grad-emerald"
+      : v === "pandora"
+      ? "text-grad-pandora"
+      : v === "cnbc"
+      ? "text-grad-cnbc"
+      : v === "ig"
+      ? "text-grad-ig"
       : "text-grad-blue"; // treat "indigo" and "blue" the same
 
-  // Pink fallback (we don't have a dedicated class in gradients.css)
+  // Pink (adhoc; we don't ship a dedicated token/class)
   const pinkStyle =
     v === "pink"
       ? {
@@ -37,7 +48,7 @@ export default function GradientText({
 
   return (
     <Tag
-      className={[variantClass, className].join(" ")}
+      className={["font-display", variantClass, className].join(" ")}
       style={{
         WebkitTextFillColor: "transparent",
         color: fallbackColor,

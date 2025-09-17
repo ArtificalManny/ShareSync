@@ -11,6 +11,8 @@ import { listProjects } from '../api/projects';
 import SectionHeader from '../components/ui/SectionHeader.jsx';
 import TraceOutline from '../components/ui/TraceOutline.jsx';
 import { bindShine } from '../utils/shine';
+import GradientText from '../components/ui/GradientText.jsx';
+import { labelledTimestamp } from '../utils/formatters.js';
 import './Projects.css';
 
 import { FolderKanban, Users, Clock } from 'lucide-react';
@@ -45,24 +47,6 @@ function writeParams({ query, status, owner, updated }) {
   if (updated && updated !== '7d') p.set('updated', updated);
   const s = p.toString();
   return s ? `?${s}` : '';
-}
-
-/** --- Small helpers for the new UI bits --- */
-function timeAgo(iso) {
-  if (!iso) return 'just now';
-  const s = Math.max(1, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  const units = [
-    ['y', 31536000], ['mo', 2592000], ['w', 604800],
-    ['d', 86400], ['h', 3600], ['m', 60], ['s', 1],
-  ];
-  for (const [label, sec] of units) {
-    if (s >= sec) {
-      const v = Math.floor(s / sec);
-      const map = { y: 'yr', mo: 'mo', w: 'wk', d: 'd', h: 'h', m: 'm', s: 's' };
-      return `${v}${map[label]} ago`;
-    }
-  }
-  return 'just now';
 }
 
 function initials(nameOrEmail = '') {
@@ -292,7 +276,9 @@ export default function Projects() {
               <FolderKanban className="w-4 h-4 text-indigo-600" />
             </span>
             <div className="text-sm">
-              <div className="font-semibold">Projects</div>
+              <div className="font-display text-base leading-tight">
+                <GradientText variant="pandora">Projects</GradientText>
+              </div>
               <div className="text-muted">Organize work by outcomes, not just tasks.</div>
             </div>
           </div>
@@ -391,10 +377,12 @@ export default function Projects() {
                               {accent.label}
                             </span>
                           </div>
-                          <div className="text-xs text-muted whitespace-nowrap inline-flex items-center gap-1"
-                               title={lastTs ? new Date(lastTs).toLocaleString() : undefined}>
+                          <div
+                            className="whitespace-nowrap inline-flex items-center gap-1 timestamp"
+                            title={lastTs ? new Date(lastTs).toLocaleString() : undefined}
+                          >
                             <Clock className="w-3 h-3" />
-                            Updated {timeAgo(lastTs)}
+                            {labelledTimestamp(lastTs, 'Updated')}
                           </div>
                         </div>
                       </div>

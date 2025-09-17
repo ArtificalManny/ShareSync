@@ -1,0 +1,657 @@
+.
+├── README.md
+├── ShareSync-backend
+│   ├── dump.rdb
+│   ├── generate-password-hash.js
+│   ├── hash-password.js
+│   ├── jest.config.js
+│   ├── jwt-auth.guard.d.ts
+│   ├── jwt-auth.guard.js
+│   ├── jwt-auth.guard.js.map
+│   ├── middleware
+│   │   └── authenticateToken.js
+│   ├── models
+│   │   ├── Project.js
+│   │   └── User.js
+│   ├── modules
+│   │   └── Users
+│   │       ├── user.module.d.ts
+│   │       ├── user.module.js
+│   │       └── user.module.js.map
+│   ├── nest-cli.json
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── reset-password.js
+│   ├── routes
+│   │   ├── comments.ts
+│   │   ├── notifications.js
+│   │   ├── profile.js
+│   │   ├── projects.js
+│   │   └── tasks.ts
+│   ├── server.js
+│   ├── src
+│   │   ├── activities
+│   │   │   ├── activities.controller.js
+│   │   │   ├── activities.controller.ts
+│   │   │   ├── activities.module.js
+│   │   │   ├── activities.module.ts
+│   │   │   ├── activities.service.js
+│   │   │   ├── activities.service.ts
+│   │   │   ├── activity.query.service.ts
+│   │   │   ├── dto
+│   │   │   ├── schemas
+│   │   │   └── unified-activity.controller.ts
+│   │   ├── analytics
+│   │   │   ├── analytics.module.ts
+│   │   │   ├── index.ts
+│   │   │   ├── kpis.ts
+│   │   │   ├── project-stats.controller.ts
+│   │   │   └── user-stats.controller.ts
+│   │   ├── api
+│   │   │   ├── auth.js
+│   │   │   ├── invite.js
+│   │   │   ├── user.js
+│   │   │   └── users.routes.js
+│   │   ├── app.controller.ts
+│   │   ├── app.gateway.js
+│   │   ├── app.gateway.ts
+│   │   ├── app.module.js
+│   │   ├── app.module.ts
+│   │   ├── app.service.ts
+│   │   ├── app.ts
+│   │   ├── audit
+│   │   │   └── audit.service.ts
+│   │   ├── auth
+│   │   │   ├── auth.controller.js
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── auth.module.js
+│   │   │   ├── auth.module.ts
+│   │   │   ├── auth.service.js
+│   │   │   ├── auth.service.ts
+│   │   │   ├── dto
+│   │   │   ├── jwt-auth.guard.js
+│   │   │   ├── jwt-auth.guard.ts
+│   │   │   ├── jwt.guard.ts
+│   │   │   ├── jwt.strategy.ts
+│   │   │   ├── local.strategy.ts
+│   │   │   └── refresh-token.schema.ts
+│   │   ├── cache
+│   │   │   ├── cache.module.js
+│   │   │   ├── cache.module.ts
+│   │   │   ├── cache.service.js
+│   │   │   └── cache.service.ts
+│   │   ├── chat
+│   │   │   ├── chat.schema.js
+│   │   │   ├── chat.schema.ts
+│   │   │   ├── chat.service.js
+│   │   │   └── chat.service.ts
+│   │   ├── comments
+│   │   │   ├── comments.controller.js
+│   │   │   ├── comments.controller.ts
+│   │   │   ├── comments.module.js
+│   │   │   ├── comments.module.ts
+│   │   │   ├── comments.service.js
+│   │   │   └── comments.service.ts
+│   │   ├── common
+│   │   │   └── interceptors
+│   │   ├── config
+│   │   │   └── feature-flags.ts
+│   │   ├── controllers
+│   │   │   └── activityController.js
+│   │   ├── data-source.js
+│   │   ├── digest
+│   │   │   ├── digest.controller.ts
+│   │   │   ├── digest.module.ts
+│   │   │   └── digest.service.ts
+│   │   ├── education
+│   │   │   └── education.entity.js
+│   │   ├── email
+│   │   │   ├── email.service.js
+│   │   │   └── email.service.ts
+│   │   ├── experiences
+│   │   │   └── experience.entity.js
+│   │   ├── feed
+│   │   │   ├── feed.controller.ts
+│   │   │   └── feed.module.ts
+│   │   ├── feedback
+│   │   │   ├── feedback.controller.js
+│   │   │   ├── feedback.controller.ts
+│   │   │   ├── feedback.module.js
+│   │   │   ├── feedback.module.ts
+│   │   │   ├── feedback.service.js
+│   │   │   ├── feedback.service.ts
+│   │   │   └── schemas
+│   │   ├── files
+│   │   │   ├── files.controller.ts
+│   │   │   ├── files.module.ts
+│   │   │   ├── files.service.ts
+│   │   │   └── schemas
+│   │   ├── gateway
+│   │   │   ├── project.gateway.js
+│   │   │   └── project.gateway.ts
+│   │   ├── habits
+│   │   │   ├── habits.controller.ts
+│   │   │   ├── habits.module.ts
+│   │   │   ├── habits.schemas.ts
+│   │   │   └── habits.service.ts
+│   │   ├── index.js
+│   │   ├── index.ts
+│   │   ├── lib
+│   │   │   └── api.ts
+│   │   ├── logging
+│   │   │   ├── logging.module.js
+│   │   │   ├── logging.module.ts
+│   │   │   ├── logging.service.js
+│   │   │   └── logging.service.ts
+│   │   ├── mailer
+│   │   │   └── mailer.module.ts
+│   │   ├── main.ts
+│   │   ├── message
+│   │   │   ├── message.controller.ts
+│   │   │   ├── message.module.ts
+│   │   │   ├── message.schema.ts
+│   │   │   └── message.service.ts
+│   │   ├── middleware
+│   │   │   ├── auth.js
+│   │   │   └── optionalAuth.js
+│   │   ├── models
+│   │   │   ├── Project.js
+│   │   │   ├── User.js
+│   │   │   ├── activityEvent.model.ts
+│   │   │   ├── invite.model.ts
+│   │   │   ├── post.model.ts
+│   │   │   ├── project.model.js
+│   │   │   ├── streakFeedItem.model.ts
+│   │   │   ├── task.model.ts
+│   │   │   └── user.model.js
+│   │   ├── moderation
+│   │   │   ├── moderation.module.ts
+│   │   │   ├── moderation.service.ts
+│   │   │   ├── moderation.types.ts
+│   │   │   └── policy.ts
+│   │   ├── notification
+│   │   │   ├── notification.controller.ts
+│   │   │   ├── notification.module.ts
+│   │   │   ├── notification.schema.ts
+│   │   │   └── notification.service.ts
+│   │   ├── notifications
+│   │   │   ├── gateway.ts
+│   │   │   ├── notifications.module.ts
+│   │   │   ├── notifications.service.ts
+│   │   │   ├── notify.cron.ts
+│   │   │   ├── notify.module.ts
+│   │   │   └── notify.service.ts
+│   │   ├── posts
+│   │   │   ├── posts.controller.js
+│   │   │   ├── posts.controller.ts
+│   │   │   ├── posts.module.js
+│   │   │   ├── posts.module.ts
+│   │   │   ├── posts.service.js
+│   │   │   ├── posts.service.ts
+│   │   │   ├── schemas
+│   │   │   └── types
+│   │   ├── prisma
+│   │   │   └── seed.ts
+│   │   ├── profile
+│   │   │   ├── profile.controller.ts
+│   │   │   ├── profile.module.ts
+│   │   │   └── profile.service.ts
+│   │   ├── projects
+│   │   │   ├── dto
+│   │   │   ├── guards
+│   │   │   ├── invites.controller.ts
+│   │   │   ├── invites.service.ts
+│   │   │   ├── project.controller.ts
+│   │   │   ├── project.module.ts
+│   │   │   ├── project.service.ts
+│   │   │   ├── schemas
+│   │   │   ├── share.schema.ts
+│   │   │   ├── share.service.ts
+│   │   │   └── updates.controller.ts
+│   │   ├── realtime
+│   │   │   ├── realtime.gateway.ts
+│   │   │   ├── realtime.module.ts
+│   │   │   └── realtime.service.ts
+│   │   ├── reset-token
+│   │   │   ├── reset-token.schema.js
+│   │   │   ├── reset-token.schema.ts
+│   │   │   ├── reset-token.service.js
+│   │   │   └── reset-token.service.ts
+│   │   ├── routes
+│   │   │   ├── activity.js
+│   │   │   ├── activity.routes.ts
+│   │   │   ├── ai.routes.ts
+│   │   │   ├── auth.js
+│   │   │   ├── invite.routes.ts
+│   │   │   ├── post.routes.ts
+│   │   │   ├── projects.js
+│   │   │   ├── streakFeed.routes.ts
+│   │   │   ├── task.routes.ts
+│   │   │   ├── uploads.js
+│   │   │   └── xp.routes.ts
+│   │   ├── schemas
+│   │   │   ├── activity.schema.js
+│   │   │   ├── comment.schema.js
+│   │   │   ├── comment.schema.ts
+│   │   │   ├── post.schema.js
+│   │   │   ├── project.schema.js
+│   │   │   ├── task.schema.js
+│   │   │   ├── task.schema.ts
+│   │   │   └── user.schema.js
+│   │   ├── scripts
+│   │   │   └── seedHabitsPrefers.ts
+│   │   ├── settings
+│   │   │   ├── settings.controller.ts
+│   │   │   ├── settings.module.ts
+│   │   │   ├── settings.schema.ts
+│   │   │   └── settings.service.ts
+│   │   ├── sprints
+│   │   │   └── sprints.service.ts
+│   │   ├── src
+│   │   │   └── context
+│   │   ├── stats
+│   │   │   ├── stats.controller.ts
+│   │   │   ├── stats.module.ts
+│   │   │   └── stats.service.ts
+│   │   ├── tasks
+│   │   │   ├── schemas
+│   │   │   ├── tasks.controller.js
+│   │   │   ├── tasks.controller.ts
+│   │   │   ├── tasks.module.js
+│   │   │   ├── tasks.module.ts
+│   │   │   ├── tasks.service.js
+│   │   │   └── tasks.service.ts
+│   │   ├── tests
+│   │   │   ├── logActivity.test.ts
+│   │   │   ├── privacy.test.ts
+│   │   │   └── xp.routes.test.ts
+│   │   ├── types
+│   │   │   └── events.ts
+│   │   ├── uploads
+│   │   │   ├── uploads.controller.js
+│   │   │   ├── uploads.controller.ts
+│   │   │   ├── uploads.module.js
+│   │   │   ├── uploads.module.ts
+│   │   │   ├── uploads.service.js
+│   │   │   └── uploads.service.ts
+│   │   ├── uploads.js
+│   │   ├── user
+│   │   │   ├── dto
+│   │   │   ├── user.controller.ts
+│   │   │   ├── user.module.ts
+│   │   │   ├── user.schema.ts
+│   │   │   └── user.service.ts
+│   │   ├── user.entity.js
+│   │   └── utils
+│   │       ├── activityLogger.ts
+│   │       ├── activityMap.js
+│   │       ├── fileUploads.js
+│   │       ├── generateAISuggestion.ts
+│   │       ├── logActivity.ts
+│   │       ├── logUserActivity.ts
+│   │       ├── mockStreakAnalytics.js
+│   │       ├── privacy.ts
+│   │       └── tokenUtils.js
+│   ├── structure.txt
+│   ├── test-password.js
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   ├── update-password.ts
+│   ├── uploads
+│   │   ├── profile-1751751682619.jpg
+│   │   ├── profile-1752439997811.jpg
+│   │   ├── profile-1752440008885.jpg
+│   │   ├── profile-1752629492384.jpg
+│   │   ├── profile-1755735281319.png
+│   │   ├── profile-1756083609723.png
+│   │   ├── profile-1756270343088.png
+│   │   └── profile-1756414947282.png
+│   └── vite-env.d.ts
+├── ShareSync-frontend-backup
+│   ├── FeedbackForm.tsx
+│   ├── Intacom-root
+│   ├── Navigation.css
+│   ├── Navigation.jsx
+│   ├── app.modules.ts
+│   ├── assets
+│   │   ├── default-profile.jpg
+│   │   ├── futuristic-city-twin-suns.jpg
+│   │   └── logo.png
+│   ├── comments.module.ts
+│   ├── create-post.dto.ts
+│   ├── create-project.dto.ts
+│   ├── create-user.dto.ts
+│   ├── index.html
+│   ├── lhr-home.html
+│   ├── lhr-project.html
+│   ├── lhr-projects.html
+│   ├── lighthouse
+│   │   ├── home_after.report.html
+│   │   ├── home_after.report.json
+│   │   ├── project_id_after.report.html
+│   │   ├── project_id_after.report.json
+│   │   ├── projects_after.report.html
+│   │   └── projects_after.report.json
+│   ├── likes.module.ts
+│   ├── localhost_2025-08-13_11-52-35.report.html
+│   ├── localhost_2025-08-13_11-53-12.report.html
+│   ├── login-user.dto.ts
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── package.json.backup
+│   ├── postcss.config.js
+│   ├── posts.module.ts
+│   ├── posts.service.ts
+│   ├── projects.service.js
+│   ├── projects.service.js.map
+│   ├── public
+│   │   ├── default-profile.png
+│   │   ├── favicon.ico
+│   │   └── fonts
+│   │       ├── ProximaNova-Regular.ttf
+│   │       ├── ProximaNova-Regular.woff
+│   │       ├── ProximaNova-Regular.woff2
+│   │       └── fonts.css
+│   ├── script.js
+│   ├── scripts
+│   │   └── lh-run.js
+│   ├── src
+│   │   ├── App.css
+│   │   ├── App.jsx
+│   │   ├── AuthContext.jsx
+│   │   ├── ErrorBoundary.jsx
+│   │   ├── FileUploader.jsx
+│   │   ├── Header.js
+│   │   ├── Routes.tsx
+│   │   ├── Settings.tsx
+│   │   ├── SubmitAssignment.jsx
+│   │   ├── ThreadForm.jsx
+│   │   ├── Upload.tsx
+│   │   ├── api
+│   │   │   ├── activities.js
+│   │   │   ├── activity.js
+│   │   │   ├── ai.js
+│   │   │   ├── client.js
+│   │   │   ├── client.ts
+│   │   │   ├── files.js
+│   │   │   ├── habits.js
+│   │   │   ├── http.js
+│   │   │   ├── invite.js
+│   │   │   ├── projects.js
+│   │   │   ├── public.js
+│   │   │   ├── search.js
+│   │   │   ├── share.js
+│   │   │   ├── sprints.js
+│   │   │   ├── stats.js
+│   │   │   ├── tasks.js
+│   │   │   ├── uploads.js
+│   │   │   └── user.js
+│   │   ├── axios.ts
+│   │   ├── common
+│   │   ├── components
+│   │   │   ├── AISuggestionCard.jsx
+│   │   │   ├── Announcement.tsx
+│   │   │   ├── AssignedTasksPanel.jsx
+│   │   │   ├── AuthForm.tsx
+│   │   │   ├── AvatarGroup.jsx
+│   │   │   ├── BackgroundSlideshow.css
+│   │   │   ├── BackgroundSlideshow.tsx
+│   │   │   ├── CreatePost.tsx
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── EmptyState.jsx
+│   │   │   ├── ErrorBoundary.css
+│   │   │   ├── ErrorBoundary.jsx
+│   │   │   ├── ErrorBoundary.tsx
+│   │   │   ├── FeedItem.jsx
+│   │   │   ├── Footer
+│   │   │   ├── Header.tsx
+│   │   │   ├── LazyImg.jsx
+│   │   │   ├── LeaderboardCard.jsx
+│   │   │   ├── LiveActivityFeed.jsx
+│   │   │   ├── MomentumRing.jsx
+│   │   │   ├── MyComponent
+│   │   │   ├── Navbar.css
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── NotificationToast.css
+│   │   │   ├── NotificationToast.jsx
+│   │   │   ├── Notifications.jsx
+│   │   │   ├── PinnedForumPanel.jsx
+│   │   │   ├── PostItem.tsx
+│   │   │   ├── PostsList.tsx
+│   │   │   ├── Profile
+│   │   │   ├── ProfilePicChanger.jsx
+│   │   │   ├── ProjectCard.tsx
+│   │   │   ├── ProjectForm.tsx
+│   │   │   ├── ProjectPage.tsx
+│   │   │   ├── Register.jsx
+│   │   │   ├── Sidebar.css
+│   │   │   ├── Sidebar.jsx
+│   │   │   ├── StoryCarousel.jsx
+│   │   │   ├── StreakChartModal.jsx
+│   │   │   ├── StreakRing.jsx
+│   │   │   ├── Task.tsx
+│   │   │   ├── UploadForm.jsx
+│   │   │   ├── WelcomeCard.jsx
+│   │   │   ├── a11y
+│   │   │   ├── activity
+│   │   │   ├── analytics
+│   │   │   ├── audit
+│   │   │   ├── avatar
+│   │   │   ├── badges
+│   │   │   ├── common
+│   │   │   ├── compose
+│   │   │   ├── docs
+│   │   │   ├── feed
+│   │   │   ├── files
+│   │   │   ├── global
+│   │   │   ├── goals
+│   │   │   ├── habits
+│   │   │   ├── home
+│   │   │   ├── insights
+│   │   │   ├── invite
+│   │   │   ├── modals
+│   │   │   ├── project
+│   │   │   ├── projects
+│   │   │   ├── public
+│   │   │   ├── social
+│   │   │   ├── sprint
+│   │   │   ├── tasks
+│   │   │   └── ui
+│   │   ├── context
+│   │   │   ├── AuthContext.jsx
+│   │   │   ├── BreakContext.jsx
+│   │   │   ├── HabitsContext.jsx
+│   │   │   ├── NotesContext.jsx
+│   │   │   ├── PinnedContext.jsx
+│   │   │   ├── ProjectContext.jsx
+│   │   │   ├── SocketProvider.tsx
+│   │   │   ├── SprintContext.jsx
+│   │   │   └── UserContext.jsx
+│   │   ├── features
+│   │   │   └── authentication
+│   │   ├── hooks
+│   │   │   ├── useAuth.tsx
+│   │   │   ├── useCommandPalette.js
+│   │   │   ├── useFreshHighlight.js
+│   │   │   ├── useHabitsData.js
+│   │   │   ├── useKpiSeries.js
+│   │   │   ├── useNudges.js
+│   │   │   ├── usePrefersReducedMotion.js
+│   │   │   ├── useProjects.ts
+│   │   │   ├── useRecentFlag.js
+│   │   │   ├── useReducedMotion.js
+│   │   │   ├── useSocket.js
+│   │   │   ├── useStaggerIn.js
+│   │   │   └── useWorkSchedule.js
+│   │   ├── hooks.ts
+│   │   ├── index.css
+│   │   ├── index.jsx
+│   │   ├── index.tsx
+│   │   ├── main.jsx
+│   │   ├── main.tsx
+│   │   ├── models
+│   │   │   └── activity.js
+│   │   ├── pages
+│   │   │   ├── CreateAccount.jsx
+│   │   │   ├── CreateProject.css
+│   │   │   ├── CreateProject.jsx
+│   │   │   ├── ForgotPassword.css
+│   │   │   ├── ForgotPassword.jsx
+│   │   │   ├── ForgotPassword.tsx
+│   │   │   ├── HighlightsFeed.jsx
+│   │   │   ├── Home.css
+│   │   │   ├── Home.jsx
+│   │   │   ├── Home.tsx
+│   │   │   ├── Leaderboard.css
+│   │   │   ├── Leaderboard.tsx
+│   │   │   ├── LevelUpBadge.jsx
+│   │   │   ├── Login.css
+│   │   │   ├── Login.jsx
+│   │   │   ├── Login.tsx
+│   │   │   ├── LoginPage.tsx
+│   │   │   ├── Messages.jsx
+│   │   │   ├── Notifications.css
+│   │   │   ├── Notifications.jsx
+│   │   │   ├── Notifications.tsx
+│   │   │   ├── Profile.css
+│   │   │   ├── Profile.jsx
+│   │   │   ├── Profile.tsx
+│   │   │   ├── ProfileEdit.tsx
+│   │   │   ├── Project.css
+│   │   │   ├── Project.tsx
+│   │   │   ├── ProjectCreate.tsx
+│   │   │   ├── ProjectEdit.css
+│   │   │   ├── ProjectEdit.tsx
+│   │   │   ├── ProjectHome.css
+│   │   │   ├── ProjectHome.jsx
+│   │   │   ├── Projects.css
+│   │   │   ├── Projects.jsx
+│   │   │   ├── Projects.tsx
+│   │   │   ├── ProjectsCreate.css
+│   │   │   ├── ProjectsCreate.jsx
+│   │   │   ├── ProjectsPage.tsx
+│   │   │   ├── PublicProject.jsx
+│   │   │   ├── PublicProjectStatus.jsx
+│   │   │   ├── PublicProjects.tsx
+│   │   │   ├── Recover.css
+│   │   │   ├── Recover.tsx
+│   │   │   ├── Register.css
+│   │   │   ├── Register.jsx
+│   │   │   ├── Register.tsx
+│   │   │   ├── RegisterPage.tsx
+│   │   │   ├── ResetPassword.css
+│   │   │   ├── ResetPassword.jsx
+│   │   │   ├── ResetPassword.tsx
+│   │   │   ├── Search.tsx
+│   │   │   ├── Settings.css
+│   │   │   ├── Settings.jsx
+│   │   │   ├── SettingsHabits.jsx
+│   │   │   ├── TeamDashboard.tsx
+│   │   │   ├── UploadPage.tsx
+│   │   │   ├── VerifyEmail.css
+│   │   │   └── VerifyEmail.tsx
+│   │   ├── routes
+│   │   │   └── streakFeed.routes.ts
+│   │   ├── services
+│   │   │   ├── api.js
+│   │   │   ├── auth.js
+│   │   │   ├── project.js
+│   │   │   ├── project.service.js
+│   │   │   ├── socket.ts
+│   │   │   └── user.service.js
+│   │   ├── store
+│   │   │   ├── index.ts
+│   │   │   └── slices
+│   │   ├── styles
+│   │   │   ├── GlobalStyles.ts
+│   │   │   ├── GlobalStyles.tsx
+│   │   │   ├── card.css
+│   │   │   ├── charts.css
+│   │   │   ├── components.css
+│   │   │   ├── css.d.ts
+│   │   │   ├── feed.css
+│   │   │   ├── global.css
+│   │   │   ├── gradients.css
+│   │   │   ├── habits.css
+│   │   │   ├── motion.css
+│   │   │   ├── public.css
+│   │   │   ├── shine.css
+│   │   │   ├── theme.css
+│   │   │   ├── theme.ts
+│   │   │   └── tokens.css
+│   │   ├── theme.css
+│   │   ├── types
+│   │   │   ├── events.ts
+│   │   │   ├── project.ts
+│   │   │   └── user.ts
+│   │   └── utils
+│   │       ├── SafeLazy.tsx
+│   │       ├── activityLogger.js
+│   │       ├── activityStats.js
+│   │       ├── analyticsUtils.js
+│   │       ├── anchor.js
+│   │       ├── api.js
+│   │       ├── auth.ts
+│   │       ├── axiosConfig.js
+│   │       ├── axiosInstance.ts
+│   │       ├── cadence.js
+│   │       ├── cadenceAnalytics.js
+│   │       ├── classnames.js
+│   │       ├── clipboard.js
+│   │       ├── confetti.js
+│   │       ├── constants.ts
+│   │       ├── featureFlags.ts
+│   │       ├── feed
+│   │       ├── formatProfilePicture.js
+│   │       ├── formatters.js
+│   │       ├── fuzzy.js
+│   │       ├── generateDailyGoal.js
+│   │       ├── getTierFromXp.js
+│   │       ├── gradients.js
+│   │       ├── imageUtils.js
+│   │       ├── levelUtils.js
+│   │       ├── logActivity.js
+│   │       ├── motion.js
+│   │       ├── nudges.js
+│   │       ├── optimistic.js
+│   │       ├── perfLog.js
+│   │       ├── productivityTips.js
+│   │       ├── publicSanitize.js
+│   │       ├── safety.js
+│   │       ├── shine.js
+│   │       ├── socket.js
+│   │       ├── sprintUtils.js
+│   │       ├── streakMilestones.js
+│   │       ├── tokenUtils.js
+│   │       ├── usePrefersReducedMotion.js
+│   │       ├── xpTierTips.js
+│   │       └── xpUtils.js
+│   ├── styles.css
+│   ├── tailwind.config.js
+│   ├── tools
+│   │   └── replaceCopy.mjs
+│   ├── tsconfig.json
+│   ├── vite.config.js
+│   └── vite.config.ts
+├── backup-recent-files
+│   └── backend
+│       ├── auth.controller.ts
+│       ├── auth.service.ts
+│       ├── project.controller.ts
+│       ├── project.schema.ts
+│       ├── project.service.ts
+│       ├── user.controller.ts
+│       ├── user.module.ts
+│       ├── user.schema.ts
+│       └── user.service.ts
+├── docker-compose.yml
+├── eslint.config.mjs
+├── localhost_2025-08-12_20-44-19.report.html
+├── localhost_2025-08-12_20-45-18.report.html
+├── package-lock.json
+├── package.json
+├── repo-tree.txt
+├── structure.txt
+└── vercel.json
+
+127 directories, 528 files

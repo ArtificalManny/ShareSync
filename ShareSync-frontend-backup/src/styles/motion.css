@@ -27,7 +27,7 @@
     inset: calc(-1 * var(--ring-thickness));
     border-radius: inherit;
     box-shadow: 0 0 0 var(--ring-thickness) rgb(var(--accent) / .35);
-    animation: pulse-ring 1.6s var(--easing-standard) infinite;
+    animation: pulse-ring 1.6s var(--easing-emph) infinite;
     pointer-events: none;
   }
   
@@ -57,16 +57,30 @@
     animation-delay: .3s;
   }
   
-  /* KPI glow on hover/focus */
+  /* KPI glow on hover/focus (subtle identity easing) */
   .kpi-glow {
-    transition: box-shadow var(--motion-normal) var(--easing-standard),
-                transform var(--motion-normal) var(--easing-standard);
+    transition:
+      box-shadow var(--motion-normal) var(--easing-emph),
+      transform var(--motion-normal) var(--easing-emph);
     will-change: transform, box-shadow;
   }
   .kpi-glow:hover,
   .kpi-glow:focus-visible {
     box-shadow: var(--shadow-glow);
     transform: translateY(-1px);
+  }
+  
+  /* Small general-purpose hover lift (used by cards/tiles) */
+  .hover-raise {
+    transition:
+      transform var(--motion-normal) var(--easing-emph),
+      box-shadow var(--motion-normal) var(--easing-emph);
+    will-change: transform, box-shadow;
+  }
+  .hover-raise:hover,
+  .hover-raise:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
   }
   
   /* Sprint marquee (for active sprint labels/banners) */
@@ -85,6 +99,12 @@
   /* Slow spin (e.g., loading indicators) */
   .spin-slow {
     animation: spin-slow 12s linear infinite;
+  }
+  
+  /* Utility to bias transitions faster (used in a few states) */
+  .motion-quick {
+    transition-duration: var(--motion-fast) !important;
+    transition-timing-function: var(--easing-standard) !important;
   }
   
   /* A utility to force-disable motion (handy for debug/dev) */
@@ -124,6 +144,9 @@
     .kpi-glow,
     .kpi-glow:hover,
     .kpi-glow:focus-visible,
+    .hover-raise,
+    .hover-raise:hover,
+    .hover-raise:focus-visible,
     .row-pulse-ring {
       animation: none !important;
       transition: none !important;

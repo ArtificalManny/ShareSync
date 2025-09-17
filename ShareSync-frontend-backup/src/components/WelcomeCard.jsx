@@ -1,8 +1,8 @@
-// src/components/WelcomeCard.jsx
 import React from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import "../styles/card.css"; // card-base / card-padding
 import { getStreakMilestone } from "../utils/streakMilestones";
+import GradientText from "../components/ui/GradientText.jsx";
 
 export default function WelcomeCard({
   // Optional props (keeps backward compatibility with your Home.jsx usage)
@@ -49,11 +49,9 @@ export default function WelcomeCard({
         <div className="min-w-0">
           <h2
             id="welcome-card-title"
-            className="text-lg sm:text-xl font-semibold tracking-tight"
+            className="text-lg sm:text-xl font-semibold tracking-tight font-display"
           >
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-emerald-600 to-rose-500">
-              {hello}
-            </span>
+            <GradientText variant="ig">{hello}</GradientText>
             <span className="ml-1">👋</span>
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 truncate">

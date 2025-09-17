@@ -1,5 +1,61 @@
-/* Futuristic cityscape background */
-body::before {
+/* ================================
+   Base typography application
+   ================================ */
+   html, body {
+    font-family: var(--font-body);
+    font-size: var(--fs-md);
+    line-height: var(--lh-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  h1, h2, h3, h4, h5, h6,
+  .heading, .display {
+    font-family: var(--font-display);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.01em;
+    margin: 0;
+    color: rgb(var(--text));
+  }
+  
+  h1, .h1 { font-size: var(--fs-3xl); font-weight: var(--fw-bold); }
+  h2, .h2 { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); line-height: var(--lh-snug); }
+  h3, .h3 { font-size: var(--fs-xl);  font-weight: var(--fw-semibold); }
+  h4, .h4 { font-size: var(--fs-lg);  font-weight: var(--fw-medium);   }
+  h5, .h5 { font-size: var(--fs-md);  font-weight: var(--fw-medium);   }
+  h6, .h6 { font-size: var(--fs-sm);  font-weight: var(--fw-medium);   }
+  
+  /* Body, small text helpers */
+  .small { font-size: var(--fs-sm); line-height: var(--lh-normal); }
+  .muted { color: rgb(var(--muted)); }
+  
+  /* Surface/ink/border glue (tokens available in both modes) */
+  :root {
+    --surface: rgb(var(--card));
+    --ink: rgb(var(--text));
+    --border-color: rgb(var(--border));
+    /* Gradient companions used by components, mapped to tokens */
+    --grad-accent: var(--grad-pandora);
+    --grad-info: var(--grad-cnbc);
+  }
+  
+  /* Ensure gradient surfaces have readable text */
+  .bg-grad-blue,
+  .bg-grad-purple,
+  .bg-grad-emerald,
+  .bg-grad-pandora,
+  .bg-grad-cnbc,
+  .bg-grad-ig {
+    color: #fff;
+    --accent-foreground: 255 255 255;
+  }
+  
+  /* ================================
+     Existing themed background (kept)
+     ================================ */
+  
+  /* Futuristic cityscape background */
+  body::before {
     content: "";
     position: fixed;
     top: 0;
@@ -90,3 +146,4 @@ body::before {
     color: #ffffff;
     font-size: 0.9rem;
   }
+  
