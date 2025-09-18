@@ -3,6 +3,8 @@ import React, { useState, useEffect, useContext, Suspense, useRef, useMemo } fro
 import client from '../api/client';
 import { getProjectsQuick } from '../api/projects';
 import { AuthContext } from '../AuthContext';
+import { mark, measure } from '../utils/perfLog';
+import { track } from '../utils/telemetry';
 
 import HomeHeader from '../components/home/HomeHeader.jsx';
 import ProjectsRail from '../components/home/ProjectsRail.jsx';
@@ -13,21 +15,32 @@ import InviteModal from '../components/invite/InviteModal';
 import FocusSprint from '../components/home/FocusSprint.jsx';
 import CadenceMeter from '../components/habits/CadenceMeter.jsx';
 import SprintMomentum from '../components/habits/SprintMomentum.jsx';
-import TraceOutline from '../components/ui/TraceOutline.jsx';
+
+import {
+  KPI_STRIP_ENABLED,
+  SMART_SEARCH_ENABLED,
+  FEED_ENABLED,
+  AI_COACH_ENABLED,
+  TENX_ENABLED,
+  LEADERBOARD_ENABLED,
+  TRANSPARENCY_ENABLED,
+  HABITS_ENABLED,
+} from '../config/flags';
+
 import './Home.css';
 
 const ActivityOverTimeLive = React.lazy(() => import('../components/analytics/ActivityOverTimeLive.jsx'));
 
 const DEFAULT_PROFILE_PIC = '/default-profile.png';
 
-/* ================= Feature flags ================= */
-const SHOW_KPI_STRIP    = true;   // Bezos
-const SHOW_SMART_SEARCH = true;   // Page
-const SHOW_FEED         = true;   // Zuck
-const SHOW_AI_COACH     = true;   // Thiel
-const SHOW_TENX         = true;   // Musk
-const SHOW_LEADERBOARD  = true;   // Thiel + Zuck transparency
-/* ================================================== */
+/* ================= Feature flags (wired to central flags) ================= */
+const SHOW_KPI_STRIP    = KPI_STRIP_ENABLED;     // Bezos
+const SHOW_SMART_SEARCH = SMART_SEARCH_ENABLED;  // Page
+const SHOW_FEED         = FEED_ENABLED;          // Zuck
+const SHOW_AI_COACH     = AI_COACH_ENABLED;      // Thiel
+const SHOW_TENX         = TENX_ENABLED;          // Musk
+const SHOW_LEADERBOARD  = LEADERBOARD_ENABLED;   // Thiel + Zuck transparency
+/* ========================================================================= */
 
 /* ---------------- helpers / inline components ---------------- */
 
@@ -118,12 +131,12 @@ function Sparkline({ data, w = 96, h = 18, title }) {
   );
 }
 
-// KPI strip + velocity hint (Bezos) — clickable + deltas + 7d sparkline + “why” + tooltip
+// KPI strip + velocity hint (Bezos)
 function KpiStrip({ stats }) {
   const today = stats?.today || {};
   const cmp = stats?.compare?.today || {};
-  const ts = stats?.timeseries || {};                // expected: { tasksDone: { last7: [...] }, ... }
-  const why = stats?.attribution || {};              // expected: { tasksDone: { top: { label, delta } }, ... }
+  const ts = stats?.timeseries || {};
+  const why = stats?.attribution || {};
 
   const tiles = [
     { key: 'tasksDone',  label: 'Tasks done', value: today.tasksDone ?? '—', prev: cmp.tasksDone },
@@ -133,9 +146,10 @@ function KpiStrip({ stats }) {
   ];
 
   const tputs = stats?.throughputPerWeek || {};
-  const velocity = (Number(tputs.prev ?? 0) === 0)
-    ? (Number(tputs.value ?? 0) > 0 ? 1 : 0)
-    : Number(tputs.value ?? 0) / Number(tputs.prev ?? 1);
+  const velocity =
+    (Number(tputs.prev ?? 0) === 0)
+      ? (Number(tputs.value ?? 0) > 0 ? 1 : 0)
+      : Number(tputs.value ?? 0) / Number(tputs.prev ?? 1);
   const velocityText = Number.isFinite(velocity) ? `${velocity.toFixed(1)}× ${velocity >= 1 ? 'faster' : 'slower'}` : '—';
 
   const goKPIs = () => document.getElementById('kpis')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -400,6 +414,9 @@ function TenXOverlay({ open, onClose }) {
 /* ------------------------------- Page ------------------------------ */
 
 export default function Home() {
+  // First-render perf mark
+  mark('ss:home:render:start');
+
   const { user: authUser } = useContext(AuthContext) || {};
   const [user, setUser] = useState(null);
 
@@ -427,8 +444,14 @@ export default function Home() {
   const [drawerItem, setDrawerItem] = useState(null);
   const drawerFirstBtnRef = useRef(null);
 
+  // Measure first render (commit)
+  useEffect(() => {
+    measure('perf:home:first-render', 'ss:home:render:start');
+  }, []);
+
   // ---- Initial minimal loads ----
   useEffect(() => {
+    mark('ss:home:bootstrap:start');
     Promise.all([
       client.get('/users/me').catch(() => client.get('/user/me')),
       client.get('/projects').catch(() => ({ data: [] })),
@@ -437,17 +460,24 @@ export default function Home() {
         setUser(userRes.data);
         setProjects(Array.isArray(projRes.data) ? projRes.data : []);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        measure('perf:home:bootstrap', 'ss:home:bootstrap:start');
+      });
   }, []);
 
   // quick rail
   useEffect(() => {
     let ignore = false;
     setQuickLoading(true);
+    mark('ss:home:quick:start');
     getProjectsQuick()
       .then((list) => !ignore && setQuickProjects(list))
       .catch(() => {})
-      .finally(() => !ignore && setQuickLoading(false));
+      .finally(() => {
+        !ignore && setQuickLoading(false);
+        measure('perf:home:quick', 'ss:home:quick:start');
+      });
     return () => { ignore = true; };
   }, []);
 
@@ -472,11 +502,15 @@ export default function Home() {
       const params = { range };
       if (projectId && projectId !== 'all') params.projectId = projectId;
 
+      mark('ss:home:stats:start');
       client
         .get('/users/me/stats', { params, signal: controller.signal })
         .then((res) => { if (!controller.signal.aborted) setStats(res.data); })
         .catch((e) => { if (!controller.signal.aborted) setStatsError(String(e?.message || e)); })
-        .finally(() => { if (!controller.signal.aborted) setStatsLoading(false); });
+        .finally(() => {
+          if (!controller.signal.aborted) setStatsLoading(false);
+          measure('perf:home:stats', 'ss:home:stats:start');
+        });
     }, 220);
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); controller.abort(); };
@@ -517,6 +551,7 @@ export default function Home() {
   const launchTenX = () => {
     setTenxOpen(true);
     document.getElementById('focus-sprint')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    try { track('sprint_started', { mode: '10x', source: 'tenx_card' }); } catch {}
     try { window.dispatchEvent(new CustomEvent('start-tenx-sprint')); } catch {}
   };
 
@@ -526,6 +561,7 @@ export default function Home() {
     const onStart = () => {
       setSprintStart(Date.now());
       setSprintActive(true);
+      try { track('sprint_started', { mode: '10x', source: 'event' }); } catch {}
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         // after 2s, we’ll switch rendering to linear using sprintStart
@@ -590,25 +626,30 @@ export default function Home() {
         {SHOW_SMART_SEARCH && <SmartSearch onAsk={handleAsk} />}
       </div>
 
-      {/* HERO: Focus Sprint with one-click Start */}
-      <div className="relative" id="focus-sprint">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 rounded-2xl blur-xl opacity-60
-                     bg-gradient-to-r from-indigo-100 via-fuchsia-100 to-pink-100
-                     dark:from-indigo-900/40 dark:via-fuchsia-900/35 dark:to-pink-900/35" />
-        <div className="flex items-center justify-between mb-2">
-          <SectionHeader icon="Timer">Focus Sprint</SectionHeader>
-          <button
-            className="btn btn--primary marching focus-ring"
-            title="Start 25:00 now"
-            onClick={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
-          >
-            Start 25:00
-          </button>
+      {/* HERO: Focus Sprint with one-click Start (behind HABITS flag to avoid empty shell) */}
+      {HABITS_ENABLED && (
+        <div className="relative" id="focus-sprint">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10 rounded-2xl blur-xl opacity-60
+                       bg-gradient-to-r from-indigo-100 via-fuchsia-100 to-pink-100
+                       dark:from-indigo-900/40 dark:via-fuchsia-900/35 dark:to-pink-900/35" />
+          <div className="flex items-center justify-between mb-2">
+            <SectionHeader icon="Timer">Focus Sprint</SectionHeader>
+            <button
+              className="btn btn--primary marching focus-ring"
+              title="Start 25:00 now"
+              onClick={() => {
+                try { track('sprint_started', { mode: '10x', source: 'start_button' }); } catch {}
+                try { window.dispatchEvent(new CustomEvent('start-tenx-sprint')); } catch {}
+              }}
+            >
+              Start 25:00
+            </button>
+          </div>
+          <FocusSprint nextTask={null} onFinish={() => setCelebrate(true)} />
         </div>
-        <FocusSprint nextTask={null} onFinish={() => setCelebrate(true)} />
-      </div>
+      )}
 
       {/* Social + AI + 10× + Transparency */}
       <div className="row-accent row-accent-cyan grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid feed">
@@ -621,20 +662,22 @@ export default function Home() {
             <p className="text-sm text-muted mb-2">Try 10× Mode — a 30-minute hyper-focus block.</p>
             <div className="flex items-center gap-2">
               <button className="btn btn--primary marching" onClick={launchTenX}>Enter 10× Mode</button>
-              <button
-                className={`btn ${publicMode ? 'btn--primary' : 'btn--outline'}`}
-                onClick={() => setPublicMode(v => !v)}
-                title="Transparency mode"
-              >
-                {publicMode ? 'Public On' : 'Transparency'}
-              </button>
+              {TRANSPARENCY_ENABLED && (
+                <button
+                  className={`btn ${publicMode ? 'btn--primary' : 'btn--outline'}`}
+                  onClick={() => setPublicMode(v => !v)}
+                  title="Transparency mode"
+                >
+                  {publicMode ? 'Public On' : 'Transparency'}
+                </button>
+              )}
             </div>
           </div>
         )}
       </div>
 
-      {/* Optional: public mode cards */}
-      {publicMode && SHOW_LEADERBOARD && (
+      {/* Optional: public mode cards (only if transparency feature is enabled) */}
+      {TRANSPARENCY_ENABLED && publicMode && SHOW_LEADERBOARD && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Leaderboard />
           {/* Proof / share tile */}
@@ -663,24 +706,22 @@ export default function Home() {
         </div>
       )}
 
-      {/* Habits row */}
-      <div className="relative">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 rounded-2xl blur-xl opacity-55
-                     bg-gradient-to-r from-cyan-100 via-teal-100 to-emerald-100
-                     dark:from-cyan-900/35 dark:via-teal-900/30 dark:to-emerald-900/30" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 row-grid habits">
-          <TraceOutline color="var(--info)" stroke={1.5} speedMs={4200}>
+      {/* Habits row (behind HABITS flag) */}
+      {HABITS_ENABLED && (
+        <div className="relative">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10 rounded-2xl blur-xl opacity-55
+                       bg-gradient-to-r from-cyan-100 via-teal-100 to-emerald-100
+                       dark:from-cyan-900/35 dark:via-teal-900/30 dark:to-emerald-900/30" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 row-grid habits">
             <CadenceMeter activeDays={activeDays14} range={14} />
-          </TraceOutline>
-          <div className="md:col-span-2">
-            <TraceOutline color="var(--info)" stroke={1.5} speedMs={4200}>
+            <div className="md:col-span-2">
               <SprintMomentum data={sprintDays} range={7} />
-            </TraceOutline>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Your Projects */}
       <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring">

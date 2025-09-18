@@ -1,29 +1,25 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import FeedFilterBar from "./FeedFilterBar";
-import FeedEmptyState from "./FeedEmptyState";
-
-import UpdateItem from "./items/UpdateItem";
-import TaskItem from "./items/TaskItem";
-import FileItem from "./items/FileItem";
-import SystemItem from "./items/SystemItem";
-
-import useFreshHighlight from "../../hooks/useFreshHighlight";
-import "../../styles/feed.css";
+import {
+  History,
+  FileText,
+  MessageSquareText,
+  CheckSquare,
+  Settings,
+  Loader2,
+  PlusCircle,
+} from "lucide-react";
 
 /**
- * ProjectActivityFeed
- * Mixed-type, filterable feed with optional composer and pagination.
+ * Unified project activity feed (normalized items).
  *
  * Props:
  * - projectId: string
- * - items: array (unified-ish activity items; server format OK)
+ * - items: normalized items [{ id, type, subtype, projectId, userId?, ts, text, task?, files?, freshUntil? }]
  * - loading: boolean
  * - hasMore: boolean
- * - onLoadMore: () => void
- * - onPostUpdate?: (text) => Promise<void> | void
+ * - onLoadMore?: () => void
  * - onRefetch?: () => void
- * - filter?: 'all'|'updates'|'tasks'|'files'|'system'
- * - onFilterChange?: (next) => void
+ * - onPostUpdate?: (payload: string | {text, attachments?}) => Promise<void>   // presence => canEdit
  */
 export default function ProjectActivityFeed({
   projectId,
@@ -31,226 +27,200 @@ export default function ProjectActivityFeed({
   loading = false,
   hasMore = false,
   onLoadMore,
-  onPostUpdate,
   onRefetch,
-  filter: controlledFilter,
-  onFilterChange,
+  onPostUpdate, // if present → editor can post
 }) {
-  // Perf marker when first items render
-  const firstRenderRef = useRef(false);
+  const canPost = typeof onPostUpdate === "function";
+  const [composer, setComposer] = useState("");
+  const [posting, setPosting] = useState(false);
+
+  // polite live region: announce when new items arrive
+  const liveRef = useRef(null);
+  const prevLenRef = useRef(items.length);
   useEffect(() => {
-    if (!firstRenderRef.current && items.length > 0) {
-      firstRenderRef.current = true;
-      try {
-        performance.mark?.("ss:feed:first-render");
-      } catch {}
+    const prev = prevLenRef.current;
+    const next = items.length;
+    if (next > prev && liveRef.current) {
+      const diff = next - prev;
+      liveRef.current.textContent = `${diff} new ${diff === 1 ? "activity" : "activities"}.`;
+      setTimeout(() => {
+        if (liveRef.current) liveRef.current.textContent = "";
+      }, 1500);
     }
+    prevLenRef.current = next;
   }, [items.length]);
 
-  // Local/controlled filter
-  const [localFilter, setLocalFilter] = useState("all");
-  const activeFilter = controlledFilter ?? localFilter;
-  const setFilter = (next) => {
-    if (onFilterChange) onFilterChange(next);
-    else setLocalFilter(next);
-  };
+  const setsize = items.length;
 
-  // Classifier to map arbitrary events to category buckets
-  const classify = (evt) => {
-    const type = String(evt?.type || evt?.kind || "").toLowerCase();
-    if (type.includes("system") || type.includes("audit")) return "system";
-    if (type.includes("task")) return "tasks";
-    if (type.includes("file")) return "files";
-    if (type.includes("update") || type === "") return "updates";
-
-    // fallback heuristics
-    const txt = String(evt?.text || "").toLowerCase();
-    if (txt.includes("uploaded") || txt.includes(".png") || txt.includes(".pdf"))
-      return "files";
-    if (
-      txt.includes("task") ||
-      txt.includes("assigned") ||
-      txt.includes("completed")
-    )
-      return "tasks";
-    return "updates";
-  };
-
-  // Filter + sort
-  const filtered = useMemo(() => {
-    const list = Array.isArray(items) ? items : [];
-    const byCat =
-      activeFilter === "all"
-        ? list
-        : list.filter((i) => classify(i) === activeFilter);
-    return [...byCat].sort((a, b) => {
-      const ta = +new Date(a.createdAt || a.ts || 0);
-      const tb = +new Date(b.createdAt || b.ts || 0);
-      return tb - ta;
-    });
-  }, [items, activeFilter]);
-
-  // Optional inline composer
-  const handleComposerSubmit = async (val) => {
-    if (!val?.trim()) return;
-    await onPostUpdate?.(val.trim());
-  };
-
-  // Row renderer with fresh highlight
-  const Row = ({ evt }) => {
-    const when = formatWhen(evt?.createdAt || evt?.ts);
-    const key =
-      evt?._id ||
-      evt?.id ||
-      `${evt?.type || "evt"}:${evt?.createdAt || evt?.ts}:${
-        evt?.text?.slice?.(0, 16) || ""
-      }`;
-
-    const { isFresh } = useFreshHighlight(evt?.freshUntil);
-
-    const cat = classify(evt);
-    const commonProps = { event: evt, when, isFresh };
-
-    switch (cat) {
-      case "tasks":
-        return <TaskItem key={key} {...commonProps} />;
-      case "files":
-        return <FileItem key={key} {...commonProps} />;
-      case "system":
-        return <SystemItem key={key} {...commonProps} />;
-      case "updates":
-      default:
-        return <UpdateItem key={key} {...commonProps} />;
+  const submitComposer = async () => {
+    if (!canPost || posting) return;
+    const text = String(composer || "").trim();
+    if (!text) return;
+    setPosting(true);
+    try {
+      // ProjectHome handler already does telemetry + optimistic swap
+      await onPostUpdate(text);
+      setComposer("");
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || "Failed to post update.");
+    } finally {
+      setPosting(false);
     }
   };
 
+  // Simple, lightweight relative time formatter (fallback if you don't have a util)
+  const relTime = (ts) => {
+    try {
+      const d = new Date(ts);
+      const diff = (Date.now() - d.getTime()) / 1000;
+      if (diff < 60) return "just now";
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      return d.toLocaleDateString();
+    } catch {
+      return "";
+    }
+  };
+
+  const iconFor = (type, subtype) => {
+    if (type === "task") return <CheckSquare className="w-4 h-4 text-emerald-600" aria-hidden="true" />;
+    if (type === "file") return <FileText className="w-4 h-4 text-indigo-600" aria-hidden="true" />;
+    if (type === "system") return <Settings className="w-4 h-4 text-slate-500" aria-hidden="true" />;
+    return <MessageSquareText className="w-4 h-4 text-purple-600" aria-hidden="true" />;
+  };
+
+  const rows = useMemo(() => items || [], [items]);
+
   return (
-    <section aria-label="Project activity feed" className="space-y-3">
-      <FeedFilterBar
-        value={activeFilter}
-        onChange={setFilter}
-        showSearch={false}
-        rightExtra={
-          onRefetch ? (
+    <section
+      aria-label="Activity feed"
+      role="region"
+    >
+      {/* Live updates */}
+      <div className="sr-only" aria-live="polite" ref={liveRef} />
+
+      {/* Optional composer (editors only) */}
+      {canPost && (
+        <div className="mb-3 rounded-xl border border-border bg-surface p-3">
+          <label htmlFor="composer-input" className="block text-xs text-muted mb-1">
+            Post an update
+          </label>
+          <textarea
+            id="composer-input"
+            rows={3}
+            value={composer}
+            onChange={(e) => setComposer(e.target.value)}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+            placeholder="What’s happening?"
+          />
+          <div className="mt-2 flex items-center justify-between">
+            <div className="text-[11px] text-muted">
+              Press <kbd className="px-1 border rounded">⌘</kbd>/<kbd className="px-1 border rounded">Ctrl</kbd> +{" "}
+              <kbd className="px-1 border rounded">Enter</kbd> to post
+            </div>
             <button
               type="button"
-              onClick={() => onRefetch?.()}
-              className="inline-flex items-center rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-1 text-sm text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
+              onClick={submitComposer}
+              disabled={posting || !composer.trim()}
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-60"
+              aria-label="Post update"
             >
-              Refresh
+              {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
+              {posting ? "Posting…" : "Post"}
             </button>
-          ) : null
-        }
-      />
-
-      {onPostUpdate && <Composer onSubmit={handleComposerSubmit} />}
-
-      {/* Loading skeleton (initial) */}
-      {loading && filtered.length === 0 && (
-        <div
-          className="rounded-xl border border-slate-200/70 dark:border-slate-700 p-4 bg-white/70 dark:bg-slate-800/70"
-          aria-busy="true"
-        >
-          <div className="animate-pulse space-y-2">
-            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
-            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3" />
-            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3" />
           </div>
         </div>
       )}
 
-      {/* List */}
-      {!loading && filtered.length > 0 && (
+      {/* Skeletons */}
+      {loading && rows.length === 0 && (
         <div className="space-y-2">
-          {filtered.map((evt) => (
-            <Row key={evt.id || evt._id} evt={evt} />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-xl border border-border bg-surface p-3 animate-pulse h-[64px]" />
           ))}
         </div>
       )}
 
       {/* Empty */}
-      {!loading && filtered.length === 0 && (
-        <FeedEmptyState
-          icon="🧵"
-          title={
-            activeFilter === "all" ? "No activity yet" : "No items in this filter"
-          }
-          body={
-            activeFilter === "all"
-              ? "Kick things off with a quick update so everyone knows the plan."
-              : "Try switching filters or posting an update."
-          }
-          action={
-            onPostUpdate && activeFilter === "all" ? (
-              <button
-                onClick={() => onPostUpdate?.("First update 👋")}
-                className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                Post an update
-              </button>
-            ) : null
-          }
-        />
+      {!loading && rows.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border bg-surface p-6 text-sm text-muted">
+          No activity yet.
+        </div>
       )}
 
-      {/* Pagination */}
-      {hasMore && (
-        <div className="pt-1">
+      {/* List */}
+      <div role="feed" aria-busy={loading ? "true" : "false"} className="divide-y divide-border rounded-xl border border-border bg-surface">
+        {rows.map((it, idx) => {
+          const posinset = idx + 1;
+          const fresh = typeof it.freshUntil === "number" ? it.freshUntil > Date.now() : false;
+          const a11yLabel = `${it.type || "item"} — ${it.text || ""} — ${relTime(it.ts)}`;
+
+          return (
+            <article
+              key={it.id || `${it.type}:${it.ts}:${idx}`}
+              role="article"
+              tabIndex={0}
+              aria-label={a11yLabel}
+              aria-posinset={posinset}
+              aria-setsize={setsize}
+              className={[
+                "group px-3 py-2 flex items-start gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
+                fresh ? "bg-indigo-50/50 dark:bg-indigo-950/20" : ""
+              ].join(" ")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  // future: open detail
+                }
+              }}
+            >
+              <div className="mt-0.5">{iconFor(it.type, it.subtype)}</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm text-text truncate">
+                  {it.text || (it.task?.title ?? "") || (Array.isArray(it.files) ? `${it.files.length} file(s)` : "")}
+                </div>
+                <div className="text-[11px] text-muted">
+                  {humanizeSubtype(it.type, it.subtype)} · {relTime(it.ts)}
+                </div>
+              </div>
+              {fresh && <span className="ml-1 mt-1 inline-block w-2 h-2 rounded-full bg-indigo-500" aria-hidden="true" />}
+            </article>
+          );
+        })}
+      </div>
+
+      {/* Footer: pagination / refresh */}
+      <div className="mt-3 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={onRefetch}
+          className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-surface"
+        >
+          Refresh
+        </button>
+        {hasMore && (
           <button
             type="button"
             onClick={onLoadMore}
-            className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            disabled={loading}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-surface disabled:opacity-60"
           >
-            Load more
+            {loading ? "Loading…" : "Load more"}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
 
-/** Small inline composer */
-function Composer({ onSubmit }) {
-  const inputRef = React.useRef(null);
-  const send = () => {
-    const val = inputRef.current?.value ?? "";
-    if (!val.trim()) return;
-    onSubmit?.(val.trim());
-    inputRef.current.value = "";
-  };
-  return (
-    <div className="rounded-xl border border-slate-200/70 dark:border-slate-700 p-3 bg-white dark:bg-slate-900">
-      <label htmlFor="feed-composer" className="sr-only">
-        Post an update
-      </label>
-      <div className="flex gap-2">
-        <input
-          id="feed-composer"
-          ref={inputRef}
-          type="text"
-          placeholder="What’s the latest?"
-          className="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") send();
-          }}
-        />
-        <button
-          type="button"
-          onClick={send}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-white text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          Post
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/** Helper */
-function formatWhen(iso) {
-  try {
-    return iso ? new Date(iso).toLocaleString() : "";
-  } catch {
-    return "";
-  }
+function humanizeSubtype(type, subtype) {
+  if (!subtype) return type || "activity";
+  const s = String(subtype).toLowerCase();
+  if (s.includes("created")) return "created";
+  if (s.includes("updated")) return "updated";
+  if (s.includes("completed")) return "completed";
+  if (s.includes("added")) return "added";
+  if (s.includes("removed")) return "removed";
+  return type || "activity";
 }

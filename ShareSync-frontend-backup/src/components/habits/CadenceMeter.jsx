@@ -3,6 +3,12 @@ import SectionHeader from "../ui/SectionHeader";
 import GradientText from "../ui/GradientText";
 import TraceOutline from "../ui/TraceOutline";
 
+/** feature flag */
+const ENABLE_HABITS = (() => {
+  const v = import.meta?.env?.VITE_FEATURE_HABITS ?? "";
+  return /^(1|true|on|yes)$/i.test(String(v));
+})();
+
 /**
  * CadenceMeter
  * props:
@@ -10,6 +16,8 @@ import TraceOutline from "../ui/TraceOutline";
  *  - range: number (default 14)
  */
 export default function CadenceMeter({ activeDays = 0, range = 14 }) {
+  if (!ENABLE_HABITS) return null;
+
   const pct = Math.max(0, Math.min(1, activeDays / Math.max(1, range)));
   const percentLabel = Math.round(pct * 100);
 

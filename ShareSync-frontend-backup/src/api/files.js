@@ -67,3 +67,5 @@ export async function deleteFile(projectId, fileId) {
   const { data } = await client.delete(`/projects/${projectId}/files/${fileId}`);
   return data; // { ok: true }
 }
+
+export default { listFiles, createFiles, deleteFile };

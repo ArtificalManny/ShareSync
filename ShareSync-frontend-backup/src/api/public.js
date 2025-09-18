@@ -206,3 +206,15 @@ function _mockStatus() {
     ],
   };
 }
+
+/** Optional default export for compatibility */
+export default {
+  buildPublicStatusUrl,
+  buildAbsoluteUrl,
+  copyPublicStatusLink,
+  enablePublic,
+  disablePublic,
+  regeneratePublicToken,
+  fetchPublicProjectStatus,
+  getPublicStatus,
+};

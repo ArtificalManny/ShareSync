@@ -29,6 +29,9 @@ import {
   UserPlus,
   Settings as SettingsIcon,
   RefreshCcw,
+  Trophy,
+  Files as FilesIcon,
+  CheckSquare,
 } from "lucide-react";
 import { buildPublicStatusUrl } from "../api/public";
 
@@ -50,25 +53,15 @@ import {
   fromSocketEvent,
   mergeRealtime,
 } from "../utils/feed/normalizeActivity";
+// 🔷 Dedupe helper (shared)
+import { dedupeById } from "../utils/feed/dedupe";
+
+// 🔔 Telemetry
+import { track } from "../utils/telemetry";
 
 // ---- small helpers ----
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
 const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
-
-// Simple de-dupe by stable key (id/_id/tempId fallback)
-function dedupeById(items = []) {
-  const seen = new Set();
-  const out = [];
-  for (const it of items) {
-    const key =
-      String(it?.id ?? it?._id ?? it?.tempId ?? "") ||
-      `${it?.type || "?"}:${it?.ts || it?.createdAt || ""}:${(it?.text || "").slice(0, 16)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(it);
-  }
-  return out;
-}
 
 async function perfLogDev(name, start) {
   if (import.meta.env.MODE === "production") return;
@@ -77,6 +70,12 @@ async function perfLogDev(name, start) {
     mod.perfLog?.(name, start);
   } catch {}
 }
+
+// --- Feature flags ---
+const ENABLE_PUBLIC_STATUS = (() => {
+  const v = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS ?? "";
+  return /^(1|true|on|yes)$/i.test(String(v));
+})();
 
 // --- Role helpers (mirror logic used in ProjectHeader) ---
 function getRoleForUser(project, userId) {
@@ -91,6 +90,52 @@ function getRoleForUser(project, userId) {
     ? hit.role
     : "viewer";
 }
+
+/* ---------------- Milestones (files & tasks) ---------------- */
+function nextThreshold(count, thresholds = [1, 5, 10, 25, 50, 100]) {
+  for (const t of thresholds) if (count < t) return t;
+  return null; // maxed
+}
+function MilestoneBar({ icon, label, count, unit }) {
+  const next = nextThreshold(count);
+  const prev = next ? (count >= 1 ? thresholdsBelow(next).slice(-1)[0] || 0 : 0) : count;
+  function thresholdsBelow(t) { return [1,5,10,25,50,100].filter((x) => x < t); }
+  const target = next ?? count;
+  const base = prev ?? 0;
+  const span = Math.max(1, target - base);
+  const progress = Math.max(0, Math.min(1, (count - base) / span));
+  const pct = Math.round(progress * 100);
+
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-surface p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="inline-flex items-center gap-2">
+          {icon}
+          <div className="text-xs text-muted">{label}</div>
+        </div>
+        <div className="text-sm font-semibold">
+          {count} <span className="text-muted">{unit}</span>
+        </div>
+      </div>
+      <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: "color-mix(in srgb, rgb(var(--accent)) 16%, transparent)" }}>
+        <div
+          className="h-2 rounded-full"
+          style={{
+            width: `${pct}%`,
+            background: "linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--info)) 100%)",
+          }}
+          aria-label={`${label} ${pct}%`}
+        />
+      </div>
+      <div className="mt-1 text-[11px] text-muted">
+        {next
+          ? <>Next milestone: <span className="font-medium">{next} {unit}</span></>
+          : <>Milestones complete — keep going! 🎉</>}
+      </div>
+    </div>
+  );
+}
+/* ----------------------------------------------------------- */
 
 export default function ProjectHome() {
   const { id } = useParams();
@@ -115,7 +160,7 @@ export default function ProjectHome() {
   const [showInvite, setShowInvite] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Files (still used by Files section)
+  // Files (used by Files section)
   const [files, setFiles] = useState([]);
 
   useEffect(() => { mark("ss:projecthome:mounted"); }, []);
@@ -199,7 +244,6 @@ export default function ProjectHome() {
   // 🔴 Realtime via shared hook (auth + room join)
   useSocket(id ? `project:${id}` : null, {
     onEvents: {
-      // Server-sent unified activity -> normalize & prepend
       "activity:new": (evt) => {
         if (String(evt?.projectId) !== String(id)) return;
         const norm = fromSocketEvent("activity:new", evt);
@@ -217,18 +261,15 @@ export default function ProjectHome() {
             members: payload.members || p?.members || [],
             invites: payload.invites || p?.invites || [],
           }));
-          // You might also surface a system item if BE doesn't emit activity:new
         }
       },
-      // Files added → keep file grid + feed in sync
       "project:filesAdded": (payload) => {
         if (String(payload?.projectId) !== String(id) || !Array.isArray(payload?.files)) return;
         setFiles((prev) => dedupeById([...payload.files, ...prev]));
         const norm = fromSocketEvent("project:filesAdded", payload);
-        if (!norm.freshUntil) norm.freshUntil = Date.now() + 10_000; // ✅ small bug fix
+        if (!norm.freshUntil) norm.freshUntil = Date.now() + 10_000;
         setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
-      // ✅ project patch (icon updates etc.) — also emit as system feed item
       "project:updated": (payload) => {
         if (String(payload?.projectId) !== String(id) || !payload?.patch) return;
         if (Object.prototype.hasOwnProperty.call(payload.patch, "icon")) {
@@ -239,7 +280,6 @@ export default function ProjectHome() {
         const norm = fromSocketEvent("project:updated", payload);
         setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
-      // Tasks → keep project.tasks and feed unified
       "tasks:created": (payload) => {
         if (String(payload?.projectId) !== String(id) || !payload?.task) return;
         setProject((p) => ({ ...p, tasks: [payload.task, ...(p?.tasks || [])] }));
@@ -258,11 +298,9 @@ export default function ProjectHome() {
         const norm = fromSocketEvent("tasks:updated", payload);
         setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
-      // public toggle (optional backend emit)
       "project:publicChanged": (payload) => {
         if (String(payload?.projectId) === String(id)) {
           setProject((p) => ({ ...p, publicToken: payload?.publicToken || "" }));
-          // If BE doesn't emit activity:new, we could synthesize a system event here too
         }
       },
     },
@@ -273,7 +311,7 @@ export default function ProjectHome() {
   const canEdit = myRole === "owner" || myRole === "member";
   const canManage = myRole === "owner";
 
-  // Composer (string or {text, attachments[], mentions?, visibility?})
+  // Composer
   const handlePostUpdate = async (payload) => {
     if (!canEdit) return;
     const text = typeof payload === "string" ? payload : payload?.text || "";
@@ -309,6 +347,7 @@ export default function ProjectHome() {
         ...prev,
         items: prev.items.map((it) => (it._id === optimistic._id ? created : it)),
       }));
+      track("update_posted", { projectId: id, visibility });
     } catch {
       setFeed((prev) => ({
         ...prev,
@@ -320,11 +359,12 @@ export default function ProjectHome() {
 
   const tasks = useMemo(() => project?.tasks ?? [], [project]);
 
-  // ✅ API-backed create (no local optimistic placeholder)
+  // Tasks
   const handleAddTask = async (payload) => {
     if (!canEdit) return;
     const created = await createTask(id, payload);
     setProject((p) => ({ ...p, tasks: [created, ...(p?.tasks || [])] }));
+    try { track("task_created", { projectId: id, taskId: created?._id || created?.id }); } catch {}
   };
 
   const handlePatchTask = async (taskId, patch) => {
@@ -334,12 +374,13 @@ export default function ProjectHome() {
       ...p,
       tasks: (p?.tasks || []).map((t) => (String(t._id) === String(taskId) ? updated : t)),
     }));
+    try { track("task_updated", { projectId: id, taskId }); } catch {}
   };
 
-  // --- Public status helpers ---
+  // --- Public status helpers (flagged) ---
   const publicToken = project?.publicToken || "";
   const publicEnabled = !!publicToken;
-  const publicStatusPath = publicEnabled ? buildPublicStatusUrl(publicToken) : null;
+  const publicStatusPath = ENABLE_PUBLIC_STATUS && publicEnabled ? buildPublicStatusUrl(publicToken) : null;
   const fullPublicUrl =
     typeof window !== "undefined" && publicStatusPath
       ? `${window.location.origin}${publicStatusPath}`
@@ -364,11 +405,10 @@ export default function ProjectHome() {
     }
   };
 
-  // Toggle public on/off from header
   const handleTogglePublic = useCallback(async (nextEnabled) => {
+    if (!ENABLE_PUBLIC_STATUS) return;
     if (!canManage || !project?._id) return;
 
-    // dynamic import if available
     let mod = {};
     try { mod = await import("../api/public"); } catch {}
 
@@ -384,6 +424,13 @@ export default function ProjectHome() {
           token = json?.token || json?.publicToken || null;
         }
         setProject((p) => ({ ...p, publicToken: token || p?.publicToken || "" }));
+        try {
+          track("public_status_changed", {
+            projectId: project._id,
+            action: "enabled",
+            tokenPresent: Boolean(token),
+          });
+        } catch {}
       } else {
         if (typeof mod.disablePublic === "function") {
           await mod.disablePublic(project._id);
@@ -391,15 +438,20 @@ export default function ProjectHome() {
           await fetch(`/api/public/projects/${project._id}/disable`, { method: "POST" });
         }
         setProject((p) => ({ ...p, publicToken: "" }));
+        try {
+          track("public_status_changed", {
+            projectId: project._id,
+            action: "disabled",
+          });
+        } catch {}
       }
     } catch (e) {
-      // eslint-disable-next-line no-alert
       alert(e?.message || "Failed to update public status.");
     }
   }, [canManage, project?._id]);
 
-  // Regenerate token from modal
   const handleRegenerate = async () => {
+    if (!ENABLE_PUBLIC_STATUS) return;
     if (!canManage || !project?._id) return;
     setRegenLoading(true);
     let mod = {};
@@ -414,16 +466,17 @@ export default function ProjectHome() {
         const json = await res.json();
         token = json?.token || json?.publicToken || null;
       }
-      if (token) setProject((p) => ({ ...p, publicToken: token }));
+      if (token) {
+        setProject((p) => ({ ...p, publicToken: token }));
+        try { track("public_status_changed", { projectId: project._id, action: "regenerated" }); } catch {}
+      }
     } catch (e) {
-      // eslint-disable-next-line no-alert
       alert(e?.message || "Failed to regenerate link.");
     } finally {
       setRegenLoading(false);
     }
   };
 
-  // 🔹 Build KPI trend series via hook
   const kpiTrends = useKpiSeries(stats);
 
   if (loading) {
@@ -498,19 +551,28 @@ export default function ProjectHome() {
   const disabledBtn =
     "opacity-60 cursor-not-allowed hover:bg-transparent hover:opacity-60";
 
+  // Milestone numbers
+  const filesCount = Array.isArray(files) ? files.length : 0;
+  const completedTasks = (project?.tasks || []).filter(
+    (t) =>
+      t?.completed === true ||
+      String(t?.status || "").toLowerCase() === "done" ||
+      String(t?.state || "").toLowerCase() === "done" ||
+      Boolean(t?.completedAt)
+  ).length;
+
   return (
     <main id="main" role="main" tabIndex={-1}>
       <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
-        {/* Header (now shows public toggle if owner) */}
+        {/* Header (public toggle gated by flag) */}
         <ProjectHeader
           project={project}
           onAddTask={() => canEdit && setShowTaskSheet(true)}
-          onTogglePublic={handleTogglePublic}
+          onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
         />
 
         {/* Action Bar */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {/* Primary CTA: gradient + shine; focus ring preserved */}
           <button
             type="button"
             onClick={() => canEdit && setShowTaskSheet(true)}
@@ -527,7 +589,6 @@ export default function ProjectHome() {
             <span className="shine pointer-events-none" aria-hidden="true" />
           </button>
 
-          {/* Neutral CTAs: solid with subtle shine sweep */}
           <button
             type="button"
             onClick={() => canManage && setShowInvite(true)}
@@ -558,16 +619,18 @@ export default function ProjectHome() {
             <span className="shine pointer-events-none" aria-hidden="true" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => setShowStatusModal(true)}
-            className="relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            title="Share public status link"
-          >
-            <Share2 className="w-4 h-4" />
-            Public status
-            <span className="shine pointer-events-none" aria-hidden="true" />
-          </button>
+          {ENABLE_PUBLIC_STATUS && (
+            <button
+              type="button"
+              onClick={() => setShowStatusModal(true)}
+              className="relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              title="Share public status link"
+            >
+              <Share2 className="w-4 h-4" />
+              Public status
+              <span className="shine pointer-events-none" aria-hidden="true" />
+            </button>
+          )}
         </div>
 
         {/* Project KPIs */}
@@ -597,7 +660,7 @@ export default function ProjectHome() {
           </div>
         </section>
 
-        {/* NEW: KPI Trends (inline charts) */}
+        {/* NEW: KPI Trends */}
         {kpiTrends.length > 0 && (
           <section
             className="mt-6 card accent-activity rounded-2xl border border-border bg-surface p-4"
@@ -618,7 +681,7 @@ export default function ProjectHome() {
 
             <div className="mt-3">
               <KpiGroup
-                data={kpiTrends /* [{label, series:[{t, v}], color?}] */}
+                data={kpiTrends}
                 height={160}
                 showLegend={false}
               />
@@ -626,7 +689,7 @@ export default function ProjectHome() {
           </section>
         )}
 
-        {/* Unified Activity Feed */}
+        {/* Unified Activity Feed (upgraded normalizer + realtime merge) */}
         <section
           className="mt-6 card rounded-2xl border border-border bg-surface p-4"
           role="region"
@@ -658,6 +721,31 @@ export default function ProjectHome() {
           </div>
         </section>
 
+        {/* NEW: Files & Tasks Milestones */}
+        <section
+          className="mt-6 card rounded-2xl border border-border bg-surface p-4"
+          role="region"
+          aria-label="Milestones"
+        >
+          <div className="flex items-start justify-between">
+            <SectionHeader icon="Flag">Milestones</SectionHeader>
+          </div>
+          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <MilestoneBar
+              icon={<FilesIcon className="w-4 h-4 text-indigo-600" />}
+              label="Files uploaded"
+              count={filesCount}
+              unit="files"
+            />
+            <MilestoneBar
+              icon={<Trophy className="w-4 h-4 text-emerald-600" />}
+              label="Tasks completed"
+              count={completedTasks}
+              unit="tasks"
+            />
+          </div>
+        </section>
+
         {/* Files */}
         <section
           className="mt-6 card rounded-2xl border border-border bg-surface p-4"
@@ -670,7 +758,7 @@ export default function ProjectHome() {
           <div className="mt-3">
             <FileGrid
               projectId={project._id}
-              initialFiles={project.files || []}
+              initialFiles={files}
               canEdit={canEdit}
               canManage={canManage}
             />
@@ -715,13 +803,12 @@ export default function ProjectHome() {
             </div>
 
             <MembersPanel members={project.members || []} />
-            {/* NOTE: the separate "Recent Activity" card has been removed in favor of the unified feed above */}
           </div>
         </div>
       </div>
 
-      {/* ---- Public Status Modal ---- */}
-      {showStatusModal && (
+      {/* ---- Public Status Modal (flagged) ---- */}
+      {ENABLE_PUBLIC_STATUS && showStatusModal && (
         <>
           <div
             className="fixed inset-0 z-50 bg-black/30 dark:bg-black/50"
@@ -800,7 +887,7 @@ export default function ProjectHome() {
         open={showTaskSheet}
         onClose={() => setShowTaskSheet(false)}
         onCreate={handleAddTask}
-        // pass-through for API fallback + permissions inside the sheet
+        onUpdate={handlePatchTask}
         projectId={id}
         canEdit={canEdit}
       />

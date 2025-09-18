@@ -1,4 +1,3 @@
-// /src/components/analytics/ActivityOverTimeLive.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { getUserStats, getProjectStats } from '../../api/stats';
 

@@ -1,5 +1,4 @@
-// src/api/invites.js
-import client from "./client"; // your shared axios instance
+import client from "./client"; // shared axios instance
 
 /**
  * Create an invite for a project (owner/manage required)
@@ -36,3 +35,5 @@ export async function revokeInvite(projectId, token) {
   const { data } = await client.delete(`/projects/${projectId}/invites/${token}`);
   return data; // { ok: true }
 }
+
+export default { sendInvite, acceptInvite, listInvites, revokeInvite };

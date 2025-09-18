@@ -1,11 +1,11 @@
-// /src/components/files/FileCard.jsx
 import React from "react";
 import { Trash2, Download } from "lucide-react";
 
 export default function FileCard({
   file,
-  onRemove,           // renamed from onDelete to match FileGrid
+  onDelete,           // matches FileGrid
   onDownload,
+  canEdit = false,
   canManage = false,   // only owners can hard-delete
 }) {
   const isImage =
@@ -60,10 +60,10 @@ export default function FileCard({
             <Download className="w-4 h-4" />
           </button>
 
-          {canManage && (
+          {(canManage || onDelete) && (
             <button
               className="btn btn--ghost hover-glow p-1 rounded-md text-danger"
-              onClick={() => onRemove?.(file?.id || file)}
+              onClick={() => onDelete?.(file?.id || file)}
               title="Delete"
               aria-label={`Delete ${file?.name || "file"}`}
             >

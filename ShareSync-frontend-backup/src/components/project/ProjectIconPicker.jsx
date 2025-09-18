@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
 /**
@@ -21,10 +21,63 @@ const SVGS = [
 export default function ProjectIconPicker({ open, onClose, onSelect }) {
   const [tab, setTab] = useState("emoji");
 
+  const containerRef = useRef(null);
+  const firstFocusRef = useRef(null);
+  const prevFocusRef = useRef(null);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      // restore focus to opener
+      setTimeout(() => prevFocusRef.current?.focus?.(), 0);
+      return;
+    }
+    prevFocusRef.current = document.activeElement;
     setTab("emoji");
-  }, [open]);
+
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose?.();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+
+    const t = setTimeout(() => firstFocusRef.current?.focus(), 10);
+
+    // Focus trap
+    const el = containerRef.current;
+    const selectors =
+      'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+    const onTrap = (e) => {
+      if (e.key !== "Tab") return;
+      const nodes = Array.from(el.querySelectorAll(selectors)).filter(
+        (n) => !n.hasAttribute("disabled")
+      );
+      if (!nodes.length) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+
+      if (e.shiftKey) {
+        if (active === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    el?.addEventListener("keydown", onTrap);
+
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("keydown", onKey);
+      el?.removeEventListener("keydown", onTrap);
+    };
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -32,21 +85,32 @@ export default function ProjectIconPicker({ open, onClose, onSelect }) {
     <>
       <div className="fixed inset-0 z-50 bg-black/30 dark:bg-black/50" onClick={onClose} aria-hidden="true" />
       <div
+        ref={containerRef}
         className="fixed z-50 inset-x-4 top-24 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(520px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
         role="dialog"
         aria-modal="true"
-        aria-label="Choose project icon"
+        aria-labelledby="icon-picker-title"
+        aria-describedby="icon-picker-desc"
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h3 className="text-sm font-semibold">Choose project icon</h3>
-          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-surface" aria-label="Close picker">
+          <h3 id="icon-picker-title" className="text-sm font-semibold">Choose project icon</h3>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 hover:bg-surface"
+            aria-label="Close picker"
+          >
             <X className="w-4 h-4 text-muted" />
           </button>
         </div>
 
+        <p id="icon-picker-desc" className="sr-only">
+          Pick an emoji or a preset SVG to use as the project icon. Press Escape to close.
+        </p>
+
         <div className="px-4 pt-3">
           <div className="inline-flex rounded-lg border border-border overflow-hidden">
             <button
+              ref={firstFocusRef}
               className={`px-3 py-1.5 text-sm ${tab === "emoji" ? "bg-indigo-50 text-indigo-700" : "text-muted"}`}
               onClick={() => setTab("emoji")}
             >
@@ -63,36 +127,40 @@ export default function ProjectIconPicker({ open, onClose, onSelect }) {
 
         <div className="p-4">
           {tab === "emoji" ? (
-            <div className="grid grid-cols-8 gap-2">
+            <div className="grid grid-cols-8 gap-2" role="list" aria-label="Emoji choices">
               {EMOJIS.map((e) => (
                 <button
                   key={e}
                   onClick={() => onSelect?.({ kind: "emoji", value: e })}
                   className="h-10 rounded-lg bg-white dark:bg-slate-900 border border-border hover:bg-slate-50 dark:hover:bg-slate-800 text-xl"
                   title={e}
+                  role="listitem"
+                  aria-label={`Select ${e} as icon`}
                 >
                   {e}
                 </button>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-5 gap-3" role="list" aria-label="Preset SVG choices">
               {SVGS.map((s) => (
                 <button
                   key={s.key}
                   onClick={() => onSelect?.({ kind: "svg", value: s.key })}
                   className="flex items-center justify-center gap-2 h-10 rounded-lg bg-white dark:bg-slate-900 border border-border hover:bg-slate-50 dark:hover:bg-slate-800"
                   title={s.label}
+                  role="listitem"
+                  aria-label={`Select ${s.label} as icon`}
                 >
-                  <span className="text-indigo-600">
+                  <span className="text-indigo-600" aria-hidden="true">
                     {s.key === "rocket" && (
-                      <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden><path d="M12 2c3 0 6 2 8 4l-6 6-2-2-6 6-2-2 6-6-2-2 6-6z" fill="currentColor"/></svg>
+                      <svg viewBox="0 0 24 24" className="w-5 h-5"><path d="M12 2c3 0 6 2 8 4l-6 6-2-2-6 6-2-2 6-6-2-2 6-6z" fill="currentColor"/></svg>
                     )}
                     {s.key === "bolt" && (
-                      <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden><path d="M13 2L3 14h7l-1 8 11-12h-7l0-8z" fill="currentColor"/></svg>
+                      <svg viewBox="0 0 24 24" className="w-5 h-5"><path d="M13 2L3 14h7l-1 8 11-12h-7l0-8z" fill="currentColor"/></svg>
                     )}
                     {s.key === "target" && (
-                      <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden>
+                      <svg viewBox="0 0 24 24" className="w-5 h-5">
                         <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" fill="none"/>
                         <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" fill="none"/>
                         <circle cx="12" cy="12" r="2" fill="currentColor"/>

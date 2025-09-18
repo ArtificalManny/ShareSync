@@ -16,6 +16,15 @@ import Switch from "../ui/Switch";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import { copyToClipboard } from "../../utils/clipboard";
 import TraceOutline from "../ui/TraceOutline";
+import { buildPublicStatusUrl } from "../../api/public";
+import { track } from "../../utils/telemetry";
+import { toast } from "../ui/Toaster";
+
+// --- Feature flag ---
+const ENABLE_PUBLIC_STATUS = (() => {
+  const v = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS ?? "";
+  return /^(1|true|on|yes)$/i.test(String(v));
+})();
 
 let patchProjectApi = null;
 let enablePublicApi = null;
@@ -38,9 +47,6 @@ try {
   disablePublicApi = pub?.disablePublic || null;
   regeneratePublicApi = pub?.regeneratePublicToken || null;
 } catch {}
-
-// Build /status/:token (keeps it in sync with buildPublicStatusUrl)
-const statusPath = (token) => (token ? `/status/${encodeURIComponent(token)}` : "");
 
 export default function ProjectSettingsModal({
   open,
@@ -70,10 +76,16 @@ export default function ProjectSettingsModal({
 
   const containerRef = useRef(null);
   const firstFieldRef = useRef(null);
+  const prevFocusRef = useRef(null);
 
-  // Reset values on open / project change
+  // Reset values on open / project change, initial focus, and focus restoration
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      // restore focus to the invoker
+      setTimeout(() => prevFocusRef.current?.focus?.(), 0);
+      return;
+    }
+    prevFocusRef.current = document.activeElement;
     setName(project?.name || project?.title || "");
     setDescription(project?.description || "");
     setVisibility(project?.visibility || "private");
@@ -139,8 +151,9 @@ export default function ProjectSettingsModal({
 
   const publicUrl = useMemo(() => {
     if (!publicToken) return "";
+    const path = buildPublicStatusUrl(publicToken);
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return origin ? `${origin}${statusPath(publicToken)}` : statusPath(publicToken);
+    return origin ? `${origin}${path}` : path;
   }, [publicToken]);
 
   const copyLink = async () => {
@@ -155,9 +168,13 @@ export default function ProjectSettingsModal({
     try {
       if (enablePublicApi && project?._id) {
         const res = await enablePublicApi(project._id);
-        if (res?.token || res?.publicToken) {
-          const t = res.token || res.publicToken;
+        const t = res?.token || res?.publicToken || "";
+        if (t) {
           setPublicToken(t);
+          try {
+            track("public_status_changed", { projectId: project._id, action: "enabled", source: "settings" });
+          } catch {}
+          toast({ title: "Public status enabled", description: "Share the link from here anytime.", variant: "success" });
           return t;
         }
       } else if (project?._id) {
@@ -167,9 +184,13 @@ export default function ProjectSettingsModal({
         });
         if (!res.ok) throw new Error("Failed to enable public status.");
         const json = await res.json();
-        if (json?.token || json?.publicToken) {
-          const t = json.token || json.publicToken;
+        const t = json?.token || json?.publicToken || "";
+        if (t) {
           setPublicToken(t);
+          try {
+            track("public_status_changed", { projectId: project._id, action: "enabled", source: "settings" });
+          } catch {}
+          toast({ title: "Public status enabled", description: "Share the link from here anytime.", variant: "success" });
           return t;
         }
       }
@@ -177,8 +198,10 @@ export default function ProjectSettingsModal({
       setError(e?.message || "Failed to enable public status.");
       throw e;
     }
+    // Dev fallback
     const devToken = `dev_${project?._id || "project"}_${Date.now().toString(36)}`;
     setPublicToken(devToken);
+    toast({ title: "Public status enabled (dev)", variant: "success" });
     return devToken;
   }, [enablePublicApi, project, publicToken]);
 
@@ -198,18 +221,24 @@ export default function ProjectSettingsModal({
     };
 
     try {
-      if (publicEnabled && !publicToken) {
-        await ensurePublicToken();
-      }
-      // If toggled OFF explicitly, also disable public server-side (best-effort)
-      if (!publicEnabled && publicToken && project?._id) {
-        try {
-          if (disablePublicApi) await disablePublicApi(project._id);
-          else await fetch(`/api/public/projects/${project._id}/disable`, { method: "POST" });
-        } catch {
-          /* non-fatal */
+      if (ENABLE_PUBLIC_STATUS) {
+        if (publicEnabled && !publicToken) {
+          await ensurePublicToken();
         }
-        setPublicToken("");
+        // If toggled OFF explicitly, also disable public server-side (best-effort)
+        if (!publicEnabled && publicToken && project?._id) {
+          try {
+            if (disablePublicApi) await disablePublicApi(project._id);
+            else await fetch(`/api/public/projects/${project._id}/disable`, { method: "POST" });
+            try {
+              track("public_status_changed", { projectId: project._id, action: "disabled", source: "settings" });
+            } catch {}
+            toast({ title: "Public status disabled", variant: "warning" });
+          } catch {
+            /* non-fatal */
+          }
+          setPublicToken("");
+        }
       }
 
       let updated = null;
@@ -231,14 +260,18 @@ export default function ProjectSettingsModal({
       }
 
       // reflect public token & icon locally for optimistic UI
-      if (publicEnabled && publicToken) updated = { ...updated, publicToken };
-      if (!publicEnabled) updated = { ...updated, publicToken: "" };
+      if (ENABLE_PUBLIC_STATUS) {
+        if (publicEnabled && publicToken) updated = { ...updated, publicToken };
+        if (!publicEnabled) updated = { ...updated, publicToken: "" };
+      }
       if (icon !== undefined) updated = { ...updated, icon };
 
       onSaved?.(updated);
+      toast({ title: "Project settings saved", variant: "success" });
       onClose?.();
     } catch (e) {
       setError(e?.message || "Failed to save project.");
+      toast({ title: "Save failed", description: String(e?.message || e), variant: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -278,9 +311,14 @@ export default function ProjectSettingsModal({
       } else {
         setIcon(sel ?? null);
       }
+      toast({
+        title: sel ? "Project icon updated" : "Project icon removed",
+        variant: sel ? "success" : "info",
+      });
     } catch (e) {
       // eslint-disable-next-line no-alert
       alert(e?.message || "Failed to update icon.");
+      toast({ title: "Icon update failed", description: String(e?.message || e), variant: "error" });
     } finally {
       setIconPickerOpen(false);
     }
@@ -296,9 +334,14 @@ export default function ProjectSettingsModal({
       setPublicEnabled(false);
       setPublicToken("");
       onSaved?.({ ...(project || {}), visibility: "private", publicToken: "" });
+      try {
+        track("public_status_changed", { projectId: project._id, action: "disabled", source: "settings" });
+      } catch {}
+      toast({ title: "Public status disabled", variant: "warning" });
     } catch (e) {
       // eslint-disable-next-line no-alert
       alert(e?.message || "Failed to disable public status.");
+      toast({ title: "Disable failed", description: String(e?.message || e), variant: "error" });
     }
   };
 
@@ -321,10 +364,15 @@ export default function ProjectSettingsModal({
       if (token) {
         setPublicToken(token);
         onSaved?.({ ...(project || {}), publicToken: token });
+        try {
+          track("public_status_changed", { projectId: project._id, action: "regenerated", source: "settings" });
+        } catch {}
+        toast({ title: "Public link regenerated", description: "Old link is now invalid.", variant: "success" });
       }
     } catch (e) {
       // eslint-disable-next-line no-alert
       alert(e?.message || "Failed to regenerate link.");
+      toast({ title: "Regenerate failed", description: String(e?.message || e), variant: "error" });
     } finally {
       setRegenLoading(false);
       setConfirmRegenOpen(false);
@@ -349,7 +397,8 @@ export default function ProjectSettingsModal({
           className="fixed z-50 inset-x-4 top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(720px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-[var(--shadow)] accent-bar shine"
           role="dialog"
           aria-modal="true"
-          aria-label="Project settings"
+          aria-labelledby="project-settings-title"
+          aria-describedby="project-settings-desc"
         >
           <span className="accent-bar__left" aria-hidden="true" />
 
@@ -357,7 +406,9 @@ export default function ProjectSettingsModal({
           <div className="p-4 border-b border-border flex items-center justify-between">
             <div className="inline-flex items-center gap-2">
               <Settings className="w-5 h-5 text-indigo-600" />
-              <h3 className="text-sm font-semibold text-text">Project Settings</h3>
+              <h3 id="project-settings-title" className="text-sm font-semibold text-text">
+                Project Settings
+              </h3>
             </div>
             <button
               className="btn btn--ghost press-shrink"
@@ -367,6 +418,10 @@ export default function ProjectSettingsModal({
               <X className="w-5 h-5 text-muted" />
             </button>
           </div>
+
+          <p id="project-settings-desc" className="sr-only">
+            Change project name, description, visibility, and public status link. Press Escape to close.
+          </p>
 
           {/* Body */}
           <div className="p-4 space-y-5">
@@ -515,84 +570,86 @@ export default function ProjectSettingsModal({
               </button>
             </div>
 
-            {/* Public status controls */}
-            <div className="rounded-xl border border-border p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <label className="inline-flex items-center gap-2 text-sm font-semibold">
-                    <LinkIcon className="w-4 h-4 text-indigo-600" />
-                    Public status page
-                  </label>
-                  <p className="text-xs text-muted">
-                    Generate a tokenized, read-only status page for stakeholders.
-                  </p>
-                </div>
+            {/* Public status controls (flag gated) */}
+            {ENABLE_PUBLIC_STATUS && (
+              <div className="rounded-xl border border-border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <label className="inline-flex items-center gap-2 text-sm font-semibold">
+                      <LinkIcon className="w-4 h-4 text-indigo-600" />
+                      Public status page
+                    </label>
+                    <p className="text-xs text-muted">
+                      Generate a tokenized, read-only status page for stakeholders.
+                    </p>
+                  </div>
 
-                <Switch
-                  checked={publicEnabled}
-                  onChange={async (next) => {
-                    if (!next && publicToken) {
-                      setConfirmDisableOpen(true);
-                    } else {
-                      setPublicEnabled(next);
-                      if (next && !publicToken) {
-                        try {
-                          await ensurePublicToken();
-                        } catch {
-                          setPublicEnabled(false);
+                  <Switch
+                    checked={publicEnabled}
+                    onChange={async (next) => {
+                      if (!next && publicToken) {
+                        setConfirmDisableOpen(true);
+                      } else {
+                        setPublicEnabled(next);
+                        if (next && !publicToken) {
+                          try {
+                            await ensurePublicToken();
+                          } catch {
+                            setPublicEnabled(false);
+                          }
                         }
                       }
-                    }
-                  }}
-                  ariaLabel="Enable public status"
-                />
-              </div>
-
-              {publicEnabled ? (
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-stretch gap-2">
-                    <input
-                      readOnly
-                      value={publicUrl || "Will be created on Save…"}
-                      className="flex-1 text-sm rounded-lg border border-border bg-surface px-3 py-2"
-                      onFocus={(e) => e.currentTarget.select()}
-                      aria-label="Public status URL"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={copyLink}
-                      disabled={!publicUrl}
-                      className="btn btn--primary press-shrink disabled:opacity-50"
-                      title={publicUrl ? "Copy link" : "No link yet"}
-                    >
-                      {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      {linkCopied ? "Copied" : "Copy"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmRegenOpen(true)}
-                      disabled={!publicToken || regenLoading}
-                      className="btn btn--outline press-shrink disabled:opacity-50"
-                      title="Regenerate link (invalidates the old one)"
-                    >
-                      {regenLoading ? (
-                        <RefreshCcw className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <RefreshCcw className="w-4 h-4" />
-                      )}
-                      Regenerate
-                    </button>
-                  </div>
-
-                  <p className="text-[11px] text-muted">
-                    The link is tokenized; anyone with the URL can view the status page.
-                  </p>
+                    }}
+                    ariaLabel="Enable public status"
+                  />
                 </div>
-              ) : null}
-            </div>
+
+                {publicEnabled ? (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-stretch gap-2">
+                      <input
+                        readOnly
+                        value={publicUrl || "Will be created on Save…"}
+                        className="flex-1 text-sm rounded-lg border border-border bg-surface px-3 py-2"
+                        onFocus={(e) => e.currentTarget.select()}
+                        aria-label="Public status URL"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={copyLink}
+                        disabled={!publicUrl}
+                        className="btn btn--primary press-shrink disabled:opacity-50"
+                        title={publicUrl ? "Copy link" : "No link yet"}
+                      >
+                        {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {linkCopied ? "Copied" : "Copy"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRegenOpen(true)}
+                        disabled={!publicToken || regenLoading}
+                        className="btn btn--outline press-shrink disabled:opacity-50"
+                        title="Regenerate link (invalidates the old one)"
+                      >
+                        {regenLoading ? (
+                          <RefreshCcw className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <RefreshCcw className="w-4 h-4" />
+                        )}
+                        Regenerate
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-muted">
+                      The link is tokenized; anyone with the URL can view the status page.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
 
           {/* Footer */}

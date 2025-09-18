@@ -1,4 +1,3 @@
-// src/components/project/ProjectKpis.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import KpiDrilldownModal from "../modals/KpiDrilldownModal.jsx";
 

@@ -6,11 +6,19 @@ import CadenceCoachTip from "../sprint/CadenceCoachTip";
 import BreakModal from "../sprint/BreakModal";
 import TraceOutline from "../ui/TraceOutline.jsx";
 
+/** feature flag */
+const ENABLE_HABITS = (() => {
+  const v = import.meta?.env?.VITE_FEATURE_HABITS ?? "";
+  return /^(1|true|on|yes)$/i.test(String(v));
+})();
+
 export default function FocusSprint({
   nextTask = null,
   onFinish = () => {},
   initialDurationMin,
 }) {
+  if (!ENABLE_HABITS) return null;
+
   const {
     intent,
     durationMin,

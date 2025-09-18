@@ -1,7 +1,7 @@
-// src/components/project/InviteModal.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { sendInvite, listInvites, revokeInvite } from "../../api/invite";
+import { track } from "../../utils/telemetry";
 
 export default function InviteModal({ open, onClose, projectId }) {
   const [email, setEmail] = useState("");
@@ -13,6 +13,11 @@ export default function InviteModal({ open, onClose, projectId }) {
   const [loadingList, setLoadingList] = useState(false);
 
   const canSubmit = !!projectId && String(email || "").trim().length > 3;
+
+  // A11y: focus management
+  const containerRef = useRef(null);
+  const firstFieldRef = useRef(null);
+  const prevFocusRef = useRef(null);
 
   const loadInvites = async () => {
     if (!projectId) return;
@@ -29,6 +34,7 @@ export default function InviteModal({ open, onClose, projectId }) {
     }
   };
 
+  // Reset + load on open; handle focus + ESC; focus trap; restore focus on close
   useEffect(() => {
     if (!open) {
       setEmail("");
@@ -37,9 +43,59 @@ export default function InviteModal({ open, onClose, projectId }) {
       setErr("");
       setOk("");
       setPending([]);
+      // restore focus
+      setTimeout(() => prevFocusRef.current?.focus?.(), 0);
       return;
     }
+
+    prevFocusRef.current = document.activeElement;
     loadInvites();
+
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose?.();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+
+    // Defer initial focus
+    const tf = setTimeout(() => firstFieldRef.current?.focus(), 10);
+
+    // Focus trap
+    const el = containerRef.current;
+    const selectors =
+      'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+    const onTrap = (e) => {
+      if (e.key !== "Tab") return;
+      const nodes = Array.from(el.querySelectorAll(selectors)).filter(
+        (n) => !n.hasAttribute("disabled")
+      );
+      if (!nodes.length) return;
+
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+
+      if (e.shiftKey) {
+        if (active === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    el?.addEventListener("keydown", onTrap);
+
+    return () => {
+      clearTimeout(tf);
+      window.removeEventListener("keydown", onKey);
+      el?.removeEventListener("keydown", onTrap);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, projectId]);
 
@@ -58,6 +114,10 @@ export default function InviteModal({ open, onClose, projectId }) {
       await sendInvite(projectId, { email: cleaned, role });
       setOk("Invite sent.");
       setEmail("");
+
+      // 🔔 Telemetry
+      try { track("invite_sent", { projectId, count: 1 }); } catch {}
+
       await loadInvites();
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || "Failed to send invite.";
@@ -86,13 +146,15 @@ export default function InviteModal({ open, onClose, projectId }) {
         aria-hidden="true"
       />
       <div
+        ref={containerRef}
         className="fixed z-50 inset-x-4 top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(560px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
         role="dialog"
         aria-modal="true"
-        aria-label="Invite teammates"
+        aria-labelledby="invite-modal-title"
+        aria-describedby="invite-modal-desc"
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h3 className="text-sm font-semibold text-text">Invite teammates</h3>
+          <h3 id="invite-modal-title" className="text-sm font-semibold text-text">Invite teammates</h3>
           <button
             onClick={onClose}
             className="rounded-lg p-1.5 hover:bg-surface"
@@ -102,11 +164,16 @@ export default function InviteModal({ open, onClose, projectId }) {
           </button>
         </div>
 
+        <p id="invite-modal-desc" className="sr-only">
+          Invite teammates to this project by entering their email and selecting a role.
+        </p>
+
         <form onSubmit={onSubmit} className="p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
               <label className="block text-xs text-muted mb-1">Email</label>
               <input
+                ref={firstFieldRef}
                 type="email"
                 inputMode="email"
                 placeholder="teammate@company.com"
@@ -162,7 +229,7 @@ export default function InviteModal({ open, onClose, projectId }) {
 
         <div className="px-4 pb-4">
           <h4 className="text-xs font-semibold text-muted mb-2">Pending invites</h4>
-          <div className="rounded-xl border border-border divide-y divide-border">
+          <div className="rounded-xl border border-border divide-y divide-border" aria-live="polite">
             {loadingList ? (
               <div className="p-3 text-sm text-muted">Loading…</div>
             ) : pending?.length ? (

@@ -25,10 +25,7 @@ export default function TaskSheet({
 
   const [title, setTitle] = useState(initialTitle);
   const [status, setStatus] = useState(existingTask?.status || defaultStatus);
-
-  // ⚠️ align with backend field name: assigneeId
   const [assigneeId, setAssigneeId] = useState(existingTask?.assigneeId || "");
-
   const [dueDate, setDueDate] = useState(
     existingTask?.dueDate ? toDateInput(existingTask.dueDate) : ""
   );
@@ -43,16 +40,21 @@ export default function TaskSheet({
 
   const containerRef = useRef(null);
   const firstFieldRef = useRef(null);
+  const prevFocusRef = useRef(null);
 
-  // Stable key so the reset effect doesn't retrigger on array identity changes
   const initialLabelsKey = useMemo(
     () => (Array.isArray(initialLabels) ? initialLabels.join("|") : ""),
     [initialLabels]
   );
 
-  // Reset when opened or when switching mode/task
+  // Reset when opened or when switching mode/task; focus; restore focus
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setTimeout(() => prevFocusRef.current?.focus?.(), 0);
+      return;
+    }
+
+    prevFocusRef.current = document.activeElement;
 
     if (isEdit) {
       setTitle(existingTask?.title || "");
@@ -72,7 +74,6 @@ export default function TaskSheet({
 
     setError("");
     setTimeout(() => firstFieldRef.current?.focus(), 10);
-    // use the stable key instead of the raw array
   }, [open, isEdit, existingTask, initialTitle, defaultStatus, initialLabelsKey]);
 
   // Esc / Cmd+Enter
@@ -90,7 +91,8 @@ export default function TaskSheet({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Focus trap (Tab only)
   useEffect(() => {
@@ -215,7 +217,8 @@ export default function TaskSheet({
         className="fixed right-0 top-0 bottom-0 z-50 w-[min(520px,100%)] bg-white dark:bg-slate-900 border-l border-slate-200/70 dark:border-slate-800 shadow-2xl flex flex-col"
         role="dialog"
         aria-modal="true"
-        aria-label={isEdit ? "Edit task" : "Create task"}
+        aria-labelledby="task-sheet-title"
+        aria-describedby="task-sheet-desc"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/70 dark:border-slate-800">
@@ -225,7 +228,7 @@ export default function TaskSheet({
             ) : (
               <PlusCircle className="w-5 h-5 text-indigo-600" aria-hidden="true" />
             )}
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <h2 id="task-sheet-title" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               {isEdit ? "Edit Task" : "New Task"}
             </h2>
           </div>
@@ -237,6 +240,10 @@ export default function TaskSheet({
             <X className="w-5 h-5 text-slate-600" />
           </button>
         </div>
+
+        <p id="task-sheet-desc" className="sr-only">
+          {isEdit ? "Edit the selected task." : "Create a new task."} Press Escape to close. Use Tab to move between fields.
+        </p>
 
         {/* Body */}
         <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
@@ -285,7 +292,6 @@ export default function TaskSheet({
                 disabled={!canEdit || submitting}
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               >
-                {/* ✅ align with backend enum */}
                 <option>Not Started</option>
                 <option>In Progress</option>
                 <option>Completed</option>

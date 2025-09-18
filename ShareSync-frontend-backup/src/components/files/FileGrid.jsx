@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import FileCard from './FileCard';
 import { listFiles, deleteFile } from '../../api/files';
+import { track } from '../../utils/telemetry';
 
 /**
  * Props:
@@ -22,8 +23,28 @@ export default function FileGrid({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
 
+  // Track newly-added files coming in from parent (e.g., successful uploads)
+  const hasMountedRef = useRef(false);
+  const prevIdsRef = useRef(new Set(initialFiles.map((f) => String(f.id ?? f._id ?? ''))));
+
   // Keep in sync if parent pushes new files via realtime (ProjectHome updates `initialFiles`)
   useEffect(() => {
+    // diff for telemetry
+    const nextIds = new Set(initialFiles.map((f) => String(f.id ?? f._id ?? '')));
+    let addedCount = 0;
+    for (const id of nextIds) {
+      if (!prevIdsRef.current.has(id)) addedCount += 1;
+    }
+    prevIdsRef.current = nextIds;
+
+    // Only fire after initial mount to avoid counting the first load
+    if (hasMountedRef.current && addedCount > 0) {
+      try {
+        track('file_added', { projectId, count: addedCount });
+      } catch {}
+    }
+    hasMountedRef.current = true;
+
     setFiles((prev) => {
       const byId = new Map();
       [...initialFiles.map(normalizeFile), ...prev].forEach((f) =>
@@ -31,7 +52,7 @@ export default function FileGrid({
       );
       return Array.from(byId.values());
     });
-  }, [initialFiles]);
+  }, [initialFiles, projectId]);
 
   useEffect(() => {
     let ignore = false;
@@ -176,10 +197,11 @@ export default function FileGrid({
               {/* Pending ring */}
               {isPending && <span className="ss-pulse-ring" />}
 
-              {/* Card (your existing visual) */}
+              {/* Card */}
               <FileCard
                 file={f}
                 canEdit={canEdit}
+                canManage={canManage}
                 onDelete={canManage ? () => handleRemove(f.id) : undefined}
               />
             </div>

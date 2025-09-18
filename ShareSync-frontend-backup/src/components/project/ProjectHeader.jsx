@@ -3,13 +3,25 @@ import { Link } from "react-router-dom";
 import { Link2, RefreshCcw, Copy as CopyIcon, Check as CheckIcon } from "lucide-react";
 import { AuthContext } from "../../AuthContext";
 import { patchProjectIcon } from "../../api/projects";
-import { enablePublic, disablePublic, regeneratePublicToken, buildPublicStatusUrl } from "../../api/public";
+import {
+  enablePublic,
+  disablePublic,
+  regeneratePublicToken,
+  buildPublicStatusUrl,
+} from "../../api/public";
+import { track } from "../../utils/telemetry";
 import ProjectIconPicker from "./ProjectIconPicker";
 import AnimatedRing from "../ui/AnimatedRing";
 import GradientText from "../ui/GradientText";
 import StatusPill from "../projects/StatusPill.jsx"; // ✅ shared pill
 import useRecentFlag from "../../hooks/useRecentFlag";
 import useReducedMotion from "../../hooks/useReducedMotion";
+
+// --- Feature flag ---
+const ENABLE_PUBLIC_STATUS = (() => {
+  const v = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS ?? "";
+  return /^(1|true|on|yes)$/i.test(String(v));
+})();
 
 function getRoleForUser(project, userId) {
   if (!project || !userId) return "viewer";
@@ -59,7 +71,12 @@ function SVGIcon({ name, className = "w-6 h-6" }) {
   }
 }
 
-export default function ProjectHeader({ project, onAddTask, onTogglePublic, recentWindowMs = 10 * 60 * 1000 }) {
+export default function ProjectHeader({
+  project,
+  onAddTask,
+  onTogglePublic, // if provided AND flag is on → render toggle; else show static pill
+  recentWindowMs = 10 * 60 * 1000,
+}) {
   const { user } = useContext(AuthContext) || {};
   const role = useMemo(
     () => getRoleForUser(project, user?._id || user?.id),
@@ -94,7 +111,6 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
   async function handleIconSelect(sel) {
     try {
       const updated = await patchProjectIcon(project._id, sel); // sel or null (clear)
-      // BE returns { projectId, patch: { icon } }; fall back to sel to reflect immediately
       setIconOverride(updated?.icon ?? updated?.patch?.icon ?? sel ?? null);
     } catch (e) {
       // eslint-disable-next-line no-alert
@@ -104,25 +120,43 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
     }
   }
 
-  // Public actions
+  // Public actions — delegate to parent if provided (and feature enabled), else call API directly
   async function handleTogglePublic(nextChecked) {
     if (!isOwner || !project?._id) return;
+    if (!ENABLE_PUBLIC_STATUS) return;
+
     setBusyToggle(true);
     try {
-      if (nextChecked) {
-        const res = await enablePublic(project._id);
-        setPublicEnabled(!!res?.publicEnabled);
-        setPublicToken(res?.publicToken || null);
-        onTogglePublic?.(true, res); // notify parent if provided
+      if (typeof onTogglePublic === "function") {
+        // Let parent manage API + persistence; we optimistically flip local UI.
+        setPublicEnabled(nextChecked);
+        if (!nextChecked) setPublicToken(null);
+        await onTogglePublic(nextChecked);
       } else {
-        const res = await disablePublic(project._id);
-        setPublicEnabled(false);
-        setPublicToken(null);
-        onTogglePublic?.(false, res);
+        // Fallback: call API here
+        if (nextChecked) {
+          const res = await enablePublic(project._id);
+          setPublicEnabled(!!res?.publicEnabled);
+          setPublicToken(res?.publicToken || res?.token || null);
+          try {
+            track("public_status_changed", { projectId: project._id, action: "enabled", source: "header" });
+          } catch {}
+        } else {
+          await disablePublic(project._id);
+          setPublicEnabled(false);
+          setPublicToken(null);
+          try {
+            track("public_status_changed", { projectId: project._id, action: "disabled", source: "header" });
+          } catch {}
+        }
       }
     } catch (e) {
       // eslint-disable-next-line no-alert
       alert(e?.response?.data?.message || e?.message || "Failed to update public status.");
+      // revert optimistic flip if delegated
+      if (typeof onTogglePublic === "function") {
+        setPublicEnabled((v) => !v);
+      }
     } finally {
       setBusyToggle(false);
     }
@@ -130,12 +164,16 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
 
   async function handleRegenerate() {
     if (!isOwner || !project?._id) return;
+    if (!ENABLE_PUBLIC_STATUS) return;
     if (!publicEnabled) return;
     setBusyRegen(true);
     try {
       const res = await regeneratePublicToken(project._id);
       setPublicEnabled(!!res?.publicEnabled);
-      setPublicToken(res?.publicToken || null);
+      setPublicToken(res?.publicToken || res?.token || null);
+      try {
+        track("public_status_changed", { projectId: project._id, action: "regenerated", source: "header" });
+      } catch {}
     } catch (e) {
       // eslint-disable-next-line no-alert
       alert(e?.response?.data?.message || e?.message || "Failed to regenerate link.");
@@ -144,7 +182,11 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
     }
   }
 
-  const publicUrl = publicToken ? buildPublicStatusUrl(publicToken) : "";
+  const publicPath = publicToken ? buildPublicStatusUrl(publicToken) : "";
+  const publicHref =
+    typeof window !== "undefined" && publicPath
+      ? `${window.location.origin}${publicPath}`
+      : publicPath;
 
   // Recent activity → animate ring only when recent + not reduced motion
   const hasRecent = useRecentFlag(project?.lastActivityAt, recentWindowMs);
@@ -152,9 +194,9 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
   const ringAnimated = hasRecent && !prefersReduced;
 
   async function copyPublicUrl() {
-    if (!publicUrl) return;
+    if (!publicHref) return;
     try {
-      await navigator.clipboard.writeText(publicUrl);
+      await navigator.clipboard.writeText(publicHref);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {
@@ -238,8 +280,8 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
                   Role: {role[0].toUpperCase()}{role.slice(1)}
                 </span>
 
-                {/* Public/Private toggle (owners only). Viewers see a static badge */}
-                {isOwner ? (
+                {/* Public/Private indicator */}
+                {isOwner && ENABLE_PUBLIC_STATUS && typeof onTogglePublic === "function" ? (
                   <label className="inline-flex items-center gap-2 text-xs">
                     <span className={`px-2 py-0.5 rounded-full ${publicEnabled ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`}>
                       {publicEnabled ? "Public" : "Private"}
@@ -259,11 +301,11 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
                   </span>
                 )}
 
-                {/* When public, show copy + regenerate controls */}
-                {publicEnabled && (
+                {/* When public + feature enabled, show copy + regenerate controls */}
+                {ENABLE_PUBLIC_STATUS && publicEnabled && (
                   <div className="inline-flex items-center gap-1 text-xs">
                     <a
-                      href={publicUrl}
+                      href={publicHref}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -331,6 +373,7 @@ export default function ProjectHeader({ project, onAddTask, onTogglePublic, rece
           >
             Settings
           </button>
+    
         </div>
       </div>
 
