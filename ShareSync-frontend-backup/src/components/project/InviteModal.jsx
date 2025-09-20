@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { sendInvite, listInvites, revokeInvite } from "../../api/invite";
 import { track } from "../../utils/telemetry";
+import { toast } from "../ui/Toaster.jsx";
 
 export default function InviteModal({ open, onClose, projectId }) {
   const [email, setEmail] = useState("");
@@ -27,7 +28,6 @@ export default function InviteModal({ open, onClose, projectId }) {
       const rows = await listInvites(projectId);
       setPending(Array.isArray(rows) ? rows : []);
     } catch (e) {
-      // list is optional; surface softly
       console.debug("[InviteModal] listInvites error", e);
     } finally {
       setLoadingList(false);
@@ -115,13 +115,15 @@ export default function InviteModal({ open, onClose, projectId }) {
       setOk("Invite sent.");
       setEmail("");
 
-      // 🔔 Telemetry
-      try { track("invite_sent", { projectId, count: 1 }); } catch {}
+      // 🔔 Toast + Telemetry
+      toast({ title: "Invite sent", description: cleaned, variant: "success" });
+      try { track("invite_sent", { projectId, email: cleaned, role }); } catch {}
 
       await loadInvites();
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || "Failed to send invite.";
       setErr(String(msg));
+      toast({ title: "Invite failed", description: String(msg), variant: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -131,10 +133,12 @@ export default function InviteModal({ open, onClose, projectId }) {
     if (!projectId || !token) return;
     try {
       await revokeInvite(projectId, token);
+      toast({ title: "Invite revoked", variant: "success" });
       await loadInvites();
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || "Failed to revoke invite.";
       setErr(String(msg));
+      toast({ title: "Revoke failed", description: String(msg), variant: "error" });
     }
   };
 
@@ -234,7 +238,7 @@ export default function InviteModal({ open, onClose, projectId }) {
               <div className="p-3 text-sm text-muted">Loading…</div>
             ) : pending?.length ? (
               pending.map((i) => (
-                <div key={`${i.token}`} className="flex items-center justify-between px-3 py-2">
+                <div key={`${i.token || i._id || i.email}`} className="flex items-center justify-between px-3 py-2">
                   <div className="text-sm">
                     <span className="font-medium">{i.email}</span>{" "}
                     <span className="text-muted">· {i.role}</span>{" "}
@@ -243,7 +247,7 @@ export default function InviteModal({ open, onClose, projectId }) {
                   {i.status === "pending" && (
                     <button
                       className="text-xs rounded-md px-2 py-1 border border-border hover:bg-surface"
-                      onClick={() => onRevoke(i.token)}
+                      onClick={() => onRevoke(i.token || i._id)}
                     >
                       Revoke
                     </button>

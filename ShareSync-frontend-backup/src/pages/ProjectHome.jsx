@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useContext, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useContext, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
 import {
@@ -58,6 +58,9 @@ import { dedupeById } from "../utils/feed/dedupe";
 
 // 🔔 Telemetry
 import { track } from "../utils/telemetry";
+
+// ⛓️ Invites API (for initial pending list / refresh)
+import { listInvites } from "../api/invite";
 
 // ---- small helpers ----
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
@@ -162,6 +165,9 @@ export default function ProjectHome() {
 
   // Files (used by Files section)
   const [files, setFiles] = useState([]);
+
+  // Track whether we've fetched invites once (to avoid loops)
+  const invitesFetchedRef = useRef(false);
 
   useEffect(() => { mark("ss:projecthome:mounted"); }, []);
 
@@ -310,6 +316,34 @@ export default function ProjectHome() {
   const myRole = useMemo(() => getRoleForUser(project, meId), [project, meId]);
   const canEdit = myRole === "owner" || myRole === "member";
   const canManage = myRole === "owner";
+
+  // ▶️ Initial invites load (owner only) so MembersPanel can show pending badge
+  useEffect(() => {
+    if (!project?._id) return;
+    if (!canManage) return;
+    if (invitesFetchedRef.current) return;
+    if (Array.isArray(project?.invites)) { invitesFetchedRef.current = true; return; }
+
+    (async () => {
+      try {
+        const rows = await listInvites(project._id);
+        setProject((p) => ({ ...(p || {}), invites: rows || [] }));
+      } catch {
+        // soft-fail; not critical for page load
+      } finally {
+        invitesFetchedRef.current = true;
+      }
+    })();
+  }, [project?._id, canManage]);
+
+  // Convenient manual refresh (used after InviteModal closes)
+  const refreshInvites = useCallback(async () => {
+    if (!project?._id) return;
+    try {
+      const rows = await listInvites(project._id);
+      setProject((p) => ({ ...(p || {}), invites: rows || [] }));
+    } catch {}
+  }, [project?._id]);
 
   // Composer
   const handlePostUpdate = async (payload) => {
@@ -802,7 +836,8 @@ export default function ProjectHome() {
               </div>
             </div>
 
-            <MembersPanel members={project.members || []} />
+            {/* ✅ Pass invites down for pending badge/section */}
+            <MembersPanel members={project.members || []} invites={project.invites || []} />
           </div>
         </div>
       </div>
@@ -891,7 +926,11 @@ export default function ProjectHome() {
         projectId={id}
         canEdit={canEdit}
       />
-      <InviteModal open={showInvite} onClose={() => setShowInvite(false)} projectId={project?._id}/>
+      <InviteModal
+        open={showInvite}
+        onClose={() => { setShowInvite(false); refreshInvites(); }}
+        projectId={project?._id}
+      />
       <ProjectSettingsModal
         open={showSettings}
         onClose={() => setShowSettings(false)}

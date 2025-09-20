@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import FileCard from './FileCard';
 import { listFiles, deleteFile } from '../../api/files';
 import { track } from '../../utils/telemetry';
+import { toast } from '../ui/Toaster.jsx';
 
 /**
  * Props:
@@ -23,13 +24,12 @@ export default function FileGrid({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
 
-  // Track newly-added files coming in from parent (e.g., successful uploads)
+  // Track newly-added files coming in from parent (e.g., successful uploads via socket)
   const hasMountedRef = useRef(false);
   const prevIdsRef = useRef(new Set(initialFiles.map((f) => String(f.id ?? f._id ?? ''))));
 
   // Keep in sync if parent pushes new files via realtime (ProjectHome updates `initialFiles`)
   useEffect(() => {
-    // diff for telemetry
     const nextIds = new Set(initialFiles.map((f) => String(f.id ?? f._id ?? '')));
     let addedCount = 0;
     for (const id of nextIds) {
@@ -37,10 +37,13 @@ export default function FileGrid({
     }
     prevIdsRef.current = nextIds;
 
-    // Only fire after initial mount to avoid counting the first load
     if (hasMountedRef.current && addedCount > 0) {
+      try { track('file_added', { projectId, count: addedCount }); } catch {}
       try {
-        track('file_added', { projectId, count: addedCount });
+        toast({
+          title: `${addedCount} file${addedCount > 1 ? 's' : ''} added`,
+          variant: 'success',
+        });
       } catch {}
     }
     hasMountedRef.current = true;
@@ -88,7 +91,6 @@ export default function FileGrid({
       setCursor(nextCursor);
       setHasMore(Boolean(nextCursor));
     } catch (e) {
-      // non-fatal; keep existing list
       console.warn('files: loadMore failed', e);
     } finally {
       setLoadingMore(false);
@@ -98,13 +100,18 @@ export default function FileGrid({
   const handleRemove = async (id) => {
     if (!canManage) return;
     const prev = files;
+    const toDelete = files.find((x) => String(x.id) === String(id));
     setFiles((f) => f.filter((x) => String(x.id) !== String(id)));
+
     try {
       await deleteFile(projectId, id);
+      try { track('file_deleted', { projectId, fileId: id }); } catch {}
+      try { toast({ title: 'File deleted', variant: 'success' }); } catch {}
     } catch (e) {
       // rollback on failure
       setFiles(prev);
-      alert(e?.response?.data?.message || e?.message || 'Failed to delete file.');
+      const msg = e?.response?.data?.message || e?.message || 'Failed to delete file.';
+      try { toast({ title: 'Delete failed', description: msg, variant: 'error' }); } catch {}
     }
   };
 
@@ -203,6 +210,10 @@ export default function FileGrid({
                 canEdit={canEdit}
                 canManage={canManage}
                 onDelete={canManage ? () => handleRemove(f.id) : undefined}
+                onDownload={(file) => {
+                  const href = file?.url || '#';
+                  try { window.open(href, '_blank', 'noopener,noreferrer'); } catch {}
+                }}
               />
             </div>
           );
@@ -235,18 +246,17 @@ function normalizeFile(f) {
     thumbUrl: f.thumbUrl || f.thumbKey || '',
     name: f.name || '',
     size: Number(f.size || 0),
-    mime: f.mime || 'application/octet-stream',
-    kind: f.kind || guessKind(f.mime || ''),
+    mime: f.mime || f.type || 'application/octet-stream',
+    kind: f.kind || guessKind(f.mime || f.type || ''),
     status: f.status || 'pending',
     moderationStatus: f.moderationStatus || f.status || 'pending',
     createdAt: f.createdAt || new Date().toISOString(),
     projectId: f.projectId,
-    uploaderId: f.uploaderId, // ← backend field name
+    uploaderId: f.uploaderId,
   };
 }
 
 function normalizeList(res) {
-  // Support both shapes: array or { items, nextCursor }
   if (Array.isArray(res)) {
     return { items: res.map(normalizeFile), nextCursor: null };
   }

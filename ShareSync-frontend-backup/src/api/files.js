@@ -13,7 +13,6 @@ export async function listFiles(projectId, { cursor = null, limit = 20 } = {}) {
       limit: Number(limit) || undefined,
     },
   });
-  // service returns { items, nextCursor }
   const items = Array.isArray(data?.items) ? data.items : [];
   return { items, nextCursor: data?.nextCursor || null };
 }
@@ -22,14 +21,12 @@ export async function listFiles(projectId, { cursor = null, limit = 20 } = {}) {
  * POST /projects/:projectId/files
  * Link one or many already-uploaded files (use server’s shape).
  *
- * Each file should include, at minimum:
- *  - storageKey (required)
- *  - url? / thumbKey? / thumbUrl?
- *  - name, size, mime, kind?
- *  - status? ('pending'|'approved'|'blocked')
- *  - moderation? ({ reason?, tags? })
+ * Accepts either a single object or an array. Flexible keys:
+ *  - key|storageKey (required)
+ *  - url, thumbUrl|thumbKey
+ *  - name, size, type|mime, kind
+ *  - status, moderation
  *
- * Accepts either a single object or an array.
  * Returns created doc(s).
  */
 export async function createFiles(projectId, files) {
@@ -37,16 +34,16 @@ export async function createFiles(projectId, files) {
   if (!files) throw new Error('files payload is required');
 
   const norm = (f) => ({
-    storageKey: f.storageKey,            // required
+    storageKey: f.storageKey || f.key,   // required
     url: f.url,
     thumbKey: f.thumbKey,
     thumbUrl: f.thumbUrl,
     name: f.name,
     size: f.size,
-    mime: f.mime,
-    kind: f.kind,                        // 'image' | 'video' | 'doc' | 'audio' | 'other'
-    status: f.status,                    // optional
-    moderation: f.moderation,            // optional
+    mime: f.mime || f.type,
+    kind: f.kind,                        // 'image' | 'video' | 'doc' | 'audio' | 'archive' | 'other'
+    status: f.status,
+    moderation: f.moderation,
   });
 
   const payload = Array.isArray(files)
@@ -59,7 +56,6 @@ export async function createFiles(projectId, files) {
 
 /**
  * DELETE /projects/:projectId/files/:fileId
- * Owner-only by default (guarded by @CanManageProject)
  */
 export async function deleteFile(projectId, fileId) {
   if (!projectId) throw new Error('projectId is required');

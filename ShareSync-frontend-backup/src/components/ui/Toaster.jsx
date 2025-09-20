@@ -49,7 +49,6 @@ export default function Toaster() {
               background: tone.bg,
               color: tone.fg,
               borderColor: "var(--border)",
-              // let .marching pick up the right hue
               ["--march-color"]: marching ? "var(--success)" : undefined,
               ["--march-speed"]: "2600ms",
               ["--march-stroke"]: "2px",
