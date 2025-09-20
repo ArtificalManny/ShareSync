@@ -1,0 +1,107 @@
+/* Horizontal rail styles */
+.stories-wrap {}
+.stories-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 10px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 6px 2px;
+  scrollbar-width: thin;
+}
+.stories-rail::-webkit-scrollbar {
+  height: 8px;
+}
+.stories-rail::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, rgb(var(--accent)) 22%, transparent);
+  border-radius: 999px;
+}
+
+/* Chip layout */
+.story-chip {
+  width: 92px;
+  padding: 8px 8px 10px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  outline: none;
+}
+
+.story-chip:focus-visible {
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.55);
+}
+
+/* Avatar circle */
+.story-chip__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background:
+    radial-gradient(transparent 55%, rgba(0,0,0,0.06) 56%),
+    color-mix(in srgb, rgb(var(--accent)) 18%, transparent);
+  color: var(--text, #0f172a);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-variation-settings: "wght" 600;
+}
+
+/* Label */
+.story-chip__label {
+  max-width: 76px;
+  font-size: 11px;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Unread animated ring */
+.story-chip--unread .story-chip__avatar::after {
+  content: "";
+  position: absolute;
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background:
+    conic-gradient(
+      from 0deg,
+      rgba(99,102,241,0.0),
+      rgba(99,102,241,0.55) 45%,
+      rgba(99,102,241,0.0) 60%,
+      rgba(99,102,241,0.0) 100%
+    );
+  -webkit-mask:
+    radial-gradient(closest-side, transparent 82%, black 83%);
+          mask:
+    radial-gradient(closest-side, transparent 82%, black 83%);
+  animation: ss-story-spin 1600ms linear infinite;
+}
+
+/* Hover subtle lift */
+.story-chip:hover .story-chip__avatar {
+  transform: translateY(-1px);
+}
+
+/* Animations */
+@keyframes ss-story-spin {
+  from { transform: translateX(-50%) rotate(0deg); }
+  to   { transform: translateX(-50%) rotate(360deg); }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .story-chip--unread .story-chip__avatar::after {
+    animation: none;
+    background: rgba(99,102,241,0.35);
+  }
+}

@@ -62,6 +62,9 @@ import { track } from "../utils/telemetry";
 // ⛓️ Invites API (for initial pending list / refresh)
 import { listInvites } from "../api/invite";
 
+// 🔔 Stories (unread ring) helpers
+import { setLastSeen } from "../utils/stories";
+
 // ---- small helpers ----
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
 const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
@@ -169,6 +172,9 @@ export default function ProjectHome() {
   // Track whether we've fetched invites once (to avoid loops)
   const invitesFetchedRef = useRef(false);
 
+  // Activity section ref (for last-seen on view)
+  const activityRef = useRef(null);
+
   useEffect(() => { mark("ss:projecthome:mounted"); }, []);
 
   useEffect(() => {
@@ -247,6 +253,53 @@ export default function ProjectHome() {
     }
   }, [feedLoading, feed.items.length]);
 
+  // ✅ Mark project as seen on mount / when visible / when Activity is viewed
+  useEffect(() => {
+    if (!project?._id) return;
+
+    // mark now if tab is visible
+    if (typeof document !== "undefined" && document.visibilityState === "visible") {
+      try { setLastSeen(project._id, Date.now()); } catch {}
+    }
+
+    // when tab becomes visible or window gains focus
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        try { setLastSeen(project._id, Date.now()); } catch {}
+      }
+    };
+    const onFocus = () => {
+      try { setLastSeen(project._id, Date.now()); } catch {}
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [project?._id]);
+
+  // When Activity section scrolls into view, mark as seen
+  useEffect(() => {
+    if (!project?._id) return;
+    const el = activityRef.current;
+    if (!el || typeof window === "undefined" || !("IntersectionObserver" in window)) return;
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        if (e?.isIntersecting && document.visibilityState === "visible") {
+          try { setLastSeen(project._id, Date.now()); } catch {}
+        }
+      },
+      { threshold: 0.25 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [project?._id]);
+
   // 🔴 Realtime via shared hook (auth + room join)
   useSocket(id ? `project:${id}` : null, {
     onEvents: {
@@ -254,6 +307,10 @@ export default function ProjectHome() {
         if (String(evt?.projectId) !== String(id)) return;
         const norm = fromSocketEvent("activity:new", evt);
         setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
+        // Optional: only update lastSeen if the page is currently visible
+        if (typeof document !== "undefined" && document.visibilityState === "visible") {
+          try { setLastSeen(id, Date.now()); } catch {}
+        }
       },
       "project:statsUpdated": (payload) => {
         if (String(payload?.projectId) === String(id)) {
@@ -725,6 +782,7 @@ export default function ProjectHome() {
 
         {/* Unified Activity Feed (upgraded normalizer + realtime merge) */}
         <section
+          ref={activityRef}
           className="mt-6 card rounded-2xl border border-border bg-surface p-4"
           role="region"
           aria-label="Activity"
@@ -851,7 +909,7 @@ export default function ProjectHome() {
             aria-hidden="true"
           />
           <div
-            className="fixed z-50 inset-x-4 top-24 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(560px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
+            className="fixed z-50 inset-x-4 top-24 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w=[min(560px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
             role="dialog"
             aria-modal="true"
             aria-label="Public status link"

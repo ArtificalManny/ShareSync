@@ -1,5 +1,6 @@
 // /src/pages/Home.jsx
 import React, { useState, useEffect, useContext, Suspense, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { getProjectsQuick } from '../api/projects';
 import { AuthContext } from '../AuthContext';
@@ -15,6 +16,9 @@ import InviteModal from '../components/invite/InviteModal';
 import FocusSprint from '../components/home/FocusSprint.jsx';
 import CadenceMeter from '../components/habits/CadenceMeter.jsx';
 import SprintMomentum from '../components/habits/SprintMomentum.jsx';
+
+import ProjectStoriesBar from '../components/projects/ProjectStoriesBar.jsx';
+import { buildUnreadMap, setLastSeen } from '../utils/stories';
 
 import {
   KPI_STRIP_ENABLED,
@@ -420,9 +424,20 @@ export default function Home() {
   const { user: authUser } = useContext(AuthContext) || {};
   const [user, setUser] = useState(null);
 
+  const navigate = useNavigate();
+
   // Projects rail
   const [quickProjects, setQuickProjects] = useState([]);
   const [quickLoading, setQuickLoading] = useState(false);
+
+  // Derived for Stories: ensure `name` exists (fallback to `title`)
+  const storiesProjects = useMemo(
+    () => (Array.isArray(quickProjects) ? quickProjects.map(p => ({ ...p, name: p?.name || p?.title })) : []),
+    [quickProjects]
+  );
+
+  // Unread map for Stories
+  const unreadMap = useMemo(() => buildUnreadMap(storiesProjects), [storiesProjects]);
 
   // Live KPI controls/state
   const [projects, setProjects] = useState([]);
@@ -592,6 +607,14 @@ export default function Home() {
     return Math.max(0, Math.min(100, (elapsed / total) * 100));
   })();
 
+  // Stories open handler: mark seen, navigate
+  const openStory = (p) => {
+    const pid = p?._id || p?.id;
+    if (!pid) return;
+    try { setLastSeen(pid, Date.now()); } catch {}
+    navigate(`/projects/${pid}`);
+  };
+
   return (
     <div className={`home-page relative ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto space-y-7 ${celebrate ? 'win-glow' : ''}`}>
       <PageStyles />
@@ -615,6 +638,17 @@ export default function Home() {
         xp={user?.totalXP || 0}
         onInvite={() => setInviteOpen(true)}
       />
+
+      {/* NEW: Project Stories rail (above KPI strip) */}
+      {storiesProjects.length > 0 && (
+        <div className="card rounded-2xl border border-border bg-surface p-4 relative focus-ring">
+          <ProjectStoriesBar
+            projects={storiesProjects}
+            unread={unreadMap}
+            onOpen={openStory}
+          />
+        </div>
+      )}
 
       {/* Top spine: KPI strip + Smart Search (row aura unified) */}
       <div className="row-accent row-accent-violet grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid">
