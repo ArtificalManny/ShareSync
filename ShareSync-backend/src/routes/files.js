@@ -26,39 +26,38 @@ app.use(express.json());
 // Expose io so routes/services can emit
 app.set('io', io);
 
-// Single room naming scheme
+// Small helper to keep a single room naming scheme
 const projectRoom = (id) => `project:${String(id)}`;
 
 // ✅ Route Imports
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const activityRoutes = require('./routes/activity');
-const fileRoutes = require('./routes/files'); // ← NEW
 
 // ✅ Route Registration
 app.use('/api/auth', authRoutes);
-
-// Provide room helper to *all* /api/projects subroutes
-const attachRoom = (req, _res, next) => { req.projectRoom = projectRoom; next(); };
-
-app.use('/api/projects', attachRoom, projectRoutes);
-app.use('/api/projects', attachRoom, fileRoutes);   // ← NEW (files endpoints live under /api/projects)
-
-// Activity lives outside projects
+app.use('/api/projects', (req, res, next) => {
+  // make room helper available to downstream handlers if needed
+  req.projectRoom = projectRoom;
+  next();
+}, projectRoutes);
 app.use('/api/activity', activityRoutes);
 
-// Convenience emitters (optional)
+// Convenience emitter attached to app (use in controllers/services)
+// Usage: req.app.emitProjectMembersUpdated(projectId, members, invites)
 app.emitProjectMembersUpdated = (projectId, members, invites) => {
-  io.to(projectRoom(projectId)).emit('project:membersUpdated', { projectId, members, invites });
-};
-app.emitProjectFilesAdded = (projectId, files) => {
-  io.to(projectRoom(projectId)).emit('project:filesAdded', { projectId, files });
+  io.to(projectRoom(projectId)).emit('project:membersUpdated', {
+    projectId,
+    members,
+    invites,
+  });
 };
 
 // ✅ Socket.IO Events
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
+  // Join a project room (new) — we still accept legacy payloads
   socket.on('join_project', (projectId) => {
     if (!projectId) return;
     const room = projectRoom(projectId);
@@ -66,6 +65,7 @@ io.on('connection', (socket) => {
     console.log(`User ${socket.id} joined ${room}`);
   });
 
+  // Optional explicit leave
   socket.on('leave_project', (projectId) => {
     if (!projectId) return;
     const room = projectRoom(projectId);
@@ -73,6 +73,7 @@ io.on('connection', (socket) => {
     console.log(`User ${socket.id} left ${room}`);
   });
 
+  // Example broadcast patterns (now target the normalized room)
   socket.on('message', (data) => {
     if (!data?.projectId) return;
     io.to(projectRoom(data.projectId)).emit('message', { ...data, timestamp: new Date() });
