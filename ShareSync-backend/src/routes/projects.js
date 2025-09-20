@@ -1,4 +1,3 @@
-// /src/api/projects.js
 import client from './client'; // axios instance (base /api) + auth
 import { getAccessToken } from '../utils/tokenUtils';
 

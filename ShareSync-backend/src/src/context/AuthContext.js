@@ -1,4 +1,3 @@
-// src/AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import client from '../api/client'; // axios instance
 
@@ -9,6 +8,8 @@ const AuthContext = createContext({
   login: async () => {},
   logout: () => {},
   updateUser: () => {},
+  refreshUser: async () => {},
+  setUser: () => {},
 });
 
 export function AuthProvider({ children }) {
@@ -17,7 +18,9 @@ export function AuthProvider({ children }) {
   // Load user from localStorage on mount
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) setUser(JSON.parse(raw));
+    if (raw) {
+      try { setUser(JSON.parse(raw)); } catch {}
+    }
   }, []);
 
   // Persist to localStorage whenever user changes
@@ -25,6 +28,16 @@ export function AuthProvider({ children }) {
     if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     else localStorage.removeItem(STORAGE_KEY);
   }, [user]);
+
+  // Listen for global "user:updated" events (e.g., from sockets or Profile page)
+  useEffect(() => {
+    const handler = (e) => {
+      const patch = e?.detail || {};
+      setUser((u) => (u ? { ...u, ...patch } : u));
+    };
+    window.addEventListener('user:updated', handler);
+    return () => window.removeEventListener('user:updated', handler);
+  }, []);
 
   // Call backend login and update tokens + lastLogin
   const login = async (email, password) => {
@@ -52,11 +65,28 @@ export function AuthProvider({ children }) {
     setUser((u) => ({ ...u, ...updates }));
   };
 
+  /** Fetch latest user from server and store */
+  const refreshUser = async () => {
+    const res = await client.get('/api/users/me');
+    setUser(res.data);
+    return res.data;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        updateUser,
+        refreshUser,
+        setUser, // exposed in case callers want to replace user atomically
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
 export const useAuth = () => useContext(AuthContext);
+export default AuthContext;

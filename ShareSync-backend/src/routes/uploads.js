@@ -1,30 +1,15 @@
-// backend/src/routes/uploads.js
+// src/routes/uploads.js
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
-const storage = multer.diskStorage({
-    destination: './uploads/',
-    filename: (req, file, cb) => {
-        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-    }
-});
-const upload = multer({ storage: storage }).single('file');
+let requireAuth;
+try { requireAuth = require('../middleware/auth'); } catch { requireAuth = require('../auth'); }
 
-if (!fs.existsSync('./uploads')) {
-    fs.mkdirSync('./uploads');
-}
+const { uploadAvatar } = require('../middleware/upload');
+const { uploadMyAvatar } = require('../controllers/usersController');
 
-router.post('/', (req, res) => {
-    upload(req, res, (err) => {
-        if (err) {
-            res.status(500).json({ error: 'File upload failed' });
-            return;
-        }
-        res.json(`http://localhost:3000/uploads/${req.file.filename}`);
-    });
-});
+// Legacy alias to keep older FE endpoints working:
+// POST /api/uploads/avatar  (field name: "avatar")
+router.post('/avatar', requireAuth, uploadAvatar.single('avatar'), uploadMyAvatar);
 
 module.exports = router;
