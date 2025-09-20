@@ -53,7 +53,7 @@ function ensureProjectEditor(req, res, next) {
     p.members.some((m) => String(m.userId) === String(userId) && (m.role === 'member' || m.role === 'owner'));
 
   if (!(isOwner || isMember)) {
-    return res.status(403).json({ message: 'Only editors (owner or member) can modify project files' });
+    return res.status(403).json({ message: 'Only editors (owner or member) can modify project content' });
   }
   next();
 }

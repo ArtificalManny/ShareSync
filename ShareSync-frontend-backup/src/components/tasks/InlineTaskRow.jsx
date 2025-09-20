@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, X, Loader2, CalendarDays, Pencil } from "lucide-react";
 import { patchTask as apiPatchTask } from "../../api/tasks";
+import { toast } from "../ui/Toaster";
+import { track } from "../../utils/telemetry";
 
 /**
  * InlineTaskRow
@@ -11,9 +13,14 @@ import { patchTask as apiPatchTask } from "../../api/tasks";
  * - canEdit:        boolean (default: true)
  * - onPatched?:     (updatedTask) => void
  * - onError?:       (errMessage) => void
- *
- * Backend status enum: 'Not Started' | 'In Progress' | 'Completed'
  */
+
+const STATUS_OPTIONS = [
+  { value: "todo",        label: "Not Started" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "done",        label: "Completed"   },
+];
+
 export default function InlineTaskRow({
   task,
   projectId,
@@ -24,7 +31,7 @@ export default function InlineTaskRow({
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState(task?.title || "");
-  const [status, setStatus] = useState(task?.status || "Not Started");
+  const [status, setStatus] = useState(task?.status || "todo");
   const [due, setDue] = useState(task?.dueDate ? toDateInput(task.dueDate) : "");
   const [error, setError] = useState("");
 
@@ -33,7 +40,7 @@ export default function InlineTaskRow({
   // keep local state in sync if parent task changes
   useEffect(() => {
     setTitle(task?.title || "");
-    setStatus(task?.status || "Not Started");
+    setStatus(task?.status || "todo");
     setDue(task?.dueDate ? toDateInput(task.dueDate) : "");
     setError("");
   }, [task?._id, task?.title, task?.status, task?.dueDate]);
@@ -78,12 +85,15 @@ export default function InlineTaskRow({
 
     try {
       const updated = await apiPatchTask(projectId, task._id || task.id, toPayload());
+      toast({ title: "Task updated", variant: "success" });
+      try { track("task_updated", { projectId, taskId: updated?.id || task._id || task.id }); } catch {}
       onPatched?.(updated);
       setEditing(false);
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || "Failed to save task.";
       setError(msg);
       onError?.(msg);
+      toast({ title: msg, variant: "error" });
     } finally {
       setSaving(false);
     }
@@ -92,7 +102,7 @@ export default function InlineTaskRow({
   function cancel() {
     // revert
     setTitle(task?.title || "");
-    setStatus(task?.status || "Not Started");
+    setStatus(task?.status || "todo");
     setDue(task?.dueDate ? toDateInput(task.dueDate) : "");
     setError("");
     setEditing(false);
@@ -132,9 +142,9 @@ export default function InlineTaskRow({
         className="shrink-0 rounded-md border border-border bg-transparent px-2 py-1 text-xs"
         title="Change status"
       >
-        <option>Not Started</option>
-        <option>In Progress</option>
-        <option>Completed</option>
+        {STATUS_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
       </select>
 
       {/* Title (inline editable) */}

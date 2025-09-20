@@ -1,11 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { X, PlusCircle, Save } from "lucide-react";
 import { createTask as apiCreateTask, patchTask as apiPatchTask } from "../../api/tasks";
+import { toast } from "../ui/Toaster";
+import { track } from "../../utils/telemetry";
 
 /**
  * TaskSheet
  * Right-side sheet for quick task creation and basic edit.
  */
+
+// Backend status values with friendly labels
+const STATUS_OPTIONS = [
+  { value: "todo",        label: "Not Started" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "done",        label: "Completed"   },
+];
+
 export default function TaskSheet({
   open,
   onClose,
@@ -13,9 +23,9 @@ export default function TaskSheet({
   canEdit = true,
   onCreate,
   onUpdate,
-  defaultStatus = "Not Started",
+  defaultStatus = "todo",   // align with backend
   initialTitle = "",
-  initialLabels,            // no default [] here (prevents new array every render)
+  initialLabels,
   afterCreate,
   afterUpdate,
   existingTask = null,
@@ -141,7 +151,7 @@ export default function TaskSheet({
   const buildPayload = () => ({
     title: title.trim(),
     status,
-    assigneeId: assigneeId.trim() || undefined, // ✅ correct field name
+    assigneeId: assigneeId.trim() || undefined,
     dueDate: dueDate || undefined,
     labels: parsedLabels,
     notes: notes.trim() || undefined,
@@ -169,7 +179,10 @@ export default function TaskSheet({
           updated = (await onUpdate(taskId, payload)) ?? null;
         } else {
           updated = await apiPatchTask(projectId, taskId, payload);
+          // Telemetry only when we call the API directly (avoid double from parent)
+          try { track("task_updated", { projectId, taskId: updated?.id || taskId }); } catch {}
         }
+        toast({ title: "Task updated", variant: "success" });
         afterUpdate?.(updated ?? { _id: taskId, ...payload });
       } else {
         let created = null;
@@ -177,13 +190,17 @@ export default function TaskSheet({
           created = (await onCreate(payload)) ?? null;
         } else {
           created = await apiCreateTask(projectId, payload);
+          try { track("task_created", { projectId, taskId: created?.id || created?._id }); } catch {}
         }
+        toast({ title: "Task created", variant: "success" });
         afterCreate?.(created ?? payload);
       }
 
       onClose?.();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || "Failed to save task.");
+      const msg = e?.response?.data?.message || e?.message || "Failed to save task.";
+      setError(msg);
+      toast({ title: msg, variant: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -198,6 +215,11 @@ export default function TaskSheet({
     projectId,
     afterCreate,
     afterUpdate,
+    status,
+    assigneeId,
+    dueDate,
+    labels,
+    notes,
   ]);
 
   if (!open) return null;
@@ -292,9 +314,9 @@ export default function TaskSheet({
                 disabled={!canEdit || submitting}
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               >
-                <option>Not Started</option>
-                <option>In Progress</option>
-                <option>Completed</option>
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
 
