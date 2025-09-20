@@ -1,17 +1,13 @@
-// /src/components/Navbar.jsx
-import React, { useRef, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Home, Folder, Settings, Sun, Moon, LogOut } from 'lucide-react';
-import axios from 'axios';
-import { getAccessToken } from '../utils/tokenUtils';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Sun, Moon, LogOut, PanelLeftClose } from 'lucide-react';
 import { formatProfilePicture } from '../utils/imageUtils';
 
 const DEFAULT_PIC = '/default-profile.png';
+const LS_KEY = 'ss.sidebar.collapsed';
 
-export default function Navbar({ user, setUser, isDarkMode, toggleDarkMode, onLogout }) {
+export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
-  const [uploading, setUploading] = useState(false);
 
   const handleLogout = () => {
     if (typeof onLogout === 'function') return onLogout();
@@ -20,129 +16,65 @@ export default function Navbar({ user, setUser, isDarkMode, toggleDarkMode, onLo
     navigate('/login');
   };
 
-  const handleChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const token = getAccessToken();
-    try {
-      setUploading(true);
-      const fd = new FormData();
-      fd.append('profilePicture', file);
-
-      const { data } = await axios.post(
-        'http://localhost:3000/api/profile/upload-profile-picture',
-        fd,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      localStorage.setItem('user', JSON.stringify(data.user));
-      setUser?.(data.user);
-    } catch (err) {
-      alert('Upload failed');
-    } finally {
-      setUploading(false);
-    }
+  const toggleSidebar = () => {
+    const collapsed = document.body.classList.contains('sidebar-collapsed');
+    const next = !collapsed;
+    document.body.classList.toggle('sidebar-collapsed', next);
+    localStorage.setItem(LS_KEY, next ? '1' : '0');
+    try { window.dispatchEvent(new CustomEvent('sidebar:toggle', { detail: { collapsed: next } })); } catch {}
   };
 
-  const itemClass = ({ isActive }) =>
-    `group flex flex-col items-center rounded-xl p-2 outline-none
-     ${isActive ? 'bg-slate-200/60 dark:bg-slate-800/40' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`;
-
   return (
-    <nav className="fixed inset-y-0 left-0 w-16 md:w-20 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col justify-between py-4 z-50 group">
-      {/* PROFILE (avatar -> /me, camera button uploads) */}
-      <div className="flex flex-col items-center space-y-1">
-        <Link to="/me" className="relative group/avatar" aria-label="Open profile">
-          <img
-            src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC}
-            alt={user?.firstName || 'User'}
-            className="avatar"
-          />
-
-          {/* Upload indicator */}
-          {uploading && (
-            <span className="absolute inset-0 grid place-items-center text-[10px] font-semibold bg-white/75 rounded-full">
-              …
-            </span>
-          )}
-
-          {/* Small camera button in corner */}
+    <header className="with-sidebar sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur">
+      <div className="px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between">
+        {/* Left: brand (click → home) and an optional sidebar toggle */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              fileInputRef.current?.click();
-            }}
-            className="absolute bottom-0 right-0 grid place-items-center h-6 w-6 rounded-full bg-white/90 border border-slate-300 text-[11px]"
-            title="Change photo"
-            aria-label="Change photo"
+            onClick={toggleSidebar}
+            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            title="Toggle sidebar ([)"
+            aria-label="Toggle sidebar"
           >
-            📷
+            <PanelLeftClose className="w-4 h-4" />
           </button>
-        </Link>
+          <Link to="/home" className="font-semibold text-sm hover:opacity-90">
+            ShareSync
+          </Link>
+        </div>
 
-        {/* Hidden file input */}
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          onChange={handleChange}
-          className="hidden"
-        />
+        {/* Right: theme, profile, logout */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleDarkMode}
+            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDarkMode ? <Sun className="w-4 h-4 text-yellow-500" /> : <Moon className="w-4 h-4" />}
+          </button>
 
-        <span className="text-xs font-medium text-gray-800 dark:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity">
-          {user?.firstName || 'User'}
-        </span>
+          <Link to="/profile" className="inline-flex items-center gap-2 group">
+            <img
+              src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC}
+              alt={user?.firstName || 'User'}
+              className="h-7 w-7 rounded-full border border-border object-cover"
+            />
+            <span className="text-xs text-muted hidden sm:inline group-hover:opacity-80">
+              {user?.firstName || 'Profile'}
+            </span>
+          </Link>
+
+          <button
+            onClick={handleLogout}
+            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            aria-label="Log out"
+            title="Log out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
       </div>
-
-      {/* NAV LINKS (Profile button removed) */}
-      <div className="flex flex-col items-center space-y-3">
-        <NavLink to="/home" className={itemClass} aria-label="Home">
-          <Home className="w-6 h-6 text-gray-800 dark:text-gray-200" />
-          <span className="mt-1 text-xxs text-gray-600 dark:text-gray-400 opacity-0 group-hover:opacity-100">
-            Home
-          </span>
-        </NavLink>
-
-        <NavLink to="/projects" className={itemClass} aria-label="Projects">
-          <Folder className="w-6 h-6 text-gray-800 dark:text-gray-200" />
-          <span className="mt-1 text-xxs opacity-0 group-hover:opacity-100">
-            Projects
-          </span>
-        </NavLink>
-
-        <NavLink to="/settings" className={itemClass} aria-label="Settings">
-          <Settings className="w-6 h-6 text-gray-800 dark:text-gray-200" />
-          <span className="mt-1 text-xxs opacity-0 group-hover:opacity-100">
-            Settings
-          </span>
-        </NavLink>
-      </div>
-
-      {/* TOGGLES */}
-      <div className="flex flex-col items-center space-y-3">
-        <button
-          onClick={toggleDarkMode}
-          className="group flex flex-col items-center focus:outline-none rounded-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
-          aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {isDarkMode ? <Sun className="w-6 h-6 text-yellow-400" /> : <Moon className="w-6 h-6 text-gray-600" />}
-          <span className="mt-1 text-xxs opacity-0 group-hover:opacity-100">
-            {isDarkMode ? 'Light' : 'Dark'}
-          </span>
-        </button>
-
-        <button
-          onClick={handleLogout}
-          className="group flex flex-col items-center focus:outline-none rounded-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
-          aria-label="Log out"
-        >
-          <LogOut className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-          <span className="mt-1 text-xxs opacity-0 group-hover:opacity-100">Logout</span>
-        </button>
-      </div>
-    </nav>
+    </header>
   );
 }

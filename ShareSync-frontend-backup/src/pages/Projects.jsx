@@ -267,7 +267,7 @@ export default function Projects() {
       <div
         ref={rootRef}
         data-accent="emerald"
-        className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto"
+        className="px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto"
       >
         {/* Page banner */}
         <div className="rounded-2xl border border-border bg-gradient-to-r from-indigo-50 via-fuchsia-50 to-pink-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 p-4 mb-4">

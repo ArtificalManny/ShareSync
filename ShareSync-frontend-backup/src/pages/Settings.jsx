@@ -143,7 +143,7 @@ export default function Settings() {
   if (loading) {
     return (
       <main id="main" role="main" tabIndex={-1}>
-        <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 max-w-3xl mx-auto">
+        <div className="with-sidebar px-4 sm:px-6 lg:px-8 py-6 max-w-3xl mx-auto">
           <div className="animate-pulse space-y-4">
             <div className="h-10 w-1/3 bg-slate-200/60 rounded" />
             <div className="h-24 bg-slate-200/60 rounded" />
@@ -156,7 +156,7 @@ export default function Settings() {
 
   return (
     <main id="main" role="main" tabIndex={-1}>
-      <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 max-w-3xl mx-auto space-y-6">
+      <div className="with-sidebar px-4 sm:px-6 lg:px-8 py-6 max-w-3xl mx-auto space-y-6">
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Settings</h1>
 
         {err && (
@@ -181,7 +181,7 @@ export default function Settings() {
         <form onSubmit={handleSave} className="space-y-6">
           {/* Profile visibility */}
           <section className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-          <SectionHeader icon="Eye">Profile visibility</SectionHeader>
+            <SectionHeader icon="Eye">Profile visibility</SectionHeader>
             <p className="text-xs text-slate-500 mt-1">
               Control whether your profile is visible at <code>/u/:username</code>.
             </p>
@@ -202,7 +202,7 @@ export default function Settings() {
 
           {/* Appearance */}
           <section className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-          <SectionHeader icon="Palette">Appearance</SectionHeader>
+            <SectionHeader icon="Palette">Appearance</SectionHeader>
             <p className="text-xs text-slate-500 mt-1">
               Choose your display theme. “System” follows your OS preference.
             </p>
@@ -226,7 +226,7 @@ export default function Settings() {
 
           {/* Notifications */}
           <section className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-          <SectionHeader icon="Bell">Notifications</SectionHeader>
+            <SectionHeader icon="Bell">Notifications</SectionHeader>
             <div className="mt-3 space-y-3">
               <Toggle
                 id="emailActivity"
@@ -268,7 +268,7 @@ export default function Settings() {
 
           {/* Account Security (placeholder 2FA switch) */}
           <section className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-          <SectionHeader icon="ShieldCheck">Account Security</SectionHeader>
+            <SectionHeader icon="ShieldCheck">Account Security</SectionHeader>
             <p className="text-xs text-slate-500 mt-1">
               Two-factor auth setup is a separate flow; enable here to be prompted next sign-in.
             </p>

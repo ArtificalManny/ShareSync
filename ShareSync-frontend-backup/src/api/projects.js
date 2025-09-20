@@ -1,3 +1,4 @@
+// /src/api/projects.js
 import client from "./client"; // axios instance with /api base + auth interceptor
 
 function toQS(params = {}) {
@@ -102,8 +103,6 @@ export async function patchProjectIcon(projectId, icon /* { kind, value } or nul
 
 /* =======================================================================
  *  🔓 Transparency Layer (optional thin wrappers; mirrors src/api/public.js)
- *  These call the Express/Nest public endpoints so callers can import from
- *  either './public' or './projects' without caring.
  * ======================================================================= */
 
 /** POST /api/public/projects/:id/enable -> { token } */

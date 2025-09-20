@@ -1,3 +1,4 @@
+// /src/pages/ProjectHome.jsx
 import React, { useEffect, useMemo, useState, useContext, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
@@ -43,9 +44,15 @@ import InsightsBlock from "../components/insights/InsightsBlock";
 
 // NEW: KPI graphs
 import KpiGroup from "../components/analytics/KpiGroup";
+// NEW: detail modal for a KPI point
+import KpiDetailModal from "../components/kpi/KpiDetailModal";
 // NEW: series hook + chart styles
 import useKpiSeries from "../hooks/useKpiSeries";
 import "../styles/charts.css";
+// NEW: prefers-reduced-motion hook
+import useReducedMotion from "../hooks/useReducedMotion";
+// NEW: local comments helpers
+import { buildKey as buildKpiKey, getComments as getKpiComments, addComment as addKpiComment } from "../utils/kpi/comments";
 
 // 🔷 Unified feed normalizers
 import {
@@ -174,6 +181,15 @@ export default function ProjectHome() {
 
   // Activity section ref (for last-seen on view)
   const activityRef = useRef(null);
+
+  // 🔹 KPI detail modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedPoint, setSelectedPoint] = useState(null); // { label, t, v, idx }
+  const [selectedMetric, setSelectedMetric] = useState("");
+  const [pointComments, setPointComments] = useState([]);
+
+  // Reduced motion (for charts’ motionEnabled signal, though charts also self-check)
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => { mark("ss:projecthome:mounted"); }, []);
 
@@ -570,10 +586,69 @@ export default function ProjectHome() {
 
   const kpiTrends = useKpiSeries(stats);
 
+  // 🔹 KPI point click handler → open modal and preload comments
+  const onKpiPointClick = useCallback((p) => {
+    // p may include metric/title from the chart; fallbacks just in case
+    const metric =
+      p?.metric ||
+      p?.title ||
+      p?.seriesLabel ||
+      p?.labelMetric ||
+      "Metric";
+
+    setSelectedMetric(metric);
+    setSelectedPoint(p || null);
+    setModalOpen(true);
+    try {
+      track("kpi_point_opened", {
+        projectId: id,
+        metric,
+        t: p?.t || p?.label || null,
+      });
+    } catch {}
+  }, [id]);
+
+  // Load comments whenever selection changes/opened
+  useEffect(() => {
+    if (!modalOpen || !selectedPoint || !selectedMetric) return;
+    const key = buildKpiKey({
+      projectId: project?._id || id,
+      metric: selectedMetric,
+      t: selectedPoint.t || selectedPoint.label,
+    });
+    try {
+      setPointComments(getKpiComments(key));
+    } catch {
+      setPointComments([]);
+    }
+  }, [modalOpen, selectedPoint, selectedMetric, project?._id, id]);
+
+  const handleAddPointComment = useCallback((text) => {
+    if (!selectedPoint || !selectedMetric) return;
+    const key = buildKpiKey({
+      projectId: project?._id || id,
+      metric: selectedMetric,
+      t: selectedPoint.t || selectedPoint.label,
+    });
+    const entry = {
+      text: String(text || "").trim(),
+      at: Date.now(),
+      author: user?.firstName || user?.username || user?.email || "You",
+    };
+    const updated = addKpiComment(key, entry);
+    setPointComments(updated);
+    try {
+      track("kpi_comment_added", {
+        projectId: id,
+        metric: selectedMetric,
+      });
+    } catch {}
+  }, [selectedPoint, selectedMetric, project?._id, id, user?.firstName, user?.username, user?.email]);
+
   if (loading) {
     return (
       <main id="main" role="main" tabIndex={-1}>
-        <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto">
+        <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto">
           <div className="animate-pulse space-y-4">
             <div className="h-24 rounded-2xl bg-surface" />
             <div className="h-24 rounded-2xl bg-surface" />
@@ -586,7 +661,7 @@ export default function ProjectHome() {
   if (error) {
     return (
       <main id="main" role="main" tabIndex={-1}>
-        <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-10 max-w-2xl mx-auto">
+        <div className="px-4 sm:px-6 lg:px-8 py-10 max-w-2xl mx-auto">
           <div className="rounded-2xl border border-rose-200/60 bg-surface p-6">
             <h1 className="text-lg font-semibold text-rose-600">Failed to load project</h1>
             <p className="mt-2 text-sm text-muted">{error}</p>
@@ -654,7 +729,7 @@ export default function ProjectHome() {
 
   return (
     <main id="main" role="main" tabIndex={-1}>
-      <div className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
         {/* Header (public toggle gated by flag) */}
         <ProjectHeader
           project={project}
@@ -775,6 +850,8 @@ export default function ProjectHome() {
                 data={kpiTrends}
                 height={160}
                 showLegend={false}
+                onPointClick={onKpiPointClick}
+                motionEnabled={!prefersReducedMotion}
               />
             </div>
           </section>
@@ -973,6 +1050,18 @@ export default function ProjectHome() {
             </div>
           </div>
         </>
+      )}
+
+      {/* ---- KPI Detail Modal ---- */}
+      {modalOpen && selectedPoint && (
+        <KpiDetailModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          metric={selectedMetric}
+          point={selectedPoint}
+          comments={pointComments}
+          onAddComment={handleAddPointComment}
+        />
       )}
 
       {/* ---- Drawers / Modals ---- */}

@@ -16,6 +16,8 @@ import "./styles/card.css";
 import "./styles/tokens.css";
 import "./styles/gradients.css";
 import "./styles/motion.css";
+/* 🔗 Sidebar skin (NOTE: path moved to components/) */
+import "./components/Sidebar.css";
 
 import { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
@@ -40,8 +42,11 @@ import CommandPalette from "./components/global/CommandPalette";
 // 🔗 Hash scrolling
 import { scrollToAnchorFromHash } from "./utils/anchor";
 
-// ✅ NEW: global user context for avatar propagation & socket updates
+// ✅ Global user context for avatar propagation & socket updates
 import UserProvider, { UserContext } from "./context/UserContext";
+
+// ✅ Left sidebar
+import Sidebar from "./components/Sidebar";
 
 const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
@@ -104,6 +109,7 @@ function GuardedRoutes() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Profile routes */}
+        <Route path="/profile" element={<Profile />} />       {/* direct self-profile */}
         <Route path="/profile/:username" element={<Profile />} />
         <Route path="/u/:username" element={<Profile />} />
         <Route path="/me" element={<Profile />} />
@@ -125,8 +131,11 @@ const AppRoutes = () => {
 
   return (
     <>
+      {/* Fixed left sidebar */}
+      <Sidebar />
+      {/* Top nav; offset via .with-sidebar so it aligns beside the sidebar */}
       <Navbar user={navbarUser} onLogout={logout} />
-      <div id="main" role="main" className="main-content">
+      <div id="main" role="main" className="main-content with-sidebar">
         <GuardedRoutes />
       </div>
       <ToastHost />

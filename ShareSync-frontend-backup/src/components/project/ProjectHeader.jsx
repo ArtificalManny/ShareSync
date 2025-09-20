@@ -16,6 +16,7 @@ import GradientText from "../ui/GradientText";
 import StatusPill from "../projects/StatusPill.jsx"; // ✅ shared pill
 import useRecentFlag from "../../hooks/useRecentFlag";
 import useReducedMotion from "../../hooks/useReducedMotion";
+import { setLastSeen } from "../../utils/stories"; // ✅ mark-as-read helper
 
 // --- Feature flag ---
 const ENABLE_PUBLIC_STATUS = (() => {
@@ -113,7 +114,6 @@ export default function ProjectHeader({
       const updated = await patchProjectIcon(project._id, sel); // sel or null (clear)
       setIconOverride(updated?.icon ?? updated?.patch?.icon ?? sel ?? null);
     } catch (e) {
-      // eslint-disable-next-line no-alert
       alert(e?.response?.data?.message || e?.message || "Failed to update icon.");
     } finally {
       setPickerOpen(false);
@@ -128,35 +128,25 @@ export default function ProjectHeader({
     setBusyToggle(true);
     try {
       if (typeof onTogglePublic === "function") {
-        // Let parent manage API + persistence; we optimistically flip local UI.
         setPublicEnabled(nextChecked);
         if (!nextChecked) setPublicToken(null);
         await onTogglePublic(nextChecked);
       } else {
-        // Fallback: call API here
         if (nextChecked) {
           const res = await enablePublic(project._id);
           setPublicEnabled(!!res?.publicEnabled);
           setPublicToken(res?.publicToken || res?.token || null);
-          try {
-            track("public_status_changed", { projectId: project._id, action: "enabled", source: "header" });
-          } catch {}
+          try { track("public_status_changed", { projectId: project._id, action: "enabled", source: "header" }); } catch {}
         } else {
           await disablePublic(project._id);
           setPublicEnabled(false);
           setPublicToken(null);
-          try {
-            track("public_status_changed", { projectId: project._id, action: "disabled", source: "header" });
-          } catch {}
+          try { track("public_status_changed", { projectId: project._id, action: "disabled", source: "header" }); } catch {}
         }
       }
     } catch (e) {
-      // eslint-disable-next-line no-alert
       alert(e?.response?.data?.message || e?.message || "Failed to update public status.");
-      // revert optimistic flip if delegated
-      if (typeof onTogglePublic === "function") {
-        setPublicEnabled((v) => !v);
-      }
+      if (typeof onTogglePublic === "function") setPublicEnabled((v) => !v);
     } finally {
       setBusyToggle(false);
     }
@@ -171,11 +161,8 @@ export default function ProjectHeader({
       const res = await regeneratePublicToken(project._id);
       setPublicEnabled(!!res?.publicEnabled);
       setPublicToken(res?.publicToken || res?.token || null);
-      try {
-        track("public_status_changed", { projectId: project._id, action: "regenerated", source: "header" });
-      } catch {}
+      try { track("public_status_changed", { projectId: project._id, action: "regenerated", source: "header" }); } catch {}
     } catch (e) {
-      // eslint-disable-next-line no-alert
       alert(e?.response?.data?.message || e?.message || "Failed to regenerate link.");
     } finally {
       setBusyRegen(false);
@@ -200,9 +187,15 @@ export default function ProjectHeader({
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {
-      // eslint-disable-next-line no-alert
       alert("Could not copy to clipboard.");
     }
+  }
+
+  function markAsRead() {
+    try {
+      setLastSeen(project?._id, Date.now());
+      track("project_mark_read", { projectId: project?._id });
+    } catch {}
   }
 
   return (
@@ -279,6 +272,16 @@ export default function ProjectHeader({
                 >
                   Role: {role[0].toUpperCase()}{role.slice(1)}
                 </span>
+
+                {/* Mark as read (clears Home’s unread ring immediately) */}
+                <button
+                  type="button"
+                  onClick={markAsRead}
+                  className="px-2 py-0.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  title="Mark this project as read"
+                >
+                  Mark as read
+                </button>
 
                 {/* Public/Private indicator */}
                 {isOwner && ENABLE_PUBLIC_STATUS && typeof onTogglePublic === "function" ? (
@@ -373,7 +376,6 @@ export default function ProjectHeader({
           >
             Settings
           </button>
-    
         </div>
       </div>
 

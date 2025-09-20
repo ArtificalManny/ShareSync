@@ -1,5 +1,6 @@
+// /src/components/analytics/KpiGroup.jsx
 import React from "react";
-import KpiChart from "./KpiChart";
+import KpiChart from "../analytics/KpiChart";
 
 /**
  * KpiGroup
@@ -10,8 +11,14 @@ import KpiChart from "./KpiChart";
  *  - data: Array<{ label: string, series: Array<{t, v}>, color?: string, gradientVariant?: string }>
  *  - height?: number
  *  - showLegend?: boolean
+ *  - onPointClick?: ({ label, t, v, idx }) => void
  */
-export default function KpiGroup({ data = [], height = 160, showLegend = false }) {
+export default function KpiGroup({
+  data = [],
+  height = 160,
+  showLegend = false,
+  onPointClick,
+}) {
   if (!Array.isArray(data) || data.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
@@ -36,6 +43,7 @@ export default function KpiGroup({ data = [], height = 160, showLegend = false }
             gradientVariant={k.gradientVariant}
             height={height}
             showLegend={showLegend}
+            onPointClick={onPointClick}
           />
         </div>
       ))}
