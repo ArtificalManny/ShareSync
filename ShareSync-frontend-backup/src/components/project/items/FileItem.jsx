@@ -1,36 +1,118 @@
-import React from "react";
-import { FileText, Image as ImageIcon } from "lucide-react";
+// /src/components/project/items/FileItem.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import { Download, RefreshCw, AlertCircle } from "lucide-react";
+import { buildPreview } from "../../../utils/upload/preview";
+import TypeIcon from "../../files/TypeIcon";
+import { retry } from "../../../utils/retry";
 
-/**
- * FileItem
- * Renders file upload/attach events.
- *
- * Props:
- *  - event: { name?, filename?, text?, mime?, meta?, url?, createdAt? }
- *  - when: formatted timestamp string (optional; computed upstream)
- *  - isFresh?: boolean (highlight row when true)
- *  - className?: string (extra classes for root)
- */
-export default function FileItem({ event, when, isFresh = false, className = "" }) {
-  const u = event || {};
-  const name = u.name || u.filename || u.text || "File";
-  const mime = (u.mime || u.meta?.mime || "").toLowerCase();
-  const icon = mime.startsWith("image/") ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />;
-  const whenText = when || (u.createdAt ? new Date(u.createdAt).toLocaleString() : "");
+export default function FileItem({ file, onDownload }) {
+  const [state, setState] = useState({
+    loading: true,
+    error: "",
+    thumbUrl: "",
+    width: 0,
+    height: 0,
+  });
+
+  const mime = String(file?.mime || "application/octet-stream").toLowerCase();
+  const isImage = mime.startsWith("image/");
+  const name = file?.name || "File";
+
+  const category = useMemo(() => {
+    if (mime.startsWith("image/")) return "image";
+    if (mime.startsWith("video/")) return "video";
+    if (mime.startsWith("audio/")) return "audio";
+    if (mime === "application/pdf") return "pdf";
+    if (/zip|gzip|tar/.test(mime)) return "archive";
+    if (/word|officedocument\.word/.test(mime)) return "doc";
+    if (/excel|spreadsheet/.test(mime)) return "sheet";
+    if (/powerpoint|presentation/.test(mime)) return "slide";
+    if (/json|javascript|typescript|text\/x-/.test(mime)) return "code";
+    return "other";
+  }, [mime]);
+
+  const runPreview = async () => {
+    if (!isImage) {
+      setState((s) => ({ ...s, loading: false, error: "", thumbUrl: "" }));
+      return;
+    }
+    setState((s) => ({ ...s, loading: true, error: "" }));
+    try {
+      const res = await retry(
+        () => buildPreview(file?.thumbUrl || file?.url),
+        { tries: 2, backoffMs: 300 }
+      );
+      setState({
+        loading: false,
+        error: "",
+        thumbUrl: res?.url || "",
+        width: res?.width || 0,
+        height: res?.height || 0,
+      });
+    } catch (e) {
+      setState({
+        loading: false,
+        error: e?.message || "Preview failed",
+        thumbUrl: "",
+        width: 0,
+        height: 0,
+      });
+    }
+  };
+
+  useEffect(() => { runPreview(); /* eslint-disable-next-line */ }, [file?.url, file?.thumbUrl, mime]);
 
   return (
-    <article
-      className={`feed-row relative overflow-hidden flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70 ${isFresh ? "row-new" : ""} ${className}`}
-    >
-      {isFresh && <span className="row-pulse-ring" aria-hidden />}
-      <span className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-1 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-900/60">
-        {icon}
-        File
-      </span>
-      <span className="text-sm text-slate-800 dark:text-slate-100 truncate" title={name}>
-        {name}
-      </span>
-      <span className="ml-auto text-[11px] text-slate-500">{whenText}</span>
-    </article>
+    <div className="rounded-xl border border-border bg-surface p-2">
+      <div className="thumb relative w-full aspect-[4/3] overflow-hidden rounded-lg bg-[rgb(241_245_249)]">
+        {isImage && state.thumbUrl ? (
+          <img
+            src={state.thumbUrl}
+            alt={name}
+            className="h-full w-full object-cover"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="absolute inset-0 grid place-items-center">
+            <TypeIcon category={category} className="w-8 h-8 text-muted" />
+          </div>
+        )}
+
+        {!!state.error && (
+          <div className="absolute top-1 right-1 inline-flex items-center gap-1 rounded-md bg-rose-50 text-rose-700 px-1.5 py-0.5 text-[11px] border border-rose-200">
+            <AlertCircle className="w-3 h-3" />
+            Preview error
+          </div>
+        )}
+      </div>
+
+      <div className="mt-2 flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm text-text" title={name}>{name}</div>
+          <div className="text-[11px] text-muted truncate" title={mime}>{mime}</div>
+        </div>
+        <div className="flex items-center gap-1">
+          {isImage && (
+            <button
+              type="button"
+              className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface"
+              onClick={runPreview}
+              title="Retry preview"
+            >
+              <RefreshCw className="w-3 h-3" />
+            </button>
+          )}
+          <button
+            type="button"
+            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface"
+            onClick={() => onDownload?.(file)}
+            title="Download"
+          >
+            <Download className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

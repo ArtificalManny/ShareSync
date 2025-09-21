@@ -1,90 +1,235 @@
-import React from "react";
-import { Trash2, Download, File as FileIcon, Image as ImageIcon, Video, Music, Archive } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { listFiles, deleteFile } from "../../api/files";
+import { track } from "../../utils/telemetry";
+import { toast } from "../ui/Toaster.jsx";
+import FileItem from "../project/items/FileItem.jsx"; // thumb + Retry/Download footer
+import "../../styles/files.css"; // badges + pending ring + thumb utilities
+import "./FileGrid.css";        // small layout helpers
 
-function TypeIcon({ kind = 'other' }) {
-  if (kind === 'image') return <ImageIcon className="w-4 h-4 opacity-80" />;
-  if (kind === 'video') return <Video className="w-4 h-4 opacity-80" />;
-  if (kind === 'audio') return <Music className="w-4 h-4 opacity-80" />;
-  if (kind === 'archive') return <Archive className="w-4 h-4 opacity-80" />;
-  return <FileIcon className="w-4 h-4 opacity-80" />;
-}
-
-export default function FileCard({
-  file,
-  onDelete,           // matches FileGrid
-  onDownload,
-  canEdit = false,
-  canManage = false,   // only owners can hard-delete
+/**
+ * Props:
+ * - projectId (required)
+ * - initialFiles?: array
+ * - canEdit?: boolean
+ * - canManage?: boolean
+ */
+export default function FileGrid({
+  projectId,
+  initialFiles = [],
+  canEdit = false,      // kept for future (uploads)
+  canManage = false,    // shows delete affordance
 }) {
-  const isImage =
-    (file?.mime || "").startsWith("image/") ||
-    /\.(png|jpe?g|gif|webp|svg)$/i.test(file?.url || "");
+  const [files, setFiles] = useState(() => initialFiles.map(normalizeFile));
+  const [cursor, setCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(!initialFiles.length);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState("");
 
-  const pending = (file?.moderationStatus || "").toLowerCase() === "pending";
+  // Track newly-added files coming in from parent (e.g., via socket)
+  const hasMountedRef = useRef(false);
+  const prevIdsRef = useRef(new Set(initialFiles.map((f) => String(f.id ?? f._id ?? ""))));
 
-  const sizeLabel =
-    typeof file?.size === "number" && file.size > 0
-      ? (file.size >= 1024 * 1024
-          ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
-          : `${Math.round(file.size / 1024)} KB`)
-      : (file?.mime || "");
+  // Sync when parent pushes new files
+  useEffect(() => {
+    const nextIds = new Set(initialFiles.map((f) => String(f.id ?? f._id ?? "")));
+    let addedCount = 0;
+    for (const id of nextIds) if (!prevIdsRef.current.has(id)) addedCount++;
+    prevIdsRef.current = nextIds;
+
+    if (hasMountedRef.current && addedCount > 0) {
+      try { track("file_added", { projectId, count: addedCount }); } catch {}
+      try { toast({ title: `${addedCount} file${addedCount > 1 ? "s" : ""} added`, variant: "success" }); } catch {}
+    }
+    hasMountedRef.current = true;
+
+    setFiles((prev) => {
+      const byId = new Map();
+      [...initialFiles.map(normalizeFile), ...prev].forEach((f) => byId.set(String(f.id), f));
+      return Array.from(byId.values());
+    });
+  }, [initialFiles, projectId]);
+
+  // Initial fetch
+  useEffect(() => {
+    let ignore = false;
+    if (!projectId) return;
+
+    (async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await listFiles(projectId);
+        const { items, nextCursor } = normalizeList(res);
+        if (ignore) return;
+        setFiles(items);
+        setCursor(nextCursor);
+        setHasMore(Boolean(nextCursor));
+      } catch (e) {
+        if (!ignore) setError(e?.message || "Failed to load files");
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    })();
+
+    return () => { ignore = true; };
+  }, [projectId]);
+
+  const loadMore = async () => {
+    if (!hasMore || !cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await listFiles(projectId, { cursor, limit: 20 });
+      const { items, nextCursor } = normalizeList(res);
+      setFiles((prev) => dedupe([...prev, ...items]));
+      setCursor(nextCursor);
+      setHasMore(Boolean(nextCursor));
+    } catch (e) {
+      console.warn("files: loadMore failed", e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const handleRemove = async (id) => {
+    if (!canManage) return;
+    const prev = files;
+    setFiles((f) => f.filter((x) => String(x.id) !== String(id)));
+    try {
+      await deleteFile(projectId, id);
+      try { track("file_deleted", { projectId, fileId: id }); } catch {}
+      try { toast({ title: "File deleted", variant: "success" }); } catch {}
+    } catch (e) {
+      setFiles(prev); // rollback
+      const msg = e?.response?.data?.message || e?.message || "Failed to delete file.";
+      try { toast({ title: "Delete failed", description: msg, variant: "error" }); } catch {}
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="filegrid grid">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="rounded-xl border border-border bg-surface h-28 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 p-3">{error}</div>;
+  }
+
+  if (!files.length) {
+    return <div className="text-sm text-muted">No files yet.</div>;
+  }
 
   return (
-    <div className="card group relative overflow-hidden hover-glow rounded-xl border border-border bg-surface">
-      {isImage ? (
-        <img
-          src={file.url}
-          alt={file.name || "file"}
-          className="w-full h-28 object-cover transition-transform duration-150 group-hover:scale-[1.01]"
-          loading="lazy"
-          decoding="async"
-        />
-      ) : (
-        <div className="h-28 grid place-items-center text-sm text-muted">
-          <div className="flex items-center gap-2">
-            <TypeIcon kind={file?.kind} />
-            <span className="truncate max-w-[12rem]">{file.name || "File"}</span>
-          </div>
-        </div>
-      )}
+    <>
+      <div className="filegrid grid">
+        {files.map((f) => {
+          const status = (f.moderationStatus || f.status || "").toLowerCase();
+          const isPending = status === "pending";
+          const badgeClass =
+            status === "blocked"
+              ? "ss-badge ss-badge--blocked"
+              : status === "approved" || status === "allowed"
+              ? "ss-badge ss-badge--approved"
+              : "ss-badge ss-badge--pending";
 
-      {/* Pending chip (secondary—main status badge is in FileGrid) */}
-      {pending && (
-        <div className="absolute top-2 left-2 chip chip--warn text-[11px] px-2 py-0.5">
-          Pending
-        </div>
-      )}
+          return (
+            <div key={f.id} className="filegrid-item relative">
+              {/* Status badge + optional pending ring */}
+              <span className={badgeClass}>{status || "pending"}</span>
+              {isPending && <span className="ss-pulse-ring" />}
 
-      <div className="p-2 flex items-center justify-between">
-        <div className="min-w-0 pr-2">
-          <div className="truncate text-sm font-medium text-text">
-            {file.name || "Untitled file"}
-          </div>
-          <div className="text-[11px] text-muted">{sizeLabel}</div>
-        </div>
+              {/* Tile (image preview or <TypeIcon/>) */}
+              <FileItem
+                file={f}
+                onDownload={(file) => {
+                  const href = file?.url || "#";
+                  try { window.open(href, "_blank", "noopener,noreferrer"); } catch {}
+                }}
+              />
 
-        <div className="flex items-center gap-2">
-          <button
-            className="btn btn--ghost hover-glow p-1 rounded-md"
-            onClick={() => onDownload?.(file)}
-            title="Download"
-            aria-label={`Download ${file?.name || "file"}`}
-          >
-            <Download className="w-4 h-4" />
-          </button>
-
-          {(canManage || onDelete) && (
-            <button
-              className="btn btn--ghost hover-glow p-1 rounded-md text-danger"
-              onClick={() => onDelete?.(file?.id || file)}
-              title="Delete"
-              aria-label={`Delete ${file?.name || "file"}`}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+              {/* Owner-only delete (kept out of FileItem so preview stays generic) */}
+              {canManage && (
+                <div className="mt-1 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(f.id)}
+                    className="text-xs rounded-md border border-border px-2 py-0.5 hover:bg-surface"
+                    title="Delete file"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-    </div>
+
+      {hasMore && (
+        <div className="mt-3 flex justify-center">
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-surface disabled:opacity-60"
+          >
+            {loadingMore ? "Loading…" : "Load more"}
+          </button>
+        </div>
+      )}
+    </>
   );
+}
+
+/* ——— helpers ——— */
+
+function normalizeFile(f) {
+  const id = String(f.id ?? f._id ?? "");
+  return {
+    id,
+    url: f.url || f.storageKey || "",
+    thumbUrl: f.thumbUrl || f.thumbKey || "",
+    name: f.name || "",
+    size: Number(f.size || 0),
+    mime: f.mime || f.type || "application/octet-stream",
+    kind: f.kind || guessKind(f.mime || f.type || ""),
+    status: f.status || "pending",
+    moderationStatus: f.moderationStatus || f.status || "pending",
+    createdAt: f.createdAt || new Date().toISOString(),
+    projectId: f.projectId,
+    uploaderId: f.uploaderId,
+  };
+}
+
+function normalizeList(res) {
+  if (Array.isArray(res)) return { items: res.map(normalizeFile), nextCursor: null };
+  const items = Array.isArray(res?.items) ? res.items.map(normalizeFile) : [];
+  const nextCursor = res?.nextCursor || null;
+  return { items, nextCursor };
+}
+
+function dedupe(list) {
+  const seen = new Set();
+  const out = [];
+  for (const it of list) {
+    const k = String(it.id || it._id || "");
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(it);
+  }
+  return out;
+}
+
+function guessKind(mime = "") {
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("audio/")) return "audio";
+  if (mime === "application/pdf") return "doc";
+  if (mime.includes("zip") || mime.includes("gzip")) return "archive";
+  return "other";
 }
