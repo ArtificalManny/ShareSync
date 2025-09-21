@@ -1,24 +1,24 @@
 /* /src/styles/card.css
-   Card helpers + intent accents
-   Uses tokens from theme.css / tokens.css (bg + gradients)
+   Card helpers + intent accents + focus ring + accent bar
+   Uses tokens from tokens.css / gradients.css
 */
 
 /* Base card */
 .card {
   background: var(--bg-elevated, #fff);
-  border: 1px solid rgba(2, 6, 23, 0.06);
-  border-radius: 16px; /* rounded-2xl */
+  border: 1px solid rgb(var(--border) / .60);
+  border-radius: var(--radius-lg); /* 16px default */
   box-shadow: var(--shadow-elev, 0 8px 24px rgba(15, 23, 42, 0.08));
 }
 
 /* Dark mode tweaks (kept subtle) */
-:root.dark .card {
-  background: rgba(15, 23, 42, 0.85);
-  border-color: rgba(51, 65, 85, 0.7);
+:root.dark .card,
+[data-theme="dark"] .card {
+  background: rgb(15 23 42 / .85);
+  border-color: rgb(var(--border) / .70);
 }
 
 /* ---- Intent accents (top inset bar) ----
-   Switch to gradient-friendly tokens via a pseudo-element so we can render gradients cleanly.
    Use alongside .card, e.g. class="card accent-kpi"
 */
 .accent-kpi,
@@ -33,8 +33,8 @@
   position: absolute;
   inset: 0 0 auto 0; /* top bar */
   height: 4px;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
   pointer-events: none;
 }
 
@@ -56,6 +56,19 @@
   opacity: 0.75;
 }
 
+/* Accent bar (left) companion (also available in gradients.css) */
+.accent-bar { position: relative; }
+.accent-bar__left {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-top-left-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-lg);
+  background-image: var(--grad-signature);
+  opacity: .95;
+  pointer-events: none;
+}
+
 /* Optional hover lift (respects reduced motion) */
 .card.hoverable {
   transition:
@@ -68,6 +81,14 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, .05);
 }
 
+/* Focus ring utility (keyboard-visible) */
+.focus-ring:focus-visible,
+.card :where(.focus-ring):focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
 /* Section helpers inside cards */
 .card-header {
   display: flex;
@@ -75,9 +96,10 @@
   gap: .5rem;
   padding: 16px 16px 0 16px;
   font-weight: 600;
-  color: #0f172a; /* slate-900 */
+  color: rgb(var(--text));
 }
-:root.dark .card-header { color: #f1f5f9; } /* slate-100 */
+:root.dark .card-header,
+[data-theme="dark"] .card-header { color: rgb(var(--text)); }
 
 .card-body { padding: 16px; }
 .card-footer { padding: 0 16px 16px 16px; }
@@ -85,5 +107,5 @@
 /* Subtle text helper */
 .card-subtle {
   font-size: .8125rem;
-  color: #64748b; /* slate-500 */
+  color: rgb(var(--muted));
 }

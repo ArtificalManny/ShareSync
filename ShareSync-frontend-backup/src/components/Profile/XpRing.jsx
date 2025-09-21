@@ -1,4 +1,3 @@
-// /src/components/profile/XpRing.jsx
 import React, { useMemo } from "react";
 
 /**
@@ -25,17 +24,23 @@ export default function XpRing({
 }) {
   const radius = useMemo(() => (size - thickness) / 2, [size, thickness]);
   const circumference = useMemo(() => 2 * Math.PI * radius, [radius]);
-  const dash = Math.max(0, Math.min(1, progress)) * circumference;
+  const clamped = Math.max(0, Math.min(1, progress));
+  const dash = clamped * circumference;
   const remainder = circumference - dash;
+
+  // Use motion tokens for timing
+  const transition = motionEnabled
+    ? "stroke-dasharray var(--motion-normal, 240ms) var(--easing-standard, cubic-bezier(.2,.8,.2,1))"
+    : "none";
 
   return (
     <div
       className="relative grid place-items-center"
       style={{ width: size, height: size }}
       role="img"
-      aria-label={`${label}: Level ${level}, ${Math.round(progress * 100)}% to next level`}
+      aria-label={`${label}: Level ${level}, ${Math.round(clamped * 100)}% to next level`}
     >
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
         {/* Track */}
         <circle
           cx={size / 2}
@@ -46,28 +51,29 @@ export default function XpRing({
           strokeOpacity="0.15"
           strokeWidth={thickness}
         />
-        {/* Progress */}
+
+        {/* Progress (uses signature gradient via tokens) */}
+        <defs>
+          <linearGradient id="xp-ring-grad" x1="0" y1="0" x2="1" y2="1">
+            {/* Signature gradient from tokens.css; resolves at runtime */}
+            <stop offset="0%"  style={{ stopColor: "rgb(var(--grad-pandora-a, 124 58 237))" }} />
+            <stop offset="100%" style={{ stopColor: "rgb(var(--grad-pandora-b, 34 211 238))" }} />
+          </linearGradient>
+        </defs>
+
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="url(#xp-grad)"
+          stroke="url(#xp-ring-grad)"
           strokeWidth={thickness}
           strokeDasharray={`${dash} ${remainder}`}
           strokeDashoffset="0"
           strokeLinecap="round"
-          style={{
-            transition: motionEnabled ? "stroke-dasharray 600ms ease" : "none",
-          }}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          style={{ transition }}
         />
-        <defs>
-          <linearGradient id="xp-grad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="rgb(79 70 229)" />
-            <stop offset="100%" stopColor="rgb(16 185 129)" />
-          </linearGradient>
-        </defs>
       </svg>
 
       {/* Center label */}

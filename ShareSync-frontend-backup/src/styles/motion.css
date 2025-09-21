@@ -1,157 +1,119 @@
-/* Motion layer: keyframes + utilities.
-   Honors prefers-reduced-motion to disable non-essential movement. */
+/* Motion layer v2 — conservative + scoped
+   Only opt-in utilities. No global transforms/animations.
+   Honors prefers-reduced-motion.
+*/
 
-   @keyframes pulse-ring {
-    0%   { transform: scale(.9); opacity: .7; }
-    70%  { transform: scale(1.2); opacity: .15; }
-    100% { transform: scale(1.2); opacity: 0; }
+:root {
+    /* fallback tokens if tokens.css hasn't loaded yet */
+    --motion-fast: 150ms;
+    --motion-normal: 240ms;
+    --motion-slow: 480ms;
+    --easing-standard: cubic-bezier(.2,.8,.2,1);
+    --easing-emph: cubic-bezier(.2,.8,0,1);
   }
   
-  @keyframes spin-slow {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  /* Default: no animation (safe) */
+  .hover-raise,
+  .kpi-glow,
+  .spin-slow,
+  .sprint-marquee > .track,
+  .shine,
+  .marching {
+    transition: none;
+    animation: none;
   }
   
-  @keyframes marquee-sprint {
-    0%   { transform: translateX(0%); }
-    100% { transform: translateX(-50%); }
-  }
-  
-  /* Generic ring animation wrapper (for chips, KPI cards, etc.) */
-  .ring-anim {
-    position: relative;
-  }
-  .ring-anim::after {
-    content: "";
-    position: absolute;
-    inset: calc(-1 * var(--ring-thickness));
-    border-radius: inherit;
-    box-shadow: 0 0 0 var(--ring-thickness) rgb(var(--accent) / .35);
-    animation: pulse-ring 1.6s var(--easing-emph) infinite;
-    pointer-events: none;
-  }
-  
-  /* Avatar ring: concentric animated halo around a circular avatar */
-  .avatar-ring {
-    position: relative;
-    display: inline-grid;
-    place-items: center;
-  }
-  .avatar-ring::before,
-  .avatar-ring::after {
-    content: "";
-    position: absolute;
-    width: var(--ring-size);
-    height: var(--ring-size);
-    border-radius: 9999px;
-    box-shadow:
-      0 0 0 var(--ring-thickness) rgb(var(--accent) / .25),
-      0 0 var(--ring-blur) var(--ring-blur) rgb(var(--accent) / .18);
-    pointer-events: none;
-  }
-  .avatar-ring::before {
-    animation: pulse-ring 1.8s var(--easing-standard) infinite;
-  }
-  .avatar-ring::after {
-    animation: pulse-ring 2.4s var(--easing-standard) infinite;
-    animation-delay: .3s;
-  }
-  
-  /* KPI glow on hover/focus (subtle identity easing) */
-  .kpi-glow {
-    transition:
-      box-shadow var(--motion-normal) var(--easing-emph),
-      transform var(--motion-normal) var(--easing-emph);
-    will-change: transform, box-shadow;
-  }
-  .kpi-glow:hover,
-  .kpi-glow:focus-visible {
-    box-shadow: var(--shadow-glow);
-    transform: translateY(-1px);
-  }
-  
-  /* Small general-purpose hover lift (used by cards/tiles) */
-  .hover-raise {
-    transition:
-      transform var(--motion-normal) var(--easing-emph),
-      box-shadow var(--motion-normal) var(--easing-emph);
-    will-change: transform, box-shadow;
-  }
-  .hover-raise:hover,
-  .hover-raise:focus-visible {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-glow);
-  }
-  
-  /* Sprint marquee (for active sprint labels/banners) */
-  .sprint-marquee {
-    overflow: hidden;
-    position: relative;
-  }
-  .sprint-marquee > .track {
-    display: inline-flex;
-    gap: 2rem;
-    white-space: nowrap;
-    will-change: transform;
-    animation: marquee-sprint 18s linear infinite;
-  }
-  
-  /* Slow spin (e.g., loading indicators) */
-  .spin-slow {
-    animation: spin-slow 12s linear infinite;
-  }
-  
-  /* Utility to bias transitions faster (used in a few states) */
-  .motion-quick {
-    transition-duration: var(--motion-fast) !important;
-    transition-timing-function: var(--easing-standard) !important;
-  }
-  
-  /* A utility to force-disable motion (handy for debug/dev) */
+  /* Allow consumers to hard-disable everything */
   .motion-none, .reduce-motion {
     animation: none !important;
     transition: none !important;
+    transform: none !important;
+    box-shadow: none !important;
   }
   
-  /* ──────────────────────────────────────────────────────────────
-     NEW: Row pulse ring for "fresh" feed items (~10s highlight)
-     Usage: place inside a relatively positioned row container.
-     <div class="feed-row row-new relative">
-       <span class="row-pulse-ring" aria-hidden="true"></span>
-       ...
-     </div>
-     ────────────────────────────────────────────────────────────── */
-  .row-pulse-ring {
-    position: absolute;
-    inset: -2px;                 /* just outside the border */
-    border-radius: var(--feed-radius, 12px);
-    pointer-events: none;
-    box-shadow:
-      0 0 0 2px rgb(var(--accent) / .28),
-      0 0 18px 6px rgb(var(--accent) / .14);
-    animation: pulse-ring 1.6s var(--easing-standard) infinite;
-    /* Fade itself out when the host removes .row-new */
-    transition: opacity var(--motion-slow) var(--easing-standard);
-  }
+  /* Enable motion ONLY when user allows it */
+  @media (prefers-reduced-motion: no-preference) {
   
-  /* Reduced motion: disable animations */
-  @media (prefers-reduced-motion: reduce) {
-    .ring-anim::after,
-    .avatar-ring::before,
-    .avatar-ring::after,
-    .sprint-marquee > .track,
-    .spin-slow,
-    .kpi-glow,
-    .kpi-glow:hover,
-    .kpi-glow:focus-visible,
-    .hover-raise,
+    /* Small general-purpose hover lift */
+    .hover-raise {
+      transition:
+        transform var(--motion-normal) var(--easing-emph),
+        box-shadow var(--motion-normal) var(--easing-emph);
+      will-change: transform, box-shadow;
+    }
     .hover-raise:hover,
-    .hover-raise:focus-visible,
+    .hover-raise:focus-visible {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-glow);
+    }
+  
+    /* KPI glow on hover/focus */
+    .kpi-glow {
+      transition:
+        box-shadow var(--motion-normal) var(--easing-emph),
+        transform var(--motion-normal) var(--easing-emph);
+      will-change: transform, box-shadow;
+    }
+    .kpi-glow:hover,
+    .kpi-glow:focus-visible {
+      box-shadow: var(--shadow-glow);
+      transform: translateY(-1px);
+    }
+  
+    /* Slow spin (e.g., subtle indicators) */
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+    .spin-slow { animation: spin-slow 12s linear infinite; }
+  
+    /* Shine sweep — overlays via ::after, never affects layout */
+    .shine { position: relative; overflow: hidden; }
+    .shine::after {
+      content: "";
+      position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.26) 50%, transparent 100%);
+      transform: translateX(-100%);
+      animation: shine-move 1.2s var(--easing-standard) forwards;
+      mix-blend-mode: screen;
+    }
+    @keyframes shine-move {
+      from { transform: translateX(-100%); }
+      to   { transform: translateX(100%); }
+    }
+  
+    /* Marching light border — also an overlay */
+    .marching { position: relative; }
+    .marching::before {
+      content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+      background: linear-gradient(90deg,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,.45) 50%,
+        rgba(255,255,255,0) 100%);
+      background-size: 200% 100%;
+      animation: marching-sweep 1.6s linear infinite;
+      mix-blend-mode: overlay;
+    }
+    @keyframes marching-sweep { to { background-position: -200% 0; } }
+  
+    /* Optional marquee — fully scoped to .sprint-marquee containers */
+    .sprint-marquee { overflow: hidden; position: relative; }
+    .sprint-marquee > .track {
+      display: inline-flex;
+      gap: 2rem;
+      white-space: nowrap;
+      will-change: transform;
+      animation: sprint-marquee 18s linear infinite;
+    }
+    @keyframes sprint-marquee { to { transform: translateX(-50%); } }
+  
+    /* Gentle pulse ring (used for “fresh” rows) */
+    @keyframes pulse-ring {
+      0%   { transform: scale(.96); opacity: .50; }
+      70%  { transform: scale(1.12); opacity: .15; }
+      100% { transform: scale(1.12); opacity: 0; }
+    }
     .row-pulse-ring {
-      animation: none !important;
-      transition: none !important;
-      transform: none !important;
-      box-shadow: none !important;
+      animation: pulse-ring 1.6s var(--easing-standard) infinite;
     }
   }
+  
+  /* If user prefers reduced motion, everything above stays inert by default */
   

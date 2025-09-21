@@ -1,5 +1,7 @@
 :root {
-    /* base */
+    /* ================================
+       Base palette (RGB channels)
+       ================================ */
     --bg:            255 255 255;
     --card:          248 250 252;   /* slate-50-ish */
     --text:          15 23 42;      /* slate-900 */
@@ -7,17 +9,43 @@
     --border:        226 232 240;   /* slate-200 */
     --ring:          99 102 241;    /* indigo-500 */
   
-    /* accent & intent (defaults) */
+    /* Accent & intent (channels) */
     --accent:              79 70 229;   /* indigo-600 */
     --accent-foreground:   255 255 255;
-    --info:                2 132 199;   /* sky-600 */
+    --info:                 2 132 199;  /* sky-600 */
+    --success:             16 185 129;  /* emerald-500 */
+    --warning:            217 119   6;  /* amber-600 */
+    --danger:             244  63  94;  /* rose-500 */
   
-    /* charts */
+    /* Quick alpha helpers */
+    --alpha-0: 0;
+    --alpha-1: .04;
+    --alpha-2: .08;
+    --alpha-3: .12;
+    --alpha-4: .16;
+    --alpha-5: .24;
+    --alpha-6: .32;
+    --alpha-7: .44;
+    --alpha-8: .56;
+    --alpha-9: .72;
+  
+    /* Derived surfaces */
+    --surface:       rgb(var(--card));
+    --surface-100:   rgb(241 245 249);  /* slate-100 */
+    --surface-200:   rgb(226 232 240);  /* slate-200 */
+    --surface-800:   rgb(30 41 59);     /* slate-800 */
+  
+    /* Text helpers */
+    --text-primary:  rgb(var(--text));
+    --text-muted:    rgb(var(--muted));
+    --text-inverse:  255 255 255;
+  
+    /* charts (channels) */
     --chart-1:  79 70 229;
-    --chart-2:  2 132 199;
+    --chart-2:   2 132 199;
     --chart-3:  16 185 129;
-    --chart-4:  234 179 8;
-    --chart-5:  244 63 94;
+    --chart-4: 234 179   8;
+    --chart-5: 244  63  94;
   
     /* project icon sizing (used in cards/headers) */
     --project-icon-size: 28px;
@@ -30,11 +58,11 @@
     --font-body: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
   
     /* sizes (clamped for responsiveness) */
-    --fs-xs: clamp(0.75rem, 0.72rem + 0.1vw, 0.80rem);
-    --fs-sm: clamp(0.875rem, 0.84rem + 0.2vw, 0.95rem);
-    --fs-md: clamp(1rem, 0.96rem + 0.3vw, 1.08rem);
-    --fs-lg: clamp(1.125rem, 1.06rem + 0.5vw, 1.32rem);
-    --fs-xl: clamp(1.25rem, 1.16rem + 0.7vw, 1.58rem);
+    --fs-xs:  clamp(0.75rem, 0.72rem + 0.1vw, 0.80rem);
+    --fs-sm:  clamp(0.875rem, 0.84rem + 0.2vw, 0.95rem);
+    --fs-md:  clamp(1rem, 0.96rem + 0.3vw, 1.08rem);
+    --fs-lg:  clamp(1.125rem, 1.06rem + 0.5vw, 1.32rem);
+    --fs-xl:  clamp(1.25rem, 1.16rem + 0.7vw, 1.58rem);
     --fs-2xl: clamp(1.5rem, 1.34rem + 1.1vw, 1.95rem);
     --fs-3xl: clamp(1.875rem, 1.62rem + 1.6vw, 2.45rem);
   
@@ -45,32 +73,65 @@
   
     /* weights */
     --fw-regular: 400;
-    --fw-medium: 500;
-    --fw-semibold: 600;
-    --fw-bold: 700;
+    --fw-medium:  500;
+    --fw-semibold:600;
+    --fw-bold:    700;
+  
+    /* ================================
+       Radii & spacing
+       ================================ */
+    --radius-xs: 6px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
+    --radius-3xl: 28px;
+    --radius-pill: 999px;
+  
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+  
+    /* ================================
+       Shadows / elevation
+       ================================ */
+    --shadow-1: 0 1px 2px rgb(15 23 42 / .06);
+    --shadow-2: 0 2px 8px rgb(15 23 42 / .08);
+    --shadow-3: 0 8px 24px rgb(15 23 42 / .10);
+    --shadow-4: 0 12px 32px rgb(15 23 42 / .12);
+  
+    --shadow-soft: var(--shadow-2);
+    --shadow-elev: var(--shadow-3);
+    --shadow-glow: 0 6px 24px rgb(var(--accent) / .18);
+  
+    /* Surfaces (aliases for components) */
+    --bg-elevated: rgb(255 255 255);
   
     /* ================================
        Motion tokens (layer-wide)
        ================================ */
-    --motion-fast: 150ms;
+    --motion-fast:   150ms;
     --motion-normal: 240ms;
-    --motion-slow: 480ms;
+    --motion-slow:   480ms;
+    --motion-quick:  var(--motion-fast);
+  
     --easing-standard: cubic-bezier(.2,.8,.2,1);
-    --easing-emph: cubic-bezier(.2,.8,.0,1);
+    --easing-emph:     cubic-bezier(.2,.8,0,1);
+    --easing-in:       cubic-bezier(.4,0,1,1);
+    --easing-out:      cubic-bezier(0,0,.2,1);
   
     /* Animated ring tokens */
     --ring-size: 44px;        /* default outer ring size */
     --ring-thickness: 2px;
     --ring-blur: 8px;
   
-    /* Shadow / glow */
-    --shadow-glow: 0 6px 24px rgb(var(--accent) / .18);
-    --shadow-soft: 0 2px 10px rgb(15 23 42 / .06);
-  
     /* ================================
        Gradient palette tokens (base)
        ================================ */
-    /* Existing triads used across the app */
     --grad-blue-a:    79 70 229;   /* indigo-600 */
     --grad-blue-b:    56 189 248;  /* sky-400 */
   
@@ -83,25 +144,25 @@
     /* Brand-style blends */
     /* Pandora: deep violet → electric cyan */
     --grad-pandora-a: 124 58 237;   /* violet-600 */
-    --grad-pandora-b: 34 211 238;   /* cyan-400 */
+    --grad-pandora-b:  34 211 238;  /* cyan-400 */
     --grad-pandora: linear-gradient(135deg,
       rgb(var(--grad-pandora-a)) 0%,
       rgb(var(--grad-pandora-b)) 100%
     );
   
     /* CNBC: cobalt → jade */
-    --grad-cnbc-a: 37 99 235;      /* blue-600 */
-    --grad-cnbc-b: 34 197 94;      /* green-500 */
+    --grad-cnbc-a:  37  99 235;     /* blue-600 */
+    --grad-cnbc-b:  34 197  94;     /* green-500 */
     --grad-cnbc: linear-gradient(135deg,
       rgb(var(--grad-cnbc-a)) 0%,
       rgb(var(--grad-cnbc-b)) 100%
     );
   
     /* Instagram: orange → pink/purple sweep */
-    --grad-ig-a: 245 133 41;       /* #F58529 */
-    --grad-ig-b: 221 42 123;       /* #DD2A7B */
-    --grad-ig-c: 129 52 175;       /* #8134AF */
-    --grad-ig-d: 81 91 212;        /* #515BD4 */
+    --grad-ig-a: 245 133  41;       /* #F58529 */
+    --grad-ig-b: 221  42 123;       /* #DD2A7B */
+    --grad-ig-c: 129  52 175;       /* #8134AF */
+    --grad-ig-d:  81  91 212;       /* #515BD4 */
     --grad-ig: linear-gradient(135deg,
       rgb(var(--grad-ig-a)) 0%,
       rgb(var(--grad-ig-b)) 33%,
@@ -109,137 +170,133 @@
       rgb(var(--grad-ig-d)) 100%
     );
   
-    /* === Gradient companions for intents ===
-       These keep older components (TraceOutline, shine, etc.) consistent
-       without rewriting them—use var(--grad-accent) / var(--grad-info). */
+    /* === Signature gradient (single source of truth) === */
+    --grad-signature: var(--grad-pandora);
+  
+    /* === Intent mappings (leave as aliases) === */
     --grad-accent: var(--grad-pandora);
-    --grad-info: var(--grad-cnbc);
+    --grad-info:   var(--grad-cnbc);
+  
+    /* =========================================================
+       Files: status badges + pending pulse ring
+       ========================================================= */
+    .ss-badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      font-size: 10px;
+      line-height: 1;
+      padding: 4px 6px;
+      border-radius: 999px;
+      backdrop-filter: saturate(1.2) blur(4px);
+      border: 1px solid transparent;
+    }
+    .ss-badge--pending {
+      color: rgb(var(--ring));
+      background: rgb(199 210 254 / 0.6); /* indigo-200/60 */
+      border-color: rgb(var(--ring) / 0.3);
+    }
+    .ss-badge--approved,
+    .ss-badge--allowed {
+      color: rgb(6 95 70);
+      background: rgb(167 243 208 / 0.5);
+      border-color: rgb(16 185 129 / 0.3);
+    }
+    .ss-badge--blocked {
+      color: rgb(155 28 28);
+      background: rgb(254 205 211 / 0.55);
+      border-color: rgb(244 63 94 / 0.35);
+    }
+  
+    @keyframes ss-pulse-ring {
+      0%   { transform: scale(0.9); opacity: 0.7; }
+      70%  { transform: scale(1.2); opacity: 0.15; }
+      100% { transform: scale(1.2); opacity: 0; }
+    }
+    .ss-pulse-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      box-shadow: 0 0 0 2px rgb(var(--ring) / 0.35);
+      animation: ss-pulse-ring 1.6s ease-out infinite;
+      pointer-events: none;
+    }
+  
+    /* =========================================================
+       Project Icon helpers
+       ========================================================= */
+    .project-icon {
+      --_size: var(--project-icon-size);
+      width: var(--_size);
+      height: var(--_size);
+      border-radius: var(--project-icon-radius);
+      display: grid;
+      place-items: center;
+      background: rgb(241 245 249); /* slate-100 */
+      color: rgb(var(--accent));
+      overflow: hidden;
+    }
+    .project-icon--sm { --_size: 24px; }
+    .project-icon--md { --_size: 28px; }
+    .project-icon--lg { --_size: 40px; }
+    .project-icon > .emoji {
+      font-size: calc(var(--_size) - 6px);
+      line-height: 1;
+    }
+    .project-icon > svg {
+      width: calc(var(--_size) - 10px);
+      height: calc(var(--_size) - 10px);
+    }
   }
   
-  [data-theme="dark"] {
+  /* Dark mode (support both dataset & class toggles) */
+  [data-theme="dark"],
+  :root.dark {
     --bg:       15 23 42;     /* slate-900 */
-    --card:     2 6 23;       /* slate-950-ish */
+    --card:      2  6 23;     /* slate-950-ish */
     --text:     241 245 249;  /* slate-100 */
     --muted:    148 163 184;  /* slate-400 */
-    --border:   51 65 85;     /* slate-700 */
+    --border:    51  65  85;  /* slate-700 */
     --ring:     165 180 252;  /* indigo-300 */
   
-    /* accent stays; or nudge lighter for contrast */
     --accent-foreground: 255 255 255;
   
-    /* slightly stronger glow in dark */
+    /* stronger glow in dark */
     --shadow-glow: 0 8px 28px rgb(var(--accent) / .28);
   
-    /* Dark-tuned gradient stops (slightly brighter for contrast) */
+    /* Slightly brighter gradient stops */
     --grad-pandora-a: 139 92 246;    /* violet-500/600 blend */
-    --grad-pandora-b: 56 189 248;    /* sky-400 */
+    --grad-pandora-b:  56 189 248;   /* sky-400 */
   
-    --grad-cnbc-a: 59 130 246;       /* blue-500 */
-    --grad-cnbc-b: 34 197 94;        /* green-500 */
+    --grad-cnbc-a:     59 130 246;   /* blue-500 */
+    --grad-cnbc-b:     34 197  94;   /* green-500 */
   
-    --grad-ig-a: 249 115 22;         /* orange-500 */
-    --grad-ig-b: 236 72 153;         /* pink-500 */
-    --grad-ig-c: 139 92 246;         /* violet-500 */
-    --grad-ig-d: 99 102 241;         /* indigo-500 */
+    --grad-ig-a:      249 115  22;   /* orange-500 */
+    --grad-ig-b:      236  72 153;   /* pink-500 */
+    --grad-ig-c:      139  92 246;   /* violet-500 */
+    --grad-ig-d:       99 102 241;   /* indigo-500 */
   
-    /* Keep the intent mappings the same in dark mode */
-    --grad-accent: var(--grad-pandora);
-    --grad-info: var(--grad-cnbc);
+    --grad-signature: var(--grad-pandora);
+  
+    --bg-elevated: rgb(15 23 42 / .85);
   }
   
   /* per-surface accent overrides e.g. data-accent="emerald" */
   [data-accent="emerald"] { --accent:  5 150 105; }
-  [data-accent="rose"]    { --accent: 225 29 72; }
-  [data-accent="sky"]     { --accent: 2 132 199; }
-  [data-accent="amber"]   { --accent: 217 119 6; }
+  [data-accent="rose"]    { --accent: 225  29  72; }
+  [data-accent="sky"]     { --accent:   2 132 199; }
+  [data-accent="amber"]   { --accent: 217 119   6; }
   
-  /* =========================================================
-     Files: status badges + pending pulse ring
-     ========================================================= */
-  
-  /* tiny badges that sit on cards (top-left) */
-  .ss-badge {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    font-size: 10px;
-    line-height: 1;
-    padding: 4px 6px;
-    border-radius: 999px;
-    backdrop-filter: saturate(1.2) blur(4px);
-    border: 1px solid transparent;
-  }
-  
-  .ss-badge--pending {
-    color: rgb(var(--ring));
-    background: rgb(199 210 254 / 0.6); /* indigo-200/60 */
-    border-color: rgb(var(--ring) / 0.3);
-  }
-  
-  .ss-badge--approved,
-  .ss-badge--allowed {
-    color: rgb(6 95 70);                   /* emerald-800ish */
-    background: rgb(167 243 208 / 0.5);    /* emerald-200/50 */
-    border-color: rgb(16 185 129 / 0.3);   /* emerald-500/30 */
-  }
-  
-  .ss-badge--blocked {
-    color: rgb(155 28 28);                 /* rose-900ish */
-    background: rgb(254 205 211 / 0.55);   /* rose-200/55 */
-    border-color: rgb(244 63 94 / 0.35);   /* rose-500/35 */
-  }
-  
-  /* animated ring that indicates “processing/pending” */
-  @keyframes ss-pulse-ring {
-    0%   { transform: scale(0.9); opacity: 0.7; }
-    70%  { transform: scale(1.2); opacity: 0.15; }
-    100% { transform: scale(1.2); opacity: 0; }
-  }
-  .ss-pulse-ring {
-    position: absolute;
-    inset: 0;
-    border-radius: 12px;
-    box-shadow: 0 0 0 2px rgb(var(--ring) / 0.35);
-    animation: ss-pulse-ring 1.6s ease-out infinite;
-    pointer-events: none;
-  }
-  
-  /* =========================================================
-     Project Icon helpers
-     ========================================================= */
-  .project-icon {
-    --_size: var(--project-icon-size);
-    width: var(--_size);
-    height: var(--_size);
-    border-radius: var(--project-icon-radius);
-    display: grid;
-    place-items: center;
-    background: rgb(241 245 249); /* slate-100 */
-    color: rgb(var(--accent));
-    overflow: hidden;
-  }
-  .project-icon--sm { --_size: 24px; }
-  .project-icon--md { --_size: 28px; }
-  .project-icon--lg { --_size: 40px; }
-  .project-icon > .emoji {
-    font-size: calc(var(--_size) - 6px);
-    line-height: 1;
-  }
-  .project-icon > svg {
-    width: calc(var(--_size) - 10px);
-    height: calc(var(--_size) - 10px);
-  }
-  
-  /* =========================================================
-     Reduced motion
-     ========================================================= */
+  /* Reduced motion: convert durations to zero and kill notable anims */
   @media (prefers-reduced-motion: reduce) {
     :root {
       --motion-fast: 0ms;
       --motion-normal: 0ms;
       --motion-slow: 0ms;
+      --motion-quick: 0ms;
     }
     .ss-pulse-ring {
       animation: none !important;
     }
-  }  
+  }
+  

@@ -1,141 +1,194 @@
 /* Gradient helpers.
-   Uses tokens from tokens.css; provides bg + text gradient utilities. */
+   Uses tokens from tokens.css; provides bg + text gradient utilities,
+   row auras, and accent bars. */
 
-   :root {}
-
-   /* -------- Background gradients (existing) -------- */
-   .bg-grad-blue {
-     background-image:
-       radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-blue-b) / .25), transparent 60%),
-       linear-gradient(135deg, rgb(var(--grad-blue-a)), rgb(var(--grad-blue-b)));
-     color: white;
-   }
-   .bg-grad-purple {
-     background-image:
-       radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-purple-b) / .25), transparent 60%),
-       linear-gradient(135deg, rgb(var(--grad-purple-a)), rgb(var(--grad-purple-b)));
-     color: white;
-   }
-   .bg-grad-emerald {
-     background-image:
-       radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-emerald-b) / .25), transparent 60%),
-       linear-gradient(135deg, rgb(var(--grad-emerald-a)), rgb(var(--grad-emerald-b)));
-     color: white;
-   }
-   
-   /* -------- New brand blends: Pandora / CNBC / IG -------- */
-   .bg-grad-pandora {
-     background-image:
-       radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-pandora-b) / .20), transparent 60%),
-       var(--grad-pandora);
-     color: white;
-   }
-   .bg-grad-cnbc {
-     background-image:
-       radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-cnbc-b) / .20), transparent 60%),
-       var(--grad-cnbc);
-     color: white;
-   }
-   .bg-grad-ig {
-     background-image:
-       radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-ig-b) / .18), transparent 60%),
-       var(--grad-ig);
-     color: white;
-   }
-   
-   /* Subtle elevated card using gradient border */
-   .grad-border {
-     position: relative;
-   }
-   .grad-border::before {
-     content: "";
-     position: absolute;
-     inset: 0;
-     padding: 1px;
-     border-radius: inherit;
-     background: linear-gradient(135deg,
-       rgb(var(--grad-blue-a) / .5),
-       rgb(var(--grad-purple-a) / .5),
-       rgb(var(--grad-emerald-a) / .5)
-     );
-     -webkit-mask:
-       linear-gradient(#000 0 0) content-box,
-       linear-gradient(#000 0 0);
-     -webkit-mask-composite: xor;
-             mask-composite: exclude;
-     pointer-events: none;
-   }
-   
-   /* -------- Text gradients -------- */
-   .text-grad-blue,
-   .text-grad-purple,
-   .text-grad-emerald,
-   .text-grad-pandora,
-   .text-grad-cnbc,
-   .text-grad-ig {
-     -webkit-background-clip: text;
-     background-clip: text;
-     color: transparent;
-   }
-   
-   .text-grad-blue     { background-image: linear-gradient(135deg, rgb(var(--grad-blue-a)), rgb(var(--grad-blue-b))); }
-   .text-grad-purple   { background-image: linear-gradient(135deg, rgb(var(--grad-purple-a)), rgb(var(--grad-purple-b))); }
-   .text-grad-emerald  { background-image: linear-gradient(135deg, rgb(var(--grad-emerald-a)), rgb(var(--grad-emerald-b))); }
-   .text-grad-pandora  { background-image: var(--grad-pandora); }
-   .text-grad-cnbc     { background-image: var(--grad-cnbc); }
-   .text-grad-ig       { background-image: var(--grad-ig); }
-   
-   /* -------- Icon stroke/fill helpers -------- */
-   .stroke-grad-blue,
-   .stroke-grad-purple,
-   .stroke-grad-emerald,
-   .stroke-grad-pandora,
-   .stroke-grad-cnbc,
-   .stroke-grad-ig {
-     background-clip: text;
-     -webkit-background-clip: text;
-     color: transparent;
-   }
-   .stroke-grad-blue    { background-image: linear-gradient(135deg, rgb(var(--grad-blue-a)), rgb(var(--grad-blue-b))); }
-   .stroke-grad-purple  { background-image: linear-gradient(135deg, rgb(var(--grad-purple-a)), rgb(var(--grad-purple-b))); }
-   .stroke-grad-emerald { background-image: linear-gradient(135deg, rgb(var(--grad-emerald-a)), rgb(var(--grad-emerald-b))); }
-   .stroke-grad-pandora { background-image: var(--grad-pandora); }
-   .stroke-grad-cnbc    { background-image: var(--grad-cnbc); }
-   .stroke-grad-ig      { background-image: var(--grad-ig); }
-   
-   /* -------- Ring-like gradient outline helper -------- */
-   .ring-grad,
-   .ring-grad-pandora,
-   .ring-grad-cnbc,
-   .ring-grad-ig {
-     position: relative;
-   }
-   .ring-grad::after,
-   .ring-grad-pandora::after,
-   .ring-grad-cnbc::after,
-   .ring-grad-ig::after {
-     content: "";
-     position: absolute;
-     inset: -2px;
-     padding: 2px;
-     border-radius: inherit;
-     background: var(--grad-pandora);
-     -webkit-mask:
-       linear-gradient(#000 0 0) content-box,
-       linear-gradient(#000 0 0);
-     -webkit-mask-composite: xor;
-             mask-composite: exclude;
-     pointer-events: none;
-   }
-   .ring-grad-pandora::after { background: var(--grad-pandora); }
-   .ring-grad-cnbc::after    { background: var(--grad-cnbc); }
-   .ring-grad-ig::after      { background: var(--grad-ig); }
-   
-   /* -------- Badges (optional extension to feed.css) -------- */
-   .badge--grad-blue    { background-image: linear-gradient(135deg, rgb(var(--grad-blue-a) / .14), rgb(var(--grad-blue-b) / .18)); color: rgb(var(--grad-blue-a)); }
-   .badge--grad-purple  { background-image: linear-gradient(135deg, rgb(var(--grad-purple-a) / .14), rgb(var(--grad-purple-b) / .18)); color: rgb(var(--grad-purple-a)); }
-   .badge--grad-emerald { background-image: linear-gradient(135deg, rgb(var(--grad-emerald-a) / .14), rgb(var(--grad-emerald-b) / .18)); color: rgb(var(--grad-emerald-a)); }
-   
-   /* Reduced motion placeholder */
-   @media (prefers-reduced-motion: reduce) {}
-   
+/* -------- Background gradients (existing) -------- */
+.bg-grad-blue {
+    background-image:
+      radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-blue-b) / .25), transparent 60%),
+      linear-gradient(135deg, rgb(var(--grad-blue-a)), rgb(var(--grad-blue-b)));
+    color: white;
+  }
+  .bg-grad-purple {
+    background-image:
+      radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-purple-b) / .25), transparent 60%),
+      linear-gradient(135deg, rgb(var(--grad-purple-a)), rgb(var(--grad-purple-b)));
+    color: white;
+  }
+  .bg-grad-emerald {
+    background-image:
+      radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-emerald-b) / .25), transparent 60%),
+      linear-gradient(135deg, rgb(var(--grad-emerald-a)), rgb(var(--grad-emerald-b)));
+    color: white;
+  }
+  
+  /* -------- Signature blends: Pandora / CNBC / IG -------- */
+  .bg-grad-pandora,
+  .bg-grad-signature {
+    background-image:
+      radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-pandora-b) / .20), transparent 60%),
+      var(--grad-signature);
+    color: white;
+  }
+  .bg-grad-cnbc {
+    background-image:
+      radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-cnbc-b) / .20), transparent 60%),
+      var(--grad-cnbc);
+    color: white;
+  }
+  .bg-grad-ig {
+    background-image:
+      radial-gradient(60% 100% at 10% 0%, rgb(var(--grad-ig-b) / .18), transparent 60%),
+      var(--grad-ig);
+    color: white;
+  }
+  
+  /* Subtle elevated card using gradient border */
+  .grad-border { position: relative; }
+  .grad-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg,
+      rgb(var(--grad-blue-a) / .5),
+      rgb(var(--grad-purple-a) / .5),
+      rgb(var(--grad-emerald-a) / .5)
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  
+  /* -------- Text gradients -------- */
+  .text-grad-blue,
+  .text-grad-purple,
+  .text-grad-emerald,
+  .text-grad-pandora,
+  .text-grad-cnbc,
+  .text-grad-ig,
+  .text-grad-signature {
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .text-grad-blue     { background-image: linear-gradient(135deg, rgb(var(--grad-blue-a)), rgb(var(--grad-blue-b))); }
+  .text-grad-purple   { background-image: linear-gradient(135deg, rgb(var(--grad-purple-a)), rgb(var(--grad-purple-b))); }
+  .text-grad-emerald  { background-image: linear-gradient(135deg, rgb(var(--grad-emerald-a)), rgb(var(--grad-emerald-b))); }
+  .text-grad-pandora,
+  .text-grad-signature{ background-image: var(--grad-signature); }
+  .text-grad-cnbc     { background-image: var(--grad-cnbc); }
+  .text-grad-ig       { background-image: var(--grad-ig); }
+  
+  /* -------- Icon stroke/fill helpers -------- */
+  .stroke-grad-blue,
+  .stroke-grad-purple,
+  .stroke-grad-emerald,
+  .stroke-grad-pandora,
+  .stroke-grad-cnbc,
+  .stroke-grad-ig,
+  .stroke-grad-signature {
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  .stroke-grad-blue      { background-image: linear-gradient(135deg, rgb(var(--grad-blue-a)), rgb(var(--grad-blue-b))); }
+  .stroke-grad-purple    { background-image: linear-gradient(135deg, rgb(var(--grad-purple-a)), rgb(var(--grad-purple-b))); }
+  .stroke-grad-emerald   { background-image: linear-gradient(135deg, rgb(var(--grad-emerald-a)), rgb(var(--grad-emerald-b))); }
+  .stroke-grad-pandora,
+  .stroke-grad-signature { background-image: var(--grad-signature); }
+  .stroke-grad-cnbc      { background-image: var(--grad-cnbc); }
+  .stroke-grad-ig        { background-image: var(--grad-ig); }
+  
+  /* -------- Ring-like gradient outline helper -------- */
+  .ring-grad,
+  .ring-grad-pandora,
+  .ring-grad-cnbc,
+  .ring-grad-ig,
+  .ring-grad-signature {
+    position: relative;
+  }
+  .ring-grad::after,
+  .ring-grad-pandora::after,
+  .ring-grad-cnbc::after,
+  .ring-grad-ig::after,
+  .ring-grad-signature::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    padding: 2px;
+    border-radius: inherit;
+    background: var(--grad-signature);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  .ring-grad-pandora::after,
+  .ring-grad-signature::after { background: var(--grad-signature); }
+  .ring-grad-cnbc::after      { background: var(--grad-cnbc); }
+  .ring-grad-ig::after        { background: var(--grad-ig); }
+  
+  /* -------- Accent bar (left) for cards/sections --------
+     Usage:
+       <div class="card accent-bar">
+         <span class="accent-bar__left"></span>
+         ...
+       </div> */
+  .accent-bar { position: relative; }
+  .accent-bar__left {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    border-top-left-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--radius-lg);
+    background-image: var(--grad-signature);
+    opacity: .95;
+    pointer-events: none;
+  }
+  
+  /* -------- Row auras (page sections) --------
+     Give a soft gradient aura behind a row/section */
+  .row-accent {
+    position: relative;
+  }
+  .row-accent::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: var(--radius-2xl);
+    filter: blur(24px);
+    opacity: .55;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgb(99 102 241 / .18), rgb(236 72 153 / .18));
+  }
+  .row-accent-violet::before {
+    background: linear-gradient(90deg, rgb(139 92 246 / .22), rgb(236 72 153 / .18));
+  }
+  .row-accent-cyan::before {
+    background: linear-gradient(90deg, rgb(56 189 248 / .22), rgb(20 184 166 / .18));
+  }
+  .row-accent-emerald::before {
+    background: linear-gradient(90deg, rgb(16 185 129 / .20), rgb(34 197 94 / .18));
+  }
+  
+  /* Badges with subtle gradient fills */
+  .badge--grad-blue    { background-image: linear-gradient(135deg, rgb(var(--grad-blue-a) / .14), rgb(var(--grad-blue-b) / .18)); color: rgb(var(--grad-blue-a)); }
+  .badge--grad-purple  { background-image: linear-gradient(135deg, rgb(var(--grad-purple-a) / .14), rgb(var(--grad-purple-b) / .18)); color: rgb(var(--grad-purple-a)); }
+  .badge--grad-emerald { background-image: linear-gradient(135deg, rgb(var(--grad-emerald-a) / .14), rgb(var(--grad-emerald-b) / .18)); color: rgb(var(--grad-emerald-a)); }
+  
+  /* Reduced motion placeholder (no animated gradients here) */
+  @media (prefers-reduced-motion: reduce) {
+    .row-accent::before {
+      filter: none;
+      opacity: .35;
+    }
+  }
+  
