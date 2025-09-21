@@ -293,7 +293,7 @@ function inferSystemMessage({ type = '', meta = {} }) {
   if (t.includes('public') || 'publicToken' in meta || 'publicEnabled' in meta) {
     const on = !!(meta.publicEnabled || meta.publicToken);
     return on ? 'Public status enabled' : 'Public status disabled';
-    }
+  }
 
   // icon change
   if (t.includes('icon') || meta.patch?.icon || meta.icon) {

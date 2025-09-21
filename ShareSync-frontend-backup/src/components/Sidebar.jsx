@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Home, FolderKanban, User as UserIcon, Settings, ChevronsLeft } from "lucide-react";
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
 import "./Sidebar.css";
 import { track } from "../utils/telemetry";
 
-// localStorage key
 const LS_KEY = "ss.sidebar.collapsed";
 
 /**
@@ -19,11 +18,14 @@ const LS_KEY = "ss.sidebar.collapsed";
 export default function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => {
-    const raw = localStorage.getItem(LS_KEY);
-    return raw ? raw === "1" : false;
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      return raw ? raw === "1" : false;
+    } catch {
+      return false;
+    }
   });
 
-  // Derive tooltip mode from collapsed state
   const tooltipWhenCollapsed = collapsed;
 
   const toggle = useCallback(() => {
@@ -34,25 +36,25 @@ export default function Sidebar() {
 
   // Persist + body class & CSS var for layout
   useEffect(() => {
-    localStorage.setItem(LS_KEY, collapsed ? "1" : "0");
+    try { localStorage.setItem(LS_KEY, collapsed ? "1" : "0"); } catch {}
 
     document.body.classList.add("has-sidebar");
     document.body.classList.toggle("sidebar-collapsed", collapsed);
 
-    // Optional: fire a custom event so analytics can listen
+    // Optional custom event for any listeners (analytics / layout)
     try {
       window.dispatchEvent(new CustomEvent("sidebar:toggle", { detail: { collapsed } }));
     } catch {}
-    return () => {
-      // We keep has-sidebar; if you ever unmount the Sidebar entirely, you can clean up here.
-    };
   }, [collapsed]);
 
-  // Global '[' hotkey, but avoid when typing in inputs/textareas
+  // Global '[' hotkey, but avoid when typing in inputs/textareas/contenteditable
   useEffect(() => {
     const onKey = (e) => {
       const tag = String(e.target?.tagName || "").toLowerCase();
-      const isTyping = tag === "input" || tag === "textarea" || e.target?.isContentEditable;
+      const isTyping =
+        tag === "input" ||
+        tag === "textarea" ||
+        e.target?.isContentEditable;
       if (isTyping) return;
       if (e.key === "[") {
         e.preventDefault();
@@ -63,10 +65,10 @@ export default function Sidebar() {
     return () => window.removeEventListener("keydown", onKey);
   }, [toggle]);
 
-  // (Optional) Active counts; wire your unread/metrics here
+  // Counts (wire up to real data if desired)
   const counts = useMemo(
     () => ({
-      projects: undefined, // e.g., number
+      projects: undefined,
       home: undefined,
       settings: undefined,
       profile: undefined,
@@ -74,8 +76,6 @@ export default function Sidebar() {
     []
   );
 
-  // (Optional) bottom user block data; you can swap to your UserContext
-  // and pass avatar src/emoji/name. Default to placeholders.
   const me = { name: "You", status: "online", avatarUrl: undefined, avatarEmoji: undefined };
 
   return (
@@ -85,7 +85,7 @@ export default function Sidebar() {
     >
       {/* Header / Logo + collapse button */}
       <div className="sb-head">
-        <div className="sb-brand" aria-hidden={!collapsed ? "false" : "true"}>
+        <div className="sb-brand" aria-hidden={collapsed ? "true" : "false"}>
           <span className="sb-logo">◆</span>
           {!collapsed && <span className="sb-title">ShareSync</span>}
         </div>

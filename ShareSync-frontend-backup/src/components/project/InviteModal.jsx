@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { sendInvite, listInvites, revokeInvite } from "../../api/invite";
 import { track } from "../../utils/telemetry";
-import { toast } from "../ui/Toaster.jsx";
+import { toast } from "../ui/toast";
 
 export default function InviteModal({ open, onClose, projectId }) {
   const [email, setEmail] = useState("");

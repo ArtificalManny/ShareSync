@@ -1,5 +1,21 @@
 import client from './client';
 
+/** Build a canonical download URL (server should stream the file). */
+export function buildDownloadUrl(projectId, fileId) {
+  if (!fileId) return '';
+  // Prefer project-scoped route; update to match your BE.
+  return projectId
+    ? `/projects/${projectId}/files/${fileId}/download`
+    : `/files/${fileId}/download`;
+}
+
+/** Given a file doc, pick the best download URL. */
+export function getDownloadUrl(file, fallbackProjectId) {
+  const id = file?._id || file?.id;
+  const pid = file?.projectId || fallbackProjectId;
+  return file?.downloadUrl || file?.url || buildDownloadUrl(pid, id);
+}
+
 /**
  * GET /projects/:projectId/files
  * Supports cursor pagination.
@@ -13,7 +29,20 @@ export async function listFiles(projectId, { cursor = null, limit = 20 } = {}) {
       limit: Number(limit) || undefined,
     },
   });
-  const items = Array.isArray(data?.items) ? data.items : [];
+
+  const rawItems = Array.isArray(data?.items) ? data.items : [];
+  const items = rawItems.map((it) => {
+    const id = it._id || it.id;
+    const url = it.url || buildDownloadUrl(projectId, id);
+    return {
+      ...it,
+      id,
+      url,                       // ensure we always have a usable href
+      downloadUrl: it.downloadUrl || url,
+      projectId: it.projectId || projectId,
+    };
+  });
+
   return { items, nextCursor: data?.nextCursor || null };
 }
 
@@ -64,4 +93,10 @@ export async function deleteFile(projectId, fileId) {
   return data; // { ok: true }
 }
 
-export default { listFiles, createFiles, deleteFile };
+export default {
+  listFiles,
+  createFiles,
+  deleteFile,
+  buildDownloadUrl,
+  getDownloadUrl,
+};

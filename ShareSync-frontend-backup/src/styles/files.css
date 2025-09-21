@@ -1,4 +1,4 @@
-/* File status badges + pending ring (kept) */
+/* File status badges + pending ring */
 @keyframes ss-pulse-ring {
     0%   { transform: scale(0.9); opacity: 0.7; }
     70%  { transform: scale(1.2); opacity: 0.15; }
@@ -67,6 +67,10 @@
     display: grid;
     place-items: center;
   }
+  .thumb--error {
+    position: relative;
+    width: 100%;
+  }
   .thumb__img {
     position: absolute;
     inset: 0;
@@ -93,6 +97,32 @@
     100% { background-position: -200% 0; }
   }
   
+  /* Caption/action bar (used by FileItem successful preview) */
+  .thumb__caption {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    padding: 6px;
+    background: linear-gradient(to top, rgba(2,6,23,.45), rgba(2,6,23,0));
+  }
+  .thumb__action {
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.25);
+    color: white;
+    backdrop-filter: saturate(1.2) blur(2px);
+    background: rgba(15,23,42,.25);
+  }
+  .thumb__action:hover {
+    background: rgba(15,23,42,.4);
+  }
+  
+  /* Optional badge for failures within thumb tile */
   .thumb__badge {
     position: absolute;
     top: 6px; right: 6px;

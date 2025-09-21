@@ -346,6 +346,7 @@ export default function ProjectSettingsModal({
   };
 
   // Regenerate link (confirmed)
+  const confirmRegenOpenRef = useRef(false);
   const regenerate = async () => {
     if (!project?._id) return;
     setRegenLoading(true);

@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from "react";
+import React, { useContext, useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Link2, RefreshCcw, Copy as CopyIcon, Check as CheckIcon } from "lucide-react";
 import { AuthContext } from "../../AuthContext";
@@ -10,7 +10,7 @@ import {
   buildPublicStatusUrl,
 } from "../../api/public";
 import { track } from "../../utils/telemetry";
-import { toast } from "../ui/Toaster.jsx";            // ← NEW
+import { toast } from "../ui/Toaster.jsx";
 import ProjectIconPicker from "./ProjectIconPicker";
 import AnimatedRing from "../ui/AnimatedRing";
 import GradientText from "../ui/GradientText";
@@ -96,6 +96,30 @@ export default function ProjectHeader({
   const [copied, setCopied] = useState(false);
 
   const icon = iconOverride ?? project?.icon ?? null;
+
+  // ✅ Mark project as seen on view/focus
+  useEffect(() => {
+    if (!project?._id) return;
+
+    // Immediately if visible
+    if (typeof document !== "undefined" && document.visibilityState === "visible") {
+      try { setLastSeen(project._id, Date.now()); track("project_seen", { projectId: project._id, source: "header_mount" }); } catch {}
+    }
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        try { setLastSeen(project._id, Date.now()); track("project_seen", { projectId: project._id, source: "visibilitychange" }); } catch {}
+      }
+    };
+    const onFocus = () => {
+      try { setLastSeen(project._id, Date.now()); track("project_seen", { projectId: project._id, source: "focus" }); } catch {}
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [project?._id]);
 
   const handleQuickAdd = async (e) => {
     e.preventDefault();

@@ -32,7 +32,6 @@ import {
   RefreshCcw,
   Trophy,
   Files as FilesIcon,
-  CheckSquare,
 } from "lucide-react";
 import { buildPublicStatusUrl } from "../api/public";
 
@@ -113,8 +112,8 @@ function nextThreshold(count, thresholds = [1, 5, 10, 25, 50, 100]) {
 }
 function MilestoneBar({ icon, label, count, unit }) {
   const next = nextThreshold(count);
-  const prev = next ? (count >= 1 ? thresholdsBelow(next).slice(-1)[0] || 0 : 0) : count;
   function thresholdsBelow(t) { return [1,5,10,25,50,100].filter((x) => x < t); }
+  const prev = next ? (count >= 1 ? thresholdsBelow(next).slice(-1)[0] || 0 : 0) : count;
   const target = next ?? count;
   const base = prev ?? 0;
   const span = Math.max(1, target - base);
@@ -297,6 +296,32 @@ export default function ProjectHome() {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onFocus);
     };
+  }, [project?._id]);
+
+  // IntersectionObserver: mark last seen when Activity section enters view
+  useEffect(() => {
+    if (!project?._id) return;
+    const el = activityRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    let lastSet = 0;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((en) => {
+          if (en.isIntersecting && en.intersectionRatio >= 0.3) {
+            const now = Date.now();
+            if (now - lastSet > 15_000) {
+              try { setLastSeen(project._id, now); } catch {}
+              lastSet = now;
+            }
+          }
+        });
+      },
+      { threshold: [0.3, 0.6, 1] }
+    );
+
+    obs.observe(el);
+    return () => obs.disconnect();
   }, [project?._id]);
 
   // Helper: is the Activity section currently in view?
@@ -622,7 +647,6 @@ export default function ProjectHome() {
 
   // 🔹 KPI point click handler → open modal and preload comments
   const onKpiPointClick = useCallback((p) => {
-    // p may include metric/title from the chart; fallbacks just in case
     const metric =
       p?.metric ||
       p?.title ||
@@ -1021,7 +1045,7 @@ export default function ProjectHome() {
             aria-hidden="true"
           />
           <div
-            className="fixed z-50 inset-x-4 top-24 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w=[min(560px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
+            className="fixed z-50 inset-x-4 top-24 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(560px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
             role="dialog"
             aria-modal="true"
             aria-label="Public status link"

@@ -55,15 +55,23 @@ function pickIcon(key) {
 function guessFromName(name = "") {
   const ext = name.toLowerCase().split(".").pop() || "";
   const map = {
-    jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif", svg: "image/svg+xml",
+    // images
+    jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp",
+    gif: "image/gif", svg: "image/svg+xml",
+    // video
     mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime",
+    // audio
     mp3: "audio/mpeg", wav: "audio/wav",
+    // docs
     pdf: "application/pdf",
     doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     xls: "application/vnd.ms-excel", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ppt: "application/vnd.ms-powerpoint", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    // archives
     zip: "application/zip", rar: "application/vnd.rar", "7z": "application/x-7z-compressed",
-    json: "application/json", js: "text/javascript", ts: "text/typescript", css: "text/css", html: "text/html", md: "text/markdown", txt: "text/plain",
+    // code/text
+    json: "application/json", js: "text/javascript", ts: "text/typescript",
+    css: "text/css", html: "text/html", md: "text/markdown", txt: "text/plain",
   };
   return map[ext] || "application/octet-stream";
 }

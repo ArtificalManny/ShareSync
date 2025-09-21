@@ -176,127 +176,126 @@
     /* === Intent mappings (leave as aliases) === */
     --grad-accent: var(--grad-pandora);
     --grad-info:   var(--grad-cnbc);
+}
   
-    /* =========================================================
-       Files: status badges + pending pulse ring
-       ========================================================= */
-    .ss-badge {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      font-size: 10px;
-      line-height: 1;
-      padding: 4px 6px;
-      border-radius: 999px;
-      backdrop-filter: saturate(1.2) blur(4px);
-      border: 1px solid transparent;
-    }
-    .ss-badge--pending {
-      color: rgb(var(--ring));
-      background: rgb(199 210 254 / 0.6); /* indigo-200/60 */
-      border-color: rgb(var(--ring) / 0.3);
-    }
-    .ss-badge--approved,
-    .ss-badge--allowed {
-      color: rgb(6 95 70);
-      background: rgb(167 243 208 / 0.5);
-      border-color: rgb(16 185 129 / 0.3);
-    }
-    .ss-badge--blocked {
-      color: rgb(155 28 28);
-      background: rgb(254 205 211 / 0.55);
-      border-color: rgb(244 63 94 / 0.35);
-    }
-  
-    @keyframes ss-pulse-ring {
-      0%   { transform: scale(0.9); opacity: 0.7; }
-      70%  { transform: scale(1.2); opacity: 0.15; }
-      100% { transform: scale(1.2); opacity: 0; }
-    }
-    .ss-pulse-ring {
-      position: absolute;
-      inset: 0;
-      border-radius: 12px;
-      box-shadow: 0 0 0 2px rgb(var(--ring) / 0.35);
-      animation: ss-pulse-ring 1.6s ease-out infinite;
-      pointer-events: none;
-    }
-  
-    /* =========================================================
-       Project Icon helpers
-       ========================================================= */
-    .project-icon {
-      --_size: var(--project-icon-size);
-      width: var(--_size);
-      height: var(--_size);
-      border-radius: var(--project-icon-radius);
-      display: grid;
-      place-items: center;
-      background: rgb(241 245 249); /* slate-100 */
-      color: rgb(var(--accent));
-      overflow: hidden;
-    }
-    .project-icon--sm { --_size: 24px; }
-    .project-icon--md { --_size: 28px; }
-    .project-icon--lg { --_size: 40px; }
-    .project-icon > .emoji {
-      font-size: calc(var(--_size) - 6px);
-      line-height: 1;
-    }
-    .project-icon > svg {
-      width: calc(var(--_size) - 10px);
-      height: calc(var(--_size) - 10px);
-    }
+/* =========================================================
+   Files: status badges + pending pulse ring
+   ========================================================= */
+.ss-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 10px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 999px;
+  backdrop-filter: saturate(1.2) blur(4px);
+  border: 1px solid transparent;
+}
+.ss-badge--pending {
+  color: rgb(var(--ring));
+  background: rgb(199 210 254 / 0.6); /* indigo-200/60 */
+  border-color: rgb(var(--ring) / 0.3);
+}
+.ss-badge--approved,
+.ss-badge--allowed {
+  color: rgb(6 95 70);
+  background: rgb(167 243 208 / 0.5);
+  border-color: rgb(16 185 129 / 0.3);
+}
+.ss-badge--blocked {
+  color: rgb(155 28 28);
+  background: rgb(254 205 211 / 0.55);
+  border-color: rgb(244 63 94 / 0.35);
+}
+
+@keyframes ss-pulse-ring {
+  0%   { transform: scale(0.9); opacity: 0.7; }
+  70%  { transform: scale(1.2); opacity: 0.15; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+.ss-pulse-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px rgb(var(--ring) / 0.35);
+  animation: ss-pulse-ring 1.6s ease-out infinite;
+  pointer-events: none;
+}
+
+/* =========================================================
+   Project Icon helpers
+   ========================================================= */
+.project-icon {
+  --_size: var(--project-icon-size);
+  width: var(--_size);
+  height: var(--_size);
+  border-radius: var(--project-icon-radius);
+  display: grid;
+  place-items: center;
+  background: rgb(241 245 249); /* slate-100 */
+  color: rgb(var(--accent));
+  overflow: hidden;
+}
+.project-icon--sm { --_size: 24px; }
+.project-icon--md { --_size: 28px; }
+.project-icon--lg { --_size: 40px; }
+.project-icon > .emoji {
+  font-size: calc(var(--_size) - 6px);
+  line-height: 1;
+}
+.project-icon > svg {
+  width: calc(var(--_size) - 10px);
+  height: calc(var(--_size) - 10px);
+}
+
+/* Dark mode (support both dataset & class toggles) */
+[data-theme="dark"],
+:root.dark {
+  --bg:       15 23 42;     /* slate-900 */
+  --card:      2  6 23;     /* slate-950-ish */
+  --text:     241 245 249;  /* slate-100 */
+  --muted:    148 163 184;  /* slate-400 */
+  --border:    51  65  85;  /* slate-700 */
+  --ring:     165 180 252;  /* indigo-300 */
+
+  --accent-foreground: 255 255 255;
+
+  /* stronger glow in dark */
+  --shadow-glow: 0 8px 28px rgb(var(--accent) / .28);
+
+  /* Slightly brighter gradient stops */
+  --grad-pandora-a: 139 92 246;    /* violet-500/600 blend */
+  --grad-pandora-b:  56 189 248;   /* sky-400 */
+
+  --grad-cnbc-a:     59 130 246;   /* blue-500 */
+  --grad-cnbc-b:     34 197  94;   /* green-500 */
+
+  --grad-ig-a:      249 115  22;   /* orange-500 */
+  --grad-ig-b:      236  72 153;   /* pink-500 */
+  --grad-ig-c:      139  92 246;   /* violet-500 */
+  --grad-ig-d:       99 102 241;   /* indigo-500 */
+
+  --grad-signature: var(--grad-pandora);
+
+  --bg-elevated: rgb(15 23 42 / .85);
+}
+
+/* per-surface accent overrides e.g. data-accent="emerald" */
+[data-accent="emerald"] { --accent:  5 150 105; }
+[data-accent="rose"]    { --accent: 225  29  72; }
+[data-accent="sky"]     { --accent:   2 132 199; }
+[data-accent="amber"]   { --accent: 217 119   6; }
+
+/* Reduced motion: convert durations to zero and kill notable anims */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-normal: 0ms;
+    --motion-slow: 0ms;
+    --motion-quick: 0ms;
   }
-  
-  /* Dark mode (support both dataset & class toggles) */
-  [data-theme="dark"],
-  :root.dark {
-    --bg:       15 23 42;     /* slate-900 */
-    --card:      2  6 23;     /* slate-950-ish */
-    --text:     241 245 249;  /* slate-100 */
-    --muted:    148 163 184;  /* slate-400 */
-    --border:    51  65  85;  /* slate-700 */
-    --ring:     165 180 252;  /* indigo-300 */
-  
-    --accent-foreground: 255 255 255;
-  
-    /* stronger glow in dark */
-    --shadow-glow: 0 8px 28px rgb(var(--accent) / .28);
-  
-    /* Slightly brighter gradient stops */
-    --grad-pandora-a: 139 92 246;    /* violet-500/600 blend */
-    --grad-pandora-b:  56 189 248;   /* sky-400 */
-  
-    --grad-cnbc-a:     59 130 246;   /* blue-500 */
-    --grad-cnbc-b:     34 197  94;   /* green-500 */
-  
-    --grad-ig-a:      249 115  22;   /* orange-500 */
-    --grad-ig-b:      236  72 153;   /* pink-500 */
-    --grad-ig-c:      139  92 246;   /* violet-500 */
-    --grad-ig-d:       99 102 241;   /* indigo-500 */
-  
-    --grad-signature: var(--grad-pandora);
-  
-    --bg-elevated: rgb(15 23 42 / .85);
+  .ss-pulse-ring {
+    animation: none !important;
   }
-  
-  /* per-surface accent overrides e.g. data-accent="emerald" */
-  [data-accent="emerald"] { --accent:  5 150 105; }
-  [data-accent="rose"]    { --accent: 225  29  72; }
-  [data-accent="sky"]     { --accent:   2 132 199; }
-  [data-accent="amber"]   { --accent: 217 119   6; }
-  
-  /* Reduced motion: convert durations to zero and kill notable anims */
-  @media (prefers-reduced-motion: reduce) {
-    :root {
-      --motion-fast: 0ms;
-      --motion-normal: 0ms;
-      --motion-slow: 0ms;
-      --motion-quick: 0ms;
-    }
-    .ss-pulse-ring {
-      animation: none !important;
-    }
-  }
-  
+}

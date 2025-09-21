@@ -1,18 +1,12 @@
-@import "../../styles/files.css";
+/* Minimal layout helpers (optional). Most grids are tailwind-based,
+   but these are handy if you want a CSS-grid fallback/class. */
 
-.filegrid.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: .75rem;
-}
-
-@media (min-width: 640px) {
-  .filegrid.grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (min-width: 1024px) {
-  .filegrid.grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-
-.filegrid-item { /* wrapper for status ring/badge positioning */
-  position: relative;
-}
+   .filegrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .filegrid .filegrid-item {
+    position: relative;
+  }
+  

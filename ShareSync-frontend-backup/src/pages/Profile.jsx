@@ -134,7 +134,7 @@ export default function Profile() {
       } else {
         window.dispatchEvent(
           new CustomEvent("user:updated", {
-            detail: { avatarUrl: cacheBusted, avatarVersion: version },
+            detail: { user: { avatarUrl: cacheBusted, avatarVersion: version } },
           })
         );
       }

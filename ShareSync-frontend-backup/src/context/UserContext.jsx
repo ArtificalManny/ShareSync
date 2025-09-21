@@ -72,7 +72,7 @@ function versionedAvatarUrl(url, version) {
     const params = new URLSearchParams(qs);
     params.set("v", String(v));
     return `${base}?${params.toString()}`;
-    }
+  }
   return `${clean}?v=${v}`;
 }
 

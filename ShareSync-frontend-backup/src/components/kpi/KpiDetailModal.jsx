@@ -1,39 +1,116 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { buildKey, getComments, addComment } from "../../utils/kpi/comments";
 import { track } from "../../utils/telemetry";
+import { buildKey, getComments, addComment } from "../../utils/kpi/comments";
 
+/**
+ * Drill-in modal for a KPI point with lightweight local comments.
+ *
+ * Props:
+ *  - open: boolean
+ *  - onClose: () => void
+ *  - projectId?: string
+ *  - metric: string
+ *  - point: { t:number|Date|string, v:number, idx?:number, label?:string }
+ *  - comments?: Array<{ text:string, at:number, author:string }>
+ *  - onAddComment?: (text:string) => void  // parent-handled add (ProjectHome wires telemetry + storage)
+ *  - author?: string                        // default "You"
+ */
 export default function KpiDetailModal({
   open = false,
   onClose,
-  onAddComment,           // (text) => void
   projectId,
-  metric,                 // string label of the metric
-  point,                  // { t, v, idx, label }
+  metric,
+  point,
+  comments,                 // optional; if provided, this is the source of truth
+  onAddComment,             // optional; if provided, parent handles storage/telemetry
   author = "You",
 }) {
   const [text, setText] = useState("");
-  const [items, setItems] = useState([]);
-  const key = useMemo(
-    () => (projectId && metric && point?.t ? buildKey({ projectId, metric, t: point.t }) : ""),
-    [projectId, metric, point?.t]
-  );
-  const firstRef = useRef(null);
+  const [localItems, setLocalItems] = useState([]);
+  const usingControlledComments = Array.isArray(comments);
 
+  // Only needed when we self-manage comments
+  const key = useMemo(() => {
+    if (!projectId || !metric || !point?.t) return "";
+    return buildKey({ projectId, metric, t: point.t });
+  }, [projectId, metric, point?.t]);
+
+  // A11y: focus management
+  const containerRef = useRef(null);
+  const firstRef = useRef(null);
+  const prevFocusRef = useRef(null);
+
+  // IDs for aria
+  const titleId = useMemo(() => `kpi-title-${metric?.toString().replace(/\s+/g, "-")}-${point?.idx ?? "x"}`, [metric, point?.idx]);
+  const descId = `${titleId}-desc`;
+
+  // Load comments when opened + focus handling
   useEffect(() => {
-    if (!open) return;
-    // fetch local comments
-    if (key) setItems(getComments(key));
+    if (!open) {
+      // restore focus to the invoker
+      setTimeout(() => prevFocusRef.current?.focus?.(), 0);
+      return;
+    }
+    prevFocusRef.current = document.activeElement;
     setText("");
     setTimeout(() => firstRef.current?.focus(), 10);
-    try {
-      track("kpi_point_opened", {
-        projectId,
-        metric,
-        t: point?.t ?? null,
-        value: point?.v ?? null,
-      });
-    } catch {}
-  }, [open, key, metric, projectId, point?.t, point?.v]);
+
+    if (usingControlledComments) {
+      setLocalItems(comments || []);
+    } else if (key) {
+      setLocalItems(getComments(key));
+    } else {
+      setLocalItems([]);
+    }
+
+    // ESC to close
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose?.();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+
+    // Focus trap
+    const el = containerRef.current;
+    const selectors =
+      'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+    const onTrap = (e) => {
+      if (e.key !== "Tab") return;
+      const nodes = Array.from(el.querySelectorAll(selectors)).filter(
+        (n) => !n.hasAttribute("disabled")
+      );
+      if (!nodes.length) return;
+
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+
+      if (e.shiftKey) {
+        if (active === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    el?.addEventListener("keydown", onTrap);
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      el?.removeEventListener("keydown", onTrap);
+    };
+  }, [open, key, comments, usingControlledComments, onClose]);
+
+  // Keep local mirror up-to-date if parent controls comments
+  useEffect(() => {
+    if (usingControlledComments) setLocalItems(comments || []);
+  }, [comments, usingControlledComments]);
 
   if (!open) return null;
 
@@ -46,52 +123,68 @@ export default function KpiDetailModal({
     e?.preventDefault?.();
     const raw = String(text || "").trim();
     if (!raw) return;
-    const payload = { text: raw, at: Date.now(), author };
-    addComment(key, payload);
-    setItems(getComments(key));
-    setText("");
-    try { onAddComment?.(raw); } catch {}
-    try {
-      track("kpi_comment_added", {
-        projectId,
-        metric,
-        t: point?.t ?? null,
-        length: raw.length,
-      });
-    } catch {}
-  };
 
-  const onKey = (e) => {
-    if (e.key === "Escape") onClose?.();
+    const baseProps = {
+      projectId: projectId || null,
+      metric,
+      t: point?.t ?? null,
+      v: point?.v ?? null,
+      source: usingControlledComments ? "parent" : "local",
+    };
+
+    // If parent provided a handler, delegate (it will update `comments` prop + do telemetry)
+    if (typeof onAddComment === "function") {
+      onAddComment(raw);
+      // optimistic UX: append locally so it shows immediately
+      setLocalItems((prev) => [...prev, { text: raw, at: Date.now(), author }]);
+      setText("");
+      try { track("kpi_comment_added", { ...baseProps, length: raw.length }); } catch {}
+      return;
+    }
+
+    // Otherwise, store locally ourselves
+    if (key) {
+      addComment(key, { text: raw, at: Date.now(), author });
+      setLocalItems(getComments(key));
+      setText("");
+      try { track("kpi_comment_added", { ...baseProps, length: raw.length }); } catch {}
+    }
   };
 
   return (
     <>
-      <div className="kpi-modal__backdrop" onClick={onClose} />
+      <div className="kpi-modal__backdrop" onClick={onClose} aria-hidden="true" />
       <div
+        ref={containerRef}
         role="dialog"
         aria-modal="true"
-        aria-label={`${metric} at ${dateLabel}`}
+        aria-labelledby={titleId}
+        aria-describedby={descId}
         className="kpi-modal"
-        onKeyDown={onKey}
       >
         <div className="kpi-modal__header">
           <div className="kpi-modal__title">
-            <div className="kpi-modal__metric">{metric}</div>
+            <div id={titleId} className="kpi-modal__metric">
+              {metric}
+            </div>
             <div className="kpi-modal__date">{dateLabel}</div>
           </div>
           <button className="kpi-modal__close" onClick={onClose} aria-label="Close">×</button>
         </div>
 
+        <p id={descId} className="sr-only">
+          Value details and comments for this KPI point. Press Escape to close.
+        </p>
+
         <div className="kpi-modal__value">{Number(point?.v ?? 0).toLocaleString()}</div>
 
         <div className="kpi-modal__comments">
           <div className="kpi-modal__comments-title">Comments</div>
-          {items.length === 0 ? (
+          {localItems.length === 0 ? (
             <div className="kpi-modal__comments-empty">No comments yet.</div>
           ) : (
             <ul className="kpi-modal__comments-list">
-              {items.map((c, i) => (
+              {localItems.map((c, i) => (
                 <li key={i} className="kpi-modal__comment">
                   <div className="kpi-modal__comment-meta">
                     <span className="kpi-modal__comment-author">{c.author || "User"}</span>
