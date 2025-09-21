@@ -49,12 +49,39 @@ export async function sendInvite(projectIdOrPayload, maybePayload) {
 
 /**
  * Accept an invite.
- * BE: POST /api/invites/accept  body: { token }
- * Returns (typical): { ok, projectId, members, invites }
+ * Accepts either a token string OR { token } object.
+ *
+ * Primary BE: POST /api/invites/accept  body: { token }
+ * Fallback BE: POST /api/invite/accept   body: { token }
+ *
+ * Returns (typical): { ok, projectId, userId, project?, members?, invites? }
  */
-export async function acceptInvite({ token }) {
-  const res = await axios.post("/api/invites/accept", { token }, authConfig());
-  return res.data;
+export async function acceptInvite(arg, opts = {}) {
+  const token = typeof arg === "string" ? arg : arg?.token;
+  if (!token) throw new Error("Missing invite token.");
+  const cfg = authConfig(opts);
+
+  // Try canonical route first; fall back to legacy if needed.
+  try {
+    const res = await axios.post("/api/invites/accept", { token }, cfg);
+    return res.data;
+  } catch (e1) {
+    try {
+      const res = await axios.post("/api/invite/accept", { token }, cfg);
+      return res.data;
+    } catch (e2) {
+      // surface the original error message if possible
+      const msg =
+        e1?.response?.data?.message ||
+        e1?.response?.data?.error ||
+        e2?.response?.data?.message ||
+        e2?.response?.data?.error ||
+        e2?.message ||
+        e1?.message ||
+        "Failed to accept invite.";
+      throw new Error(msg);
+    }
+  }
 }
 
 /**
@@ -73,7 +100,10 @@ export async function listInvites(projectId) {
  * BE: DELETE /api/invites/:token  (with { projectId } in body if needed)
  */
 export async function revokeInvite(projectId, tokenOrId) {
-  const res = await axios.delete(`/api/invites/${encodeURIComponent(tokenOrId)}`, authConfig({ data: { projectId } }));
+  const res = await axios.delete(
+    `/api/invites/${encodeURIComponent(tokenOrId)}`,
+    authConfig({ data: { projectId } })
+  );
   return res.data; // { ok: true }
 }
 

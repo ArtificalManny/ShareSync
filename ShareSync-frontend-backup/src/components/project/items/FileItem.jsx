@@ -1,118 +1,185 @@
-// /src/components/project/items/FileItem.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Download, RefreshCw, AlertCircle } from "lucide-react";
 import { buildPreview } from "../../../utils/upload/preview";
-import TypeIcon from "../../files/TypeIcon";
-import { retry } from "../../../utils/retry";
+import TypeIcon from "../../files/TypeIcon.jsx";
+import { retry as retryFn } from "../../../utils/retry";
+import { track } from "../../../utils/telemetry";
+import { toast } from "../../ui/Toaster.jsx";
 
 export default function FileItem({ file, onDownload }) {
-  const [state, setState] = useState({
-    loading: true,
-    error: "",
-    thumbUrl: "",
-    width: 0,
-    height: 0,
-  });
-
+  const id = String(file?.id ?? file?._id ?? "");
+  const name = file?.name || "file";
   const mime = String(file?.mime || "application/octet-stream").toLowerCase();
   const isImage = mime.startsWith("image/");
-  const name = file?.name || "File";
+  const href = file?.url || file?.downloadUrl || "#";
 
-  const category = useMemo(() => {
-    if (mime.startsWith("image/")) return "image";
-    if (mime.startsWith("video/")) return "video";
-    if (mime.startsWith("audio/")) return "audio";
-    if (mime === "application/pdf") return "pdf";
-    if (/zip|gzip|tar/.test(mime)) return "archive";
-    if (/word|officedocument\.word/.test(mime)) return "doc";
-    if (/excel|spreadsheet/.test(mime)) return "sheet";
-    if (/powerpoint|presentation/.test(mime)) return "slide";
-    if (/json|javascript|typescript|text\/x-/.test(mime)) return "code";
-    return "other";
-  }, [mime]);
+  const [state, setState] = useState({
+    loading: isImage,
+    url: "",
+    placeholder: "",
+    width: 0,
+    height: 0,
+    error: "",
+    type: "",
+  });
 
-  const runPreview = async () => {
-    if (!isImage) {
-      setState((s) => ({ ...s, loading: false, error: "", thumbUrl: "" }));
-      return;
+  const alt = useMemo(
+    () => (isImage ? `${name} preview` : `${name}`),
+    [isImage, name]
+  );
+
+  // Build preview for images
+  useEffect(() => {
+    let cancelled = false;
+    if (!isImage || !href) {
+      setState((s) => ({ ...s, loading: false, url: "", error: "" }));
+      return () => {};
     }
-    setState((s) => ({ ...s, loading: true, error: "" }));
+
+    (async () => {
+      setState((s) => ({ ...s, loading: true, error: "" }));
+      try {
+        const out = await buildPreview(href, { maxBytes: 12_000_000 });
+        if (!cancelled) {
+          setState({
+            loading: false,
+            url: out?.url || "",
+            placeholder: out?.placeholder || "",
+            width: out?.width || 0,
+            height: out?.height || 0,
+            error: out?.error || "",
+            type: out?.type || "",
+          });
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setState((s) => ({
+            ...s,
+            loading: false,
+            error: e?.message || "Failed to build preview",
+          }));
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      try {
+        if (state.url && state.url.startsWith("blob:")) URL.revokeObjectURL(state.url);
+      } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [href, isImage, id]);
+
+  const onRetry = async () => {
+    // Toast + telemetry
+    try { toast({ title: "Retrying preview…" }); } catch {}
+    try { track("file_preview_retry", { fileId: id }); } catch {}
+
     try {
-      const res = await retry(
-        () => buildPreview(file?.thumbUrl || file?.url),
-        { tries: 2, backoffMs: 300 }
+      const out = await retryFn(
+        () => buildPreview(href, { maxBytes: 12_000_000 }),
+        { tries: 3, backoffMs: 400 }
       );
       setState({
         loading: false,
-        error: "",
-        thumbUrl: res?.url || "",
-        width: res?.width || 0,
-        height: res?.height || 0,
+        url: out?.url || "",
+        placeholder: out?.placeholder || "",
+        width: out?.width || 0,
+        height: out?.height || 0,
+        error: out?.error || "",
+        type: out?.type || "",
       });
     } catch (e) {
-      setState({
-        loading: false,
-        error: e?.message || "Preview failed",
-        thumbUrl: "",
-        width: 0,
-        height: 0,
-      });
+      setState((s) => ({ ...s, loading: false, error: e?.message || "Preview failed" }));
+      try {
+        toast({ title: "Preview failed", description: String(e?.message || e), variant: "error" });
+      } catch {}
     }
   };
 
-  useEffect(() => { runPreview(); /* eslint-disable-next-line */ }, [file?.url, file?.thumbUrl, mime]);
+  const onDownloadClick = (e) => {
+    // Emit telemetry first; then delegate
+    try { track("file_download", { fileId: id }); } catch {}
+    if (onDownload) {
+      e?.preventDefault?.();
+      onDownload(file);
+    }
+  };
 
-  return (
-    <div className="rounded-xl border border-border bg-surface p-2">
-      <div className="thumb relative w-full aspect-[4/3] overflow-hidden rounded-lg bg-[rgb(241_245_249)]">
-        {isImage && state.thumbUrl ? (
-          <img
-            src={state.thumbUrl}
-            alt={name}
-            className="h-full w-full object-cover"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="absolute inset-0 grid place-items-center">
-            <TypeIcon category={category} className="w-8 h-8 text-muted" />
+  // Non-image or failed preview → icon tile with actions
+  if (!isImage || state.error) {
+    return (
+      <div className="thumb thumb--error">
+        {isImage && state.error ? (
+          <div className="absolute top-2 left-2 inline-flex items-center gap-1 text-[11px] rounded-md px-1.5 py-1 bg-rose-50 text-rose-700 border border-rose-200">
+            <AlertCircle className="w-3.5 h-3.5" />
+            Preview failed
           </div>
-        )}
+        ) : null}
 
-        {!!state.error && (
-          <div className="absolute top-1 right-1 inline-flex items-center gap-1 rounded-md bg-rose-50 text-rose-700 px-1.5 py-0.5 text-[11px] border border-rose-200">
-            <AlertCircle className="w-3 h-3" />
-            Preview error
-          </div>
-        )}
-      </div>
-
-      <div className="mt-2 flex items-center gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm text-text" title={name}>{name}</div>
-          <div className="text-[11px] text-muted truncate" title={mime}>{mime}</div>
+        <div className="grid place-items-center h-28">
+          <TypeIcon mime={mime} size={28} ariaLabel={`${mime} file: ${name}`} />
         </div>
-        <div className="flex items-center gap-1">
-          {isImage && (
+
+        <div className="mt-1 flex items-center justify-between gap-2">
+          {isImage ? (
             <button
               type="button"
-              className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface"
-              onClick={runPreview}
+              onClick={onRetry}
+              className="text-xs inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 hover:bg-surface"
               title="Retry preview"
             >
-              <RefreshCw className="w-3 h-3" />
+              <RefreshCw className="w-3.5 h-3.5" />
+              Retry
             </button>
-          )}
-          <button
-            type="button"
-            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface"
-            onClick={() => onDownload?.(file)}
-            title="Download"
+          ) : <span />}
+
+          <a
+            href={href}
+            download
+            rel="noopener"
+            onClick={onDownloadClick}
+            className="text-xs inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 hover:bg-surface"
+            title={`Download ${name}`}
           >
-            <Download className="w-3 h-3" />
-          </button>
+            <Download className="w-3.5 h-3.5" />
+            Download
+          </a>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  // Loading skeleton
+  if (state.loading) {
+    return <div className="thumb__skeleton" aria-label={`Loading preview for ${name}`} />;
+  }
+
+  // Successful image preview
+  return (
+    <figure className="thumb">
+      <img
+        src={state.url || state.placeholder}
+        alt={alt}
+        className="thumb__img"
+        loading="lazy"
+        width={state.width || undefined}
+        height={state.height || undefined}
+      />
+      <figcaption className="thumb__caption">
+        <a
+          href={href}
+          download
+          rel="noopener"
+          onClick={onDownloadClick}
+          className="thumb__action"
+          title={`Download ${name}`}
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Download</span>
+        </a>
+      </figcaption>
+    </figure>
   );
 }

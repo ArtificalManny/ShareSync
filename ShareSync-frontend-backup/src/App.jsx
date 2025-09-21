@@ -58,6 +58,8 @@ const CreateAccount = lazy(() => import("./pages/CreateAccount"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const PublicProject = lazy(() => import("./pages/PublicProject"));
 const PublicProjectStatus = lazy(() => import("./pages/PublicProjectStatus"));
+// ✅ Accept Invite (your file lives under components/)
+const AcceptInvite = lazy(() => import("./components/AcceptInvite.jsx"));
 
 /** Smooth-scroll to #hash elements whenever path or hash changes */
 function ScrollToHash() {
@@ -78,7 +80,8 @@ function GuardedRoutes() {
   const navigate = useNavigate();
 
   // Paths that never require auth (prefix checks)
-  const openRoutes = ["/login", "/create-account", "/forgot-password", "/p/", "/status"];
+  // Added /invite so /invite/accept works for logged-out users
+  const openRoutes = ["/login", "/create-account", "/forgot-password", "/p/", "/status", "/invite"];
 
   useEffect(() => {
     if (!ready) return;
@@ -117,6 +120,9 @@ function GuardedRoutes() {
         {/* Public (open) */}
         <Route path="/p/:token" element={<PublicProject />} />
         <Route path="/status/:token" element={<PublicProjectStatus />} />
+
+        {/* ✅ Invite accept (open) */}
+        <Route path="/invite/accept" element={<AcceptInvite />} />
 
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>

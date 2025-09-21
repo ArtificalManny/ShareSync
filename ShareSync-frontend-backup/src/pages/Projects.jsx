@@ -16,6 +16,8 @@ import { labelledTimestamp } from '../utils/formatters.js';
 import './Projects.css';
 
 import { FolderKanban, Users, Clock } from 'lucide-react';
+import { track } from '../utils/telemetry';
+import { toast } from '../components/ui/Toaster.jsx';
 
 /** Debounce a value to limit API calls while typing */
 function useDebounce(value, delay = 350) {
@@ -204,6 +206,9 @@ export default function Projects() {
       if (controller.signal.aborted) return;
       console.error('[Projects] load error', e);
       setError('Failed to load projects.');
+      // ✅ Toast + Telemetry on list fetch error
+      try { toast({ title: 'Failed to load projects', variant: 'error' }); } catch {}
+      try { track('projects_load_error'); } catch {}
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
@@ -253,7 +258,12 @@ export default function Projects() {
   // when a project is created, prepend and close modal
   const handleProjectCreated = (newProject) => {
     setShowCreate(false);
-    if (newProject) setProjects((prev) => [newProject, ...prev]);
+    if (newProject) {
+      setProjects((prev) => [newProject, ...prev]);
+      // ✅ Toast + Telemetry on create
+      try { toast({ title: 'Project created', variant: 'success' }); } catch {}
+      try { track('project_created', { projectId: newProject._id || newProject.id }); } catch {}
+    }
   };
 
   // --- PERF: mark when navigating to ProjectHome ---

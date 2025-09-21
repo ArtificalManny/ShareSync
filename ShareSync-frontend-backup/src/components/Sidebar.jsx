@@ -4,6 +4,7 @@ import { Home, FolderKanban, User as UserIcon, Settings, ChevronsLeft } from "lu
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
 import "./Sidebar.css";
+import { track } from "../utils/telemetry";
 
 // localStorage key
 const LS_KEY = "ss.sidebar.collapsed";
@@ -26,8 +27,10 @@ export default function Sidebar() {
   const tooltipWhenCollapsed = collapsed;
 
   const toggle = useCallback(() => {
-    setCollapsed((c) => !c);
-  }, []);
+    const next = !collapsed;
+    setCollapsed(next);
+    try { track("sidebar_toggled", { collapsed: next }); } catch {}
+  }, [collapsed]);
 
   // Persist + body class & CSS var for layout
   useEffect(() => {

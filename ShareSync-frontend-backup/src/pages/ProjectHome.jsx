@@ -65,6 +65,8 @@ import { dedupeById } from "../utils/feed/dedupe";
 
 // 🔔 Telemetry
 import { track } from "../utils/telemetry";
+// 🔔 Toasts
+import { toast } from "../components/ui/Toaster.jsx";
 
 // ⛓️ Invites API (for initial pending list / refresh)
 import { listInvites } from "../api/invite";
@@ -297,24 +299,22 @@ export default function ProjectHome() {
     };
   }, [project?._id]);
 
-  // When Activity section scrolls into view, mark as seen
-  useEffect(() => {
-    if (!project?._id) return;
-    const el = activityRef.current;
-    if (!el || typeof window === "undefined" || !("IntersectionObserver" in window)) return;
-
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const e = entries[0];
-        if (e?.isIntersecting && document.visibilityState === "visible") {
-          try { setLastSeen(project._id, Date.now()); } catch {}
-        }
-      },
-      { threshold: 0.25 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [project?._id]);
+  // Helper: is the Activity section currently in view?
+  const isActivityInView = useCallback(() => {
+    try {
+      const el = activityRef.current;
+      if (!el) return false;
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      // Consider "in view" if at least ~30% is within viewport
+      const visible =
+        rect.top < vh * 0.7 &&
+        rect.bottom > vh * 0.3;
+      return visible;
+    } catch {
+      return false;
+    }
+  }, []);
 
   // 🔴 Realtime via shared hook (auth + room join)
   useSocket(id ? `project:${id}` : null, {
@@ -327,6 +327,19 @@ export default function ProjectHome() {
         if (typeof document !== "undefined" && document.visibilityState === "visible") {
           try { setLastSeen(id, Date.now()); } catch {}
         }
+        // Soft ping if Activity section isn't visible
+        try {
+          if (document.visibilityState === "visible" && !isActivityInView()) {
+            toast({
+              title: "New activity",
+              action: {
+                label: "View",
+                onClick: () => document.getElementById("activity")?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+            });
+            track("activity_new_ping", { projectId: id });
+          }
+        } catch {}
       },
       "project:statsUpdated": (payload) => {
         if (String(payload?.projectId) === String(id)) {
@@ -471,7 +484,10 @@ export default function ProjectHome() {
     if (!canEdit) return;
     const created = await createTask(id, payload);
     setProject((p) => ({ ...p, tasks: [created, ...(p?.tasks || [])] }));
-    try { track("task_created", { projectId: id, taskId: created?._id || created?.id }); } catch {}
+    try {
+      toast({ title: "Task created", variant: "success" });
+      track("task_created", { projectId: id, taskId: created?._id || created?.id });
+    } catch {}
   };
 
   const handlePatchTask = async (taskId, patch) => {
@@ -481,7 +497,10 @@ export default function ProjectHome() {
       ...p,
       tasks: (p?.tasks || []).map((t) => (String(t._id) === String(taskId) ? updated : t)),
     }));
-    try { track("task_updated", { projectId: id, taskId }); } catch {}
+    try {
+      toast({ title: "Task updated", variant: "success" });
+      track("task_updated", { projectId: id, taskId });
+    } catch {}
   };
 
   // --- Public status helpers (flagged) ---
@@ -507,8 +526,14 @@ export default function ProjectHome() {
       }
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch {
+      try {
+        toast({ title: "Link copied", variant: "success" });
+        track("public_link_copied", { projectId: id });
+      } catch {}
+    } catch (e) {
       setCopied(false);
+      const msg = e?.message || "Failed to copy link.";
+      try { toast({ title: "Copy failed", description: msg, variant: "error" }); } catch {}
     }
   };
 
@@ -532,6 +557,7 @@ export default function ProjectHome() {
         }
         setProject((p) => ({ ...p, publicToken: token || p?.publicToken || "" }));
         try {
+          toast({ title: "Public status enabled", variant: "success" });
           track("public_status_changed", {
             projectId: project._id,
             action: "enabled",
@@ -546,6 +572,7 @@ export default function ProjectHome() {
         }
         setProject((p) => ({ ...p, publicToken: "" }));
         try {
+          toast({ title: "Public status disabled" });
           track("public_status_changed", {
             projectId: project._id,
             action: "disabled",
@@ -553,7 +580,9 @@ export default function ProjectHome() {
         } catch {}
       }
     } catch (e) {
-      alert(e?.message || "Failed to update public status.");
+      const msg = e?.message || "Failed to update public status.";
+      alert(msg);
+      try { toast({ title: "Public status failed", description: msg, variant: "error" }); } catch {}
     }
   }, [canManage, project?._id]);
 
@@ -575,10 +604,15 @@ export default function ProjectHome() {
       }
       if (token) {
         setProject((p) => ({ ...p, publicToken: token }));
-        try { track("public_status_changed", { projectId: project._id, action: "regenerated" }); } catch {}
+        try {
+          toast({ title: "Link regenerated", variant: "success" });
+          track("public_status_changed", { projectId: project._id, action: "regenerated" });
+        } catch {}
       }
     } catch (e) {
-      alert(e?.message || "Failed to regenerate link.");
+      const msg = e?.message || "Failed to regenerate link.";
+      alert(msg);
+      try { toast({ title: "Regenerate failed", description: msg, variant: "error" }); } catch {}
     } finally {
       setRegenLoading(false);
     }
@@ -860,6 +894,7 @@ export default function ProjectHome() {
         {/* Unified Activity Feed (upgraded normalizer + realtime merge) */}
         <section
           ref={activityRef}
+          id="activity"
           className="mt-6 card rounded-2xl border border-border bg-surface p-4"
           role="region"
           aria-label="Activity"
@@ -1083,7 +1118,13 @@ export default function ProjectHome() {
         onClose={() => setShowSettings(false)}
         project={project}
         onSaved={(updated) => {
-          if (updated) setProject((p) => ({ ...(p || {}), ...(updated || {}) }));
+          if (updated) {
+            setProject((p) => ({ ...(p || {}), ...(updated || {}) }));
+            try {
+              toast({ title: "Project saved", variant: "success" });
+              track("project_saved", { projectId: (updated?._id || project?._id || id) });
+            } catch {}
+          }
         }}
       />
     </main>

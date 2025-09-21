@@ -10,15 +10,15 @@ import {
   buildPublicStatusUrl,
 } from "../../api/public";
 import { track } from "../../utils/telemetry";
+import { toast } from "../ui/Toaster.jsx";            // ← NEW
 import ProjectIconPicker from "./ProjectIconPicker";
 import AnimatedRing from "../ui/AnimatedRing";
 import GradientText from "../ui/GradientText";
-import StatusPill from "../projects/StatusPill.jsx"; // ✅ shared pill
+import StatusPill from "../projects/StatusPill.jsx";
 import useRecentFlag from "../../hooks/useRecentFlag";
 import useReducedMotion from "../../hooks/useReducedMotion";
-import { setLastSeen } from "../../utils/stories"; // ✅ mark-as-read helper
+import { setLastSeen } from "../../utils/stories";
 
-// --- Feature flag ---
 const ENABLE_PUBLIC_STATUS = (() => {
   const v = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS ?? "";
   return /^(1|true|on|yes)$/i.test(String(v));
@@ -43,7 +43,6 @@ const roleStyle = (role) => {
   }
 };
 
-// Small SVG renderer for preset keys
 function SVGIcon({ name, className = "w-6 h-6" }) {
   const common = { className, "aria-hidden": true };
   switch (name) {
@@ -75,7 +74,7 @@ function SVGIcon({ name, className = "w-6 h-6" }) {
 export default function ProjectHeader({
   project,
   onAddTask,
-  onTogglePublic, // if provided AND flag is on → render toggle; else show static pill
+  onTogglePublic,
   recentWindowMs = 10 * 60 * 1000,
 }) {
   const { user } = useContext(AuthContext) || {};
@@ -87,10 +86,8 @@ export default function ProjectHeader({
 
   const [quickTask, setQuickTask] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
-  // Local override so header reflects immediately after change
   const [iconOverride, setIconOverride] = useState(project?.icon ?? null);
 
-  // Local public state mirrors server payload so header updates instantly
   const initialEnabled = !!(project?.publicEnabled || project?.publicToken);
   const [publicEnabled, setPublicEnabled] = useState(initialEnabled);
   const [publicToken, setPublicToken] = useState(project?.publicToken || null);
@@ -108,11 +105,20 @@ export default function ProjectHeader({
     setQuickTask("");
   };
 
-  // Submit icon change to backend and optimistically reflect
+  // Persist icon; toast + telemetry
   async function handleIconSelect(sel) {
     try {
       const updated = await patchProjectIcon(project._id, sel); // sel or null (clear)
-      setIconOverride(updated?.icon ?? updated?.patch?.icon ?? sel ?? null);
+      const nextIcon = updated?.icon ?? updated?.patch?.icon ?? sel ?? null;
+      setIconOverride(nextIcon);
+
+      if (sel) {
+        toast({ title: "Icon updated", variant: "success" });
+        try { track("icon_saved", { projectId: project._id }); } catch {}
+      } else {
+        toast({ title: "Icon removed" });
+        try { track("icon_removed", { projectId: project._id }); } catch {}
+      }
     } catch (e) {
       alert(e?.response?.data?.message || e?.message || "Failed to update icon.");
     } finally {
@@ -120,7 +126,6 @@ export default function ProjectHeader({
     }
   }
 
-  // Public actions — delegate to parent if provided (and feature enabled), else call API directly
   async function handleTogglePublic(nextChecked) {
     if (!isOwner || !project?._id) return;
     if (!ENABLE_PUBLIC_STATUS) return;
@@ -175,7 +180,6 @@ export default function ProjectHeader({
       ? `${window.location.origin}${publicPath}`
       : publicPath;
 
-  // Recent activity → animate ring only when recent + not reduced motion
   const hasRecent = useRecentFlag(project?.lastActivityAt, recentWindowMs);
   const prefersReduced = useReducedMotion();
   const ringAnimated = hasRecent && !prefersReduced;
@@ -210,7 +214,7 @@ export default function ProjectHeader({
           </Link>
 
           <div className="min-w-0 flex items-center gap-3">
-            {/* 🔷 Project Icon with conditional animated ring (auto-respects reduced motion) */}
+            {/* Icon + activity ring */}
             <div className="relative shrink-0">
               {ringAnimated && (
                 <AnimatedRing size="48px" thickness="2px" className="absolute -inset-[6px]" animated />
@@ -246,7 +250,6 @@ export default function ProjectHeader({
                   </GradientText>
                 </h1>
 
-                {/* Status pill for quick read */}
                 <span className="hidden sm:inline-flex">
                   <StatusPill status={project?.status || "In Progress"} />
                 </span>
@@ -264,7 +267,6 @@ export default function ProjectHeader({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mt-1">
-                {/* Role pill */}
                 <span
                   className={`px-2 py-0.5 text-xs rounded-full ${roleStyle(role)} `}
                   title={`Role: ${role}`}
@@ -273,7 +275,6 @@ export default function ProjectHeader({
                   Role: {role[0].toUpperCase()}{role.slice(1)}
                 </span>
 
-                {/* Mark as read (clears Home’s unread ring immediately) */}
                 <button
                   type="button"
                   onClick={markAsRead}
@@ -283,7 +284,6 @@ export default function ProjectHeader({
                   Mark as read
                 </button>
 
-                {/* Public/Private indicator */}
                 {isOwner && ENABLE_PUBLIC_STATUS && typeof onTogglePublic === "function" ? (
                   <label className="inline-flex items-center gap-2 text-xs">
                     <span className={`px-2 py-0.5 rounded-full ${publicEnabled ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`}>
@@ -304,7 +304,6 @@ export default function ProjectHeader({
                   </span>
                 )}
 
-                {/* When public + feature enabled, show copy + regenerate controls */}
                 {ENABLE_PUBLIC_STATUS && publicEnabled && (
                   <div className="inline-flex items-center gap-1 text-xs">
                     <a
@@ -359,7 +358,6 @@ export default function ProjectHeader({
             </button>
           </form>
 
-          {/* Quick actions — add .marching for pop */}
           <button
             type="button"
             className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm marching"

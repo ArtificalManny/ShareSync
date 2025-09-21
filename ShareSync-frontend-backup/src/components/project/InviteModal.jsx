@@ -115,15 +115,16 @@ export default function InviteModal({ open, onClose, projectId }) {
       setOk("Invite sent.");
       setEmail("");
 
-      // 🔔 Toast + Telemetry
+      // ✅ Toast + Telemetry
       toast({ title: "Invite sent", description: cleaned, variant: "success" });
-      try { track("invite_sent", { projectId, email: cleaned, role }); } catch {}
+      try { track("invite_sent", { projectId, count: 1, email: cleaned, role }); } catch {}
 
       await loadInvites();
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || "Failed to send invite.";
       setErr(String(msg));
       toast({ title: "Invite failed", description: String(msg), variant: "error" });
+      try { track("invite_error", { action: "send", projectId, message: String(msg) }); } catch {}
     } finally {
       setSubmitting(false);
     }
@@ -139,6 +140,7 @@ export default function InviteModal({ open, onClose, projectId }) {
       const msg = e?.response?.data?.message || e?.message || "Failed to revoke invite.";
       setErr(String(msg));
       toast({ title: "Revoke failed", description: String(msg), variant: "error" });
+      try { track("invite_error", { action: "revoke", projectId, message: String(msg) }); } catch {}
     }
   };
 
