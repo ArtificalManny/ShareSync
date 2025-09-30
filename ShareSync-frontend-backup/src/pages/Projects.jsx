@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import ProjectsHeader from '../components/projects/ProjectsHeader.jsx';
 import ProjectsCreate from './ProjectsCreate.jsx';
 import ProjectListItem from '../components/projects/ProjectListItem.jsx';
 import ProjectSkeleton from '../components/projects/ProjectSkeleton.jsx';
@@ -15,7 +14,7 @@ import GradientText from '../components/ui/GradientText.jsx';
 import { labelledTimestamp } from '../utils/formatters.js';
 import './Projects.css';
 
-import { FolderKanban, Users, Clock } from 'lucide-react';
+import { Users, Clock, Search } from 'lucide-react';
 import { track } from '../utils/telemetry';
 import { toast } from '../components/ui/Toaster.jsx';
 
@@ -279,32 +278,95 @@ export default function Projects() {
         data-accent="emerald"
         className="px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto"
       >
-        {/* Page banner */}
-        <div className="rounded-2xl border border-border bg-gradient-to-r from-indigo-50 via-fuchsia-50 to-pink-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 p-4 mb-4">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white shadow-sm dark:bg-slate-900">
-              <FolderKanban className="w-4 h-4 text-indigo-600" />
-            </span>
-            <div className="text-sm">
-              <div className="font-display text-base leading-tight">
-                <GradientText variant="pandora">Projects</GradientText>
+        {/* ✅ Unified header: title + subtitle + search/filters + CTA */}
+        <section className="card accent-bar rounded-2xl border border-border bg-surface">
+          <span className="accent-bar__left" aria-hidden="true" />
+          <div className="px-4 sm:px-6 md:px-8 py-4">
+            {/* Title + CTA */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold">
+                  <GradientText variant="pandora">Projects</GradientText>
+                </h1>
+                <p className="text-sm text-muted mt-0.5">
+                  Organize work by outcomes, not just tasks.
+                </p>
               </div>
-              <div className="text-muted">Organize work by outcomes, not just tasks.</div>
+
+              <div className="shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(true)}
+                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm"
+                >
+                  + New Project
+                </button>
+              </div>
+            </div>
+
+            {/* Controls row (search + filters) */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-2">
+              {/* Search */}
+              <label className="relative flex items-center">
+                <span className="sr-only">Search projects</span>
+                <Search className="w-4 h-4 absolute left-3 text-slate-400 pointer-events-none" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search projects..."
+                  className="search-bar w-full pl-9"
+                  aria-label="Search projects"
+                />
+              </label>
+
+              {/* Status */}
+              <label className="block">
+                <span className="sr-only">Status</span>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-white dark:bg-slate-900 px-3 py-2 text-sm"
+                  aria-label="Filter by status"
+                >
+                  <option value="all">All status</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="not_started">Not Started</option>
+                </select>
+              </label>
+
+              {/* Owner */}
+              <label className="block">
+                <span className="sr-only">Owner</span>
+                <select
+                  value={owner}
+                  onChange={(e) => setOwner(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-white dark:bg-slate-900 px-3 py-2 text-sm"
+                  aria-label="Filter by owner"
+                >
+                  <option value="all">All owners</option>
+                  <option value="me">Owned by me</option>
+                  <option value="team">Owned by teammates</option>
+                </select>
+              </label>
+
+              {/* Updated within */}
+              <label className="block">
+                <span className="sr-only">Updated window</span>
+                <select
+                  value={updated}
+                  onChange={(e) => setUpdated(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-white dark:bg-slate-900 px-3 py-2 text-sm"
+                  aria-label="Filter by last updated"
+                >
+                  <option value="7d">Updated in 7 days</option>
+                  <option value="30d">Updated in 30 days</option>
+                  <option value="all">Any time</option>
+                </select>
+              </label>
             </div>
           </div>
-        </div>
-
-        <ProjectsHeader
-          query={query}
-          onQueryChange={setQuery}
-          status={status}
-          onStatusChange={setStatus}
-          owner={owner}
-          onOwnerChange={setOwner}
-          updated={updated}
-          onUpdatedChange={setUpdated}
-          onCreateProject={() => setShowCreate(true)}
-        />
+        </section>
 
         {/* Two-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mt-4">
@@ -351,7 +413,7 @@ export default function Projects() {
 
                   return (
                     <TraceOutline key={pid} radius={16} paused={!isHovered}>
-                      {/* OUTER CARD: the hover surface with the blue spotlight */}
+                      {/* OUTER CARD */}
                       <div
                         className="group project-card relative rounded-2xl border border-border bg-surface shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(16,24,40,0.12)]"
                         data-shine
@@ -363,13 +425,13 @@ export default function Projects() {
                         onClick={() => goToProject(pid)}
                         onKeyDown={(e) => { if (e.key === 'Enter') goToProject(pid); }}
                       >
-                        {/* Color bar (left) with gentle widen on hover */}
+                        {/* Color bar (left) */}
                         <div
                           className={`absolute left-0 top-0 h-full w-1 origin-left bg-gradient-to-b ${accent.bar} transition-transform duration-300 ease-out group-hover:scale-x-[1.4]`}
                           aria-hidden="true"
                         />
 
-                        {/* Optional linear sweep for extra polish */}
+                        {/* Sweep */}
                         <div
                           className="pointer-events-none absolute inset-0 -translate-x-full opacity-0 bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/10 transition duration-700 ease-out group-hover:opacity-100 group-hover:translate-x-full"
                           aria-hidden="true"
