@@ -1,13 +1,15 @@
 // /src/components/tasks/TaskRow.jsx
 import React from "react";
-import { CheckCircle2, Circle, Link as LinkIcon, Pin, PinOff } from "lucide-react";
+import { CheckCircle2, Circle, Pin, PinOff } from "lucide-react";
 import AnchorLinkButton from "../common/AnchorLinkButton";
 import { makeAnchorId } from "../../utils/anchor";
+import StateChip from "./StateChip";
+import "../../styles/chips.css";
 
 /**
  * TaskRow
  * Props:
- *  - task: { _id, title, status?, projectTitle? }
+ *  - task: { _id, id?, title, status?, projectTitle?, scheduleState?, dueDate?, completedAt? }
  *  - onPatch?: (id, patch) => void     // e.g., toggle status
  *  - onPin?: (task) => void            // caller decides pin/unpin
  *  - isPinned?: boolean
@@ -22,13 +24,20 @@ export default function TaskRow({
 }) {
   if (!task) return null;
 
-  const rowId = `task-${task._id ?? ""}` || makeAnchorId("task", task?.title || "");
+  const taskId = task._id || task.id;
+  const rowId = `task-${taskId || makeAnchorId("task", task?.title || "")}`;
 
-  const isDone = (task.status || "").toLowerCase() === "done";
+  // Normalize status → boolean done
+  const statusStr = String(task.status || "").toLowerCase();
+  const isDone =
+    statusStr === "done" ||
+    statusStr === "completed" ||
+    statusStr === "complete";
 
   const toggleDone = () => {
-    if (!onPatch || !task?._id) return;
-    onPatch(task._id, { status: isDone ? "Not Started" : "Done" });
+    if (!onPatch || !taskId) return;
+    const next = isDone ? "todo" : "done";
+    onPatch(taskId, { status: next });
   };
 
   const handlePin = () => {
@@ -38,6 +47,8 @@ export default function TaskRow({
   return (
     <div
       id={rowId}
+      data-task-id={taskId || ""}
+      tabIndex={-1}
       className={`group flex items-center justify-between gap-3 rounded-xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 ${className}`}
     >
       {/* Left: status toggle + title */}
@@ -60,9 +71,15 @@ export default function TaskRow({
           <div className={`truncate text-sm ${isDone ? "line-through text-slate-400" : "text-slate-900 dark:text-slate-100"}`}>
             {task.title || "Untitled task"}
           </div>
-          {task.projectTitle ? (
-            <div className="text-[11px] text-slate-500 truncate">{task.projectTitle}</div>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {task.projectTitle ? (
+              <div className="text-[11px] text-slate-500 truncate">{task.projectTitle}</div>
+            ) : null}
+            {/* State chip (a11y color-contrast safe) */}
+            {task.scheduleState ? (
+              <StateChip state={task.scheduleState} className="ml-0" />
+            ) : null}
+          </div>
         </div>
       </div>
 

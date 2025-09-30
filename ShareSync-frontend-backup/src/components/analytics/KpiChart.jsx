@@ -135,7 +135,7 @@ export default function KpiChart({
   );
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-3 chart-fade-in kpi-card">
+    <div className="rounded-xl border border-border bg-surface p-3 chart-fade-in kpi-card" role="img" aria-label={`Chart: ${title}`}>
       <div className="text-xs text-muted mb-2">{title}</div>
       <div style={{ width: "100%", height }}>
         <ResponsiveContainer>

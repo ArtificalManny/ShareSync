@@ -1,8 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { X, PlusCircle, Save } from "lucide-react";
+import { X, PlusCircle, Save, Calendar as CalendarIcon, BadgeCheck } from "lucide-react";
 import { createTask as apiCreateTask, patchTask as apiPatchTask } from "../../api/tasks";
+import { getIcsUrl } from "../../api/calendar";
 import { toast } from "../ui/Toaster";
-import { track } from "../../utils/telemetry";
+import { track, trackScheduleCreated } from "../../utils/telemetry";
+import { CALENDAR_ACCOUNTABILITY } from "../../config/flags";
+import StateChip from "./StateChip";
+import "../../styles/chips.css";
 
 /**
  * TaskSheet
@@ -47,6 +51,10 @@ export default function TaskSheet({
   const [notes, setNotes] = useState(existingTask?.notes || "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Read-only computed/returned fields
+  const scheduleState = existingTask?.scheduleState || null;
+  const completedAtStr = useMemo(() => toDateInput(existingTask?.completedAt), [existingTask?.completedAt]);
 
   const containerRef = useRef(null);
   const firstFieldRef = useRef(null);
@@ -183,6 +191,12 @@ export default function TaskSheet({
           try { track("task_updated", { projectId, taskId: updated?.id || taskId }); } catch {}
         }
         toast({ title: "Task updated", variant: "success" });
+        // If dueDate added/changed, treat as schedule created/updated
+        try {
+          if (payload.dueDate) {
+            trackScheduleCreated({ projectId, taskId: updated?.id || taskId, dueDate: payload.dueDate, mode: "edit" });
+          }
+        } catch {}
         afterUpdate?.(updated ?? { _id: taskId, ...payload });
       } else {
         let created = null;
@@ -193,6 +207,11 @@ export default function TaskSheet({
           try { track("task_created", { projectId, taskId: created?.id || created?._id }); } catch {}
         }
         toast({ title: "Task created", variant: "success" });
+        if (payload.dueDate) {
+          try {
+            trackScheduleCreated({ projectId, taskId: created?.id || created?._id, dueDate: payload.dueDate, mode: "create" });
+          } catch {}
+        }
         afterCreate?.(created ?? payload);
       }
 
@@ -223,6 +242,8 @@ export default function TaskSheet({
   ]);
 
   if (!open) return null;
+
+  const icsUrl = projectId ? getIcsUrl(projectId) : null;
 
   return (
     <>
@@ -281,6 +302,22 @@ export default function TaskSheet({
             </div>
           )}
 
+          {/* ICS quick link (project-level) */}
+          {CALENDAR_ACCOUNTABILITY && icsUrl ? (
+            <div className="rounded-lg border border-slate-200/70 dark:border-slate-700 px-3 py-2 text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between">
+              <span className="inline-flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4" /> Add project tasks to your calendar
+              </span>
+              <a
+                href={icsUrl}
+                download
+                className="inline-flex items-center gap-1 rounded-md border border-slate-300 dark:border-slate-600 px-2 py-1 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                Download .ics
+              </a>
+            </div>
+          ) : null}
+
           <div>
             <label htmlFor="task-title" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
               Title <span className="text-rose-500">*</span>
@@ -336,7 +373,28 @@ export default function TaskSheet({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Read-only schedule detail (edit mode) */}
+          {isEdit && (scheduleState || completedAtStr) ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
+                  Schedule state
+                </div>
+                {scheduleState ? <StateChip state={scheduleState} /> : <div className="text-xs text-slate-400">—</div>}
+              </div>
+              <div>
+                <div className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
+                  Completed at
+                </div>
+                <div className="text-sm text-slate-700 dark:text-slate-200 inline-flex items-center gap-1">
+                  <BadgeCheck className="w-4 h-4 text-emerald-600" />
+                  {completedAtStr || "—"}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-1 sm/grid-cols-2 gap-3">
             <div>
               <label htmlFor="task-assignee" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
                 Assignee ID (optional)
@@ -412,6 +470,7 @@ export default function TaskSheet({
 /** Helpers */
 function toDateInput(d) {
   try {
+    if (!d) return "";
     const dt = typeof d === "string" ? new Date(d) : d;
     if (!dt || isNaN(dt.getTime())) return "";
     const yyyy = dt.getFullYear();

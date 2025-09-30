@@ -19,14 +19,19 @@ export default function ProjectStoriesBar({ projects = [], unread = {}, onOpen, 
   const itemRefs = useRef([]);
   const [focusIndex, setFocusIndex] = useState(0);
 
+  // Local overrides so the unread ring clears immediately on open (in addition to setLastSeen)
+  const [overrides, setOverrides] = useState({}); // { [projectId]: boolean }
+
   const computedUnread = useMemo(() => {
     if (!Array.isArray(projects)) return {};
-    // Build from lastSeen + lastActivity
+    // Base: compute from lastSeen + lastActivity
     const base = buildUnreadMap(projects);
-    // Allow caller to force/override
+    // External override (prop) first
     Object.entries(unread || {}).forEach(([pid, v]) => { base[pid] = Boolean(v); });
+    // Local override (rings clear instantly)
+    Object.entries(overrides || {}).forEach(([pid, v]) => { base[pid] = Boolean(v); });
     return base;
-  }, [projects, unread]);
+  }, [projects, unread, overrides]);
 
   useEffect(() => {
     try { track("stories_rendered", { count: projects.length }); } catch {}
@@ -100,7 +105,10 @@ export default function ProjectStoriesBar({ projects = [], unread = {}, onOpen, 
   const handleOpen = useCallback((p) => {
     if (!p?._id) return;
     try { setLastSeen(p._id, Date.now()); } catch {}
+    // Clear ring immediately
+    setOverrides((prev) => ({ ...prev, [String(p._id)]: false }));
     try { track("story_opened", { projectId: p._id }); } catch {}
+    try { track("story_mark_read", { projectId: p._id }); } catch {}
     onOpen?.(p);
   }, [onOpen]);
 

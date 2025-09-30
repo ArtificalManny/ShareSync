@@ -157,7 +157,25 @@
       rgb(var(--grad-cnbc-a)) 0%,
       rgb(var(--grad-cnbc-b)) 100%
     );
-  
+    
+    /* ================================
+       Brand V2 tokens (light)
+       ================================ */
+    /* channels (R G B) */
+    --brand-v2-bg:       244 248 255; /* soft powder blue */
+    --brand-v2-header:    18  40  74; /* deep navy */
+    --brand-v2-sidebar:   22  44  82; /* slate-blue */
+    --brand-v2-text:      10  18  33; /* near-navy text */
+    --brand-v2-border:   208 222 245; /* cool border */
+    --brand-v2-glow:      99 102 241; /* indigo-ish for hover glow */
+
+    /* optional accents tuned to this brand */
+    --brand-v2-accent:    37  99 235; /* blue-600 */
+    --brand-v2-info:       2 132 199; /* sky-600 */
+    --brand-v2-success:   16 185 129; /* emerald-500 */
+    --brand-v2-warning:  217 119   6; /* amber-600 */
+    --brand-v2-danger:   244  63  94; /* rose-500 */
+
     /* Instagram: orange → pink/purple sweep */
     --grad-ig-a: 245 133  41;       /* #F58529 */
     --grad-ig-b: 221  42 123;       /* #DD2A7B */
@@ -279,6 +297,22 @@
   --grad-signature: var(--grad-pandora);
 
   --bg-elevated: rgb(15 23 42 / .85);
+
+  /* ================================
+     Brand V2 tokens (dark)
+     ================================ */
+  --brand-v2-bg:         6  12  24; /* deep space */
+  --brand-v2-header:     8  20  38; /* darker navy */
+  --brand-v2-sidebar:   12  22  42; /* navy-slate */
+  --brand-v2-text:     224 232 255; /* ice text */
+  --brand-v2-border:    38  56  86; /* cool border */
+  --brand-v2-glow:     129 140 248; /* brighter indigo-ish glow */
+
+  --brand-v2-accent:    59 130 246; /* blue-500 */
+  --brand-v2-info:       2 132 199; /* sky-600 */
+  --brand-v2-success:   16 185 129; /* emerald-500 */
+  --brand-v2-warning:  245 158  11; /* amber-500 */
+  --brand-v2-danger:   244  63  94; /* rose-500 */
 }
 
 /* per-surface accent overrides e.g. data-accent="emerald" */
@@ -298,4 +332,28 @@
   .ss-pulse-ring {
     animation: none !important;
   }
+}
+
+/* =========================================================
+   Brand V2 application (when documentElement has data-brand="v2")
+   ========================================================= */
+[data-brand="v2"] {
+  /* remap key surfaces/text to brand-v2 */
+  --bg:     var(--brand-v2-bg);
+  --card:   250 252 255;               /* slightly brighter card on light */
+  --text:   var(--brand-v2-text);
+  --border: var(--brand-v2-border);
+
+  /* intent colors lean to brand palette */
+  --accent:  var(--brand-v2-accent);
+  --info:    var(--brand-v2-info);
+  --success: var(--brand-v2-success);
+  --warning: var(--brand-v2-warning);
+  --danger:  var(--brand-v2-danger);
+}
+
+/* Dark-mode tweak for card on brand v2 */
+[data-theme="dark"][data-brand="v2"],
+:root.dark[data-brand="v2"] {
+  --card:  10  16  28; /* card a hair above bg */
 }

@@ -17,7 +17,8 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 import { copyToClipboard } from "../../utils/clipboard";
 import TraceOutline from "../ui/TraceOutline";
 import { buildPublicStatusUrl } from "../../api/public";
-import { track } from "../../utils/telemetry";
+import { track, trackProjectDiscoverToggle } from "../../utils/telemetry";
+import { DISCOVERABILITY } from "../../config/flags";
 import { toast } from "../ui/Toaster";
 
 // --- Feature flag ---
@@ -62,6 +63,7 @@ export default function ProjectSettingsModal({
   );
   const [publicToken, setPublicToken] = useState(project?.publicToken || "");
   const [icon, setIcon] = useState(project?.icon || null);
+  const [discoverable, setDiscoverable] = useState(Boolean(project?.discoverable));
 
   const [submitting, setSubmitting] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -92,6 +94,7 @@ export default function ProjectSettingsModal({
     setPublicEnabled(!!project?.publicToken || project?.visibility === "public");
     setPublicToken(project?.publicToken || "");
     setIcon(project?.icon || null);
+    setDiscoverable(Boolean(project?.discoverable));
     setError("");
     setSubmitting(false);
     setLinkCopied(false);
@@ -218,6 +221,7 @@ export default function ProjectSettingsModal({
       name: newName,
       description: description || "",
       visibility: visibility === "public" ? "public" : "private",
+      ...(DISCOVERABILITY ? { discoverable: Boolean(discoverable) } : {}),
     };
 
     try {
@@ -570,6 +574,36 @@ export default function ProjectSettingsModal({
                 </p>
               </button>
             </div>
+
+            {/* ✅ Discoverability (flag-gated) */}
+{DISCOVERABILITY && (
+  <div className="rounded-xl border border-border p-3">
+    <div className="flex items-center justify-between">
+      <div>
+        <label className="inline-flex items-center gap-2 text-sm font-semibold">
+          Allow this project to be discoverable
+        </label>
+        <p className="text-xs text-muted">
+          Lets teammates find this project when searching the workspace.
+        </p>
+      </div>
+      <Switch
+        checked={discoverable}
+        onChange={(next) => {
+          setDiscoverable(next);
+          try {
+            trackProjectDiscoverToggle({
+              projectId: project?._id,
+              on: Boolean(next),
+              source: 'settings_toggle',
+            });
+          } catch {}
+        }}
+        ariaLabel="Allow this project to be discoverable"
+      />
+    </div>
+  </div>
+)}
 
             {/* Public status controls (flag gated) */}
             {ENABLE_PUBLIC_STATUS && (

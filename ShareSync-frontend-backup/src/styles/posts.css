@@ -1,0 +1,191 @@
+/* src/styles/posts.css */
+
+/* Composer */
+.post-composer {
+    display: grid;
+    gap: 8px;
+    border: 1px dashed var(--border);
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  
+  .post-composer textarea {
+    width: 100%;
+    min-height: 72px;
+    resize: vertical;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font: inherit;
+    outline: none;
+  }
+  
+  .post-composer textarea:focus {
+    border-color: rgb(var(--accent));
+    box-shadow: 0 0 0 2px color-mix(in srgb, rgb(var(--accent)) 30%, transparent);
+  }
+  
+  .post-composer__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+  }
+  
+  .post-composer__left,
+  .post-composer__right {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .post-composer .btn {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .post-composer .btn:hover {
+    background: color-mix(in srgb, var(--surface) 70%, var(--bg) 30%);
+  }
+  
+  /* Mentions dropdown */
+  .mentions-list {
+    position: absolute;
+    z-index: 40;
+    max-height: 200px;
+    overflow: auto;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 4px;
+    box-shadow: var(--shadow-elev, 0 6px 24px rgba(0,0,0,.08));
+  }
+  .mentions-item {
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .mentions-item[aria-selected="true"],
+  .mentions-item:hover {
+    background: color-mix(in srgb, rgb(var(--accent)) 12%, transparent);
+  }
+  
+  /* Post card */
+  .post-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  
+  .post-card__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  
+  .post-card__author {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  
+  .post-card__time {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  
+  .post-card__body {
+    white-space: pre-wrap;
+    line-height: 1.4;
+    font-size: 14px;
+  }
+  
+  .post-card__attachments {
+    margin-top: 8px;
+    display: grid;
+    gap: 8px;
+  }
+  
+  .post-card__thread {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+  
+  /* Reaction bar */
+  .reaction-bar {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  
+  .reaction-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+  }
+  .reaction-chip:hover {
+    background: color-mix(in srgb, rgb(var(--accent)) 12%, transparent);
+  }
+  .reaction-chip[aria-pressed="true"] {
+    border-color: rgb(var(--accent));
+    box-shadow: 0 0 0 2px color-mix(in srgb, rgb(var(--accent)) 24%, transparent);
+  }
+  
+  /* Comment input */
+  .post-card__commentbox {
+    display: grid;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .post-card__commentbox textarea {
+    width: 100%;
+    min-height: 48px;
+    resize: vertical;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font: inherit;
+    outline: none;
+  }
+  .post-card__commentbox textarea:focus {
+    border-color: rgb(var(--accent));
+    box-shadow: 0 0 0 2px color-mix(in srgb, rgb(var(--accent)) 30%, transparent);
+  }
+  .post-card__commentbox .btn {
+    justify-self: end;
+  }
+  
+  /* Reduced motion niceties */
+  @media (prefers-reduced-motion: no-preference) {
+    .reaction-chip {
+      transition: background .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .post-composer textarea,
+    .post-card__commentbox textarea {
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+  }
+  

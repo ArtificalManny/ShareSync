@@ -76,6 +76,58 @@ export function fromApiActivity(raw = {}) {
     };
   }
 
+    // Posts (rich posts)
+    if (rawType.startsWith('post') || raw.body || raw.post) {
+      const post = raw.post || raw;
+      const body = String(post.body || post.text || raw.text || '');
+      const files =
+        Array.isArray(post.attachments) ? post.attachments :
+        Array.isArray(raw.attachments) ? raw.attachments :
+        Array.isArray(raw.files) ? raw.files : [];
+      const subtype =
+        rawType.includes('updated') || post.editedAt ? 'post.updated' : 'post.created';
+  
+      return {
+        id: String(post._id || post.id || raw._id || raw.id || fallbackId(subtype, ts, body)),
+        type: 'update',                 // keep unified 'update' type; specialize in subtype
+        subtype,                        // 'post.created' | 'post.updated'
+        projectId,
+        userId: String(post.authorId || raw.authorId || userId || ''),
+        ts: iso(post.createdAt || raw.createdAt || ts),
+        text: body,
+        files,
+        meta: {
+          post: pickPostFields(post),
+          reactions: post.reactions || {},
+          editedAt: post.editedAt || null,
+          ...raw.meta,
+        },
+        freshUntil,
+      };
+    }
+  
+    // Comments on posts
+    if (rawType.startsWith('comment') || raw.comment || (raw.postId && raw.text)) {
+      const c = raw.comment || raw;
+      const text = String(c.text || raw.text || '');
+      const postId = String(c.postId || raw.postId || '');
+      return {
+        id: String(c._id || c.id || fallbackId('post.commented', ts, text)),
+        type: 'update',
+        subtype: 'post.commented',
+        projectId,
+        userId,
+        ts: iso(c.createdAt || raw.createdAt || ts),
+        text,
+        meta: {
+          postId,
+          comment: pickCommentFields(c),
+          ...raw.meta,
+        },
+        freshUntil,
+      };
+    }  
+
   // Tasks
   if (rawType.includes('task') || raw.task || raw.meta?.task) {
     const task = raw.task || raw.meta?.task || {};
@@ -215,6 +267,88 @@ export function fromSocketEvent(event, payload = {}) {
     };
   }
 
+    // Posts: created
+    if ((name === 'posts:created' || name === 'post_created') && payload.post) {
+      const p = payload.post;
+      const body = String(p.body || '');
+      return {
+        id: String(p._id || p.id || fallbackId('post.created', ts, body)),
+        type: 'update',
+        subtype: 'post.created',
+        projectId: String(payload.projectId || p.projectId || ''),
+        userId: String(p.authorId || payload.userId || ''),
+        ts: iso(p.createdAt || ts),
+        text: body,
+        meta: { post: pickPostFields(p), socket: true },
+        freshUntil,
+      };
+    }
+  
+    // Posts: updated (edits, attachments, etc.)
+    if ((name === 'posts:updated' || name === 'post_updated') && payload.post) {
+      const p = payload.post;
+      const body = String(p.body || '');
+      return {
+        id: String(p._id || p.id || fallbackId('post.updated', ts, body)),
+        type: 'update',
+        subtype: 'post.updated',
+        projectId: String(payload.projectId || p.projectId || ''),
+        userId: String(p.authorId || payload.userId || ''),
+        ts: iso(p.editedAt || p.updatedAt || ts),
+        text: body,
+        meta: { post: pickPostFields(p), socket: true },
+        freshUntil,
+      };
+    }
+  
+    // Posts: commented
+    if (
+      name === 'post:commented' ||
+      name === 'posts:commented' ||
+      name === 'comments:created' ||
+      name === 'post_commented'
+    ) {
+      const c = payload.comment || payload;
+      const text = String(c.text || payload.text || '');
+      return {
+        id: String(c._id || c.id || fallbackId('post.commented', ts, text)),
+        type: 'update',
+        subtype: 'post.commented',
+        projectId: String(payload.projectId || c.projectId || ''),
+        userId: String(c.authorId || payload.userId || ''),
+        ts: iso(c.createdAt || ts),
+        text,
+        meta: {
+          postId: String(c.postId || payload.postId || ''),
+          comment: pickCommentFields(c),
+          socket: true,
+        },
+        freshUntil,
+      };
+    }
+  
+    // Posts: reacted (optional – nice to visualize)
+    if (
+      name === 'posts:reacted' ||
+      name === 'post_reacted' ||
+      name === 'post:reacted'
+    ) {
+      const p = payload.post || {};
+      const emoji = payload.reaction || payload.emoji || payload.type;
+      const body = String(p.body || '');
+      return {
+        id: fallbackId('post.reacted', ts, emoji || body),
+        type: 'update',
+        subtype: 'post.reacted',
+        projectId: String(payload.projectId || p.projectId || ''),
+        userId: String(payload.userId || ''),
+        ts,
+        text: emoji ? `Reacted ${emoji}` : 'Reacted to a post',
+        meta: { postId: String(p._id || p.id || payload.postId || ''), emoji, socket: true },
+        freshUntil,
+      };
+    }  
+
   if (name === 'project:filesadded' && Array.isArray(payload.files)) {
     const files = payload.files;
     const text = `${files.length} file${files.length > 1 ? 's' : ''} added`;
@@ -283,6 +417,29 @@ function pickTaskFields(t = {}) {
     dueDate: t.dueDate,
     labels: Array.isArray(t.labels) ? t.labels : [],
     notes: t.notes,
+  };
+}
+
+function pickPostFields(p = {}) {
+  return {
+    id: p._id || p.id,
+    projectId: p.projectId,
+    authorId: p.authorId,
+    body: p.body || '',
+    attachments: Array.isArray(p.attachments) ? p.attachments : [],
+    createdAt: p.createdAt,
+    editedAt: p.editedAt || null,
+    reactions: p.reactions || {},
+  };
+}
+
+function pickCommentFields(c = {}) {
+  return {
+    id: c._id || c.id,
+    postId: c.postId,
+    authorId: c.authorId,
+    text: c.text || '',
+    createdAt: c.createdAt,
   };
 }
 

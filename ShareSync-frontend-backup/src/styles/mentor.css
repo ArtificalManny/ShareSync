@@ -1,0 +1,39 @@
+/* Mentor panel visuals (motion guarded by motion.css tokens) */
+
+.mentor-panel {
+    --mentor-accent: rgb(var(--grad-cnbc-a));
+    --mentor-accent-2: rgb(var(--grad-cnbc-b));
+    position: relative;
+  }
+  
+  .mentor-panel::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: var(--radius-2xl);
+    background: linear-gradient(135deg, var(--mentor-accent) 0%, var(--mentor-accent-2) 100%);
+    opacity: 0.08;
+    filter: blur(18px);
+    pointer-events: none;
+  }
+  
+  /* Reduce intensity when user prefers reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .mentor-panel::before {
+      filter: none;
+      opacity: .06;
+    }
+  
+    /* Global motion guards for mentor UI */
+    .hover-raise {
+      transform: none !important;
+      transition: none !important;
+    }
+    .mentor-panel,
+    .mentor-panel * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+  

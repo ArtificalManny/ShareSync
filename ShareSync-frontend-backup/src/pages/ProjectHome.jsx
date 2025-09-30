@@ -9,7 +9,7 @@ import {
 } from "../api/projects";
 import { createTask, patchTask } from "../api/tasks";
 
-import { uploadFiles } from "../api/uploads";
+// import { uploadFiles } from "../api/uploads"; // (unused here; PostComposer handles uploads)
 import { getProjectStats } from "../api/stats";
 import ActivityOverTimeLive from "../components/analytics/ActivityOverTimeLive";
 
@@ -32,7 +32,10 @@ import {
   RefreshCcw,
   Trophy,
   Files as FilesIcon,
+  CalendarDays,
 } from "lucide-react";
+import { CALENDAR_ACCOUNTABILITY, POSTS_V1 } from "../config/flags.js";
+import { getIcsUrl } from "../api/calendar.js";
 import { buildPublicStatusUrl } from "../api/public";
 
 import TaskSheet from "../components/tasks/TaskSheet";
@@ -48,8 +51,10 @@ import KpiDetailModal from "../components/kpi/KpiDetailModal";
 // NEW: series hook + chart styles
 import useKpiSeries from "../hooks/useKpiSeries";
 import "../styles/charts.css";
+import "../styles/posts.css"; // ← NEW styles for posts
 // NEW: prefers-reduced-motion hook
 import useReducedMotion from "../hooks/useReducedMotion";
+import useXpToasts from "../hooks/useXpToasts.js";
 // NEW: local comments helpers
 import { buildKey as buildKpiKey, getComments as getKpiComments, addComment as addKpiComment } from "../utils/kpi/comments";
 
@@ -72,6 +77,18 @@ import { listInvites } from "../api/invite";
 
 // 🔔 Stories (unread ring) helpers
 import { setLastSeen } from "../utils/stories";
+
+// 🧩 Posts API + UI
+import {
+  listPosts,
+  addComment as apiAddComment,
+  toggleReaction as apiToggleReaction,
+} from "../api/posts.js";
+import PostComposer from "../components/posts/PostComposer.jsx";
+import PostCard from "../components/posts/PostCard.jsx";
+
+import { MESSENGER_V1 } from "../config/flags.js";
+import ProjectChatThread from "../components/messenger/ProjectChatThread.jsx";
 
 // ---- small helpers ----
 const mark = (name) => { try { performance?.mark?.(name); } catch {} };
@@ -156,8 +173,18 @@ export default function ProjectHome() {
   const { user } = useContext(AuthContext) || {};
   const meId = user?._id || user?.id;
 
+  // Calendar ICS link (flag-gated)
+  const icsUrl = CALENDAR_ACCOUNTABILITY ? getIcsUrl(id) : null;
+
+  // XP toasts (confetti + telemetry on punctual completions)
+  useXpToasts(id);
+
   const [project, setProject] = useState(null);
   const [feed, setFeed] = useState({ items: [], nextCursor: null });
+
+  // ✅ Proper posts state init
+  const [posts, setPosts] = useState({ items: [], page: 1, hasMore: true, loading: false });
+
   const [loading, setLoading] = useState(true);
   const [feedLoading, setFeedLoading] = useState(true);
   const [error, setError] = useState("");
@@ -189,7 +216,7 @@ export default function ProjectHome() {
   const [selectedMetric, setSelectedMetric] = useState("");
   const [pointComments, setPointComments] = useState([]);
 
-  // Reduced motion (for charts’ motionEnabled signal, though charts also self-check)
+  // Reduced motion
   const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => { mark("ss:projecthome:mounted"); }, []);
@@ -244,7 +271,7 @@ export default function ProjectHome() {
     try {
       const res = await getProjectFeed(id, { limit: 20, cursor });
       const rawItems = Array.isArray(res?.items) ? res.items : [];
-      const items = fromApiList(rawItems); // 🔹 normalize API items
+      const items = fromApiList(rawItems);
       const nextCursor = res?.nextCursor || null;
 
       setFeed((prev) => ({
@@ -258,9 +285,33 @@ export default function ProjectHome() {
     }
   };
 
+  // Load posts (paged)
+  const loadPosts = async (page = 1, limit = 20) => {
+    if (!id) return;
+    setPosts((p) => ({ ...p, loading: true }));
+    try {
+      const res = await listPosts(id, { page, limit });
+      const incoming = Array.isArray(res?.items) ? res.items : [];
+      setPosts((prev) => ({
+        items: page === 1 ? incoming : [...prev.items, ...incoming],
+        page,
+        hasMore: (res?.total || incoming.length) > (page * limit),
+        loading: false,
+      }));
+    } catch (e) {
+      console.error("[ProjectHome] posts load error", e);
+      setPosts((p) => ({ ...p, loading: false }));
+    }
+  };
+
   useEffect(() => {
     if (!id) return;
     loadFeed();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id || !POSTS_V1) return;
+    loadPosts(1);
   }, [id]);
 
   useEffect(() => {
@@ -331,7 +382,6 @@ export default function ProjectHome() {
       if (!el) return false;
       const rect = el.getBoundingClientRect();
       const vh = window.innerHeight || document.documentElement.clientHeight;
-      // Consider "in view" if at least ~30% is within viewport
       const visible =
         rect.top < vh * 0.7 &&
         rect.bottom > vh * 0.3;
@@ -348,11 +398,9 @@ export default function ProjectHome() {
         if (String(evt?.projectId) !== String(id)) return;
         const norm = fromSocketEvent("activity:new", evt);
         setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
-        // Optional: only update lastSeen if the page is currently visible
         if (typeof document !== "undefined" && document.visibilityState === "visible") {
           try { setLastSeen(id, Date.now()); } catch {}
         }
-        // Soft ping if Activity section isn't visible
         try {
           if (document.visibilityState === "visible" && !isActivityInView()) {
             toast({
@@ -368,7 +416,7 @@ export default function ProjectHome() {
       },
       "project:statsUpdated": (payload) => {
         if (String(payload?.projectId) === String(id)) {
-          // Optional: could refetch KPIs here
+          // optional: refetch KPIs
         }
       },
       "project:membersUpdated": (payload) => {
@@ -415,6 +463,28 @@ export default function ProjectHome() {
         const norm = fromSocketEvent("tasks:updated", payload);
         setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
+
+      // 🧩 NEW: posts realtime (merge into posts list)
+      "posts:created": (payload) => {
+        if (String(payload?.projectId) !== String(id) || !payload?.post) return;
+        const p = payload.post;
+        setPosts((prev) => {
+          const exists = prev.items.findIndex((x) => String(x.id || x._id) === String(p.id || p._id));
+          const items = exists >= 0 ? prev.items : [{ ...(p._id ? { id: p._id } : {}), ...p }, ...prev.items];
+          return { ...prev, items };
+        });
+      },
+      "posts:updated": (payload) => {
+        if (String(payload?.projectId) !== String(id) || !payload?.post) return;
+        const p = payload.post;
+        setPosts((prev) => ({
+          ...prev,
+          items: prev.items.map((it) =>
+            String(it.id || it._id) === String(p.id || p._id) ? { ...it, ...p } : it
+          ),
+        }));
+      },
+
       "project:publicChanged": (payload) => {
         if (String(payload?.projectId) === String(id)) {
           setProject((p) => ({ ...p, publicToken: payload?.publicToken || "" }));
@@ -428,7 +498,7 @@ export default function ProjectHome() {
   const canEdit = myRole === "owner" || myRole === "member";
   const canManage = myRole === "owner";
 
-  // ▶️ Initial invites load (owner only) so MembersPanel can show pending badge
+  // ▶️ Initial invites load (owner only)
   useEffect(() => {
     if (!project?._id) return;
     if (!canManage) return;
@@ -440,7 +510,7 @@ export default function ProjectHome() {
         const rows = await listInvites(project._id);
         setProject((p) => ({ ...(p || {}), invites: rows || [] }));
       } catch {
-        // soft-fail; not critical for page load
+        /* soft-fail */
       } finally {
         invitesFetchedRef.current = true;
       }
@@ -456,7 +526,7 @@ export default function ProjectHome() {
     } catch {}
   }, [project?._id]);
 
-  // Composer
+  // Composer (legacy project update posts)
   const handlePostUpdate = async (payload) => {
     if (!canEdit) return;
     const text = typeof payload === "string" ? payload : payload?.text || "";
@@ -730,6 +800,27 @@ export default function ProjectHome() {
               Retry
               <span className="shine pointer-events-none" aria-hidden="true" />
             </button>
+
+            {CALENDAR_ACCOUNTABILITY && icsUrl && (
+              <a
+                href={icsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                onClick={() => {
+                  try {
+                    const { trackScheduleCreated } = require("../utils/telemetry.js");
+                    trackScheduleCreated?.({ projectId: id, method: "ics_export" });
+                  } catch {}
+                }}
+                className="ml-3 relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                title="Download tasks as .ics"
+              >
+                <CalendarDays className="w-4 h-4" />
+                Download .ics
+                <span className="shine pointer-events-none" aria-hidden="true" />
+              </a>
+            )}
           </div>
         </div>
       </main>
@@ -785,6 +876,53 @@ export default function ProjectHome() {
       Boolean(t?.completedAt)
   ).length;
 
+  // --- Posts handlers for PostCard ---
+  const handleReact = async (postId, emoji) => {
+    try {
+      // Optimistic UI update
+      setPosts((prev) => ({
+        ...prev,
+        items: prev.items.map((p) => {
+          if (String(p.id) !== String(postId)) return p;
+          const counts = { ...(p.reactions || {}) };
+          counts[emoji] = Math.max(0, (counts[emoji] || 0) + 1);
+          return { ...p, reactions: counts };
+        })
+      }));
+      await apiToggleReaction(id, postId, emoji);
+    } catch (e) {
+      // Rollback on error (best effort)
+      setPosts((prev) => ({
+        ...prev,
+        items: prev.items.map((p) => {
+          if (String(p.id) !== String(postId)) return p;
+          const counts = { ...(p.reactions || {}) };
+          counts[emoji] = Math.max(0, (counts[emoji] || 1) - 1);
+          return { ...p, reactions: counts };
+        })
+      }));
+    }
+  };
+
+  const handleComment = async (postId, text, mentions) => {
+    const trimmed = String(text || "").trim();
+    if (!trimmed) return;
+    try {
+      const created = await apiAddComment(id, postId, { text: trimmed, mentions: mentions || [] });
+      // Merge into thread
+      setPosts((prev) => ({
+        ...prev,
+        items: prev.items.map((p) =>
+          String(p.id) === String(postId)
+            ? { ...p, comments: [ ...(p.comments || []), created ] }
+            : p
+        ),
+      }));
+    } catch (e) {
+      toast({ title: "Failed to comment", variant: "error" });
+    }
+  };
+
   return (
     <main id="main" role="main" tabIndex={-1}>
       <div className="px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
@@ -794,6 +932,80 @@ export default function ProjectHome() {
           onAddTask={() => canEdit && setShowTaskSheet(true)}
           onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
         />
+
+        {/* 🧩 Team Posts (Composer + list) */}
+        {POSTS_V1 && (
+          <section
+            className="mt-4 card rounded-2xl border border-border bg-surface p-4"
+            role="region"
+            aria-label="Team Posts"
+          >
+            <div className="flex items-start justify-between">
+              <SectionHeader icon="MessageSquare">Team Posts</SectionHeader>
+              <button
+                type="button"
+                onClick={() => loadPosts(1)}
+                className="rounded-lg p-1.5 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                aria-label="Refresh posts"
+                title="Refresh posts"
+              >
+                <MoreHorizontal className="w-5 h-5 text-muted" />
+              </button>
+            </div>
+
+            <div className="mt-3">
+              <PostComposer
+                projectId={id}
+                onCreated={(post) => {
+                  setPosts((prev) => ({ ...prev, items: [post, ...(prev.items || [])] }));
+                }}
+              />
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {(posts.items || []).map((p) => (
+                <PostCard
+                  key={p.id}
+                  projectId={id}
+                  post={p}
+                  onReact={handleReact}
+                  onComment={handleComment}
+                  canComment={true}
+                />
+              ))}
+              {posts.loading && (
+                <div className="text-xs text-muted px-2">Loading…</div>
+              )}
+              {!posts.loading && posts.hasMore && (
+                <button
+                  type="button"
+                  onClick={() => loadPosts((posts.page || 1) + 1)}
+                  className="mt-2 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-surface"
+                >
+                  Load more
+                </button>
+              )}
+              {!posts.loading && (posts.items || []).length === 0 && (
+                <div className="text-xs text-muted px-2">No posts yet.</div>
+              )}
+            </div>
+          </section>
+        )}
+
+{MESSENGER_V1 && project?.chatEnabled && (
+  <section
+    className="mt-6 card rounded-2xl border border-border bg-surface p-4"
+    role="region"
+    aria-label="Project chat"
+  >
+    <div className="flex items-start justify-between">
+      <SectionHeader icon="MessagesSquare">Chat</SectionHeader>
+    </div>
+    <div className="mt-3">
+      <ProjectChatThread projectId={project._id} />
+    </div>
+  </section>
+)}
 
         {/* Action Bar */}
         <div className="mt-3 flex flex-wrap items-center gap-2">

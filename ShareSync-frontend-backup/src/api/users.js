@@ -87,10 +87,20 @@ export async function listHighlights() {
   }
 }
 
+export async function searchUsers(query, opts = {}) {
+    const params = { q: String(query || '').trim(), limit: opts.limit ?? 8 }
+    const { data } = await client.get('/users/search', { params });
+    //Expext { items: [...] }, but be tolerant of arrays
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.items)) return data.items;
+    return [];
+}
+
 export default {
   getMe,
   updateProfile,
   updateAvatar,
   listBadges,
   listHighlights,
+  searchUsers,
 };

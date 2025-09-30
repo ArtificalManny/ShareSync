@@ -35,6 +35,7 @@ const projectRoutes = require('./routes/projects');
 const activityRoutes = require('./routes/activity');
 const fileRoutes = require('./routes/files');     // ← already added earlier
 const taskRoutes = require('./routes/tasks');     // ← NEW
+const mentorRoutes = require('./routes/mentor.routes');
 
 // ✅ Route Registration
 app.use('/api/auth', authRoutes);
@@ -70,6 +71,10 @@ app.use(
 );
 
 app.use('/api/activity', activityRoutes);
+
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+app.use('/api', mentorRoutes);
 
 // Convenience emitter attached to app (use in controllers/services)
 // Usage: req.app.emitProjectMembersUpdated(projectId, members, invites)

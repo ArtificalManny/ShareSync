@@ -1,0 +1,79 @@
+/* Schedule state chips — color-contrast safe and reduced-motion friendly */
+
+.chip {
+    --chip-fg: #0f172a;     /* slate-900 default (dark text on light bg) */
+    --chip-bg: #e2e8f0;     /* slate-200 default */
+    --chip-br: 9999px;
+  
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.5rem;
+    font-size: 11px;
+    line-height: 1;
+    border-radius: var(--chip-br);
+    color: var(--chip-fg);
+    background-color: var(--chip-bg);
+    border: 1px solid color-mix(in srgb, var(--chip-bg) 60%, black 8%);
+    user-select: none;
+    white-space: nowrap;
+  }
+  
+  .chip__text {
+    letter-spacing: .2px;
+  }
+  
+  /* Themes */
+  .chip--early {
+    --chip-fg: #065f46;   /* emerald-800 */
+    --chip-bg: #d1fae5;   /* emerald-100 */
+  }
+  
+  .chip--ontime {
+    --chip-fg: #854d0e;   /* amber-800 */
+    --chip-bg: #fef3c7;   /* amber-100 */
+  }
+  
+  .chip--late {
+    --chip-fg: #7f1d1d;   /* rose-900 */
+    --chip-bg: #ffe4e6;   /* rose-100 */
+  }
+  
+  .chip--atrisk {
+    --chip-fg: #1e3a8a;   /* indigo-900 */
+    --chip-bg: #e0e7ff;   /* indigo-100 */
+  }
+  
+  /* Dark mode adjustments */
+  :root.dark .chip {
+    border-color: color-mix(in srgb, var(--chip-bg) 40%, white 8%);
+  }
+  
+  :root.dark .chip--early {
+    --chip-fg: #a7f3d0; /* emerald-200 */
+    --chip-bg: #064e3b; /* emerald-900 */
+  }
+  
+  :root.dark .chip--ontime {
+    --chip-fg: #fde68a; /* amber-300 */
+    --chip-bg: #78350f; /* amber-900 */
+  }
+  
+  :root.dark .chip--late {
+    --chip-fg: #fecdd3; /* rose-200 */
+    --chip-bg: #7f1d1d; /* rose-900 */
+  }
+  
+  :root.dark .chip--atrisk {
+    --chip-fg: #c7d2fe; /* indigo-200 */
+    --chip-bg: #1e3a8a; /* indigo-900 */
+  }
+  
+  /* Motion guard — don't bounce/fade on reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .chip {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+  

@@ -1,6 +1,6 @@
 import React, { useContext, useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Link2, RefreshCcw, Copy as CopyIcon, Check as CheckIcon } from "lucide-react";
+import { Link2, RefreshCcw, Copy as CopyIcon, Check as CheckIcon, CalendarDays } from "lucide-react";
 import { AuthContext } from "../../AuthContext";
 import { patchProjectIcon } from "../../api/projects";
 import {
@@ -18,6 +18,9 @@ import StatusPill from "../projects/StatusPill.jsx";
 import useRecentFlag from "../../hooks/useRecentFlag";
 import useReducedMotion from "../../hooks/useReducedMotion";
 import { setLastSeen } from "../../utils/stories";
+import { CALENDAR_ACCOUNTABILITY } from "../../config/flags.js";
+import { getIcsUrl } from "../../api/calendar.js";
+import { trackScheduleCreated } from "../../utils/telemetry";
 
 const ENABLE_PUBLIC_STATUS = (() => {
   const v = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS ?? "";
@@ -204,6 +207,9 @@ export default function ProjectHeader({
       ? `${window.location.origin}${publicPath}`
       : publicPath;
 
+  // Calendar (.ics) export link
+  const icsUrl = CALENDAR_ACCOUNTABILITY ? getIcsUrl(project?._id || project?.id) : null;
+
   const hasRecent = useRecentFlag(project?.lastActivityAt, recentWindowMs);
   const prefersReduced = useReducedMotion();
   const ringAnimated = hasRecent && !prefersReduced;
@@ -372,7 +378,7 @@ export default function ProjectHeader({
               value={quickTask}
               onChange={(e) => setQuickTask(e.target.value)}
               placeholder="Quick add a task…"
-              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+              className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
             />
             <button
               type="submit"
@@ -381,6 +387,25 @@ export default function ProjectHeader({
               Add task
             </button>
           </form>
+
+          {CALENDAR_ACCOUNTABILITY && icsUrl && (
+            <a
+              href={icsUrl}
+              target="_blank"
+              rel="noreferrer"
+              download
+              onClick={() => {
+                try {
+                  trackScheduleCreated?.({ projectId: project?._id || project?.id, method: "ics_export", source: "header"});
+                } catch {}
+              }}
+              className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm inline-flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800"
+              title="Download tasks as .ics"
+            >
+              <CalendarDays className="w-4 h-4"/>
+              Download .ics
+            </a>
+          )}
 
           <button
             type="button"

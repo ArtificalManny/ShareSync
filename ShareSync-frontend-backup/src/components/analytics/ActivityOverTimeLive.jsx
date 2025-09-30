@@ -1,5 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { getUserStats, getProjectStats } from '../../api/stats';
+import ConfettiBurst from '../xp/ConfettiBurst';
+import useReducedMotion from '../../hooks/useReducedMotion';
+import { BRAND_V2 } from '../../config/flags.js';
 
 // very lightweight line chart using <svg> so we don't add deps
 function MiniLine({ points = [], width = 640, height = 140, padding = 16 }) {
@@ -46,6 +49,10 @@ export default function ActivityOverTimeLive({
   const [rangeState, setRangeState] = useState(String(defaultRange || '30'));
   const range = String(controlled ? rangeProp : rangeState);
 
+  const prefersReduced = useReducedMotion();
+  const [confetti, setConfetti] = useState(false);
+  const prevTotalRef = useRef(0);
+
   const [seriesState, setSeriesState] = useState([]);
   const [loading, setLoading] = useState(!seriesProp); // if series provided, no loading
   const [err, setErr] = useState('');
@@ -55,6 +62,11 @@ export default function ActivityOverTimeLive({
     const raw = seriesProp ?? seriesState;
     return Array.isArray(raw) ? raw : [];
   }, [seriesProp, seriesState]);
+
+  // Sum of activity used for simple milestone checks
+  const total = useMemo(() => {
+    return points.reduce((sum, p) => sum + (p.tasks || 0) + (p.updates || 0), 0);
+  }, [points]);
 
   // Fetch only when we DON'T get series from props
   useEffect(() => {
@@ -86,6 +98,29 @@ export default function ActivityOverTimeLive({
     return () => { ignore = true; };
   }, [projectId, range, seriesProp]);
 
+  // Motion-gated milestone celebration — fires when crossing thresholds
+  useEffect(() => {
+    if (!BRAND_V2) return;
+    if (prefersReduced) return;
+
+    const prev = prevTotalRef.current || 0;
+    if (total <= prev) {
+      prevTotalRef.current = total;
+      return;
+    }
+
+    const milestones = [10, 25, 50, 100, 200, 500, 1000];
+    const crossed = milestones.some((m) => prev < m && total >= m);
+    if (crossed) {
+      setConfetti(true);
+      const t = setTimeout(() => setConfetti(false), 1200);
+      prevTotalRef.current = total;
+      return () => clearTimeout(t);
+    }
+
+    prevTotalRef.current = total;
+  }, [total, prefersReduced]);
+
   const handleRangeChange = (next) => {
     if (controlled) {
       onRangeChange?.(next);
@@ -95,7 +130,13 @@ export default function ActivityOverTimeLive({
   };
 
   return (
-    <div>
+    <div className="relative">
+      {confetti && (
+        <div className="pointer-events-none absolute inset-0 z-[5]">
+          <ConfettiBurst />
+        </div>
+      )}
+
       <div className="flex items-center gap-2 mb-3">
         <label htmlFor="range" className="text-xs text-slate-500">Range</label>
         <select

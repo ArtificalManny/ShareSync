@@ -1,77 +1,85 @@
 // /src/api/search.js
+// Search & Discovery API client
+//
+// GET /search?q=&types=&projectId=&userId=&sort=&page=&limit=
+//
+// - types: CSV from SUPPORTED_TYPES (user,project,post,file,task)
+// - sort: 'relevance' | 'recent' (backend should default to 'relevance')
+// - projectId/userId: optional scope filters
+
+import client from "./client";
+
+export const SUPPORTED_TYPES = ["user", "project", "post", "file", "task"];
 
 /**
- * Lightweight search helpers for the Command Palette.
- * If a backend endpoint exists at GET /api/search?q=..., we'll use it.
- * Otherwise we gracefully return empty arrays so the palette
- * still works for routes + sprint actions.
- *
- * Expected backend response shape (flexible):
- * {
- *   projects: [{ _id, id, title, name }],
- *   tasks: [{ _id, id, title, projectId, projectTitle }]
- * }
+ * Normalize various input forms into a backend CSV:
+ * - string: "user,project"
+ * - array:  ["user","project"]
+ * - Set:    new Set(["user","project"])
+ * - null/undefined: omit
  */
-
-const API_BASE = "/api";
-
-function toJsonSafe(res) {
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-function coerceProject(p) {
-  if (!p || typeof p !== "object") return null;
-  return {
-    _id: p._id ?? p.id ?? String(p.slug || ""),
-    title: p.title ?? p.name ?? "Untitled project",
-  };
-}
-
-function coerceTask(t) {
-  if (!t || typeof t !== "object") return null;
-  return {
-    _id: t._id ?? t.id ?? String(t.slug || ""),
-    title: t.title ?? "Untitled task",
-    projectId: t.projectId ?? t.project_id ?? null,
-    projectTitle: t.projectTitle ?? t.project_name ?? null,
-  };
-}
-
-/**
- * Try backend search; fall back to empty arrays if not available.
- * @param {string} q
- * @returns {Promise<{projects: any[], tasks: any[]}>}
- */
-export async function searchAll(q) {
-  const query = (q ?? "").trim();
-  if (!query) return { projects: [], tasks: [] };
-
-  // Attempt a backend search endpoint if present.
-  // If it 404s or errors, we swallow and return empty.
-  try {
-    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`, {
-      credentials: "include",
-      headers: { "Accept": "application/json" },
-    });
-    const data = await toJsonSafe(res);
-
-    const projects = Array.isArray(data?.projects)
-      ? data.projects.map(coerceProject).filter(Boolean)
-      : [];
-    const tasks = Array.isArray(data?.tasks)
-      ? data.tasks.map(coerceTask).filter(Boolean)
-      : [];
-
-    return { projects, tasks };
-  } catch {
-    // Graceful fallback: palette still usable for routes & sprint actions
-    return { projects: [], tasks: [] };
+export function parseTypesParam(types) {
+  if (!types) return undefined;
+  if (typeof types === "string") {
+    // sanitize: split on commas/space, dedupe, keep only supported
+    const parts = types
+      .split(/[,\s]+/)
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    const filtered = Array.from(new Set(parts)).filter((t) =>
+      SUPPORTED_TYPES.includes(t)
+    );
+    return filtered.length ? filtered.join(",") : undefined;
   }
+  if (Array.isArray(types) || types instanceof Set) {
+    const arr = Array.from(types).map((s) => String(s || "").toLowerCase().trim());
+    const filtered = Array.from(new Set(arr)).filter((t) =>
+      SUPPORTED_TYPES.includes(t)
+    );
+    return filtered.length ? filtered.join(",") : undefined;
+  }
+  return undefined;
 }
 
 /**
- * If you later add dedicated endpoints, you can wire these:
- * export async function searchProjects(q) { ... }
- * export async function searchTasks(q) { ... }
+ * searchAll({ q, types, projectId, userId, sort, page, limit })
+ * -> GET /search with provided params
+ *
+ * Returns whatever the backend responds with (mixed results list or grouped),
+ * so the UI can adapt without us over-normalizing here.
  */
+export async function searchAll({
+  q = "",
+  types,
+  projectId,
+  userId,
+  sort,
+  page,
+  limit,
+} = {}) {
+  const params = {};
+
+  const query = String(q || "").trim();
+  if (query) params.q = query;
+
+  const typeCsv = parseTypesParam(types);
+  if (typeCsv) params.types = typeCsv;
+
+  if (projectId) params.projectId = projectId;
+  if (userId) params.userId = userId;
+
+  const s = String(sort || "").toLowerCase();
+  if (s === "relevance" || s === "recent") params.sort = s;
+
+  if (Number.isFinite(page)) params.page = Number(page);
+  if (Number.isFinite(limit)) params.limit = Number(limit);
+
+  const { data } = await client.get("/search", { params });
+  return data;
+}
+
+export default {
+  searchAll,
+  parseTypesParam,
+  SUPPORTED_TYPES,
+};

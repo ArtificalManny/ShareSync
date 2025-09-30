@@ -142,7 +142,7 @@ export default function FileGrid({
 
   return (
     <>
-      {/* Local CSS for the pending ring + badges */}
+      {/* Local CSS for the pending ring + badges (mirrors tokens for isolation) */}
       <style>{`
         @keyframes ss-pulse-ring {
           0% { transform: scale(0.9); opacity: 0.7; }

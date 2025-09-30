@@ -191,3 +191,17 @@ body.has-sidebar.sidebar-collapsed { --sidebar-width: var(--sidebar-w-collapsed)
     transition: none !important;
   }
 }
+
+/* ===== Brand V2 sidebar skin ===== */
+[data-brand="v2"] .ss-sidebar {
+  --sb-bg:    rgb(var(--brand-v2-sidebar));
+  --sb-border:rgb(var(--brand-v2-border));
+  --sb-text:  rgb(var(--brand-v2-text));
+  --sb-muted: color-mix(in srgb, rgb(var(--brand-v2-text)) 55%, white);
+  --sb-hover: color-mix(in srgb, rgb(var(--brand-v2-accent)) 12%, transparent);
+  --sb-active:color-mix(in srgb, rgb(var(--brand-v2-accent)) 22%, transparent);
+
+  --sb-neon:     rgb(var(--brand-v2-accent));
+  --sb-count-bg: rgb(var(--brand-v2-accent));
+  --sb-count-fg: #fff;
+}

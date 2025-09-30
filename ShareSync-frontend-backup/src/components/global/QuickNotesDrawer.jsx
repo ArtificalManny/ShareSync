@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { X, Plus, StickyNote, Pin, PinOff, Trash2 } from "lucide-react";
 import { useNotes } from "../../context/NotesContext";
+import MessengerPanel from "../messenger/MessengerPanel";
 
 export default function QuickNotesDrawer() {
   const {
@@ -28,7 +29,7 @@ export default function QuickNotesDrawer() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 z-40 h-10 w-10 rounded-full bg-indigo-600 text-white shadow-lg flex items-center justify-center hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        className="fixed bottom-36 right-4 z-40 h-10 w-10 rounded-full bg-indigo-600 text-white shadow-lg flex items-center justify-center hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         aria-label="Open Quick Notes"
       >
         <StickyNote className="h-5 w-5" />
@@ -143,6 +144,7 @@ export default function QuickNotesDrawer() {
           )}
         </div>
       </aside>
+      <MessengerPanel />
     </>
   );
 }

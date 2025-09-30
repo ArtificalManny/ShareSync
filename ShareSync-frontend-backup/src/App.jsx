@@ -12,41 +12,35 @@ import Navbar from "./components/Navbar";
 import { AuthProvider, AuthContext } from "./AuthContext";
 import "./theme.css";
 import "./styles/card.css";
-/* 🔗 Global design layers (tokens/gradients/motion) */
 import "./styles/tokens.css";
 import "./styles/gradients.css";
 import "./styles/motion.css";
-/* 🔗 Sidebar skin (NOTE: path moved to components/) */
 import "./components/Sidebar.css";
+import "./styles/messenger.css";
 
 import { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
 
-// Sprint context + widget
 import { SprintProvider } from "./context/SprintContext";
 import MiniSprintWidget from "./components/global/MiniSprintWidget";
-
-// Break (global short-break timer)
 import { BreakProvider } from "./context/BreakContext";
-
-// Notes + Pinned global layers
 import { NotesProvider } from "./context/NotesContext";
 import { PinnedProvider } from "./context/PinnedContext";
 import QuickNotesDrawer from "./components/global/QuickNotesDrawer";
 import PinnedTaskPanel from "./components/global/PinnedTaskPanel";
 
-// Command Palette
 import { CommandPaletteProvider } from "./hooks/useCommandPalette";
 import CommandPalette from "./components/global/CommandPalette";
-
-// 🔗 Hash scrolling
 import { scrollToAnchorFromHash } from "./utils/anchor";
 
-// ✅ Global user context for avatar propagation & socket updates
 import UserProvider, { UserContext } from "./context/UserContext";
-
-// ✅ Left sidebar
 import Sidebar from "./components/Sidebar";
+
+import MessengerPanel from "./components/messenger/MessengerPanel.jsx";
+import { ChatProvider } from "./context/ChatContext.jsx";
+import { MESSENGER_V1, BRAND_V2 } from "./config/flags.js";
+
+import useBrandTheme from "./hooks/useBrandTheme.js";
 
 const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
@@ -54,14 +48,14 @@ const Settings = lazy(() => import("./pages/Settings"));
 const Login = lazy(() => import("./pages/Login"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProjectHome = lazy(() => import("./pages/ProjectHome"));
+const DMPage = lazy(() => import("./pages/DMPage.jsx"));
 const CreateAccount = lazy(() => import("./pages/CreateAccount"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const PublicProject = lazy(() => import("./pages/PublicProject"));
 const PublicProjectStatus = lazy(() => import("./pages/PublicProjectStatus"));
-// ✅ Accept Invite (your file lives under components/)
+const SearchPage = lazy(() => import("./pages/SearchPage"));
 const AcceptInvite = lazy(() => import("./components/AcceptInvite.jsx"));
 
-/** Smooth-scroll to #hash elements whenever path or hash changes */
 function ScrollToHash() {
   const location = useLocation();
   useEffect(() => {
@@ -79,16 +73,12 @@ function GuardedRoutes() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Paths that never require auth (prefix checks)
-  // Added /invite so /invite/accept works for logged-out users
   const openRoutes = ["/login", "/create-account", "/forgot-password", "/p/", "/status", "/invite"];
 
   useEffect(() => {
     if (!ready) return;
     const isOpen = openRoutes.some((p) => location.pathname.startsWith(p));
-    if (!isOpen && !user) {
-      navigate("/login", { replace: true });
-    }
+    if (!isOpen && !user) navigate("/login", { replace: true });
   }, [user, ready, location.pathname, navigate]);
 
   return (
@@ -111,19 +101,24 @@ function GuardedRoutes() {
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Profile routes */}
-        <Route path="/profile" element={<Profile />} />       {/* direct self-profile */}
+        {/* Profile */}
+        <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:username" element={<Profile />} />
         <Route path="/u/:username" element={<Profile />} />
         <Route path="/me" element={<Profile />} />
 
-        {/* Public (open) */}
+        {/* Public */}
         <Route path="/p/:token" element={<PublicProject />} />
         <Route path="/status/:token" element={<PublicProjectStatus />} />
 
-        {/* ✅ Invite accept (open) */}
+        {/* Messenger full-page */}
+        <Route path="/messages" element={<DMPage />} />
+        <Route path="/messages/:id" element={<DMPage />} />
+
+        {/* Invite accept */}
         <Route path="/invite/accept" element={<AcceptInvite />} />
 
+        <Route path="/search" element={<SearchPage />} />
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Suspense>
@@ -132,63 +127,74 @@ function GuardedRoutes() {
 
 const AppRoutes = () => {
   const { user: authUser, logout } = useContext(AuthContext);
-  const { user: profileUser } = useContext(UserContext); // ✅ live-updating user (socket/cache-busted)
+  const { user: profileUser } = useContext(UserContext);
   const navbarUser = profileUser || authUser;
 
   return (
     <>
-      {/* Fixed left sidebar */}
       <Sidebar />
-      {/* Top nav; offset via .with-sidebar so it aligns beside the sidebar */}
       <Navbar user={navbarUser} onLogout={logout} />
-      <div id="main" role="main" className="main-content with-sidebar">
-        <GuardedRoutes />
-      </div>
+
+      {/* ✅ Wrap pages and the floating panel with ChatProvider */}
+      <ChatProvider enabled={MESSENGER_V1} userId={navbarUser?._id || navbarUser?.id}>
+        <div id="main" role="main" className="main-content with-sidebar">
+          <GuardedRoutes />
+        </div>
+
+        {/* Floating messenger panel */}
+        <MessengerPanel />
+      </ChatProvider>
+
       <ToastHost />
     </>
   );
 };
 
-const App = () => (
-  <AuthProvider>
-    {/* ✅ Wrap the app so avatars/names update everywhere in real-time */}
-    <UserProvider>
-      <ErrorBoundary>
-        <Router>
-          <a
-            href="#main"
-            className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 bg-white text-ink-900 px-3 py-2 rounded-lg shadow"
-          >
-            Skip to content
-          </a>
+const App = () => {
+  // ✅ Brand wiring: compute container data attributes via the hook
+  const { containerAttrs } = useBrandTheme({ enabled: BRAND_V2 });
 
-          {/* Global Command Palette provider (handles ⌘K / Ctrl-K) */}
-          <CommandPaletteProvider>
-            {/* Providers for global, persistent UI layers */}
-            <SprintProvider>
-              <BreakProvider>
-                <NotesProvider>
-                  <PinnedProvider>
-                    <div className="app-container" data-accent="indigo">
-                      <AppRoutes />
-                    </div>
+  return (
+    <AuthProvider>
+      <UserProvider>
+        <ErrorBoundary>
+          <Router>
+            <a
+              href="#main"
+              className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 bg-white text-ink-900 px-3 py-2 rounded-lg shadow"
+            >
+              Skip to content
+            </a>
 
-                    {/* Global floating tools */}
-                    <MiniSprintWidget />
-                    <QuickNotesDrawer />
-                    <PinnedTaskPanel />
-                  </PinnedProvider>
-                </NotesProvider>
-              </BreakProvider>
-            </SprintProvider>
+            <CommandPaletteProvider>
+              <SprintProvider>
+                <BreakProvider>
+                  <NotesProvider>
+                    <PinnedProvider>
+                      <div
+                        className="app-container"
+                        data-accent="indigo"
+                        {...containerAttrs}  // adds data-brand="classic|v2" + any needed attrs
+                      >
+                        <AppRoutes />
+                      </div>
 
-            {/* Rendered once at root so it overlays everything */}
-            <CommandPalette />
-          </CommandPaletteProvider>
-        </Router>
-      </ErrorBoundary>
-    </UserProvider>
-  </AuthProvider>
-);
+                      {/* Global floating tools */}
+                      <MiniSprintWidget />
+                      <QuickNotesDrawer />
+                      <PinnedTaskPanel />
+                    </PinnedProvider>
+                  </NotesProvider>
+                </BreakProvider>
+              </SprintProvider>
+
+              <CommandPalette />
+            </CommandPaletteProvider>
+          </Router>
+        </ErrorBoundary>
+      </UserProvider>
+    </AuthProvider>
+  );
+};
 
 export default App;

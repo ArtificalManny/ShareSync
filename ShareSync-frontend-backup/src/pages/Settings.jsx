@@ -2,6 +2,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getMe, updateProfile, updateNotifications } from '../api/user';
 import SectionHeader from '../components/ui/SectionHeader';
+import { toast } from '../components/ui/Toaster.jsx';
+import { trackMentorSettings, trackProfileDiscoverToggle } from '../utils/telemetry';
+import { DISCOVERABILITY } from '../config/flags.js';
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
@@ -11,6 +14,7 @@ export default function Settings() {
 
   // form state
   const [publicProfile, setPublicProfile] = useState(true);
+  const [discoverable, setDiscoverable] = useState(false);
   const [theme, setTheme] = useState('system'); // 'light' | 'dark' | 'system'
   const [emailActivity, setEmailActivity] = useState(true);
   const [emailDigest, setEmailDigest] = useState(true);
@@ -19,6 +23,10 @@ export default function Settings() {
   // NEW: Social & Sharing toggles
   const [allowShareLinks, setAllowShareLinks] = useState(false);
   const [allowFollow, setAllowFollow] = useState(false);
+
+  // ✅ NEW: Mentor settings
+  const [mentorEnabled, setMentorEnabled] = useState(true);
+  const [mentorIntensity, setMentorIntensity] = useState('standard'); // 'light' | 'standard'
 
   // ---- THEME HANDLING (applies instantly) ----
   const mqlRef = useRef(null); // MediaQueryList for system theme listener
@@ -71,6 +79,7 @@ export default function Settings() {
       .then((me) => {
         if (ignore) return;
         setPublicProfile(Boolean(me?.publicProfile ?? true));
+        setDiscoverable(Boolean(me?.discoverable ?? false));
         const initialTheme = me?.appearance?.theme ?? localStorage.getItem('ss.theme') ?? 'system';
         setTheme(initialTheme);
         applyTheme(initialTheme);
@@ -84,6 +93,23 @@ export default function Settings() {
         const sharing = me?.sharing || {};
         setAllowShareLinks(Boolean(sharing.links ?? false));
         setAllowFollow(Boolean(sharing.follow ?? false));
+
+        // ✅ Mentor hydrate (from profile, else localStorage fallback)
+        const mentor = me?.mentor || me?.preferences?.mentor || {};
+        const lsEnabled = localStorage.getItem('ss.mentor.enabled');
+        const lsIntensity = localStorage.getItem('ss.mentor.intensity');
+        setMentorEnabled(
+          typeof mentor.enabled === 'boolean'
+            ? mentor.enabled
+            : lsEnabled != null
+              ? lsEnabled === 'true'
+              : true
+        );
+        setMentorIntensity(
+          mentor.intensity === 'light' || mentor.intensity === 'standard'
+            ? mentor.intensity
+            : (lsIntensity === 'light' ? 'light' : 'standard')
+        );
       })
       .catch((e) => !ignore && setErr(String(e?.message || e)))
       .finally(() => !ignore && setLoading(false));
@@ -110,13 +136,18 @@ export default function Settings() {
     setOk('');
     setSaving(true);
     try {
-      // 1) profile-ish settings (+ NEW: sharing)
+      // 1) profile-ish settings (+ NEW: sharing + mentor)
       await updateProfile({
         publicProfile,
+        discoverable: Boolean(discoverable),
         appearance: { theme },
         sharing: {
           links: allowShareLinks,
           follow: allowFollow,
+        },
+        mentor: {
+          enabled: Boolean(mentorEnabled),
+          intensity: mentorIntensity === 'light' ? 'light' : 'standard',
         },
         // Optionally: security flags like twoFA can live here if your backend supports it
         security: {
@@ -124,13 +155,33 @@ export default function Settings() {
         },
       });
 
+      // Persist mentor locally as a fallback between sessions
+      try {
+        localStorage.setItem('ss.mentor.enabled', String(Boolean(mentorEnabled)));
+        localStorage.setItem('ss.mentor.intensity', mentorIntensity === 'light' ? 'light' : 'standard');
+      } catch {}
+
       // 2) notifications
       await updateNotifications({
         emailActivity,
         emailDigest,
       });
 
+      try { 
+        if (DISCOVERABILITY) {
+          trackProfileDiscoverToggle({ on: Boolean(discoverable), source: 'settings_save'});
+        }
+      } catch {}
+
       setOk('Settings saved.');
+      // 🧭 Telemetry
+      try {
+        trackMentorSettings({
+          enabled: Boolean(mentorEnabled),
+          intensity: mentorIntensity,
+          source: 'settings_save',
+        });
+      } catch {}
     } catch (e) {
       setErr(e?.response?.data?.message || e?.message || 'Failed to save settings');
     } finally {
@@ -138,6 +189,28 @@ export default function Settings() {
       // tiny auto-clear for success
       setTimeout(() => setOk(''), 1800);
     }
+  };
+
+  // ✅ Reset mentor tips: clears local cached nudge state
+  const handleResetMentorTips = () => {
+    let removed = 0;
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('ss.mentor.') || k.startsWith('mentor.'))) keys.push(k);
+      }
+      keys.forEach((k) => {
+        localStorage.removeItem(k);
+        removed++;
+      });
+      // marker so BE/FE can ignore prior dismissals if needed
+      localStorage.setItem('ss.mentor.resetAt', String(Date.now()));
+    } catch {}
+    toast({ title: 'Mentor tips reset', description: removed ? `Cleared ${removed} cached items.` : undefined });
+    try {
+      trackMentorSettings({ action: 'reset_tips', removed, source: 'settings_button' });
+    } catch {}
   };
 
   if (loading) {
@@ -224,6 +297,28 @@ export default function Settings() {
             </div>
           </section>
 
+          {/* ✅ Search & discovery (flag-gated) */}
+{DISCOVERABILITY && (
+  <section className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+    <SectionHeader icon="Search">Search &amp; discovery</SectionHeader>
+    <p className="text-xs text-slate-500 mt-1">
+      Control whether your profile can appear in workspace search results.
+    </p>
+    <div className="mt-3">
+      <Toggle
+        id="discoverable"
+        label="Appear in search (discoverable)"
+        checked={discoverable}
+        onChange={(next) => {
+          setDiscoverable(next);
+          try {
+            trackProfileDiscoverToggle({ on: Boolean(next), source: 'settings_toggle' });
+          } catch {}
+        }}
+      />
+    </div>
+  </section>
+)}
           {/* Notifications */}
           <section className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
             <SectionHeader icon="Bell">Notifications</SectionHeader>
@@ -240,6 +335,51 @@ export default function Settings() {
                 checked={emailDigest}
                 onChange={setEmailDigest}
               />
+            </div>
+          </section>
+
+          {/* ✅ Mentor */}
+          <section className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+            <SectionHeader icon="Sparkles">Mentor</SectionHeader>
+            <p className="text-xs text-slate-500 mt-1">
+              The AI “Charles Xavier” mentor watches your project’s velocity and nudges you with tips.
+            </p>
+
+            <div className="mt-3 space-y-3">
+              <Toggle
+                id="mentorEnabled"
+                label="Enable mentor nudges"
+                checked={mentorEnabled}
+                onChange={setMentorEnabled}
+              />
+
+              <div className="flex items-center gap-3">
+                <label htmlFor="mentorIntensity" className="text-sm text-slate-700 dark:text-slate-300">
+                  Intensity
+                </label>
+                <select
+                  id="mentorIntensity"
+                  value={mentorIntensity}
+                  onChange={(e) => setMentorIntensity(e.target.value === 'light' ? 'light' : 'standard')}
+                  className="text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1"
+                >
+                  <option value="light">Light (fewer nudges)</option>
+                  <option value="standard">Standard</option>
+                </select>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={handleResetMentorTips}
+                  className="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  Reset mentor tips
+                </button>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Clears dismissed/seen nudges locally so tips can show again.
+                </p>
+              </div>
             </div>
           </section>
 

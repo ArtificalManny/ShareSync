@@ -3,7 +3,7 @@ import { Play, Pause, RotateCcw, Maximize2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSprint } from "../../context/SprintContext";
 import Draggable from "../ui/Draggable";
-import NudgeCard from "../habits/NudgeCard";
+import NudgeCard from "../mentor/NudgeCard";
 
 export default function MiniSprintWidget() {
   const navigate = useNavigate();

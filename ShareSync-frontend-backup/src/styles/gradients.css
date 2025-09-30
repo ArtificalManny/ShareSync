@@ -191,3 +191,56 @@
       opacity: .35;
     }
   }
+  
+  /* =======================
+     Brand V2 gradient helpers
+     ======================= */
+  
+  /* Deep navy banner (header hero) */
+  .bg-grad-navy {
+    background-image:
+      radial-gradient(60% 120% at 0% -10%, rgba(56, 189, 248, .18) 0%, transparent 60%),
+      linear-gradient(135deg, rgb(18 40 74), rgb(22 44 82));
+    color: white;
+  }
+  
+  /* Deep blue sweep (page section) */
+  .bg-grad-deepblue {
+    background-image:
+      radial-gradient(60% 120% at 100% 0%, rgba(99, 102, 241, .18) 0%, transparent 60%),
+      linear-gradient(135deg, rgb(29 78 216), rgb(37 99 235));
+    color: white;
+  }
+  
+  /* CTA orange (primary call-to-action) */
+  .bg-grad-orange-cta {
+    background-image:
+      radial-gradient(60% 120% at 0% 0%, rgba(253, 186, 116, .25) 0%, transparent 60%),
+      linear-gradient(135deg, rgb(234 88 12), rgb(249 115 22));
+    color: white;
+  }
+  
+  /* Success (toasts/buttons) */
+  .bg-grad-success {
+    background-image:
+      radial-gradient(60% 120% at 100% 0%, rgba(110, 231, 183, .25) 0%, transparent 60%),
+      linear-gradient(135deg, rgb(16 185 129), rgb(20 184 166));
+    color: white;
+  }
+  
+  /* Error (toasts/buttons) */
+  .bg-grad-error {
+    background-image:
+      radial-gradient(60% 120% at 0% 0%, rgba(254, 205, 211, .28) 0%, transparent 60%),
+      linear-gradient(135deg, rgb(244 63 94), rgb(225 29 72));
+    color: white;
+  }
+  
+  /* XP / streak flair */
+  .bg-grad-xp {
+    background-image:
+      radial-gradient(60% 120% at 35% -10%, rgba(236, 72, 153, .25) 0%, transparent 60%),
+      linear-gradient(135deg, rgb(124 58 237), rgb(236 72 153));
+    color: white;
+  }
+  

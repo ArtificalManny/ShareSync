@@ -1,7 +1,7 @@
 // /src/components/global/CommandPalette.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Command, Play, Pause, RotateCcw, Search, Folder, CheckCircle2, Hash, ChevronRight, Loader2 } from "lucide-react";
+import { Command, Play, Pause, RotateCcw, Search, Folder, CheckCircle2, Hash, ChevronRight, Loader2, MessageCircle } from "lucide-react";
 import { useSprint } from "../../context/SprintContext";
 import { useCommandPalette } from "../../hooks/useCommandPalette"; // to be created next
 import { fuzzyMatch } from "../../utils/fuzzy";                      // to be created next
@@ -21,6 +21,7 @@ const ROUTE_ITEMS = [
   { id: "route:projects",label: "Open Projects", hint: "/projects",icon: Folder,  run: (nav) => nav("/projects") },
   { id: "route:settings",label: "Open Settings", hint: "/settings",icon: Hash,    run: (nav) => nav("/settings") },
   { id: "route:profile", label: "My Profile",    hint: "/me",      icon: Hash,    run: (nav) => nav("/me") },
+  { id: "route:message", label: "Open Messenger", hint: "/messages", icon: MessageCircle, run: (nav) => nav("/messages") },
 ];
 
 export default function CommandPalette() {
@@ -122,6 +123,17 @@ export default function CommandPalette() {
         },
       })),
     ];
+
+    //Chnages here
+    if (q) {
+      base.unshift({
+        id: `route:search:${q}`,
+        kind: "route",
+        label: `Search "${q}"`,
+        hint: "/search",
+        run: () => navigate(`/search?q=${encodeURIComponent(q)}`)
+      })
+    }
 
     if (!q) return base.slice(0, 10);
 

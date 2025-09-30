@@ -1,13 +1,35 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut, PanelLeftClose } from 'lucide-react';
+import { Sun, Moon, LogOut, PanelLeftClose, MessageCircle } from 'lucide-react';
 import { formatProfilePicture } from '../utils/imageUtils';
+import { useChat } from "../context/ChatContext.jsx";
+import UnreadBadge from './messenger/UnreadBadge.jsx';
+import { BRAND_V2 } from '../config/flags.js';
 
+const BrandSwitcher = lazy(() => import('./global/BrandSwitcher.jsx'));
 const DEFAULT_PIC = '/default-profile.png';
 const LS_KEY = 'ss.sidebar.collapsed';
 
 export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   const navigate = useNavigate();
+
+  // Chat context is optional here; Navbar renders even if provider is not mounted yet.
+  const chat = typeof useChat === 'function' ? useChat() : null;
+  const unreadTotal = chat?.unreadTotal || 0;
+
+  const openMessenger = () => {
+    try { chat?.toggleOpen?.(true); } catch {}
+    navigate('/messages');
+  };
+
+  const [navQuery, setNavQuery] = React.useState("");
+
+  const onSubmitSearch = (e) => {
+    e.preventDefault();
+    const q = (navQuery || "").trim();
+    if (!q) return;
+    navigate(`/search?q=${encodeURIComponent(q)}`);
+  };
 
   const handleLogout = () => {
     if (typeof onLogout === 'function') return onLogout();
@@ -24,10 +46,20 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
     try { window.dispatchEvent(new CustomEvent('sidebar:toggle', { detail: { collapsed: next } })); } catch {}
   };
 
+  const headerStyle = BRAND_V2
+  ? {
+    background: 'rgb(var(--brand-v2-header))',
+    color: 'rgb(var(--brand-v2-text))',
+    borderBottomColor: 'rgb(var(--brand-v2-border))'
+  }
+  : undefined;
+
   return (
-    <header className="with-sidebar sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur">
+    <header className="with-sidebar sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur"
+      style={headerStyle}
+    >
       <div className="px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between">
-        {/* Left: brand (click → home) and an optional sidebar toggle */}
+        {/* Left: brand + sidebar toggle */}
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -43,8 +75,46 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           </Link>
         </div>
 
-        {/* Right: theme, profile, logout */}
+        {/* Middle: search */}
+        <form
+          onSubmit={onSubmitSearch}
+          className="hidden md:flex items-center mx-3 flex-1 max-w-md"
+          role="search"
+          aria-label="Site search"
+        >
+          <input
+            value={navQuery}
+            onChange={(e) => setNavQuery(e.target.value)}
+            placeholder="Search..."
+            className="w-full rounded-md border border-border bg-surfaces px-3 py-1.5 text-sm"
+          />
+        </form>
+
+        {/* Right: messenger, theme, profile, logout */}
         <div className="flex items-center gap-3">
+        {BRAND_V2 && (
+          <Suspense fallback={null}>
+        <BrandSwitcher className='mr-1' />
+        </Suspense>
+        )}
+
+
+          {/* Messenger */}
+          <button
+            type="button"
+            onClick={openMessenger}
+            className="relative rounded-md border border-border px-2 py-1 text-xs hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            aria-label="Open messenger"
+            title="Open messenger"
+          >
+            <MessageCircle className="w-4 h-4 text-indigo-600" />
+            {unreadTotal > 0 && (
+              <span className="absolute -top-1 -right-1">
+                <UnreadBadge count={unreadTotal} />
+              </span>
+            )}
+          </button>
+
           <button
             onClick={toggleDarkMode}
             className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"

@@ -3,6 +3,10 @@
    Honors prefers-reduced-motion.
 */
 
+.motion-safe * {
+
+}
+
 :root {
     /* fallback tokens if tokens.css hasn't loaded yet */
     --motion-fast: 150ms;
@@ -45,6 +49,43 @@
     .hover-raise:focus-visible {
       transform: translateY(-2px);
       box-shadow: var(--shadow-glow);
+
+        /* Motion-safe namespace allows localized animation opt-ins */
+        .motion-safe .hover-raise {
+            transition:
+              transform var(--motion-normal) var(--easing-emph),
+              box-shadow var(--motion-normal) var(--easing-emph);
+            will-change: transform, box-shadow;
+          }
+          .motion-safe .hover-raise:hover,
+          .motion-safe .hover-raise:focus-visible {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+          }
+      
+          /* Subtle card glow (used for brand V2 cards on hover) */
+          @keyframes card-glow {
+            0%   { box-shadow: 0 0 0 rgba(0,0,0,0); }
+            100% { box-shadow: var(--shadow-glow); }
+          }
+          .card-glow:hover, .card-glow:focus-visible {
+            animation: card-glow var(--motion-normal) var(--easing-emph) forwards;
+          }
+      
+          /* Confetti burst keyframes (used by XP/Streak)  */
+          @keyframes confetti-pop {
+            0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+            80%  { opacity: 1; }
+            100% { transform: translateY(40vh) rotate(540deg); opacity: 0; }
+          }
+          /* Utility class for individual confetti pieces (your component can inject these) */
+          .confetti-piece {
+            position: absolute;
+            width: 6px; height: 10px; border-radius: 2px;
+            animation: confetti-pop 900ms linear forwards;
+            will-change: transform, opacity;
+            pointer-events: none;
+          }      
     }
   
     /* KPI glow on hover/focus */

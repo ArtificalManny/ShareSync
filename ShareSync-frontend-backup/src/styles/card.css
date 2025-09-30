@@ -109,3 +109,25 @@
   font-size: .8125rem;
   color: rgb(var(--muted));
 }
+
+/* --- Brand-aware neon hover glow (motion-gated) --- */
+/* Opt-in by adding `card neon-hover` to the element */
+@media (prefers-reduced-motion: no-preference) {
+  .card.neon-hover:hover,
+  .card.neon-hover:focus-within {
+    /* Classic / default uses --accent */
+    box-shadow:
+      0 10px 28px rgb(var(--accent) / .18),
+      0 0 0 1px rgb(var(--accent) / .22);
+    border-color: rgb(var(--accent) / .35);
+  }
+
+  /* When Brand V2 is active, lean into deep blue glow */
+  [data-brand="v2"] .card.neon-hover:hover,
+  [data-brand="v2"] .card.neon-hover:focus-within {
+    box-shadow:
+      0 12px 32px rgb(var(--brand-v2-accent) / .22),
+      0 0 0 1px rgb(var(--brand-v2-accent) / .28);
+    border-color: rgb(var(--brand-v2-accent) / .38);
+  }
+}
