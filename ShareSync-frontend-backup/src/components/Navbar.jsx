@@ -70,15 +70,15 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           >
             <PanelLeftClose className="w-4 h-4" />
           </button>
-          <Link to="/home" className="font-semibold text-sm hover:opacity-90">
+          {/*<Link to="/home" className="font-semibold text-sm hover:opacity-90">
             ShareSync
-          </Link>
+  </Link>*/}
         </div>
 
         {/* Middle: search */}
         <form
           onSubmit={onSubmitSearch}
-          className="hidden md:flex items-center mx-3 flex-1 max-w-md"
+          className="header-search hidden md:flex items-center mx-3 flex-1 max-w-md"
           role="search"
           aria-label="Site search"
         >
@@ -86,7 +86,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             value={navQuery}
             onChange={(e) => setNavQuery(e.target.value)}
             placeholder="Search..."
-            className="w-full rounded-md border border-border bg-surfaces px-3 py-1.5 text-sm"
+            className="search-bar w-full"
           />
         </form>
 

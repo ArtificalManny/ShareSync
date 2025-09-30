@@ -17,6 +17,7 @@ import "./styles/gradients.css";
 import "./styles/motion.css";
 import "./components/Sidebar.css";
 import "./styles/messenger.css";
+import "./styles/search.css";
 
 import { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
@@ -27,7 +28,8 @@ import { BreakProvider } from "./context/BreakContext";
 import { NotesProvider } from "./context/NotesContext";
 import { PinnedProvider } from "./context/PinnedContext";
 import QuickNotesDrawer from "./components/global/QuickNotesDrawer";
-import PinnedTaskPanel from "./components/global/PinnedTaskPanel";
+// ⬇️ New floating pinned drawer (replaces old panel)
+import PinnedDrawer from "./components/global/PinnedDrawer.jsx";
 
 import { CommandPaletteProvider } from "./hooks/useCommandPalette";
 import CommandPalette from "./components/global/CommandPalette";
@@ -174,7 +176,7 @@ const App = () => {
                       <div
                         className="app-container"
                         data-accent="indigo"
-                        {...containerAttrs}  // adds data-brand="classic|v2" + any needed attrs
+                        {...containerAttrs} // adds data-brand + any needed attrs
                       >
                         <AppRoutes />
                       </div>
@@ -182,7 +184,8 @@ const App = () => {
                       {/* Global floating tools */}
                       <MiniSprintWidget />
                       <QuickNotesDrawer />
-                      <PinnedTaskPanel />
+                      {/* ⬇️ New floating pinned drawer replaces old panel */}
+                      <PinnedDrawer />
                     </PinnedProvider>
                   </NotesProvider>
                 </BreakProvider>
