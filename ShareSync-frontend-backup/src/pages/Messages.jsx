@@ -1,11 +1,33 @@
-import React, { useState } from 'react';
+// src/pages/Messenger.jsx
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+/** Check if messaging is enabled via env or localStorage override */
+function isMessagingEnabled() {
+  const envOn = import.meta?.env?.VITE_MESSAGES_ENABLED === 'true';
+  const lsOn = (typeof window !== 'undefined') && localStorage.getItem('ss:features:messages') === 'on';
+  return envOn || lsOn;
+}
 
 const Messages = ({ user }) => {
   const navigate = useNavigate();
-  const [selectedChat, setSelectedChat] = useState(null);
-  const [newMessage, setNewMessage] = useState('');
-  const [chats, setChats] = useState([
+
+  // feature flag
+  const [enabled, setEnabled] = useState(isMessagingEnabled());
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === 'ss:features:messages') setEnabled(isMessagingEnabled());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+  const enableNow = () => {
+    localStorage.setItem('ss:features:messages', 'on');
+    setEnabled(true);
+  };
+
+  // demo chats (kept from your version)
+  const [chats, setChats] = useState(() => ([
     {
       id: 1,
       user: 'Alice',
@@ -25,117 +47,186 @@ const Messages = ({ user }) => {
         { sender: 'Bob', content: 'Can we discuss the timeline?', timestamp: '2025-05-14T06:30:00Z' },
       ],
     },
-  ]);
+  ]));
+
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [newMessage, setNewMessage] = useState('');
+
+  // choose first chat by default once enabled/loaded
+  useEffect(() => {
+    if (enabled && chats.length && !selectedChat) setSelectedChat(chats[0]);
+  }, [enabled, chats, selectedChat]);
 
   const handleSendMessage = (chatId) => {
-    if (!newMessage.trim()) return;
+    const text = newMessage.trim();
+    if (!text) return;
 
-    const updatedChats = chats.map(chat => {
-      if (chat.id === chatId) {
-        return {
-          ...chat,
-          messages: [
-            ...chat.messages,
-            { sender: user?.username || 'You', content: newMessage, timestamp: new Date().toISOString() },
-          ],
-          lastMessage: newMessage,
-          timestamp: new Date().toISOString(),
-        };
-      }
-      return chat;
+    const updated = chats.map((chat) => {
+      if (chat.id !== chatId) return chat;
+      const now = new Date().toISOString();
+      return {
+        ...chat,
+        messages: [...chat.messages, { sender: user?.username || 'You', content: text, timestamp: now }],
+        lastMessage: text,
+        timestamp: now,
+      };
     });
 
-    setChats(updatedChats);
+    setChats(updated);
     setNewMessage('');
   };
 
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-8 flex space-x-6">
-      {/* Chat List */}
-      <div className="w-1/3">
-        <h2 className="text-2xl font-display text-vibrant-pink mb-6 animate-fade-in">Messages</h2>
-        <div className="space-y-4">
-          {chats.map(chat => (
-            <div
-              key={chat.id}
-              onClick={() => setSelectedChat(chat)}
-              className={`card glassmorphic transform hover:scale-105 transition-transform cursor-pointer ${
-                selectedChat?.id === chat.id ? 'border-2 border-vibrant-pink' : ''
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <img
-                  src={`https://via.placeholder.com/40?text=${chat.user[0]}`}
-                  alt={chat.user}
-                  className="w-10 h-10 rounded-full animate-pulse-glow"
-                />
-                <div>
-                  <h3 className="text-lg font-display text-vibrant-pink">{chat.user}</h3>
-                  <p className="text-sm text-gray-300">{chat.lastMessage}</p>
-                  <p className="text-xs text-gray-400">{new Date(chat.timestamp).toLocaleTimeString()}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+  const onComposerKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && selectedChat) {
+      e.preventDefault();
+      handleSendMessage(selectedChat.id);
+    }
+  };
 
-      {/* Chat Window */}
-      <div className="w-2/3">
-        {selectedChat ? (
-          <div className="card glassmorphic animate-fade-in h-[calc(100vh-12rem)] flex flex-col">
-            <div className="flex items-center space-x-3 p-4 border-b border-vibrant-pink">
-              <img
-                src={`https://via.placeholder.com/40?text=${selectedChat.user[0]}`}
-                alt={selectedChat.user}
-                className="w-10 h-10 rounded-full animate-pulse-glow"
-              />
-              <h3 className="text-xl font-display text-vibrant-pink">{selectedChat.user}</h3>
-            </div>
-            <div className="flex-1 p-4 overflow-y-auto">
-              {selectedChat.messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`mb-4 flex ${msg.sender === user?.username ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-xs p-3 rounded-lg ${
-                      msg.sender === user?.username
-                        ? 'bg-vibrant-pink text-white'
-                        : 'bg-dark-navy text-gray-300'
-                    } animate-slide-in`}
+  // ---------- Disabled state ----------
+  if (!enabled) {
+    return (
+      <main className="px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto">
+        <section className="rounded-2xl border border-border bg-surface p-8 text-center">
+          <h1 className="text-xl font-semibold mb-2">Messaging is disabled</h1>
+          <p className="text-muted mb-6">
+            This workspace hasn’t turned on direct messages yet. Enable it for development to preview the UI.
+          </p>
+          <div className="inline-flex items-center gap-3">
+            <button
+              className="rounded-full bg-indigo-600 text-white text-sm px-4 py-2 hover:bg-indigo-700"
+              onClick={enableNow}
+            >
+              Enable messaging (dev)
+            </button>
+            <a
+              href="/projects"
+              className="rounded-full border border-border px-4 py-2 text-sm hover:bg-white/60"
+            >
+              Back to Projects
+            </a>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  // ---------- Enabled UI ----------
+  return (
+    <main
+      className="h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] px-4 sm:px-6 lg:px-8 py-4"
+      aria-label="Direct messages"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-[320px_minmax(0,1fr)] gap-4 h-full">
+        {/* Chat list */}
+        <aside className="rounded-2xl border border-border bg-surface overflow-hidden flex flex-col">
+          <div className="px-4 py-3 border-b border-border">
+            <h2 className="text-base font-semibold">Messages</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            <div className="space-y-2">
+              {chats.map((chat) => {
+                const active = selectedChat?.id === chat.id;
+                return (
+                  <button
+                    key={chat.id}
+                    onClick={() => setSelectedChat(chat)}
+                    className={`w-full text-left rounded-xl border px-3 py-3 transition
+                      ${active ? 'border-indigo-300 bg-white/80 dark:bg-slate-900/80' : 'border-border hover:bg-surface-100'}`}
+                    aria-current={active ? 'true' : 'false'}
                   >
-                    <p>{msg.content}</p>
-                    <p className="text-xs text-gray-400 mt-1">{new Date(msg.timestamp).toLocaleTimeString()}</p>
-                  </div>
-                </div>
-              ))}
+                    <div className="flex items-start gap-3">
+                      <img
+                        src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(chat.user)}`}
+                        alt={chat.user}
+                        className="w-9 h-9 rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
+                        loading="lazy"
+                      />
+                      <div className="min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-medium truncate">{chat.user}</p>
+                          <span className="text-xs text-muted shrink-0">
+                            {new Date(chat.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted truncate">{chat.lastMessage}</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-            <div className="p-4 border-t border-vibrant-pink">
-              <div className="flex space-x-3">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1 p-3 rounded-lg bg-dark-navy text-white border border-vibrant-pink focus:outline-none focus:border-neon-blue transition-all"
+          </div>
+        </aside>
+
+        {/* Thread */}
+        <section className="rounded-2xl border border-border bg-surface h-full flex flex-col">
+          {!selectedChat ? (
+            <div className="flex-1 grid place-items-center text-muted">
+              Select a conversation to start messaging.
+            </div>
+          ) : (
+            <>
+              <header className="px-4 py-3 border-b border-border flex items-center gap-3">
+                <img
+                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(selectedChat.user)}`}
+                  alt={selectedChat.user}
+                  className="w-9 h-9 rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
                 />
-                <button
-                  onClick={() => handleSendMessage(selectedChat.id)}
-                  className="btn-primary neumorphic hover:scale-105 transition-transform"
-                >
-                  Send
-                </button>
+                <h3 className="font-semibold">{selectedChat.user}</h3>
+              </header>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {selectedChat.messages.map((msg, idx) => {
+                  const mine = msg.sender === (user?.username || 'You');
+                  return (
+                    <div key={idx} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                      <div
+                        className={`max-w-[75%] rounded-xl px-3 py-2 text-sm
+                          ${mine ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-900 border border-border'}`}
+                      >
+                        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                        <p className={`text-[11px] mt-1 ${mine ? 'text-white/80' : 'text-muted'}`}>
+                          {new Date(msg.timestamp).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          </div>
-        ) : (
-          <div className="card glassmorphic animate-fade-in h-[calc(100vh-12rem)] flex items-center justify-center">
-            <p className="text-white text-lg">Select a chat to start messaging.</p>
-          </div>
-        )}
+
+              <footer className="px-4 py-3 border-t border-border">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    selectedChat && handleSendMessage(selectedChat.id);
+                  }}
+                  className="flex gap-2"
+                  aria-label="Message composer"
+                >
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={onComposerKeyDown}
+                    placeholder="Type a message…"
+                    className="flex-1 rounded-xl border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    aria-label="Message text"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm hover:bg-indigo-700 disabled:opacity-60"
+                    disabled={!newMessage.trim()}
+                  >
+                    Send
+                  </button>
+                </form>
+              </footer>
+            </>
+          )}
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 

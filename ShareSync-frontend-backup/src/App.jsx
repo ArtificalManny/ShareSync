@@ -28,7 +28,6 @@ import { BreakProvider } from "./context/BreakContext";
 import { NotesProvider } from "./context/NotesContext";
 import { PinnedProvider } from "./context/PinnedContext";
 import QuickNotesDrawer from "./components/global/QuickNotesDrawer";
-// ⬇️ New floating pinned drawer (replaces old panel)
 import PinnedDrawer from "./components/global/PinnedDrawer.jsx";
 
 import { CommandPaletteProvider } from "./hooks/useCommandPalette";
@@ -137,13 +136,12 @@ const AppRoutes = () => {
       <Sidebar />
       <Navbar user={navbarUser} onLogout={logout} />
 
-      {/* ✅ Wrap pages and the floating panel with ChatProvider */}
-      <ChatProvider enabled={MESSENGER_V1} userId={navbarUser?._id || navbarUser?.id}>
+      {/* ChatProvider wraps both routed pages AND the floating messenger panel */}
+      <ChatProvider userId={navbarUser?._id || navbarUser?.id}>
         <div id="main" role="main" className="main-content with-sidebar">
           <GuardedRoutes />
         </div>
 
-        {/* Floating messenger panel */}
         <MessengerPanel />
       </ChatProvider>
 
@@ -153,7 +151,6 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  // ✅ Brand wiring: compute container data attributes via the hook
   const { containerAttrs } = useBrandTheme({ enabled: BRAND_V2 });
 
   return (
@@ -176,15 +173,13 @@ const App = () => {
                       <div
                         className="app-container"
                         data-accent="indigo"
-                        {...containerAttrs} // adds data-brand + any needed attrs
+                        {...containerAttrs}
                       >
                         <AppRoutes />
                       </div>
 
-                      {/* Global floating tools */}
                       <MiniSprintWidget />
                       <QuickNotesDrawer />
-                      {/* ⬇️ New floating pinned drawer replaces old panel */}
                       <PinnedDrawer />
                     </PinnedProvider>
                   </NotesProvider>
