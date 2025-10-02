@@ -7,7 +7,7 @@ import { AuthContext } from '../AuthContext';
 import { mark, measure } from '../utils/perfLog';
 import { track } from '../utils/telemetry';
 
-import HomeHeader from '../components/home/HomeHeader.jsx';
+import HomeHeaderSwitcher from '../components/home/HomeHeaderSwitcher.jsx'; // ⬅️ NEW
 import ProjectsRail from '../components/home/ProjectsRail.jsx';
 import KpiRow from '../components/analytics/KpiRow.jsx';
 import SectionHeader from '../components/ui/SectionHeader.jsx';
@@ -51,54 +51,26 @@ const SHOW_LEADERBOARD  = LEADERBOARD_ENABLED;   // Thiel + Zuck transparency
 // Scoped style tweaks (tone down KPI glow, focus ring, row min-heights, top progress)
 const PageStyles = () => (
   <style>{`
-    /* ~10% tighter vertical rhythm */
-    .home-page { row-gap: 1.5rem; } /* tailwind space-y-6-ish */
-    @media (min-width: 768px) { .home-page { row-gap: 1.75rem; } } /* was 2rem */
-
-    /* Soften aura specifically for KPI row cards */
+    .home-page { row-gap: 1.5rem; }
+    @media (min-width: 768px) { .home-page { row-gap: 1.75rem; } }
     .kpi-strip .card::before { opacity: .28 !important; filter: blur(20px) !important; }
-    /* One accent per row: ensure containers carry only row-accent background, not inner gradients */
     .row-accent > .card.card--no-inner::before { display:none; }
-
-    /* Visible keyboard focus */
     .focus-ring:focus-visible { outline: 2px solid var(--accent, #6366f1); outline-offset: 2px; border-radius: 14px; }
-
-    /* Normalize card heights per row */
     .row-grid { align-items: stretch; }
-    .row-grid > * { min-height: 112px; }           /* KPI/search row */
+    .row-grid > * { min-height: 112px; }
     .row-grid.feed > * { min-height: 188px; }
     .row-grid.habits > * { min-height: 146px; }
-
-    /* Top progress bar (indeterminate → linear after 2s) */
     .top-progress { position: sticky; top: 0; left: 0; right: 0; height: 3px; z-index: 70; background: transparent; }
     .top-progress .indet { display:block; height:100%; width:35%; background: linear-gradient(90deg,#6366f1,#ec4899);
       animation: tp 1.2s ease-in-out infinite; border-radius: 999px; opacity:.85; }
     @keyframes tp { 0% {margin-left:0%} 50%{margin-left:65%} 100%{margin-left:0%} }
     .top-progress .linear { height:100%; background: linear-gradient(90deg,#6366f1,#ec4899); border-radius:999px; }
 
-    /* Right drawer overlay + panel */
     .drawer { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.34); display:grid; grid-template-columns: 1fr auto; }
     .drawer__panel { width:min(420px,90vw); background: var(--surface,#fff); border-left: 1px solid var(--border,#e5e7eb);
       box-shadow: -12px 0 32px rgba(2,6,23,.10); }
   `}</style>
 );
-
-// Presence avatars (Zuck)
-function PresenceBar({ people = [] }) {
-  if (!people.length) people = [
-    { id: 'm', name: 'Manny' },
-    { id: 'a', name: 'Alex' },
-    { id: 'j', name: 'Jordan' },
-  ];
-  return (
-    <div className="avatar-stack">
-      {people.map((p, i) => (
-        <div key={p.id || i} className="avatar w-7 h-7 text-[10px]">{(p.name || 'U')[0]}</div>
-      ))}
-      <span className="ml-2 text-xs text-muted">{people.length} online</span>
-    </div>
-  );
-}
 
 // tiny chip
 function Chip({ tone = 'neutral', children, className = '', onClick }) {
@@ -113,11 +85,11 @@ function Chip({ tone = 'neutral', children, className = '', onClick }) {
 // safe percent delta helper
 const pct = (a, b) => {
   const A = Number(a ?? 0), B = Number(b ?? 0);
-  if (B === 0) return A === 0 ? 0 : 100; // from 0 to >0 => +100%
+  if (B === 0) return A === 0 ? 0 : 100;
   return Math.round(((A - B) / Math.max(1, Math.abs(B))) * 100);
 };
 
-// Small inline sparkline (expects an array of numbers)
+// Small inline sparkline
 function Sparkline({ data, w = 96, h = 18, title }) {
   const arr = Array.isArray(data) && data.length ? data : Array(7).fill(1);
   const max = Math.max(...arr, 1);
@@ -135,7 +107,7 @@ function Sparkline({ data, w = 96, h = 18, title }) {
   );
 }
 
-// KPI strip + velocity hint (Bezos)
+// KPI strip + velocity hint
 function KpiStrip({ stats }) {
   const today = stats?.today || {};
   const cmp = stats?.compare?.today || {};
@@ -223,7 +195,7 @@ function KpiStrip({ stats }) {
   );
 }
 
-// Smart search (Page) — keyboard shortcuts + hints + answer capsule + aria-live
+// Smart search (unchanged)
 function SmartSearch({ onAsk }) {
   const [q, setQ] = useState('');
   const [answers, setAnswers] = useState([]);
@@ -231,7 +203,6 @@ function SmartSearch({ onAsk }) {
   const inputRef = useRef(null);
   const resultsRef = useRef(null);
 
-  // global "/", Cmd/Ctrl-K to focus; "Esc" clears & blurs
   useEffect(() => {
     const onKey = (e) => {
       const tag = (document.activeElement?.tagName || '').toLowerCase();
@@ -272,8 +243,6 @@ function SmartSearch({ onAsk }) {
     <div className="card rounded-2xl p-3 shine accent-bar relative focus-ring min-h-[112px]">
       <span className="accent-bar__left" aria-hidden="true" />
       <div ref={resultsRef} aria-live="polite" className="sr-only" />
-
-      {/* answer capsule (kept after run) */}
       {answers.length > 0 && (
         <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
           <span className="px-2 py-1 rounded-md border border-border bg-surface">
@@ -282,7 +251,6 @@ function SmartSearch({ onAsk }) {
           {answers.slice(1).map((a,i) => <span key={i} className="px-2 py-1 rounded-md border border-border bg-surface text-xs">{a}</span>)}
         </div>
       )}
-
       <div className="flex items-center gap-2">
         <input
           ref={inputRef}
@@ -295,9 +263,8 @@ function SmartSearch({ onAsk }) {
         />
         <button className="btn btn--primary marching" onClick={() => run(q)}>Ask AI</button>
       </div>
-
       <div className="mt-2 flex flex-wrap gap-2">
-        {hints.map((h, i) => (
+        {['what did i complete last week','overdue this week','streak this month'].map((h, i) => (
           <button
             key={h}
             className={`btn btn--ghost text-xs ${selected === i ? 'ring-2 ring-accent' : ''}`}
@@ -313,7 +280,7 @@ function SmartSearch({ onAsk }) {
   );
 }
 
-// Micro activity feed (Zuck) — badges + right-side drawer details with focus trap
+// Micro feed + AI coach + Leaderboard + TenX (unchanged from your latest)
 const MOCK_FEED = [
   { id: '1', type: 'task',  who: 'Manny',  action: 'completed 3 tasks', when: '2m ago', project: 'Launch Alpha' },
   { id: '2', type: 'sprint',who: 'Alex',   action: 'started a sprint',  when: '10m ago', project: 'Growth' },
@@ -323,10 +290,7 @@ function MicroFeed({ items = MOCK_FEED, onOpen }) {
   return (
     <div className="card rounded-2xl p-3 shine accent-bar relative focus-ring">
       <span className="accent-bar__left" aria-hidden="true" />
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-sm font-semibold">What’s happening</div>
-        <PresenceBar />
-      </div>
+      <div className="text-sm font-semibold mb-2">What’s happening</div>
       <ul className="space-y-2">
         {items.map((i) => (
           <li
@@ -350,8 +314,6 @@ function MicroFeed({ items = MOCK_FEED, onOpen }) {
     </div>
   );
 }
-
-// AI Coach (Thiel)
 function AiCoachCard({ nextBest }) {
   return (
     <div className="card rounded-2xl p-3 shine accent-bar relative focus-ring">
@@ -367,8 +329,6 @@ function AiCoachCard({ nextBest }) {
     </div>
   );
 }
-
-// Leaderboard (Thiel + Zuck)
 const MOCK_BOARD = [
   { id: 'm', name: 'Manny',   streak: 3 },
   { id: 'a', name: 'Alex',    streak: 2 },
@@ -394,8 +354,6 @@ function Leaderboard({ items = MOCK_BOARD }) {
     </div>
   );
 }
-
-// 10× overlay (Musk)
 function TenXOverlay({ open, onClose }) {
   if (!open) return null;
   return (
@@ -418,7 +376,6 @@ function TenXOverlay({ open, onClose }) {
 /* ------------------------------- Page ------------------------------ */
 
 export default function Home() {
-  // First-render perf mark
   mark('ss:home:render:start');
 
   const { user: authUser } = useContext(AuthContext) || {};
@@ -426,23 +383,24 @@ export default function Home() {
 
   const navigate = useNavigate();
 
+  // NEW: track which header surface is selected
+  const [headerMode, setHeaderMode] = useState('feed'); // 'feed' | 'momentum' | 'compass' | 'metrics'
+
   // Projects rail
   const [quickProjects, setQuickProjects] = useState([]);
   const [quickLoading, setQuickLoading] = useState(false);
 
-  // Derived for Stories: ensure `name` exists (fallback to `title`)
+  // Derived for Stories: ensure name
   const storiesProjects = useMemo(
     () => (Array.isArray(quickProjects) ? quickProjects.map(p => ({ ...p, name: p?.name || p?.title })) : []),
     [quickProjects]
   );
-
-  // Unread map for Stories
   const unreadMap = useMemo(() => buildUnreadMap(storiesProjects), [storiesProjects]);
 
   // Live KPI controls/state
   const [projects, setProjects] = useState([]);
-  const [statsRange, setStatsRange] = useState(30);             // 7 | 30 | 90
-  const [statsProjectId, setStatsProjectId] = useState('all');  // 'all' or project _id
+  const [statsRange, setStatsRange] = useState(30);
+  const [statsProjectId, setStatsProjectId] = useState('all');
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState('');
@@ -450,21 +408,18 @@ export default function Home() {
   // UI
   const [inviteOpen, setInviteOpen] = useState(false);
   const [tenxOpen, setTenxOpen] = useState(false);
-  const [publicMode, setPublicMode] = useState(false); // transparency toggle
-  const [celebrate, setCelebrate] = useState(false);   // sprint celebration
-  const [sprintActive, setSprintActive] = useState(false); // thin top progress
-  const [sprintStart, setSprintStart] = useState(null);     // for linear progress
+  const [publicMode, setPublicMode] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+  const [sprintActive, setSprintActive] = useState(false);
+  const [sprintStart, setSprintStart] = useState(null);
 
   // Feed drawer
   const [drawerItem, setDrawerItem] = useState(null);
   const drawerFirstBtnRef = useRef(null);
 
-  // Measure first render (commit)
-  useEffect(() => {
-    measure('perf:home:first-render', 'ss:home:render:start');
-  }, []);
+  useEffect(() => { measure('perf:home:first-render', 'ss:home:render:start'); }, []);
 
-  // ---- Initial minimal loads ----
+  // Initial bootstrap
   useEffect(() => {
     mark('ss:home:bootstrap:start');
     Promise.all([
@@ -496,16 +451,14 @@ export default function Home() {
     return () => { ignore = true; };
   }, []);
 
-  // ---- KPIs: debounced, cancelable fetch ----
+  // KPIs fetch (debounced)
   const debounceRef = useRef(null);
   const requestRef = useRef({ abort: () => {} });
   const latestParamsRef = useRef({ range: statsRange, projectId: statsProjectId });
 
   useEffect(() => {
     latestParamsRef.current = { range: statsRange, projectId: statsProjectId };
-
     if (debounceRef.current) { clearTimeout(debounceRef.current); debounceRef.current = null; }
-
     const controller = new AbortController();
     if (requestRef.current && typeof requestRef.current.abort === 'function') requestRef.current.abort();
     requestRef.current = controller;
@@ -536,26 +489,23 @@ export default function Home() {
   const username = user?.username;
   const profilePic = user?.profilePicture || DEFAULT_PROFILE_PIC;
 
-  // Momentum data
+  // Momentum/KPIs helpers
   const sprintDays = (stats?.activitySeries || [])
     .filter(d => d && (d.date || d.t))
     .map(d => ({ date: d.date || d.t, count: Number(d.sprints || d.count || 0) }));
   const activeDays14 = Number(stats?.activeDays?.last14 || stats?.activeDays?.value || 0);
 
-  // Smart search handler (stub)
   const handleAsk = (q) => {
     if (!q?.trim()) return;
     alert(`AI (stub): "${q}"\n\n– Last week: 5 tasks completed\n– Risk: 1 overdue task\n– Suggestion: Do a 25m sprint on “Marketing plan v2”`);
   };
 
-  // Coach suggestion from throughput (Thiel)
   const coachSuggestion = useMemo(() => {
     const throughput = stats?.throughputPerWeek?.value ?? 0;
     if (throughput >= 5) return 'Stack two 25-min sprints on your top project; finish with a 10-min review.';
     return 'Start a single 25-min sprint on the highest-impact task, then capture blockers and schedule a follow-up.';
   }, [stats]);
 
-  // celebration flicker
   useEffect(() => {
     if (!celebrate) return;
     const t = setTimeout(() => setCelebrate(false), 900);
@@ -570,7 +520,7 @@ export default function Home() {
     try { window.dispatchEvent(new CustomEvent('start-tenx-sprint')); } catch {}
   };
 
-  // global sprint progress bar: indeterminate (2s) → linear for remaining time
+  // global sprint progress bar
   useEffect(() => {
     let timer = null;
     const onStart = () => {
@@ -578,10 +528,7 @@ export default function Home() {
       setSprintActive(true);
       try { track('sprint_started', { mode: '10x', source: 'event' }); } catch {}
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        // after 2s, we’ll switch rendering to linear using sprintStart
-      }, 2000);
-      // auto-stop after 25m as fallback
+      timer = setTimeout(() => {}, 2000);
       const stop = setTimeout(() => setSprintActive(false), 25 * 60 * 1000);
       return () => clearTimeout(stop);
     };
@@ -589,7 +536,7 @@ export default function Home() {
     return () => { window.removeEventListener('start-tenx-sprint', onStart); if (timer) clearTimeout(timer); };
   }, []);
 
-  // Feed drawer: focus trap + Esc
+  // Feed drawer focus mgmt
   useEffect(() => {
     if (!drawerItem) return;
     const prev = document.activeElement;
@@ -599,7 +546,6 @@ export default function Home() {
     return () => { window.removeEventListener('keydown', onKey); prev?.focus?.(); };
   }, [drawerItem]);
 
-  // linear progress percent
   const linearPct = (() => {
     if (!sprintActive || !sprintStart) return 0;
     const elapsed = Date.now() - sprintStart;
@@ -607,7 +553,6 @@ export default function Home() {
     return Math.max(0, Math.min(100, (elapsed / total) * 100));
   })();
 
-  // Stories open handler: mark seen, navigate
   const openStory = (p) => {
     const pid = p?._id || p?.id;
     if (!pid) return;
@@ -615,31 +560,32 @@ export default function Home() {
     navigate(`/projects/${pid}`);
   };
 
+  const hideBelowMetrics = String(headerMode || '').toLowerCase() === 'metrics'; // ⬅️ when header shows Metrics, don’t repeat KPIs below
+
   return (
     <div className={`home-page relative ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto space-y-7 ${celebrate ? 'win-glow' : ''}`}>
       <PageStyles />
 
-      {/* Thin top progress bar during active sprint */}
       {sprintActive && (
         <div className="top-progress" role="status" aria-live="polite">
-          {/* show indeterminate for first 2s after start, then linear width */}
           {(Date.now() - (sprintStart || 0)) < 2000
             ? <span className="indet" />
             : <div className="linear" style={{ width: `${linearPct}%` }} />}
         </div>
       )}
 
-      {/* Header */}
-      <HomeHeader
-        username={username}
+      {/* ======= NEW HEADER (Facebook-style avatar + switcher) ======= */}
+      <HomeHeaderSwitcher
+        mode={headerMode}
+        onModeChange={setHeaderMode}
         firstName={firstName}
-        profilePic={profilePic}
-        tier={user?.tier || 'Newcomer'}
-        xp={user?.totalXP || 0}
-        onInvite={() => setInviteOpen(true)}
+        username={username}
+        profilePic={profilePic}          // ⬅️ avatar bubble at the left like FB
+        stats={stats}                    // header can render Momentum/Metrics from real data
+        onStartSprint={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
       />
 
-      {/* NEW: Project Stories rail (above KPI strip) */}
+      {/* Project Stories rail */}
       {storiesProjects.length > 0 && (
         <div className="card rounded-2xl border border-border bg-surface p-4 relative focus-ring">
           <ProjectStoriesBar
@@ -650,17 +596,19 @@ export default function Home() {
         </div>
       )}
 
-      {/* Top spine: KPI strip + Smart Search (row aura unified) */}
-      <div className="row-accent row-accent-violet grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid">
-        {SHOW_KPI_STRIP && (
-          <div className="lg:col-span-2">
-            <KpiStrip stats={stats} />
-          </div>
-        )}
-        {SHOW_SMART_SEARCH && <SmartSearch onAsk={handleAsk} />}
-      </div>
+      {/* Top spine: KPI strip + Smart Search — hidden if header already shows Metrics */}
+      {!hideBelowMetrics && (
+        <div className="row-accent row-accent-violet grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid">
+          {SHOW_KPI_STRIP && (
+            <div className="lg:col-span-2">
+              <KpiStrip stats={stats} />
+            </div>
+          )}
+          {SHOW_SMART_SEARCH && <SmartSearch onAsk={handleAsk} />}
+        </div>
+      )}
 
-      {/* HERO: Focus Sprint with one-click Start (behind HABITS flag to avoid empty shell) */}
+      {/* Focus Sprint */}
       {HABITS_ENABLED && (
         <div className="relative" id="focus-sprint">
           <div
@@ -710,11 +658,10 @@ export default function Home() {
         )}
       </div>
 
-      {/* Optional: public mode cards (only if transparency feature is enabled) */}
+      {/* Optional: public mode cards */}
       {TRANSPARENCY_ENABLED && publicMode && SHOW_LEADERBOARD && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Leaderboard />
-          {/* Proof / share tile */}
           <div className="card rounded-2xl p-3 shine accent-bar relative focus-ring">
             <span className="accent-bar__left" aria-hidden="true" />
             <div className="text-sm font-semibold mb-1">Public dashboard</div>
@@ -740,7 +687,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Habits row (behind HABITS flag) */}
+      {/* Habits row */}
       {HABITS_ENABLED && (
         <div className="relative">
           <div
@@ -768,7 +715,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* KPIs section (full detail) */}
       <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring" id="kpis" aria-live="polite">
         <span className="accent-bar__left" aria-hidden="true" />
         <div className="flex items-center justify-between">
@@ -791,7 +738,7 @@ export default function Home() {
             ))}
           </select>
 
-        <label className="text-xs text-muted ml-2">Range</label>
+          <label className="text-xs text-muted ml-2">Range</label>
           <select
             value={statsRange}
             onChange={(e) => setStatsRange(Number(e.target.value))}
