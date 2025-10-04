@@ -932,66 +932,7 @@ export default function ProjectHome() {
           onAddTask={() => canEdit && setShowTaskSheet(true)}
           onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
         />
-
-        {/* 🧩 Team Posts (Composer + list) */}
-        {POSTS_V1 && (
-          <section
-            className="mt-4 card rounded-2xl border border-border bg-surface p-4"
-            role="region"
-            aria-label="Team Posts"
-          >
-            <div className="flex items-start justify-between">
-              <SectionHeader icon="MessageSquare">Team Posts</SectionHeader>
-              <button
-                type="button"
-                onClick={() => loadPosts(1)}
-                className="rounded-lg p-1.5 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                aria-label="Refresh posts"
-                title="Refresh posts"
-              >
-                <MoreHorizontal className="w-5 h-5 text-muted" />
-              </button>
-            </div>
-
-            <div className="mt-3">
-              <PostComposer
-                projectId={id}
-                onCreated={(post) => {
-                  setPosts((prev) => ({ ...prev, items: [post, ...(prev.items || [])] }));
-                }}
-              />
-            </div>
-
-            <div className="mt-4 space-y-3">
-              {(posts.items || []).map((p) => (
-                <PostCard
-                  key={p.id}
-                  projectId={id}
-                  post={p}
-                  onReact={handleReact}
-                  onComment={handleComment}
-                  canComment={true}
-                />
-              ))}
-              {posts.loading && (
-                <div className="text-xs text-muted px-2">Loading…</div>
-              )}
-              {!posts.loading && posts.hasMore && (
-                <button
-                  type="button"
-                  onClick={() => loadPosts((posts.page || 1) + 1)}
-                  className="mt-2 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-surface"
-                >
-                  Load more
-                </button>
-              )}
-              {!posts.loading && (posts.items || []).length === 0 && (
-                <div className="text-xs text-muted px-2">No posts yet.</div>
-              )}
-            </div>
-          </section>
-        )}
-
+        
 {MESSENGER_V1 && project?.chatEnabled && (
   <section
     className="mt-6 card rounded-2xl border border-border bg-surface p-4"

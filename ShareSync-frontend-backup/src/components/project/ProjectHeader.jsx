@@ -407,22 +407,7 @@ export default function ProjectHeader({
             </a>
           )}
 
-          <button
-            type="button"
-            className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm marching"
-            disabled
-            title="Coming soon"
-          >
-            Invite
-          </button>
-          <button
-            type="button"
-            className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm marching"
-            disabled
-            title="Settings (coming soon)"
-          >
-            Settings
-          </button>
+        
         </div>
       </div>
 
