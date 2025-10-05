@@ -40,9 +40,9 @@ export const AI_COACH_ENABLED     = overrides.AI_COACH_ENABLED     ?? envFlag('V
 export const TENX_ENABLED         = overrides.TENX_ENABLED         ?? envFlag('VITE_FEATURE_TENX',         true);
 export const LEADERBOARD_ENABLED  = overrides.LEADERBOARD_ENABLED  ?? envFlag('VITE_FEATURE_LEADERBOARD',  true);
 
-// ✅ NEW: AI mentor flag (distinct from any older "coach" naming)
-export const AI_MENTOR = overrides.AI_MENTOR ??
-  envFlag('VITE_FEATURE_AI_MENTOR', true);
+// AI mentor (Charles Xavier)
+export const MENTOR_V1 =
+  /^(1|true|on|yes)$/i.test(String(import.meta?.env?.VITE_FEATURE_MENTOR ?? "1"));
 
 // ✅ NEW: Calendar scheduling + accountability
 export const CALENDAR_ACCOUNTABILITY = overrides.CALENDAR_ACCOUNTABILITY ??
@@ -77,7 +77,7 @@ export const FLAGS = {
   AI_COACH_ENABLED,
   TENX_ENABLED,
   LEADERBOARD_ENABLED,
-  AI_MENTOR,
+  MENTOR_V1,
   CALENDAR_ACCOUNTABILITY, // existing
   POSTS_V1,                // posts system
   GLOBAL_SEARCH,           // NEW

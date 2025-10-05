@@ -17,7 +17,6 @@ import ProjectHeader from "../components/project/ProjectHeader";
 import ProjectKpis from "../components/project/ProjectKpis";
 import ProjectActivityFeed from "../components/project/ProjectActivityFeed";
 import RisksPanel from "../components/project/RisksPanel";
-import MembersPanel from "../components/project/MembersPanel";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
 import useSocket from "../hooks/useSocket";
 import {
@@ -33,8 +32,16 @@ import {
   Trophy,
   Files as FilesIcon,
   CalendarDays,
+  CheckCircle2,
+  AlertTriangle,
+  TimerReset,
+  Brain,
+  TrendingUp, 
+  Users,
+  Lightbulb,
+  AlertCircle,
 } from "lucide-react";
-import { CALENDAR_ACCOUNTABILITY, POSTS_V1 } from "../config/flags.js";
+import { CALENDAR_ACCOUNTABILITY, POSTS_V1, MENTOR_V1 } from "../config/flags.js";
 import { getIcsUrl } from "../api/calendar.js";
 import { buildPublicStatusUrl } from "../api/public";
 
@@ -122,7 +129,151 @@ function getRoleForUser(project, userId) {
     : "viewer";
 }
 
+// ---- AI Mentor (Charles) helpers ----
+// Tries several shapes your backend might return; stays safe if missing.
+function extractMentor(stats) {
+  const ai   = stats?.mentor || stats?.ai || {};
+  const vel  = stats?.throughputPerWeek?.value ?? ai.velocityPerWeek ?? null;
+
+  // Forecast: { p50: "2025-10-12", p90: "2025-10-20", remainingTasks: 7 }
+  const fc   = ai.forecast || stats?.forecast || null;
+
+  // Overload: [{ userId, name, loadPct, recommendation }]
+  const load = Array.isArray(ai.overload) ? ai.overload : [];
+
+  // Suggestions/nudges: [{ id?, text, action? }]
+  const tips = Array.isArray(ai.suggestions) ? ai.suggestions : (ai.tips || []);
+
+  // Productive window: { startHour: 9, endHour: 11 } // local hours
+  const chrono = ai.chronotype || ai.productiveWindow || null;
+
+  return { vel, fc, load, tips, chrono };
+}
+
+function inProductiveWindow(windowSpec, now = new Date()) {
+  if (!windowSpec) return false;
+  const h = now.getHours();
+  const { startHour, endHour } = windowSpec;
+  if (typeof startHour !== "number" || typeof endHour !== "number") return false;
+  if (endHour >= startHour) return h >= startHour && h < endHour;         // e.g., 9..11
+  return h >= startHour || h < endHour;                                    // window wraps midnight
+}
+
 /* ---------------- Milestones (files & tasks) ---------------- */
+function getPunctuality(task) {
+  //expects ISO strings; tolerant of nulls
+  const due = task?.dueDate ? new Date(task.dueDate) : null;
+  const done = task?.completedAt ? new Date (task.completedAt) : null;
+  const now = new Date();
+
+  if (!due) return "unscheduled";
+  if (done) return done <= due ? "on-time" : "late";
+
+  //not completed yet - risk window = due within next 48h
+  const ms = due - now;
+  if (ms < 0) return "late";
+  if (ms <= 48 * 3600 * 1000) return "at-risk";
+  return "scheduled";
+}
+
+function AccountabilityPanel({ tasks = [], stats }) {
+  const withDue = tasks.filter(t => t?.dueDate);
+  const stateCounts = withDue.reduce((acc, t) => {
+    const s = getPunctuality(t);
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
+
+  const total = withDue.length;
+  const ontime = stateCounts["on-time"] || 0;
+  const late = stateCounts["late"] || 0;
+  const risk = stateCounts["at-risk"] || 0;
+  const scheduled = (stateCounts["scheduled"] || 0) + risk + late + ontime;
+
+  // optional numbers if backend provides them
+  const reliability = stats?.reliability?.score ?? null;     // 0..100
+  const streak      = stats?.reliability?.streak ?? null;    // days
+  const lastMsg     = stats?.insights?.punctuality?.[0]?.text || null;
+
+  const Chip = ({ tone="default", icon=null, label, value }) => {
+    const toneCls =
+      tone === "good" ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : tone === "warn" ? "bg-amber-50 text-amber-700 border-amber-200"
+    : tone === "bad"  ? "bg-rose-50 text-rose-700 border-rose-200"
+    :                   "bg-slate-50 text-slate-700 border-slate-200";
+    return (
+      <div className={`rounded-xl border px-3 py-2 flex items-center gap-2 ${toneCls}`}>
+        {icon}
+        <div className="text-xs">
+          <div className="font-semibold leading-none">{value}</div>
+          <div className="leading-none mt-0.5">{label}</div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <section
+      className="mt-6 card rounded-2xl border border-border bg-surface p-4"
+      role="region"
+      aria-label="Scheduling & Accountability"
+    >
+      <div className="flex items-start justify-between">
+        <div className="inline-flex items-center gap-2">
+          <CalendarDays className="w-5 h-5 text-indigo-600" />
+          <h3 className="text-sm font-semibold">Scheduling &amp; Accountability</h3>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Chip
+          icon={<CalendarDays className="w-4 h-4" />}
+          label="Scheduled (has due date)"
+          value={scheduled}
+        />
+        <Chip
+          tone="good"
+          icon={<CheckCircle2 className="w-4 h-4" />}
+          label="On-time (completed ≤ due)"
+          value={ontime}
+        />
+        <Chip
+          tone="bad"
+          icon={<AlertTriangle className="w-4 h-4" />}
+          label="Late (overdue or completed late)"
+          value={late}
+        />
+        <Chip
+          tone="warn"
+          icon={<TimerReset className="w-4 h-4" />}
+          label="At risk (due ≤ 48h)"
+          value={risk}
+        />
+        <div className="rounded-xl border border-dashed border-border px-3 py-2">
+          <div className="text-xs text-muted">Reliability</div>
+          <div className="text-lg font-semibold">
+            {reliability != null ? `${Math.round(reliability)}%` : "—"}
+            {streak ? <span className="ml-2 text-xs text-muted">· streak {streak}d</span> : null}
+          </div>
+          <div className="text-[11px] text-muted mt-1">XP bonuses for punctuality</div>
+        </div>
+      </div>
+
+      {lastMsg && (
+        <div className="mt-3 text-xs px-3 py-2 rounded-xl border border-border bg-surface/50">
+          {lastMsg}
+        </div>
+      )}
+
+      {total === 0 && (
+        <div className="mt-3 text-xs text-muted">
+          No scheduled tasks yet. Add due dates to tasks to track on-time vs late delivery.
+        </div>
+      )}
+    </section>
+  );
+}
+
 function nextThreshold(count, thresholds = [1, 5, 10, 25, 50, 100]) {
   for (const t of thresholds) if (count < t) return t;
   return null; // maxed
@@ -166,6 +317,115 @@ function MilestoneBar({ icon, label, count, unit }) {
     </div>
   );
 }
+
+function MentorPanel({ stats, projectId, onStartFocus }) {
+  const { vel, fc, load, tips, chrono } = extractMentor(stats);
+
+  const Card = ({ title, icon, children }) => (
+    <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        {icon}
+        <span>{title}</span>
+      </div>
+      <div className="mt-2 text-sm">{children}</div>
+    </div>
+  );
+
+  const Nudge = () => {
+    if (!inProductiveWindow(chrono)) return null;
+    return (
+      <div className="rounded-xl border border-indigo-200/60 bg-indigo-50/60 dark:bg-indigo-900/20 px-3 py-2 flex items-center justify-between">
+        <div className="text-sm">
+          You’re usually strongest now. Want to tackle your top task?
+        </div>
+        <button
+          className="btn btn--primary"
+          onClick={onStartFocus}
+          title="Start a 25-min sprint"
+        >
+          Start 25:00
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <section
+      className="mt-6 card rounded-2xl border border-border bg-surface p-4"
+      role="region"
+      aria-label="AI Mentor"
+    >
+      <div className="flex items-start justify-between">
+        <div className="inline-flex items-center gap-2">
+          <Brain className="w-5 h-5 text-indigo-600" />
+          <h3 className="text-sm font-semibold">AI Charles Xavier – Predictive Mentor</h3>
+        </div>
+      </div>
+
+      <div className="mt-3"><Nudge /></div>
+
+      <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Card
+          title="Velocity & forecast"
+          icon={<TrendingUp className="w-4 h-4 text-indigo-600" />}
+        >
+          <div className="text-sm">
+            <div>Velocity: <span className="font-semibold">{vel != null ? `${vel}/wk` : "—"}</span></div>
+            {fc ? (
+              <div className="mt-1 text-xs text-muted">
+                ETA (p50): <span className="font-medium">{fc.p50 || "—"}</span>
+                {fc.p90 ? <> · p90: <span className="font-medium">{fc.p90}</span></> : null}
+                {fc.remainingTasks != null ? <> · remaining: {fc.remainingTasks}</> : null}
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-muted">Add a few completed tasks to unlock ETA.</div>
+            )}
+          </div>
+        </Card>
+
+        <Card
+          title="Workload balance"
+          icon={<Users className="w-4 h-4 text-indigo-600" />}
+        >
+          {Array.isArray(load) && load.length > 0 ? (
+            <ul className="space-y-1 text-sm">
+              {load.slice(0, 3).map((m, i) => (
+                <li key={m.userId || i} className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                  <span className="truncate">
+                    <span className="font-medium">{m.name || "Member"}</span> at {Math.round(m.loadPct ?? 0)}%
+                    {m.recommendation ? <> — {m.recommendation}</> : null}
+                  </span>
+                </li>
+              ))}
+              {load.length > 3 && <li className="text-xs text-muted">+{load.length - 3} more…</li>}
+            </ul>
+          ) : (
+            <div className="text-xs text-muted">No overload detected.</div>
+          )}
+        </Card>
+
+        <Card
+          title="Suggestions"
+          icon={<Lightbulb className="w-4 h-4 text-indigo-600" />}
+        >
+          {Array.isArray(tips) && tips.length > 0 ? (
+            <ul className="list-disc pl-4 space-y-1">
+              {tips.slice(0, 4).map((t, i) => <li key={t.id || i}>{t.text || String(t)}</li>)}
+            </ul>
+          ) : (
+            <div className="text-xs text-muted">MVP active: using velocity-based hints. More learnings will appear here.</div>
+          )}
+        </Card>
+      </div>
+
+      <div className="mt-3 text-[11px] text-muted">
+        Phase 2: probability models, AI delegation, scenario planning.
+      </div>
+    </section>
+  );
+}
+
 /* ----------------------------------------------------------- */
 
 export default function ProjectHome() {
@@ -715,6 +975,17 @@ export default function ProjectHome() {
 
   const kpiTrends = useKpiSeries(stats);
 
+  useEffect(() => {
+    if (!MENTOR_V1) return;
+    const { chrono } = extractMentor(stats || {});
+    if (inProductiveWindow(chrono)) {
+      try {
+        toast({ title: "Prime time ✨", description: "You’re usually most productive now. Start a 25:00?", action: { label: "Start", onClick: () => window.dispatchEvent(new CustomEvent('start-tenx-sprint')) } });
+      } catch {}
+    }
+  }, [stats]);
+  
+
   // 🔹 KPI point click handler → open modal and preload comments
   const onKpiPointClick = useCallback((p) => {
     const metric =
@@ -932,7 +1203,7 @@ export default function ProjectHome() {
           onAddTask={() => canEdit && setShowTaskSheet(true)}
           onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
         />
-        
+
 {MESSENGER_V1 && project?.chatEnabled && (
   <section
     className="mt-6 card rounded-2xl border border-border bg-surface p-4"
@@ -1068,6 +1339,20 @@ export default function ProjectHome() {
           </section>
         )}
 
+        {/* Scheduling + Accountability */}
+        {CALENDAR_ACCOUNTABILITY && ( 
+          <AccountabilityPanel tasks={project?.tasks || []} stats={stats} />
+        )}
+
+        {/* AI Charles Xavier = Mentor */}
+        {MENTOR_V1 && (
+          <MentorPanel
+          stats={stats}
+          projectId={project?._id}
+          onStartFocus={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
+          />
+        )}
+
         {/* Unified Activity Feed (upgraded normalizer + realtime merge) */}
         <section
           ref={activityRef}
@@ -1182,9 +1467,6 @@ export default function ProjectHome() {
                 <RisksPanel project={project} />
               </div>
             </div>
-
-            {/* ✅ Pass invites down for pending badge/section */}
-            <MembersPanel members={project.members || []} invites={project.invites || []} />
           </div>
         </div>
       </div>

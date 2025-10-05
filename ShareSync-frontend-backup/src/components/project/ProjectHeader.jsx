@@ -74,6 +74,19 @@ function SVGIcon({ name, className = "w-6 h-6" }) {
   }
 }
 
+function Avatar({ label, title }) {
+  const ch = (label || "?").trim()[0]?.toUpperCase() || "?";
+  return (
+    <div
+      className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 ring-2 ring-white dark:ring-slate-900 grid place-content-center text-xs font-medium text-slate-700 dark:text-slate-200"
+      title={title}
+      aria-label={title}
+    >
+      {ch}
+    </div>
+  );
+}
+
 export default function ProjectHeader({
   project,
   onAddTask,
@@ -406,6 +419,44 @@ export default function ProjectHeader({
               Download .ics
             </a>
           )}
+
+          {/* Inline Members (replaces Invite/Settings buttons) */}
+{Array.isArray(project?.members) && (
+  <div className="sm:ml-2 flex items-center gap-3">
+    {/* Avatar group */}
+    <div className="flex -space-x-2">
+      {project.members.slice(0, 5).map((m, i) => {
+        const name = m?.name || m?.email || "Member";
+        const role = (m?.role || "member").toLowerCase();
+        return (
+          <Avatar
+            key={m._id || m.userId || m.email || i}
+            label={name}
+            title={`${name} · ${role}`}
+          />
+        );
+      })}
+      {project.members.length > 5 && (
+        <div
+          className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 ring-2 ring-white dark:ring-slate-900 grid place-content-center text-[11px] text-slate-600 dark:text-slate-300"
+          title={`${project.members.length - 5} more`}
+        >
+          +{project.members.length - 5}
+        </div>
+      )}
+    </div>
+
+    {/* Counts + pending */}
+    <div className="text-xs text-slate-600 dark:text-slate-300">
+      {project.members.length} member{project.members.length === 1 ? "" : "s"}
+      {Array.isArray(project?.invites) && project.invites.filter(i => (i?.status || "pending") === "pending").length > 0 && (
+        <span className="ml-2 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 text-[11px]">
+          {project.invites.filter(i => (i?.status || "pending") === "pending").length} pending
+        </span>
+      )}
+    </div>
+  </div>
+)}
 
         
         </div>
