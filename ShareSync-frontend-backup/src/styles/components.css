@@ -85,3 +85,20 @@
     margin-right: 2px;
   }
   
+  /* Typography utilities — consistent across app */
+@layer utilities {
+    /* Muted text always meets contrast on light+dark */
+    .text-muted { color: rgb(var(--muted)); }
+  
+    /* Numeric alignment for metrics, timers, counters */
+    .num, .tabular-nums { font-variant-numeric: tabular-nums; }
+  
+    /* Title scales */
+    .title-page { @apply text-xl font-semibold; }   /* page/title bars */
+    .title-card { @apply text-sm font-semibold; }   /* section/card headers */
+  }
+  
+  @layer utilities {
+    .text-body { font-size: 15px; line-height: var(--lh-normal); }
+  }
+  

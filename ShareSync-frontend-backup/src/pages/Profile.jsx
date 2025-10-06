@@ -7,6 +7,7 @@ import AuditList from "../components/audit/AuditList.jsx";
 import { Lock } from "lucide-react";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
 import useReducedMotion from "../hooks/useReducedMotion";
+import Page from "../components/layout/Page.jsx";
 
 // NEW: global user context (will emit user:updated so avatars refresh everywhere)
 import { UserContext } from "../context/UserContext";

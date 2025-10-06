@@ -157,3 +157,54 @@
   }
   
   /* If user prefers reduced motion, everything above stays inert by default */
+/* ── Motion: short, meaningful ───────────────────────────── */
+
+:root {
+  --motion-fast:   150ms;
+  --motion-normal: 200ms;
+  --easing-standard: cubic-bezier(.2,.8,.2,1);
+  --easing-emph:     cubic-bezier(.2,.8,0,1);
+}
+
+/* Micro-lift & press */
+.lift {
+  transition: transform var(--motion-fast) var(--easing-emph), box-shadow var(--motion-normal) var(--easing-standard);
+}
+.lift:hover { transform: translateY(-1px); }
+.lift:active { transform: translateY(0); }
+
+.press {
+  transition: transform var(--motion-fast) var(--easing-standard);
+}
+.press:active { transform: translateY(1px); }
+
+/* Fade-swap utility for icon/text transitions */
+.fade-swap {
+  position: relative;
+}
+.fade-swap > .swap-a,
+.fade-swap > .swap-b {
+  transition: opacity var(--motion-fast) var(--easing-standard);
+}
+.fade-swap > .swap-a[aria-hidden="true"],
+.fade-swap > .swap-b[aria-hidden="true"] {
+  opacity: 0;
+}
+
+/* One-shot pulse (for activity ring / "fresh" state) */
+@keyframes ss-one-pulse {
+  0%   { transform: scale(.92); opacity: .75; }
+  70%  { transform: scale(1.18); opacity: .18; }
+  100% { transform: scale(1.18); opacity: 0; }
+}
+.pulse-once {
+  animation: ss-one-pulse 1.2s var(--easing-emph) 1;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .lift, .press, .fade-swap > * { transition: none !important; }
+  .pulse-once { animation: none !important; }
+}
+/* one-pulse helper (you already applied to AnimatedRing) */
+.one-pulse { animation-iteration-count: 1 !important; }

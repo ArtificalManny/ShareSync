@@ -1,4 +1,3 @@
-// src/components/ui/Card.jsx
 import React from 'react';
 import { cn } from './cn';
 
@@ -17,7 +16,7 @@ export default function Card({
   const pad = {
     none: '',
     sm: 'p-3',
-    md: 'p-4',
+    md: 'p-4 sm:p-5',
     lg: 'p-6',
   }[padding];
 
@@ -32,7 +31,7 @@ export default function Card({
     radius,
     pad,
     border && 'border border-slate-200/60 dark:border-slate-700/50',
-    hover && 'transition-shadow hover:shadow-sm',
+    hover && 'transition-shadow duration-200 hover:shadow-pop',
   );
 
   const byVariant = {

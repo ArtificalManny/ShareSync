@@ -12,7 +12,7 @@ import { createTask, patchTask } from "../api/tasks";
 // import { uploadFiles } from "../api/uploads"; // (unused here; PostComposer handles uploads)
 import { getProjectStats } from "../api/stats";
 import ActivityOverTimeLive from "../components/analytics/ActivityOverTimeLive";
-
+import Page from "../components/layout/Page.jsx";
 import ProjectHeader from "../components/project/ProjectHeader";
 import ProjectKpis from "../components/project/ProjectKpis";
 import ProjectActivityFeed from "../components/project/ProjectActivityFeed";
@@ -44,6 +44,7 @@ import {
 import { CALENDAR_ACCOUNTABILITY, POSTS_V1, MENTOR_V1 } from "../config/flags.js";
 import { getIcsUrl } from "../api/calendar.js";
 import { buildPublicStatusUrl } from "../api/public";
+import EmptyState from "../components/ui/EmptyState.jsx";
 
 import TaskSheet from "../components/tasks/TaskSheet";
 import InviteModal from "../components/project/InviteModal";
@@ -176,7 +177,7 @@ function getPunctuality(task) {
   return "scheduled";
 }
 
-function AccountabilityPanel({ tasks = [], stats }) {
+function AccountabilityPanel({ tasks = [], stats, onAddDueDate }) {
   const withDue = tasks.filter(t => t?.dueDate);
   const stateCounts = withDue.reduce((acc, t) => {
     const s = getPunctuality(t);
@@ -205,7 +206,7 @@ function AccountabilityPanel({ tasks = [], stats }) {
       <div className={`rounded-xl border px-3 py-2 flex items-center gap-2 ${toneCls}`}>
         {icon}
         <div className="text-xs">
-          <div className="font-semibold leading-none">{value}</div>
+          <div className="font-semibold leading-none num">{value}</div>
           <div className="leading-none mt-0.5">{label}</div>
         </div>
       </div>
@@ -265,11 +266,18 @@ function AccountabilityPanel({ tasks = [], stats }) {
         </div>
       )}
 
-      {total === 0 && (
-        <div className="mt-3 text-xs text-muted">
-          No scheduled tasks yet. Add due dates to tasks to track on-time vs late delivery.
-        </div>
-      )}
+{total === 0 && (
+  <div className="mt-3">
+    <EmptyState
+      icon="🗓️"
+      title="Add due dates to unlock reliability tracking."
+      primary={{
+        label: "Add a due date",
+        onClick: () => onAddDueDate?.(),
+      }}
+    />
+  </div>
+)}
     </section>
   );
 }
@@ -318,7 +326,7 @@ function MilestoneBar({ icon, label, count, unit }) {
   );
 }
 
-function MentorPanel({ stats, projectId, onStartFocus }) {
+function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
   const { vel, fc, load, tips, chrono } = extractMentor(stats);
 
   const Card = ({ title, icon, children }) => (
@@ -364,18 +372,35 @@ function MentorPanel({ stats, projectId, onStartFocus }) {
 
       <div className="mt-3"><Nudge /></div>
 
+      {!vel && !fc && (
+  <div className="mt-3">
+    <EmptyState
+      icon="🔮"
+      title="Complete a few tasks to unlock ETA."
+      primary={{
+        label: "Open tasks",
+        onClick: () => onOpenTasks?.(),
+      }}
+      secondary={{
+        label: "Start a 25:00",
+        onClick: onStartFocus,
+      }}
+    />
+  </div>
+)}
+
       <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
         <Card
           title="Velocity & forecast"
           icon={<TrendingUp className="w-4 h-4 text-indigo-600" />}
         >
           <div className="text-sm">
-            <div>Velocity: <span className="font-semibold">{vel != null ? `${vel}/wk` : "—"}</span></div>
+            <div>Velocity: <span className="font-semibold num">{vel != null ? `${vel}/wk` : "—"}</span></div>
             {fc ? (
               <div className="mt-1 text-xs text-muted">
                 ETA (p50): <span className="font-medium">{fc.p50 || "—"}</span>
                 {fc.p90 ? <> · p90: <span className="font-medium">{fc.p90}</span></> : null}
-                {fc.remainingTasks != null ? <> · remaining: {fc.remainingTasks}</> : null}
+                {fc.remainingTasks != null ? <> · remaining: <span className="num">{fc.remainingTasks}</span></> : null}
               </div>
             ) : (
               <div className="mt-1 text-xs text-muted">Add a few completed tasks to unlock ETA.</div>
@@ -1046,14 +1071,14 @@ export default function ProjectHome() {
 
   if (loading) {
     return (
-      <main id="main" role="main" tabIndex={-1}>
+      <Page className="bg-bg text-text min-h-screen">
         <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto">
           <div className="animate-pulse space-y-4">
             <div className="h-24 rounded-2xl bg-surface" />
             <div className="h-24 rounded-2xl bg-surface" />
           </div>
         </div>
-      </main>
+      </Page>
     );
   }
 
@@ -1119,7 +1144,7 @@ export default function ProjectHome() {
     const card = (label, value, sub) => (
       <div className="rounded-2xl border border-dashed border-border bg-surface p-4 shadow-sm">
         <div className="text-xs text-muted">{label}</div>
-        <div className="text-xl font-semibold text-text">{value}</div>
+        <div className="text-xl font-semibold text-text num">{value}</div>
         {sub ? <div className="text-xs text-muted mt-1">{sub}</div> : null}
       </div>
     );
@@ -1340,9 +1365,13 @@ export default function ProjectHome() {
         )}
 
         {/* Scheduling + Accountability */}
-        {CALENDAR_ACCOUNTABILITY && ( 
-          <AccountabilityPanel tasks={project?.tasks || []} stats={stats} />
-        )}
+        {CALENDAR_ACCOUNTABILITY && (
+  <AccountabilityPanel
+    tasks={project?.tasks || []}
+    stats={stats}
+    onAddDueDate={() => canEdit && setShowTaskSheet(true)}
+  />
+)}
 
         {/* AI Charles Xavier = Mentor */}
         {MENTOR_V1 && (
@@ -1350,7 +1379,8 @@ export default function ProjectHome() {
           stats={stats}
           projectId={project?._id}
           onStartFocus={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
-          />
+          onOpenTasks={() => canEdit && setShowTaskSheet(true)}
+        />        
         )}
 
         {/* Unified Activity Feed (upgraded normalizer + realtime merge) */}
@@ -1375,16 +1405,33 @@ export default function ProjectHome() {
           </div>
 
           <div className="mt-3">
-            <ProjectActivityFeed
-              projectId={id}
-              items={feed.items}
-              loading={feedLoading}
-              onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
-              hasMore={!!feed.nextCursor}
-              onPostUpdate={canEdit ? handlePostUpdate : undefined}
-              onRefetch={() => loadFeed()}
-            />
-          </div>
+  {!feedLoading && feed.items.length === 0 ? (
+    <EmptyState
+      icon="💬"
+      title="No conversations yet."
+      primary={{
+        label: "Invite teammates",
+        onClick: () => setShowInvite(true),
+      }}
+      secondary={{
+        label: "Start a sprint",
+        onClick: () => window.dispatchEvent(new CustomEvent("start-tenx-sprint")),
+      }}
+    >
+      Invite teammates or start a sprint to generate activity.
+    </EmptyState>
+  ) : (
+    <ProjectActivityFeed
+      projectId={id}
+      items={feed.items}
+      loading={feedLoading}
+      onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
+      hasMore={!!feed.nextCursor}
+      onPostUpdate={canEdit ? handlePostUpdate : undefined}
+      onRefetch={() => loadFeed()}
+    />
+  )}
+</div>
         </section>
 
         {/* NEW: Files & Tasks Milestones */}
@@ -1519,10 +1566,12 @@ export default function ProjectHome() {
                     />
                     <button
                       onClick={copyLink}
-                      className="relative inline-flex items-center gap-2 rounded-lg px-3 py-2 text-white bg-grad-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      className="relative inline-flex items-center gap-2 rounded-lg px-3 py-2 text-white bg-grad-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 lift fade-swap"
                     >
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      {copied ? "Copied" : "Copy"}
+                      <span className="swap-a" aria-hidden={copied ? "true" : "false"}><Copy className="w-4 h-4" /></span>
+   <span className="swap-b" aria-hidden={copied ? "false" : "true"}><Check className="w-4 h-4" /></span>
+  <span className="swap-a" aria-hidden={copied ? "true" : "false"}>Copy</span>
+   <span className="swap-b" aria-hidden={copied ? "false" : "true"}>Copied</span>
                       <span className="shine pointer-events-none" aria-hidden="true" />
                     </button>
                     <button

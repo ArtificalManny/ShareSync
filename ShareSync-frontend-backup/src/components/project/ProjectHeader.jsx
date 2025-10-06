@@ -22,6 +22,10 @@ import { CALENDAR_ACCOUNTABILITY } from "../../config/flags.js";
 import { getIcsUrl } from "../../api/calendar.js";
 import { trackScheduleCreated } from "../../utils/telemetry";
 
+// ✅ new primitives
+import Card from "../ui/Card.jsx";
+import Button from "../ui/Button.jsx";
+
 const ENABLE_PUBLIC_STATUS = (() => {
   const v = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS ?? "";
   return /^(1|true|on|yes)$/i.test(String(v));
@@ -74,19 +78,6 @@ function SVGIcon({ name, className = "w-6 h-6" }) {
   }
 }
 
-function Avatar({ label, title }) {
-  const ch = (label || "?").trim()[0]?.toUpperCase() || "?";
-  return (
-    <div
-      className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 ring-2 ring-white dark:ring-slate-900 grid place-content-center text-xs font-medium text-slate-700 dark:text-slate-200"
-      title={title}
-      aria-label={title}
-    >
-      {ch}
-    </div>
-  );
-}
-
 export default function ProjectHeader({
   project,
   onAddTask,
@@ -101,6 +92,8 @@ export default function ProjectHeader({
   const isOwner = role === "owner";
 
   const [quickTask, setQuickTask] = useState("");
+  const [addingQuick, setAddingQuick] = useState(false);
+  const [addedQuick, setAddedQuick] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [iconOverride, setIconOverride] = useState(project?.icon ?? null);
 
@@ -117,7 +110,6 @@ export default function ProjectHeader({
   useEffect(() => {
     if (!project?._id) return;
 
-    // Immediately if visible
     if (typeof document !== "undefined" && document.visibilityState === "visible") {
       try { setLastSeen(project._id, Date.now()); track("project_seen", { projectId: project._id, source: "header_mount" }); } catch {}
     }
@@ -141,14 +133,21 @@ export default function ProjectHeader({
     e.preventDefault();
     const t = quickTask.trim();
     if (!t) return;
-    await onAddTask?.(t);
-    setQuickTask("");
+    try {
+      setAddingQuick(true);
+      await onAddTask?.(t);
+      setQuickTask("");
+      setAddedQuick(true);
+      setTimeout(() => setAddedQuick(false), 1000);
+    } finally{
+      setAddingQuick(false);
+    }
   };
 
   // Persist icon; toast + telemetry
   async function handleIconSelect(sel) {
     try {
-      const updated = await patchProjectIcon(project._id, sel); // sel or null (clear)
+      const updated = await patchProjectIcon(project._id, sel);
       const nextIcon = updated?.icon ?? updated?.patch?.icon ?? sel ?? null;
       setIconOverride(nextIcon);
 
@@ -246,7 +245,7 @@ export default function ProjectHeader({
   }
 
   return (
-    <section className="card shine accent-bar rounded-2xl border border-border bg-surface shadow-[var(--shadow-elev)]">
+    <Card className="shine accent-bar">
       <span className="accent-bar__left" aria-hidden="true" />
       <div className="px-4 sm:px-6 md:px-8 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
@@ -298,14 +297,16 @@ export default function ProjectHeader({
                 </span>
 
                 {isOwner && (
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     type="button"
                     onClick={() => setPickerOpen(true)}
-                    className="text-xs px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    className="text-xs px-2 py-1 rounded-md"
                     title="Edit icon"
                   >
                     Edit icon
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -318,14 +319,16 @@ export default function ProjectHeader({
                   Role: {role[0].toUpperCase()}{role.slice(1)}
                 </span>
 
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   type="button"
                   onClick={markAsRead}
-                  className="px-2 py-0.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="px-2 py-0.5 text-xs rounded-md"
                   title="Mark this project as read"
                 >
                   Mark as read
-                </button>
+                </Button>
 
                 {isOwner && ENABLE_PUBLIC_STATUS && typeof onTogglePublic === "function" ? (
                   <label className="inline-flex items-center gap-2 text-xs">
@@ -353,31 +356,44 @@ export default function ProjectHeader({
                       href={publicHref}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 lift"
                       title="Open public link"
                     >
                       <Link2 className="w-3.5 h-3.5" />
                       Public link
                     </a>
-                    <button
+
+                    {/* Copy with fade-swap */}
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       type="button"
                       onClick={copyPublicUrl}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      className="px-2 py-0.5 text-xs rounded-md lift fade-swap"
                       title="Copy public link"
                     >
-                      {copied ? <CheckIcon className="w-3.5 h-3.5" /> : <CopyIcon className="w-3.5 h-3.5" />}
-                      {copied ? "Copied" : "Copy"}
-                    </button>
-                    <button
+                      <span className="swap-a inline-flex items-center gap-1" aria-hidden={copied ? "true" : "false"}>
+                        <CopyIcon className="w-3.5 h-3.5" />
+                        Copy
+                      </span>
+                      <span className="swap-b inline-flex items-center gap-1" aria-hidden={copied ? "false" : "true"}>
+                        <CheckIcon className="w-3.5 h-3.5" />
+                        Copied
+                      </span>
+                    </Button>
+
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       type="button"
                       onClick={handleRegenerate}
                       disabled={busyRegen}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
+                      className="px-2 py-0.5 text-xs rounded-md disabled:opacity-60 lift"
                       title="Regenerate public link"
+                      leftIcon={<RefreshCcw className="w-3.5 h-3.5" />}
                     >
-                      <RefreshCcw className="w-3.5 h-3.5" />
                       {busyRegen ? "…" : "Regenerate"}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -393,16 +409,33 @@ export default function ProjectHeader({
               placeholder="Quick add a task…"
               className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
             />
-            <button
-              type="submit"
-              className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 transition-colors"
-            >
-              Add task
-            </button>
+            <Button
+   type="submit"
+   variant="primary"
+   size="md"
+   className="rounded-xl px-4 py-2 lift"
+   disabled={addingQuick}
+>
+   <span className="relative inline-flex items-center gap-2">
+     {/* spinner */}
+     {addingQuick && (
+       <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden>
+         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+       </svg>
+     )}
+     {/* check */}
+     {!addingQuick && addedQuick && <span aria-hidden>✓</span>}
+     <span className="transition-opacity duration-150">
+       {addingQuick ? "Adding…" : addedQuick ? "Added" : "Add task"}
+     </span>
+   </span>
+ </Button>
           </form>
 
           {CALENDAR_ACCOUNTABILITY && icsUrl && (
-            <a
+            <Button
+              as="a"
               href={icsUrl}
               target="_blank"
               rel="noreferrer"
@@ -412,53 +445,14 @@ export default function ProjectHeader({
                   trackScheduleCreated?.({ projectId: project?._id || project?.id, method: "ics_export", source: "header"});
                 } catch {}
               }}
-              className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm inline-flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800"
+              variant="secondary"
+              size="md"
+              leftIcon={<CalendarDays className="w-4 h-4" />}
               title="Download tasks as .ics"
             >
-              <CalendarDays className="w-4 h-4"/>
               Download .ics
-            </a>
+            </Button>
           )}
-
-          {/* Inline Members (replaces Invite/Settings buttons) */}
-{Array.isArray(project?.members) && (
-  <div className="sm:ml-2 flex items-center gap-3">
-    {/* Avatar group */}
-    <div className="flex -space-x-2">
-      {project.members.slice(0, 5).map((m, i) => {
-        const name = m?.name || m?.email || "Member";
-        const role = (m?.role || "member").toLowerCase();
-        return (
-          <Avatar
-            key={m._id || m.userId || m.email || i}
-            label={name}
-            title={`${name} · ${role}`}
-          />
-        );
-      })}
-      {project.members.length > 5 && (
-        <div
-          className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 ring-2 ring-white dark:ring-slate-900 grid place-content-center text-[11px] text-slate-600 dark:text-slate-300"
-          title={`${project.members.length - 5} more`}
-        >
-          +{project.members.length - 5}
-        </div>
-      )}
-    </div>
-
-    {/* Counts + pending */}
-    <div className="text-xs text-slate-600 dark:text-slate-300">
-      {project.members.length} member{project.members.length === 1 ? "" : "s"}
-      {Array.isArray(project?.invites) && project.invites.filter(i => (i?.status || "pending") === "pending").length > 0 && (
-        <span className="ml-2 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 text-[11px]">
-          {project.invites.filter(i => (i?.status || "pending") === "pending").length} pending
-        </span>
-      )}
-    </div>
-  </div>
-)}
-
-        
         </div>
       </div>
 
@@ -467,6 +461,6 @@ export default function ProjectHeader({
         onClose={() => setPickerOpen(false)}
         onSelect={handleIconSelect}
       />
-    </section>
+    </Card>
   );
 }

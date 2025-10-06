@@ -2,9 +2,9 @@
     /* ================================
        Base palette (RGB channels)
        ================================ */
-    --bg:            255 255 255;
+    --bg:            248 250 252;
     --card:          248 250 252;   /* slate-50-ish */
-    --text:          15 23 42;      /* slate-900 */
+    --text:          18 24 38;      /* slate-900 */
     --muted:         100 116 139;   /* slate-500 */
     --border:        226 232 240;   /* slate-200 */
     --ring:          99 102 241;    /* indigo-500 */
@@ -237,7 +237,7 @@
   inset: 0;
   border-radius: 12px;
   box-shadow: 0 0 0 2px rgb(var(--ring) / 0.35);
-  animation: ss-pulse-ring 1.6s ease-out infinite;
+  animation: ss-pulse-ring 1.2s ease-out 1;
   pointer-events: none;
 }
 

@@ -1,4 +1,3 @@
-// src/components/ui/Button.jsx
 import React from 'react';
 import { cn } from './cn';
 
@@ -34,8 +33,9 @@ export default function Button({
   return (
     <Tag
       className={cn(
-        'inline-flex items-center gap-2 font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 disabled:opacity-60 disabled:cursor-not-allowed',
-        VARIANTS[variant] || VARIANTS.primary,
+        'inline-flex items-center gap-2 font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 disabled:opacity-60 disabled:cursor-not-allowed',
+        'lift',
+        VARIANTS[variant] || VARIANTS[ 'primary'],
         SIZES[size] || SIZES.md,
         className
       )}

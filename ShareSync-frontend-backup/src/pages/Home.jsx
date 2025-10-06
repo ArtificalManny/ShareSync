@@ -6,7 +6,7 @@ import { getProjectsQuick } from '../api/projects';
 import { AuthContext } from '../AuthContext';
 import { mark, measure } from '../utils/perfLog';
 import { track } from '../utils/telemetry';
-
+import Page from "../components/layout/Page.jsx";
 import HomeHeaderSwitcher from '../components/home/HomeHeaderSwitcher.jsx'; // ⬅️ NEW
 import ProjectsRail from '../components/home/ProjectsRail.jsx';
 import KpiRow from '../components/analytics/KpiRow.jsx';
@@ -156,10 +156,10 @@ function KpiStrip({ stats }) {
             title={`7d ${t.label} · min ${min} · max ${max} · last ${last}`}
           >
             <span className="accent-bar__left" aria-hidden="true" />
-            <div className="text-2xl font-bold">{t.value}</div>
+            <div className="text-2xl font-bold num">{t.value}</div>
             <div className="flex items-center gap-2 mt-1">
               <div className="text-xs text-muted">{t.label}</div>
-              <Chip tone={tone} onClick={goKPIs}>{delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}%</Chip>
+              <Chip tone={tone} onClick={goKPIs}>{delta >= 0 ? '▲' : '▼'} <span className="num">{Math.abs(delta)}</span>%</Chip>
             </div>
             <Sparkline data={series} />
             {whyLine && <div className="text-[10px] text-muted mt-1">{whyLine}</div>}
@@ -180,7 +180,7 @@ function KpiStrip({ stats }) {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs text-muted">Velocity</div>
-            <div className="text-lg font-semibold">{velocityText}</div>
+            <div className="text-lg font-semibold num">{velocityText}</div>
           </div>
           <div className="text-right">
             <div className="text-xs text-muted">Goal</div>

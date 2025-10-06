@@ -12,6 +12,7 @@ import TraceOutline from '../components/ui/TraceOutline.jsx';
 import { bindShine } from '../utils/shine';
 import GradientText from '../components/ui/GradientText.jsx';
 import { labelledTimestamp } from '../utils/formatters.js';
+import Page from "../components/layout/Page.jsx";
 import './Projects.css';
 
 import { Users, Clock, Search } from 'lucide-react';
@@ -272,7 +273,7 @@ export default function Projects() {
   };
 
   return (
-    <main id="main" role="main" tabIndex={-1}>
+    <Page>
       <div
         ref={rootRef}
         data-accent="emerald"
@@ -486,6 +487,6 @@ export default function Projects() {
           />
         )}
       </div>
-    </main>
+    </Page>
   );
 }
