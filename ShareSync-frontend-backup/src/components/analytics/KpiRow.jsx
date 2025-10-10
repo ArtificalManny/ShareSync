@@ -1,5 +1,6 @@
 import React from "react";
 import { Info } from "lucide-react";
+import Card from "../ui/Card.jsx";
 
 /**
  * Kpi chip w/ pastel tone, dot, and accessible tooltip
@@ -65,12 +66,12 @@ function Kpi({ label, value, suffix, help, tone = "indigo" }) {
           ) : null}
         </div>
 
-        <div className={`text-lg font-semibold ${tones.text} shrink-0`}>
-          {value}
-          {suffix ? (
-            <span className={`ml-1 text-sm ${tones.sub}`}>{suffix}</span>
-          ) : null}
-        </div>
+        <div className={`text-lg font-semibold tabular-nums num ${tones.text} shrink-0`}>
+  {value}
+  {suffix ? (
+    <span className={`ml-1 text-sm ${tones.sub}`}>{suffix}</span>
+  ) : null}
+</div>
       </div>
     </div>
   );
@@ -89,36 +90,42 @@ export default function KpiRow({ cadence, onTimeCompletion, activeDays, throughp
       ? Math.round(onTimeCompletion.value * 100)
       : 0;
 
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-      <Kpi
-        tone="indigo"
-        label="Cadence"
-        value={cadence?.value ?? 0}
-        suffix={`/ ${cadence?.windowDays ?? 14}d`}
-        help="Updates + completed tasks, recency-weighted over a rolling 14 days."
-      />
-      <Kpi
-        tone="emerald"
-        label="On-time"
-        value={`${pct}%`}
-        suffix={`/${onTimeCompletion?.windowDays ?? 30}d`}
-        help="Share of tasks completed by due date over 30 days."
-      />
-      <Kpi
-        tone="sky"
-        label="Active days"
-        value={activeDays?.value ?? 0}
-        suffix={`/${activeDays?.windowDays ?? 28}d`}
-        help="Days with any activity in the last 28 days."
-      />
-      <Kpi
-        tone="amber"
-        label="Throughput"
-        value={throughputPerWeek?.value ?? 0}
-        suffix={`/wk`}
-        help="Completed tasks per 7-day window."
-      />
-    </div>
-  );
-}
+      return (
+        <Card className="mt-6" role="region" aria-label="KPI Row">
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <Kpi
+              tone="indigo"
+              label="Cadence"
+              value={cadence?.value ?? 0}
+              suffix={`/ ${cadence?.windowDays ?? 14}d`}
+              help="Updates + completed tasks, recency-weighted over a rolling 14 days."
+            />
+            <Kpi
+              tone="emerald"
+              label="On-time"
+              value={
+                typeof onTimeCompletion?.value === "number"
+                  ? `${Math.round(onTimeCompletion.value * 100)}%`
+                  : "0%"
+              }
+              suffix={`/${onTimeCompletion?.windowDays ?? 30}d`}
+              help="Share of tasks completed by due date over 30 days."
+            />
+            <Kpi
+              tone="sky"
+              label="Active days"
+              value={activeDays?.value ?? 0}
+              suffix={`/${activeDays?.windowDays ?? 28}d`}
+              help="Days with any activity in the last 28 days."
+            />
+            <Kpi
+              tone="amber"
+              label="Throughput"
+              value={throughputPerWeek?.value ?? 0}
+              suffix={`/wk`}
+              help="Completed tasks per 7-day window."
+            />
+          </div>
+        </Card>
+      );
+    }      

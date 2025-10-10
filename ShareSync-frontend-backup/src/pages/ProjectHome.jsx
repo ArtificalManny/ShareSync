@@ -18,6 +18,7 @@ import ProjectKpis from "../components/project/ProjectKpis";
 import ProjectActivityFeed from "../components/project/ProjectActivityFeed";
 import RisksPanel from "../components/project/RisksPanel";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
+import Card from "../components/ui/Card.jsx";
 import useSocket from "../hooks/useSocket";
 import {
   MoreHorizontal,
@@ -214,11 +215,7 @@ function AccountabilityPanel({ tasks = [], stats, onAddDueDate }) {
   };
 
   return (
-    <section
-      className="mt-6 card rounded-2xl border border-border bg-surface p-4"
-      role="region"
-      aria-label="Scheduling & Accountability"
-    >
+    <Card className="mt-6" role="region" aria-label="Scheduling & Accountability">
       <div className="flex items-start justify-between">
         <div className="inline-flex items-center gap-2">
           <CalendarDays className="w-5 h-5 text-indigo-600" />
@@ -266,19 +263,19 @@ function AccountabilityPanel({ tasks = [], stats, onAddDueDate }) {
         </div>
       )}
 
-{total === 0 && (
-  <div className="mt-3">
-    <EmptyState
-      icon="🗓️"
-      title="Add due dates to unlock reliability tracking."
-      primary={{
-        label: "Add a due date",
-        onClick: () => onAddDueDate?.(),
-      }}
-    />
-  </div>
-)}
-    </section>
+      {total === 0 && (
+        <div className="mt-3">
+          <EmptyState
+            icon="🗓️"
+            title="Add due dates to unlock reliability tracking."
+            primary={{
+              label: "Add a due date",
+              onClick: () => onAddDueDate?.(),
+            }}
+          />
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -329,7 +326,7 @@ function MilestoneBar({ icon, label, count, unit }) {
 function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
   const { vel, fc, load, tips, chrono } = extractMentor(stats);
 
-  const Card = ({ title, icon, children }) => (
+  const CardInner = ({ title, icon, children }) => (
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center gap-2 text-sm font-semibold">
         {icon}
@@ -358,11 +355,7 @@ function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
   };
 
   return (
-    <section
-      className="mt-6 card rounded-2xl border border-border bg-surface p-4"
-      role="region"
-      aria-label="AI Mentor"
-    >
+    <Card className="mt-6" role="region" aria-label="AI Mentor">
       <div className="flex items-start justify-between">
         <div className="inline-flex items-center gap-2">
           <Brain className="w-5 h-5 text-indigo-600" />
@@ -373,24 +366,24 @@ function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
       <div className="mt-3"><Nudge /></div>
 
       {!vel && !fc && (
-  <div className="mt-3">
-    <EmptyState
-      icon="🔮"
-      title="Complete a few tasks to unlock ETA."
-      primary={{
-        label: "Open tasks",
-        onClick: () => onOpenTasks?.(),
-      }}
-      secondary={{
-        label: "Start a 25:00",
-        onClick: onStartFocus,
-      }}
-    />
-  </div>
-)}
+        <div className="mt-3">
+          <EmptyState
+            icon="🔮"
+            title="Complete a few tasks to unlock ETA."
+            primary={{
+              label: "Open tasks",
+              onClick: () => onOpenTasks?.(),
+            }}
+            secondary={{
+              label: "Start a 25:00",
+              onClick: onStartFocus,
+            }}
+          />
+        </div>
+      )}
 
       <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Card
+        <CardInner
           title="Velocity & forecast"
           icon={<TrendingUp className="w-4 h-4 text-indigo-600" />}
         >
@@ -406,9 +399,9 @@ function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
               <div className="mt-1 text-xs text-muted">Add a few completed tasks to unlock ETA.</div>
             )}
           </div>
-        </Card>
+        </CardInner>
 
-        <Card
+        <CardInner
           title="Workload balance"
           icon={<Users className="w-4 h-4 text-indigo-600" />}
         >
@@ -428,9 +421,9 @@ function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
           ) : (
             <div className="text-xs text-muted">No overload detected.</div>
           )}
-        </Card>
+        </CardInner>
 
-        <Card
+        <CardInner
           title="Suggestions"
           icon={<Lightbulb className="w-4 h-4 text-indigo-600" />}
         >
@@ -441,13 +434,13 @@ function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
           ) : (
             <div className="text-xs text-muted">MVP active: using velocity-based hints. More learnings will appear here.</div>
           )}
-        </Card>
+        </CardInner>
       </div>
 
       <div className="mt-3 text-[11px] text-muted">
         Phase 2: probability models, AI delegation, scenario planning.
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -1072,7 +1065,7 @@ export default function ProjectHome() {
   if (loading) {
     return (
       <Page className="bg-bg text-text min-h-screen">
-        <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto">
+        <div className="px-4 sm:px-6 lg:px-10 py-6 max-w-6xl mx-auto">
           <div className="animate-pulse space-y-4">
             <div className="h-24 rounded-2xl bg-surface" />
             <div className="h-24 rounded-2xl bg-surface" />
@@ -1221,7 +1214,7 @@ export default function ProjectHome() {
 
   return (
     <main id="main" role="main" tabIndex={-1}>
-      <div className="px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 lg:px-10 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
         {/* Header (public toggle gated by flag) */}
         <ProjectHeader
           project={project}
@@ -1229,20 +1222,16 @@ export default function ProjectHome() {
           onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
         />
 
-{MESSENGER_V1 && project?.chatEnabled && (
-  <section
-    className="mt-6 card rounded-2xl border border-border bg-surface p-4"
-    role="region"
-    aria-label="Project chat"
-  >
-    <div className="flex items-start justify-between">
-      <SectionHeader icon="MessagesSquare">Chat</SectionHeader>
-    </div>
-    <div className="mt-3">
-      <ProjectChatThread projectId={project._id} />
-    </div>
-  </section>
-)}
+        {MESSENGER_V1 && project?.chatEnabled && (
+          <Card className="mt-6" role="region" aria-label="Project chat">
+            <div className="flex items-start justify-between">
+              <SectionHeader icon="MessagesSquare">Chat</SectionHeader>
+            </div>
+            <div className="mt-3">
+              <ProjectChatThread projectId={project._id} />
+            </div>
+          </Card>
+        )}
 
         {/* Action Bar */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1307,12 +1296,7 @@ export default function ProjectHome() {
         </div>
 
         {/* Project KPIs */}
-        <section
-          className="mt-4 card accent-kpi rounded-2xl border border-dashed border-border bg-surface p-4"
-          role="region"
-          aria-label="Project KPIs"
-          aria-busy={statsLoading ? "true" : "false"}
-        >
+        <Card className="mt-6 accent-kpi" role="region" aria-label="Project KPIs" aria-busy={statsLoading ? "true" : "false"}>
           <div className="flex items-start justify-between">
             <SectionHeader icon="Gauge">Project KPIs</SectionHeader>
             <button
@@ -1328,18 +1312,15 @@ export default function ProjectHome() {
           <div className="mt-3">
             <ProjectKpis project={project} />
           </div>
-          <div className="mt-4">
+          <div className="my-3 border-t border-border" />
+          <div className="mt-3">
             <KpiCards />
           </div>
-        </section>
+        </Card>
 
         {/* NEW: KPI Trends */}
         {kpiTrends.length > 0 && (
-          <section
-            className="mt-6 card accent-activity rounded-2xl border border-border bg-surface p-4"
-            role="region"
-            aria-label="KPI Trends"
-          >
+          <Card className="mt-6 accent-activity" role="region" aria-label="KPI Trends">
             <div className="flex items-start justify-between">
               <SectionHeader icon="Activity">KPI Trends</SectionHeader>
               <button
@@ -1351,7 +1332,6 @@ export default function ProjectHome() {
                 <MoreHorizontal className="w-5 h-5 text-muted" />
               </button>
             </div>
-
             <div className="mt-3">
               <KpiGroup
                 data={kpiTrends}
@@ -1361,85 +1341,77 @@ export default function ProjectHome() {
                 motionEnabled={!prefersReducedMotion}
               />
             </div>
-          </section>
+          </Card>
         )}
 
         {/* Scheduling + Accountability */}
         {CALENDAR_ACCOUNTABILITY && (
-  <AccountabilityPanel
-    tasks={project?.tasks || []}
-    stats={stats}
-    onAddDueDate={() => canEdit && setShowTaskSheet(true)}
-  />
-)}
+          <AccountabilityPanel
+            tasks={project?.tasks || []}
+            stats={stats}
+            onAddDueDate={() => canEdit && setShowTaskSheet(true)}
+          />
+        )}
 
         {/* AI Charles Xavier = Mentor */}
         {MENTOR_V1 && (
           <MentorPanel
-          stats={stats}
-          projectId={project?._id}
-          onStartFocus={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
-          onOpenTasks={() => canEdit && setShowTaskSheet(true)}
-        />        
+            stats={stats}
+            projectId={project?._id}
+            onStartFocus={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
+            onOpenTasks={() => canEdit && setShowTaskSheet(true)}
+          />
         )}
 
         {/* Unified Activity Feed (upgraded normalizer + realtime merge) */}
-        <section
-          ref={activityRef}
-          id="activity"
-          className="mt-6 card rounded-2xl border border-border bg-surface p-4"
-          role="region"
-          aria-label="Activity"
-        >
-          <div className="flex items-start justify-between">
-            <SectionHeader icon="History">Activity</SectionHeader>
-            <button
-              type="button"
-              className="rounded-lg p-1.5 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              aria-label="Activity options"
-              title="Activity options"
-              onClick={() => loadFeed()}
-            >
-              <MoreHorizontal className="w-5 h-5 text-muted" />
-            </button>
-          </div>
+        <div ref={activityRef}>
+          <Card id="activity" className="mt-6" role="region" aria-label="Activity">
+            <div className="flex items-start justify-between">
+              <SectionHeader icon="History">Activity</SectionHeader>
+              <button
+                type="button"
+                className="rounded-lg p-1.5 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                aria-label="Activity options"
+                title="Activity options"
+                onClick={() => loadFeed()}
+              >
+                <MoreHorizontal className="w-5 h-5 text-muted" />
+              </button>
+            </div>
 
-          <div className="mt-3">
-  {!feedLoading && feed.items.length === 0 ? (
-    <EmptyState
-      icon="💬"
-      title="No conversations yet."
-      primary={{
-        label: "Invite teammates",
-        onClick: () => setShowInvite(true),
-      }}
-      secondary={{
-        label: "Start a sprint",
-        onClick: () => window.dispatchEvent(new CustomEvent("start-tenx-sprint")),
-      }}
-    >
-      Invite teammates or start a sprint to generate activity.
-    </EmptyState>
-  ) : (
-    <ProjectActivityFeed
-      projectId={id}
-      items={feed.items}
-      loading={feedLoading}
-      onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
-      hasMore={!!feed.nextCursor}
-      onPostUpdate={canEdit ? handlePostUpdate : undefined}
-      onRefetch={() => loadFeed()}
-    />
-  )}
-</div>
-        </section>
+            <div className="mt-3">
+              {!feedLoading && feed.items.length === 0 ? (
+                <EmptyState
+                  icon="💬"
+                  title="No conversations yet."
+                  primary={{
+                    label: "Invite teammates",
+                    onClick: () => setShowInvite(true),
+                  }}
+                  secondary={{
+                    label: "Start a sprint",
+                    onClick: () => window.dispatchEvent(new CustomEvent("start-tenx-sprint")),
+                  }}
+                >
+                  Invite teammates or start a sprint to generate activity.
+                </EmptyState>
+              ) : (
+                <ProjectActivityFeed
+                  projectId={id}
+                  items={feed.items}
+                  loading={feedLoading}
+                  onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
+                  hasMore={!!feed.nextCursor}
+                  onPostUpdate={canEdit ? handlePostUpdate : undefined}
+                  onRefetch={() => loadFeed()}
+                />
+              )}
+            </div>
+          </Card>
+        </div>
 
         {/* NEW: Files & Tasks Milestones */}
-        <section
-          className="mt-6 card rounded-2xl border border-border bg-surface p-4"
-          role="region"
-          aria-label="Milestones"
-        >
+        <Card className="mt-6" role="region" aria-label="Milestones">
           <div className="flex items-start justify-between">
             <SectionHeader icon="Flag">Milestones</SectionHeader>
           </div>
@@ -1457,14 +1429,10 @@ export default function ProjectHome() {
               unit="tasks"
             />
           </div>
-        </section>
+        </Card>
 
         {/* Files */}
-        <section
-          className="mt-6 card rounded-2xl border border-border bg-surface p-4"
-          role="region"
-          aria-label="Files"
-        >
+        <Card className="mt-6" role="region" aria-label="Files">
           <div className="flex items-start justify-between">
             <SectionHeader icon="Folder">Files</SectionHeader>
           </div>
@@ -1476,14 +1444,10 @@ export default function ProjectHome() {
               canManage={canManage}
             />
           </div>
-        </section>
+        </Card>
 
         {/* Activity Over Time */}
-        <section
-          className="mt-6 card accent-activity rounded-2xl border border-border bg-surface p-4"
-          role="region"
-          aria-label="Activity over time"
-        >
+        <Card className="mt-6 accent-activity" role="region" aria-label="Activity over time">
           <div className="flex items-start justify-between">
             <SectionHeader icon="ActivitySquare">Activity Over Time</SectionHeader>
             <button
@@ -1495,8 +1459,10 @@ export default function ProjectHome() {
               <MoreHorizontal className="w-5 h-5 text-muted" />
             </button>
           </div>
-          <ActivityOverTimeLive projectId={project._id} defaultRange="30" />
-        </section>
+          <div className="mt-3">
+            <ActivityOverTimeLive projectId={project._id} defaultRange="30" />
+          </div>
+        </Card>
 
         {/* Right rail */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -1508,12 +1474,12 @@ export default function ProjectHome() {
               loading={statsLoading}
             />
 
-            <div className="card accent-risk rounded-2xl border border-border bg-surface p-4">
+            <Card className="accent-risk">
               <SectionHeader icon="AlertTriangle">Risks &amp; Blockers</SectionHeader>
               <div className="mt-3">
                 <RisksPanel project={project} />
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       </div>
@@ -1569,9 +1535,9 @@ export default function ProjectHome() {
                       className="relative inline-flex items-center gap-2 rounded-lg px-3 py-2 text-white bg-grad-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 lift fade-swap"
                     >
                       <span className="swap-a" aria-hidden={copied ? "true" : "false"}><Copy className="w-4 h-4" /></span>
-   <span className="swap-b" aria-hidden={copied ? "false" : "true"}><Check className="w-4 h-4" /></span>
-  <span className="swap-a" aria-hidden={copied ? "true" : "false"}>Copy</span>
-   <span className="swap-b" aria-hidden={copied ? "false" : "true"}>Copied</span>
+                      <span className="swap-b" aria-hidden={copied ? "false" : "true"}><Check className="w-4 h-4" /></span>
+                      <span className="swap-a" aria-hidden={copied ? "true" : "false"}>Copy</span>
+                      <span className="swap-b" aria-hidden={copied ? "false" : "true"}>Copied</span>
                       <span className="shine pointer-events-none" aria-hidden="true" />
                     </button>
                     <button

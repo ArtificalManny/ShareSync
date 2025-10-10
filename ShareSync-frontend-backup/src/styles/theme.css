@@ -147,3 +147,13 @@
     font-size: 0.9rem;
   }
   
+  /*  Link + Focus accessibility baseline */
+a, button {
+  outline: none;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+a:focus-visible,
+button:focus-visible {
+  box-shadow: var(--shadow-focus);
+  border-radius: 8px;
+}

@@ -563,7 +563,7 @@ export default function Home() {
   const hideBelowMetrics = String(headerMode || '').toLowerCase() === 'metrics'; // ⬅️ when header shows Metrics, don’t repeat KPIs below
 
   return (
-    <div className={`home-page relative ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto space-y-7 ${celebrate ? 'win-glow' : ''}`}>
+    <div className={`home-page relative ml-0 md:ml-24 max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-6 bg-bg text-text min-h-screen space-y-7 ${celebrate ? 'win-glow' : ''}`}>
       <PageStyles />
 
       {sprintActive && (
@@ -587,7 +587,7 @@ export default function Home() {
 
       {/* Project Stories rail */}
       {storiesProjects.length > 0 && (
-        <div className="card rounded-2xl border border-border bg-surface p-4 relative focus-ring">
+        <div className="card rounded-2xl border border-border bg-surface p-4 relative focus-ring mt-6">
           <ProjectStoriesBar
             projects={storiesProjects}
             unread={unreadMap}
@@ -598,7 +598,7 @@ export default function Home() {
 
       {/* Top spine: KPI strip + Smart Search — hidden if header already shows Metrics */}
       {!hideBelowMetrics && (
-        <div className="row-accent row-accent-violet grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid">
+        <div className="row-accent row-accent-violet grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid mt-6">
           {SHOW_KPI_STRIP && (
             <div className="lg:col-span-2">
               <KpiStrip stats={stats} />
@@ -610,7 +610,7 @@ export default function Home() {
 
       {/* Focus Sprint */}
       {HABITS_ENABLED && (
-        <div className="relative" id="focus-sprint">
+        <div className="relative mt-6" id="focus-sprint">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 -z-10 rounded-2xl blur-xl opacity-60
@@ -634,7 +634,7 @@ export default function Home() {
       )}
 
       {/* Social + AI + 10× + Transparency */}
-      <div className="row-accent row-accent-cyan grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid feed">
+      <div className="row-accent row-accent-cyan grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid feed mt-6">
         {SHOW_FEED && <MicroFeed onOpen={setDrawerItem} />}
         {SHOW_AI_COACH && <AiCoachCard nextBest={coachSuggestion} />}
         {SHOW_TENX && (
@@ -660,7 +660,7 @@ export default function Home() {
 
       {/* Optional: public mode cards */}
       {TRANSPARENCY_ENABLED && publicMode && SHOW_LEADERBOARD && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
           <Leaderboard />
           <div className="card rounded-2xl p-3 shine accent-bar relative focus-ring">
             <span className="accent-bar__left" aria-hidden="true" />
@@ -689,7 +689,7 @@ export default function Home() {
 
       {/* Habits row */}
       {HABITS_ENABLED && (
-        <div className="relative">
+        <div className="relative mt-6">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 -z-10 rounded-2xl blur-xl opacity-55
@@ -705,7 +705,7 @@ export default function Home() {
       )}
 
       {/* Your Projects */}
-      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring">
+      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring mt-6">
         <span className="accent-bar__left" aria-hidden="true" />
         <div className="flex items-center justify-between">
           <SectionHeader icon="LayoutDashboard">Your Projects</SectionHeader>
@@ -716,7 +716,7 @@ export default function Home() {
       </div>
 
       {/* KPIs section (full detail) */}
-      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring" id="kpis" aria-live="polite">
+      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring mt-6" id="kpis" aria-live="polite">
         <span className="accent-bar__left" aria-hidden="true" />
         <div className="flex items-center justify-between">
           <SectionHeader icon="BarChartBig">Your KPIs</SectionHeader>
@@ -783,7 +783,7 @@ export default function Home() {
       </div>
 
       {/* Activity Over Time */}
-      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring" data-section="activity-over-time">
+      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring mt-6" data-section="activity-over-time">
         <span className="accent-bar__left" aria-hidden="true" />
         <SectionHeader icon="ActivitySquare">Activity Over Time</SectionHeader>
         <div className="mt-3">
@@ -807,10 +807,10 @@ export default function Home() {
       </div>
 
       {/* Recent Activity */}
-      <div id="recent-activity" className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring">
+      <div id="recent-activity" className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring mt-6">
         <span className="accent-bar__left" aria-hidden="true" />
         <SectionHeader icon="History">Recent Activity</SectionHeader>
-        <div className="mt-2">
+        <div className="mt-3">
           <AuditList scope="user" />
         </div>
       </div>

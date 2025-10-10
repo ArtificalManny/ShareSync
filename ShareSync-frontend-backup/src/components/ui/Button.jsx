@@ -33,8 +33,9 @@ export default function Button({
   return (
     <Tag
       className={cn(
-        'inline-flex items-center gap-2 font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 disabled:opacity-60 disabled:cursor-not-allowed',
-        'lift',
+        'inline-flex items-center justify-center gap-2 font-medium transition select-none disabled:opacity-60 disabled:cursor-not-allowed',
+        'focus:outline-none focus-visible:shadow-focus',
+        'min-h-[40px]',
         VARIANTS[variant] || VARIANTS[ 'primary'],
         SIZES[size] || SIZES.md,
         className

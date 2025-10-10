@@ -1,4 +1,6 @@
 import React, { forwardRef } from "react";
+import Button from "../ui/Button.jsx";
+
 
 /**
  * ProjectStoryChip
@@ -27,21 +29,22 @@ const ProjectStoryChip = forwardRef(function ProjectStoryChip(
   })();
 
   return (
-    <button
-      ref={ref}
-      type="button"
-      role="option"
-      aria-selected={selected ? "true" : "false"}
-      title={title}
-      className={[
-        "story-chip relative shrink-0 group",
-        "rounded-2xl border border-border bg-surface hover:bg-surface/60",
-        unread ? "story-chip--unread" : "",
-      ].join(" ")}
-      onClick={onClick}
-      onFocus={onFocus}
-      tabIndex={tabIndex}
-    >
+    <Button asChild variant="ghost" size="sm">
+      <button
+        ref={ref}
+        type="button"
+        role="option"
+        aria-selected={selected ? "true" : "false"}
+        title={title}
+        className={[
+          "story-chip relative shrink-0 group",
+          "rounded-2xl border border-border bg-surface hover:bg-surface/60",
+          unread ? "story-chip--unread" : "",
+        ].join(" ")}
+        onClick={onClick}
+        onFocus={onFocus}
+        tabIndex={tabIndex}
+      >
       <span className="story-chip__avatar">
         {avatar}
       </span>
@@ -50,6 +53,7 @@ const ProjectStoryChip = forwardRef(function ProjectStoryChip(
       </span>
       {/* focus ring handled by CSS; unread ring handled by .story-chip--unread */}
     </button>
+    </Button>
   );
 });
 

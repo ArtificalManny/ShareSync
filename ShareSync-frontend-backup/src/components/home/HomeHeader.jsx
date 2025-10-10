@@ -2,6 +2,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import usePRM from "../../utils/usePrefersReducedMotion";
+import Button from "../ui/Button.jsx";
+
 
 const XPProgressRing = ({ xp = 0, prefersReduced = false }) => {
   const radius = 40;
@@ -94,14 +96,13 @@ export default function HomeHeader({
             <div className="text-xs text-slate-500 dark:text-slate-400">Tier</div>
             <div className="text-base font-semibold text-indigo-600 dark:text-indigo-300">{tier}</div>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={onInvite}
-            className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             aria-label="Invite teammate"
           >
             Invite Teammate
-          </button>
+          </Button>
         </div>
       </div>
       <div className="border-t border-slate-200 dark:border-slate-700" />

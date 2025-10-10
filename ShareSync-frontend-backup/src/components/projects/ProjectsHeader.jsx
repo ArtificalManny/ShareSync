@@ -1,5 +1,6 @@
 // src/components/projects/ProjectsHeader.jsx
 import React from 'react';
+import Button from "../ui/Button.jsx";
 
 export default function ProjectsHeader({
   query, onQueryChange,
@@ -13,12 +14,9 @@ export default function ProjectsHeader({
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Projects</h1>
         <div className="flex gap-2">
-          <button
-            onClick={onCreateProject}
-            className="rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
-          >
+        <Button variant="primary" onClick={onCreateProject}>
             New Project
-          </button>
+          </Button>
         </div>
       </div>
 

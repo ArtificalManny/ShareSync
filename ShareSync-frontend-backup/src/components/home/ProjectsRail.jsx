@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import StatusPill from "../projects/StatusPill.jsx";
 import TraceOutline from "../ui/TraceOutline.jsx";
+import Button from "../ui/Button.jsx";
 
 /** Ultra-light sparkline (SVG) */
 function Sparkline({ points = [], width = 120, height = 36, pad = 4 }) {
@@ -321,22 +322,22 @@ export default function ProjectsRail({ items = [], loading = false }) {
           <h2 className="text-sm font-semibold text-text">Your Projects</h2>
         </div>
         <div className="flex gap-1">
-          <button
-            type="button"
-            aria-label="Scroll left"
+          <Button
+            variant="secondary"
             onClick={() => scrollBy(-240)}
-            className="btn btn--outline h-8 w-8 grid place-items-center"
+            aria-label="Scroll left"
+            className="h-10 w-10 p-0 grid place-items-center"
           >
             <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            aria-label="Scroll right"
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => scrollBy(240)}
-            className="btn btn--outline h-8 w-8 grid place-items-center"
+            aria-label="Scroll right"
+            className="h-10 w-10 p-0 grid place-items-center"
           >
             <ChevronRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 

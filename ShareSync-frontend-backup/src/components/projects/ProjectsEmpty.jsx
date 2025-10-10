@@ -1,4 +1,6 @@
 import React from 'react';
+import Button from '../ui/Button.jsx';
+
 
 export default function ProjectsEmpty({ onCreate }) {
   return (
@@ -31,14 +33,10 @@ export default function ProjectsEmpty({ onCreate }) {
         Create your first project to kick off planning, tasks, and updates.
       </p>
 
-      <button
-        type="button"
-        onClick={onCreate}
-        className="mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-      >
-        <span>＋</span>
+      <Button variant="primary" onClick={onCreate} className="mt-5 inline-flex items-center gap-2">
+        <span aria-hidden="true">＋</span>
         Create Project
-      </button>
+      </Button>
     </div>
   );
 }

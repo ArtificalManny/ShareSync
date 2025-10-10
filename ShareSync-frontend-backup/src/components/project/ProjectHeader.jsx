@@ -25,6 +25,7 @@ import { trackScheduleCreated } from "../../utils/telemetry";
 // ✅ new primitives
 import Card from "../ui/Card.jsx";
 import Button from "../ui/Button.jsx";
+import Chip from "../ui/Chip.jsx";
 
 const ENABLE_PUBLIC_STATUS = (() => {
   const v = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS ?? "";
@@ -311,13 +312,10 @@ export default function ProjectHeader({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span
-                  className={`px-2 py-0.5 text-xs rounded-full ${roleStyle(role)} `}
-                  title={`Role: ${role}`}
-                  aria-label={`Role: ${role}`}
-                >
-                  Role: {role[0].toUpperCase()}{role.slice(1)}
-                </span>
+              <Chip tone="default" title={`Role: ${role}`} aria-label={`Role: ${role}`}>
+  Role: {role[0].toUpperCase()}{role.slice(1)}
+</Chip>
+
 
                 <Button
                   variant="secondary"
@@ -332,9 +330,9 @@ export default function ProjectHeader({
 
                 {isOwner && ENABLE_PUBLIC_STATUS && typeof onTogglePublic === "function" ? (
                   <label className="inline-flex items-center gap-2 text-xs">
-                    <span className={`px-2 py-0.5 rounded-full ${publicEnabled ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`}>
-                      {publicEnabled ? "Public" : "Private"}
-                    </span>
+                    <Chip tone={publicEnabled ? "good" : "default"}>
+  {publicEnabled ? "Public" : "Private"}
+</Chip>
                     <input
                       type="checkbox"
                       className="h-4 w-7 appearance-none rounded-full bg-slate-300 checked:bg-indigo-600 relative transition-colors outline-none cursor-pointer disabled:opacity-60"
@@ -345,9 +343,9 @@ export default function ProjectHeader({
                     />
                   </label>
                 ) : (
-                  <span className={`px-2 py-0.5 text-xs rounded-full ${publicEnabled ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`}>
-                    {publicEnabled ? "Public" : "Private"}
-                  </span>
+                  <Chip tone={publicEnabled ? "good" : "default"}>
+  {publicEnabled ? "Public" : "Private"}
+</Chip>
                 )}
 
                 {ENABLE_PUBLIC_STATUS && publicEnabled && (

@@ -1,9 +1,10 @@
+// src/components/projects/StatusPill.jsx
 import React, { useMemo } from "react";
-import Badge from "../ui/Badge";
+import Chip from "../ui/Chip.jsx"; // replaced Badge with Chip
 
 /**
  * StatusPill
- * Gradient/solid badge for project status.
+ * Chip-style badge for project status.
  *
  * Props:
  *  - status: string
@@ -11,7 +12,12 @@ import Badge from "../ui/Badge";
  *  - variant: "solid" | "gradient" (default "solid")
  *  - className?: string
  */
-export default function StatusPill({ status, size = "sm", variant = "solid", className = "" }) {
+export default function StatusPill({
+  status,
+  size = "sm",
+  variant = "solid",
+  className = "",
+}) {
   const label = String(status || "").trim() || "In Progress";
 
   const { tone, text, gradClass } = useMemo(() => {
@@ -26,24 +32,26 @@ export default function StatusPill({ status, size = "sm", variant = "solid", cla
     if (s.includes("paused")) {
       return { tone: "slate", text: "Paused", gradClass: "" };
     }
-    if (s.includes("not") && s.includes("start")) {
+    if ((s.includes("not") && s.includes("start")) || s.includes("ns")) {
       return { tone: "sky", text: "Not Started", gradClass: "bg-grad-cnbc" };
     }
     // default: in progress / active
     return { tone: "indigo", text: "In Progress", gradClass: "bg-grad-pandora" };
   }, [label]);
 
+  // Optional gradient flair (keeps Chip API; only adds classes when asked)
   const gradientClasses =
     variant === "gradient" && gradClass
       ? `${gradClass} text-white border-transparent`
       : "";
 
   return (
-    <Badge
+    <Chip
       tone={tone}
       size={size}
       className={[gradientClasses, className].filter(Boolean).join(" ")}
       aria-label={`Status: ${text}`}
+      title={text}
     >
       {/* tiny dot */}
       <span
@@ -52,6 +60,6 @@ export default function StatusPill({ status, size = "sm", variant = "solid", cla
         style={{ background: "currentColor", opacity: variant === "gradient" ? 0.9 : 0.8 }}
       />
       <span className="ml-1">{label}</span>
-    </Badge>
+    </Chip>
   );
 }

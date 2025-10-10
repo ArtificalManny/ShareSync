@@ -5,6 +5,8 @@ import { useBreak } from "../../context/BreakContext";
 import CadenceCoachTip from "../sprint/CadenceCoachTip";
 import BreakModal from "../sprint/BreakModal";
 import TraceOutline from "../ui/TraceOutline.jsx";
+import Button from "../ui/Button.jsx";
+
 
 /** feature flag */
 const ENABLE_HABITS = (() => {
@@ -146,31 +148,44 @@ export default function FocusSprint({
                 </div>
               </div>
 
-              {/* controls */}
-              <div className="shrink-0 flex items-center gap-1">
+                            {/* controls */}
+                            <div className="shrink-0 flex items-center gap-2">
                 {isIdleOrDone && (
-                  <button onClick={handleStart} className="btn btn--primary press-shrink marching">
-                    <Play className="w-4 h-4" /> Start
-                  </button>
+                  <Button
+                    variant="primary"
+                    onClick={handleStart}
+                    leftIcon={<Play className="w-4 h-4" />}
+                  >
+                    Start
+                  </Button>
                 )}
                 {isRunning && (
-                  <button onClick={handlePause} className="btn btn--outline press-shrink">
-                    <Pause className="w-4 h-4" /> Pause
-                  </button>
+                  <Button
+                    variant="secondary"
+                    onClick={handlePause}
+                    leftIcon={<Pause className="w-4 h-4" />}
+                  >
+                    Pause
+                  </Button>
                 )}
                 {isPaused && (
-                  <button onClick={handleResume} className="btn btn--primary press-shrink marching">
-                    <Play className="w-4 h-4" /> Resume
-                  </button>
+                  <Button
+                    variant="primary"
+                    onClick={handleResume}
+                    leftIcon={<Play className="w-4 h-4" />}
+                  >
+                    Resume
+                  </Button>
                 )}
-                <button
+                <Button
+                  variant="ghost"
                   onClick={handleReset}
-                  className="btn btn--ghost press-shrink"
                   aria-label="Reset timer"
                   title="Reset timer"
+                  className="h-10 w-10 p-0 grid place-items-center"
                 >
                   <RotateCcw className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             </div>
 

@@ -1,5 +1,7 @@
 // src/components/projects/PendingInvitesCard.jsx
 import React, { useEffect, useMemo, useState } from 'react';
+import Button from "../ui/Button.jsx";
+
 
 export default function PendingInvitesCard() {
   const [invites, setInvites] = useState([]);
@@ -78,20 +80,23 @@ export default function PendingInvitesCard() {
                 )}
               </div>
               <div className="shrink-0 flex items-center gap-2">
-                <button
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={() => accept(inv.token)}
-                  className="px-2.5 py-1 rounded-full text-xs bg-emerald-500/90 hover:bg-emerald-600 text-white"
                 >
                   Accept
-                </button>
-                <a
+                </Button>
+                <Button
+                  as="a"
                   href={`${window.location.origin}/invite/${inv.token}`}
-                  className="px-2.5 py-1 rounded-full text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
                   target="_blank"
                   rel="noreferrer"
+                  variant="secondary"
+                  size="sm"
                 >
                   Open
-                </a>
+                </Button>
               </div>
             </li>
           ))}

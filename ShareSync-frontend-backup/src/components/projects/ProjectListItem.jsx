@@ -6,6 +6,8 @@ import AnimatedRing from "../ui/AnimatedRing";
 import useRecentFlag from "../../hooks/useRecentFlag";
 import useReducedMotion from "../../hooks/useReducedMotion";
 import { formatRelativeTime } from "../../utils/formatters";
+import Button from "../ui/Button.jsx";
+
 
 // lazy import so first paint is fast; we call this on hover/focus
 let _prefetchStats = null;
@@ -143,13 +145,15 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
                 {title}
               </h3>
               {publicEnabled && (
-                <span
-                  className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-900/60"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   title="Public link enabled"
+                  className="h-6 px-2 py-0 inline-flex items-center gap-1 text-[11px]"
                 >
                   <Link2 className="w-3.5 h-3.5" />
                   Public
-                </span>
+                </Button>
               )}
             </div>
           </div>

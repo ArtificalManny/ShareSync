@@ -32,6 +32,8 @@ export default function Card({
     pad,
     border && 'border border-slate-200/60 dark:border-slate-700/50',
     hover && 'transition-shadow duration-200 hover:shadow-pop',
+    'focus:outline-none focus-visible:shadow-focus', //visible focus
+    'min-h-[40px]', //ensure hit area minimum
   );
 
   const byVariant = {

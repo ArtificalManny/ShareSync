@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Sparkles, Compass, BarChart2, Rss, PlusCircle, Clock } from "lucide-react";
+import Button from "../ui/Button.jsx";
 
 // ---- Inject real data via props or use fallbacks ----
 // props:
@@ -93,14 +94,13 @@ export default function HomeHeaderSwitcher({
 
         {/* Quick action slot */}
         <div className="hidden sm:block">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={onStartSprint}
-            className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm hover:bg-white/70 dark:hover:bg-slate-900/70"
+            leftIcon={<PlusCircle className="w-4 h-4" />}
           >
-            <PlusCircle className="w-4 h-4" />
             Start 25-min Sprint
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -119,20 +119,21 @@ export default function HomeHeaderSwitcher({
   );
 }
 
-function TabButton({ id, tab, setTab, icon:Icon, children }) {
-  const active = tab === id;
-  return (
-    <button
-      onClick={() => setTab(id)}
-      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition
-        ${active ? "bg-indigo-600 text-white" : "text-ink-700 hover:bg-white dark:hover:bg-slate-800"}`}
-      aria-pressed={active}
-    >
-      <Icon className="w-4 h-4" />
-      {children}
-    </button>
-  );
-}
+function TabButton({ id, tab, setTab, icon: Icon, children }) {
+    const active = tab === id;
+    return (
+      <Button
+        variant={active ? "primary" : "ghost"}
+        size="sm"
+        onClick={() => setTab(id)}
+        aria-pressed={active}
+        leftIcon={<Icon className="w-4 h-4" />}
+        className="rounded-lg"
+      >
+        {children}
+      </Button>
+    );
+  }  
 
 /* ---------- FEED ---------- */
 function FeedPanel({ items = [] }) {
@@ -196,17 +197,18 @@ function CompassPanel({ options = [] }) {
   }
   return (
     <div className="grid sm:grid-cols-3 gap-3">
-      {options.map((opt) => (
-        <button
-          key={opt.id}
-          onClick={opt.action}
-          className="text-left rounded-2xl border border-border bg-white/70 dark:bg-slate-900/50 px-4 py-3 hover:shadow-sm"
-        >
-          <div className="font-semibold">{opt.label}</div>
-          <div className="text-xs text-muted mt-1">{opt.hint}</div>
-        </button>
-      ))}
-    </div>
+    {options.map((opt) => (
+      <Button
+        key={opt.id}
+        variant="secondary"
+        onClick={opt.action}
+        className="text-left rounded-2xl px-4 py-3 hover:shadow-sm min-h-10"
+      >
+        <div className="font-semibold">{opt.label}</div>
+        <div className="text-xs text-muted mt-1">{opt.hint}</div>
+      </Button>
+    ))}
+  </div>
   );
 }
 
