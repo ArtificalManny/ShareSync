@@ -29,7 +29,9 @@ import {
   LEADERBOARD_ENABLED,
   TRANSPARENCY_ENABLED,
   HABITS_ENABLED,
+  DISCOVERY_V1, //New
 } from '../config/flags';
+import DiscoveryFeed from '../components/discovery/DiscoveryFeed.jsx';  // ← NEW
 
 import './Home.css';
 
@@ -657,6 +659,14 @@ export default function Home() {
           </div>
         )}
       </div>
+
+            {/* ======= Discover (behind flag) ======= */}
+            {DISCOVERY_V1 && (
+        <div className="card rounded-2xl border border-border bg-surface p-4 mt-6">
+          <div className="text-sm font-semibold mb-2">Discover</div>
+          <DiscoveryFeed />
+        </div>
+      )}
 
       {/* Optional: public mode cards */}
       {TRANSPARENCY_ENABLED && publicMode && SHOW_LEADERBOARD && (

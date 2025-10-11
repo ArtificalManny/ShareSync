@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: ShareSync Discovery API
+  version: 0.1.0
+paths:
+  /api/discovery:
+    get:
+      summary: Get discovery feed of public projects
+      parameters:
+        - in: query
+          name: cursor
+          schema: { type: string }
+          description: Opaque cursor for pagination
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+        - in: query
+          name: mix
+          schema:
+            type: string
+            enum: [trending, personalized, blended]
+            default: blended
+        - in: query
+          name: personalized
+          schema: { type: boolean, default: true }
+        - in: query
+          name: timeRange
+          schema:
+            type: string
+            enum: [7d, 30d, 90d]
+            default: 7d
+        - in: query
+          name: onlyTransparent
+          schema: { type: boolean, default: false }
+        - in: query
+          name: followingBoost
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          description: Discovery items with next cursor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        title: { type: string }
+                        icon:
+                          type: object
+                          nullable: true
+                          properties:
+                            kind: { type: string }
+                            value: { type: string }
+                        public: { type: boolean }
+                        score: { type: number }
+                        signals:
+                          type: object
+                          properties:
+                            velocityPerWeek: { type: number }
+                            xpGrowth: { type: number }
+                            reactions: { type: number }
+                            transparency: { type: number }
+                            inactivityHours: { type: number }
+                        lastActivityAt: { type: string, format: date-time }
+                        transparency: { type: number }
+                  nextCursor:
+                    type: string
+                    nullable: true
+        "500":
+          description: Server error

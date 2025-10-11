@@ -68,6 +68,9 @@ export const MESSENGER_V1 = overrides.MESSENGER_V1 ??
 export const BRAND_V2 = overrides.BRAND_V2 ??
   envFlag('VITE_FEATURE_BRAND_V2', false);
 
+export const DISCOVERY_V1 = overrides.DISCOVERY_V1 ??
+  envFlag('VITE_FEATURE_DISCOVERY_V1', false);
+
 export const FLAGS = {
   TRANSPARENCY_ENABLED,
   HABITS_ENABLED,
@@ -84,6 +87,7 @@ export const FLAGS = {
   DISCOVERABILITY,         // NEW
   MESSENGER_V1,            // NEW
   BRAND_V2,                // NEW
+  DISCOVERY_V1,
 };
 
 export default FLAGS;
