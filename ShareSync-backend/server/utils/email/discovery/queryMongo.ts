@@ -1,5 +1,5 @@
 // server/utils/email/discovery/queryMongo.ts
-// MongoDB aggregation to fetch public projects + compute signals,
+// MongoDB aggregation to fetch public/discoverable projects + compute signals,
 // then score with score.ts. Safe fallbacks if collections are sparse.
 
 import mongoose from "mongoose";
@@ -32,6 +32,8 @@ const Project =
         title: String,
         icon: { kind: String, value: String },
         public: { type: Boolean, default: false },
+        discoverable: { type: Boolean, default: false }, // allow discoverable as an alternative to public
+        ownerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // project owner
         transparencyScore: { type: Number, default: 1 }, // 0..1 optional
         updatedAt: Date,
         createdAt: Date,
@@ -84,6 +86,22 @@ const XPEvent =
     )
   );
 
+const User =
+  mongoose.models.User ||
+  mongoose.model(
+    "User",
+    new mongoose.Schema(
+      {
+        firstName: String,
+        lastName: String,
+        username: String,
+        publicProfile: { type: Boolean, default: false }, // owner opt-in for public name/username
+        displayName: String, // optional precomputed public label
+      },
+      { timestamps: true, collection: "users" } // <-- FIX: no trailing space
+    )
+  );
+
 // ---------- Helpers ----------
 function toIcon(
   raw:
@@ -98,8 +116,57 @@ function toIcon(
   return { kind: String(kind), value: String(value) };
 }
 
+type PublicOwner = {
+  displayName: string;
+  username?: string;
+};
+
+function buildPublicOwner(ownerDoc: any | null | undefined): PublicOwner | undefined {
+  if (!ownerDoc) return undefined;
+
+  const publicOptIn = !!ownerDoc.publicProfile;
+  if (publicOptIn) {
+    // Prefer displayName if present, else username, else "First L."
+    const disp =
+      ownerDoc.displayName ||
+      ownerDoc.username ||
+      [ownerDoc.firstName, ownerDoc.lastName ? `${String(ownerDoc.lastName)[0]}.` : ""]
+        .filter(Boolean)
+        .join(" ")
+        .trim() ||
+      "Team member";
+    const out: PublicOwner = { displayName: String(disp) };
+    if (ownerDoc.username) out.username = String(ownerDoc.username);
+    return out;
+  }
+
+  // Not opted in → only show First L. (no username)
+  const fallback =
+    [ownerDoc.firstName, ownerDoc.lastName ? `${String(ownerDoc.lastName)[0]}.` : ""]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || "Team member";
+
+  return { displayName: fallback };
+}
+
+/** Ensure only safe fields are returned to the client */
+function sanitizeItem(x: any) {
+  return {
+    id: x.id,
+    title: x.title,
+    icon: x.icon,
+    public: x.public,
+    transparency: x.transparency,
+    score: x.score,
+    signals: x.signals,
+    lastActivityAt: x.lastActivityAt,
+    owner: x.owner ? { displayName: x.owner.displayName, username: x.owner.username } : undefined,
+  };
+}
+
 /**
- * Aggregate raw metrics from Mongo for each public project in the chosen window.
+ * Aggregate raw metrics from Mongo for each public/discoverable project in the chosen window.
  * We compute:
  *  - velocityPerWeek (tasks done / weeks in window)
  *  - xpGrowth (sum XPEvent amounts in window)
@@ -121,9 +188,15 @@ export async function queryDiscoveryMongo(
   // Cursor handling
   const cursor = decodeCursor(params.cursor ?? null);
 
-  // Fetch public (or transparent) projects first
-  const matchProject: any = { public: true, deletedAt: null }; // <— added deletedAt: null
+  // Fetch public (or discoverable) projects only; exclude soft-deleted
+  const matchProject: any = {
+    $and: [
+      { $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }] },
+      { $or: [{ public: true }, { discoverable: true }] },
+    ],
+  };
   if (onlyTransparent) {
+    // optional additional gate on transparency
     matchProject.transparencyScore = { $gte: 1 };
   }
 
@@ -134,10 +207,27 @@ export async function queryDiscoveryMongo(
     transparencyScore: 1,
     updatedAt: 1,
     createdAt: 1,
+    ownerId: 1, // <-- include owner id so we can build public owner
   }).lean();
 
   if (!projects.length) {
     return { items: [], nextCursor: null };
+  }
+
+  // Fetch owners in bulk for display names (safe fields only)
+  const ownerIds = Array.from(
+    new Set(
+      projects.map((p: any) => (p.ownerId ? String(p.ownerId) : null)).filter(Boolean)
+    )
+  );
+
+  const ownersById = new Map<string, any>();
+  if (ownerIds.length) {
+    const ownerDocs = await User.find(
+      { _id: { $in: ownerIds as any } },
+      { firstName: 1, lastName: 1, username: 1, publicProfile: 1, displayName: 1 }
+    ).lean();
+    for (const u of ownerDocs) ownersById.set(String(u._id), u);
   }
 
   const projectIds = projects.map((p: any) => p._id);
@@ -186,7 +276,7 @@ export async function queryDiscoveryMongo(
   const reactMap = new Map<string, number>();
   for (const row of reactionsRows) reactMap.set(String(row._id), row.reactions);
 
-  // Last activity timestamp (fallback to project.updatedAt)
+  // Last activity timestamp (fallback to project.updatedAt/createdAt)
   const lastActivityRows = await Activity.aggregate([
     { $match: { projectId: { $in: projectIds } } },
     { $group: { _id: "$projectId", lastActivityAt: { $max: "$createdAt" } } },
@@ -233,6 +323,8 @@ export async function queryDiscoveryMongo(
     }
 
     const icon = toIcon(p.icon);
+    const ownerDoc = p.ownerId ? ownersById.get(String(p.ownerId)) : null;
+    const ownerPublic = buildPublicOwner(ownerDoc);
 
     return {
       id: pid,
@@ -243,6 +335,7 @@ export async function queryDiscoveryMongo(
       signals,
       score,
       lastActivityAt: new Date(lastActivity).toISOString(),
+      owner: ownerPublic, // strictly public-safe owner info
     };
   });
 
@@ -278,16 +371,13 @@ export async function queryDiscoveryMongo(
       })
     : null;
 
-  const items: DiscoveryItem[] = page.map((x) => ({
-    id: x.id,
-    title: x.title,
-    icon: x.icon, // {kind,value} | undefined
-    public: x.public,
-    score: Number(x.score.toFixed(4)),
-    signals: x.signals,
-    lastActivityAt: x.lastActivityAt,
-    transparency: x.transparency,
-  }));
+  // Sanitize to ensure only safe fields are returned
+  const items: DiscoveryItem[] = page.map((x) =>
+    sanitizeItem({
+      ...x,
+      score: Number(x.score.toFixed(4)),
+    })
+  );
 
   return { items, nextCursor };
 }
@@ -325,10 +415,14 @@ export async function queryDiscoveryMongoNative(
 ): Promise<DiscoveryResult> {
   const since = new Date(Date.now() - timeRangeDays * 24 * 3600 * 1000);
 
-  const match: any = { public: true, deletedAt: null };
+  const match: any = {
+    $and: [
+      { $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }] },
+      { public: true }, // native path: keep strict public; extend if you want discoverable here too
+    ],
+  };
   if (onlyTransparent) {
-    // If you use a transparencyScore, you can gate it here
-    // match.transparencyScore = { $gte: 1 };
+    // match.transparencyScore = { $gte: 1 }; // enable if your schema supports it
   }
 
   const after = _decodeIdCursor(cursor);
@@ -369,7 +463,7 @@ export async function queryDiscoveryMongoNative(
           title: 1,
           icon: 1,
           public: 1,
-          owner: 1,
+          ownerId: 1,
           updatedAt: 1,
           createdAt: 1,
           latestUpdate: { $first: "$latestUpdate" },
@@ -402,7 +496,7 @@ export async function queryDiscoveryMongoNative(
       inactivityHours,
     });
 
-    return {
+    return sanitizeItem({
       id: p._id.toString(),
       title: p.title ?? "Untitled Project",
       icon: p.icon,
@@ -417,8 +511,8 @@ export async function queryDiscoveryMongoNative(
       },
       lastActivityAt: new Date(lastWhen).toISOString(),
       transparency: transparency ? 1 : 0,
-      // latestUpdate: p.latestUpdate || null, // add to type if you want to expose
-    };
+      // owner: compute with a separate join if needed
+    });
   });
 
   const personalizedItems =

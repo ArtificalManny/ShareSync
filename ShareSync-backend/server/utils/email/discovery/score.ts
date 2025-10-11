@@ -1,6 +1,8 @@
-// server/discovery/score.ts
+// server/utils/email/discovery/score.ts
 // Scoring logic for the Discovery Feed.
 // Safe, testable, and parameterized with tweakable weights.
+
+import { DEFAULT_DISCOVERY_WEIGHTS } from "../config/flags";
 
 export type TimeRangeKey = "7d" | "30d" | "90d";
 
@@ -20,38 +22,8 @@ export interface ScoreWeights {
   inactivityPenaltyPer24h: number; // penalty per 24 hours of inactivity, multiplied
 }
 
-export const DEFAULT_WEIGHTS: ScoreWeights = {
-  velocity: 2.0,
-  xpGrowth: 1.5,
-  reactions: 0.5,
-  transparency: 1.0,
-  inactivityPenaltyPer24h: 3.0,
-};
-
-/** ---------------- Guardrails + Freshness helpers ---------------- **/
-
-/** Clamp a number to a safe finite range. */
-function clamp(n: unknown, min = -1e9, max = 1e9): number {
-    const x = Number(n);
-    if (!Number.isFinite(x)) return 0;
-    return Math.min(max, Math.max(min, x));
-  }
-  
-  /** Ensure 0..1 transparency */
-  function clamp01(n: unknown): number {
-    const x = clamp(n, 0, 1);
-    return x < 0 ? 0 : x > 1 ? 1 : x;
-  }
-  
-  /**
-   * Freshness boost in the first ~24h since last activity.
-   * inactivityHours = 0 → boost 1.0 ; inactivityHours >= 24 → boost 0.0
-   */
-  function freshnessBoost(inactivityHours: number): number {
-    const days = clamp(inactivityHours, 0) / 24;
-    // 1.0 → 0.0 linearly over 1 day
-    return Math.max(0, 1 - Math.min(1, days));
-  }  
+// DEFAULT WEIGHTS now come from env/config (no redeploy to tweak)
+export const DEFAULT_WEIGHTS: ScoreWeights = DEFAULT_DISCOVERY_WEIGHTS;
 
 /**
  * Convert hours of inactivity into a penalty scalar.
@@ -68,55 +40,42 @@ export function inactivityPenalty(
 
 /**
  * Core scoring function. Pure & deterministic.
- * Matches your requested formula + guardrails + soft freshness boost.
- *
- * ProjectScore =
- *   (Velocity * 2) + (XPGrowth * 1.5) + (Reactions * 0.5) + (Transparency * 1)
- *   - (InactivityDays * 3)
- *   + (0.75 * freshnessBoost[0..1])
  */
 export function scoreProject(
-    s: ProjectSignals,
-    weights: ScoreWeights = DEFAULT_WEIGHTS
-  ): number {
-    // ----- guardrails / coalescing -----
-    const Velocity     = clamp(s.velocityPerWeek, 0);  // tasks/week (rolling)
-    const XPGrowth     = clamp(s.xpGrowth, 0);
-    const Reactions    = clamp(s.reactions, 0);
-    const Transparency = clamp01(s.transparency);      // 0..1
-    const InactivityH  = clamp(s.inactivityHours, 0);
-  
-    // ----- base per weights (kept parametric) -----
-    const base =
-      Velocity     * weights.velocity +
-      XPGrowth     * weights.xpGrowth +
-      Reactions    * weights.reactions +
-      Transparency * weights.transparency;
-  
-    // penalty per 24h @ configured rate (defaults to 3.0/day)
-    const penalty = inactivityPenalty(InactivityH, weights.inactivityPenaltyPer24h);
-  
-    // ----- soft freshness boost during first 24h -----
-    // maps 0h→+0.75 down to 24h→+0.0
-    const boost = 0.75 * freshnessBoost(InactivityH);
-  
-    return base + penalty + boost;
-  }
-    
+  s: ProjectSignals,
+  weights: ScoreWeights = DEFAULT_WEIGHTS
+): number {
+  const base =
+    s.velocityPerWeek * weights.velocity +
+    s.xpGrowth * weights.xpGrowth +
+    s.reactions * weights.reactions +
+    s.transparency * weights.transparency;
+
+  const penalty = inactivityPenalty(s.inactivityHours, weights.inactivityPenaltyPer24h);
+
+  // Soft freshness boost in first 24h (optional, tiny nudge)
+  const inactivityDays = s.inactivityHours / 24;
+  const freshnessBoost = Math.max(0, 1 - Math.min(1, inactivityDays)); // 0..1
+  const boosted = base + penalty + 0.75 * freshnessBoost;
+
+  return boosted;
+}
+
 /**
  * Quick helper for mapping mix mode to sort strategy weights (optional).
  * You can plug this into personalized blending later.
  */
 export function weightsForMix(mix: "trending" | "personalized" | "blended"): ScoreWeights {
+  const W = DEFAULT_WEIGHTS;
   switch (mix) {
     case "trending":
-      return { ...DEFAULT_WEIGHTS, reactions: 0.8, xpGrowth: 1.2 };
+      return { ...W, reactions: Math.max(W.reactions, 0.8), xpGrowth: Math.max(W.xpGrowth, 1.2) };
     case "personalized":
       // Placeholder: you can later boost weights based on the user’s historical clicks
-      return { ...DEFAULT_WEIGHTS, velocity: 1.6, xpGrowth: 1.8 };
+      return { ...W, velocity: Math.max(W.velocity, 1.6), xpGrowth: Math.max(W.xpGrowth, 1.8) };
     case "blended":
     default:
-      return DEFAULT_WEIGHTS;
+      return W;
   }
 }
 
