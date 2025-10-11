@@ -40,6 +40,7 @@ import Sidebar from "./components/Sidebar";
 import MessengerPanel from "./components/messenger/MessengerPanel.jsx";
 import { ChatProvider } from "./context/ChatContext.jsx";
 import { MESSENGER_V1, BRAND_V2 } from "./config/flags.js";
+import { DISCOVERY_V1 } from "./config/flags.js"; // ⬅️ NEW (feature flag)
 
 import useBrandTheme from "./hooks/useBrandTheme.js";
 
@@ -56,6 +57,7 @@ const PublicProject = lazy(() => import("./pages/PublicProject"));
 const PublicProjectStatus = lazy(() => import("./pages/PublicProjectStatus"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const AcceptInvite = lazy(() => import("./components/AcceptInvite.jsx"));
+const Discover = lazy(() => import("./pages/Discover.jsx")); // ⬅️ NEW (page)
 
 function ScrollToHash() {
   const location = useLocation();
@@ -119,7 +121,15 @@ function GuardedRoutes() {
         {/* Invite accept */}
         <Route path="/invite/accept" element={<AcceptInvite />} />
 
+        {/* Search */}
         <Route path="/search" element={<SearchPage />} />
+
+        {/* ⬇️ NEW: Discovery route gated by feature flag */}
+        <Route
+          path="/discover"
+          element={DISCOVERY_V1 ? <Discover /> : <Navigate to="/home" replace />}
+        />
+
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Suspense>

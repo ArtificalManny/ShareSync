@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Home, FolderKanban, User as UserIcon, Settings, ChevronsLeft } from "lucide-react";
+import { Home, FolderKanban, User as UserIcon, Settings, ChevronsLeft, Compass } from "lucide-react";
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
 import "./Sidebar.css";
 import { track } from "../utils/telemetry";
+import { DISCOVERY_V1 } from "../config/flags"; // ⬅️ NEW
 
 const LS_KEY = "ss.sidebar.collapsed";
 
@@ -46,24 +47,6 @@ export default function Sidebar() {
       window.dispatchEvent(new CustomEvent("sidebar:toggle", { detail: { collapsed } }));
     } catch {}
   }, [collapsed]);
-
-  // Global '[' hotkey, but avoid when typing in inputs/textareas/contenteditable
-  useEffect(() => {
-    const onKey = (e) => {
-      const tag = String(e.target?.tagName || "").toLowerCase();
-      const isTyping =
-        tag === "input" ||
-        tag === "textarea" ||
-        e.target?.isContentEditable;
-      if (isTyping) return;
-      if (e.key === "[") {
-        e.preventDefault();
-        toggle();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [toggle]);
 
   // Counts (wire up to real data if desired)
   const counts = useMemo(
@@ -110,6 +93,17 @@ export default function Sidebar() {
           count={counts.home}
           collapsed={tooltipWhenCollapsed}
         />
+
+        {/* ⬇️ NEW: Discover link (feature-gated) */}
+        {DISCOVERY_V1 && (
+          <SidebarItem
+            to="/discover"
+            label="Discover"
+            icon={Compass}
+            collapsed={tooltipWhenCollapsed}
+          />
+        )}
+
         <SidebarItem
           to="/projects"
           label="Projects"
