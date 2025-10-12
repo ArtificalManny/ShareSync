@@ -13,10 +13,17 @@ export default function Discover() {
       </div>
     );
   }
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-6">
-      <div className="text-lg font-semibold mb-3">Discover</div>
-      <DiscoveryFeed />
+      {/* ✅ HERO (Step 7.2) */}
+      <h1 className="h-hero">Discover</h1>
+      <p className="h-sub mt-1">Fresh public projects, ranked by real momentum.</p>
+
+      {/* Feed */}
+      <div className="mt-4">
+        <DiscoveryFeed />
+      </div>
     </div>
   );
 }

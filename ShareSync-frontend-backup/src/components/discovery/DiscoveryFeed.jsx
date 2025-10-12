@@ -118,7 +118,7 @@ export default function DiscoveryFeed() {
   return (
     <section className="space-y-4">
       {/* controls */}
-      <div className="card rounded-2xl border border-border bg-surface p-3">
+      <div className="card rounded-2xl border border-border bg-surface p-3 p-gradient specular">
         <div className="flex flex-wrap items-center gap-2">
           <div className="text-xs text-muted">View</div>
           {["blended", "trending", "personalized"].map((m) => (

@@ -97,7 +97,7 @@
   --space-6: 24px;
 
   /* ================================
-     Shadows / elevation
+     Shadows / elevation (RGB system)
      ================================ */
   --shadow-1: 0 1px 2px rgb(15 23 42 / .06);
   --shadow-2: 0 2px 8px rgb(15 23 42 / .08);
@@ -360,3 +360,81 @@
 :root.dark[data-brand="v2"] {
   --card:  10  16  28; /* card a hair above bg */
 }
+
+/* =========================================================
+   Pandora / MetaLab helpers (HSL; non-breaking additions)
+   ========================================================= */
+
+/* Accent hues (HSL), used by new gradient utilities */
+:root {
+  --indigo-500: hsl(244 85% 62%);
+  --indigo-600: hsl(244 85% 56%);
+  --blue-600:   hsl(218 92% 55%);
+  --blue-700:   hsl(218 90% 48%);
+  --cyan-400:   hsl(190 90% 55%);
+  --magenta-500:hsl(300 75% 55%);
+
+  /* Contrast text for gradient buttons/chips */
+  --accent-contrast: #fff;
+
+  /* MetaLab-like elevation/glow (HSL shadows) */
+  --elev-1: 0 4px 12px hsl(220 40% 20% / .06);
+  --elev-2: 0 10px 30px hsl(220 40% 20% / .10);
+  --glow:   0 0 0 1px hsl(244 85% 56% / .15), 0 12px 40px hsl(244 85% 56% / .25);
+
+  /* Comfortable radii aliases (used by new styles) */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+}
+
+/* Dark-mode variants for the new helpers only (keep RGB tokens intact) */
+:root.dark {
+  --elev-1: 0 4px 14px hsl(220 50% 2% / .55);
+  --elev-2: 0 20px 60px hsl(220 50% 2% / .65);
+  --glow:   0 0 0 1px hsl(244 85% 64% / .20), 0 16px 60px hsl(244 85% 58% / .45);
+}
+
+/* =========================================================
+   ✅ Step 4 — Typography scale helpers
+   ========================================================= */
+:root { --font-sans: ui-sans-serif, system-ui, Inter, Segoe UI, Roboto, Apple Color Emoji, Noto Color Emoji; }
+body { font-family: var(--font-sans); letter-spacing: 0; }
+.h-hero { font-weight: 800; font-size: clamp(24px, 3.5vw, 44px); line-height: 1.06; }
+.h-sub  { font-weight: 600; font-size: clamp(16px, 1.5vw, 20px); color: var(--muted); }
+
+/* =========================================================
+   ✅ Step 5 — Buttons & chips styling
+   ========================================================= */
+.btn--primary {
+  background: linear-gradient(135deg, var(--indigo-600), var(--blue-600));
+  color: var(--accent-contrast);
+  border: none;
+  border-radius: var(--r-md);
+  box-shadow: var(--elev-1);
+  transition: transform .15s var(--easing-standard), box-shadow .2s var(--easing-standard);
+}
+.btn--primary:hover { box-shadow: var(--glow); transform: translateY(-1px); }
+
+.btn--outline {
+  background: transparent;
+  color: var(--indigo-600);
+  border: 1px solid color-mix(in oklch, var(--indigo-600) 35%, white);
+  border-radius: var(--r-md);
+}
+
+.chip {
+  border: 1px solid var(--border);
+  background: hsl(0 0% 100% / .6);
+  backdrop-filter: saturate(120%) blur(6px);
+  border-radius: 999px;
+  transition: transform .12s var(--easing-standard), box-shadow .2s var(--easing-standard), border-color .2s var(--easing-standard);
+}
+.chip.is-selected {
+  border-color: color-mix(in oklch, var(--indigo-600) 40%, var(--border));
+  box-shadow: 0 0 0 2px hsl(244 85% 56% / .15) inset;
+  color: var(--indigo-600);
+}
+:root.dark .chip { background: hsl(220 20% 12% / .6); }
+:root.dark .card { border-color: hsl(222 15% 22%); }

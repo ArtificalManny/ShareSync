@@ -3,131 +3,142 @@
    Uses tokens from tokens.css / gradients.css
 */
 
-/* Base card */
-.card {
-  background: var(--bg-elevated, #fff);
-  border: 1px solid rgb(var(--border) / .60);
-  border-radius: var(--radius-lg); /* 16px default */
-  box-shadow: var(--shadow-elev, 0 8px 24px rgba(15, 23, 42, 0.08));
-}
-
-/* Dark mode tweaks (kept subtle) */
-:root.dark .card,
-[data-theme="dark"] .card {
-  background: rgb(15 23 42 / .85);
-  border-color: rgb(var(--border) / .70);
-}
-
-/* ---- Intent accents (top inset bar) ----
-   Use alongside .card, e.g. class="card accent-kpi"
-*/
-.accent-kpi,
-.accent-risk,
-.accent-activity {
-  position: relative;
-}
-.accent-kpi::before,
-.accent-risk::before,
-.accent-activity::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0; /* top bar */
-  height: 4px;
-  border-top-left-radius: var(--radius-lg);
-  border-top-right-radius: var(--radius-lg);
-  pointer-events: none;
-}
-
-/* KPI/info → CNBC blend */
-.accent-kpi::before {
-  background-image: var(--grad-cnbc);
-  opacity: 0.9;
-}
-
-/* Risk → warm sweep using IG blend for visual heat */
-.accent-risk::before {
-  background-image: var(--grad-ig);
-  opacity: 0.9;
-}
-
-/* Neutral activity → subtle slate gradient fallback */
-.accent-activity::before {
-  background-image: linear-gradient(135deg, rgb(100 116 139 / .8), rgb(71 85 105 / .8));
-  opacity: 0.75;
-}
-
-/* Accent bar (left) companion (also available in gradients.css) */
-.accent-bar { position: relative; }
-.accent-bar__left {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  border-top-left-radius: var(--radius-lg);
-  border-bottom-left-radius: var(--radius-lg);
-  background-image: var(--grad-signature);
-  opacity: .95;
-  pointer-events: none;
-}
-
-/* Optional hover lift (respects reduced motion) */
-.card.hoverable {
-  transition:
-    transform var(--motion-quick, 150ms) ease,
-    box-shadow var(--motion-quick, 150ms) ease,
-    border-color var(--motion-quick, 150ms) ease;
-}
-.card.hoverable:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, .05);
-}
-
-/* Focus ring utility (keyboard-visible) */
-.focus-ring:focus-visible,
-.card :where(.focus-ring):focus-visible {
-  outline: 2px solid rgb(var(--accent));
-  outline-offset: 2px;
-  border-radius: var(--radius-md);
-}
-
-/* Section helpers inside cards */
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding: 16px 16px 0 16px;
-  font-weight: 600;
-  color: rgb(var(--text));
-}
-:root.dark .card-header,
-[data-theme="dark"] .card-header { color: rgb(var(--text)); }
-
-.card-body { padding: 16px; }
-.card-footer { padding: 0 16px 16px 16px; }
-
-/* Subtle text helper */
-.card-subtle {
-  font-size: .8125rem;
-  color: rgb(var(--muted));
-}
-
-/* --- Brand-aware neon hover glow (motion-gated) --- */
-/* Opt-in by adding `card neon-hover` to the element */
-@media (prefers-reduced-motion: no-preference) {
-  .card.neon-hover:hover,
-  .card.neon-hover:focus-within {
-    /* Classic / default uses --accent */
-    box-shadow:
-      0 10px 28px rgb(var(--accent) / .18),
-      0 0 0 1px rgb(var(--accent) / .22);
-    border-color: rgb(var(--accent) / .35);
+/* =====================
+   Base card (updated)
+   ===================== */
+   .card {
+    /* Prefer new tokens; fall back to your existing ones */
+    background: var(--surface, var(--bg-elevated, #fff));
+    border: 1px solid var(--border, rgb(var(--border) / .60));
+    border-radius: var(--r-lg, var(--radius-lg)); /* 16px default */
+    box-shadow: var(--elev-1, var(--shadow-elev, 0 8px 24px rgba(15, 23, 42, 0.08)));
+    transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
   }
-
-  /* When Brand V2 is active, lean into deep blue glow */
-  [data-brand="v2"] .card.neon-hover:hover,
-  [data-brand="v2"] .card.neon-hover:focus-within {
-    box-shadow:
-      0 12px 32px rgb(var(--brand-v2-accent) / .22),
-      0 0 0 1px rgb(var(--brand-v2-accent) / .28);
-    border-color: rgb(var(--brand-v2-accent) / .38);
+  
+  /* Gentle raise on hover (new) */
+  .card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--elev-2, 0 12px 32px rgb(15 23 42 / .12));
   }
-}
+  
+  /* Dark mode tweaks (kept subtle) */
+  :root.dark .card,
+  [data-theme="dark"] .card {
+    background: var(--surface, rgb(15 23 42 / .85));
+    border-color: var(--border, rgb(var(--border) / .70));
+  }
+  
+  /* ---- Intent accents (top inset bar) ----
+     Use alongside .card, e.g. class="card accent-kpi"
+  */
+  .accent-kpi,
+  .accent-risk,
+  .accent-activity {
+    position: relative;
+  }
+  .accent-kpi::before,
+  .accent-risk::before,
+  .accent-activity::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0; /* top bar */
+    height: 4px;
+    border-top-left-radius: var(--r-lg, var(--radius-lg));
+    border-top-right-radius: var(--r-lg, var(--radius-lg));
+    pointer-events: none;
+  }
+  
+  /* KPI/info → CNBC blend */
+  .accent-kpi::before {
+    background-image: var(--grad-cnbc);
+    opacity: 0.9;
+  }
+  
+  /* Risk → warm sweep using IG blend for visual heat */
+  .accent-risk::before {
+    background-image: var(--grad-ig);
+    opacity: 0.9;
+  }
+  
+  /* Neutral activity → subtle slate gradient fallback */
+  .accent-activity::before {
+    background-image: linear-gradient(135deg, rgb(100 116 139 / .8), rgb(71 85 105 / .8));
+    opacity: 0.75;
+  }
+  
+  /* Accent bar (left) companion (also available in gradients.css) */
+  .accent-bar { position: relative; }
+  .accent-bar__left {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    border-top-left-radius: var(--r-lg, var(--radius-lg));
+    border-bottom-left-radius: var(--r-lg, var(--radius-lg));
+    background-image: var(--grad-signature);
+    opacity: .95;
+    pointer-events: none;
+  }
+  
+  /* Optional hover lift (legacy opt-in) */
+  .card.hoverable {
+    transition:
+      transform var(--motion-quick, 150ms) ease,
+      box-shadow var(--motion-quick, 150ms) ease,
+      border-color var(--motion-quick, 150ms) ease;
+  }
+  .card.hoverable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .05);
+  }
+  
+  /* Focus ring utility (keyboard-visible) */
+  .focus-ring:focus-visible,
+  .card :where(.focus-ring):focus-visible {
+    outline: 2px solid rgb(var(--accent));
+    outline-offset: 2px;
+    border-radius: var(--radius-md);
+  }
+  
+  /* Section helpers inside cards */
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: 16px 16px 0 16px;
+    font-weight: 600;
+    color: rgb(var(--text));
+  }
+  :root.dark .card-header,
+  [data-theme="dark"] .card-header { color: rgb(var(--text)); }
+  
+  .card-body { padding: 16px; }
+  .card-footer { padding: 0 16px 16px 16px; }
+  
+  /* Subtle text helper */
+  .card-subtle {
+    font-size: .8125rem;
+    color: rgb(var(--muted));
+  }
+  
+  /* --- Brand-aware neon hover glow (motion-gated) --- */
+  /* Opt-in by adding `card neon-hover` to the element */
+  @media (prefers-reduced-motion: no-preference) {
+    .card.neon-hover:hover,
+    .card.neon-hover:focus-within {
+      /* Classic / default uses --accent */
+      box-shadow:
+        0 10px 28px rgb(var(--accent) / .18),
+        0 0 0 1px rgb(var(--accent) / .22);
+      border-color: rgb(var(--accent) / .35);
+    }
+  
+    /* When Brand V2 is active, lean into deep blue glow */
+    [data-brand="v2"] .card.neon-hover:hover,
+    [data-brand="v2"] .card.neon-hover:focus-within {
+      box-shadow:
+        0 12px 32px rgb(var(--brand-v2-accent) / .22),
+        0 0 0 1px rgb(var(--brand-v2-accent) / .28);
+      border-color: rgb(var(--brand-v2-accent) / .38);
+    }
+  }
+  

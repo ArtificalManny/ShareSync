@@ -40,7 +40,7 @@ import Sidebar from "./components/Sidebar";
 import MessengerPanel from "./components/messenger/MessengerPanel.jsx";
 import { ChatProvider } from "./context/ChatContext.jsx";
 import { MESSENGER_V1, BRAND_V2 } from "./config/flags.js";
-import { DISCOVERY_V1 } from "./config/flags.js"; // ⬅️ NEW (feature flag)
+import { DISCOVERY_V1 } from "./config/flags.js"; // ⬅️ feature flag
 
 import useBrandTheme from "./hooks/useBrandTheme.js";
 
@@ -57,7 +57,7 @@ const PublicProject = lazy(() => import("./pages/PublicProject"));
 const PublicProjectStatus = lazy(() => import("./pages/PublicProjectStatus"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const AcceptInvite = lazy(() => import("./components/AcceptInvite.jsx"));
-const Discover = lazy(() => import("./pages/Discover.jsx")); // ⬅️ NEW (page)
+const Discover = lazy(() => import("./pages/Discover.jsx")); // ⬅️ page
 
 function ScrollToHash() {
   const location = useLocation();
@@ -124,7 +124,7 @@ function GuardedRoutes() {
         {/* Search */}
         <Route path="/search" element={<SearchPage />} />
 
-        {/* ⬇️ NEW: Discovery route gated by feature flag */}
+        {/* Discovery (gated) */}
         <Route
           path="/discover"
           element={DISCOVERY_V1 ? <Discover /> : <Navigate to="/home" replace />}
@@ -181,7 +181,7 @@ const App = () => {
                   <NotesProvider>
                     <PinnedProvider>
                       <div
-                        className="app-container"
+                        className="app-container layout-stage" 
                         data-accent="indigo"
                         {...containerAttrs}
                       >

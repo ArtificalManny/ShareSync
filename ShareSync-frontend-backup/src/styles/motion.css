@@ -208,3 +208,9 @@
 }
 /* one-pulse helper (you already applied to AnimatedRing) */
 .one-pulse { animation-iteration-count: 1 !important; }
+
+/* =========================================================
+   ✅ Step 6 — Micro-motion helper
+   ========================================================= */
+.interact { transition: transform .15s cubic-bezier(.2,.6,.2,1), box-shadow .2s; }
+.interact:active { transform: scale(.98); }

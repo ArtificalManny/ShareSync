@@ -2,19 +2,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Heart } from "lucide-react";
 import Button from "../ui/Button.jsx";
-import Chip from "../ui/Chip.jsx";
 import { track } from "../../utils/telemetry";
 
 function formatNumber(n) {
   if (n == null || isNaN(n)) return "0";
   return Number(n).toLocaleString();
 }
-
 function formatScore(s) {
   if (s == null || isNaN(s)) return "0.0";
   return Number(s).toFixed(1);
 }
-
 function timeAgo(iso) {
   try {
     const d = new Date(iso);
@@ -58,7 +55,6 @@ export default function ProjectDiscoveryCard({ data }) {
     return () => obs.disconnect();
   }, [seen, data?.id, score]);
 
-  // Tiny, human-readable reason line:
   const reason = data.public ? "Public project" : "Similar momentum";
   const boostHint = "boosted by velocity & reactions";
 
@@ -67,6 +63,7 @@ export default function ProjectDiscoveryCard({ data }) {
       ref={rootRef}
       className="card rounded-2xl border border-border bg-surface p-4 hover:shadow-md transition"
     >
+      {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2 min-w-0">
           <div className="project-icon project-icon--lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center rounded-xl w-10 h-10">
@@ -85,7 +82,11 @@ export default function ProjectDiscoveryCard({ data }) {
             </div>
           </div>
         </div>
-        {data.public && <Chip size="sm">Public</Chip>}
+
+        {/* ✅ Public chip with “selected” styling */}
+        {data.public && (
+          <span className="chip is-selected px-2 py-0.5 text-[11px]">Public</span>
+        )}
       </div>
 
       {/* Metrics summary */}
@@ -93,21 +94,15 @@ export default function ProjectDiscoveryCard({ data }) {
         <div className="text-xs text-muted">7–90d signals</div>
         <div className="mt-1 grid grid-cols-3 gap-2 text-sm">
           <div className="rounded-lg bg-surface p-2 border border-border">
-            <div className="text-[10px] uppercase text-muted tracking-wide">
-              Velocity/wk
-            </div>
+            <div className="text-[10px] uppercase text-muted tracking-wide">Velocity/wk</div>
             <div className="font-medium">{formatNumber(velocity)}</div>
           </div>
           <div className="rounded-lg bg-surface p-2 border border-border">
-            <div className="text-[10px] uppercase text-muted tracking-wide">
-              XP Δ
-            </div>
+            <div className="text-[10px] uppercase text-muted tracking-wide">XP Δ</div>
             <div className="font-medium">{formatNumber(xp)}</div>
           </div>
           <div className="rounded-lg bg-surface p-2 border border-border">
-            <div className="text-[10px] uppercase text-muted tracking-wide">
-              Reactions
-            </div>
+            <div className="text-[10px] uppercase text-muted tracking-wide">Reactions</div>
             <div className="font-medium inline-flex items-center gap-1">
               <Heart className="w-3.5 h-3.5" />
               {formatNumber(reactions)}
@@ -115,6 +110,9 @@ export default function ProjectDiscoveryCard({ data }) {
           </div>
         </div>
       </div>
+
+      {/* ✅ Thin gradient rule just above footer */}
+      <div className="rule" />
 
       {/* Footer */}
       <div className="mt-3 flex items-center justify-between">
@@ -133,9 +131,7 @@ export default function ProjectDiscoveryCard({ data }) {
           href={`/projects/${data.id}`}
           size="sm"
           variant="secondary"
-          onClick={() =>
-            track("discovery_open_project", { projectId: data.id, score })
-          }
+          onClick={() => track("discovery_open_project", { projectId: data.id, score })}
         >
           Open
         </Button>
