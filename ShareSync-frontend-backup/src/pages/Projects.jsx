@@ -279,8 +279,12 @@ export default function Projects() {
         data-accent="emerald"
         className="px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto"
       >
+
+        {/*Page Hero */}
+        <h1 className="h-hero">Projects</h1>
+        <p className="h-sub mt-1">Organize work by outcomes, track momentum.</p>
         {/* ✅ Unified header: title + subtitle + search/filters + CTA */}
-        <section className="card accent-bar rounded-2xl border border-border bg-surface">
+        <section className="card accent-bar rounded-2xl border border-border bg-surface p-4 p-gradient specular">
           <span className="accent-bar__left" aria-hidden="true" />
           <div className="px-4 sm:px-6 md:px-8 py-4">
             {/* Title + CTA */}

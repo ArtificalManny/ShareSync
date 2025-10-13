@@ -1215,12 +1215,20 @@ export default function ProjectHome() {
   return (
     <main id="main" role="main" tabIndex={-1}>
       <div className="px-4 sm:px-6 lg:px-10 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
+                {/* Page hero */}
+                
         {/* Header (public toggle gated by flag) */}
-        <ProjectHeader
-          project={project}
-          onAddTask={() => canEdit && setShowTaskSheet(true)}
-          onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
-        />
+                {/* Header (public toggle gated by flag) */}
+                <div className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular">
+          <ProjectHeader
+            project={project}
+            onAddTask={() => canEdit && setShowTaskSheet(true)}
+            onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
+          />
+
+          {/* Optional thin gradient rule above KPIs (divider) */}
+          <div className="rule" />
+        </div>
 
         {MESSENGER_V1 && project?.chatEnabled && (
           <Card className="mt-6" role="region" aria-label="Project chat">

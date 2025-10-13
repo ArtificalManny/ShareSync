@@ -230,7 +230,8 @@ export default function Settings() {
   return (
     <main id="main" role="main" tabIndex={-1}>
       <div className="with-sidebar px-4 sm:px-6 lg:px-8 py-6 max-w-3xl mx-auto space-y-6">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Settings</h1>
+      <h1 className="h-hero">Settings</h1>
+<p className="h-sub mt-1">Preferences, notifications, and account.</p>
 
         {err && (
           <div
@@ -253,7 +254,7 @@ export default function Settings() {
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* Profile visibility */}
-          <section className="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+          <section className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular">
             <SectionHeader icon="Eye">Profile visibility</SectionHeader>
             <p className="text-xs text-slate-500 mt-1">
               Control whether your profile is visible at <code>/u/:username</code>.

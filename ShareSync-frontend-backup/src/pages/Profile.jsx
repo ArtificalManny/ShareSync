@@ -191,16 +191,11 @@ export default function Profile() {
             <h1 className="text-xl font-semibold text-text">{name}</h1>
             {at && <span className="text-muted">{at}</span>}
             <span
-              className={[
-                "ml-2 rounded-full border px-2 py-0.5 text-xs",
-                user?.publicProfile
-                  ? "border-emerald-300 text-emerald-700 bg-emerald-50"
-                  : "border-border text-muted bg-surface",
-              ].join(" ")}
-              title={privacy}
-            >
-              {privacy}
-            </span>
+  className={`chip ${user?.publicProfile ? "is-selected" : ""} px-2 py-0.5 text-[11px] ml-2`}
+  title={privacy}
+>
+  {privacy}
+</span>
           </div>
 
         {user?.bio && <p className="mt-1 text-muted">{user.bio}</p>}
@@ -300,6 +295,7 @@ export default function Profile() {
 
   return (
     <div className="with-sidebar px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-5xl mx-auto space-y-6">
+
       {loading ? (
         <div className="rounded-2xl border border-border bg-surface p-6">
           <div className="animate-pulse flex items-start gap-4">
@@ -325,7 +321,9 @@ export default function Profile() {
           <LockedCard />
         ) : (
           <>
-            <Header user={userForPublic} isOwner={false} />
+            <section className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular">
+  <Header user={userForPublic} isOwner={false} />
+</section>
 
             {/* Public: XP/Streak/Badges summary */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -367,7 +365,9 @@ export default function Profile() {
         )
       ) : (
         <>
-          <Header user={me} isOwner />
+          <section className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular">
+  <Header user={me} isOwner />
+</section>
 
           {/* Owner: Profile Photo editor */}
           <section className="card rounded-2xl border border-border bg-surface p-6">

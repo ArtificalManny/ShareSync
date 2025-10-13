@@ -575,17 +575,22 @@ export default function Home() {
             : <div className="linear" style={{ width: `${linearPct}%` }} />}
         </div>
       )}
+            {/* Page hero */}
+            <h1 className="h-hero">Home</h1>
+      <p className="h-sub mt-1">Your activity, momentum, and shortcuts.</p>
 
       {/* ======= NEW HEADER (Facebook-style avatar + switcher) ======= */}
-      <HomeHeaderSwitcher
-        mode={headerMode}
-        onModeChange={setHeaderMode}
-        firstName={firstName}
-        username={username}
-        profilePic={profilePic}          // ⬅️ avatar bubble at the left like FB
-        stats={stats}                    // header can render Momentum/Metrics from real data
-        onStartSprint={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
-      />
+      <div className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular mt-3">
+        <HomeHeaderSwitcher
+          mode={headerMode}
+          onModeChange={setHeaderMode}
+          firstName={firstName}
+          username={username}
+          profilePic={profilePic}          // ⬅️ avatar bubble at the left like FB
+          stats={stats}                    // header can render Momentum/Metrics from real data
+          onStartSprint={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
+        />
+      </div>
 
       {/* Project Stories rail */}
       {storiesProjects.length > 0 && (
