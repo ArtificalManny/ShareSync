@@ -71,6 +71,21 @@ export const BRAND_V2 = overrides.BRAND_V2 ??
 export const DISCOVERY_V1 = overrides.DISCOVERY_V1 ??
   envFlag('VITE_FEATURE_DISCOVERY_V1', false);
 
+// Public pages (Phase 4)
+export const PUBLIC_PAGES_V1 = /^(1|true|on|yes)$/i.test(String(import.meta.env.VITE_PUBLIC_PAGES_V1 ?? ""));
+
+// Reactions v1 (Phase 3)
+export const REACTIONS_V1 = /^(1|true|on|yes)$/i.test(String(import.meta.env.VITE_FEATURE_REACTIONS_V1 ?? ''));
+
+// SSO placeholder (Phase 5)
+export const SSO_ENABLED       = /^(1|true|on|yes)$/i.test(String(import.meta.env.VITE_SSO_ENABLED || ""));
+export const SSO_PROVIDER_NAME = String(import.meta.env.VITE_SSO_PROVIDER_NAME || "SSO");
+export const SSO_DOCS_URL      = String(import.meta.env.VITE_SSO_DOCS_URL || "https://yourdocs.example.com/sso");
+export const SSO_START_URL     = String(import.meta.env.VITE_SSO_START_URL || "/auth/sso/start"); // if backend wired
+
+// Admin/metrics debug panel (guardrail traceability)
+export const ADMIN_METRICS_V1  = overrides.ADMIN_METRICS_V1 ?? envFlag('VITE_FEATURE_ADMIN_METRICS_V1', true);
+
 export const FLAGS = {
   TRANSPARENCY_ENABLED,
   HABITS_ENABLED,
@@ -88,6 +103,10 @@ export const FLAGS = {
   MESSENGER_V1,            // NEW
   BRAND_V2,                // NEW
   DISCOVERY_V1,
+  // convenience: include a couple more for dashboards
+  PUBLIC_PAGES_V1,
+  REACTIONS_V1,
+  ADMIN_METRICS_V1,
 };
 
 export default FLAGS;

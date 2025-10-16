@@ -16,6 +16,12 @@ import InviteModal from '../components/invite/InviteModal';
 import FocusSprint from '../components/home/FocusSprint.jsx';
 import CadenceMeter from '../components/habits/CadenceMeter.jsx';
 import SprintMomentum from '../components/habits/SprintMomentum.jsx';
+import useSprint from "../hooks/useSprint";
+import SprintCompleteModal from "../components/focus/SprintCompleteModal.jsx";
+import { REACTIONS_V1 } from '../config/flags';
+import ReactionBar from '../components/reactions/ReactionBar.jsx';
+import BellMenu from '../components/notifications/Bell.jsx';
+import { pushEvent } from '../state/metrics.js';
 
 import ProjectStoriesBar from '../components/projects/ProjectStoriesBar.jsx';
 import { buildUnreadMap, setLastSeen } from '../utils/stories';
@@ -110,7 +116,7 @@ function Sparkline({ data, w = 96, h = 18, title }) {
 }
 
 // KPI strip + velocity hint
-function KpiStrip({ stats }) {
+function KpiStrip({ stats, meId }) {
   const today = stats?.today || {};
   const cmp = stats?.compare?.today || {};
   const ts = stats?.timeseries || {};
@@ -165,6 +171,14 @@ function KpiStrip({ stats }) {
             </div>
             <Sparkline data={series} />
             {whyLine && <div className="text-[10px] text-muted mt-1">{whyLine}</div>}
+            {REACTIONS_V1 && (
+  <ReactionBar
+    targetId={`kpi:${t.key}`}
+    ownerId={meId}
+    meId={meId}
+    label={t.label}
+  />
+)}
           </div>
         );
       })}
@@ -198,12 +212,13 @@ function KpiStrip({ stats }) {
 }
 
 // Smart search (unchanged)
-function SmartSearch({ onAsk }) {
+function SmartSearch({ onAsk, stats }) {
   const [q, setQ] = useState('');
   const [answers, setAnswers] = useState([]);
   const [selected, setSelected] = useState(-1);
   const inputRef = useRef(null);
   const resultsRef = useRef(null);
+  
 
   useEffect(() => {
     const onKey = (e) => {
@@ -219,19 +234,82 @@ function SmartSearch({ onAsk }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+    // ---- Deterministic calculators from stats (MVP) ----
+    const sum = (arr) => (Array.isArray(arr) ? arr.reduce((a, b) => a + Number(b || 0), 0) : 0);
+
+    // 1) what did i complete last week → count of tasks completed in last 7d
+    const completedLast7 = () => {
+      const series = stats?.timeseries?.tasksDone;
+      if (Array.isArray(series?.last7)) return sum(series.last7);
+      if (Array.isArray(series)) return sum(series.slice(-7));
+      // last resort fallbacks
+      const fallback = Number(stats?.today?.tasksDone ?? 0);
+      return fallback; // still deterministic; better than NaN
+    };
+  
+    // 2) overdue this week → tasks due in past 7d and not done
+    const overdueThisWeek = () => {
+      // Prefer explicit field if backend provides it; otherwise 0 for MVP
+      return Number(stats?.overdueThisWeek?.value ?? stats?.overdue7d ?? 0);
+    };
+  
+    // 3) streak this month → active days in last 30d
+    const streakThisMonth = () => {
+      return Number(stats?.activeDays?.last30 ?? stats?.activeDays?.value ?? 0);
+    };
+  
+    // Small helper to push telemetry on answer click
+    const clickReport = (hit) => {
+      try { track('smartsearch_answer_click', { hit }); } catch {}
+    };  
+
   const hints = ['what did i complete last week', 'overdue this week', 'streak this month'];
 
   const run = (query) => {
     if (!query?.trim()) return;
-    const lower = query.toLowerCase();
-    const out = [];
-    if (lower.includes('finish') || lower.includes('complete')) out.push('Completed 5 tasks last week');
-    if (lower.includes('overdue') || lower.includes('late')) out.push('1 task overdue this week');
-    if (lower.includes('streak')) out.push('Streak is 0 days — start a sprint today');
-    if (!out.length) out.push('Try: “overdue this week” • “streak this month” • “top project”');
-    setAnswers(out);
+    const q = query.trim().toLowerCase();
+
+    // canonical hits
+    const isCompleted7 = (
+      q.includes('what did i complete last week') ||
+      (q.includes('complete') && (q.includes('last week') || q.includes('past week') || q.includes('7')))
+    );
+    const isOverdue7 = (
+      q.includes('overdue this week') ||
+      (q.includes('overdue') && (q.includes('this week') || q.includes('past week') || q.includes('7')))
+    );
+    const isStreak30 = (
+      q.includes('streak this month') ||
+      (q.includes('streak') && (q.includes('this month') || q.includes('30')))
+    );
+
+    let answer = '';
+    let anchor = '#recent-activity'; // default explainability link
+
+    if (isCompleted7) {
+      const n = completedLast7();
+      answer = `Completed ${n} task${n === 1 ? '' : 's'} last week`;
+      anchor = '#recent-activity';
+      try { track('smartsearch_query', { q, hit: 'completed_last_week', value: n }); } catch {}
+    } else if (isOverdue7) {
+      const n = overdueThisWeek();
+      answer = `${n} overdue task${n === 1 ? '' : 's'} this week`;
+      anchor = '#kpis'; // KPIs section is visible and auditable
+      try { track('smartsearch_query', { q, hit: 'overdue_this_week', value: n }); } catch {}
+    } else if (isStreak30) {
+      const n = streakThisMonth();
+      answer = `Active on ${n} day${n === 1 ? '' : 's'} this month`;
+      anchor = '#kpis';
+      try { track('smartsearch_query', { q, hit: 'streak_this_month', value: n }); } catch {}
+    } else {
+      answer = 'Try: “what did i complete last week” • “overdue this week” • “streak this month”';
+      anchor = '#kpis';
+      try { track('smartsearch_query', { q, hit: 'fallback' }); } catch {}
+    }
+
+    setAnswers([{ text: answer, anchor }]);
     onAsk(query);
-    if (resultsRef.current) resultsRef.current.textContent = out.join(' · ');
+    if (resultsRef.current) resultsRef.current.textContent = answer;
   };
 
   const onKeyDown = (e) => {
@@ -248,9 +326,15 @@ function SmartSearch({ onAsk }) {
       {answers.length > 0 && (
         <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
           <span className="px-2 py-1 rounded-md border border-border bg-surface">
-            {answers[0]} · <a href="#recent-activity" className="underline">open report</a>
+            {answers[0].text} ·{' '}
+            <a
+              href={answers[0].anchor}
+              className="underline"
+              onClick={() => clickReport(answers[0].text)}
+            >
+              View report
+            </a>
           </span>
-          {answers.slice(1).map((a,i) => <span key={i} className="px-2 py-1 rounded-md border border-border bg-surface text-xs">{a}</span>)}
         </div>
       )}
       <div className="flex items-center gap-2">
@@ -263,7 +347,7 @@ function SmartSearch({ onAsk }) {
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button className="btn btn--primary marching" onClick={() => run(q)}>Ask AI</button>
+        <button className="btn btn--outline" onClick={() => run(q)}>Ask AI</button>
       </div>
       <div className="mt-2 flex flex-wrap gap-2">
         {['what did i complete last week','overdue this week','streak this month'].map((h, i) => (
@@ -325,7 +409,7 @@ function AiCoachCard({ nextBest }) {
         Suggested plan: {nextBest || 'Start a 25-min sprint on the top impact task, then a 5-min review.'}
       </p>
       <div className="mt-2 flex gap-2">
-        <button className="btn btn--primary">Start plan</button>
+        <button className="btn btn--outline">Start plan</button>
         <button className="btn btn--outline">Regenerate</button>
       </div>
     </div>
@@ -381,6 +465,7 @@ export default function Home() {
   mark('ss:home:render:start');
 
   const { user: authUser } = useContext(AuthContext) || {};
+  const meId = authUser?._id || authUser?.id || 'me';
   const [user, setUser] = useState(null);
 
   const navigate = useNavigate();
@@ -410,6 +495,9 @@ export default function Home() {
   // UI
   const [inviteOpen, setInviteOpen] = useState(false);
   const [tenxOpen, setTenxOpen] = useState(false);
+  const [sprintDoneOpen, setSprintDoneOpen] = useState(false);
+const [shareToFeed, setShareToFeed] = useState(false);
+const [recentCompleted, setRecentCompleted] = useState([]); // stub list for now
   const [publicMode, setPublicMode] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [sprintActive, setSprintActive] = useState(false);
@@ -538,6 +626,16 @@ export default function Home() {
     return () => { window.removeEventListener('start-tenx-sprint', onStart); if (timer) clearTimeout(timer); };
   }, []);
 
+  // Sprint engine — fires 'sprint:done' and opens completion modal
+useSprint({
+  durationMs: 25 * 60 * 1000,
+  onDone: () => {
+    // (Optional) collect recently-completed tasks here if you have them
+    setRecentCompleted([]); // keep empty for now
+    setSprintDoneOpen(true);
+  },
+});
+
   // Feed drawer focus mgmt
   useEffect(() => {
     if (!drawerItem) return;
@@ -579,18 +677,22 @@ export default function Home() {
             <h1 className="h-hero">Home</h1>
       <p className="h-sub mt-1">Your activity, momentum, and shortcuts.</p>
 
+    
       {/* ======= NEW HEADER (Facebook-style avatar + switcher) ======= */}
       <div className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular mt-3">
-        <HomeHeaderSwitcher
-          mode={headerMode}
-          onModeChange={setHeaderMode}
-          firstName={firstName}
-          username={username}
-          profilePic={profilePic}          // ⬅️ avatar bubble at the left like FB
-          stats={stats}                    // header can render Momentum/Metrics from real data
-          onStartSprint={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
-        />
-      </div>
+  <div className="flex items-start justify-between">
+    <HomeHeaderSwitcher
+      mode={headerMode}
+      onModeChange={setHeaderMode}
+      firstName={firstName}
+      username={username}
+      profilePic={profilePic}
+      stats={stats}
+      onStartSprint={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
+    />
+    <BellMenu />
+  </div>
+</div>
 
       {/* Project Stories rail */}
       {storiesProjects.length > 0 && (
@@ -608,10 +710,10 @@ export default function Home() {
         <div className="row-accent row-accent-violet grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid mt-6">
           {SHOW_KPI_STRIP && (
             <div className="lg:col-span-2">
-              <KpiStrip stats={stats} />
+              <KpiStrip stats={stats} meId={meId}/>
             </div>
           )}
-          {SHOW_SMART_SEARCH && <SmartSearch onAsk={handleAsk} />}
+          {SHOW_SMART_SEARCH && <SmartSearch onAsk={handleAsk} stats={stats} />}
         </div>
       )}
 
@@ -650,7 +752,7 @@ export default function Home() {
             <div className="text-sm font-semibold mb-1">Need a push?</div>
             <p className="text-sm text-muted mb-2">Try 10× Mode — a 30-minute hyper-focus block.</p>
             <div className="flex items-center gap-2">
-              <button className="btn btn--primary marching" onClick={launchTenX}>Enter 10× Mode</button>
+              <button className="btn btn--primary outline" onClick={launchTenX}>Enter 10× Mode</button>
               {TRANSPARENCY_ENABLED && (
                 <button
                   className={`btn ${publicMode ? 'btn--primary' : 'btn--outline'}`}
@@ -851,6 +953,17 @@ export default function Home() {
           </div>
         </div>
       )}
+
+<SprintCompleteModal
+  open={sprintDoneOpen}
+  onClose={() => { setSprintDoneOpen(false); setShareToFeed(false); }}
+  completedTasks={recentCompleted}
+  onShareToggleChange={(on) => {
+    setShareToFeed(on);
+    try { track('share_toggle_used', { on }); } catch {}
+  }}
+/>
+
 
       {/* Invite teammates */}
       {inviteOpen && (

@@ -9,6 +9,8 @@ import {
   PlusCircle,
 } from "lucide-react";
 import { track } from "../../utils/telemetry";
+import { REACTIONS_V1 } from "../../config/flags";
+import ReactionBar from "../reactions/ReactionBar.jsx";
 
 /**
  * Unified project activity feed (normalized items).
@@ -21,6 +23,7 @@ import { track } from "../../utils/telemetry";
  * - onLoadMore?: () => void
  * - onRefetch?: () => void
  * - onPostUpdate?: (payload: string | {text, attachments?}) => Promise<void>   // presence => canEdit
+ * - currentUserId?: string   // <-- added to support ReactionBar ownership checks
  */
 export default function ProjectActivityFeed({
   projectId,
@@ -30,6 +33,7 @@ export default function ProjectActivityFeed({
   onLoadMore,
   onRefetch,
   onPostUpdate, // if present → editor can post
+  currentUserId, // <-- NEW
 }) {
   const canPost = typeof onPostUpdate === "function";
   const [composer, setComposer] = useState("");
@@ -242,9 +246,12 @@ export default function ProjectActivityFeed({
           const fresh = typeof it.freshUntil === "number" ? it.freshUntil > Date.now() : false;
           const a11yLabel = `${it.type || "item"} — ${it.text || ""} — ${relTime(it.ts)}`;
 
+          // robust id for reactions/local storage
+          const stableId = String(it.id || `${it.type || "item"}:${it.ts || idx}:${projectId || "proj"}`);
+
           return (
             <article
-              key={it.id || `${it.type}:${it.ts}:${idx}`}
+              key={stableId}
               role="article"
               tabIndex={0}
               aria-label={a11yLabel}
@@ -269,6 +276,16 @@ export default function ProjectActivityFeed({
                 <div className="text-[11px] text-muted">
                   {humanizeSubtype(it.type, it.subtype)} · {relTime(it.ts)}
                 </div>
+
+                {/* Reactions: local first, optional API via /reactions/toggle */}
+                {REACTIONS_V1 && (
+                  <ReactionBar
+                    targetId={`act:${stableId}`}
+                    ownerId={it.userId || null}
+                    meId={currentUserId || "me"}
+                    label="activity"
+                  />
+                )}
               </div>
               {fresh && <span className="ml-1 mt-1 inline-block w-2 h-2 rounded-full bg-indigo-500" aria-hidden="true" />}
             </article>

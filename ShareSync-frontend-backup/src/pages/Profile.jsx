@@ -7,13 +7,16 @@ import AuditList from "../components/audit/AuditList.jsx";
 import { Lock } from "lucide-react";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
 import useReducedMotion from "../hooks/useReducedMotion";
-import Page from "../components/layout/Page.jsx";
+
+// NEW shared profile pieces (public-safe)
+import ProfileHeader from "../components/Profile/ProfileHeader.jsx";
+import Streak from "../components/Profile/Streak.jsx";
+import Badges from "../components/Profile/Badges.jsx";
 
 // NEW: global user context (will emit user:updated so avatars refresh everywhere)
 import { UserContext } from "../context/UserContext";
 
-// NEW: avatar components
-import Avatar from "../components/ui/Avatar";
+// Owner-only helpers
 import AvatarUploader from "../components/profile/AvatarUploader";
 import XpRing from "../components/Profile/XpRing";
 
@@ -125,7 +128,9 @@ export default function Profile() {
       });
 
       // 3) Update local state and propagate globally
-      setMe((prev) => (prev ? { ...prev, profilePicture: cacheBusted, avatarUrl: cacheBusted } : prev));
+      setMe((prev) =>
+        prev ? { ...prev, profilePicture: cacheBusted, avatarUrl: cacheBusted } : prev
+      );
 
       if (typeof userCtx.updateUser === "function") {
         userCtx.updateUser({ avatarUrl: cacheBusted, avatarVersion: version });
@@ -144,90 +149,6 @@ export default function Profile() {
     }
   };
 
-  const Header = ({ user, isOwner }) => {
-    const name = user?.firstName || user?.name || user?.displayName || "User";
-    const at = user?.username ? `@${user.username}` : "";
-    const emoji = user?.avatarEmoji || null;
-    const pic = user?.avatarUrl || user?.profilePicture || ""; // prefer avatarUrl with cache-bust
-    const privacy = isOwner
-      ? user?.publicProfile
-        ? "Public profile"
-        : "Private profile"
-      : user?.publicProfile
-      ? "Public"
-      : "Private";
-
-    // XP ring data
-    const xp = Number(user?.xp ?? 0);
-    const { level, progress, cur, next } = progressToNext(xp);
-
-    // Streak + badges (tolerant to missing fields)
-    const streak = {
-      current: Number(user?.streak?.current ?? user?.streakCurrent ?? 0),
-      longest: Number(user?.streak?.longest ?? user?.streakLongest ?? 0),
-      lastActiveAt: user?.streak?.lastActiveAt || user?.lastActiveAt || null,
-    };
-    const badges = Array.isArray(user?.badges) ? user.badges : [];
-
-    return (
-      <div className="flex items-start gap-4">
-        <div className="relative">
-          <Avatar src={pic} emoji={emoji} name={name} size={64} />
-          {/* Owner-only: small “Change” pill overlay on avatar (click opens uploader) */}
-          {isOwner && (
-            <div className="absolute -bottom-2 left-0">
-              <AvatarUploader
-                size="sm"
-                onUploaded={handleAvatarUploaded}
-                buttonClassName="rounded-full btn btn-primary text-[11px] px-2 py-0.5"
-                buttonLabel="Change"
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-semibold text-text">{name}</h1>
-            {at && <span className="text-muted">{at}</span>}
-            <span
-  className={`chip ${user?.publicProfile ? "is-selected" : ""} px-2 py-0.5 text-[11px] ml-2`}
-  title={privacy}
->
-  {privacy}
-</span>
-          </div>
-
-        {user?.bio && <p className="mt-1 text-muted">{user.bio}</p>}
-
-          {isOwner && (
-            <div className="mt-3 flex items-center gap-2">
-              <Link to="/settings" className="btn btn-primary text-sm">
-                Edit profile
-              </Link>
-              <Link to="/projects" className="btn btn-ghost text-sm border border-border">
-                View projects
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* XP ring on the right (collapses on small screens) */}
-        <div className="hidden sm:block">
-          <XpRing
-            level={level}
-            progress={progress}
-            size={96}
-            thickness={10}
-            motionEnabled={!prefersReduced}
-            label="XP"
-            sublabel={`${xp - cur}/${next - cur}`}
-          />
-        </div>
-      </div>
-    );
-  };
-
   const LockedCard = () => (
     <div className="card accent-activity rounded-2xl border border-border bg-surface p-6 text-center">
       <div className="flex items-center justify-center mb-2">
@@ -241,61 +162,8 @@ export default function Profile() {
   const userForPublic = publicUser;
   const publicUserId = userForPublic?._id || userForPublic?.id || null;
 
-  // ---- Small UI helpers for streak/badges (owner & public) ----
-  function StreakCard({ user }) {
-    const streak = {
-      current: Number(user?.streak?.current ?? user?.streakCurrent ?? 0),
-      longest: Number(user?.streak?.longest ?? user?.streakLongest ?? 0),
-      lastActiveAt: user?.streak?.lastActiveAt || user?.lastActiveAt || null,
-    };
-    return (
-      <div className="rounded-2xl border border-border bg-surface p-4 h-full">
-        <div className="text-xs text-muted">Streak</div>
-        <div className="mt-1 text-2xl font-semibold">{streak.current}🔥</div>
-        <div className="mt-1 text-xs text-muted">
-          Longest: <span className="font-medium">{streak.longest}</span> days
-        </div>
-        {streak.lastActiveAt && (
-          <div className="mt-1 text-xs text-muted">
-            Last active: {new Date(streak.lastActiveAt).toLocaleDateString()}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  function BadgesPanel({ user }) {
-    const items = Array.isArray(user?.badges) ? user.badges : [];
-    return (
-      <div className="rounded-2xl border border-border bg-surface p-4 h-full">
-        <div className="text-xs text-muted">Badges</div>
-        {items.length === 0 ? (
-          <div className="mt-2 text-sm text-muted">No badges yet.</div>
-        ) : (
-          <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {items.map((b, i) => {
-              const name = typeof b === "string" ? b : b?.name || `Badge ${i + 1}`;
-              const emoji = typeof b === "object" && b?.emoji ? b.emoji : "🏅";
-              return (
-                <div
-                  key={`${name}-${i}`}
-                  className="rounded-lg border border-border bg-surface px-2 py-2 text-center text-xs"
-                  title={name}
-                >
-                  <div className="text-lg leading-none">{emoji}</div>
-                  <div className="mt-1 truncate">{name}</div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="with-sidebar px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-5xl mx-auto space-y-6">
-
       {loading ? (
         <div className="rounded-2xl border border-border bg-surface p-6">
           <div className="animate-pulse flex items-start gap-4">
@@ -321,9 +189,16 @@ export default function Profile() {
           <LockedCard />
         ) : (
           <>
+            {/* Public header (read-only) */}
             <section className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular">
-  <Header user={userForPublic} isOwner={false} />
-</section>
+              <ProfileHeader
+                user={userForPublic}
+                isOwner={false}
+                isPublic
+                prefersReduced={prefersReduced}
+                onAvatarUploaded={undefined}
+              />
+            </section>
 
             {/* Public: XP/Streak/Badges summary */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -347,8 +222,8 @@ export default function Profile() {
                   })()}
                 </div>
               </div>
-              <StreakCard user={userForPublic} />
-              <BadgesPanel user={userForPublic} />
+              <Streak user={userForPublic} isPublic className="" />
+              <Badges user={userForPublic} isPublic className="" />
             </section>
 
             <section className="card accent-activity rounded-2xl border border-border bg-surface p-6">
@@ -365,9 +240,16 @@ export default function Profile() {
         )
       ) : (
         <>
+          {/* Owner header (edit controls enabled) */}
           <section className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular">
-  <Header user={me} isOwner />
-</section>
+            <ProfileHeader
+              user={me}
+              isOwner
+              isPublic={false}
+              prefersReduced={prefersReduced}
+              onAvatarUploaded={handleAvatarUploaded}
+            />
+          </section>
 
           {/* Owner: Profile Photo editor */}
           <section className="card rounded-2xl border border-border bg-surface p-6">
@@ -402,8 +284,8 @@ export default function Profile() {
                 })()}
               </div>
             </div>
-            <StreakCard user={me} />
-            <BadgesPanel user={me} />
+            <Streak user={me} isPublic={false} className="" />
+            <Badges user={me} isPublic={false} className="" />
           </section>
 
           {/* Highlights & Notifications */}

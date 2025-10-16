@@ -9,3 +9,5 @@ export default function SectionHeader({ title, sub, className = "" }) {
     </div>
   );
 }
+
+export { default } from "../frame/SectionHeader.jsx;"

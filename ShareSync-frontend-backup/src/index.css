@@ -14,6 +14,9 @@
 @import './styles/charts.css';
 @import './styles/feed.css';
 
+/* Chips primitive (non-Frankenstein guardrail) */
+@import './styles/chip.css';
+
 /* Typography + themed background */
 @import './styles/theme.css';
 

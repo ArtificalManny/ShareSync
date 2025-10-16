@@ -141,4 +141,5 @@
       border-color: rgb(var(--brand-v2-accent) / .38);
     }
   }
-  
+  .h-hero { font-size: clamp(28px, 6vw, 40px); font-weight: 800; line-height: 1.1; }
+.h-sub  { color: var(--muted); font-size: clamp(14px, 2.2vw, 16px); }

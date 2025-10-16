@@ -11,6 +11,7 @@ import SectionHeader from '../components/ui/SectionHeader.jsx';
 import TraceOutline from '../components/ui/TraceOutline.jsx';
 import { bindShine } from '../utils/shine';
 import GradientText from '../components/ui/GradientText.jsx';
+import GradientPanel from "../components/frame/GradientPanel.jsx";
 import { labelledTimestamp } from '../utils/formatters.js';
 import Page from "../components/layout/Page.jsx";
 import './Projects.css';
@@ -284,7 +285,7 @@ export default function Projects() {
         <h1 className="h-hero">Projects</h1>
         <p className="h-sub mt-1">Organize work by outcomes, track momentum.</p>
         {/* ✅ Unified header: title + subtitle + search/filters + CTA */}
-        <section className="card accent-bar rounded-2xl border border-border bg-surface p-4 p-gradient specular">
+        <GradientPanel className="card accent-bar rounded-2xl border border-border bg-surface p-4 p-gradient specular">
           <span className="accent-bar__left" aria-hidden="true" />
           <div className="px-4 sm:px-6 md:px-8 py-4">
             {/* Title + CTA */}
@@ -371,7 +372,7 @@ export default function Projects() {
               </label>
             </div>
           </div>
-        </section>
+        </GradientPanel>
 
         {/* Two-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mt-4">

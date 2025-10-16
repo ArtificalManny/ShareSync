@@ -1,0 +1,4 @@
+/* /src/styles/chip.css */
+.chip{display:inline-flex;align-items:center;gap:.4rem;border:1px solid rgb(var(--border));background:rgb(var(--surface));border-radius:.5rem;padding:.15rem .5rem;font-size:11px;line-height:1}
+.chip .num{font-variant-numeric:tabular-nums}
+.chip.is-selected{background:color-mix(in srgb, rgb(var(--accent)) 10%, transparent);border-color:color-mix(in srgb, rgb(var(--accent)) 35%, rgb(var(--border)))}

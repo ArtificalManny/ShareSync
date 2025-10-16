@@ -19,6 +19,7 @@ import ProjectActivityFeed from "../components/project/ProjectActivityFeed";
 import RisksPanel from "../components/project/RisksPanel";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
 import Card from "../components/ui/Card.jsx";
+import GradientPanel from "../components/frame/GradientPanel.jsx";
 import useSocket from "../hooks/useSocket";
 import {
   MoreHorizontal,
@@ -46,12 +47,16 @@ import { CALENDAR_ACCOUNTABILITY, POSTS_V1, MENTOR_V1 } from "../config/flags.js
 import { getIcsUrl } from "../api/calendar.js";
 import { buildPublicStatusUrl } from "../api/public";
 import EmptyState from "../components/ui/EmptyState.jsx";
+import { REACTIONS_V1 } from "../config/flags.js";
+import ReactionBar from "../components/reactions/ReactionBar.jsx";
 
 import TaskSheet from "../components/tasks/TaskSheet";
 import InviteModal from "../components/project/InviteModal";
 import ProjectSettingsModal from "../components/project/ProjectSettingsModal";
 import FileGrid from "../components/files/FileGrid";
 import InsightsBlock from "../components/insights/InsightsBlock";
+import useSprint from "../hooks/useSprint";
+import SprintCompleteModal from "../components/focus/SprintCompleteModal.jsx";
 
 // NEW: KPI graphs
 import KpiGroup from "../components/analytics/KpiGroup";
@@ -478,6 +483,8 @@ export default function ProjectHome() {
   const [showTaskSheet, setShowTaskSheet] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [sprintDoneOpen, setSprintDoneOpen] = useState(false);
+const [shareToFeed, setShareToFeed] = useState(false);
 
   // Files (used by Files section)
   const [files, setFiles] = useState([]);
@@ -1139,8 +1146,16 @@ export default function ProjectHome() {
         <div className="text-xs text-muted">{label}</div>
         <div className="text-xl font-semibold text-text num">{value}</div>
         {sub ? <div className="text-xs text-muted mt-1">{sub}</div> : null}
+        {REACTIONS_V1 && (
+          <ReactionBar
+            targetId={`kpi:${project?._id || id}:${label}`}
+            ownerId={project?.userId}
+            meId={meId || 'me'}
+            label={label}
+          />
+        )}
       </div>
-    );
+    );    
 
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1216,19 +1231,19 @@ export default function ProjectHome() {
     <main id="main" role="main" tabIndex={-1}>
       <div className="px-4 sm:px-6 lg:px-10 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
                 {/* Page hero */}
-                
+
         {/* Header (public toggle gated by flag) */}
                 {/* Header (public toggle gated by flag) */}
-                <div className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular">
-          <ProjectHeader
-            project={project}
-            onAddTask={() => canEdit && setShowTaskSheet(true)}
-            onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
-          />
+                <GradientPanel>
+  <ProjectHeader
+    project={project}
+    onAddTask={() => canEdit && setShowTaskSheet(true)}
+    onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
+  />
 
-          {/* Optional thin gradient rule above KPIs (divider) */}
-          <div className="rule" />
-        </div>
+  {/* Optional thin gradient rule above KPIs (divider) */}
+  <div className="rule" />
+</GradientPanel>
 
         {MESSENGER_V1 && project?.chatEnabled && (
           <Card className="mt-6" role="region" aria-label="Project chat">
@@ -1349,6 +1364,14 @@ export default function ProjectHome() {
                 motionEnabled={!prefersReducedMotion}
               />
             </div>
+            {REACTIONS_V1 && (
+  <ReactionBar
+    targetId={`kpi-trends:${project?._id || id}`}
+    ownerId={project?.userId}
+    meId={meId || 'me'}
+    label="KPI Trends"
+  />
+)}
           </Card>
         )}
 
@@ -1412,6 +1435,7 @@ export default function ProjectHome() {
                   hasMore={!!feed.nextCursor}
                   onPostUpdate={canEdit ? handlePostUpdate : undefined}
                   onRefetch={() => loadFeed()}
+                  currentUserId={meId}
                 />
               )}
             </div>
@@ -1581,6 +1605,17 @@ export default function ProjectHome() {
         />
       )}
 
+      {/* ---- Sprint Complete Modal ---- */}
+<SprintCompleteModal
+  open={sprintDoneOpen}
+  onClose={() => { setSprintDoneOpen(false); setShareToFeed(false); }}
+  // Lightweight v1: pass an empty list or derive from project.tasks window if you want
+  completedTasks={[]}
+  onShareToggleChange={(on) => {
+    setShareToFeed(on);
+    try { track('share_toggle_used', { on }); } catch {}
+  }}
+/>
       {/* ---- Drawers / Modals ---- */}
       <TaskSheet
         open={showTaskSheet}

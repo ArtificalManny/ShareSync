@@ -218,3 +218,17 @@ export default {
   fetchPublicProjectStatus,
   getPublicStatus,
 };
+
+export async function getPublicProject(token) {
+  const res = await fetch(`/api/public/projects/${token}`);
+  if (!res.ok) throw new Error('Failed to load public project');
+  return res.json();
+}
+export async function getPublicActivity(token, { page = 1, limit = 20 } = {}) {
+  const url = new URL(`/api/public/projects/${token}/activity`, window.location.origin);
+  url.searchParams.set('page', page);
+  url.searchParams.set('limit', limit);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to load public activity');
+  return res.json();
+}
