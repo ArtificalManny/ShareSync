@@ -1,0 +1,83 @@
+/* src/styles/admin.css */
+/* Read-only Admin tables — uses your token vars */
+
+.admin-page {
+    --admin-radius: 0.75rem;
+  }
+  
+  .admin-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.925rem;
+  }
+  
+  .admin-table thead th {
+    position: sticky;
+    top: 0;
+    background: rgb(var(--card));
+    z-index: 1;
+    text-align: left;
+    font-weight: 600;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgb(var(--border));
+    white-space: nowrap;
+  }
+  
+  .admin-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgb(var(--border));
+    vertical-align: top;
+  }
+  
+  .admin-table tbody tr:nth-child(even) td {
+    background: color-mix(in srgb, rgb(var(--surface)) 40%, transparent);
+  }
+  
+  .admin-table tbody tr:hover td {
+    background: color-mix(in srgb, rgb(var(--accent)) 8%, transparent);
+  }
+  
+  .admin-table thead tr:first-child th:first-child {
+    border-top-left-radius: var(--admin-radius);
+  }
+  .admin-table thead tr:first-child th:last-child {
+    border-top-right-radius: var(--admin-radius);
+  }
+  .admin-table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: var(--admin-radius);
+  }
+  .admin-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: var(--admin-radius);
+  }
+  
+  /* Small buttons used in headers (sort toggles, etc.) */
+  .admin-table .btn {
+    font-size: 0.85rem;
+  }
+  
+  .admin-toolbar {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+  }
+  
+  .admin-toolbar input[type="search"],
+  .admin-toolbar select {
+    border: 1px solid rgb(var(--border));
+    background: rgb(var(--surface));
+    color: rgb(var(--text));
+    padding: 6px 10px;
+    border-radius: 0.5rem;
+  }
+  
+  .admin-pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .5rem .75rem;
+    border-top: 1px solid rgb(var(--border));
+    background: rgb(var(--card));
+    font-size: 0.9rem;
+  }
+  

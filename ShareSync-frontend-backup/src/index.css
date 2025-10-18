@@ -17,6 +17,9 @@
 /* Chips primitive (non-Frankenstein guardrail) */
 @import './styles/chip.css';
 
+/* ⬇️ NEW: Admin console tables (optional polish) */
+@import './styles/admin.css';
+
 /* Typography + themed background */
 @import './styles/theme.css';
 

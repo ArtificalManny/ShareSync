@@ -1,6 +1,6 @@
 // /src/pages/ProjectHome.jsx
 import React, { useEffect, useMemo, useState, useContext, useCallback, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
 import {
   getProject,
@@ -43,7 +43,7 @@ import {
   Lightbulb,
   AlertCircle,
 } from "lucide-react";
-import { CALENDAR_ACCOUNTABILITY, POSTS_V1, MENTOR_V1 } from "../config/flags.js";
+import { CALENDAR_ACCOUNTABILITY, POSTS_V1, MENTOR_V1, IMPORT_WIZARD_V1 } from "../config/flags.js";
 import { getIcsUrl } from "../api/calendar.js";
 import { buildPublicStatusUrl } from "../api/public";
 import EmptyState from "../components/ui/EmptyState.jsx";
@@ -1303,6 +1303,24 @@ const [shareToFeed, setShareToFeed] = useState(false);
             Settings
             <span className="shine pointer-events-none" aria-hidden="true" />
           </button>
+
+          {IMPORT_WIZARD_V1 && canManage && (
+  <Link
+    to="/import"
+    onClick={() => {
+      try { track("import_cta_clicked", { projectId: id, source: "project_home" }); } catch {}
+    }}
+    className={[
+      "relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
+    ].join(" ")}
+    title="Import from Linear or Jira"
+  >
+    <TrendingUp className="w-4 h-4" />
+    Import from Linear/Jira
+    <span className="shine pointer-events-none" aria-hidden="true" />
+  </Link>
+)}
+
 
           {ENABLE_PUBLIC_STATUS && (
             <button

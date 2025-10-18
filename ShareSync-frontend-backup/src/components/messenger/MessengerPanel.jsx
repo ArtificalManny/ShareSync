@@ -3,6 +3,8 @@ import { MessageCircle, X, Loader2 } from "lucide-react";
 import DMList from "./DMList.jsx";
 import DMThread from "./DMThread.jsx";
 import { useChat } from "../../context/ChatContext.jsx";
+import { IMPORT_WIZARD_V1 } from "../../config/flags.js";
+import FeatureGate from "../../utils/FeatureGate.jsx";
 
 /**
  * MessengerPanel

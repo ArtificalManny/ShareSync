@@ -96,6 +96,20 @@ export const trackMessengerToggled  = (props = {}) => track("messenger_toggled",
 // ✅ NEW: Brand switcher telemetry
 export const trackBrandSwitched     = (props = {}) => track("brand_switched", props);
 
+// ✅ NEW: Admin Console telemetry
+export const trackAdminConsoleOpened        = (props = {}) => track("admin_console_opened", props);
+export const trackAdminConsoleTabChanged    = (props = {}) => track("admin_console_tab_changed", props);
+export const trackAdminConsoleFilterChanged = (props = {}) => track("admin_console_filter_changed", props);
+// Optional, if you add CSV export per tab
+export const trackAdminConsoleExportClicked = (props = {}) => track("admin_console_export_clicked", props);
+
+
+// ✅ NEW: Import wizard helpers
+export const trackImportStarted       = (props = {}) => track("import_started", props);
+export const trackImportPreviewShown  = (props = {}) => track("import_preview_shown", props);
+export const trackImportConfirmed     = (props = {}) => track("import_confirmed", props);
+export const trackImportFailed        = (props = {}) => track("import_failed", props);
+
 // Simple ephemeral session id (tab-scoped)
 let __sid = null;
 function getSessionId() {
@@ -138,4 +152,13 @@ export default {
   trackChatSummarized,
   trackMessengerToggled,
   trackBrandSwitched,
+  trackImportStarted,
+  trackImportPreviewShown,
+  trackImportConfirmed,
+  trackImportFailed,
+    // Admin Console
+    trackAdminConsoleOpened,
+    trackAdminConsoleTabChanged,
+    trackAdminConsoleFilterChanged,
+    trackAdminConsoleExportClicked,  
 };

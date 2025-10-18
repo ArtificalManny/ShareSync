@@ -39,9 +39,17 @@ import Sidebar from "./components/Sidebar";
 
 import MessengerPanel from "./components/messenger/MessengerPanel.jsx";
 import { ChatProvider } from "./context/ChatContext.jsx";
-import { MESSENGER_V1, BRAND_V2 } from "./config/flags.js";
-import { DISCOVERY_V1 } from "./config/flags.js"; // ⬅️ feature flag
 
+// ⬇️ consolidate flag imports
+import {
+  MESSENGER_V1,
+  BRAND_V2,
+  DISCOVERY_V1,
+  IMPORT_WIZARD_V1,
+  ADMIN_CONSOLE_V1,
+} from "./config/flags.js";
+
+import FeatureGate from "./utils/FeatureGate.jsx";
 import useBrandTheme from "./hooks/useBrandTheme.js";
 
 const Home = lazy(() => import("./pages/Home"));
@@ -57,7 +65,11 @@ const PublicProject = lazy(() => import("./pages/PublicProject"));
 const PublicProjectStatus = lazy(() => import("./pages/PublicProjectStatus"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const AcceptInvite = lazy(() => import("./components/AcceptInvite.jsx"));
-const Discover = lazy(() => import("./pages/Discover.jsx")); // ⬅️ page
+const Discover = lazy(() => import("./pages/Discover.jsx")); // discovery
+
+// ⬇️ NEW: Import Wizard + Admin Console pages
+const ImportWizard = lazy(() => import("./pages/import/ImportWizard.jsx"));
+const AdminConsole = lazy(() => import("./pages/admin/AdminConsole.jsx"));
 
 function ScrollToHash() {
   const location = useLocation();
@@ -77,6 +89,7 @@ function GuardedRoutes() {
   const navigate = useNavigate();
 
   const openRoutes = ["/login", "/create-account", "/forgot-password", "/p/", "/status", "/invite"];
+  // NOTE: /import and /admin/console remain authenticated-only
 
   useEffect(() => {
     if (!ready) return;
@@ -130,6 +143,26 @@ function GuardedRoutes() {
           element={DISCOVERY_V1 ? <Discover /> : <Navigate to="/home" replace />}
         />
 
+        {/* Import Wizard (gated) */}
+        <Route
+          path="/import"
+          element={
+            <FeatureGate flag={IMPORT_WIZARD_V1} fallback={<Navigate to="/home" replace />}>
+              <ImportWizard />
+            </FeatureGate>
+          }
+        />
+
+        {/* ⬇️ NEW: Admin Console (gated) */}
+        <Route
+          path="/admin/console"
+          element={
+            <FeatureGate flag={ADMIN_CONSOLE_V1} fallback={<Navigate to="/home" replace />}>
+              <AdminConsole />
+            </FeatureGate>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Suspense>
@@ -152,6 +185,7 @@ const AppRoutes = () => {
           <GuardedRoutes />
         </div>
 
+        {/* Floating Messenger Panel */}
         <MessengerPanel />
       </ChatProvider>
 
@@ -181,7 +215,7 @@ const App = () => {
                   <NotesProvider>
                     <PinnedProvider>
                       <div
-                        className="app-container layout-stage" 
+                        className="app-container layout-stage"
                         data-accent="indigo"
                         {...containerAttrs}
                       >

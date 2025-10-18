@@ -60,6 +60,10 @@ export const GLOBAL_SEARCH = overrides.GLOBAL_SEARCH ??
 export const DISCOVERABILITY = overrides.DISCOVERABILITY ??
   envFlag('VITE_FEATURE_DISCOVERABILITY', false);
 
+// Import Wizard (Linear/Jira)
+export const IMPORT_WIZARD_V1 = overrides.IMPORT_WIZARD_V1 ??
+  envFlag('VITE_FEATURE_IMPORT_WIZARD_V1', false);
+
 // NEW: Messenger (DMs + project chat)
 export const MESSENGER_V1 = overrides.MESSENGER_V1 ??
   envFlag('VITE_FEATURE_MESSENGER_V1', false);
@@ -86,6 +90,10 @@ export const SSO_START_URL     = String(import.meta.env.VITE_SSO_START_URL || "/
 // Admin/metrics debug panel (guardrail traceability)
 export const ADMIN_METRICS_V1  = overrides.ADMIN_METRICS_V1 ?? envFlag('VITE_FEATURE_ADMIN_METRICS_V1', true);
 
+// Admin console (read-only)
+export const ADMIN_CONSOLE_V1 = (overrides.ADMIN_CONSOLE_V1 ??
+  envFlag('VITE_FEATURE_ADMIN_CONSOLE_V1', false));
+
 export const FLAGS = {
   TRANSPARENCY_ENABLED,
   HABITS_ENABLED,
@@ -107,6 +115,8 @@ export const FLAGS = {
   PUBLIC_PAGES_V1,
   REACTIONS_V1,
   ADMIN_METRICS_V1,
+  ADMIN_CONSOLE_V1,
+  IMPORT_WIZARD_V1,       //NEW 
 };
 
 export default FLAGS;
