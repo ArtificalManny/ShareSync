@@ -1,3 +1,4 @@
+// /src/pages/Projects.jsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -19,6 +20,9 @@ import './Projects.css';
 import { Users, Clock, Search } from 'lucide-react';
 import { track } from '../utils/telemetry';
 import { toast } from '../components/ui/Toaster.jsx';
+
+// 🔁 Shared avatars with presence dots
+import AvatarGroup from '../components/ui/AvatarGroup.jsx';
 
 /** Debounce a value to limit API calls while typing */
 function useDebounce(value, delay = 350) {
@@ -52,69 +56,6 @@ function writeParams({ query, status, owner, updated }) {
   return s ? `?${s}` : '';
 }
 
-function initials(nameOrEmail = '') {
-  const name = String(nameOrEmail || '').trim();
-  if (!name) return '•';
-  const parts = name.split(/\s+/);
-  if (parts.length === 1) {
-    const at = name.indexOf('@');
-    if (at > 0) return name.slice(0, 2).toUpperCase();
-    return name.slice(0, 2).toUpperCase();
-  }
-  return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
-}
-
-function Avatar({ user, size = 24 }) {
-  const { avatarUrl, displayName, name, username, email } = user || {};
-  const label = displayName || name || username || email || '';
-  const scaleHover = 'transition-transform duration-200 ease-out group-hover:scale-[1.06]';
-  if (avatarUrl) {
-    return (
-      <img
-        src={avatarUrl}
-        alt={label}
-        className={`inline-block rounded-full ring-2 ring-white dark:ring-slate-900 object-cover ${scaleHover}`}
-        style={{ width: size, height: size }}
-        loading="lazy"
-        referrerPolicy="no-referrer"
-      />
-    );
-  }
-  return (
-    <div
-      className={`inline-grid place-items-center rounded-full bg-surface text-text ring-2 ring-white dark:ring-slate-900 text-[11px] font-semibold ${scaleHover}`}
-      style={{ width: size, height: size }}
-      aria-label={label}
-      title={label}
-    >
-      {initials(label)}
-    </div>
-  );
-}
-
-function AvatarGroup({ members = [], max = 5 }) {
-  const shown = members.slice(0, max);
-  const extra = Math.max(0, members.length - shown.length);
-  return (
-    <div className="flex -space-x-2">
-      {shown.map((m, i) => (
-        <div key={m.id || m._id || m.username || m.email || i} className="inline-block">
-          <Avatar user={m} />
-        </div>
-      ))}
-      {extra > 0 && (
-        <div
-          className="inline-grid place-items-center rounded-full bg-surface text-text ring-2 ring-white dark:ring-slate-900 text-[11px] font-semibold transition-transform duration-200 ease-out group-hover:scale-[1.06]"
-          style={{ width: 24, height: 24 }}
-          title={`+${extra} more`}
-        >
-          +{extra}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /** Map status -> colorful accent */
 function statusAccent(status) {
   const key = (status || '').toString().toLowerCase().replace(/\s+/g, '_');
@@ -132,6 +73,96 @@ function statusAccent(status) {
   }
 }
 
+/* ───────────────────────── ProjectCard (local) ───────────────────────── */
+function ProjectCard({ project, onOpen, onPrefetch, isHovered }) {
+  const pid = project._id || project.id;
+  const lastTs = project.lastActivityAt || project.updatedAt || project.createdAt;
+  const rawStatus = project.status || '';
+  const key =
+    rawStatus === 'In Progress' ? 'in_progress' :
+    rawStatus === 'Completed'   ? 'completed'   : 'not_started';
+  const accent = statusAccent(key);
+
+  // Mini KPIs (safe fallbacks)
+  const m = project.metrics || {};
+  const onTime = (m.onTimePct ?? m.onTime ?? null);
+  const openTasks = (project.openTasks ?? m.openTasks ?? null);
+  const tput = (m.throughputPerWeek?.value ?? m.tputWk ?? null);
+
+  const members = Array.isArray(project.members) ? project.members.map((u) => ({
+    id: u.id || u._id || u.userId || u.username || u.email,
+    name: u.displayName || u.name || u.username || u.email,
+    avatar: u.avatar || u.avatarUrl || u.photoURL || u.profilePicture || '',
+  })) : [];
+
+  return (
+    <TraceOutline radius={16} paused={!isHovered}>
+      <div
+        className="group relative rounded-2xl border border-border bg-surface shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(16,24,40,0.12)] focus-ring"
+        data-shine
+        role="link"
+        tabIndex={0}
+        aria-label={`Open project ${project.title || 'untitled'}`}
+        onClick={onOpen}
+        onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}
+        onMouseEnter={onPrefetch}
+      >
+        {/* Accent bar */}
+        <div
+          className={`absolute left-0 top-0 h-full w-1 origin-left bg-gradient-to-b ${accent.bar} transition-transform duration-300 ease-out group-hover:scale-x-[1.4]`}
+          aria-hidden="true"
+        />
+
+        {/* Sweep */}
+        <div
+          className="pointer-events-none absolute inset-0 -translate-x-full opacity-0 bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/10 transition duration-700 ease-out group-hover:opacity-100 group-hover:translate-x-full"
+          aria-hidden="true"
+        />
+
+        {/* Main content (reuse your list item for title/description badges) */}
+        <div className="px-3 sm:px-4 pt-3">
+          <ProjectListItem project={project} />
+        </div>
+
+        {/* Mini KPIs + members */}
+        <div className="px-3 sm:px-4 py-2 grid grid-cols-2 gap-2">
+          <div className="rounded-md border border-border/60 bg-white/60 dark:bg-slate-900/40 px-2 py-1.5">
+            <div className="text-[10px] text-muted">On-time %</div>
+            <div className="text-sm font-semibold">{onTime ?? '—'}</div>
+          </div>
+          <div className="rounded-md border border-border/60 bg-white/60 dark:bg-slate-900/40 px-2 py-1.5">
+            <div className="text-[10px] text-muted">Open tasks</div>
+            <div className="text-sm font-semibold">{openTasks ?? '—'}</div>
+          </div>
+          <div className="rounded-md border border-border/60 bg-white/60 dark:bg-slate-900/40 px-2 py-1.5 col-span-2">
+            <div className="text-[10px] text-muted">Throughput / wk</div>
+            <div className="text-sm font-semibold">{tput ?? '—'}</div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-t border-border bg-white/60 dark:bg-slate-900/40">
+          <div className="min-w-0 flex items-center gap-3">
+            <AvatarGroup members={members} />
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${accent.chip}`}>
+              <Users className="w-3 h-3" />
+              {accent.label}
+            </span>
+          </div>
+          <div
+            className="whitespace-nowrap inline-flex items-center gap-1 timestamp"
+            title={lastTs ? new Date(lastTs).toLocaleString() : undefined}
+          >
+            <Clock className="w-3 h-3" />
+            {labelledTimestamp(lastTs, 'Updated')}
+          </div>
+        </div>
+      </div>
+    </TraceOutline>
+  );
+}
+
+/* ───────────────────────────── Page ───────────────────────────── */
 export default function Projects() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -149,7 +180,7 @@ export default function Projects() {
   const [owner, setOwner]     = useState(init.owner);
   const [updated, setUpdated] = useState(init.updated);
 
-  // marching-outline hover control
+  // hover state (for trace outline)
   const [hoverId, setHoverId] = useState(null);
 
   // Bind blue-shine to this page only
@@ -191,8 +222,8 @@ export default function Projects() {
         signal: controller.signal,
       });
 
-      const first = Array.isArray(items) ? items.slice(0, 10) : [];
-      const rest  = Array.isArray(items) ? items.slice(10) : [];
+      const first = Array.isArray(items) ? items.slice(0, 12) : [];
+      const rest  = Array.isArray(items) ? items.slice(12) : [];
       setProjects(first);
       setTimeout(() => {
         if (!controller.signal.aborted) {
@@ -207,7 +238,6 @@ export default function Projects() {
       if (controller.signal.aborted) return;
       console.error('[Projects] load error', e);
       setError('Failed to load projects.');
-      // ✅ Toast + Telemetry on list fetch error
       try { toast({ title: 'Failed to load projects', variant: 'error' }); } catch {}
       try { track('projects_load_error'); } catch {}
     } finally {
@@ -261,15 +291,21 @@ export default function Projects() {
     setShowCreate(false);
     if (newProject) {
       setProjects((prev) => [newProject, ...prev]);
-      // ✅ Toast + Telemetry on create
       try { toast({ title: 'Project created', variant: 'success' }); } catch {}
       try { track('project_created', { projectId: newProject._id || newProject.id }); } catch {}
     }
   };
 
-  // --- PERF: mark when navigating to ProjectHome ---
+  // Prefetch on hover (lightweight stub)
+  const prefetchProject = (id) => {
+    try { track('project_card_hover', { projectId: id }); } catch {}
+    // If you have an endpoint like /projects/:id/summary, queue it here.
+    // client.get(`/projects/${id}/summary`, { params: { lite: 1 } }).catch(() => {});
+  };
+
   const goToProject = (id) => {
     try { performance?.mark?.('ss:nav-project-click'); } catch {}
+    try { track('project_card_click', { projectId: id }); } catch {}
     navigate(`/projects/${id}`);
   };
 
@@ -280,11 +316,11 @@ export default function Projects() {
         data-accent="emerald"
         className="px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto"
       >
-
         {/*Page Hero */}
         <h1 className="h-hero">Projects</h1>
         <p className="h-sub mt-1">Organize work by outcomes, track momentum.</p>
-        {/* ✅ Unified header: title + subtitle + search/filters + CTA */}
+
+        {/* Header + Filters + CTA */}
         <GradientPanel className="card accent-bar rounded-2xl border border-border bg-surface p-4 p-gradient specular">
           <span className="accent-bar__left" aria-hidden="true" />
           <div className="px-4 sm:px-6 md:px-8 py-4">
@@ -376,15 +412,15 @@ export default function Projects() {
 
         {/* Two-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mt-4">
-          {/* LEFT: Project list */}
+          {/* LEFT: Project grid */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <SectionHeader icon="FolderKanban">All Projects</SectionHeader>
             </div>
 
             {loading && (
-              <div className="grid grid-cols-1 gap-3" aria-busy="true" aria-live="polite">
-                {[...Array(4)].map((_, i) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3" aria-busy="true" aria-live="polite">
+                {[...Array(6)].map((_, i) => (
                   <ProjectSkeleton key={i} />
                 ))}
               </div>
@@ -404,67 +440,21 @@ export default function Projects() {
             )}
 
             {!loading && !error && filtered.length > 0 && (
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[var(--g-gap,12px)]">
                 {filtered.map((p) => {
                   const pid = p._id || p.id;
-                  const lastTs = p.lastActivityAt || p.updatedAt || p.createdAt;
-
-                  const rawStatus = p.status || '';
-                  const key =
-                    rawStatus === 'In Progress' ? 'in_progress' :
-                    rawStatus === 'Completed'   ? 'completed'   : 'not_started';
-                  const accent = statusAccent(key);
-
                   const isHovered = hoverId === pid;
-
                   return (
-                    <TraceOutline key={pid} radius={16} paused={!isHovered}>
-                      {/* OUTER CARD */}
-                      <div
-                        className="group project-card relative rounded-2xl border border-border bg-surface shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(16,24,40,0.12)]"
-                        data-shine
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`Open project ${p.title || 'untitled'}`}
-                        onMouseEnter={() => setHoverId(pid)}
-                        onMouseLeave={() => setHoverId(null)}
-                        onClick={() => goToProject(pid)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') goToProject(pid); }}
-                      >
-                        {/* Color bar (left) */}
-                        <div
-                          className={`absolute left-0 top-0 h-full w-1 origin-left bg-gradient-to-b ${accent.bar} transition-transform duration-300 ease-out group-hover:scale-x-[1.4]`}
-                          aria-hidden="true"
-                        />
-
-                        {/* Sweep */}
-                        <div
-                          className="pointer-events-none absolute inset-0 -translate-x-full opacity-0 bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/10 transition duration-700 ease-out group-hover:opacity-100 group-hover:translate-x-full"
-                          aria-hidden="true"
-                        />
-
-                        {/* Content */}
-                        <ProjectListItem project={p} />
-
-                        {/* Footer */}
-                        <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-t border-border bg-white/60 dark:bg-slate-900/40">
-                          <div className="min-w-0 flex items-center gap-3">
-                            <AvatarGroup members={Array.isArray(p.members) ? p.members : []} />
-                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${accent.chip}`}>
-                              <Users className="w-3 h-3" />
-                              {accent.label}
-                            </span>
-                          </div>
-                          <div
-                            className="whitespace-nowrap inline-flex items-center gap-1 timestamp"
-                            title={lastTs ? new Date(lastTs).toLocaleString() : undefined}
-                          >
-                            <Clock className="w-3 h-3" />
-                            {labelledTimestamp(lastTs, 'Updated')}
-                          </div>
-                        </div>
-                      </div>
-                    </TraceOutline>
+                    <ProjectCard
+                      key={pid}
+                      project={p}
+                      isHovered={isHovered}
+                      onOpen={() => goToProject(pid)}
+                      onPrefetch={() => {
+                        setHoverId(pid);
+                        prefetchProject(pid);
+                      }}
+                    />
                   );
                 })}
               </div>

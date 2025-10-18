@@ -23,12 +23,13 @@ import { CALENDAR_ACCOUNTABILITY, PRESENCE_V1 } from "../../config/flags.js";
 import { getIcsUrl } from "../../api/calendar.js";
 import { trackScheduleCreated } from "../../utils/telemetry";
 
-// ✅ new primitives
+// ✅ primitives
 import Card from "../ui/Card.jsx";
 import Button from "../ui/Button.jsx";
 import Chip from "../ui/Chip.jsx";
 import usePresence from "../../hooks/usePresence.js";
-import Avatar from "../ui/Avatar.jsx";
+// ⬇️ shared avatars with presence dots
+import AvatarGroup from "../ui/AvatarGroup.jsx";
 
 const ENABLE_PUBLIC_STATUS = (() => {
   const v = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS ?? "";
@@ -110,7 +111,7 @@ export default function ProjectHeader({
 
   const icon = iconOverride ?? project?.icon ?? null;
 
-  // ✅ Mark project as seen on view/focus
+  // ✅ mark as seen
   useEffect(() => {
     if (!project?._id) return;
 
@@ -148,7 +149,7 @@ export default function ProjectHeader({
     }
   };
 
-  // Persist icon; toast + telemetry
+  // Persist icon
   async function handleIconSelect(sel) {
     try {
       const updated = await patchProjectIcon(project._id, sel);
@@ -223,18 +224,27 @@ export default function ProjectHeader({
       ? `${window.location.origin}${publicPath}`
       : publicPath;
 
-  // Calendar (.ics) export link
+  // Calendar (.ics)
   const icsUrl = CALENDAR_ACCOUNTABILITY ? getIcsUrl(project?._id || project?.id) : null;
 
   const hasRecent = useRecentFlag(project?.lastActivityAt, recentWindowMs);
   const prefersReduced = useReducedMotion();
   const ringAnimated = hasRecent && !prefersReduced;
 
-  // ── Presence (light) ───────────────────────────────────────────────────────
+  // ── Presence (via hook) ──────────────────────────────────────────────────
   const { onlineMap, isOnline } = usePresence(project?._id);
   const members = useMemo(
     () => (Array.isArray(project?.members) ? project.members : []),
     [project?.members]
+  );
+  const mappedMembers = useMemo(
+    () =>
+      members.map((m) => ({
+        id: m.userId || m.id,
+        name: m.name || m.displayName || m.username || m.email || "Member",
+        avatar: m.avatar || m.avatarUrl || m.profilePicture || "",
+      })),
+    [members]
   );
   const onlineCount = useMemo(() => {
     const ids = new Set();
@@ -245,7 +255,7 @@ export default function ProjectHeader({
     return c;
   }, [project?.userId, members, isOnline, onlineMap]);
 
-  // Telemetry: listen for heartbeat and log
+  // Telemetry: heartbeat + first-seen
   const seenRef = useRef(new Set());
   useEffect(() => {
     const onBeat = () => {
@@ -255,7 +265,6 @@ export default function ProjectHeader({
     return () => window.removeEventListener("presence:heartbeat", onBeat);
   }, [project?._id]);
 
-  // Telemetry: when members appear online, mark "seen" once per session
   useEffect(() => {
     if (!PRESENCE_V1) return;
     const been = seenRef.current;
@@ -329,7 +338,7 @@ export default function ProjectHeader({
             </div>
 
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="truncate text-lg sm:text-xl font-bold">
                   <GradientText variant="purple">
                     {project?.title || "Untitled Project"}
@@ -339,6 +348,17 @@ export default function ProjectHeader({
                 <span className="hidden sm:inline-flex">
                   <StatusPill status={project?.status || "In Progress"} />
                 </span>
+
+                {/* ⬇️ Presence beside the title (flag-gated) */}
+                {PRESENCE_V1 && mappedMembers.length > 0 && (
+                  <div className="inline-flex items-center gap-2">
+                    <AvatarGroup
+                      members={mappedMembers}
+                      isOnline={(id) => isOnline(String(id))}
+                    />
+                    <span className="text-xs text-muted">• {onlineCount} online</span>
+                  </div>
+                )}
 
                 {isOwner && (
                   <Button
@@ -403,7 +423,6 @@ export default function ProjectHeader({
                       Public link
                     </a>
 
-                    {/* Copy with fade-swap */}
                     <Button
                       variant="secondary"
                       size="sm"
@@ -436,33 +455,6 @@ export default function ProjectHeader({
                     </Button>
                   </div>
                 )}
-
-                {/* ── Presence UI: avatars with online dots + count ─────────── */}
-                {PRESENCE_V1 && members.length > 0 && (
-                  <div className="inline-flex items-center gap-2 ml-1">
-                    <div className="flex -space-x-2">
-                      {members.slice(0, 5).map((m) => (
-                        <span key={m.userId || m.id} className="relative">
-                          <Avatar
-                            src={m.avatarUrl || m.profilePicture}
-                            name={m.name || m.username || "Member"}
-                            size={22}
-                            className="rounded-full ring-2 ring-white dark:ring-slate-900"
-                          />
-                          <span
-                            className={[
-                              "presence-dot",
-                              isOnline(m.userId || m.id) ? "is-online" : "is-away",
-                            ].join(" ")}
-                            title={isOnline(m.userId || m.id) ? "Online" : "Away"}
-                            aria-hidden
-                          />
-                        </span>
-                      ))}
-                    </div>
-                    <span className="text-xs text-muted">• {onlineCount} online</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -484,14 +476,12 @@ export default function ProjectHeader({
               disabled={addingQuick}
             >
               <span className="relative inline-flex items-center gap-2">
-                {/* spinner */}
                 {addingQuick && (
                   <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden>
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
                   </svg>
                 )}
-                {/* check */}
                 {!addingQuick && addedQuick && <span aria-hidden>✓</span>}
                 <span className="transition-opacity duration-150">
                   {addingQuick ? "Adding…" : addedQuick ? "Added" : "Add task"}

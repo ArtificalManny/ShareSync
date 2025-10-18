@@ -6,8 +6,6 @@ import { getProjectsQuick } from '../api/projects';
 import { AuthContext } from '../AuthContext';
 import { mark, measure } from '../utils/perfLog';
 import { track } from '../utils/telemetry';
-import Page from "../components/layout/Page.jsx";
-import HomeHeaderSwitcher from '../components/home/HomeHeaderSwitcher.jsx'; // ⬅️ NEW
 import ProjectsRail from '../components/home/ProjectsRail.jsx';
 import KpiRow from '../components/analytics/KpiRow.jsx';
 import SectionHeader from '../components/ui/SectionHeader.jsx';
@@ -20,12 +18,8 @@ import useSprint from "../hooks/useSprint";
 import SprintCompleteModal from "../components/focus/SprintCompleteModal.jsx";
 import { REACTIONS_V1 } from '../config/flags';
 import ReactionBar from '../components/reactions/ReactionBar.jsx';
-import BellMenu from '../components/notifications/Bell.jsx';
-import { pushEvent } from '../state/metrics.js';
-
-import ProjectStoriesBar from '../components/projects/ProjectStoriesBar.jsx';
 import { buildUnreadMap, setLastSeen } from '../utils/stories';
-
+import PageHeader from '../components/layout/PageHeader.jsx';
 import {
   KPI_STRIP_ENABLED,
   SMART_SEARCH_ENABLED,
@@ -35,9 +29,11 @@ import {
   LEADERBOARD_ENABLED,
   TRANSPARENCY_ENABLED,
   HABITS_ENABLED,
-  DISCOVERY_V1, //New
+  DISCOVERY_V1,
 } from '../config/flags';
-import DiscoveryFeed from '../components/discovery/DiscoveryFeed.jsx';  // ← NEW
+import DiscoveryFeed from '../components/discovery/DiscoveryFeed.jsx';
+import TabbedFeed from '../components/feed/TabbedFeed.jsx';
+import ProjectStoriesBar from '../components/projects/ProjectStoriesBar.jsx';
 
 import './Home.css';
 
@@ -136,7 +132,10 @@ function KpiStrip({ stats, meId }) {
       : Number(tputs.value ?? 0) / Number(tputs.prev ?? 1);
   const velocityText = Number.isFinite(velocity) ? `${velocity.toFixed(1)}× ${velocity >= 1 ? 'faster' : 'slower'}` : '—';
 
-  const goKPIs = () => document.getElementById('kpis')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const goKPIs = (reason) => {
+    try { track('kpi_strip_tile_clicked', { tile: reason }); } catch {}
+    document.getElementById('kpis')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div className="kpi-strip grid grid-cols-2 sm:grid-cols-4 gap-3 row-grid">
@@ -157,8 +156,8 @@ function KpiStrip({ stats, meId }) {
             key={t.key}
             role="button"
             tabIndex={0}
-            onClick={goKPIs}
-            onKeyDown={(e) => e.key === 'Enter' && goKPIs()}
+            onClick={() => goKPIs(t.key)}
+            onKeyDown={(e) => e.key === 'Enter' && goKPIs(t.key)}
             className="card rounded-2xl p-3 shine accent-bar relative hover:cursor-pointer hover-raise focus-ring"
             aria-label={`Open KPIs filtered by ${t.label}`}
             title={`7d ${t.label} · min ${min} · max ${max} · last ${last}`}
@@ -167,18 +166,18 @@ function KpiStrip({ stats, meId }) {
             <div className="text-2xl font-bold num">{t.value}</div>
             <div className="flex items-center gap-2 mt-1">
               <div className="text-xs text-muted">{t.label}</div>
-              <Chip tone={tone} onClick={goKPIs}>{delta >= 0 ? '▲' : '▼'} <span className="num">{Math.abs(delta)}</span>%</Chip>
+              <Chip tone={tone} onClick={() => goKPIs(t.key)}>{delta >= 0 ? '▲' : '▼'} <span className="num">{Math.abs(delta)}</span>%</Chip>
             </div>
             <Sparkline data={series} />
             {whyLine && <div className="text-[10px] text-muted mt-1">{whyLine}</div>}
             {REACTIONS_V1 && (
-  <ReactionBar
-    targetId={`kpi:${t.key}`}
-    ownerId={meId}
-    meId={meId}
-    label={t.label}
-  />
-)}
+              <ReactionBar
+                targetId={`kpi:${t.key}`}
+                ownerId={meId}
+                meId={meId}
+                label={t.label}
+              />
+            )}
           </div>
         );
       })}
@@ -187,8 +186,8 @@ function KpiStrip({ stats, meId }) {
       <div
         role="button"
         tabIndex={0}
-        onClick={goKPIs}
-        onKeyDown={(e) => e.key === 'Enter' && goKPIs()}
+        onClick={() => goKPIs('velocity')}
+        onKeyDown={(e) => e.key === 'Enter' && goKPIs('velocity')}
         className="card rounded-2xl p-3 shine accent-bar relative sm:col-span-2 hover:cursor-pointer hover-raise focus-ring"
         title="See detailed throughput and goals"
       >
@@ -219,7 +218,6 @@ function SmartSearch({ onAsk, stats }) {
   const inputRef = useRef(null);
   const resultsRef = useRef(null);
   
-
   useEffect(() => {
     const onKey = (e) => {
       const tag = (document.activeElement?.tagName || '').toLowerCase();
@@ -234,34 +232,20 @@ function SmartSearch({ onAsk, stats }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-    // ---- Deterministic calculators from stats (MVP) ----
-    const sum = (arr) => (Array.isArray(arr) ? arr.reduce((a, b) => a + Number(b || 0), 0) : 0);
+  // ---- Deterministic calculators from stats (MVP) ----
+  const sum = (arr) => (Array.isArray(arr) ? arr.reduce((a, b) => a + Number(b || 0), 0) : 0);
 
-    // 1) what did i complete last week → count of tasks completed in last 7d
-    const completedLast7 = () => {
-      const series = stats?.timeseries?.tasksDone;
-      if (Array.isArray(series?.last7)) return sum(series.last7);
-      if (Array.isArray(series)) return sum(series.slice(-7));
-      // last resort fallbacks
-      const fallback = Number(stats?.today?.tasksDone ?? 0);
-      return fallback; // still deterministic; better than NaN
-    };
-  
-    // 2) overdue this week → tasks due in past 7d and not done
-    const overdueThisWeek = () => {
-      // Prefer explicit field if backend provides it; otherwise 0 for MVP
-      return Number(stats?.overdueThisWeek?.value ?? stats?.overdue7d ?? 0);
-    };
-  
-    // 3) streak this month → active days in last 30d
-    const streakThisMonth = () => {
-      return Number(stats?.activeDays?.last30 ?? stats?.activeDays?.value ?? 0);
-    };
-  
-    // Small helper to push telemetry on answer click
-    const clickReport = (hit) => {
-      try { track('smartsearch_answer_click', { hit }); } catch {}
-    };  
+  const completedLast7 = () => {
+    const series = stats?.timeseries?.tasksDone;
+    if (Array.isArray(series?.last7)) return sum(series.last7);
+    if (Array.isArray(series)) return sum(series.slice(-7));
+    const fallback = Number(stats?.today?.tasksDone ?? 0);
+    return fallback;
+  };
+  const overdueThisWeek = () => Number(stats?.overdueThisWeek?.value ?? stats?.overdue7d ?? 0);
+  const streakThisMonth = () => Number(stats?.activeDays?.last30 ?? stats?.activeDays?.value ?? 0);
+
+  const clickReport = (hit) => { try { track('smartsearch_answer_click', { hit }); } catch {} };
 
   const hints = ['what did i complete last week', 'overdue this week', 'streak this month'];
 
@@ -269,22 +253,12 @@ function SmartSearch({ onAsk, stats }) {
     if (!query?.trim()) return;
     const q = query.trim().toLowerCase();
 
-    // canonical hits
-    const isCompleted7 = (
-      q.includes('what did i complete last week') ||
-      (q.includes('complete') && (q.includes('last week') || q.includes('past week') || q.includes('7')))
-    );
-    const isOverdue7 = (
-      q.includes('overdue this week') ||
-      (q.includes('overdue') && (q.includes('this week') || q.includes('past week') || q.includes('7')))
-    );
-    const isStreak30 = (
-      q.includes('streak this month') ||
-      (q.includes('streak') && (q.includes('this month') || q.includes('30')))
-    );
+    const isCompleted7 = (q.includes('what did i complete last week') || (q.includes('complete') && (q.includes('last week') || q.includes('past week') || q.includes('7'))));
+    const isOverdue7   = (q.includes('overdue this week') || (q.includes('overdue') && (q.includes('this week') || q.includes('past week') || q.includes('7'))));
+    const isStreak30   = (q.includes('streak this month') || (q.includes('streak') && (q.includes('this month') || q.includes('30'))));
 
     let answer = '';
-    let anchor = '#recent-activity'; // default explainability link
+    let anchor = '#recent-activity';
 
     if (isCompleted7) {
       const n = completedLast7();
@@ -294,7 +268,7 @@ function SmartSearch({ onAsk, stats }) {
     } else if (isOverdue7) {
       const n = overdueThisWeek();
       answer = `${n} overdue task${n === 1 ? '' : 's'} this week`;
-      anchor = '#kpis'; // KPIs section is visible and auditable
+      anchor = '#kpis';
       try { track('smartsearch_query', { q, hit: 'overdue_this_week', value: n }); } catch {}
     } else if (isStreak30) {
       const n = streakThisMonth();
@@ -470,9 +444,6 @@ export default function Home() {
 
   const navigate = useNavigate();
 
-  // NEW: track which header surface is selected
-  const [headerMode, setHeaderMode] = useState('feed'); // 'feed' | 'momentum' | 'compass' | 'metrics'
-
   // Projects rail
   const [quickProjects, setQuickProjects] = useState([]);
   const [quickLoading, setQuickLoading] = useState(false);
@@ -496,8 +467,8 @@ export default function Home() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [tenxOpen, setTenxOpen] = useState(false);
   const [sprintDoneOpen, setSprintDoneOpen] = useState(false);
-const [shareToFeed, setShareToFeed] = useState(false);
-const [recentCompleted, setRecentCompleted] = useState([]); // stub list for now
+  const [shareToFeed, setShareToFeed] = useState(false);
+  const [recentCompleted, setRecentCompleted] = useState([]); // stub list for now
   const [publicMode, setPublicMode] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [sprintActive, setSprintActive] = useState(false);
@@ -506,6 +477,46 @@ const [recentCompleted, setRecentCompleted] = useState([]); // stub list for now
   // Feed drawer
   const [drawerItem, setDrawerItem] = useState(null);
   const drawerFirstBtnRef = useRef(null);
+
+  // 🔭 KPI strip view tracking
+  const kpiRef = useRef(null);
+  useEffect(() => {
+    if (!SHOW_KPI_STRIP) return;
+    const el = kpiRef.current;
+    // If no observer support, count it as viewed immediately.
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      try { track('kpi_strip_viewed', { fallback: true }); } catch {}
+      return;
+    }
+    let fired = false;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const en = entries[0];
+        if (!fired && en.isIntersecting && en.intersectionRatio >= 0.25) {
+          fired = true;
+          try { track('kpi_strip_viewed'); } catch {}
+          obs.disconnect();
+        }
+      },
+      { threshold: [0.25, 0.5, 0.75] }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // 🗂️ Feed tab change tracking (prop + global custom event)
+  useEffect(() => {
+    const handler = (e) => {
+      const tab = e?.detail?.tab ?? e?.detail ?? null;
+      try { track('feed_tab_changed', { tab }); } catch {}
+    };
+    window.addEventListener('feed:tab_changed', handler);
+    window.addEventListener('feed:tab-changed', handler);
+    return () => {
+      window.removeEventListener('feed:tab_changed', handler);
+      window.removeEventListener('feed:tab-changed', handler);
+    };
+  }, []);
 
   useEffect(() => { measure('perf:home:first-render', 'ss:home:render:start'); }, []);
 
@@ -627,14 +638,13 @@ const [recentCompleted, setRecentCompleted] = useState([]); // stub list for now
   }, []);
 
   // Sprint engine — fires 'sprint:done' and opens completion modal
-useSprint({
-  durationMs: 25 * 60 * 1000,
-  onDone: () => {
-    // (Optional) collect recently-completed tasks here if you have them
-    setRecentCompleted([]); // keep empty for now
-    setSprintDoneOpen(true);
-  },
-});
+  useSprint({
+    durationMs: 25 * 60 * 1000,
+    onDone: () => {
+      setRecentCompleted([]);
+      setSprintDoneOpen(true);
+    },
+  });
 
   // Feed drawer focus mgmt
   useEffect(() => {
@@ -648,7 +658,7 @@ useSprint({
 
   const linearPct = (() => {
     if (!sprintActive || !sprintStart) return 0;
-    const elapsed = Date.now() - sprintStart;
+    const elapsed = Date.now() - (sprintStart || 0);
     const total = 25 * 60 * 1000;
     return Math.max(0, Math.min(100, (elapsed / total) * 100));
   })();
@@ -660,7 +670,31 @@ useSprint({
     navigate(`/projects/${pid}`);
   };
 
-  const hideBelowMetrics = String(headerMode || '').toLowerCase() === 'metrics'; // ⬅️ when header shows Metrics, don’t repeat KPIs below
+  // ---- PageHeader CTAs ----
+  const pickLastProject = () => {
+    const list = Array.isArray(quickProjects) && quickProjects.length ? quickProjects : projects;
+    if (!Array.isArray(list) || list.length === 0) return null;
+    const sorted = [...list].sort((a, b) => {
+      const ta = new Date(a.lastActivityAt || a.updatedAt || a.createdAt || 0).getTime();
+      const tb = new Date(b.lastActivityAt || b.updatedAt || b.createdAt || 0).getTime();
+      return tb - ta;
+    });
+    return sorted[0];
+  };
+
+  const continueProject = () => {
+    const last = pickLastProject();
+    if (!last) return;
+    const pid = last._id || last.id;
+    try { track('home_primary_cta_clicked', { cta: 'continue_project', projectId: pid }); } catch {}
+    navigate(`/projects/${pid}`);
+  };
+
+  const start25 = () => {
+    try { track('home_secondary_cta_clicked', { cta: 'start_25' }); } catch {}
+    try { window.dispatchEvent(new CustomEvent('start-tenx-sprint')); } catch {}
+    document.getElementById('focus-sprint')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   return (
     <div className={`home-page relative ml-0 md:ml-24 max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-6 bg-bg text-text min-h-screen space-y-7 ${celebrate ? 'win-glow' : ''}`}>
@@ -673,30 +707,34 @@ useSprint({
             : <div className="linear" style={{ width: `${linearPct}%` }} />}
         </div>
       )}
-            {/* Page hero */}
-            <h1 className="h-hero">Home</h1>
-      <p className="h-sub mt-1">Your activity, momentum, and shortcuts.</p>
 
-    
-      {/* ======= NEW HEADER (Facebook-style avatar + switcher) ======= */}
-      <div className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular mt-3">
-  <div className="flex items-start justify-between">
-    <HomeHeaderSwitcher
-      mode={headerMode}
-      onModeChange={setHeaderMode}
-      firstName={firstName}
-      username={username}
-      profilePic={profilePic}
-      stats={stats}
-      onStartSprint={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
-    />
-    <BellMenu />
-  </div>
-</div>
+      {/* ======= NEW: Page header with primary/secondary CTAs ======= */}
+      <PageHeader
+        title="Home"
+        subtitle="Resume work fast. See momentum & recent activity."
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              className="btn btn--primary focus-ring"
+              onClick={continueProject}
+              title="Open your most active project"
+            >
+              Continue Project
+            </button>
+            <button
+              className="btn btn--outline focus-ring"
+              onClick={start25}
+              title="Start a 25:00 sprint"
+            >
+              Start 25:00
+            </button>
+          </div>
+        }
+      />
 
       {/* Project Stories rail */}
       {storiesProjects.length > 0 && (
-        <div className="card rounded-2xl border border-border bg-surface p-4 relative focus-ring mt-6">
+        <div className="card rounded-2xl border border-border bg-surface p-4 relative focus-ring">
           <ProjectStoriesBar
             projects={storiesProjects}
             unread={unreadMap}
@@ -705,21 +743,19 @@ useSprint({
         </div>
       )}
 
-      {/* Top spine: KPI strip + Smart Search — hidden if header already shows Metrics */}
-      {!hideBelowMetrics && (
-        <div className="row-accent row-accent-violet grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid mt-6">
-          {SHOW_KPI_STRIP && (
-            <div className="lg:col-span-2">
-              <KpiStrip stats={stats} meId={meId}/>
-            </div>
-          )}
-          {SHOW_SMART_SEARCH && <SmartSearch onAsk={handleAsk} stats={stats} />}
-        </div>
-      )}
+      {/* Top spine: KPI strip + Smart Search */}
+      <div className="row-accent row-accent-violet grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid">
+        {SHOW_KPI_STRIP && (
+          <div className="lg:col-span-2" ref={kpiRef}>
+            <KpiStrip stats={stats} meId={meId}/>
+          </div>
+        )}
+        {SHOW_SMART_SEARCH && <SmartSearch onAsk={handleAsk} stats={stats} />}
+      </div>
 
       {/* Focus Sprint */}
       {HABITS_ENABLED && (
-        <div className="relative mt-6" id="focus-sprint">
+        <div className="relative" id="focus-sprint">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 -z-10 rounded-2xl blur-xl opacity-60
@@ -742,34 +778,16 @@ useSprint({
         </div>
       )}
 
-      {/* Social + AI + 10× + Transparency */}
-      <div className="row-accent row-accent-cyan grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid feed mt-6">
-        {SHOW_FEED && <MicroFeed onOpen={setDrawerItem} />}
-        {SHOW_AI_COACH && <AiCoachCard nextBest={coachSuggestion} />}
-        {SHOW_TENX && (
-          <div className="card rounded-2xl p-3 shine accent-bar relative focus-ring">
-            <span className="accent-bar__left" aria-hidden="true" />
-            <div className="text-sm font-semibold mb-1">Need a push?</div>
-            <p className="text-sm text-muted mb-2">Try 10× Mode — a 30-minute hyper-focus block.</p>
-            <div className="flex items-center gap-2">
-              <button className="btn btn--primary outline" onClick={launchTenX}>Enter 10× Mode</button>
-              {TRANSPARENCY_ENABLED && (
-                <button
-                  className={`btn ${publicMode ? 'btn--primary' : 'btn--outline'}`}
-                  onClick={() => setPublicMode(v => !v)}
-                  title="Transparency mode"
-                >
-                  {publicMode ? 'Public On' : 'Transparency'}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      <TabbedFeed
+        showDiscover
+        className="mt-6"
+        // If TabbedFeed supports this prop, we’ll capture tab changes directly.
+        onTabChange={(tab) => { try { track('feed_tab_changed', { tab }); } catch {} }}
+      />
 
-            {/* ======= Discover (behind flag) ======= */}
-            {DISCOVERY_V1 && (
-        <div className="card rounded-2xl border border-border bg-surface p-4 mt-6">
+      {/* ======= Discover (behind flag) ======= */}
+      {DISCOVERY_V1 && (
+        <div className="card rounded-2xl border border-border bg-surface p-4">
           <div className="text-sm font-semibold mb-2">Discover</div>
           <DiscoveryFeed />
         </div>
@@ -777,7 +795,7 @@ useSprint({
 
       {/* Optional: public mode cards */}
       {TRANSPARENCY_ENABLED && publicMode && SHOW_LEADERBOARD && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Leaderboard />
           <div className="card rounded-2xl p-3 shine accent-bar relative focus-ring">
             <span className="accent-bar__left" aria-hidden="true" />
@@ -806,7 +824,7 @@ useSprint({
 
       {/* Habits row */}
       {HABITS_ENABLED && (
-        <div className="relative mt-6">
+        <div className="relative">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 -z-10 rounded-2xl blur-xl opacity-55
@@ -822,7 +840,7 @@ useSprint({
       )}
 
       {/* Your Projects */}
-      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring mt-6">
+      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring">
         <span className="accent-bar__left" aria-hidden="true" />
         <div className="flex items-center justify-between">
           <SectionHeader icon="LayoutDashboard">Your Projects</SectionHeader>
@@ -833,7 +851,7 @@ useSprint({
       </div>
 
       {/* KPIs section (full detail) */}
-      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring mt-6" id="kpis" aria-live="polite">
+      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring" id="kpis" aria-live="polite">
         <span className="accent-bar__left" aria-hidden="true" />
         <div className="flex items-center justify-between">
           <SectionHeader icon="BarChartBig">Your KPIs</SectionHeader>
@@ -900,7 +918,7 @@ useSprint({
       </div>
 
       {/* Activity Over Time */}
-      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring mt-6" data-section="activity-over-time">
+      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring" data-section="activity-over-time">
         <span className="accent-bar__left" aria-hidden="true" />
         <SectionHeader icon="ActivitySquare">Activity Over Time</SectionHeader>
         <div className="mt-3">
@@ -924,7 +942,7 @@ useSprint({
       </div>
 
       {/* Recent Activity */}
-      <div id="recent-activity" className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring mt-6">
+      <div id="recent-activity" className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring">
         <span className="accent-bar__left" aria-hidden="true" />
         <SectionHeader icon="History">Recent Activity</SectionHeader>
         <div className="mt-3">
@@ -954,16 +972,15 @@ useSprint({
         </div>
       )}
 
-<SprintCompleteModal
-  open={sprintDoneOpen}
-  onClose={() => { setSprintDoneOpen(false); setShareToFeed(false); }}
-  completedTasks={recentCompleted}
-  onShareToggleChange={(on) => {
-    setShareToFeed(on);
-    try { track('share_toggle_used', { on }); } catch {}
-  }}
-/>
-
+      <SprintCompleteModal
+        open={sprintDoneOpen}
+        onClose={() => { setSprintDoneOpen(false); setShareToFeed(false); }}
+        completedTasks={recentCompleted}
+        onShareToggleChange={(on) => {
+          setShareToFeed(on);
+          try { track('share_toggle_used', { on }); } catch {}
+        }}
+      />
 
       {/* Invite teammates */}
       {inviteOpen && (

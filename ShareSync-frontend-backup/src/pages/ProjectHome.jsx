@@ -2,20 +2,14 @@
 import React, { useEffect, useMemo, useState, useContext, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
-import {
-  getProject,
-  getProjectFeed,
-  postProjectUpdate,
-} from "../api/projects";
+import { getProject } from "../api/projects";
 import { createTask, patchTask } from "../api/tasks";
 
-// import { uploadFiles } from "../api/uploads"; // (unused here; PostComposer handles uploads)
 import { getProjectStats } from "../api/stats";
 import ActivityOverTimeLive from "../components/analytics/ActivityOverTimeLive";
 import Page from "../components/layout/Page.jsx";
 import ProjectHeader from "../components/project/ProjectHeader";
 import ProjectKpis from "../components/project/ProjectKpis";
-import ProjectActivityFeed from "../components/project/ProjectActivityFeed";
 import RisksPanel from "../components/project/RisksPanel";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
 import Card from "../components/ui/Card.jsx";
@@ -38,25 +32,27 @@ import {
   AlertTriangle,
   TimerReset,
   Brain,
-  TrendingUp, 
+  TrendingUp,
   Users,
   Lightbulb,
   AlertCircle,
 } from "lucide-react";
-import { CALENDAR_ACCOUNTABILITY, POSTS_V1, MENTOR_V1, IMPORT_WIZARD_V1 } from "../config/flags.js";
+import { CALENDAR_ACCOUNTABILITY, MENTOR_V1, IMPORT_WIZARD_V1 } from "../config/flags.js";
 import { getIcsUrl } from "../api/calendar.js";
 import { buildPublicStatusUrl } from "../api/public";
 import EmptyState from "../components/ui/EmptyState.jsx";
 import { REACTIONS_V1 } from "../config/flags.js";
 import ReactionBar from "../components/reactions/ReactionBar.jsx";
+import AvatarGroup from "../components/ui/AvatarGroup.jsx";
+import usePresence from "../hooks/usePresence.js";
 
 import TaskSheet from "../components/tasks/TaskSheet";
 import InviteModal from "../components/project/InviteModal";
 import ProjectSettingsModal from "../components/project/ProjectSettingsModal";
 import FileGrid from "../components/files/FileGrid";
 import InsightsBlock from "../components/insights/InsightsBlock";
-import useSprint from "../hooks/useSprint";
 import SprintCompleteModal from "../components/focus/SprintCompleteModal.jsx";
+import TabbedFeed from "../components/feed/TabbedFeed.jsx";
 
 // NEW: KPI graphs
 import KpiGroup from "../components/analytics/KpiGroup";
@@ -65,21 +61,18 @@ import KpiDetailModal from "../components/kpi/KpiDetailModal";
 // NEW: series hook + chart styles
 import useKpiSeries from "../hooks/useKpiSeries";
 import "../styles/charts.css";
-import "../styles/posts.css"; // ← NEW styles for posts
+import "../styles/posts.css"; // keep if TabbedFeed/PostCard styles are global
+
 // NEW: prefers-reduced-motion hook
 import useReducedMotion from "../hooks/useReducedMotion";
 import useXpToasts from "../hooks/useXpToasts.js";
-// NEW: local comments helpers
-import { buildKey as buildKpiKey, getComments as getKpiComments, addComment as addKpiComment } from "../utils/kpi/comments";
 
-// 🔷 Unified feed normalizers
+// NEW: local comments helpers
 import {
-  fromApiList,
-  fromSocketEvent,
-  mergeRealtime,
-} from "../utils/feed/normalizeActivity";
-// 🔷 Dedupe helper (shared)
-import { dedupeById } from "../utils/feed/dedupe";
+  buildKey as buildKpiKey,
+  getComments as getKpiComments,
+  addComment as addKpiComment,
+} from "../utils/kpi/comments";
 
 // 🔔 Telemetry
 import { track } from "../utils/telemetry";
@@ -91,15 +84,6 @@ import { listInvites } from "../api/invite";
 
 // 🔔 Stories (unread ring) helpers
 import { setLastSeen } from "../utils/stories";
-
-// 🧩 Posts API + UI
-import {
-  listPosts,
-  addComment as apiAddComment,
-  toggleReaction as apiToggleReaction,
-} from "../api/posts.js";
-import PostComposer from "../components/posts/PostComposer.jsx";
-import PostCard from "../components/posts/PostCard.jsx";
 
 import { MESSENGER_V1 } from "../config/flags.js";
 import ProjectChatThread from "../components/messenger/ProjectChatThread.jsx";
@@ -128,32 +112,20 @@ function getRoleForUser(project, userId) {
   if (String(project.userId || "") === String(userId)) return "owner";
   const hit =
     Array.isArray(project.members) &&
-    project.members.find(
-      (m) => m?.userId && String(m.userId) === String(userId)
-    );
+    project.members.find((m) => m?.userId && String(m.userId) === String(userId));
   return (hit?.role === "owner" || hit?.role === "member" || hit?.role === "viewer")
     ? hit.role
     : "viewer";
 }
 
 // ---- AI Mentor (Charles) helpers ----
-// Tries several shapes your backend might return; stays safe if missing.
 function extractMentor(stats) {
-  const ai   = stats?.mentor || stats?.ai || {};
-  const vel  = stats?.throughputPerWeek?.value ?? ai.velocityPerWeek ?? null;
-
-  // Forecast: { p50: "2025-10-12", p90: "2025-10-20", remainingTasks: 7 }
-  const fc   = ai.forecast || stats?.forecast || null;
-
-  // Overload: [{ userId, name, loadPct, recommendation }]
+  const ai = stats?.mentor || stats?.ai || {};
+  const vel = stats?.throughputPerWeek?.value ?? ai.velocityPerWeek ?? null;
+  const fc = ai.forecast || stats?.forecast || null; // { p50, p90, remainingTasks }
   const load = Array.isArray(ai.overload) ? ai.overload : [];
-
-  // Suggestions/nudges: [{ id?, text, action? }]
   const tips = Array.isArray(ai.suggestions) ? ai.suggestions : (ai.tips || []);
-
-  // Productive window: { startHour: 9, endHour: 11 } // local hours
   const chrono = ai.chronotype || ai.productiveWindow || null;
-
   return { vel, fc, load, tips, chrono };
 }
 
@@ -162,21 +134,17 @@ function inProductiveWindow(windowSpec, now = new Date()) {
   const h = now.getHours();
   const { startHour, endHour } = windowSpec;
   if (typeof startHour !== "number" || typeof endHour !== "number") return false;
-  if (endHour >= startHour) return h >= startHour && h < endHour;         // e.g., 9..11
-  return h >= startHour || h < endHour;                                    // window wraps midnight
+  if (endHour >= startHour) return h >= startHour && h < endHour; // e.g., 9..11
+  return h >= startHour || h < endHour; // wraps midnight
 }
 
 /* ---------------- Milestones (files & tasks) ---------------- */
 function getPunctuality(task) {
-  //expects ISO strings; tolerant of nulls
   const due = task?.dueDate ? new Date(task.dueDate) : null;
-  const done = task?.completedAt ? new Date (task.completedAt) : null;
+  const done = task?.completedAt ? new Date(task.completedAt) : null;
   const now = new Date();
-
   if (!due) return "unscheduled";
   if (done) return done <= due ? "on-time" : "late";
-
-  //not completed yet - risk window = due within next 48h
   const ms = due - now;
   if (ms < 0) return "late";
   if (ms <= 48 * 3600 * 1000) return "at-risk";
@@ -184,30 +152,31 @@ function getPunctuality(task) {
 }
 
 function AccountabilityPanel({ tasks = [], stats, onAddDueDate }) {
-  const withDue = tasks.filter(t => t?.dueDate);
+  const withDue = tasks.filter((t) => t?.dueDate);
   const stateCounts = withDue.reduce((acc, t) => {
     const s = getPunctuality(t);
     acc[s] = (acc[s] || 0) + 1;
     return acc;
   }, {});
-
   const total = withDue.length;
   const ontime = stateCounts["on-time"] || 0;
   const late = stateCounts["late"] || 0;
   const risk = stateCounts["at-risk"] || 0;
   const scheduled = (stateCounts["scheduled"] || 0) + risk + late + ontime;
 
-  // optional numbers if backend provides them
-  const reliability = stats?.reliability?.score ?? null;     // 0..100
-  const streak      = stats?.reliability?.streak ?? null;    // days
-  const lastMsg     = stats?.insights?.punctuality?.[0]?.text || null;
+  const reliability = stats?.reliability?.score ?? null; // 0..100
+  const streak = stats?.reliability?.streak ?? null; // days
+  const lastMsg = stats?.insights?.punctuality?.[0]?.text || null;
 
-  const Chip = ({ tone="default", icon=null, label, value }) => {
+  const Chip = ({ tone = "default", icon = null, label, value }) => {
     const toneCls =
-      tone === "good" ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-    : tone === "warn" ? "bg-amber-50 text-amber-700 border-amber-200"
-    : tone === "bad"  ? "bg-rose-50 text-rose-700 border-rose-200"
-    :                   "bg-slate-50 text-slate-700 border-slate-200";
+      tone === "good"
+        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+        : tone === "warn"
+        ? "bg-amber-50 text-amber-700 border-amber-200"
+        : tone === "bad"
+        ? "bg-rose-50 text-rose-700 border-rose-200"
+        : "bg-slate-50 text-slate-700 border-slate-200";
     return (
       <div className={`rounded-xl border px-3 py-2 flex items-center gap-2 ${toneCls}`}>
         {icon}
@@ -229,29 +198,10 @@ function AccountabilityPanel({ tasks = [], stats, onAddDueDate }) {
       </div>
 
       <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Chip
-          icon={<CalendarDays className="w-4 h-4" />}
-          label="Scheduled (has due date)"
-          value={scheduled}
-        />
-        <Chip
-          tone="good"
-          icon={<CheckCircle2 className="w-4 h-4" />}
-          label="On-time (completed ≤ due)"
-          value={ontime}
-        />
-        <Chip
-          tone="bad"
-          icon={<AlertTriangle className="w-4 h-4" />}
-          label="Late (overdue or completed late)"
-          value={late}
-        />
-        <Chip
-          tone="warn"
-          icon={<TimerReset className="w-4 h-4" />}
-          label="At risk (due ≤ 48h)"
-          value={risk}
-        />
+        <Chip icon={<CalendarDays className="w-4 h-4" />} label="Scheduled (has due date)" value={scheduled} />
+        <Chip tone="good" icon={<CheckCircle2 className="w-4 h-4" />} label="On-time (completed ≤ due)" value={ontime} />
+        <Chip tone="bad" icon={<AlertTriangle className="w-4 h-4" />} label="Late (overdue or completed late)" value={late} />
+        <Chip tone="warn" icon={<TimerReset className="w-4 h-4" />} label="At risk (due ≤ 48h)" value={risk} />
         <div className="rounded-xl border border-dashed border-border px-3 py-2">
           <div className="text-xs text-muted">Reliability</div>
           <div className="text-lg font-semibold">
@@ -262,21 +212,14 @@ function AccountabilityPanel({ tasks = [], stats, onAddDueDate }) {
         </div>
       </div>
 
-      {lastMsg && (
-        <div className="mt-3 text-xs px-3 py-2 rounded-xl border border-border bg-surface/50">
-          {lastMsg}
-        </div>
-      )}
+      {lastMsg && <div className="mt-3 text-xs px-3 py-2 rounded-xl border border-border bg-surface/50">{lastMsg}</div>}
 
       {total === 0 && (
         <div className="mt-3">
           <EmptyState
             icon="🗓️"
             title="Add due dates to unlock reliability tracking."
-            primary={{
-              label: "Add a due date",
-              onClick: () => onAddDueDate?.(),
-            }}
+            primary={{ label: "Add a due date", onClick: () => onAddDueDate?.() }}
           />
         </div>
       )}
@@ -286,11 +229,13 @@ function AccountabilityPanel({ tasks = [], stats, onAddDueDate }) {
 
 function nextThreshold(count, thresholds = [1, 5, 10, 25, 50, 100]) {
   for (const t of thresholds) if (count < t) return t;
-  return null; // maxed
+  return null;
 }
 function MilestoneBar({ icon, label, count, unit }) {
   const next = nextThreshold(count);
-  function thresholdsBelow(t) { return [1,5,10,25,50,100].filter((x) => x < t); }
+  function thresholdsBelow(t) {
+    return [1, 5, 10, 25, 50, 100].filter((x) => x < t);
+  }
   const prev = next ? (count >= 1 ? thresholdsBelow(next).slice(-1)[0] || 0 : 0) : count;
   const target = next ?? count;
   const base = prev ?? 0;
@@ -309,20 +254,24 @@ function MilestoneBar({ icon, label, count, unit }) {
           {count} <span className="text-muted">{unit}</span>
         </div>
       </div>
-      <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: "color-mix(in srgb, rgb(var(--accent)) 16%, transparent)" }}>
+      <div
+        className="mt-2 h-2 rounded-full overflow-hidden"
+        style={{ background: "color-mix(in srgb, rgb(var(--accent)) 16%, transparent)" }}
+      >
         <div
           className="h-2 rounded-full"
-          style={{
-            width: `${pct}%`,
-            background: "linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--info)) 100%)",
-          }}
+          style={{ width: `${pct}%`, background: "linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--info)) 100%)" }}
           aria-label={`${label} ${pct}%`}
         />
       </div>
       <div className="mt-1 text-[11px] text-muted">
-        {next
-          ? <>Next milestone: <span className="font-medium">{next} {unit}</span></>
-          : <>Milestones complete — keep going! 🎉</>}
+        {next ? (
+          <>
+            Next milestone: <span className="font-medium">{next} {unit}</span>
+          </>
+        ) : (
+          <>Milestones complete — keep going! 🎉</>
+        )}
       </div>
     </div>
   );
@@ -345,14 +294,8 @@ function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
     if (!inProductiveWindow(chrono)) return null;
     return (
       <div className="rounded-xl border border-indigo-200/60 bg-indigo-50/60 dark:bg-indigo-900/20 px-3 py-2 flex items-center justify-between">
-        <div className="text-sm">
-          You’re usually strongest now. Want to tackle your top task?
-        </div>
-        <button
-          className="btn btn--primary"
-          onClick={onStartFocus}
-          title="Start a 25-min sprint"
-        >
+        <div className="text-sm">You’re usually strongest now. Want to tackle your top task?</div>
+        <button className="btn btn--primary" onClick={onStartFocus} title="Start a 25-min sprint">
           Start 25:00
         </button>
       </div>
@@ -375,25 +318,18 @@ function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
           <EmptyState
             icon="🔮"
             title="Complete a few tasks to unlock ETA."
-            primary={{
-              label: "Open tasks",
-              onClick: () => onOpenTasks?.(),
-            }}
-            secondary={{
-              label: "Start a 25:00",
-              onClick: onStartFocus,
-            }}
+            primary={{ label: "Open tasks", onClick: () => onOpenTasks?.() }}
+            secondary={{ label: "Start a 25:00", onClick: onStartFocus }}
           />
         </div>
       )}
 
       <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <CardInner
-          title="Velocity & forecast"
-          icon={<TrendingUp className="w-4 h-4 text-indigo-600" />}
-        >
+        <CardInner title="Velocity & forecast" icon={<TrendingUp className="w-4 h-4 text-indigo-600" />}>
           <div className="text-sm">
-            <div>Velocity: <span className="font-semibold num">{vel != null ? `${vel}/wk` : "—"}</span></div>
+            <div>
+              Velocity: <span className="font-semibold num">{vel != null ? `${vel}/wk` : "—"}</span>
+            </div>
             {fc ? (
               <div className="mt-1 text-xs text-muted">
                 ETA (p50): <span className="font-medium">{fc.p50 || "—"}</span>
@@ -406,10 +342,7 @@ function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
           </div>
         </CardInner>
 
-        <CardInner
-          title="Workload balance"
-          icon={<Users className="w-4 h-4 text-indigo-600" />}
-        >
+        <CardInner title="Workload balance" icon={<Users className="w-4 h-4 text-indigo-600" />}>
           {Array.isArray(load) && load.length > 0 ? (
             <ul className="space-y-1 text-sm">
               {load.slice(0, 3).map((m, i) => (
@@ -428,10 +361,7 @@ function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
           )}
         </CardInner>
 
-        <CardInner
-          title="Suggestions"
-          icon={<Lightbulb className="w-4 h-4 text-indigo-600" />}
-        >
+        <CardInner title="Suggestions" icon={<Lightbulb className="w-4 h-4 text-indigo-600" />}>
           {Array.isArray(tips) && tips.length > 0 ? (
             <ul className="list-disc pl-4 space-y-1">
               {tips.slice(0, 4).map((t, i) => <li key={t.id || i}>{t.text || String(t)}</li>)}
@@ -442,9 +372,7 @@ function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
         </CardInner>
       </div>
 
-      <div className="mt-3 text-[11px] text-muted">
-        Phase 2: probability models, AI delegation, scenario planning.
-      </div>
+      <div className="mt-3 text-[11px] text-muted">Phase 2: probability models, AI delegation, scenario planning.</div>
     </Card>
   );
 }
@@ -456,6 +384,12 @@ export default function ProjectHome() {
   const { user } = useContext(AuthContext) || {};
   const meId = user?._id || user?.id;
 
+  // Live presence for this project
+  const presence = (() => {
+    try { return usePresence(id); } catch { return null; }
+  })();
+  const isOnline = presence?.isOnline ?? (() => false);
+
   // Calendar ICS link (flag-gated)
   const icsUrl = CALENDAR_ACCOUNTABILITY ? getIcsUrl(id) : null;
 
@@ -463,13 +397,8 @@ export default function ProjectHome() {
   useXpToasts(id);
 
   const [project, setProject] = useState(null);
-  const [feed, setFeed] = useState({ items: [], nextCursor: null });
-
-  // ✅ Proper posts state init
-  const [posts, setPosts] = useState({ items: [], page: 1, hasMore: true, loading: false });
 
   const [loading, setLoading] = useState(true);
-  const [feedLoading, setFeedLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [stats, setStats] = useState(null);
@@ -484,16 +413,13 @@ export default function ProjectHome() {
   const [showInvite, setShowInvite] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [sprintDoneOpen, setSprintDoneOpen] = useState(false);
-const [shareToFeed, setShareToFeed] = useState(false);
+  const [shareToFeed, setShareToFeed] = useState(false);
 
   // Files (used by Files section)
   const [files, setFiles] = useState([]);
 
   // Track whether we've fetched invites once (to avoid loops)
   const invitesFetchedRef = useRef(false);
-
-  // Activity section ref (for last-seen on view)
-  const activityRef = useRef(null);
 
   // 🔹 KPI detail modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -504,12 +430,15 @@ const [shareToFeed, setShareToFeed] = useState(false);
   // Reduced motion
   const prefersReducedMotion = useReducedMotion();
 
-  useEffect(() => { mark("ss:projecthome:mounted"); }, []);
+  useEffect(() => {
+    mark("ss:projecthome:mounted");
+  }, []);
 
   useEffect(() => {
     let ignore = false;
     (async () => {
-      setLoading(true); setError("");
+      setLoading(true);
+      setError("");
       try {
         const data = await getProject(id);
         if (!ignore) {
@@ -522,7 +451,9 @@ const [shareToFeed, setShareToFeed] = useState(false);
         if (!ignore) setLoading(false);
       }
     })();
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -530,7 +461,8 @@ const [shareToFeed, setShareToFeed] = useState(false);
     let ignore = false;
     const start = performance.now();
     (async () => {
-      setStatsLoading(true); setStatsError("");
+      setStatsLoading(true);
+      setStatsError("");
       try {
         const data = await getProjectStats(id, { range: 30 });
         if (!ignore) setStats(data || null);
@@ -541,7 +473,9 @@ const [shareToFeed, setShareToFeed] = useState(false);
         if (!ignore) setStatsLoading(false);
       }
     })();
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -551,157 +485,41 @@ const [shareToFeed, setShareToFeed] = useState(false);
     }
   }, [loading, project]);
 
-  const loadFeed = async (cursor) => {
-    setFeedLoading(true);
-    try {
-      const res = await getProjectFeed(id, { limit: 20, cursor });
-      const rawItems = Array.isArray(res?.items) ? res.items : [];
-      const items = fromApiList(rawItems);
-      const nextCursor = res?.nextCursor || null;
-
-      setFeed((prev) => ({
-        items: dedupeById(cursor ? [...prev.items, ...items] : items),
-        nextCursor,
-      }));
-    } catch (e) {
-      console.error("[ProjectHome] feed load error", e);
-    } finally {
-      setFeedLoading(false);
-    }
-  };
-
-  // Load posts (paged)
-  const loadPosts = async (page = 1, limit = 20) => {
-    if (!id) return;
-    setPosts((p) => ({ ...p, loading: true }));
-    try {
-      const res = await listPosts(id, { page, limit });
-      const incoming = Array.isArray(res?.items) ? res.items : [];
-      setPosts((prev) => ({
-        items: page === 1 ? incoming : [...prev.items, ...incoming],
-        page,
-        hasMore: (res?.total || incoming.length) > (page * limit),
-        loading: false,
-      }));
-    } catch (e) {
-      console.error("[ProjectHome] posts load error", e);
-      setPosts((p) => ({ ...p, loading: false }));
-    }
-  };
-
-  useEffect(() => {
-    if (!id) return;
-    loadFeed();
-  }, [id]);
-
-  useEffect(() => {
-    if (!id || !POSTS_V1) return;
-    loadPosts(1);
-  }, [id]);
-
-  useEffect(() => {
-    if (!feedLoading && feed.items.length > 0) {
-      mark("ss:projecthome:first-activity");
-      measure("perf:projecthome:first-activity", "ss:nav-project-click", "ss:projecthome:first-activity");
-    }
-  }, [feedLoading, feed.items.length]);
-
-  // ✅ Mark project as seen on mount / when visible / when Activity is viewed
+  // ✅ Mark project as seen on mount / when tab visible/focus
   useEffect(() => {
     if (!project?._id) return;
 
-    // mark now if tab is visible
     if (typeof document !== "undefined" && document.visibilityState === "visible") {
-      try { setLastSeen(project._id, Date.now()); } catch {}
+      try {
+        setLastSeen(project._id, Date.now());
+      } catch {}
     }
-
-    // when tab becomes visible or window gains focus
     const onVisible = () => {
       if (document.visibilityState === "visible") {
-        try { setLastSeen(project._id, Date.now()); } catch {}
+        try {
+          setLastSeen(project._id, Date.now());
+        } catch {}
       }
     };
     const onFocus = () => {
-      try { setLastSeen(project._id, Date.now()); } catch {}
+      try {
+        setLastSeen(project._id, Date.now());
+      } catch {}
     };
-
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onFocus);
-
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onFocus);
     };
   }, [project?._id]);
 
-  // IntersectionObserver: mark last seen when Activity section enters view
-  useEffect(() => {
-    if (!project?._id) return;
-    const el = activityRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-
-    let lastSet = 0;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((en) => {
-          if (en.isIntersecting && en.intersectionRatio >= 0.3) {
-            const now = Date.now();
-            if (now - lastSet > 15_000) {
-              try { setLastSeen(project._id, now); } catch {}
-              lastSet = now;
-            }
-          }
-        });
-      },
-      { threshold: [0.3, 0.6, 1] }
-    );
-
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [project?._id]);
-
-  // Helper: is the Activity section currently in view?
-  const isActivityInView = useCallback(() => {
-    try {
-      const el = activityRef.current;
-      if (!el) return false;
-      const rect = el.getBoundingClientRect();
-      const vh = window.innerHeight || document.documentElement.clientHeight;
-      const visible =
-        rect.top < vh * 0.7 &&
-        rect.bottom > vh * 0.3;
-      return visible;
-    } catch {
-      return false;
-    }
-  }, []);
-
-  // 🔴 Realtime via shared hook (auth + room join)
+  // 🔴 Realtime (keep updates to files/members/tasks; TabbedFeed handles its own data)
   useSocket(id ? `project:${id}` : null, {
     onEvents: {
-      "activity:new": (evt) => {
-        if (String(evt?.projectId) !== String(id)) return;
-        const norm = fromSocketEvent("activity:new", evt);
-        setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
-        if (typeof document !== "undefined" && document.visibilityState === "visible") {
-          try { setLastSeen(id, Date.now()); } catch {}
-        }
-        try {
-          if (document.visibilityState === "visible" && !isActivityInView()) {
-            toast({
-              title: "New activity",
-              action: {
-                label: "View",
-                onClick: () => document.getElementById("activity")?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
-            });
-            track("activity_new_ping", { projectId: id });
-          }
-        } catch {}
-      },
       "project:statsUpdated": (payload) => {
         if (String(payload?.projectId) === String(id)) {
-          // optional: refetch KPIs
+          // optional: refetch KPIs later
         }
       },
       "project:membersUpdated": (payload) => {
@@ -715,10 +533,11 @@ const [shareToFeed, setShareToFeed] = useState(false);
       },
       "project:filesAdded": (payload) => {
         if (String(payload?.projectId) !== String(id) || !Array.isArray(payload?.files)) return;
-        setFiles((prev) => dedupeById([...payload.files, ...prev]));
-        const norm = fromSocketEvent("project:filesAdded", payload);
-        if (!norm.freshUntil) norm.freshUntil = Date.now() + 10_000;
-        setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
+        setFiles((prev) => {
+          const seen = new Set(prev.map((f) => String(f._id || f.id)));
+          const incoming = payload.files.filter((f) => !seen.has(String(f._id || f.id)));
+          return [...incoming, ...prev];
+        });
       },
       "project:updated": (payload) => {
         if (String(payload?.projectId) !== String(id) || !payload?.patch) return;
@@ -727,15 +546,10 @@ const [shareToFeed, setShareToFeed] = useState(false);
         } else {
           setProject((p) => ({ ...p, ...payload.patch }));
         }
-        const norm = fromSocketEvent("project:updated", payload);
-        setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
       "tasks:created": (payload) => {
         if (String(payload?.projectId) !== String(id) || !payload?.task) return;
         setProject((p) => ({ ...p, tasks: [payload.task, ...(p?.tasks || [])] }));
-        const norm = fromSocketEvent("tasks:created", payload);
-        if (!norm.freshUntil) norm.freshUntil = Date.now() + 10_000;
-        setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
       "tasks:updated": (payload) => {
         if (String(payload?.projectId) !== String(id) || !payload?.task) return;
@@ -745,31 +559,7 @@ const [shareToFeed, setShareToFeed] = useState(false);
             String(t._id) === String(payload.task._id) ? payload.task : t
           ),
         }));
-        const norm = fromSocketEvent("tasks:updated", payload);
-        setFeed((prev) => ({ ...prev, items: dedupeById(mergeRealtime(prev.items, norm)) }));
       },
-
-      // 🧩 NEW: posts realtime (merge into posts list)
-      "posts:created": (payload) => {
-        if (String(payload?.projectId) !== String(id) || !payload?.post) return;
-        const p = payload.post;
-        setPosts((prev) => {
-          const exists = prev.items.findIndex((x) => String(x.id || x._id) === String(p.id || p._id));
-          const items = exists >= 0 ? prev.items : [{ ...(p._id ? { id: p._id } : {}), ...p }, ...prev.items];
-          return { ...prev, items };
-        });
-      },
-      "posts:updated": (payload) => {
-        if (String(payload?.projectId) !== String(id) || !payload?.post) return;
-        const p = payload.post;
-        setPosts((prev) => ({
-          ...prev,
-          items: prev.items.map((it) =>
-            String(it.id || it._id) === String(p.id || p._id) ? { ...it, ...p } : it
-          ),
-        }));
-      },
-
       "project:publicChanged": (payload) => {
         if (String(payload?.projectId) === String(id)) {
           setProject((p) => ({ ...p, publicToken: payload?.publicToken || "" }));
@@ -788,7 +578,10 @@ const [shareToFeed, setShareToFeed] = useState(false);
     if (!project?._id) return;
     if (!canManage) return;
     if (invitesFetchedRef.current) return;
-    if (Array.isArray(project?.invites)) { invitesFetchedRef.current = true; return; }
+    if (Array.isArray(project?.invites)) {
+      invitesFetchedRef.current = true;
+      return;
+    }
 
     (async () => {
       try {
@@ -810,54 +603,6 @@ const [shareToFeed, setShareToFeed] = useState(false);
       setProject((p) => ({ ...(p || {}), invites: rows || [] }));
     } catch {}
   }, [project?._id]);
-
-  // Composer (legacy project update posts)
-  const handlePostUpdate = async (payload) => {
-    if (!canEdit) return;
-    const text = typeof payload === "string" ? payload : payload?.text || "";
-    const attachments = typeof payload === "string" ? [] : payload?.attachments || [];
-    const mentions = Array.isArray(payload?.mentions) ? payload.mentions : [];
-    const visibility = (payload && payload.visibility) === "public" ? "public" : "private";
-    if (!text.trim() && attachments.length === 0) return;
-
-    const optimistic = {
-      _id: `tmp-${Date.now()}`,
-      type: "update.posted",
-      text,
-      attachments,
-      mentions,
-      visibility,
-      userId: user?._id,
-      projectId: id,
-      createdAt: new Date().toISOString(),
-      __optimistic: true,
-    };
-
-    setFeed((prev) => ({ ...prev, items: [optimistic, ...prev.items] }));
-
-    try {
-      const created = await postProjectUpdate(id, {
-        text,
-        mentions,
-        visibility,
-        files: attachments.map((a) => a.id || a.tempId).filter(Boolean),
-        clientTempId: optimistic._id,
-      });
-      setFeed((prev) => ({
-        ...prev,
-        items: prev.items.map((it) => (it._id === optimistic._id ? created : it)),
-      }));
-      track("update_posted", { projectId: id, visibility });
-    } catch {
-      setFeed((prev) => ({
-        ...prev,
-        items: prev.items.filter((it) => it._id !== optimistic._id),
-      }));
-      throw new Error("Failed to post update");
-    }
-  };
-
-  const tasks = useMemo(() => project?.tasks ?? [], [project]);
 
   // Tasks
   const handleAddTask = async (payload) => {
@@ -888,9 +633,7 @@ const [shareToFeed, setShareToFeed] = useState(false);
   const publicEnabled = !!publicToken;
   const publicStatusPath = ENABLE_PUBLIC_STATUS && publicEnabled ? buildPublicStatusUrl(publicToken) : null;
   const fullPublicUrl =
-    typeof window !== "undefined" && publicStatusPath
-      ? `${window.location.origin}${publicStatusPath}`
-      : publicStatusPath || "";
+    typeof window !== "undefined" && publicStatusPath ? `${window.location.origin}${publicStatusPath}` : publicStatusPath || "";
 
   const copyLink = async () => {
     try {
@@ -913,65 +656,76 @@ const [shareToFeed, setShareToFeed] = useState(false);
     } catch (e) {
       setCopied(false);
       const msg = e?.message || "Failed to copy link.";
-      try { toast({ title: "Copy failed", description: msg, variant: "error" }); } catch {}
+      try {
+        toast({ title: "Copy failed", description: msg, variant: "error" });
+      } catch {}
     }
   };
 
-  const handleTogglePublic = useCallback(async (nextEnabled) => {
-    if (!ENABLE_PUBLIC_STATUS) return;
-    if (!canManage || !project?._id) return;
+  const handleTogglePublic = useCallback(
+    async (nextEnabled) => {
+      if (!ENABLE_PUBLIC_STATUS) return;
+      if (!canManage || !project?._id) return;
 
-    let mod = {};
-    try { mod = await import("../api/public"); } catch {}
+      let mod = {};
+      try {
+        mod = await import("../api/public");
+      } catch {}
 
-    try {
-      if (nextEnabled) {
-        let token = null;
-        if (typeof mod.enablePublic === "function") {
-          const res = await mod.enablePublic(project._id);
-          token = res?.token || res?.publicToken || null;
+      try {
+        if (nextEnabled) {
+          let token = null;
+          if (typeof mod.enablePublic === "function") {
+            const res = await mod.enablePublic(project._id);
+            token = res?.token || res?.publicToken || null;
+          } else {
+            const res = await fetch(`/api/public/projects/${project._id}/enable`, { method: "POST" });
+            const json = await res.json();
+            token = json?.token || json?.publicToken || null;
+          }
+          setProject((p) => ({ ...p, publicToken: token || p?.publicToken || "" }));
+          try {
+            toast({ title: "Public status enabled", variant: "success" });
+            track("public_status_changed", {
+              projectId: project._id,
+              action: "enabled",
+              tokenPresent: Boolean(token),
+            });
+          } catch {}
         } else {
-          const res = await fetch(`/api/public/projects/${project._id}/enable`, { method: "POST" });
-          const json = await res.json();
-          token = json?.token || json?.publicToken || null;
+          if (typeof mod.disablePublic === "function") {
+            await mod.disablePublic(project._id);
+          } else {
+            await fetch(`/api/public/projects/${project._id}/disable`, { method: "POST" });
+          }
+          setProject((p) => ({ ...p, publicToken: "" }));
+          try {
+            toast({ title: "Public status disabled" });
+            track("public_status_changed", {
+              projectId: project._id,
+              action: "disabled",
+            });
+          } catch {}
         }
-        setProject((p) => ({ ...p, publicToken: token || p?.publicToken || "" }));
+      } catch (e) {
+        const msg = e?.message || "Failed to update public status.";
+        alert(msg);
         try {
-          toast({ title: "Public status enabled", variant: "success" });
-          track("public_status_changed", {
-            projectId: project._id,
-            action: "enabled",
-            tokenPresent: Boolean(token),
-          });
-        } catch {}
-      } else {
-        if (typeof mod.disablePublic === "function") {
-          await mod.disablePublic(project._id);
-        } else {
-          await fetch(`/api/public/projects/${project._id}/disable`, { method: "POST" });
-        }
-        setProject((p) => ({ ...p, publicToken: "" }));
-        try {
-          toast({ title: "Public status disabled" });
-          track("public_status_changed", {
-            projectId: project._id,
-            action: "disabled",
-          });
+          toast({ title: "Public status failed", description: msg, variant: "error" });
         } catch {}
       }
-    } catch (e) {
-      const msg = e?.message || "Failed to update public status.";
-      alert(msg);
-      try { toast({ title: "Public status failed", description: msg, variant: "error" }); } catch {}
-    }
-  }, [canManage, project?._id]);
+    },
+    [canManage, project?._id]
+  );
 
   const handleRegenerate = async () => {
     if (!ENABLE_PUBLIC_STATUS) return;
     if (!canManage || !project?._id) return;
     setRegenLoading(true);
     let mod = {};
-    try { mod = await import("../api/public"); } catch {}
+    try {
+      mod = await import("../api/public");
+    } catch {}
     try {
       let token = null;
       if (typeof mod.regeneratePublicToken === "function") {
@@ -992,7 +746,9 @@ const [shareToFeed, setShareToFeed] = useState(false);
     } catch (e) {
       const msg = e?.message || "Failed to regenerate link.";
       alert(msg);
-      try { toast({ title: "Regenerate failed", description: msg, variant: "error" }); } catch {}
+      try {
+        toast({ title: "Regenerate failed", description: msg, variant: "error" });
+      } catch {}
     } finally {
       setRegenLoading(false);
     }
@@ -1005,32 +761,28 @@ const [shareToFeed, setShareToFeed] = useState(false);
     const { chrono } = extractMentor(stats || {});
     if (inProductiveWindow(chrono)) {
       try {
-        toast({ title: "Prime time ✨", description: "You’re usually most productive now. Start a 25:00?", action: { label: "Start", onClick: () => window.dispatchEvent(new CustomEvent('start-tenx-sprint')) } });
+        toast({
+          title: "Prime time ✨",
+          description: "You’re usually most productive now. Start a 25:00?",
+          action: { label: "Start", onClick: () => window.dispatchEvent(new CustomEvent("start-tenx-sprint")) },
+        });
       } catch {}
     }
   }, [stats]);
-  
 
   // 🔹 KPI point click handler → open modal and preload comments
-  const onKpiPointClick = useCallback((p) => {
-    const metric =
-      p?.metric ||
-      p?.title ||
-      p?.seriesLabel ||
-      p?.labelMetric ||
-      "Metric";
-
-    setSelectedMetric(metric);
-    setSelectedPoint(p || null);
-    setModalOpen(true);
-    try {
-      track("kpi_point_opened", {
-        projectId: id,
-        metric,
-        t: p?.t || p?.label || null,
-      });
-    } catch {}
-  }, [id]);
+  const onKpiPointClick = useCallback(
+    (p) => {
+      const metric = p?.metric || p?.title || p?.seriesLabel || p?.labelMetric || "Metric";
+      setSelectedMetric(metric);
+      setSelectedPoint(p || null);
+      setModalOpen(true);
+      try {
+        track("kpi_point_opened", { projectId: id, metric, t: p?.t || p?.label || null });
+      } catch {}
+    },
+    [id]
+  );
 
   // Load comments whenever selection changes/opened
   useEffect(() => {
@@ -1047,27 +799,27 @@ const [shareToFeed, setShareToFeed] = useState(false);
     }
   }, [modalOpen, selectedPoint, selectedMetric, project?._id, id]);
 
-  const handleAddPointComment = useCallback((text) => {
-    if (!selectedPoint || !selectedMetric) return;
-    const key = buildKpiKey({
-      projectId: project?._id || id,
-      metric: selectedMetric,
-      t: selectedPoint.t || selectedPoint.label,
-    });
-    const entry = {
-      text: String(text || "").trim(),
-      at: Date.now(),
-      author: user?.firstName || user?.username || user?.email || "You",
-    };
-    const updated = addKpiComment(key, entry);
-    setPointComments(updated);
-    try {
-      track("kpi_comment_added", {
-        projectId: id,
+  const handleAddPointComment = useCallback(
+    (text) => {
+      if (!selectedPoint || !selectedMetric) return;
+      const key = buildKpiKey({
+        projectId: project?._id || id,
         metric: selectedMetric,
+        t: selectedPoint.t || selectedPoint.label,
       });
-    } catch {}
-  }, [selectedPoint, selectedMetric, project?._id, id, user?.firstName, user?.username, user?.email]);
+      const entry = {
+        text: String(text || "").trim(),
+        at: Date.now(),
+        author: user?.firstName || user?.username || user?.email || "You",
+      };
+      const updated = addKpiComment(key, entry);
+      setPointComments(updated);
+      try {
+        track("kpi_comment_added", { projectId: id, metric: selectedMetric });
+      } catch {}
+    },
+    [selectedPoint, selectedMetric, project?._id, id, user?.firstName, user?.username, user?.email]
+  );
 
   if (loading) {
     return (
@@ -1130,10 +882,7 @@ const [shareToFeed, setShareToFeed] = useState(false);
       return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-dashed border-border bg-surface p-4 animate-pulse h-[88px]"
-            />
+            <div key={i} className="rounded-2xl border border-dashed border-border bg-surface p-4 animate-pulse h-[88px]" />
           ))}
         </div>
       );
@@ -1147,15 +896,10 @@ const [shareToFeed, setShareToFeed] = useState(false);
         <div className="text-xl font-semibold text-text num">{value}</div>
         {sub ? <div className="text-xs text-muted mt-1">{sub}</div> : null}
         {REACTIONS_V1 && (
-          <ReactionBar
-            targetId={`kpi:${project?._id || id}:${label}`}
-            ownerId={project?.userId}
-            meId={meId || 'me'}
-            label={label}
-          />
+          <ReactionBar targetId={`kpi:${project?._id || id}:${label}`} ownerId={project?.userId} meId={meId || "me"} label={label} />
         )}
       </div>
-    );    
+    );
 
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1167,8 +911,7 @@ const [shareToFeed, setShareToFeed] = useState(false);
     );
   };
 
-  const disabledBtn =
-    "opacity-60 cursor-not-allowed hover:bg-transparent hover:opacity-60";
+  const disabledBtn = "opacity-60 cursor-not-allowed hover:bg-transparent hover:opacity-60";
 
   // Milestone numbers
   const filesCount = Array.isArray(files) ? files.length : 0;
@@ -1180,70 +923,26 @@ const [shareToFeed, setShareToFeed] = useState(false);
       Boolean(t?.completedAt)
   ).length;
 
-  // --- Posts handlers for PostCard ---
-  const handleReact = async (postId, emoji) => {
-    try {
-      // Optimistic UI update
-      setPosts((prev) => ({
-        ...prev,
-        items: prev.items.map((p) => {
-          if (String(p.id) !== String(postId)) return p;
-          const counts = { ...(p.reactions || {}) };
-          counts[emoji] = Math.max(0, (counts[emoji] || 0) + 1);
-          return { ...p, reactions: counts };
-        })
-      }));
-      await apiToggleReaction(id, postId, emoji);
-    } catch (e) {
-      // Rollback on error (best effort)
-      setPosts((prev) => ({
-        ...prev,
-        items: prev.items.map((p) => {
-          if (String(p.id) !== String(postId)) return p;
-          const counts = { ...(p.reactions || {}) };
-          counts[emoji] = Math.max(0, (counts[emoji] || 1) - 1);
-          return { ...p, reactions: counts };
-        })
-      }));
-    }
-  };
-
-  const handleComment = async (postId, text, mentions) => {
-    const trimmed = String(text || "").trim();
-    if (!trimmed) return;
-    try {
-      const created = await apiAddComment(id, postId, { text: trimmed, mentions: mentions || [] });
-      // Merge into thread
-      setPosts((prev) => ({
-        ...prev,
-        items: prev.items.map((p) =>
-          String(p.id) === String(postId)
-            ? { ...p, comments: [ ...(p.comments || []), created ] }
-            : p
-        ),
-      }));
-    } catch (e) {
-      toast({ title: "Failed to comment", variant: "error" });
-    }
-  };
-
   return (
     <main id="main" role="main" tabIndex={-1}>
       <div className="px-4 sm:px-6 lg:px-10 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
-                {/* Page hero */}
-
         {/* Header (public toggle gated by flag) */}
-                {/* Header (public toggle gated by flag) */}
-                <GradientPanel>
-  <ProjectHeader
-    project={project}
-    onAddTask={() => canEdit && setShowTaskSheet(true)}
-    onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
-  />
-
-  {/* Optional thin gradient rule above KPIs (divider) */}
-  <div className="rule" />
-</GradientPanel>
+        <GradientPanel>
+          <ProjectHeader
+            project={project}
+            onAddTask={() => canEdit && setShowTaskSheet(true)}
+            onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
+          />
+          {/* Presence (who's around) */}
+          {Array.isArray(project?.members) && project.members.length > 0 && (
+            <div className="mt-2 px-1 flex items-center justify-between">
+              <div className="flex items-center gap 2">
+                <span className="text-xs text-muted">Online now</span>
+                <AvatarGroup members={project.members} isOnline={isOnline}></AvatarGroup>
+              </div>
+            </div>
+          )}
+        </GradientPanel>
 
         {MESSENGER_V1 && project?.chatEnabled && (
           <Card className="mt-6" role="region" aria-label="Project chat">
@@ -1305,22 +1004,23 @@ const [shareToFeed, setShareToFeed] = useState(false);
           </button>
 
           {IMPORT_WIZARD_V1 && canManage && (
-  <Link
-    to="/import"
-    onClick={() => {
-      try { track("import_cta_clicked", { projectId: id, source: "project_home" }); } catch {}
-    }}
-    className={[
-      "relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
-    ].join(" ")}
-    title="Import from Linear or Jira"
-  >
-    <TrendingUp className="w-4 h-4" />
-    Import from Linear/Jira
-    <span className="shine pointer-events-none" aria-hidden="true" />
-  </Link>
-)}
-
+            <Link
+              to="/import"
+              onClick={() => {
+                try {
+                  track("import_cta_clicked", { projectId: id, source: "project_home" });
+                } catch {}
+              }}
+              className={[
+                "relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 border border-border hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
+              ].join(" ")}
+              title="Import from Linear or Jira"
+            >
+              <TrendingUp className="w-4 h-4" />
+              Import from Linear/Jira
+              <span className="shine pointer-events-none" aria-hidden="true" />
+            </Link>
+          )}
 
           {ENABLE_PUBLIC_STATUS && (
             <button
@@ -1383,23 +1083,14 @@ const [shareToFeed, setShareToFeed] = useState(false);
               />
             </div>
             {REACTIONS_V1 && (
-  <ReactionBar
-    targetId={`kpi-trends:${project?._id || id}`}
-    ownerId={project?.userId}
-    meId={meId || 'me'}
-    label="KPI Trends"
-  />
-)}
+              <ReactionBar targetId={`kpi-trends:${project?._id || id}`} ownerId={project?.userId} meId={meId || "me"} label="KPI Trends" />
+            )}
           </Card>
         )}
 
         {/* Scheduling + Accountability */}
         {CALENDAR_ACCOUNTABILITY && (
-          <AccountabilityPanel
-            tasks={project?.tasks || []}
-            stats={stats}
-            onAddDueDate={() => canEdit && setShowTaskSheet(true)}
-          />
+          <AccountabilityPanel tasks={project?.tasks || []} stats={stats} onAddDueDate={() => canEdit && setShowTaskSheet(true)} />
         )}
 
         {/* AI Charles Xavier = Mentor */}
@@ -1407,58 +1098,13 @@ const [shareToFeed, setShareToFeed] = useState(false);
           <MentorPanel
             stats={stats}
             projectId={project?._id}
-            onStartFocus={() => window.dispatchEvent(new CustomEvent('start-tenx-sprint'))}
+            onStartFocus={() => window.dispatchEvent(new CustomEvent("start-tenx-sprint"))}
             onOpenTasks={() => canEdit && setShowTaskSheet(true)}
           />
         )}
 
-        {/* Unified Activity Feed (upgraded normalizer + realtime merge) */}
-        <div ref={activityRef}>
-          <Card id="activity" className="mt-6" role="region" aria-label="Activity">
-            <div className="flex items-start justify-between">
-              <SectionHeader icon="History">Activity</SectionHeader>
-              <button
-                type="button"
-                className="rounded-lg p-1.5 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                aria-label="Activity options"
-                title="Activity options"
-                onClick={() => loadFeed()}
-              >
-                <MoreHorizontal className="w-5 h-5 text-muted" />
-              </button>
-            </div>
-
-            <div className="mt-3">
-              {!feedLoading && feed.items.length === 0 ? (
-                <EmptyState
-                  icon="💬"
-                  title="No conversations yet."
-                  primary={{
-                    label: "Invite teammates",
-                    onClick: () => setShowInvite(true),
-                  }}
-                  secondary={{
-                    label: "Start a sprint",
-                    onClick: () => window.dispatchEvent(new CustomEvent("start-tenx-sprint")),
-                  }}
-                >
-                  Invite teammates or start a sprint to generate activity.
-                </EmptyState>
-              ) : (
-                <ProjectActivityFeed
-                  projectId={id}
-                  items={feed.items}
-                  loading={feedLoading}
-                  onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
-                  hasMore={!!feed.nextCursor}
-                  onPostUpdate={canEdit ? handlePostUpdate : undefined}
-                  onRefetch={() => loadFeed()}
-                  currentUserId={meId}
-                />
-              )}
-            </div>
-          </Card>
-        </div>
+        {/* Unified Tabbed Feed (project-scoped) */}
+        <TabbedFeed projectId={project._id} showDiscover={false} className="mt-6" />
 
         {/* NEW: Files & Tasks Milestones */}
         <Card className="mt-6" role="region" aria-label="Milestones">
@@ -1466,18 +1112,8 @@ const [shareToFeed, setShareToFeed] = useState(false);
             <SectionHeader icon="Flag">Milestones</SectionHeader>
           </div>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-            <MilestoneBar
-              icon={<FilesIcon className="w-4 h-4 text-indigo-600" />}
-              label="Files uploaded"
-              count={filesCount}
-              unit="files"
-            />
-            <MilestoneBar
-              icon={<Trophy className="w-4 h-4 text-emerald-600" />}
-              label="Tasks completed"
-              count={completedTasks}
-              unit="tasks"
-            />
+            <MilestoneBar icon={<FilesIcon className="w-4 h-4 text-indigo-600" />} label="Files uploaded" count={filesCount} unit="files" />
+            <MilestoneBar icon={<Trophy className="w-4 h-4 text-emerald-600" />} label="Tasks completed" count={completedTasks} unit="tasks" />
           </div>
         </Card>
 
@@ -1487,12 +1123,7 @@ const [shareToFeed, setShareToFeed] = useState(false);
             <SectionHeader icon="Folder">Files</SectionHeader>
           </div>
           <div className="mt-3">
-            <FileGrid
-              projectId={project._id}
-              initialFiles={files}
-              canEdit={canEdit}
-              canManage={canManage}
-            />
+            <FileGrid projectId={project._id} initialFiles={files} canEdit={canEdit} canManage={canManage} />
           </div>
         </Card>
 
@@ -1518,11 +1149,7 @@ const [shareToFeed, setShareToFeed] = useState(false);
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8" />
           <div className="lg:col-span-4 space-y-6">
-            <InsightsBlock
-              projectId={project._id}
-              insights={stats?.insights}
-              loading={statsLoading}
-            />
+            <InsightsBlock projectId={project._id} insights={stats?.insights} loading={statsLoading} />
 
             <Card className="accent-risk">
               <SectionHeader icon="AlertTriangle">Risks &amp; Blockers</SectionHeader>
@@ -1537,11 +1164,7 @@ const [shareToFeed, setShareToFeed] = useState(false);
       {/* ---- Public Status Modal (flagged) ---- */}
       {ENABLE_PUBLIC_STATUS && showStatusModal && (
         <>
-          <div
-            className="fixed inset-0 z-50 bg-black/30 dark:bg-black/50"
-            onClick={() => setShowStatusModal(false)}
-            aria-hidden="true"
-          />
+          <div className="fixed inset-0 z-50 bg-black/30 dark:bg-black/50" onClick={() => setShowStatusModal(false)} aria-hidden="true" />
           <div
             className="fixed z-50 inset-x-4 top-24 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(560px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
             role="dialog"
@@ -1551,14 +1174,9 @@ const [shareToFeed, setShareToFeed] = useState(false);
             <div className="p-4 border-b border-border flex items-center justify-between">
               <div className="inline-flex items-center gap-2">
                 <LinkIcon className="w-4 h-4 text-indigo-600" />
-                <h3 className="text-sm font-semibold text-text">
-                  Public status link
-                </h3>
+                <h3 className="text-sm font-semibold text-text">Public status link</h3>
               </div>
-              <button
-                className="text-sm rounded-lg px-2 py-1 hover:bg-surface"
-                onClick={() => setShowStatusModal(false)}
-              >
+              <button className="text-sm rounded-lg px-2 py-1 hover:bg-surface" onClick={() => setShowStatusModal(false)}>
                 Close
               </button>
             </div>
@@ -1570,9 +1188,7 @@ const [shareToFeed, setShareToFeed] = useState(false);
                 </p>
               ) : (
                 <>
-                  <label className="block text-xs text-muted mb-1">
-                    Share this read-only status page:
-                  </label>
+                  <label className="block text-xs text-muted mb-1">Share this read-only status page:</label>
                   <div className="flex items-stretch gap-2">
                     <input
                       readOnly
@@ -1584,8 +1200,12 @@ const [shareToFeed, setShareToFeed] = useState(false);
                       onClick={copyLink}
                       className="relative inline-flex items-center gap-2 rounded-lg px-3 py-2 text-white bg-grad-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 lift fade-swap"
                     >
-                      <span className="swap-a" aria-hidden={copied ? "true" : "false"}><Copy className="w-4 h-4" /></span>
-                      <span className="swap-b" aria-hidden={copied ? "false" : "true"}><Check className="w-4 h-4" /></span>
+                      <span className="swap-a" aria-hidden={copied ? "true" : "false"}>
+                        <Copy className="w-4 h-4" />
+                      </span>
+                      <span className="swap-b" aria-hidden={copied ? "false" : "true"}>
+                        <Check className="w-4 h-4" />
+                      </span>
                       <span className="swap-a" aria-hidden={copied ? "true" : "false"}>Copy</span>
                       <span className="swap-b" aria-hidden={copied ? "false" : "true"}>Copied</span>
                       <span className="shine pointer-events-none" aria-hidden="true" />
@@ -1601,9 +1221,7 @@ const [shareToFeed, setShareToFeed] = useState(false);
                       <span className="shine pointer-events-none" aria-hidden="true" />
                     </button>
                   </div>
-                  <p className="text-[11px] text-muted">
-                    Regenerating creates a new token and invalidates the old link.
-                  </p>
+                  <p className="text-[11px] text-muted">Regenerating creates a new token and invalidates the old link.</p>
                 </>
               )}
             </div>
@@ -1624,16 +1242,21 @@ const [shareToFeed, setShareToFeed] = useState(false);
       )}
 
       {/* ---- Sprint Complete Modal ---- */}
-<SprintCompleteModal
-  open={sprintDoneOpen}
-  onClose={() => { setSprintDoneOpen(false); setShareToFeed(false); }}
-  // Lightweight v1: pass an empty list or derive from project.tasks window if you want
-  completedTasks={[]}
-  onShareToggleChange={(on) => {
-    setShareToFeed(on);
-    try { track('share_toggle_used', { on }); } catch {}
-  }}
-/>
+      <SprintCompleteModal
+        open={sprintDoneOpen}
+        onClose={() => {
+          setSprintDoneOpen(false);
+          setShareToFeed(false);
+        }}
+        completedTasks={[]}
+        onShareToggleChange={(on) => {
+          setShareToFeed(on);
+          try {
+            track("share_toggle_used", { on });
+          } catch {}
+        }}
+      />
+
       {/* ---- Drawers / Modals ---- */}
       <TaskSheet
         open={showTaskSheet}
@@ -1645,7 +1268,10 @@ const [shareToFeed, setShareToFeed] = useState(false);
       />
       <InviteModal
         open={showInvite}
-        onClose={() => { setShowInvite(false); refreshInvites(); }}
+        onClose={() => {
+          setShowInvite(false);
+          refreshInvites();
+        }}
         projectId={project?._id}
       />
       <ProjectSettingsModal
@@ -1657,7 +1283,7 @@ const [shareToFeed, setShareToFeed] = useState(false);
             setProject((p) => ({ ...(p || {}), ...(updated || {}) }));
             try {
               toast({ title: "Project saved", variant: "success" });
-              track("project_saved", { projectId: (updated?._id || project?._id || id) });
+              track("project_saved", { projectId: updated?._id || project?._id || id });
             } catch {}
           }
         }}

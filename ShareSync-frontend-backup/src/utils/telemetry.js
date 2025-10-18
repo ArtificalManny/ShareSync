@@ -120,6 +120,10 @@ export const trackImportFailed        = (props = {}) => track("import_failed", p
 export const trackPresenceHeartbeatSent = (props = {}) => track("presence_heartbeat_sent", props);
 export const trackPresenceMemberSeen    = (props = {}) => track("presence_member_seen", props);
 
+// ✅ NEW: Home polish telemetry
+export const trackKpiStripViewed   = (props = {}) => track("kpi_strip_viewed", props);
+export const trackFeedTabChanged   = (props = {}) => track("feed_tab_changed", props);
+
 // Simple ephemeral session id (tab-scoped)
 let __sid = null;
 function getSessionId() {
@@ -180,4 +184,8 @@ export default {
     //Presence
     trackPresenceHeartbeatSent,
     trackPresenceMemberSeen,
+
+    //NEW
+    trackKpiStripViewed,
+    trackFeedTabChanged,
 };

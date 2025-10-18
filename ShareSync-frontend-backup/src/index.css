@@ -23,6 +23,10 @@
 /* Typography + themed background */
 @import './styles/theme.css';
 
+/* ⬇️ NEW: Type & spacing tokens (global, before Tailwind layers) */
+@import './styles/type.css';
+@import './styles/spacing.css';
+
 /* 2) Tailwind layers */
 @tailwind base;
 @tailwind components;

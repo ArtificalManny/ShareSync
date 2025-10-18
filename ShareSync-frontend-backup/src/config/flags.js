@@ -93,6 +93,9 @@ export const SSO_START_URL     = String(import.meta.env.VITE_SSO_START_URL || "/
 // Admin/metrics debug panel (guardrail traceability)
 export const ADMIN_METRICS_V1  = overrides.ADMIN_METRICS_V1 ?? envFlag('VITE_FEATURE_ADMIN_METRICS_V1', true);
 
+export const PULSE_ADMIN_V1 = /^(1|true|on|yes)$/i.test(String(import.meta?.env?.VITE_PULSE_ADMIN_V1 ?? ""));
+
+
 // Admin console (read-only)
 export const ADMIN_CONSOLE_V1 = (overrides.ADMIN_CONSOLE_V1 ??
   envFlag('VITE_FEATURE_ADMIN_CONSOLE_V1', false));

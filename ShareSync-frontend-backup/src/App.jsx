@@ -19,6 +19,8 @@ import "./styles/motion.css";
 import "./components/Sidebar.css";
 import "./styles/messenger.css";
 import "./styles/search.css";
+import "./styles/type.css";
+import "./styles/spacing.css";
 
 import { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
@@ -48,6 +50,7 @@ import {
   DISCOVERY_V1,
   IMPORT_WIZARD_V1,
   ADMIN_CONSOLE_V1,
+  PULSE_ADMIN_V1, // ⬅️ NEW
 } from "./config/flags.js";
 
 import FeatureGate from "./utils/FeatureGate.jsx";
@@ -68,9 +71,10 @@ const SearchPage = lazy(() => import("./pages/SearchPage"));
 const AcceptInvite = lazy(() => import("./components/AcceptInvite.jsx"));
 const Discover = lazy(() => import("./pages/Discover.jsx")); // discovery
 
-// ⬇️ NEW: Import Wizard + Admin Console pages
+// ⬇️ NEW: Import Wizard + Admin pages
 const ImportWizard = lazy(() => import("./pages/import/ImportWizard.jsx"));
 const AdminConsole = lazy(() => import("./pages/admin/AdminConsole.jsx"));
+const PulseAdmin = lazy(() => import("./pages/admin/PulseAdmin.jsx")); // ⬅️ NEW
 
 function ScrollToHash() {
   const location = useLocation();
@@ -90,7 +94,7 @@ function GuardedRoutes() {
   const navigate = useNavigate();
 
   const openRoutes = ["/login", "/create-account", "/forgot-password", "/p/", "/status", "/invite"];
-  // NOTE: /import and /admin/console remain authenticated-only
+  // NOTE: /import, /admin/console, and /admin/pulse remain authenticated-only
 
   useEffect(() => {
     if (!ready) return;
@@ -154,12 +158,22 @@ function GuardedRoutes() {
           }
         />
 
-        {/* ⬇️ NEW: Admin Console (gated) */}
+        {/* Admin Console (gated) */}
         <Route
           path="/admin/console"
           element={
             <FeatureGate flag={ADMIN_CONSOLE_V1} fallback={<Navigate to="/home" replace />}>
               <AdminConsole />
+            </FeatureGate>
+          }
+        />
+
+        {/* ⬇️ NEW: Pulse Admin (gated) */}
+        <Route
+          path="/admin/pulse"
+          element={
+            <FeatureGate flag={PULSE_ADMIN_V1} fallback={<Navigate to="/home" replace />}>
+              <PulseAdmin />
             </FeatureGate>
           }
         />
