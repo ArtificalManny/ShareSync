@@ -68,6 +68,9 @@ export const IMPORT_WIZARD_V1 = overrides.IMPORT_WIZARD_V1 ??
 export const MESSENGER_V1 = overrides.MESSENGER_V1 ??
   envFlag('VITE_FEATURE_MESSENGER_V1', false);
 
+  // Presence (light)
+export const PRESENCE_V1 = envFlag('VITE_FEATURE_PRESENCE_V1', false);
+
 // ✅ NEW: Brand V2
 export const BRAND_V2 = overrides.BRAND_V2 ??
   envFlag('VITE_FEATURE_BRAND_V2', false);
@@ -109,6 +112,7 @@ export const FLAGS = {
   GLOBAL_SEARCH,           // NEW
   DISCOVERABILITY,         // NEW
   MESSENGER_V1,            // NEW
+  PRESENCE_V1,
   BRAND_V2,                // NEW
   DISCOVERY_V1,
   // convenience: include a couple more for dashboards

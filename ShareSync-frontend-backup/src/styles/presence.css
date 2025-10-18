@@ -1,0 +1,36 @@
+/* Tiny presence dots; uses neutral surface/border tokens if available. */
+
+.presence-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 9999px;
+    border: 2px solid var(--bg, #fff); /* ring to separate from avatars */
+    background: #94a3b8;               /* slate-400 as default/offline */
+    box-shadow: 0 0 0 1px var(--border, rgba(0,0,0,.06));
+  }
+  
+  /* States */
+  .presence-dot.is-online {
+    background: #22c55e;               /* emerald-500 */
+  }
+  
+  .presence-dot.is-away {
+    background: #f59e0b;               /* amber-500 */
+  }
+  
+  .presence-dot.is-offline {
+    background: #94a3b8;               /* slate-400 */
+    opacity: .85;
+  }
+  
+  /* Helpful placement utility for avatar corners */
+  .presence-corner {
+    position: relative;
+  }
+  .presence-corner .presence-dot {
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+  }
+  

@@ -4,7 +4,7 @@ import { Sun, Moon, LogOut, PanelLeftClose, MessageCircle } from 'lucide-react';
 import { formatProfilePicture } from '../utils/imageUtils';
 import { useChat } from "../context/ChatContext.jsx";
 import UnreadBadge from './messenger/UnreadBadge.jsx';
-import { BRAND_V2 } from '../config/flags.js';
+import { BRAND_V2, ADMIN_CONSOLE_V1 } from '../config/flags.js';
 
 const BrandSwitcher = lazy(() => import('./global/BrandSwitcher.jsx'));
 const DEFAULT_PIC = '/default-profile.png';
@@ -47,12 +47,12 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   };
 
   const headerStyle = BRAND_V2
-  ? {
-    background: 'rgb(var(--brand-v2-header))',
-    color: 'rgb(var(--brand-v2-text))',
-    borderBottomColor: 'rgb(var(--brand-v2-border))'
-  }
-  : undefined;
+    ? {
+      background: 'rgb(var(--brand-v2-header))',
+      color: 'rgb(var(--brand-v2-text))',
+      borderBottomColor: 'rgb(var(--brand-v2-border))'
+    }
+    : undefined;
 
   return (
     <header className="with-sidebar sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur"
@@ -72,7 +72,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           </button>
           {/*<Link to="/home" className="font-semibold text-sm hover:opacity-90">
             ShareSync
-  </Link>*/}
+          </Link>*/}
         </div>
 
         {/* Middle: search */}
@@ -90,14 +90,25 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           />
         </form>
 
-        {/* Right: messenger, theme, profile, logout */}
+        {/* Right: admin (flag), messenger, theme, profile, logout */}
         <div className="flex items-center gap-3">
-        {BRAND_V2 && (
-          <Suspense fallback={null}>
-        <BrandSwitcher className='mr-1' />
-        </Suspense>
-        )}
+          {BRAND_V2 && (
+            <Suspense fallback={null}>
+              <BrandSwitcher className='mr-1' />
+            </Suspense>
+          )}
 
+          {/* ⬇️ NEW: Admin Console shortcut (feature-gated) */}
+          {ADMIN_CONSOLE_V1 && (
+            <Link
+              to="/admin/console"
+              className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-label="Open admin console"
+              title="Admin Console"
+            >
+              Admin
+            </Link>
+          )}
 
           {/* Messenger */}
           <button

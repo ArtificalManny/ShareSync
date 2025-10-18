@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Home, FolderKanban, User as UserIcon, Settings, ChevronsLeft, Compass } from "lucide-react";
+import { Home, FolderKanban, User as UserIcon, Settings, ChevronsLeft, Compass, ShieldCheck } from "lucide-react";
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
 import "./Sidebar.css";
 import { track } from "../utils/telemetry";
-import { DISCOVERY_V1 } from "../config/flags"; // ⬅️ NEW
+import { DISCOVERY_V1, ADMIN_CONSOLE_V1 } from "../config/flags"; // ⬅️ NEW: include admin flag
 
 const LS_KEY = "ss.sidebar.collapsed";
 
@@ -125,6 +125,16 @@ export default function Sidebar() {
           count={counts.settings}
           collapsed={tooltipWhenCollapsed}
         />
+
+        {/* ⬇️ NEW: Admin Console link (feature-gated) */}
+        {ADMIN_CONSOLE_V1 && (
+          <SidebarItem
+            to="/admin/console"
+            label="Admin"
+            icon={ShieldCheck}
+            collapsed={tooltipWhenCollapsed}
+          />
+        )}
       </nav>
 
       {/* Spacer */}

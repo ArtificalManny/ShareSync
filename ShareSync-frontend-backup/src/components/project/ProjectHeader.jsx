@@ -1,4 +1,5 @@
-import React, { useContext, useMemo, useState, useEffect } from "react";
+// src/components/project/ProjectHeader.jsx
+import React, { useContext, useMemo, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Link2, RefreshCcw, Copy as CopyIcon, Check as CheckIcon, CalendarDays } from "lucide-react";
 import { AuthContext } from "../../AuthContext";
@@ -18,7 +19,7 @@ import StatusPill from "../projects/StatusPill.jsx";
 import useRecentFlag from "../../hooks/useRecentFlag";
 import useReducedMotion from "../../hooks/useReducedMotion";
 import { setLastSeen } from "../../utils/stories";
-import { CALENDAR_ACCOUNTABILITY } from "../../config/flags.js";
+import { CALENDAR_ACCOUNTABILITY, PRESENCE_V1 } from "../../config/flags.js";
 import { getIcsUrl } from "../../api/calendar.js";
 import { trackScheduleCreated } from "../../utils/telemetry";
 
@@ -26,6 +27,8 @@ import { trackScheduleCreated } from "../../utils/telemetry";
 import Card from "../ui/Card.jsx";
 import Button from "../ui/Button.jsx";
 import Chip from "../ui/Chip.jsx";
+import usePresence from "../../hooks/usePresence.js";
+import Avatar from "../ui/Avatar.jsx";
 
 const ENABLE_PUBLIC_STATUS = (() => {
   const v = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS ?? "";
@@ -227,6 +230,46 @@ export default function ProjectHeader({
   const prefersReduced = useReducedMotion();
   const ringAnimated = hasRecent && !prefersReduced;
 
+  // ── Presence (light) ───────────────────────────────────────────────────────
+  const { onlineMap, isOnline } = usePresence(project?._id);
+  const members = useMemo(
+    () => (Array.isArray(project?.members) ? project.members : []),
+    [project?.members]
+  );
+  const onlineCount = useMemo(() => {
+    const ids = new Set();
+    if (project?.userId) ids.add(String(project.userId));
+    members.forEach((m) => m?.userId && ids.add(String(m.userId)));
+    let c = 0;
+    ids.forEach((uid) => { if (isOnline(uid)) c++; });
+    return c;
+  }, [project?.userId, members, isOnline, onlineMap]);
+
+  // Telemetry: listen for heartbeat and log
+  const seenRef = useRef(new Set());
+  useEffect(() => {
+    const onBeat = () => {
+      try { track("presence_heartbeat_sent", { projectId: project?._id }); } catch {}
+    };
+    window.addEventListener("presence:heartbeat", onBeat);
+    return () => window.removeEventListener("presence:heartbeat", onBeat);
+  }, [project?._id]);
+
+  // Telemetry: when members appear online, mark "seen" once per session
+  useEffect(() => {
+    if (!PRESENCE_V1) return;
+    const been = seenRef.current;
+    const ids = [];
+    if (project?.userId) ids.push(String(project.userId));
+    members.forEach((m) => m?.userId && ids.push(String(m.userId)));
+    ids.forEach((uid) => {
+      if (isOnline(uid) && !been.has(uid)) {
+        been.add(uid);
+        try { track("presence_member_seen", { projectId: project?._id, userId: uid }); } catch {}
+      }
+    });
+  }, [onlineMap, members, project?._id, isOnline]);
+
   async function copyPublicUrl() {
     if (!publicHref) return;
     try {
@@ -312,10 +355,9 @@ export default function ProjectHeader({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mt-1">
-              <Chip tone="default" title={`Role: ${role}`} aria-label={`Role: ${role}`}>
-  Role: {role[0].toUpperCase()}{role.slice(1)}
-</Chip>
-
+                <Chip tone="default" title={`Role: ${role}`} aria-label={`Role: ${role}`}>
+                  Role: {role[0].toUpperCase()}{role.slice(1)}
+                </Chip>
 
                 <Button
                   variant="secondary"
@@ -331,8 +373,8 @@ export default function ProjectHeader({
                 {isOwner && ENABLE_PUBLIC_STATUS && typeof onTogglePublic === "function" ? (
                   <label className="inline-flex items-center gap-2 text-xs">
                     <Chip tone={publicEnabled ? "good" : "default"}>
-  {publicEnabled ? "Public" : "Private"}
-</Chip>
+                      {publicEnabled ? "Public" : "Private"}
+                    </Chip>
                     <input
                       type="checkbox"
                       className="h-4 w-7 appearance-none rounded-full bg-slate-300 checked:bg-indigo-600 relative transition-colors outline-none cursor-pointer disabled:opacity-60"
@@ -344,8 +386,8 @@ export default function ProjectHeader({
                   </label>
                 ) : (
                   <Chip tone={publicEnabled ? "good" : "default"}>
-  {publicEnabled ? "Public" : "Private"}
-</Chip>
+                    {publicEnabled ? "Public" : "Private"}
+                  </Chip>
                 )}
 
                 {ENABLE_PUBLIC_STATUS && publicEnabled && (
@@ -394,6 +436,33 @@ export default function ProjectHeader({
                     </Button>
                   </div>
                 )}
+
+                {/* ── Presence UI: avatars with online dots + count ─────────── */}
+                {PRESENCE_V1 && members.length > 0 && (
+                  <div className="inline-flex items-center gap-2 ml-1">
+                    <div className="flex -space-x-2">
+                      {members.slice(0, 5).map((m) => (
+                        <span key={m.userId || m.id} className="relative">
+                          <Avatar
+                            src={m.avatarUrl || m.profilePicture}
+                            name={m.name || m.username || "Member"}
+                            size={22}
+                            className="rounded-full ring-2 ring-white dark:ring-slate-900"
+                          />
+                          <span
+                            className={[
+                              "presence-dot",
+                              isOnline(m.userId || m.id) ? "is-online" : "is-away",
+                            ].join(" ")}
+                            title={isOnline(m.userId || m.id) ? "Online" : "Away"}
+                            aria-hidden
+                          />
+                        </span>
+                      ))}
+                    </div>
+                    <span className="text-xs text-muted">• {onlineCount} online</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -408,27 +477,27 @@ export default function ProjectHeader({
               className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
             />
             <Button
-   type="submit"
-   variant="primary"
-   size="md"
-   className="rounded-xl px-4 py-2 lift"
-   disabled={addingQuick}
->
-   <span className="relative inline-flex items-center gap-2">
-     {/* spinner */}
-     {addingQuick && (
-       <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden>
-         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
-       </svg>
-     )}
-     {/* check */}
-     {!addingQuick && addedQuick && <span aria-hidden>✓</span>}
-     <span className="transition-opacity duration-150">
-       {addingQuick ? "Adding…" : addedQuick ? "Added" : "Add task"}
-     </span>
-   </span>
- </Button>
+              type="submit"
+              variant="primary"
+              size="md"
+              className="rounded-xl px-4 py-2 lift"
+              disabled={addingQuick}
+            >
+              <span className="relative inline-flex items-center gap-2">
+                {/* spinner */}
+                {addingQuick && (
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                  </svg>
+                )}
+                {/* check */}
+                {!addingQuick && addedQuick && <span aria-hidden>✓</span>}
+                <span className="transition-opacity duration-150">
+                  {addingQuick ? "Adding…" : addedQuick ? "Added" : "Add task"}
+                </span>
+              </span>
+            </Button>
           </form>
 
           {CALENDAR_ACCOUNTABILITY && icsUrl && (

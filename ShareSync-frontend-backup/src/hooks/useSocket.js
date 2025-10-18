@@ -1,3 +1,4 @@
+// /src/hooks/useSocket.js
 import { useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 
@@ -25,6 +26,16 @@ const WS_URL = import.meta.env.VITE_WS_URL || "/"; // same origin by default
  *  - Re-joins rooms on reconnect.
  *  - Re-binds handlers when `onEvents` changes.
  *  - Cleans up on unmount.
+ *
+ * Optional presence (keep OFF by default):
+ *  - You can pass an onEvents handler for "presence:update" from your server:
+ *      useSocket(`project:${id}`, {
+ *        onEvents: {
+ *          "presence:update": ({ onlineCount }) => {
+ *            window.dispatchEvent(new CustomEvent("presence:count", { detail: { count: onlineCount }}));
+ *          }
+ *        }
+ *      })
  */
 export default function useSocket(roomsInput, { onEvents = {}, onAny, poller, userId } = {}) {
   const socketRef = useRef(null);

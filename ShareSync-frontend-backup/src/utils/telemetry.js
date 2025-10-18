@@ -100,6 +100,12 @@ export const trackBrandSwitched     = (props = {}) => track("brand_switched", pr
 export const trackAdminConsoleOpened        = (props = {}) => track("admin_console_opened", props);
 export const trackAdminConsoleTabChanged    = (props = {}) => track("admin_console_tab_changed", props);
 export const trackAdminConsoleFilterChanged = (props = {}) => track("admin_console_filter_changed", props);
+
+// Aliases requested (keep both sets so nothing breaks)
+export const trackAdminConsoleViewed     = (props = {}) => track("admin_console_viewed", props);
+export const trackAdminTabChanged        = (props = {}) => track("admin_tab_changed", props);
+export const trackAdminCsvExported       = (props = {}) => track("admin_csv_exported", props);
+
 // Optional, if you add CSV export per tab
 export const trackAdminConsoleExportClicked = (props = {}) => track("admin_console_export_clicked", props);
 
@@ -109,6 +115,10 @@ export const trackImportStarted       = (props = {}) => track("import_started", 
 export const trackImportPreviewShown  = (props = {}) => track("import_preview_shown", props);
 export const trackImportConfirmed     = (props = {}) => track("import_confirmed", props);
 export const trackImportFailed        = (props = {}) => track("import_failed", props);
+
+// Presence telemetry
+export const trackPresenceHeartbeatSent = (props = {}) => track("presence_heartbeat_sent", props);
+export const trackPresenceMemberSeen    = (props = {}) => track("presence_member_seen", props);
 
 // Simple ephemeral session id (tab-scoped)
 let __sid = null;
@@ -161,4 +171,13 @@ export default {
     trackAdminConsoleTabChanged,
     trackAdminConsoleFilterChanged,
     trackAdminConsoleExportClicked,  
+
+    //Alises requested
+    trackAdminConsoleViewed,
+    trackAdminTabChanged,
+    trackAdminCsvExported,
+
+    //Presence
+    trackPresenceHeartbeatSent,
+    trackPresenceMemberSeen,
 };
