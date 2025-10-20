@@ -157,3 +157,90 @@ button:focus-visible {
   box-shadow: var(--shadow-focus);
   border-radius: 8px;
 }
+
+/* ===== Neon Theme ===== */
+.layout-stage[data-theme="neon"] {
+  /* elevate base contrast a touch */
+  --surface: #0B1020;      /* deep navy */
+  --bg:      #0E1426;
+  --text:    #E6ECFF;
+  --muted:   #9AA7C7;
+  --border:  #1D2743;
+}
+
+/* Buttons */
+.layout-stage[data-theme="neon"] .btn.btn--primary{
+  background: var(--grad-primary);
+  color: var(--btn-contrast);
+  border: 1px solid color-mix(in oklab, var(--brand-accent) 60%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--brand-accent) 35%, transparent),
+    0 8px 28px var(--glow-mid),
+    0 2px 8px rgba(0,0,0,.24);
+}
+.layout-stage[data-theme="neon"] .btn.btn--primary:hover{
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--brand-accent) 55%, transparent),
+    0 12px 36px var(--glow-strong);
+  transform: translateY(-0.5px);
+}
+
+.layout-stage[data-theme="neon"] .btn.btn--outline{
+  border: 1px solid color-mix(in oklab, var(--brand-accent) 40%, #6b7280 60%);
+  color: var(--text);
+}
+.layout-stage[data-theme="neon"] .btn.btn--outline:hover{
+  background: color-mix(in oklab, var(--brand-accent) 8%, transparent);
+  box-shadow: 0 6px 18px var(--glow-soft);
+}
+
+/* PageHeader + specular backdrop */
+.layout-stage[data-theme="neon"] .accent-bar{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.06), transparent),
+    radial-gradient(120% 120% at 0% 0%, color-mix(in oklab, var(--brand-accent) 14%, transparent) 0%, transparent 60%);
+}
+
+/* Focus rings */
+.layout-stage[data-theme="neon"] .focus-ring:focus-visible,
+.layout-stage[data-theme="neon"] [tabindex]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 14px;
+}
+
+/* KPI tiles slight lift on hover */
+.layout-stage[data-theme="neon"] .kpi-strip .card{
+  box-shadow: 0 10px 32px -8px var(--glow-soft);
+}
+.layout-stage[data-theme="neon"] .kpi-strip .card:hover{
+  box-shadow: 0 18px 48px -8px var(--glow-mid);
+}
+
+/* Presence dots—make the “online” feel neon */
+.layout-stage[data-theme="neon"] .presence-dot.is-online{
+  background: var(--signal-good);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 10px 2px var(--signal-good);
+}
+.layout-stage[data-theme="neon"] .presence-dot.is-away{
+  background: #97A3C1;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.text-neon {
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow:
+    0 0 18px color-mix(in oklab, var(--brand-accent) 25%, transparent);
+}
+.layout-stage[data-theme="neon"] .card{
+  border-color: color-mix(in oklab, var(--brand-accent) 20%, var(--border));
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+    var(--surface);
+}
+.layout-stage[data-theme="neon"] .row-accent-violet{
+  --row-glow: var(--glow-soft);
+  box-shadow: 0 18px 56px -10px var(--row-glow);
+}

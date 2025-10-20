@@ -1,16 +1,30 @@
+// src/components/Sidebar.jsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Home, FolderKanban, User as UserIcon, Settings, ChevronsLeft, Compass, ShieldCheck } from "lucide-react";
+import {
+  Home,
+  FolderKanban,
+  User as UserIcon,
+  Settings,
+  ChevronsLeft,
+  Compass,
+  ShieldCheck,
+} from "lucide-react";
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
+
+// Keep base styles + add neon skin
 import "./Sidebar.css";
+import "./Sidebar.neon.css";
+
 import { track } from "../utils/telemetry";
-import { DISCOVERY_V1, ADMIN_CONSOLE_V1 } from "../config/flags"; // ⬅️ NEW: include admin flag
+import { DISCOVERY_V1, ADMIN_CONSOLE_V1 } from "../config/flags";
+import useBrandTheme from "../hooks/useBrandTheme";
 
 const LS_KEY = "ss.sidebar.collapsed";
 
 /**
- * App Left Sidebar (collapsible)
+ * App Left Sidebar (collapsible, neon skin)
  * - Persists collapsed state in localStorage
  * - Adds/removes body classes so the content can offset via CSS vars
  * - Keyboard hint: '[' toggles collapse
@@ -27,17 +41,24 @@ export default function Sidebar() {
     }
   });
 
+  // brand/accent attrs so CSS can theme the rail (pandora/cnbc/meta)
+  const { containerAttrs } = useBrandTheme({ enabled: true });
+
   const tooltipWhenCollapsed = collapsed;
 
   const toggle = useCallback(() => {
     const next = !collapsed;
     setCollapsed(next);
-    try { track("sidebar_toggled", { collapsed: next }); } catch {}
+    try {
+      track("sidebar_toggled", { collapsed: next });
+    } catch {}
   }, [collapsed]);
 
   // Persist + body class & CSS var for layout
   useEffect(() => {
-    try { localStorage.setItem(LS_KEY, collapsed ? "1" : "0"); } catch {}
+    try {
+      localStorage.setItem(LS_KEY, collapsed ? "1" : "0");
+    } catch {}
 
     document.body.classList.add("has-sidebar");
     document.body.classList.toggle("sidebar-collapsed", collapsed);
@@ -47,6 +68,21 @@ export default function Sidebar() {
       window.dispatchEvent(new CustomEvent("sidebar:toggle", { detail: { collapsed } }));
     } catch {}
   }, [collapsed]);
+
+  // Keyboard '[' to toggle collapse (as hinted in UI)
+  useEffect(() => {
+    const onKey = (e) => {
+      // Ignore when typing in inputs
+      const tag = (document.activeElement?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
+      if (e.key === "[") {
+        e.preventDefault();
+        toggle();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggle]);
 
   // Counts (wire up to real data if desired)
   const counts = useMemo(
@@ -63,9 +99,15 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={["ss-sidebar", collapsed ? "is-collapsed" : ""].join(" ")}
+      {...containerAttrs}
+      id="app-sidebar"
+      className={["ss-sidebar", "neon-sidebar", collapsed ? "is-collapsed" : ""].join(" ")}
       aria-label="Primary"
     >
+      {/* Neon vertical spine + subtle glow */}
+      <span className="sb-rail" aria-hidden="true" />
+      <span className="sb-ambient" aria-hidden="true" />
+
       {/* Header / Logo + collapse button */}
       <div className="sb-head">
         <div className="sb-brand" aria-hidden={collapsed ? "true" : "false"}>
@@ -94,7 +136,7 @@ export default function Sidebar() {
           collapsed={tooltipWhenCollapsed}
         />
 
-        {/* ⬇️ NEW: Discover link (feature-gated) */}
+        {/* Discover (feature-gated) */}
         {DISCOVERY_V1 && (
           <SidebarItem
             to="/discover"
@@ -126,7 +168,7 @@ export default function Sidebar() {
           collapsed={tooltipWhenCollapsed}
         />
 
-        {/* ⬇️ NEW: Admin Console link (feature-gated) */}
+        {/* Admin Console (feature-gated) */}
         {ADMIN_CONSOLE_V1 && (
           <SidebarItem
             to="/admin/console"

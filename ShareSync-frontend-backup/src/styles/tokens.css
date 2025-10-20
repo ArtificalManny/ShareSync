@@ -438,3 +438,51 @@ body { font-family: var(--font-sans); letter-spacing: 0; }
 }
 :root.dark .chip { background: hsl(220 20% 12% / .6); }
 :root.dark .card { border-color: hsl(222 15% 22%); }
+/* === Neon brand palette (Pandora/CNBC/Facebook mashup) ================== */
+:root {
+  /* Core neons */
+  --neon-violet:  #7B61FF; /* Pandora violet */
+  --neon-fuchsia: #FF3FA4;
+  --neon-cyan:    #00E5FF; /* Pandora cyan */
+  --neon-blue:    #00A3FF; /* CNBC blue */
+  --neon-teal:    #00E0B8; /* CNBC teal */
+  --neon-lime:    #B4F500;
+
+  /* Dark-surface friendly “signal” colors */
+  --signal-good:  #06F78A;
+  --signal-warn:  #FFB020;
+  --signal-bad:   #FF5C7A;
+
+  /* Defaults (overridden per accent below) */
+  --brand-accent: var(--neon-violet);
+  --brand-accent-2: var(--neon-cyan);
+  --brand-accent-3: var(--neon-fuchsia);
+
+  /* Glows (OKLCH mix if supported; safe fallback) */
+  --glow-soft:  color-mix(in oklab, var(--brand-accent) 35%, transparent);
+  --glow-mid:   color-mix(in oklab, var(--brand-accent) 55%, transparent);
+  --glow-strong:color-mix(in oklab, var(--brand-accent) 75%, transparent);
+
+  /* Focus ring tuned for neon */
+  --focus-ring: var(--brand-accent);
+
+  /* Button text contrast (kept white for neon) */
+  --btn-contrast: #ffffff;
+}
+
+/* Accent families (switch via [data-accent]) */
+.layout-stage[data-theme="neon"][data-accent="pandora"] {
+  --brand-accent:   var(--neon-violet);
+  --brand-accent-2: var(--neon-cyan);
+  --brand-accent-3: var(--neon-fuchsia);
+}
+.layout-stage[data-theme="neon"][data-accent="cnbc"] {
+  --brand-accent:   var(--neon-blue);
+  --brand-accent-2: var(--neon-teal);
+  --brand-accent-3: var(--neon-lime);
+}
+.layout-stage[data-theme="neon"][data-accent="meta"] {
+  --brand-accent:   #0866FF;       /* FB blue */
+  --brand-accent-2: var(--neon-violet);
+  --brand-accent-3: var(--neon-cyan);
+}

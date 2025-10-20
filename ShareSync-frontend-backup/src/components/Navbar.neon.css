@@ -1,0 +1,177 @@
+/* Neon Navbar skin
+   - attaches to .neon-nav on your existing header
+   - expects your tokens (bg/surface/border/text/accent vars) already in theme.css
+   - respects [data-brand="v2"] and [data-accent="..."] if present
+*/
+
+:root {
+    /* sensible fallbacks if tokens are missing */
+    --nn-bg:        var(--bg, #0b0f1a);
+    --nn-surface:   var(--surface, #0f1422);
+    --nn-text:      var(--text, #e6e8ee);
+    --nn-muted:     var(--muted, #96a0b5);
+    --nn-border:    var(--border, #1e2536);
+    --nn-ring:      var(--ring, #7c91ff);
+    --nn-accent:    var(--accent, #6a5cff);
+    --nn-accent-2:  var(--accent-2, #00e0ff);
+    --nn-accent-3:  var(--accent-3, #ff00e0);
+  }
+  
+  /* Root container */
+  .neon-nav,
+  header.neon-nav,
+  .topbar.neon-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    isolation: isolate;
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    color: var(--nn-text);
+    background:
+      radial-gradient(120% 140% at 10% 0%,
+        color-mix(in oklab, var(--nn-accent) 8%, transparent) 0%,
+        transparent 50%) no-repeat,
+      radial-gradient(120% 140% at 90% 0%,
+        color-mix(in oklab, var(--nn-accent-2) 10%, transparent) 0%,
+        transparent 58%) no-repeat,
+      linear-gradient(180deg, color-mix(in oklab, var(--nn-surface) 85%, #000 15%), var(--nn-bg));
+    border-bottom: 1px solid color-mix(in oklab, var(--nn-border) 60%, transparent);
+    box-shadow:
+      inset 0 -1px 0 color-mix(in oklab, #fff 7%, transparent),
+      0 10px 40px -20px color-mix(in oklab, var(--nn-accent) 28%, transparent);
+  }
+  
+  /* Subtle top hairline light */
+  .neon-nav::before {
+    content: "";
+    position: absolute; inset: 0 0 auto 0; height: 1px;
+    background: linear-gradient(90deg,
+      transparent, color-mix(in oklab, var(--nn-accent) 35%, transparent),
+      color-mix(in oklab, var(--nn-accent-2) 35%, transparent), transparent);
+    opacity: .75;
+    pointer-events: none;
+  }
+  
+  /* Soft specular sheen */
+  .neon-nav::after {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(120% 50% at 50% -10%,
+        color-mix(in oklab, #fff 6%, transparent),
+        transparent 65%);
+    mix-blend-mode: screen;
+    opacity: .35;
+    pointer-events: none;
+  }
+  
+  /* container row helpers if your Navbar already uses them */
+  .neon-nav .nav-wrap { display:flex; align-items:center; gap:.75rem; padding:.5rem .75rem; }
+  .neon-nav .nav-left, .neon-nav .nav-center, .neon-nav .nav-right { display:flex; align-items:center; gap:.5rem; }
+  
+  /* Brand mark */
+  .neon-nav .logo, .neon-nav [data-logo] {
+    display:inline-grid; place-items:center;
+    width:28px; height:28px; border-radius:8px;
+    color:#fff;
+    background: conic-gradient(from 220deg,
+      var(--nn-accent), var(--nn-accent-2), var(--nn-accent-3), var(--nn-accent));
+    box-shadow: 0 0 28px color-mix(in oklab, var(--nn-accent-2) 30%, transparent);
+  }
+  
+  /* Search — pill with neon ring */
+  .neon-nav .searchbar,
+  .neon-nav input[type="search"] {
+    --_bg: color-mix(in oklab, var(--nn-surface) 80%, #000 20%);
+    --_bd: color-mix(in oklab, var(--nn-border) 80%, transparent);
+    background: var(--_bg);
+    border: 1px solid var(--_bd);
+    border-radius: 999px;
+    color: var(--nn-text);
+    padding: .5rem .875rem;
+    min-width: clamp(220px, 36vw, 560px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+    transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
+  }
+  .neon-nav .searchbar::placeholder,
+  .neon-nav input[type="search"]::placeholder { color: color-mix(in oklab, var(--nn-muted) 70%, #fff 0%); }
+  
+  .neon-nav .searchbar:focus,
+  .neon-nav input[type="search"]:focus {
+    outline: none;
+    border-color: color-mix(in oklab, var(--nn-accent) 55%, var(--nn-border));
+    box-shadow:
+      0 0 0 3px color-mix(in oklab, var(--nn-accent) 18%, transparent),
+      0 0 32px -6px color-mix(in oklab, var(--nn-accent-2) 45%, transparent);
+  }
+  
+  /* Icon buttons */
+  .neon-nav .btn-icon,
+  .neon-nav button.btn-icon,
+  .neon-nav .icon-button {
+    display:inline-grid; place-items:center;
+    width:32px; height:32px; border-radius:10px;
+    border:1px solid color-mix(in oklab, var(--nn-border) 80%, transparent);
+    background: color-mix(in oklab, var(--nn-surface) 75%, #000 25%);
+    color: var(--nn-text);
+    transition: transform .12s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+  }
+  .neon-nav .btn-icon:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in oklab, var(--nn-accent) 40%, var(--nn-border));
+    box-shadow:
+      0 0 0 3px color-mix(in oklab, var(--nn-accent) 18%, transparent),
+      0 8px 22px -10px color-mix(in oklab, var(--nn-accent-3) 45%, transparent);
+  }
+  
+  /* Primary tiny pill (if you render one in nav) */
+  .neon-nav .btn-pill {
+    border-radius: 999px;
+    padding: .45rem .9rem;
+    background: linear-gradient(180deg,
+      color-mix(in oklab, var(--nn-accent) 78%, #fff 0%),
+      color-mix(in oklab, var(--nn-accent-2) 78%, #fff 0%));
+    color: #0b0f1a; font-weight: 600;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.35) inset,
+      0 0 36px -10px color-mix(in oklab, var(--nn-accent-2) 65%, transparent);
+  }
+  .neon-nav .btn-pill:active { transform: translateY(1px); }
+  
+  /* Profile chip / avatar with glow ring */
+  .neon-nav .avatar, .neon-nav [data-avatar] {
+    position: relative; border-radius: 999px; overflow: hidden;
+    box-shadow:
+      0 0 0 1.5px color-mix(in oklab, var(--nn-border) 70%, transparent),
+      0 0 28px -10px color-mix(in oklab, var(--nn-accent-2) 55%, transparent);
+  }
+  .neon-nav .avatar::after {
+    content:""; position:absolute; inset:-2px;
+    border-radius:inherit; pointer-events:none;
+    background: conic-gradient(from 180deg,
+      color-mix(in oklab, var(--nn-accent) 70%, transparent),
+      color-mix(in oklab, var(--nn-accent-2) 70%, transparent),
+      color-mix(in oklab, var(--nn-accent-3) 70%, transparent),
+      color-mix(in oklab, var(--nn-accent) 70%, transparent));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    padding: 2px; opacity:.45;
+  }
+  
+  /* Online dot (if you place one) */
+  .neon-nav .presence-dot {
+    position:absolute; right:-2px; bottom:-2px; width:10px; height:10px; border-radius:999px;
+    background: #18ffb2; box-shadow: 0 0 8px #18ffb2, 0 0 16px #18ffb2aa;
+    border: 2px solid var(--nn-surface);
+  }
+  
+  /* Compact on scroll (optional – add .is-compact on scroll) */
+  .neon-nav.is-compact { backdrop-filter: blur(8px) saturate(120%); }
+  .neon-nav.is-compact .searchbar { min-width: clamp(200px, 28vw, 420px); }
+  
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .neon-nav, .neon-nav * { transition: none !important; }
+  }
+  

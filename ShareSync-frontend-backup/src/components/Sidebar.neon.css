@@ -1,0 +1,43 @@
+/* ───────────────── Level the sidebar with the header ─────────────────── */
+/* If you already define --header-h in tokens.css, this will use it; else 48px */
+:root { --header-h: var(--header-height, 48px); }
+
+/* Header (your Navbar.jsx uses h-12 = 48px) */
+header.with-sidebar { height: var(--header-h); }
+
+/* Sidebar sits directly below the header */
+.ss-sidebar,
+.neon-sidebar {
+  position: fixed;
+  top: var(--header-h, 48px);
+  left: 0;
+  height: calc(100vh - var(--header-h, 48px));
+  /* keep existing width, z-index, etc. from your current CSS */
+}
+
+/* If you have an inner scroll container, ensure it fits the new height */
+.neon-sidebar .sb-nav,
+.neon-sidebar .sb-scroll {
+  max-height: calc(100vh - var(--header-h, 48px) - 96px); /* room for brand + user block */
+  overflow: auto;
+}
+
+/* ─────────── Keep neon effects inside the rail (no top bleed) ─────────── */
+.neon-sidebar .sb-ambient {
+  position: absolute;
+  inset: 0;                 /* was negative offsets; now fully inside */
+  pointer-events: none;
+  z-index: 0;
+}
+
+.neon-sidebar .sb-rail {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 16px;
+  z-index: 0;
+}
+
+/* Content sits above the glow layers */
+.neon-sidebar .sb-head,
+.neon-sidebar .sb-nav,
+.neon-sidebar .sb-user { position: relative; z-index: 1; }

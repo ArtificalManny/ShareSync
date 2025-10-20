@@ -11,6 +11,8 @@ import {
 
 import Navbar from "./components/Navbar";
 import { AuthProvider, AuthContext } from "./AuthContext";
+
+// Global styles
 import "./theme.css";
 import "./styles/card.css";
 import "./styles/tokens.css";
@@ -21,6 +23,7 @@ import "./styles/messenger.css";
 import "./styles/search.css";
 import "./styles/type.css";
 import "./styles/spacing.css";
+import "./styles/focus.neon.css";
 
 import { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
@@ -43,19 +46,30 @@ import Sidebar from "./components/Sidebar";
 import MessengerPanel from "./components/messenger/MessengerPanel.jsx";
 import { ChatProvider } from "./context/ChatContext.jsx";
 
-// ⬇️ consolidate flag imports
+// Focus (gated)
+import { FocusProvider } from "./context/FocusContext.jsx";
+import FocusDock from "./components/focus/FocusDock.jsx";
+import FocusToasts from "./components/toast/FocusToasts.jsx";
+
+// Public routes chunk (returns <Route/> children only)
+import PublicRoutes from "./routes/publicRoutes.jsx";
+
+// Flags
 import {
   MESSENGER_V1,
   BRAND_V2,
   DISCOVERY_V1,
   IMPORT_WIZARD_V1,
   ADMIN_CONSOLE_V1,
-  PULSE_ADMIN_V1, // ⬅️ NEW
+  PULSE_ADMIN_V1,
+  PUBLIC_PAGES_V1,
+  FOCUS_DOCK_V1,
 } from "./config/flags.js";
 
 import FeatureGate from "./utils/FeatureGate.jsx";
 import useBrandTheme from "./hooks/useBrandTheme.js";
 
+// Lazy pages
 const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -65,16 +79,13 @@ const ProjectHome = lazy(() => import("./pages/ProjectHome"));
 const DMPage = lazy(() => import("./pages/DMPage.jsx"));
 const CreateAccount = lazy(() => import("./pages/CreateAccount"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
-const PublicProject = lazy(() => import("./pages/PublicProject"));
 const PublicProjectStatus = lazy(() => import("./pages/PublicProjectStatus"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const AcceptInvite = lazy(() => import("./components/AcceptInvite.jsx"));
-const Discover = lazy(() => import("./pages/Discover.jsx")); // discovery
-
-// ⬇️ NEW: Import Wizard + Admin pages
+const Discover = lazy(() => import("./pages/Discover.jsx"));
 const ImportWizard = lazy(() => import("./pages/import/ImportWizard.jsx"));
 const AdminConsole = lazy(() => import("./pages/admin/AdminConsole.jsx"));
-const PulseAdmin = lazy(() => import("./pages/admin/PulseAdmin.jsx")); // ⬅️ NEW
+const PulseAdmin = lazy(() => import("./pages/admin/PulseAdmin.jsx"));
 
 function ScrollToHash() {
   const location = useLocation();
@@ -93,8 +104,16 @@ function GuardedRoutes() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const openRoutes = ["/login", "/create-account", "/forgot-password", "/p/", "/status", "/invite"];
-  // NOTE: /import, /admin/console, and /admin/pulse remain authenticated-only
+  // Paths allowed while logged out
+  const openRoutes = [
+    "/login",
+    "/create-account",
+    "/forgot-password",
+    "/p/",     // public project
+    "/u/",     // public profile
+    "/status", // legacy public status
+    "/invite",
+  ];
 
   useEffect(() => {
     if (!ready) return;
@@ -103,13 +122,7 @@ function GuardedRoutes() {
   }, [user, ready, location.pathname, navigate]);
 
   return (
-    <Suspense
-      fallback={
-        <div className="px-6 py-10 text-center text-slate-500" role="status" aria-live="polite">
-          Loading page…
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="px-6 py-10 text-center text-slate-500">Loading page…</div>}>
       <ScrollToHash />
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
@@ -118,18 +131,20 @@ function GuardedRoutes() {
         <Route path="/projects/:id" element={<ProjectHome />} />
         <Route path="/settings" element={<Settings />} />
 
+        {/* Auth */}
         <Route path="/login" element={<Login />} />
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Profile */}
+        {/* Profile (authenticated) */}
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:username" element={<Profile />} />
-        <Route path="/u/:username" element={<Profile />} />
         <Route path="/me" element={<Profile />} />
 
-        {/* Public */}
-        <Route path="/p/:token" element={<PublicProject />} />
+        {/* Public (insert only <Route/>s) */}
+        {PUBLIC_PAGES_V1 && <PublicRoutes />}
+
+        {/* Legacy public status */}
         <Route path="/status/:token" element={<PublicProjectStatus />} />
 
         {/* Messenger full-page */}
@@ -142,7 +157,7 @@ function GuardedRoutes() {
         {/* Search */}
         <Route path="/search" element={<SearchPage />} />
 
-        {/* Discovery (gated) */}
+        {/* Discover (gated) */}
         <Route
           path="/discover"
           element={DISCOVERY_V1 ? <Discover /> : <Navigate to="/home" replace />}
@@ -168,7 +183,7 @@ function GuardedRoutes() {
           }
         />
 
-        {/* ⬇️ NEW: Pulse Admin (gated) */}
+        {/* Pulse Admin (gated) */}
         <Route
           path="/admin/pulse"
           element={
@@ -178,6 +193,7 @@ function GuardedRoutes() {
           }
         />
 
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Suspense>
@@ -194,14 +210,11 @@ const AppRoutes = () => {
       <Sidebar />
       <Navbar user={navbarUser} onLogout={logout} />
 
-      {/* ChatProvider wraps both routed pages AND the floating messenger panel */}
       <ChatProvider userId={navbarUser?._id || navbarUser?.id}>
         <div id="main" role="main" className="main-content with-sidebar">
           <GuardedRoutes />
         </div>
-
-        {/* Floating Messenger Panel */}
-        <MessengerPanel />
+        {MESSENGER_V1 && <MessengerPanel />}
       </ChatProvider>
 
       <ToastHost />
@@ -210,13 +223,35 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  const { containerAttrs } = useBrandTheme({ enabled: BRAND_V2 });
+  const { containerAttrs } = useBrandTheme({
+    enabled: BRAND_V2,
+    applyToDocument: true,
+    defaultBrand: "v2",
+    defaultAccent: "pandora",
+  });
+
+  // A tiny shell so we can conditionally wrap FocusProvider
+  const Shell = (
+    <>
+      <div className="app-container layout-stage" {...containerAttrs}>
+        <AppRoutes />
+      </div>
+
+      {/* Globals */}
+      <MiniSprintWidget />
+      <QuickNotesDrawer />
+      <PinnedDrawer />
+      {FOCUS_DOCK_V1 && <FocusDock />}
+      {FOCUS_DOCK_V1 && <FocusToasts />}
+    </>
+  );
 
   return (
     <AuthProvider>
       <UserProvider>
         <ErrorBoundary>
           <Router>
+            {/* Accessibility helper */}
             <a
               href="#main"
               className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 bg-white text-ink-900 px-3 py-2 rounded-lg shadow"
@@ -225,26 +260,11 @@ const App = () => {
             </a>
 
             <CommandPaletteProvider>
-              <SprintProvider>
-                <BreakProvider>
-                  <NotesProvider>
-                    <PinnedProvider>
-                      <div
-                        className="app-container layout-stage"
-                        data-accent="indigo"
-                        {...containerAttrs}
-                      >
-                        <AppRoutes />
-                      </div>
-
-                      <MiniSprintWidget />
-                      <QuickNotesDrawer />
-                      <PinnedDrawer />
-                    </PinnedProvider>
-                  </NotesProvider>
-                </BreakProvider>
-              </SprintProvider>
-
+              {FOCUS_DOCK_V1 ? (
+                <FocusProvider>{Shell}</FocusProvider>
+              ) : (
+                Shell
+              )}
               <CommandPalette />
             </CommandPaletteProvider>
           </Router>

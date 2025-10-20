@@ -1,0 +1,50 @@
+/* Minimal styles used by FocusDock, FocusDoneModal, and tiny icon buttons.
+   Safe to keep even if you later skin these via Tailwind/util classes. */
+
+   :root {
+    --dock-bg: rgb(12 18 32 / 72%);
+    --dock-border: rgb(153 161 189 / 28%);
+    --dock-blur: 10px;
+    --dock-shadow: 0 10px 30px rgb(0 0 0 / 40%);
+    --neon-primary: #6ea8ff;
+    --neon-primary-2: #b073ff;
+  }
+  
+  .glass-strong {
+    background: radial-gradient(120% 140% at 10% 0%, rgb(255 255 255 / 06%), rgb(255 255 255 / 02%)) ,
+                var(--dock-bg);
+    backdrop-filter: saturate(1.2) blur(var(--dock-blur));
+    -webkit-backdrop-filter: saturate(1.2) blur(var(--dock-blur));
+    border: 1px solid var(--dock-border);
+    border-radius: 14px;
+    box-shadow: var(--dock-shadow);
+  }
+  
+  .btn-primary.neon {
+    appearance: none;
+    border: 1px solid rgba(110,168,255,.35);
+    border-radius: 9999px;
+    padding: 8px 14px;
+    font-weight: 600;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,0)) ,
+      radial-gradient(120% 140% at 10% 0%, var(--neon-primary), var(--neon-primary-2));
+    color: white;
+    box-shadow:
+      0 0 18px rgba(110,168,255,.35),
+      inset 0 1px 0 rgba(255,255,255,.22);
+  }
+  .btn-primary.neon:active { transform: translateY(1px); }
+  
+  .icon-btn, .btn-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--dock-border);
+    background: rgb(255 255 255 / 03%);
+  }
+  .icon-btn:hover, .btn-icon:hover { background: rgb(255 255 255 / 06%); }
+  
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+  
