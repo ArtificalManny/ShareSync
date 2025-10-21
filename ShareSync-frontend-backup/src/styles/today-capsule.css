@@ -1,0 +1,32 @@
+/* Today Capsule — “Next best action” */
+.today-capsule {
+    border-radius: var(--radius, 16px);
+    border: 1px solid var(--border, rgb(153 161 189 / 28%));
+    background:
+      radial-gradient(120% 140% at 10% 0%, rgb(255 255 255 / 6%), rgb(255 255 255 / 2%)),
+      var(--surface, #11162a);
+    box-shadow: 0 10px 30px rgb(0 0 0 / 28%);
+    padding: 16px;
+  }
+  
+  .today-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+  
+  .today-title { font-weight: 700; color: var(--text, #e9ecf6); }
+  .today-sub   { color: var(--muted, #9aa3b2); font-size: 13px; }
+  
+  .today-start {
+    border-radius: 999px;
+    padding: 8px 14px;
+    color: white;
+    border: 0;
+    background: radial-gradient(120% 140% at 10% 0%, var(--brand, #7a8cff), var(--brand-2, #9e6dff));
+    box-shadow: 0 0 24px color-mix(in srgb, var(--brand, #7a8cff) 35%, transparent);
+    cursor: pointer;
+  }
+  .today-start:active { transform: translateY(1px); }
+  

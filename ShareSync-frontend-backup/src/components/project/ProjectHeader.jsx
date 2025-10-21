@@ -30,6 +30,7 @@ import Chip from "../ui/Chip.jsx";
 import usePresence from "../../hooks/usePresence.js";
 // ⬇️ shared avatars with presence dots
 import AvatarGroup from "../ui/AvatarGroup.jsx";
+import FocusPresenceDot from "../presence/FocusPresenceDot.jsx";
 
 const ENABLE_PUBLIC_STATUS = (() => {
   const v = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS ?? "";
@@ -232,7 +233,14 @@ export default function ProjectHeader({
   const ringAnimated = hasRecent && !prefersReduced;
 
   // ── Presence (via hook) ──────────────────────────────────────────────────
-  const { onlineMap, isOnline } = usePresence(project?._id);
+  // ── Presence (via hook) ──────────────────────────────────────────────────
+const presence = usePresence(project?._id);
+const onlineMap = presence?.onlineMap || {};
+const isOnline = (uid) =>
+  presence?.isOnline ? presence.isOnline(String(uid)) : false;
+const isFocusing = Boolean(presence?.isFocusing);
+const focusProjectId = presence?.focusProjectId;
+
   const members = useMemo(
     () => (Array.isArray(project?.members) ? project.members : []),
     [project?.members]
@@ -297,6 +305,16 @@ export default function ProjectHeader({
     } catch {}
   }
 
+  function joinFocus() {
+    try { track("focus_join_clicked", { projectId: project?._id }) ; } catch {
+    try {
+      window.dispatchEvent(
+        new CustomEvent("start-tenx-sprint", { detail: { projectId: project?._id } })
+      );
+    } catch {}
+    }
+  }
+
   return (
     <Card className="shine accent-bar">
       <span className="accent-bar__left" aria-hidden="true" />
@@ -350,15 +368,38 @@ export default function ProjectHeader({
                 </span>
 
                 {/* ⬇️ Presence beside the title (flag-gated) */}
-                {PRESENCE_V1 && mappedMembers.length > 0 && (
-                  <div className="inline-flex items-center gap-2">
-                    <AvatarGroup
-                      members={mappedMembers}
-                      isOnline={(id) => isOnline(String(id))}
-                    />
-                    <span className="text-xs text-muted">• {onlineCount} online</span>
-                  </div>
-                )}
+{PRESENCE_V1 && mappedMembers.length > 0 && (
+  <div className="inline-flex items-center gap-2">
+    {/* Breathing pulse when anyone is focusing on this project */}
+    <FocusPresenceDot
+      active={Boolean(
+        isFocusing && (!focusProjectId || String(focusProjectId) === String(project?._id))
+      )}
+      title="Live focus in progress"
+    />
+
+    <AvatarGroup
+      members={mappedMembers}
+      isOnline={(id) => isOnline(String(id))}
+    />
+    <span className="text-xs text-muted">• {onlineCount} online</span>
+
+    {/* Quick 'Join Focus' CTA when a live focus is on this project */}
+    {isFocusing &&
+      (!focusProjectId || String(focusProjectId) === String(project?._id)) && (
+        <Button
+          variant="secondary"
+          size="sm"
+          type="button"
+          className="px-2 py-0.5 text-xs rounded-md"
+          onClick={joinFocus}
+          title="Join the current 25:00 focus"
+        >
+          Join Focus
+        </Button>
+      )}
+  </div>
+)}
 
                 {isOwner && (
                   <Button

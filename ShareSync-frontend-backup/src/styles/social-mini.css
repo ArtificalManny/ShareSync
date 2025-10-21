@@ -1,0 +1,27 @@
+/* Social mini (reactions, follow) */
+.reaction-bar {
+    display: inline-flex; gap: 8px; align-items: center;
+  }
+  
+  .reaction-btn {
+    display: inline-grid; place-items: center;
+    width: 28px; height: 28px; border-radius: 999px;
+    border: 1px solid var(--border, rgb(153 161 189 / 28%));
+    background: rgb(255 255 255 / 4%);
+    color: var(--text, #e9ecf6);
+    transition: transform .1s ease;
+  }
+  .reaction-btn:hover { transform: translateY(-1px); }
+  .reaction-btn.active {
+    background: rgb(122 140 255 / .18);
+    border-color: rgb(122 140 255 / .38);
+    box-shadow: 0 0 18px rgb(122 140 255 / .35);
+  }
+  
+  .follow-btn {
+    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border);
+    color: white;
+    background: radial-gradient(120% 140% at 10% 0%, var(--brand, #7a8cff), var(--brand-2, #9e6dff));
+    box-shadow: 0 0 22px color-mix(in srgb, var(--brand, #7a8cff) 35%, transparent);
+  }
+  

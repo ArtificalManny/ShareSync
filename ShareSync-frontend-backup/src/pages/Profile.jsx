@@ -7,11 +7,17 @@ import AuditList from "../components/audit/AuditList.jsx";
 import { Lock } from "lucide-react";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
 import useReducedMotion from "../hooks/useReducedMotion";
+import { SOCIAL_MINI_V1 } from "../config/flags.js";
 
 // NEW shared profile pieces (public-safe)
 import ProfileHeader from "../components/Profile/ProfileHeader.jsx";
 import Streak from "../components/Profile/Streak.jsx";
 import Badges from "../components/Profile/Badges.jsx";
+
+//SOcial (follow + reactions)
+import FollowButton from "../components/social/FollowButton.jsx";
+import ReactionBar from "../components/social/ReactionBar.jsx";
+import { track } from "../utils/telemetry.js";
 
 // NEW: global user context (will emit user:updated so avatars refresh everywhere)
 import { UserContext } from "../context/UserContext";
@@ -161,6 +167,12 @@ export default function Profile() {
 
   const userForPublic = publicUser;
   const publicUserId = userForPublic?._id || userForPublic?.id || null;
+  const publicFollowers = 
+    userForPublic?.followersCount ??
+    (Array.isArray(userForPublic?.followers) ? userForPublic.followers.length : 0);
+  const publicFollowing =
+    userForPublic?.followingCount ??
+    (Array.isArray(userForPublic?.followers) ? userForPublic.followers.length : 0);
 
   return (
     <div className="with-sidebar px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-5xl mx-auto space-y-6">
@@ -191,14 +203,50 @@ export default function Profile() {
           <>
             {/* Public header (read-only) */}
             <section className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular">
-              <ProfileHeader
-                user={userForPublic}
-                isOwner={false}
-                isPublic
-                prefersReduced={prefersReduced}
-                onAvatarUploaded={undefined}
-              />
-            </section>
+  <ProfileHeader
+    user={userForPublic}
+    isOwner={false}
+    isPublic
+    prefersReduced={prefersReduced}
+    onAvatarUploaded={undefined}
+  />
+
+  {/* Social actions (public view) */}
+  {SOCIAL_MINI_V1 && publicUserId && (
+    <div className="mt-3 flex flex-wrap items-center gap-3">
+      <FollowButton
+        userId={publicUserId}
+        onChange={(following) => {
+          try {
+            track(following ? "follow_clicked" : "unfollow_clicked", {
+              userId: publicUserId,
+              surface: "profile_public",
+            });
+          } catch {}
+        }}
+      />
+      <ReactionBar
+        compact
+        targetId={`user:${publicUserId}`}
+        ownerId={publicUserId}
+        meId={"me"}
+        label="Profile"
+        onReact={(emoji) => {
+          try {
+            track("reaction_clicked", {
+              userId: publicUserId,
+              emoji,
+              surface: "profile_public",
+            });
+          } catch {}
+        }}
+      />
+      <div className="ml-auto text-xs text-muted">
+        {publicFollowers} followers · {publicFollowing} following
+      </div>
+    </div>
+  )}
+</section>
 
             {/* Public: XP/Streak/Badges summary */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -240,16 +288,25 @@ export default function Profile() {
         )
       ) : (
         <>
+        <p className="text-xs text-muted mt-1">
+  Follows and reactions on this profile may appear here.
+</p>
           {/* Owner header (edit controls enabled) */}
           <section className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular">
-            <ProfileHeader
-              user={me}
-              isOwner
-              isPublic={false}
-              prefersReduced={prefersReduced}
-              onAvatarUploaded={handleAvatarUploaded}
-            />
-          </section>
+  <ProfileHeader
+    user={me}
+    isOwner
+    isPublic={false}
+    prefersReduced={prefersReduced}
+    onAvatarUploaded={handleAvatarUploaded}
+  />
+
+  {SOCIAL_MINI_V1 && (
+    <div className="mt-3 text-xs text-muted">
+      {ownerFollowers} followers · {ownerFollowing} following
+    </div>
+  )}
+</section>
 
           {/* Owner: Profile Photo editor */}
           <section className="card rounded-2xl border border-border bg-surface p-6">

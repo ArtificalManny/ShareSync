@@ -23,7 +23,10 @@ import "./styles/messenger.css";
 import "./styles/search.css";
 import "./styles/type.css";
 import "./styles/spacing.css";
-import "./styles/focus.neon.css";
+
+// if you already have tokens/neon pack, keep them;
+// if not, the “drop-in” below will add equivalents inside focus.neon.css
+
 
 import { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";

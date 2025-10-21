@@ -1,0 +1,24 @@
+/* Public pages (read-only cards + sharebar) */
+.public-card {
+    border-radius: var(--radius, 16px);
+    border: 1px solid var(--border, rgb(153 161 189 / 28%));
+    background:
+      radial-gradient(120% 140% at 5% 0%, rgb(255 255 255 / 6%), rgb(255 255 255 / 2%)),
+      var(--surface, #11162a);
+    padding: 16px;
+    box-shadow: 0 10px 30px rgb(0 0 0 / 28%);
+  }
+  
+  .public-sharebar {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .public-sharebar .copy {
+    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border);
+    background: rgb(255 255 255 / 6%); color: var(--text);
+  }
+  .public-sharebar .open {
+    padding: 6px 12px; border-radius: 999px; border: 0; color: white;
+    background: radial-gradient(120% 140% at 10% 0%, var(--brand, #7a8cff), var(--brand-2, #9e6dff));
+    box-shadow: 0 0 22px color-mix(in srgb, var(--brand, #7a8cff) 35%, transparent);
+  }
+  

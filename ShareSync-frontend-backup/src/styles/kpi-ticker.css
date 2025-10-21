@@ -1,0 +1,37 @@
+/* KPI Ticker — compact pills for navbar */
+.kpi-ticker {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  .kpi-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border, rgb(153 161 189 / 28%));
+    background: linear-gradient(180deg, rgb(255 255 255 / 5%), rgb(255 255 255 / 0));
+    box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+    font-size: 12px;
+    color: var(--text, #e9ecf6);
+  }
+  
+  .kpi-pill .label { opacity: .7; }
+  .kpi-pill .value { font-weight: 700; font-variant-numeric: tabular-nums; }
+  
+  .kpi-delta {
+    font-size: 12px;
+    border-radius: 6px;
+    padding: 2px 6px;
+    background: rgb(28 200 160 / .18);
+    border: 1px solid rgb(28 200 160 / .3);
+    color: #19caa3;
+  }
+  .kpi-delta.down {
+    background: rgb(255 109 126 / .14);
+    border-color: rgb(255 109 126 / .28);
+    color: #ff6d7e;
+  }
+  
