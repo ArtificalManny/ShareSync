@@ -37,7 +37,7 @@ import {
   Lightbulb,
   AlertCircle,
 } from "lucide-react";
-import { CALENDAR_ACCOUNTABILITY, MENTOR_V1, IMPORT_WIZARD_V1 } from "../config/flags.js";
+import { CALENDAR_ACCOUNTABILITY, MENTOR_V1, IMPORT_WIZARD_V1, ETA_EXPLAINER_V1 } from "../config/flags.js";
 import { getIcsUrl } from "../api/calendar.js";
 import { buildPublicStatusUrl } from "../api/public";
 import EmptyState from "../components/ui/EmptyState.jsx";
@@ -62,6 +62,9 @@ import KpiDetailModal from "../components/kpi/KpiDetailModal";
 import useKpiSeries from "../hooks/useKpiSeries";
 import "../styles/charts.css";
 import "../styles/posts.css"; // keep if TabbedFeed/PostCard styles are global
+
+import ETAExplainer from "../components/project/ETAExplainer.jsx";
+import FocusPresenceDot from "../components/presence/FocusPresenceDot.jsx";
 
 // NEW: prefers-reduced-motion hook
 import useReducedMotion from "../hooks/useReducedMotion";
@@ -388,7 +391,17 @@ export default function ProjectHome() {
   const presence = (() => {
     try { return usePresence(id); } catch { return null; }
   })();
-  const isOnline = presence?.isOnline ?? (() => false);
+  // AvatarGroup expects a function: isOnline(userId) -> boolean
+const isOnline =
+typeof presence?.isOnline === "function"
+  ? presence.isOnline
+  : (uid) => {
+      // if the hook exposes an array of online ids, use it; otherwise fall back to a single-flag bool
+      const idStr = String(uid ?? "");
+      const list = Array.isArray(presence?.onlineIds) ? presence.onlineIds.map(String) : [];
+      if (list.length) return list.includes(idStr);
+      return Boolean(presence?.online ?? presence?.isOnline);
+    };
 
   // Calendar ICS link (flag-gated)
   const icsUrl = CALENDAR_ACCOUNTABILITY ? getIcsUrl(id) : null;
@@ -756,6 +769,12 @@ export default function ProjectHome() {
 
   const kpiTrends = useKpiSeries(stats);
 
+  //Quick-join the current focus session (if one is active on this project)
+  const joinFocus = useCallback(() => {
+    try { track("focus_join_clicked", { projectId: id}); } catch {}
+    try { window.dispatchEvent(new CustomEvent("start-tenx-sprint", { detail: { projectId: id } })); } catch{}
+  }, [id]);
+
   useEffect(() => {
     if (!MENTOR_V1) return;
     const { chrono } = extractMentor(stats || {});
@@ -936,10 +955,29 @@ export default function ProjectHome() {
           {/* Presence (who's around) */}
           {Array.isArray(project?.members) && project.members.length > 0 && (
             <div className="mt-2 px-1 flex items-center justify-between">
-              <div className="flex items-center gap 2">
+              <div className="flex items-center gap-2">
+                {/* Breathing pulse when anyone is focusing on this project */}
+                <FocusPresenceDot
+  active={Boolean(
+    presence?.isFocusing &&
+    (!presence?.focusProjectId || String(presence.focusProjectId) === String(id))
+  )}
+  title="Live focus in progress"
+/>
                 <span className="text-xs text-muted">Online now</span>
-                <AvatarGroup members={project.members} isOnline={isOnline}></AvatarGroup>
+                <AvatarGroup members={project.members} isOnline={isOnline}/>
               </div>
+              {/* Quick “Join focus” CTA when there’s a live focus on this project */}
+              {presence?.isFocusing && (!presence?.focusProjectId || String(presence.focusProjectId) === String(id)) && (
+                <button
+                type="button"
+                className="btn btn--outline focus-ring"
+                onClick={joinFocus}
+                title="Join the current 25:00"
+                >
+                  Join Focus
+                </button>
+              )}
             </div>
           )}
         </GradientPanel>
@@ -1058,6 +1096,17 @@ export default function ProjectHome() {
             <KpiCards />
           </div>
         </Card>
+
+        {/* ETA Explainer */}
+        {ETA_EXPLAINER_V1 && (
+          <div className="mt-6">
+            <ETAExplainer 
+            projectId={project._id}
+            tasks={project?.tasks || []}
+            stats={stats}
+            />
+            </div>
+        )}
 
         {/* NEW: KPI Trends */}
         {kpiTrends.length > 0 && (

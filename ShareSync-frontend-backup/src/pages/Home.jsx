@@ -37,6 +37,8 @@ import ProjectStoriesBar from '../components/projects/ProjectStoriesBar.jsx';
 
 import './Home.css';
 
+import TodayCapsule from "../components/home/TodayCapsule.jsx";
+
 const ActivityOverTimeLive = React.lazy(() => import('../components/analytics/ActivityOverTimeLive.jsx'));
 
 const DEFAULT_PROFILE_PIC = '/default-profile.png';
@@ -696,6 +698,13 @@ export default function Home() {
     document.getElementById('focus-sprint')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  //Today Capsule -> Start hook 
+  const onTodayCapsuleStart = () => {
+    try { track('today_capsule_action_started', { source: 'home' }); } catch {}
+    //Reuse your existing 25:00 starter
+    start25();
+  }
+
   return (
     <div className={`home-page relative ml-0 md:ml-24 max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-6 bg-bg text-text min-h-screen space-y-7 ${celebrate ? 'win-glow' : ''}`}>
       <PageStyles />
@@ -731,6 +740,11 @@ export default function Home() {
           </div>
         }
       />
+
+      {/* ======= Today Capsule (Next best action + ETA) ======= */}
+      <div className="mt-3">
+        <TodayCapsule onStart={onTodayCapsuleStart} />
+      </div>
 
       {/* Project Stories rail */}
       {storiesProjects.length > 0 && (
