@@ -743,7 +743,7 @@ export default function Home() {
 
       {/* ======= Today Capsule (Next best action + ETA) ======= */}
       <div className="mt-3">
-        <TodayCapsule onStart={onTodayCapsuleStart} />
+        <TodayCapsule />
       </div>
 
       {/* Project Stories rail */}

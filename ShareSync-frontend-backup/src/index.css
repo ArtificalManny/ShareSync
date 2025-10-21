@@ -27,6 +27,13 @@
 @import './styles/type.css';
 @import './styles/spacing.css';
 
+@import './styles/focus.neon.css';
+@import './styles/kpi-ticker.css';
+@import './styles/today-capsule.css';
+@import './styles/eta-explainer.css';
+@import './styles/social-mini.css';
+@import './styles/public-pages.css';
+
 /* 2) Tailwind layers */
 @tailwind base;
 @tailwind components;

@@ -13,7 +13,6 @@ import useBrandTheme from '../hooks/useBrandTheme.js';
 
 // KPI ticker
 import KPITicker from './global/KPITicker.jsx';
-import useKPIs from '../hooks/useKPIs.js';
 import { track } from '../utils/telemetry';
 
 const BrandSwitcher = lazy(() => import('./global/BrandSwitcher.jsx'));
@@ -73,17 +72,6 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // KPIs (tolerant to shape)
-  const kpiData = (KPI_TICKER_V1 && typeof useKPIs === 'function') ? (useKPIs() || {}) : {};
-  const {
-    velocity = 0,
-    ontime = 0,
-    streak = 0,
-    loading: kpiLoading = false,
-    // deltas or meta if your hook provides them:
-    delta = {},
-  } = kpiData;
-
   // Old inline brand style not needed in v2 neon; CSS drives it
   const headerStyle = BRAND_V2 ? undefined : undefined;
 
@@ -136,14 +124,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
               onClick={() => { try { track('kpi_ticker_opened'); } catch {} }}
               onMouseEnter={() => { try { track('kpi_delta_hovered', { hint: 'enter' }); } catch {} }}
             >
-              <KPITicker
-                velocity={velocity}
-                ontime={ontime}
-                streak={streak}
-                loading={kpiLoading}
-                // Optional: if your component supports it
-                deltas={delta}
-              />
+              <KPITicker />
             </div>
           )}
 
