@@ -1,18 +1,38 @@
 // src/pages/Discover.jsx
 import React from 'react';
-import { DISCOVERY_V1 } from '../config/flags';
+import { DISCOVERY_V1, SOCIAL_MINI_V1 } from '../config/flags';
 import DiscoveryFeed from '../components/discovery/DiscoveryFeed.jsx';
+import FollowButton from '../components/social/FollowButton.jsx';
+import ReactionBar from '../components/social/ReactionBar.jsx';
+import { track } from '../utils/telemetry.js';
 
 export default function Discover() {
-  if (!DISCOVERY_V1) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="card rounded-2xl border border-border bg-surface p-4">
-          <div className="text-sm">Discovery is not enabled for this environment.</div>
-        </div>
-      </div>
-    );
-  }
+      // Render actions under each project card in the feed
+      const renderItemActions = (project) => {
+        if (!SOCIAL_MINI_V1 || !project) return null;
+        const pid = project._id || project.id || project.slug || '';
+        const ownerId = project.userId || project.ownerId || null;
+    
+        return (
+          <div className="mt-2 flex items-center gap-2">
+            <FollowButton
+              projectId={pid}
+              onChange={(following) => {
+                try { track(following ? 'follow_clicked' : 'unfollow_clicked', { projectId: pid }); } catch {}
+              }}
+            />
+            <ReactionBar
+              compact
+              targetId={`project:${pid}`}
+              ownerId={ownerId}
+              meId={"me"}
+              label="Project"
+              onReact={(emoji) => { try { track('reaction_clicked', { projectId: pid, emoji }); } catch {} }}
+            />
+          </div>
+        );
+      };
+    
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-6">
@@ -22,7 +42,7 @@ export default function Discover() {
 
       {/* Feed */}
       <div className="mt-4">
-        <DiscoveryFeed />
+        <DiscoveryFeed itemActions={renderItemActions}/>
       </div>
     </div>
   );
