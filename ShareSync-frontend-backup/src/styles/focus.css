@@ -1,0 +1,31 @@
+/* Accessible, on-brand focus ring */
+/* Applies only when navigating by keyboard (:focus-visible) */
+
+:where(
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  .btn-icon,
+  .sb-toggle,
+  .searchbar
+):focus-visible {
+  outline: none;
+  /* 2px contrast base + 4px accent ring */
+  box-shadow:
+    0 0 0 2px rgb(var(--bg, 15 23 42)),
+    0 0 0 4px rgb(var(--ring, 99 102 241) / .55) !important;
+  border-color: color-mix(in oklab, rgb(var(--ring, 99 102 241)) 40%, transparent);
+}
+
+@media (prefers-contrast: more) {
+  :where(
+    a,button,input,select,textarea,[role="button"],.btn-icon,.sb-toggle,.searchbar
+  ):focus-visible {
+    box-shadow:
+      0 0 0 2px #000,
+      0 0 0 5px rgb(var(--ring, 99 102 241));
+  }
+}

@@ -1,51 +1,104 @@
-import React from 'react';
-import { cn } from './cn';
+// src/components/ui/Button.jsx
+import React from "react";
+import { cn } from "./cn";
 
-// Accessible, themeable button with variants & sizes
-const VARIANTS = {
-  primary:  'bg-indigo-600 text-white hover:bg-indigo-500 active:bg-indigo-700',
-  secondary:'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700/60',
-  subtle:   'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600',
-  ghost:    'bg-transparent text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700/60',
-  danger:   'bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700',
-  success:  'bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700',
+/**
+ * Reusable Button
+ * - Variants: primary | outline | ghost
+ * - Sizes:    sm | md | lg
+ * - Optional leftIcon / rightIcon
+ *
+ * Notes:
+ * • Primary pulls its gradient from your CSS tokens (var(--grad-accent)).
+ * • Focus styles come from styles/focus.css.
+ */
+const SIZE_CLASSES = {
+  sm: "h-8 px-3 text-sm rounded-full",
+  md: "h-10 px-4 text-sm rounded-full",
+  lg: "h-12 px-5 text-base rounded-full",
 };
 
-const SIZES = {
-  sm: 'h-8 px-3 text-sm rounded-full',
-  md: 'h-10 px-4 text-sm rounded-full',
-  lg: 'h-12 px-5 text-base rounded-full',
-  icon: 'h-9 w-9 rounded-full p-0 flex items-center justify-center',
-};
+const BASE =
+  "inline-flex items-center justify-center gap-2 font-medium select-none " +
+  "transition-transform duration-150 active:translate-y-[1px] disabled:opacity-60 disabled:cursor-not-allowed " +
+  "focus:outline-none";
 
-export default function Button({
-  as: Tag = 'button',
-  variant = 'primary',
-  size = 'md',
-  className,
-  disabled,
-  loading,
-  children,
-  leftIcon,
-  rightIcon,
-  ...rest
-}) {
+function Primary({ className, style, children, ...rest }) {
   return (
-    <Tag
+    <button
+      {...rest}
       className={cn(
-        'inline-flex items-center justify-center gap-2 font-medium transition select-none disabled:opacity-60 disabled:cursor-not-allowed',
-        'focus:outline-none focus-visible:shadow-focus',
-        'min-h-[40px]',
-        VARIANTS[variant] || VARIANTS[ 'primary'],
-        SIZES[size] || SIZES.md,
+        "text-white border border-transparent shadow-sm hover:-translate-y-[1px]",
         className
       )}
-      disabled={disabled || loading}
+      style={{
+        /* uses your gradient variable; falls back to a blue→cyan sweep */
+        background:
+          "var(--grad-accent, linear-gradient(90deg, rgb(59 130 246), rgb(34 197 94)))",
+        ...style,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Outline({ className, style, children, ...rest }) {
+  return (
+    <button
+      {...rest}
+      className={cn(
+        "bg-transparent text-[rgb(var(--text,18 24 38))] border",
+        "border-[rgb(var(--border,226 232 240))] hover:bg-white/40 dark:hover:bg-white/5",
+        className
+      )}
+      style={style}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Ghost({ className, style, children, ...rest }) {
+  return (
+    <button
+      {...rest}
+      className={cn(
+        "bg-transparent text-[rgb(var(--text,18 24 38))] hover:bg-black/5 dark:hover:bg-white/5",
+        className
+      )}
+      style={style}
+    >
+      {children}
+    </button>
+  );
+}
+
+export default function Button({
+  as: As,                 // optional polymorphic
+  variant = "primary",
+  size = "md",
+  className,
+  leftIcon,
+  rightIcon,
+  children,
+  disabled,
+  ...rest
+}) {
+  const cls = cn(BASE, SIZE_CLASSES[size] || SIZE_CLASSES.md, className);
+  const Comp =
+    As ||
+    (variant === "outline" ? Outline : variant === "ghost" ? Ghost : Primary);
+
+  return (
+    <Comp
+      className={cls}
+      disabled={disabled}
       {...rest}
     >
       {leftIcon && <span className="shrink-0">{leftIcon}</span>}
-      <span>{loading ? 'Loading…' : children}</span>
+      <span className="inline-flex items-center">{children}</span>
       {rightIcon && <span className="shrink-0">{rightIcon}</span>}
-    </Tag>
+    </Comp>
   );
 }

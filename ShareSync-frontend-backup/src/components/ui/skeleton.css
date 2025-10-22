@@ -1,0 +1,65 @@
+/* Lightweight shimmer skeletons
+   Match your card radii & palette.
+*/
+
+.sk {
+    --sk-radius: var(--radius-md, var(--r-md, 14px));
+    --sk-base: color-mix(in oklab, rgb(var(--card, 248 250 252)) 80%, #000);
+    --sk-ink:  color-mix(in oklab, rgb(var(--text, 18 24 38)) 12%, transparent);
+    --sk-sheen: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255,255,255,.18) 45%,
+        rgba(255,255,255,.28) 50%,
+        rgba(255,255,255,.18) 55%,
+        transparent 100%
+      );
+    position: relative;
+    overflow: hidden;
+    background: var(--sk-ink);
+    border-radius: var(--sk-radius);
+  }
+  
+  .sk::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--sk-sheen);
+    transform: translateX(-100%);
+    animation: sk-shimmer 1.35s linear infinite;
+  }
+  
+  /* Block / Line / Circle presets */
+  .sk-block { min-height: 96px; }
+  .sk-line  { height: 12px; }
+  .sk-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+  }
+  
+  /* Grid helper for stacked lines (used by <SkeletonText/>) */
+  .sk-text > .sk-line { border-radius: var(--radius-sm, 8px); }
+  
+  @keyframes sk-shimmer {
+    to { transform: translateX(100%); }
+  }
+  
+  /* Dark mode tuning */
+  :root.dark .sk {
+    --sk-ink: color-mix(in oklab, rgb(var(--bg, 15 23 42)) 70%, white 8%);
+    --sk-sheen: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255,255,255,.10) 45%,
+        rgba(255,255,255,.18) 50%,
+        rgba(255,255,255,.10) 55%,
+        transparent 100%
+      );
+  }
+  
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .sk::after { animation: none; display: none; }
+  }
+  

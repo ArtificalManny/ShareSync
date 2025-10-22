@@ -1,0 +1,78 @@
+/* Instagram-style orbit ring (blue → cyan) */
+/* Wrap any circular thing with .story-ring.
+   Add .ring-spin-once to play a single rotation on mount. */
+
+   .story-ring {
+    /* sizing comes from the child; this only draws the ring */
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 999px;
+  
+    /* Tunables */
+    --sr-thickness: 3px;        /* visual stroke width */
+    --sr-gap: 2px;              /* gap between content and ring */
+    --sr-blur: 18px;            /* halo softness */
+  
+    /* Palette (blue-leaning by default; still looks great with your accents) */
+    --sr-a: #60a5fa; /* blue-400  */
+    --sr-b: #38bdf8; /* sky-400   */
+    --sr-c: #22d3ee; /* cyan-400  */
+    --sr-d: #60a5fa; /* back to blue */
+  }
+  
+  /* The colorful stroke (masked so only the border shows) */
+  .story-ring::before {
+    content: "";
+    position: absolute;
+    inset: calc(-1 * (var(--sr-gap) + var(--sr-thickness)));
+    border-radius: inherit;
+    padding: var(--sr-gap);
+    background:
+      conic-gradient(from 0deg,
+        var(--sr-a) 0deg,
+        var(--sr-b) 90deg,
+        var(--sr-c) 180deg,
+        var(--sr-d) 360deg);
+  
+    /* Mask the fill, keep only the stroke */
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+  
+    /* Subtle inner stroke to keep it crisp on dark surfaces */
+    box-shadow: inset 0 0 0 var(--sr-thickness) rgba(255 255 255 / .08);
+    pointer-events: none;
+  }
+  
+  /* Soft neon halo */
+  .story-ring::after {
+    content: "";
+    position: absolute;
+    inset: calc(-1 * (var(--sr-gap) + var(--sr-thickness) + 4px));
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow:
+      0 0 var(--sr-blur) color-mix(in oklab, var(--sr-b) 40%, transparent),
+      0 0 calc(var(--sr-blur) * .6) color-mix(in oklab, var(--sr-c) 30%, transparent);
+    opacity: .55;
+  }
+  
+  /* One-time orbit animation */
+  .ring-spin-once::before {
+    animation: sr-spin 1.4s cubic-bezier(.2,.8,.2,1) 1 both;
+  }
+  
+  /* Spin keyframes */
+  @keyframes sr-spin {
+    from { transform: rotate(0deg);   }
+    to   { transform: rotate(360deg); }
+  }
+  
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .ring-spin-once::before { animation: none !important; }
+  }
+  
