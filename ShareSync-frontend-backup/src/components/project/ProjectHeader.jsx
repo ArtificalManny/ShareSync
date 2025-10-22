@@ -1,564 +1,61 @@
-// src/components/project/ProjectHeader.jsx
-import React, { useContext, useMemo, useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import { Link2, RefreshCcw, Copy as CopyIcon, Check as CheckIcon, CalendarDays } from "lucide-react";
-import { AuthContext } from "../../AuthContext";
-import { patchProjectIcon } from "../../api/projects";
-import {
-  enablePublic,
-  disablePublic,
-  regeneratePublicToken,
-  buildPublicStatusUrl,
-} from "../../api/public";
-import { track } from "../../utils/telemetry";
-import { toast } from "../ui/Toaster.jsx";
-import ProjectIconPicker from "./ProjectIconPicker";
-import AnimatedRing from "../ui/AnimatedRing";
-import GradientText from "../ui/GradientText";
-import StatusPill from "../projects/StatusPill.jsx";
-import useRecentFlag from "../../hooks/useRecentFlag";
-import useReducedMotion from "../../hooks/useReducedMotion";
-import { setLastSeen } from "../../utils/stories";
-import { CALENDAR_ACCOUNTABILITY, PRESENCE_V1 } from "../../config/flags.js";
-import { getIcsUrl } from "../../api/calendar.js";
-import { trackScheduleCreated } from "../../utils/telemetry";
-
-// ✅ primitives
-import Card from "../ui/Card.jsx";
-import Button from "../ui/Button.jsx";
-import Chip from "../ui/Chip.jsx";
-import usePresence from "../../hooks/usePresence.js";
-// ⬇️ shared avatars with presence dots
-import AvatarGroup from "../ui/AvatarGroup.jsx";
-import FocusPresenceDot from "../presence/FocusPresenceDot.jsx";
-
-const ENABLE_PUBLIC_STATUS = (() => {
-  const v = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS ?? "";
-  return /^(1|true|on|yes)$/i.test(String(v));
-})();
-
-function getRoleForUser(project, userId) {
-  if (!project || !userId) return "viewer";
-  if (String(project.userId || "") === String(userId)) return "owner";
-  const hit =
-    Array.isArray(project.members) &&
-    project.members.find((m) => m?.userId && String(m.userId) === String(userId));
-  return (hit?.role === "owner" || hit?.role === "member" || hit?.role === "viewer")
-    ? hit.role
-    : "viewer";
-}
-
-const roleStyle = (role) => {
-  switch (role) {
-    case "owner":  return "bg-indigo-100 text-indigo-700";
-    case "member": return "bg-sky-100 text-sky-700";
-    default:       return "bg-slate-100 text-slate-700";
-  }
-};
-
-function SVGIcon({ name, className = "w-6 h-6" }) {
-  const common = { className, "aria-hidden": true };
-  switch (name) {
-    case "rocket":
-      return (
-        <svg viewBox="0 0 24 24" {...common}>
-          <path d="M12 2c3 0 6 2 8 4l-6 6-2-2-6 6-2-2 6-6-2-2 6-6z" fill="currentColor" />
-        </svg>
-      );
-    case "bolt":
-      return (
-        <svg viewBox="0 0 24 24" {...common}>
-          <path d="M13 2L3 14h7l-1 8 11-12h-7l0-8z" fill="currentColor" />
-        </svg>
-      );
-    case "target":
-      return (
-        <svg viewBox="0 0 24 24" {...common}>
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" fill="none"/>
-          <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" fill="none"/>
-          <circle cx="12" cy="12" r="2" fill="currentColor"/>
-        </svg>
-      );
-    default:
-      return <div className={className} />;
-  }
-}
+import React, { useEffect, useState } from "react";
+import "./project-header.css";
 
 export default function ProjectHeader({
-  project,
+  name = "Untitled Project",
+  status = "In Progress",         // or "Paused", "Done"
+  isPublic = false,
+  metrics = { ontime: 0, throughput: 0, streak: 0 },
   onAddTask,
-  onTogglePublic,
-  recentWindowMs = 10 * 60 * 1000,
+  onStartFocus,
+  onDownloadICS,
+  icon = "U",                      // emoji, letter, or <img src=...>
 }) {
-  const { user } = useContext(AuthContext) || {};
-  const role = useMemo(
-    () => getRoleForUser(project, user?._id || user?.id),
-    [project, user]
-  );
-  const isOwner = role === "owner";
-
-  const [quickTask, setQuickTask] = useState("");
-  const [addingQuick, setAddingQuick] = useState(false);
-  const [addedQuick, setAddedQuick] = useState(false);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [iconOverride, setIconOverride] = useState(project?.icon ?? null);
-
-  const initialEnabled = !!(project?.publicEnabled || project?.publicToken);
-  const [publicEnabled, setPublicEnabled] = useState(initialEnabled);
-  const [publicToken, setPublicToken] = useState(project?.publicToken || null);
-  const [busyToggle, setBusyToggle] = useState(false);
-  const [busyRegen, setBusyRegen] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const icon = iconOverride ?? project?.icon ?? null;
-
-  // ✅ mark as seen
+  // spin the ring once on first mount
+  const [spinOnce, setSpinOnce] = useState(true);
   useEffect(() => {
-    if (!project?._id) return;
-
-    if (typeof document !== "undefined" && document.visibilityState === "visible") {
-      try { setLastSeen(project._id, Date.now()); track("project_seen", { projectId: project._id, source: "header_mount" }); } catch {}
-    }
-    const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        try { setLastSeen(project._id, Date.now()); track("project_seen", { projectId: project._id, source: "visibilitychange" }); } catch {}
-      }
-    };
-    const onFocus = () => {
-      try { setLastSeen(project._id, Date.now()); track("project_seen", { projectId: project._id, source: "focus" }); } catch {}
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onFocus);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("focus", onFocus);
-    };
-  }, [project?._id]);
-
-  const handleQuickAdd = async (e) => {
-    e.preventDefault();
-    const t = quickTask.trim();
-    if (!t) return;
-    try {
-      setAddingQuick(true);
-      await onAddTask?.(t);
-      setQuickTask("");
-      setAddedQuick(true);
-      setTimeout(() => setAddedQuick(false), 1000);
-    } finally{
-      setAddingQuick(false);
-    }
-  };
-
-  // Persist icon
-  async function handleIconSelect(sel) {
-    try {
-      const updated = await patchProjectIcon(project._id, sel);
-      const nextIcon = updated?.icon ?? updated?.patch?.icon ?? sel ?? null;
-      setIconOverride(nextIcon);
-
-      if (sel) {
-        toast({ title: "Icon updated", variant: "success" });
-        try { track("icon_saved", { projectId: project._id }); } catch {}
-      } else {
-        toast({ title: "Icon removed" });
-        try { track("icon_removed", { projectId: project._id }); } catch {}
-      }
-    } catch (e) {
-      alert(e?.response?.data?.message || e?.message || "Failed to update icon.");
-    } finally {
-      setPickerOpen(false);
-    }
-  }
-
-  async function handleTogglePublic(nextChecked) {
-    if (!isOwner || !project?._id) return;
-    if (!ENABLE_PUBLIC_STATUS) return;
-
-    setBusyToggle(true);
-    try {
-      if (typeof onTogglePublic === "function") {
-        setPublicEnabled(nextChecked);
-        if (!nextChecked) setPublicToken(null);
-        await onTogglePublic(nextChecked);
-      } else {
-        if (nextChecked) {
-          const res = await enablePublic(project._id);
-          setPublicEnabled(!!res?.publicEnabled);
-          setPublicToken(res?.publicToken || res?.token || null);
-          try { track("public_status_changed", { projectId: project._id, action: "enabled", source: "header" }); } catch {}
-        } else {
-          await disablePublic(project._id);
-          setPublicEnabled(false);
-          setPublicToken(null);
-          try { track("public_status_changed", { projectId: project._id, action: "disabled", source: "header" }); } catch {}
-        }
-      }
-    } catch (e) {
-      alert(e?.response?.data?.message || e?.message || "Failed to update public status.");
-      if (typeof onTogglePublic === "function") setPublicEnabled((v) => !v);
-    } finally {
-      setBusyToggle(false);
-    }
-  }
-
-  async function handleRegenerate() {
-    if (!isOwner || !project?._id) return;
-    if (!ENABLE_PUBLIC_STATUS) return;
-    if (!publicEnabled) return;
-    setBusyRegen(true);
-    try {
-      const res = await regeneratePublicToken(project._id);
-      setPublicEnabled(!!res?.publicEnabled);
-      setPublicToken(res?.publicToken || res?.token || null);
-      try { track("public_status_changed", { projectId: project._id, action: "regenerated", source: "header" }); } catch {}
-    } catch (e) {
-      alert(e?.response?.data?.message || e?.message || "Failed to regenerate link.");
-    } finally {
-      setBusyRegen(false);
-    }
-  }
-
-  const publicPath = publicToken ? buildPublicStatusUrl(publicToken) : "";
-  const publicHref =
-    typeof window !== "undefined" && publicPath
-      ? `${window.location.origin}${publicPath}`
-      : publicPath;
-
-  // Calendar (.ics)
-  const icsUrl = CALENDAR_ACCOUNTABILITY ? getIcsUrl(project?._id || project?.id) : null;
-
-  const hasRecent = useRecentFlag(project?.lastActivityAt, recentWindowMs);
-  const prefersReduced = useReducedMotion();
-  const ringAnimated = hasRecent && !prefersReduced;
-
-  // ── Presence (via hook) ──────────────────────────────────────────────────
-  // ── Presence (via hook) ──────────────────────────────────────────────────
-const presence = usePresence(project?._id);
-const onlineMap = presence?.onlineMap || {};
-const isOnline = (uid) =>
-  presence?.isOnline ? presence.isOnline(String(uid)) : false;
-const isFocusing = Boolean(presence?.isFocusing);
-const focusProjectId = presence?.focusProjectId;
-
-  const members = useMemo(
-    () => (Array.isArray(project?.members) ? project.members : []),
-    [project?.members]
-  );
-  const mappedMembers = useMemo(
-    () =>
-      members.map((m) => ({
-        id: m.userId || m.id,
-        name: m.name || m.displayName || m.username || m.email || "Member",
-        avatar: m.avatar || m.avatarUrl || m.profilePicture || "",
-      })),
-    [members]
-  );
-  const onlineCount = useMemo(() => {
-    const ids = new Set();
-    if (project?.userId) ids.add(String(project.userId));
-    members.forEach((m) => m?.userId && ids.add(String(m.userId)));
-    let c = 0;
-    ids.forEach((uid) => { if (isOnline(uid)) c++; });
-    return c;
-  }, [project?.userId, members, isOnline, onlineMap]);
-
-  // Telemetry: heartbeat + first-seen
-  const seenRef = useRef(new Set());
-  useEffect(() => {
-    const onBeat = () => {
-      try { track("presence_heartbeat_sent", { projectId: project?._id }); } catch {}
-    };
-    window.addEventListener("presence:heartbeat", onBeat);
-    return () => window.removeEventListener("presence:heartbeat", onBeat);
-  }, [project?._id]);
-
-  useEffect(() => {
-    if (!PRESENCE_V1) return;
-    const been = seenRef.current;
-    const ids = [];
-    if (project?.userId) ids.push(String(project.userId));
-    members.forEach((m) => m?.userId && ids.push(String(m.userId)));
-    ids.forEach((uid) => {
-      if (isOnline(uid) && !been.has(uid)) {
-        been.add(uid);
-        try { track("presence_member_seen", { projectId: project?._id, userId: uid }); } catch {}
-      }
-    });
-  }, [onlineMap, members, project?._id, isOnline]);
-
-  async function copyPublicUrl() {
-    if (!publicHref) return;
-    try {
-      await navigator.clipboard.writeText(publicHref);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
-    } catch {
-      alert("Could not copy to clipboard.");
-    }
-  }
-
-  function markAsRead() {
-    try {
-      setLastSeen(project?._id, Date.now());
-      track("project_mark_read", { projectId: project?._id });
-    } catch {}
-  }
-
-  function joinFocus() {
-    try { track("focus_join_clicked", { projectId: project?._id }) ; } catch {
-    try {
-      window.dispatchEvent(
-        new CustomEvent("start-tenx-sprint", { detail: { projectId: project?._id } })
-      );
-    } catch {}
-    }
-  }
+    const t = setTimeout(() => setSpinOnce(false), 1600);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
-    <Card className="shine accent-bar">
-      <span className="accent-bar__left" aria-hidden="true" />
-      <div className="px-4 sm:px-6 md:px-8 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link to="/projects" className="shrink-0" aria-label="Back to projects">
-            <div className="h-12 w-12 rounded-xl bg-indigo-100 grid place-content-center text-indigo-700 font-semibold">
-              {project?.title?.[0]?.toUpperCase() || "P"}
+    <section className="project-header panel-neon specular">
+      <div className="ph-inner">
+        {/* Left cluster */}
+        <div className="ph-left">
+          <div className={`ph-icon story-ring ${spinOnce ? "ring-spin-once" : ""}`}>
+            <div className="ph-avatar" aria-hidden>
+              {typeof icon === "string" ? icon : icon}
             </div>
-          </Link>
+          </div>
 
-          <div className="min-w-0 flex items-center gap-3">
-            {/* Icon + activity ring */}
-            <div className="relative shrink-0">
-              {ringAnimated && (
-                <AnimatedRing size="48px" thickness="2px" className="absolute -inset-[6px]" animated />
-              )}
-              {!ringAnimated && hasRecent && (
-                <span
-                  className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
-                  aria-hidden
-                />
-              )}
-              <div className="h-8 w-8 rounded-lg grid place-content-center icon-ring text-xl bg-white dark:bg-slate-800">
-                {icon?.kind === "emoji" && (
-                  <span role="img" aria-label="project icon">{icon.value}</span>
-                )}
-                {icon?.kind === "svg" && (
-                  <span className="text-indigo-600">
-                    <SVGIcon name={icon.value} className="w-5 h-5" />
-                  </span>
-                )}
-                {!icon && (
-                  <span className="text-indigo-600">
-                    <SVGIcon name="target" className="w-5 h-5" />
-                  </span>
-                )}
-              </div>
+          <div className="ph-title">
+            <h1 className="ph-name">{name}</h1>
+            <div className="ph-sub">
+              <span className={`chip chip-${status === "In Progress" ? "good" : status === "Paused" ? "warn" : "muted"}`}>
+                {status}
+              </span>
+              <span className={`chip chip-${isPublic ? "info" : "muted"}`}>
+                {isPublic ? "Public" : "Private"}
+              </span>
             </div>
 
-            <div className="min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="truncate text-lg sm:text-xl font-bold">
-                  <GradientText variant="purple">
-                    {project?.title || "Untitled Project"}
-                  </GradientText>
-                </h1>
-
-                <span className="hidden sm:inline-flex">
-                  <StatusPill status={project?.status || "In Progress"} />
-                </span>
-
-                {/* ⬇️ Presence beside the title (flag-gated) */}
-{PRESENCE_V1 && mappedMembers.length > 0 && (
-  <div className="inline-flex items-center gap-2">
-    {/* Breathing pulse when anyone is focusing on this project */}
-    <FocusPresenceDot
-      active={Boolean(
-        isFocusing && (!focusProjectId || String(focusProjectId) === String(project?._id))
-      )}
-      title="Live focus in progress"
-    />
-
-    <AvatarGroup
-      members={mappedMembers}
-      isOnline={(id) => isOnline(String(id))}
-    />
-    <span className="text-xs text-muted">• {onlineCount} online</span>
-
-    {/* Quick 'Join Focus' CTA when a live focus is on this project */}
-    {isFocusing &&
-      (!focusProjectId || String(focusProjectId) === String(project?._id)) && (
-        <Button
-          variant="secondary"
-          size="sm"
-          type="button"
-          className="px-2 py-0.5 text-xs rounded-md"
-          onClick={joinFocus}
-          title="Join the current 25:00 focus"
-        >
-          Join Focus
-        </Button>
-      )}
-  </div>
-)}
-
-                {isOwner && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    type="button"
-                    onClick={() => setPickerOpen(true)}
-                    className="text-xs px-2 py-1 rounded-md"
-                    title="Edit icon"
-                  >
-                    Edit icon
-                  </Button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                <Chip tone="default" title={`Role: ${role}`} aria-label={`Role: ${role}`}>
-                  Role: {role[0].toUpperCase()}{role.slice(1)}
-                </Chip>
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  type="button"
-                  onClick={markAsRead}
-                  className="px-2 py-0.5 text-xs rounded-md"
-                  title="Mark this project as read"
-                >
-                  Mark as read
-                </Button>
-
-                {isOwner && ENABLE_PUBLIC_STATUS && typeof onTogglePublic === "function" ? (
-                  <label className="inline-flex items-center gap-2 text-xs">
-                    <Chip tone={publicEnabled ? "good" : "default"}>
-                      {publicEnabled ? "Public" : "Private"}
-                    </Chip>
-                    <input
-                      type="checkbox"
-                      className="h-4 w-7 appearance-none rounded-full bg-slate-300 checked:bg-indigo-600 relative transition-colors outline-none cursor-pointer disabled:opacity-60"
-                      checked={publicEnabled}
-                      disabled={busyToggle}
-                      onChange={(e) => handleTogglePublic(e.target.checked)}
-                      aria-label="Toggle public status"
-                    />
-                  </label>
-                ) : (
-                  <Chip tone={publicEnabled ? "good" : "default"}>
-                    {publicEnabled ? "Public" : "Private"}
-                  </Chip>
-                )}
-
-                {ENABLE_PUBLIC_STATUS && publicEnabled && (
-                  <div className="inline-flex items-center gap-1 text-xs">
-                    <a
-                      href={publicHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 lift"
-                      title="Open public link"
-                    >
-                      <Link2 className="w-3.5 h-3.5" />
-                      Public link
-                    </a>
-
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      type="button"
-                      onClick={copyPublicUrl}
-                      className="px-2 py-0.5 text-xs rounded-md lift fade-swap"
-                      title="Copy public link"
-                    >
-                      <span className="swap-a inline-flex items-center gap-1" aria-hidden={copied ? "true" : "false"}>
-                        <CopyIcon className="w-3.5 h-3.5" />
-                        Copy
-                      </span>
-                      <span className="swap-b inline-flex items-center gap-1" aria-hidden={copied ? "false" : "true"}>
-                        <CheckIcon className="w-3.5 h-3.5" />
-                        Copied
-                      </span>
-                    </Button>
-
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      type="button"
-                      onClick={handleRegenerate}
-                      disabled={busyRegen}
-                      className="px-2 py-0.5 text-xs rounded-md disabled:opacity-60 lift"
-                      title="Regenerate public link"
-                      leftIcon={<RefreshCcw className="w-3.5 h-3.5" />}
-                    >
-                      {busyRegen ? "…" : "Regenerate"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Micro KPIs (optional) */}
+            <ul className="ph-kpis" aria-label="Project mini KPIs">
+              <li><span className="kpi-label">On-time</span><span className="kpi-val">{metrics.ontime ?? 0}%</span></li>
+              <li><span className="kpi-label">Throughput</span><span className="kpi-val">{metrics.throughput ?? 0}/wk</span></li>
+              <li><span className="kpi-label">Streak</span><span className="kpi-val">{metrics.streak ?? 0}d</span></li>
+            </ul>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <form onSubmit={handleQuickAdd} className="flex items-center gap-2">
-            <input
-              value={quickTask}
-              onChange={(e) => setQuickTask(e.target.value)}
-              placeholder="Quick add a task…"
-              className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
-            />
-            <Button
-              type="submit"
-              variant="primary"
-              size="md"
-              className="rounded-xl px-4 py-2 lift"
-              disabled={addingQuick}
-            >
-              <span className="relative inline-flex items-center gap-2">
-                {addingQuick && (
-                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden>
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
-                  </svg>
-                )}
-                {!addingQuick && addedQuick && <span aria-hidden>✓</span>}
-                <span className="transition-opacity duration-150">
-                  {addingQuick ? "Adding…" : addedQuick ? "Added" : "Add task"}
-                </span>
-              </span>
-            </Button>
-          </form>
-
-          {CALENDAR_ACCOUNTABILITY && icsUrl && (
-            <Button
-              as="a"
-              href={icsUrl}
-              target="_blank"
-              rel="noreferrer"
-              download
-              onClick={() => {
-                try {
-                  trackScheduleCreated?.({ projectId: project?._id || project?.id, method: "ics_export", source: "header"});
-                } catch {}
-              }}
-              variant="secondary"
-              size="md"
-              leftIcon={<CalendarDays className="w-4 h-4" />}
-              title="Download tasks as .ics"
-            >
-              Download .ics
-            </Button>
-          )}
+        {/* Right actions */}
+        <div className="ph-right">
+          <button className="btn-neon" onClick={onAddTask}>+ Add task</button>
+          <button className="btn-outline" onClick={onStartFocus}>Start 25:00</button>
+          <button className="btn-ghost" onClick={onDownloadICS}>Download .ics</button>
         </div>
       </div>
-
-      <ProjectIconPicker
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelect={handleIconSelect}
-      />
-    </Card>
+    </section>
   );
 }

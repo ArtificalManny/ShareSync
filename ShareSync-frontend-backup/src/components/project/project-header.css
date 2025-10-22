@@ -1,0 +1,92 @@
+/* container */
+.project-header {
+    border-radius: 18px;
+    padding: 14px;
+    background: linear-gradient(180deg, rgba(2,6,23,.76), rgba(2,6,23,.92));
+    border: 1px solid color-mix(in oklab, var(--border, #334155) 70%, transparent);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.06) inset,
+      0 0 0 1px rgba(255,255,255,.02) inset,
+      0 16px 48px rgba(2,6,23,.42);
+  }
+  .project-header .ph-inner {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  
+  /* left */
+  .ph-left { display: grid; grid-auto-flow: column; align-items: center; gap: 14px; }
+  .ph-title { display: grid; gap: 6px; }
+  .ph-name { font: 700 clamp(18px, 1.6vw, 22px)/1.1 var(--font-display, Inter); margin: 0; color: rgb(var(--text, 241 245 249)); }
+  .ph-sub { display: flex; gap: 6px; align-items: center; }
+  
+  .chip {
+    --bd: color-mix(in oklab, var(--border,#334155) 70%, transparent);
+    border: 1px solid var(--bd); border-radius: 999px; padding: 4px 8px;
+    font-size: 12px; color: rgb(var(--text, 226 232 240) / .85);
+    background: color-mix(in oklab, #0b1220 85%, transparent);
+  }
+  .chip-good { color: #10b981; border-color: color-mix(in oklab, #10b981 40%, var(--bd)); }
+  .chip-info { color: #38bdf8; border-color: color-mix(in oklab, #38bdf8 40%, var(--bd)); }
+  .chip-muted { color: #a3a3a3; }
+  
+  .ph-kpis { display: flex; gap: 14px; padding: 0; margin: 0; list-style: none; }
+  .ph-kpis .kpi-label { color: rgb(var(--muted, 148 163 184)); font-size: 12px; margin-right: 6px; }
+  .ph-kpis .kpi-val { font-weight: 600; }
+  
+  /* right actions */
+  .ph-right { display: flex; gap: 8px; align-items: center; }
+  .btn-neon {
+    --accent: var(--brand-v2-accent, #3b82f6);
+    --accent2: var(--grad-cnbc-b, #22c55e);
+    padding: 8px 12px; border-radius: 12px; border: 0; color: #fff; font-weight: 600;
+    background:
+      radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,.18), rgba(255,255,255,0) 55%),
+      linear-gradient(90deg, var(--accent), var(--accent2));
+    box-shadow: 0 10px 26px color-mix(in oklab, var(--accent) 26%, #000 74%), 0 0 0 1px rgba(255,255,255,.08) inset;
+  }
+  .btn-neon:hover { transform: translateY(-1px); }
+  .btn-outline {
+    padding: 8px 10px; border-radius: 12px; background: transparent; color: #c7d2fe;
+    border: 1px solid color-mix(in oklab, #6366f1 35%, white);
+  }
+  .btn-ghost {
+    padding: 8px 10px; border-radius: 12px; background: transparent; color: rgb(var(--muted, 148 163 184));
+    border: 1px solid color-mix(in oklab, var(--border, #334155) 70%, transparent);
+  }
+  
+  /* --- Instagram-like blue story ring (one spin on mount) --- */
+  .ph-icon { position: relative; width: 44px; height: 44px; }
+  .ph-avatar {
+    width: 100%; height: 100%; border-radius: 999px; display: grid; place-items: center;
+    background: #0f172a; color: #dbeafe; font-weight: 700;
+    box-shadow: 0 0 0 1.5px color-mix(in oklab, var(--border,#334155) 70%, transparent);
+  }
+  
+  /* the ring itself (conic gradient + mask to create the “stroke”) */
+  .story-ring::before {
+    content: "";
+    position: absolute; inset: -3px; border-radius: 999px; pointer-events: none;
+    background:
+      conic-gradient(from 0deg,
+        #60a5fa 0deg, #38bdf8 120deg, #22d3ee 240deg, #60a5fa 360deg);
+    -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%);
+            mask: radial-gradient(circle, transparent 62%, #000 64%);
+    box-shadow: 0 0 18px rgba(56,189,248,.35);
+    opacity: .95;
+    transform: rotate(0deg);
+  }
+  
+  /* one-time spin */
+  @keyframes ring-spin {
+    to { transform: rotate(360deg); }
+  }
+  .ring-spin-once.story-ring::before {
+    animation: ring-spin 1.6s linear 1;
+  }
+  
+  /* idle gentle glow after spin */
+  .story-ring:not(.ring-spin-once)::before {
+    box-shadow: 0 0 14px rgba(56,189,248,.25), 0 0 32px rgba(99,102,241,.18);
+    opacity: .85;
+  }
+  

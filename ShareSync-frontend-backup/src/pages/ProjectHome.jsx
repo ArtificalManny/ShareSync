@@ -947,11 +947,20 @@ typeof presence?.isOnline === "function"
       <div className="px-4 sm:px-6 lg:px-10 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
         {/* Header (public toggle gated by flag) */}
         <GradientPanel>
-          <ProjectHeader
-            project={project}
-            onAddTask={() => canEdit && setShowTaskSheet(true)}
-            onTogglePublic={ENABLE_PUBLIC_STATUS ? handleTogglePublic : undefined}
-          />
+        <ProjectHeader
+  name={project?.name || "Untitled"}
+  status={project?.status || "In Progress"}
+  isPublic={!!project?.isPublic}
+  metrics={{
+    ontime: project?.stats?.onTimePct ?? 0,
+    throughput: project?.stats?.throughputPerWeek ?? 0,
+    streak: project?.stats?.streakDays ?? 0,
+  }}
+  icon={(project?.emoji || "U")}
+  onAddTask={() => setQuickAddOpen?.(true)}
+  onStartFocus={() => /* start your 25:00, or use Focus Dock */ null}
+  onDownloadICS={() => window.open(`/api/projects/${project?._id}/calendar.ics`, "_blank")}
+/>
           {/* Presence (who's around) */}
           {Array.isArray(project?.members) && project.members.length > 0 && (
             <div className="mt-2 px-1 flex items-center justify-between">
