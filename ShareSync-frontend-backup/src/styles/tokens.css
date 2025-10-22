@@ -10,8 +10,17 @@
   --ring:          99 102 241;    /* indigo-500 */
 
   /* Accent & intent (channels) */
-  --accent:              79 70 229;   /* indigo-600 */
+  --accent:              79 70 229;   /* indigo-600 (channels) */
   --accent-foreground:   255 255 255;
+  /* NEW: companion accent channels for gradients */
+  --accent-2:            34 211 238;  /* cyan-400 (channels) */
+  --accent-3:           232 121 249;  /* fuchsia-400 (channels) */
+
+  /* NEW: hex accents for neon skins/color-mix (keeps channel vars intact) */
+  --accent-hex:   #4F46E5;  /* indigo-600 */
+  --accent-2-hex: #22D3EE;  /* cyan-400  */
+  --accent-3-hex: #E879F9;  /* fuchsia-400 */
+
   --info:                 2 132 199;  /* sky-600 */
   --success:             16 185 129;  /* emerald-500 */
   --warning:            217 119   6;  /* amber-600 */
@@ -301,6 +310,11 @@
 
   --bg-elevated: rgb(15 23 42 / .85);
 
+  /* NEW: brighter hex accents for dark */
+  --accent-hex:   #8B5CF6;
+  --accent-2-hex: #38BDF8;
+  --accent-3-hex: #F472B6;
+
   /* ================================
      Brand V2 tokens (dark)
      ================================ */
@@ -318,11 +332,49 @@
   --brand-v2-danger:   244  63  94; /* rose-500 */
 }
 
-/* per-surface accent overrides e.g. data-accent="emerald" */
+/* per-surface accent overrides (channels) */
 [data-accent="emerald"] { --accent:  5 150 105; }
 [data-accent="rose"]    { --accent: 225  29  72; }
 [data-accent="sky"]     { --accent:   2 132 199; }
 [data-accent="amber"]   { --accent: 217 119   6; }
+
+/* NEW: Accent families (set BOTH channels + hex so all layers get color) */
+body:not([data-accent]), body[data-accent="violet"], body[data-accent="pandora"] {
+  --accent:       124 58 237;  --accent-2: 34 211 238; --accent-3: 232 121 249;
+  --accent-hex:   #7C3AED;     --accent-2-hex: #22D3EE; --accent-3-hex: #E879F9;
+}
+body[data-accent="aqua"] {
+  --accent:        20 184 166; --accent-2: 96 165 250; --accent-3: 45 212 191;
+  --accent-hex:   #14B8A6;     --accent-2-hex:#60A5FA;  --accent-3-hex:#2DD4BF;
+}
+body[data-accent="sky"] {
+  --accent:         2 132 199; --accent-2: 96 165 250; --accent-3: 56 189 248;
+  --accent-hex:   #0284C7;     --accent-2-hex:#60A5FA;  --accent-3-hex:#38BDF8;
+}
+body[data-accent="lime"] {
+  --accent:       101 163  13; --accent-2: 34 197  94; --accent-3: 163 230  53;
+  --accent-hex:   #65A30D;     --accent-2-hex:#22C55E;  --accent-3-hex:#A3E635;
+}
+body[data-accent="amber"], body[data-accent="cnbc"] {
+  --accent:       217 119   6; --accent-2: 34 197 94;  --accent-3: 180 245   0;
+  --accent-hex:   #F59E0B;     --accent-2-hex:#22C55E;  --accent-3-hex:#B4F500;
+}
+body[data-accent="rose"] {
+  --accent:       225  29  72; --accent-2: 244 114 182; --accent-3: 251 113 133;
+  --accent-hex:   #E11D48;     --accent-2-hex:#F472B6;  --accent-3-hex:#FB7185;
+}
+body[data-accent="fuchsia"] {
+  --accent:       162  28 175; --accent-2:  99 102 241; --accent-3: 217  70 239;
+  --accent-hex:   #A21CAF;     --accent-2-hex:#6366F1;  --accent-3-hex:#D946EF;
+}
+body[data-accent="cyan"] {
+  --accent:         8 145 178; --accent-2:  6 182 212; --accent-3:  34 211 238;
+  --accent-hex:   #0891B2;     --accent-2-hex:#06B6D4;  --accent-3-hex:#22D3EE;
+}
+body[data-accent="meta"] {
+  --accent:        8 102 255;  --accent-2: 139 92 246; --accent-3:  34 211 238;
+  --accent-hex:   #0866FF;     --accent-2-hex:#8B5CF6;  --accent-3-hex:#22D3EE;
+}
 
 /* Reduced motion: convert durations to zero and kill notable anims */
 @media (prefers-reduced-motion: reduce) {
@@ -332,9 +384,7 @@
     --motion-slow: 0ms;
     --motion-quick: 0ms;
   }
-  .ss-pulse-ring {
-    animation: none !important;
-  }
+  .ss-pulse-ring { animation: none !important; }
 }
 
 /* =========================================================
@@ -438,6 +488,7 @@ body { font-family: var(--font-sans); letter-spacing: 0; }
 }
 :root.dark .chip { background: hsl(220 20% 12% / .6); }
 :root.dark .card { border-color: hsl(222 15% 22%); }
+
 /* === Neon brand palette (Pandora/CNBC/Facebook mashup) ================== */
 :root {
   /* Core neons */
@@ -470,7 +521,7 @@ body { font-family: var(--font-sans); letter-spacing: 0; }
   --btn-contrast: #ffffff;
 }
 
-/* Accent families (switch via [data-accent]) */
+/* Accent families (legacy selector kept; also see body[data-accent] above) */
 .layout-stage[data-theme="neon"][data-accent="pandora"] {
   --brand-accent:   var(--neon-violet);
   --brand-accent-2: var(--neon-cyan);
@@ -483,6 +534,99 @@ body { font-family: var(--font-sans); letter-spacing: 0; }
 }
 .layout-stage[data-theme="neon"][data-accent="meta"] {
   --brand-accent:   #0866FF;       /* FB blue */
+
   --brand-accent-2: var(--neon-violet);
   --brand-accent-3: var(--neon-cyan);
 }
+
+/* ====== Layout rhythm & containers =================================== */
+:root {
+  --section-gap: 48px;  /* vertical spacing between major blocks */
+  --card-pad: 24px;     /* interior card padding */
+  --toolbar-gap: 8px;   /* small spacing for icon clusters */
+}
+
+/* Page-level wrappers so spacing is consistent everywhere */
+.ss-page { max-width: 1120px; margin: 0 auto; padding: 24px 20px 64px; }
+.ss-section { margin-block: var(--section-gap); }
+
+/* ====== Accent “moods” by route (set via LayoutSkin) ================== */
+.layout-stage[data-accent="pandora"] {
+  --brand-accent:   var(--neon-violet);
+  --brand-accent-2: var(--neon-cyan);
+  --brand-accent-3: var(--neon-fuchsia);
+}
+.layout-stage[data-accent="cnbc"] {
+  --brand-accent:   var(--neon-blue);
+  --brand-accent-2: var(--neon-teal);
+  --brand-accent-3: var(--neon-lime);
+}
+.layout-stage[data-accent="meta"] {
+  --brand-accent:   #0866FF;          /* FB blue */
+  --brand-accent-2: var(--neon-violet);
+  --brand-accent-3: var(--neon-cyan);
+}
+
+/* ====== Panel/card unification ======================================= */
+.card,
+.panel,
+.panel-neon {  /* keep compatibility with your existing class */
+  --_bgA: color-mix(in oklab, rgb(var(--card, 2 6 23)) 88%, black 12%);
+  background: linear-gradient(180deg, var(--_bgA), rgba(0,0,0,.02));
+  border: 1px solid color-mix(in oklab, rgb(var(--border)) 75%, white 6%);
+  border-radius: var(--r-lg, 16px);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.05) inset,
+    0 0 0 1px rgba(255,255,255,.02) inset,
+    0 12px 40px rgba(2,6,23,.35);
+  padding: var(--card-pad);
+}
+
+/* subtle inner highlight for panels */
+.card::before,
+.panel::before,
+.panel-neon::before {
+  content:""; position:absolute; inset: 2px; border-radius: inherit; pointer-events:none;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+}
+
+/* ====== Button system (primary/secondary) ============================= */
+.btn-primary {
+  --_a: var(--brand-accent);
+  --_b: var(--brand-accent-2);
+  background:
+    radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,.18), rgba(255,255,255,0) 55%),
+    linear-gradient(90deg, var(--_a), var(--_b));
+  color: var(--btn-contrast, #fff);
+  border: none;
+  border-radius: var(--r-md, 14px);
+  padding: 10px 16px;
+  font-weight: 600;
+  box-shadow:
+    0 10px 28px color-mix(in oklab, var(--_a) 35%, black 65%),
+    0 0 0 1px rgba(255,255,255,.06) inset;
+  transition: transform .12s var(--easing-standard), box-shadow .2s var(--easing-standard);
+}
+.btn-primary:hover { transform: translateY(-1px); }
+
+.btn-ghost {
+  background: transparent;
+  color: rgb(var(--text));
+  border: 1px solid color-mix(in oklab, rgb(var(--border)) 80%, white 10%);
+  border-radius: var(--r-md, 14px);
+  padding: 8px 14px;
+}
+
+/* ====== KPI chips (small, crisp) ===================================== */
+.kpi-chip {
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 4px 8px; border-radius: 999px;
+  font-size: 12px; line-height: 1;
+  border: 1px solid color-mix(in oklab, rgb(var(--border)) 80%, white 6%);
+  background: color-mix(in oklab, rgb(var(--card)) 88%, black 12%);
+}
+.kpi-chip.is-up   { color: var(--signal-good);  }
+.kpi-chip.is-down { color: var(--signal-bad);   }
+
+/* ====== Utility for tight icon rows (navbar, toolbars) ================ */
+.icon-row { display:inline-flex; gap: var(--toolbar-gap); }

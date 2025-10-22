@@ -24,10 +24,6 @@ import "./styles/search.css";
 import "./styles/type.css";
 import "./styles/spacing.css";
 
-// if you already have tokens/neon pack, keep them;
-// if not, the “drop-in” below will add equivalents inside focus.neon.css
-
-
 import { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
 
@@ -38,6 +34,7 @@ import { NotesProvider } from "./context/NotesContext";
 import { PinnedProvider } from "./context/PinnedContext";
 import QuickNotesDrawer from "./components/global/QuickNotesDrawer";
 import PinnedDrawer from "./components/global/PinnedDrawer.jsx";
+import LayoutSkin from "./components/LayoutSkin.jsx";
 
 import { CommandPaletteProvider } from "./hooks/useCommandPalette";
 import CommandPalette from "./components/global/CommandPalette";
@@ -233,10 +230,10 @@ const App = () => {
     defaultAccent: "pandora",
   });
 
-  // A tiny shell so we can conditionally wrap FocusProvider
+  // Tiny shell so we can conditionally wrap FocusProvider
   const Shell = (
     <>
-      <div className="app-container layout-stage" {...containerAttrs}>
+      <div className="app-container" {...containerAttrs}>
         <AppRoutes />
       </div>
 
@@ -262,14 +259,13 @@ const App = () => {
               Skip to content
             </a>
 
-            <CommandPaletteProvider>
-              {FOCUS_DOCK_V1 ? (
-                <FocusProvider>{Shell}</FocusProvider>
-              ) : (
-                Shell
-              )}
-              <CommandPalette />
-            </CommandPaletteProvider>
+            {/* Route-aware accent & brand wrapper (must be inside Router) */}
+            <LayoutSkin>
+              <CommandPaletteProvider>
+                {FOCUS_DOCK_V1 ? <FocusProvider>{Shell}</FocusProvider> : Shell}
+                <CommandPalette />
+              </CommandPaletteProvider>
+            </LayoutSkin>
           </Router>
         </ErrorBoundary>
       </UserProvider>

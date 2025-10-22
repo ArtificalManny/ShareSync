@@ -2,22 +2,21 @@
 /* Uses your existing tokens/gradients; safe to layer on top. */
 
 /* ---- Canvas -------------------------------------------------------------- */
+/* ---- Canvas: softer galaxy ------------------------------------------ */
 .bg-galaxy {
-    /* deep vignette + angled aurora */
     background:
-      radial-gradient(1200px 600px at -10% -20%, rgba(99,102,241,.25) 0%, rgba(99,102,241,0) 60%) ,
-      radial-gradient(900px 500px at 110% -10%, rgba(236,72,153,.22) 0%, rgba(236,72,153,0) 55%) ,
-      radial-gradient(800px 500px at 80% 120%, rgba(16,185,129,.18) 0%, rgba(16,185,129,0) 55%),
-      linear-gradient(180deg, rgba(2,6,23,.9), rgba(2,6,23,.96));
+      radial-gradient(950px 520px at -10% -20%, rgba(99,102,241,.18) 0%, rgba(99,102,241,0) 62%),
+      radial-gradient(820px 480px at 110% -10%, rgba(236,72,153,.14) 0%, rgba(236,72,153,0) 58%),
+      radial-gradient(780px 520px at 80% 120%, rgba(16,185,129,.12) 0%, rgba(16,185,129,0) 58%),
+      linear-gradient(180deg, rgba(2,6,23,.92), rgba(2,6,23,.97));
     position: relative;
   }
   .bg-galaxy::after {
-    /* subtle film grain for depth */
     content:"";
-    position: absolute; inset: 0; pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' type='fractalNoise'/%3E%3CfeColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 -0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+    position:absolute; inset:0; pointer-events:none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' type='fractalNoise'/%3E%3CfeColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 -0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
     mix-blend-mode: soft-light;
-  }
+  }  
   
   /* ---- Neon Panel ---------------------------------------------------------- */
   .panel-neon {
@@ -38,19 +37,17 @@
     pointer-events:none;
   }
   .panel-neon::after {
-    /* corner halos */
+    /* corner halos — uses HEX accent vars (safe for color-mix) */
     content:"";
     position:absolute; inset: -1px; border-radius: inherit; pointer-events:none;
     background:
-      radial-gradient(220px 120px at 12% 8%, color-mix(in oklab, var(--accent,#6d28d9) 85%, white 15%) 0%, transparent 60%),
-      radial-gradient(220px 120px at 88% 92%, color-mix(in oklab, var(--accent2,#22d3ee) 85%, white 15%) 0%, transparent 60%);
+      radial-gradient(220px 120px at 12% 8%, color-mix(in oklab, var(--accent-hex,#6d28d9) 85%, white 15%) 0%, transparent 60%),
+      radial-gradient(220px 120px at 88% 92%, color-mix(in oklab, var(--accent-2-hex,#22d3ee) 85%, white 15%) 0%, transparent 60%);
     opacity:.25; filter: blur(18px);
   }
   
   /* ---- Specular highlight (optional) -------------------------------------- */
-  .specular {
-    position: relative;
-  }
+  .specular { position: relative; }
   .specular::before {
     content:"";
     position:absolute; inset: 2px 2px auto 2px; height: 28px; border-radius: 16px;
@@ -60,17 +57,17 @@
   
   /* ---- Luminous Button ----------------------------------------------------- */
   .btn-neon {
-    --btn-glow: color-mix(in oklab, var(--accent,#6366f1) 70%, white 30%);
+    --btn-glow: color-mix(in oklab, var(--accent-hex,#6366f1) 70%, white 30%);
     background:
       radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,.22), rgba(255,255,255,0) 55%),
-      linear-gradient(90deg, var(--accent,#6366f1), var(--accent2,#22d3ee));
+      linear-gradient(90deg, var(--accent-hex,#6366f1), var(--accent-2-hex,#22d3ee));
     color: white; border: none;
     box-shadow:
-      0 8px 26px color-mix(in oklab, var(--accent,#6366f1) 30%, black 70%),
+      0 8px 26px color-mix(in oklab, var(--accent-hex,#6366f1) 30%, black 70%),
       0 0 0 1px rgba(255,255,255,.08) inset;
   }
   .btn-neon:hover { transform: translateY(-1px); }
-  .btn-neon:focus-visible { outline: 2px solid var(--accent2,#22d3ee); outline-offset: 2px; }
+  .btn-neon:focus-visible { outline: 2px solid var(--accent-2-hex,#22d3ee); outline-offset: 2px; }
   
   /* ---- Hover scan (micro-motion) ------------------------------------------ */
   .scan-on-hover { position: relative; overflow: hidden; }
@@ -102,5 +99,4 @@
   .ss-sidebar .sb-tooltip {
     background: #0f172a; color: #e5edff; border: 1px solid rgba(148,163,184,.35);
     box-shadow: 0 10px 24px rgba(2,6,23,.48);
-  }
-  
+  }  

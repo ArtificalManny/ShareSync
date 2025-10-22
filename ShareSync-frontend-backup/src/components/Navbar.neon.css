@@ -12,9 +12,11 @@
     --nn-muted:     var(--muted, #96a0b5);
     --nn-border:    var(--border, #1e2536);
     --nn-ring:      var(--ring, #7c91ff);
-    --nn-accent:    var(--accent, #6a5cff);
-    --nn-accent-2:  var(--accent-2, #00e0ff);
-    --nn-accent-3:  var(--accent-3, #ff00e0);
+  
+    /* IMPORTANT: use HEX accent vars derived in tokens.css */
+    --nn-accent:    var(--accent-hex, #6a5cff);
+    --nn-accent-2:  var(--accent-2-hex, #00e0ff);
+    --nn-accent-3:  var(--accent-3-hex, #ff00e0);
   }
   
   /* Root container */
@@ -173,5 +175,9 @@
   /* Respect reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .neon-nav, .neon-nav * { transition: none !important; }
-  }
-  
+  }  
+
+  /* src/components/Navbar.neon.css — add at end */
+.neon-nav .btn-icon { width: 32px; height: 32px; border-radius: 10px; }
+.neon-nav .btn-icon svg { width: 16px; height: 16px; }
+.neon-nav .nav-right { gap: var(--toolbar-gap); }
