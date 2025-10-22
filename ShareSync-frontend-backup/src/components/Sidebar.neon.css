@@ -1,43 +1,102 @@
-/* ───────────────── Level the sidebar with the header ─────────────────── */
-/* If you already define --header-h in tokens.css, this will use it; else 48px */
-:root { --header-h: var(--header-height, 48px); }
-
-/* Header (your Navbar.jsx uses h-12 = 48px) */
-header.with-sidebar { height: var(--header-h); }
-
-/* Sidebar sits directly below the header */
-.ss-sidebar,
-.neon-sidebar {
-  position: fixed;
-  top: var(--header-h, 48px);
-  left: 0;
-  height: calc(100vh - var(--header-h, 48px));
-  /* keep existing width, z-index, etc. from your current CSS */
-}
-
-/* If you have an inner scroll container, ensure it fits the new height */
-.neon-sidebar .sb-nav,
-.neon-sidebar .sb-scroll {
-  max-height: calc(100vh - var(--header-h, 48px) - 96px); /* room for brand + user block */
-  overflow: auto;
-}
-
-/* ─────────── Keep neon effects inside the rail (no top bleed) ─────────── */
-.neon-sidebar .sb-ambient {
-  position: absolute;
-  inset: 0;                 /* was negative offsets; now fully inside */
-  pointer-events: none;
-  z-index: 0;
-}
-
-.neon-sidebar .sb-rail {
-  position: absolute;
-  top: 0; bottom: 0; left: 0;
-  width: 16px;
-  z-index: 0;
-}
-
-/* Content sits above the glow layers */
-.neon-sidebar .sb-head,
-.neon-sidebar .sb-nav,
-.neon-sidebar .sb-user { position: relative; z-index: 1; }
+/* ================== Neon Sidebar — visible & colorful ================== */
+.ss-sidebar.neon-sidebar {
+    background:
+      radial-gradient(900px 400px at -20% -10%, rgba(124,58,237,.22), transparent 60%),
+      radial-gradient(800px 420px at 120% -20%, rgba(34,211,238,.16), transparent 60%),
+      linear-gradient(180deg, #0e1630, #0d142b 60%, #0b1226 100%);
+    color: #e8edff;
+    border-right: 1px solid rgba(148,163,184,.22);
+    box-shadow: 0 10px 28px rgba(2,6,23,.45) inset;
+  }
+  
+  /* Vertical spine & ambient glow already exist; brighten slightly */
+  .ss-sidebar.neon-sidebar .sb-rail { background: linear-gradient(180deg, #5f6afc, #22d3ee); opacity:.28; }
+  .ss-sidebar.neon-sidebar .sb-ambient { box-shadow: 0 0 80px 20px rgba(99,102,241,.18) inset; }
+  
+  /* Make items readable */
+  .ss-sidebar.neon-sidebar .sb-nav { padding: 10px 8px; }
+  .ss-sidebar.neon-sidebar .sb-item {
+    --_text: #dfe7ff;
+    --_bg: rgba(255,255,255,.03);
+    --_bd: rgba(148,163,184,.26);
+    color: var(--_text);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 8px 10px;
+    gap: 10px;
+  }
+  .ss-sidebar.neon-sidebar .sb-item:hover {
+    background: var(--_bg);
+    border-color: var(--_bd);
+    box-shadow: 0 8px 22px rgba(2,6,23,.35);
+  }
+  .ss-sidebar.neon-sidebar .sb-item.is-active {
+    background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    border-color: rgba(148,163,184,.35);
+  }
+  
+  /* Fluorescent icon chip */
+  .ss-sidebar.neon-sidebar .sb-icon {
+    position: relative;
+    display: grid; place-items: center;
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(148,163,184,.28);
+    color: white;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.12) inset,
+      0 0 0 1px rgba(255,255,255,.04) inset,
+      0 8px 24px rgba(2,6,23,.6);
+  }
+  
+  /* === Route color mapping (used by the ring) ============================ */
+  .ss-sidebar.neon-sidebar .sb-item[data-route="home"]     { --ring-a:#7B61FF; --ring-b:#00E5FF; }
+  .ss-sidebar.neon-sidebar .sb-item[data-route="discover"] { --ring-a:#00A3FF; --ring-b:#00E0B8; }
+  .ss-sidebar.neon-sidebar .sb-item[data-route="projects"] { --ring-a:#FF3FA4; --ring-b:#7B61FF; }
+  .ss-sidebar.neon-sidebar .sb-item[data-route="profile"]  { --ring-a:#22D3EE; --ring-b:#7C3AED; }
+  .ss-sidebar.neon-sidebar .sb-item[data-route="settings"] { --ring-a:#B4F500; --ring-b:#00E0B8; }
+  .ss-sidebar.neon-sidebar .sb-item[data-route="admin"]    { --ring-a:#F59E0B; --ring-b:#06B6D4; }
+  
+  /* === Neon story-style ring ============================================ */
+  /* Build a conic-gradient ring as ::after and optionally rotate it */
+  .ss-sidebar.neon-sidebar .sb-icon::after {
+    content:"";
+    position:absolute; inset:-3px; border-radius: inherit;
+    background: conic-gradient(from 220deg, var(--ring-a), var(--ring-b), var(--ring-a));
+    /* punch a hole to make it a ring */
+    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+            mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+    opacity: .55;
+    filter: drop-shadow(0 0 16px color-mix(in oklab, var(--ring-a) 45%, transparent));
+    transform: rotate(0deg);
+  }
+  
+  /* Idle state on active route: soft breathing glow */
+  @keyframes sb-ring-breathe {
+    0%,100% { opacity: .45; }
+    50%     { opacity: .65; }
+  }
+  .ss-sidebar.neon-sidebar .sb-item.is-active .sb-icon::after {
+    animation: sb-ring-breathe 3.2s ease-in-out infinite;
+  }
+  
+  /* One-time orbit on first load (class added by Sidebar.jsx) */
+  @keyframes sb-ring-orbit {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  .ss-sidebar.neon-sidebar .sb-icon.orbit-once::after {
+    animation: sb-ring-orbit 1.4s cubic-bezier(.25,.8,.25,1) 1, sb-ring-breathe 3.2s ease-in-out infinite 1.4s;
+  }
+  
+  /* Labels and counts */
+  .ss-sidebar.neon-sidebar .sb-label { color: #eaf1ff; font-weight: 600; }
+  .ss-sidebar.neon-sidebar .sb-kbd,
+  .ss-sidebar.neon-sidebar .sb-count { color: #b9c4ff; opacity:.9; }
+  
+  /* Collapsed tooltips stay legible */
+  .ss-sidebar.neon-sidebar .sb-tooltip {
+    background: #0f172a; color: #e5edff; border: 1px solid rgba(148,163,184,.35);
+    box-shadow: 0 10px 24px rgba(2,6,23,.48);
+  }  

@@ -29,6 +29,9 @@ const LS_KEY = "ss.sidebar.collapsed";
  * - Adds/removes body classes so the content can offset via CSS vars
  * - Keyboard hint: '[' toggles collapse
  * - A11y: <nav> landmark, aria-expanded, focus-visible rings
+ * - ✨ Neon upgrades:
+ *    • Fluorescent route-colored rings via [data-route]
+ *    • One-time Instagram-style orbit animation on the active icon
  */
 export default function Sidebar() {
   const location = useLocation();
@@ -84,6 +87,55 @@ export default function Sidebar() {
     return () => window.removeEventListener("keydown", onKey);
   }, [toggle]);
 
+  // ---- Neon helpers --------------------------------------------------------
+
+  // 1) Wire data-route to each .sb-item so CSS can color its ring.
+  //    We infer from href/label if SidebarItem doesn't pass it.
+  useEffect(() => {
+    const items = Array.from(document.querySelectorAll(".sb-nav .sb-item"));
+    items.forEach((el) => {
+      if (el.dataset.route) return;
+
+      // Prefer href on the clickable node; else a child anchor
+      const anchor = el.matches("a[href]") ? el : el.querySelector("a[href]");
+      let href = anchor?.getAttribute("href") || "";
+
+      let route = "";
+      if (href && href.startsWith("/")) {
+        const seg = href.split("/")[1]; // "/projects/..." -> "projects"
+        route = seg || "home";
+      } else {
+        // Fallback: guess from visible text
+        const text = (el.textContent || "").toLowerCase();
+        if (text.includes("home")) route = "home";
+        else if (text.includes("discover")) route = "discover";
+        else if (text.includes("project")) route = "projects";
+        else if (text.includes("profile")) route = "profile";
+        else if (text.includes("setting")) route = "settings";
+        else if (text.includes("admin")) route = "admin";
+      }
+
+      if (route) el.setAttribute("data-route", route);
+    });
+  }, [location.pathname]);
+
+  // 2) One-time orbit animation on the active icon (on hard reload / first session)
+  useEffect(() => {
+    const activeIcon = document.querySelector(".sb-item.is-active .sb-icon");
+    if (!activeIcon) return;
+
+    const nav = performance.getEntriesByType?.("navigation")?.[0];
+    const isReload = nav ? nav.type === "reload" : true;
+    const firstVisit = !sessionStorage.getItem("sb_ring_played");
+
+    if (isReload || firstVisit) {
+      activeIcon.classList.add("orbit-once");
+      sessionStorage.setItem("sb_ring_played", "1");
+      const t = setTimeout(() => activeIcon.classList.remove("orbit-once"), 1800);
+      return () => clearTimeout(t);
+    }
+  }, [location.pathname]);
+
   // Counts (wire up to real data if desired)
   const counts = useMemo(
     () => ({
@@ -134,6 +186,8 @@ export default function Sidebar() {
           icon={Home}
           count={counts.home}
           collapsed={tooltipWhenCollapsed}
+          // If SidebarItem forwards props to the clickable root, this helps the CSS:
+          data-route="home"
         />
 
         {/* Discover (feature-gated) */}
@@ -143,6 +197,7 @@ export default function Sidebar() {
             label="Discover"
             icon={Compass}
             collapsed={tooltipWhenCollapsed}
+            data-route="discover"
           />
         )}
 
@@ -152,6 +207,7 @@ export default function Sidebar() {
           icon={FolderKanban}
           count={counts.projects}
           collapsed={tooltipWhenCollapsed}
+          data-route="projects"
         />
         <SidebarItem
           to="/profile"
@@ -159,6 +215,7 @@ export default function Sidebar() {
           icon={UserIcon}
           count={counts.profile}
           collapsed={tooltipWhenCollapsed}
+          data-route="profile"
         />
         <SidebarItem
           to="/settings"
@@ -166,6 +223,7 @@ export default function Sidebar() {
           icon={Settings}
           count={counts.settings}
           collapsed={tooltipWhenCollapsed}
+          data-route="settings"
         />
 
         {/* Admin Console (feature-gated) */}
@@ -175,6 +233,7 @@ export default function Sidebar() {
             label="Admin"
             icon={ShieldCheck}
             collapsed={tooltipWhenCollapsed}
+            data-route="admin"
           />
         )}
       </nav>
