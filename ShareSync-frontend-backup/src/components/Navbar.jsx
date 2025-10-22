@@ -19,6 +19,18 @@ const BrandSwitcher = lazy(() => import('./global/BrandSwitcher.jsx'));
 const DEFAULT_PIC = '/default-profile.png';
 const LS_KEY = 'ss.sidebar.collapsed';
 
+  // Avatar: spin ring once per session on first render
+  const [spinAvatar, setSpinAvatar] = useState(false);
+  useEffect(() => {
+    const key = 'seen.nav.avatar.spin';
+    if (!sessionStorage.getItem(key)) {
+      setSpinAvatar(true);
+      const t = setTimeout(() => setSpinAvatar(false), 1600); // keep in sync with rings.css
+      sessionStorage.setItem(key, '1');
+      return () => clearTimeout(t);
+    }
+  }, []);
+
 export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   const navigate = useNavigate();
 
@@ -185,18 +197,20 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           </button>
 
           {/* Profile */}
-          <Link to="/profile" className="inline-flex items-center gap-2 group">
-            <div className="avatar h-7 w-7">
-              <img
-                src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC}
-                alt={user?.firstName || 'User'}
-                className="h-7 w-7 rounded-full object-cover"
-              />
-            </div>
-            <span className="text-xs text-muted hidden sm:inline group-hover:opacity-80">
-              {user?.firstName || 'Profile'}
-            </span>
-          </Link>
+<Link to="/profile" className="inline-flex items-center gap-2 group">
+  <div className={`story-ring ${spinAvatar ? 'ring-spin-once' : ''}`}>
+    <div className="avatar h-7 w-7 rounded-full overflow-hidden">
+      <img
+        src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC}
+        alt={user?.firstName || 'User'}
+        className="h-7 w-7 object-cover"
+      />
+    </div>
+  </div>
+  <span className="text-xs text-muted hidden sm:inline group-hover:opacity-80">
+    {user?.firstName || 'Profile'}
+  </span>
+</Link>
 
           {/* Logout */}
           <button

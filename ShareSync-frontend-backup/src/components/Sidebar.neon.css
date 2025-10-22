@@ -35,20 +35,22 @@
     border-color: rgba(148,163,184,.35);
   }
   
-  /* Fluorescent icon chip */
-  .ss-sidebar.neon-sidebar .sb-icon {
+  /* Fluorescent icon chip — circle, no competing borders */
+.ss-sidebar.neon-sidebar .sb-icon {
     position: relative;
+    isolation: isolate;              /* keeps ring glow contained */
     display: grid; place-items: center;
-    width: 36px; height: 36px;
-    border-radius: 10px;
+    width: 36px; height: 36px;       /* square chip */
+    border-radius: 999px;            /* <-- circle */
     background: rgba(255,255,255,.05);
-    border: 1px solid rgba(148,163,184,.28);
+    /* remove solid borders so the ring reads cleanly */
+    border: none;
     color: white;
     box-shadow:
       0 1px 0 rgba(255,255,255,.12) inset,
       0 0 0 1px rgba(255,255,255,.04) inset,
       0 8px 24px rgba(2,6,23,.6);
-  }
+  }  
   
   /* === Route color mapping (used by the ring) ============================ */
   .ss-sidebar.neon-sidebar .sb-item[data-route="home"]     { --ring-a:#7B61FF; --ring-b:#00E5FF; }
@@ -58,38 +60,7 @@
   .ss-sidebar.neon-sidebar .sb-item[data-route="settings"] { --ring-a:#B4F500; --ring-b:#00E0B8; }
   .ss-sidebar.neon-sidebar .sb-item[data-route="admin"]    { --ring-a:#F59E0B; --ring-b:#06B6D4; }
   
-  /* === Neon story-style ring ============================================ */
-  /* Build a conic-gradient ring as ::after and optionally rotate it */
-  .ss-sidebar.neon-sidebar .sb-icon::after {
-    content:"";
-    position:absolute; inset:-3px; border-radius: inherit;
-    background: conic-gradient(from 220deg, var(--ring-a), var(--ring-b), var(--ring-a));
-    /* punch a hole to make it a ring */
-    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
-            mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
-    opacity: .55;
-    filter: drop-shadow(0 0 16px color-mix(in oklab, var(--ring-a) 45%, transparent));
-    transform: rotate(0deg);
-  }
-  
-  /* Idle state on active route: soft breathing glow */
-  @keyframes sb-ring-breathe {
-    0%,100% { opacity: .45; }
-    50%     { opacity: .65; }
-  }
-  .ss-sidebar.neon-sidebar .sb-item.is-active .sb-icon::after {
-    animation: sb-ring-breathe 3.2s ease-in-out infinite;
-  }
-  
-  /* One-time orbit on first load (class added by Sidebar.jsx) */
-  @keyframes sb-ring-orbit {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-  }
-  .ss-sidebar.neon-sidebar .sb-icon.orbit-once::after {
-    animation: sb-ring-orbit 1.4s cubic-bezier(.25,.8,.25,1) 1, sb-ring-breathe 3.2s ease-in-out infinite 1.4s;
-  }
-  
+
   /* Labels and counts */
   .ss-sidebar.neon-sidebar .sb-label { color: #eaf1ff; font-weight: 600; }
   .ss-sidebar.neon-sidebar .sb-kbd,
