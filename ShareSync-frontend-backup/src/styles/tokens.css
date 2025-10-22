@@ -630,3 +630,16 @@ body { font-family: var(--font-sans); letter-spacing: 0; }
 
 /* ====== Utility for tight icon rows (navbar, toolbars) ================ */
 .icon-row { display:inline-flex; gap: var(--toolbar-gap); }
+
+/* === Orbit ring palette (blue) ========================================== */
+:root {
+  --orbit-blue-a: #3b82f6; /* blue-500 */
+  --orbit-blue-b: #06b6d4; /* cyan-500 */
+  --orbit-ring-thickness: 3px;
+  --orbit-glow: 0 0 16px rgba(59,130,246,.45), 0 0 6px rgba(6,182,212,.35) inset;
+}
+
+/* Dark keeps the same hues but stronger glow */
+:root.dark {
+  --orbit-glow: 0 0 18px rgba(59,130,246,.65), 0 0 8px rgba(6,182,212,.45) inset;
+}

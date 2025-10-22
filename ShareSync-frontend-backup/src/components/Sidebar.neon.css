@@ -99,4 +99,69 @@
   .ss-sidebar.neon-sidebar .sb-tooltip {
     background: #0f172a; color: #e5edff; border: 1px solid rgba(148,163,184,.35);
     box-shadow: 0 10px 24px rgba(2,6,23,.48);
-  }  
+  }
+/* === Orbit ring around sidebar icons ==================================== */
+.sb-item .sb-icon {
+    position: relative;
+    isolation: isolate;
+  }
+  
+  /* soft idle glow so the active item stays “lit” after the spin */
+  .sb-item.is-active .sb-icon::before {
+    content: "";
+    position: absolute; inset: 0;
+    border-radius: 999px;
+    box-shadow: var(--orbit-glow);
+    opacity: .65;
+    pointer-events: none;
+  }
+  
+  /* animated ring — thin conic gradient band that spins */
+  .sb-item .sb-icon::after {
+    content: "";
+    position: absolute;
+    inset: calc(var(--orbit-ring-thickness) * -1);
+    padding: var(--orbit-ring-thickness);
+    border-radius: 999px;
+    background:
+      conic-gradient(
+        from 0deg,
+        var(--orbit-blue-a) 0%,
+        var(--orbit-blue-b) 40%,
+        var(--orbit-blue-a) 80%,
+        transparent 100%
+      );
+    /* carve the center so only the ring shows */
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transform: rotate(0deg);
+    pointer-events: none;
+  }
+  
+  @keyframes orbit-spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Animate ONCE whenever the item becomes active */
+  .sb-item.is-active .sb-icon::after {
+    opacity: 1;
+    animation: orbit-spin 1.6s linear 1;
+  }
+  
+  /* If you ever want a continuous orbit (e.g., “busy”): add .orbit-loop to the item */
+  .sb-item.orbit-loop .sb-icon::after {
+    opacity: 1;
+    animation: orbit-spin 1.8s linear infinite;
+  }
+  
+  /* Handsome hover for non-active items */
+  .sb-item:not(.is-active):hover .sb-icon::after {
+    opacity: .9;
+    animation: orbit-spin .9s linear 1;
+  }
+  
+  

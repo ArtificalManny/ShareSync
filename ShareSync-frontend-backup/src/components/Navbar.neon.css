@@ -181,3 +181,19 @@
 .neon-nav .btn-icon { width: 32px; height: 32px; border-radius: 10px; }
 .neon-nav .btn-icon svg { width: 16px; height: 16px; }
 .neon-nav .nav-right { gap: var(--toolbar-gap); }
+
+/* One-spin orbit around the avatar on first render */
+.neon-nav .avatar::after {
+    animation: orbit-spin 1.4s linear 1;
+    will-change: transform;
+    /* reuse the same ring gradient to keep the system cohesive */
+    background:
+      conic-gradient(
+        from 0deg,
+        var(--orbit-blue-a) 0%,
+        var(--orbit-blue-b) 40%,
+        var(--orbit-blue-a) 80%,
+        transparent 100%
+      );
+  }
+  
