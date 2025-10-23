@@ -175,7 +175,26 @@ body { color: rgb(var(--fg)); }
   --grad-cnbc: linear-gradient(135deg,
     rgb(var(--grad-cnbc-a)) 0%,
     rgb(var(--grad-cnbc-b)) 100%
+
+    /* === Proton/MetaLab accent rail (hex + channels) ===================== */
+--proton-purple-hex: #7A5AF8; /* Proton-y violet */
+--proton-blue-hex:   #22D3EE; /* cyan */
+--proton-iris-hex:   #6C72FF; /* MetaLab cobalt-violet */
+
+/* Channels for gradients using rgb(var(--...)) */
+--proton-purple: 122 90 248;
+--proton-iris:   108 114 255;
+--proton-blue:    34 211 238;
+
+/* Nav foregrounds (crisper on dark) */
+--nav-fg:    236 244 255;
+--nav-muted: 170 186 210;
+
+/* Default UI foregrounds for dark UIs */
+--fg: 255 255 255;
   );
+
+
 
   /* ================================
      Brand V2 tokens (light)
@@ -317,7 +336,11 @@ body { color: rgb(var(--fg)); }
   --grad-ig-c:      139  92 246;   /* violet-500 */
   --grad-ig-d:       99 102 241;   /* indigo-500 */
 
-  --grad-signature: var(--grad-pandora);
+  --grad-signature: linear-gradient(135deg,
+  rgb(var(--proton-purple)) 0%,
+  rgb(var(--proton-iris)) 50%,
+  rgb(var(--proton-blue)) 100%
+);
 
   --bg-elevated: rgb(15 23 42 / .85);
 

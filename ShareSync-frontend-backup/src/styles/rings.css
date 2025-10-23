@@ -82,3 +82,19 @@
   @media (prefers-reduced-motion: reduce) {
     .ring-spin-once::before { animation: none !important; }
   }  
+
+  /* Proton/MetaLab coloration (opt-in) */
+.story-ring--proton {
+    --sr-a: var(--proton-purple-hex);
+    --sr-b: var(--proton-iris-hex);
+    --sr-c: var(--proton-blue-hex);
+    --sr-d: var(--proton-iris-hex);
+  }
+  
+  /* Tight variant for small targets (navbar avatar) – already added, keep here for clarity */
+  .story-ring--tight {
+    --sr-thickness: 2px;
+    --sr-gap: 1px;
+    --sr-blur: 10px;
+  }
+  

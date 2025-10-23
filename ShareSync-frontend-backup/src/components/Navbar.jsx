@@ -198,22 +198,22 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
 
           {/* Profile (one-spin ring on first session) */}
           <Link to="/profile" className="inline-flex items-center gap-1.5 group">
-            <div className={`story-ring story-ring--tight ${spinAvatar ? 'ring-spin-once' : ''}`}>
-              <div className="avatar h-8 w-8 rounded-full overflow-hidden">
-                <img
-                  src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC}
-                  alt={user?.firstName || 'User'}
-                  className="h-8 w-8 object-cover"
-                />
-              </div>
-            </div>
-            <span
-              className="text-xs hidden sm:inline group-hover:opacity-80"
-              style={{ color: 'var(--nav-fg, #ECF4FF)' }}
-            >
-              {user?.firstName || 'Profile'}
-            </span>
-          </Link>
+  <div className={`story-ring story-ring--tight story-ring--proton ${spinAvatar ? 'ring-spin-once' : ''}`}>
+    <div className="avatar rounded-full overflow-hidden" style={{ width: 32, height: 32 }}>
+      <img
+        src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC}
+        alt={user?.firstName || 'User'}
+        className="object-cover w-full h-full"
+      />
+    </div>
+  </div>
+  <span
+    className="text-xs hidden sm:inline group-hover:opacity-80"
+    style={{ color: 'rgb(var(--nav-fg, 236 244 255))' }}
+  >
+    {user?.firstName || 'Profile'}
+  </span>
+</Link>
 
           {/* Logout */}
           <button

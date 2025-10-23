@@ -79,4 +79,26 @@
   
   /* Icon slot helper (optional) */
   .ui-btn > .icon { display: inline-grid; place-items: center; line-height: 0; }
+
+  /* ——— Proton / Soft variants (Metalab × ProtonMail vibe) ——— */
+
+/* Proton pill */
+.btn--proton {
+    background: var(--grad-signature);
+    color: #fff;
+    border: 0;
+    border-radius: 14px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.25) inset,
+      0 14px 32px color-mix(in oklab, var(--proton-iris-hex) 28%, #000 72%),
+      0 0 0 1px rgba(255,255,255,.08) inset;
+    transition: transform .15s var(--easing-standard, cubic-bezier(.2,.8,.2,1));
+  }
+  .btn--proton:hover { transform: translateY(-1px); }
   
+  /* Soft button (quiet surface, keeps neon system) */
+  .btn--soft {
+    background: color-mix(in oklab, rgb(var(--card)) 86%, #000 14%);
+    border: 1px solid color-mix(in oklab, rgb(var(--border)) 80%, white 10%);
+    color: rgb(var(--fg, var(--text)));
+  }  

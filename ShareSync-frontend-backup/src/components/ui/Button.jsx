@@ -23,6 +23,8 @@ const VARIANT = {
   primary: "btn--primary",
   outline: "btn--outline",
   ghost: "btn--ghost",
+  soft: "btn--soft",
+  proton: "btn--proton",
 };
 
 export default function Button({

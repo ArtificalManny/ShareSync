@@ -162,8 +162,8 @@
       0 0 0 1.5px color-mix(in oklab, var(--nn-border) 70%, transparent),
       0 0 28px -10px color-mix(in oklab, var(--nn-accent-2) 55%, transparent);
   }
-  /* Tighten the ring & fix size */
-  .neon-nav .nav-right .story-ring { --ring-thickness: 2px; --ring-gap: 1px; }
+  /* Tighten the ring & fix size (matches rings.css variables) */
+  .neon-nav .nav-right .story-ring { --sr-thickness: 2px; --sr-gap: 1px; }
   .neon-nav .nav-right .avatar { width: 32px; height: 32px; border-radius: 999px; }
   
   /* (Removed the old .avatar::after ring to avoid double-rings; story-ring handles it) */

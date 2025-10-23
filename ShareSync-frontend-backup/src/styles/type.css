@@ -10,6 +10,23 @@
     --fs-micro: 12px; --lh-micro: 18px; --fw-micro: 500;
   }
   
+/* Crisp defaults for dark UI */
+html, body {
+    color: rgb(var(--fg));
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  
+  ::selection {
+    background: color-mix(in oklab, var(--proton-iris-hex) 35%, transparent);
+    color: #fff;
+  }
+  
+  .text-muted { color: rgb(var(--muted)); }
+  
+  /* Ensure headings inherit fg */
+  h1, h2, h3, h4, h5, h6 { color: rgb(var(--fg)); }  
+
   /* === Crisp defaults (pull from tokens) ====================== */
   body {
     color: rgb(var(--fg));
