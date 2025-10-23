@@ -25,10 +25,10 @@ import "./styles/type.css";
 import "./styles/spacing.css";
 
 // Neon rings, focus & shared UI styles
-import "./styles/rings.css";
-import "./styles/focus.css";
-import "./components/ui/buttons.css";
-import "./components/ui/skeleton.css";
+//* import "./styles/rings.css";
+//import "./styles/focus.css";
+//import "./components/ui/buttons.css";
+//import "./components/ui/skeleton.css";
 
 import { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
