@@ -94,7 +94,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
       style={headerStyle}
     >
       <div className="px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between nav-wrap">
-        {/* Left: brand + sidebar toggle */}
+        {/* Left: sidebar toggle + (mobile-only) brand */}
         <div className="nav-left">
           <button
             type="button"
@@ -106,8 +106,8 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             <PanelLeftClose className="w-4 h-4" />
           </button>
 
-          {/* Brand / Home */}
-          <Link to="/home" className="logo" aria-label="ShareSync home">
+          {/* Brand / Home — keep on small screens, hide on md+ to avoid duplicate brand with sidebar */}
+          <Link to="/home" className="logo sm:inline md:hidden" aria-label="ShareSync home">
             SS
           </Link>
         </div>
@@ -128,7 +128,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
         </form>
 
         {/* Right: KPI Ticker (flag), admin, messenger, theme, profile, logout */}
-        <div className="flex items-center gap-2 nav-right">
+        <div className="flex items-center gap-1.5 nav-right">
           {/* KPI Ticker — CNBC-style, shows only on md+ to keep it compact */}
           {KPI_TICKER_V1 && (
             <div
@@ -197,17 +197,20 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           </button>
 
           {/* Profile (one-spin ring on first session) */}
-          <Link to="/profile" className="inline-flex items-center gap-2 group">
-            <div className={`story-ring ${spinAvatar ? 'ring-spin-once' : ''}`}>
-              <div className="avatar h-7 w-7 rounded-full overflow-hidden">
+          <Link to="/profile" className="inline-flex items-center gap-1.5 group">
+            <div className={`story-ring story-ring--tight ${spinAvatar ? 'ring-spin-once' : ''}`}>
+              <div className="avatar h-8 w-8 rounded-full overflow-hidden">
                 <img
                   src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC}
                   alt={user?.firstName || 'User'}
-                  className="h-7 w-7 object-cover"
+                  className="h-8 w-8 object-cover"
                 />
               </div>
             </div>
-            <span className="text-xs text-muted hidden sm:inline group-hover:opacity-80">
+            <span
+              className="text-xs hidden sm:inline group-hover:opacity-80"
+              style={{ color: 'var(--nav-fg, #ECF4FF)' }}
+            >
               {user?.firstName || 'Profile'}
             </span>
           </Link>

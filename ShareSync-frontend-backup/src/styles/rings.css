@@ -1,5 +1,5 @@
-/* Instagram-style orbit ring (blue → cyan) */
-/* Wrap any circular thing with .story-ring.
+/* Instagram-style orbit ring (blue → cyan)
+   Wrap any circular thing with .story-ring.
    Add .ring-spin-once to play a single rotation on mount. */
 
    .story-ring {
@@ -9,16 +9,23 @@
     place-items: center;
     border-radius: 999px;
   
-    /* Tunables */
-    --sr-thickness: 3px;        /* visual stroke width */
-    --sr-gap: 2px;              /* gap between content and ring */
-    --sr-blur: 18px;            /* halo softness */
+    /* Aliases so parents can override with --ring-* (navbar uses this) */
+    --sr-thickness: var(--ring-thickness, 3px);  /* visual stroke width */
+    --sr-gap:       var(--ring-gap, 2px);        /* gap between content and ring */
+    --sr-blur:      var(--ring-blur, 18px);      /* halo softness */
   
     /* Palette (blue-leaning by default; still looks great with your accents) */
     --sr-a: #60a5fa; /* blue-400  */
     --sr-b: #38bdf8; /* sky-400   */
     --sr-c: #22d3ee; /* cyan-400  */
     --sr-d: #60a5fa; /* back to blue */
+  }
+  
+  /* Tight variant for small targets (nav avatar, small icons) */
+  .story-ring--tight {
+    --ring-thickness: 2px;
+    --ring-gap: 1px;
+    --ring-blur: 12px; /* slightly softer halo so it doesn't spill */
   }
   
   /* The colorful stroke (masked so only the border shows) */
@@ -67,12 +74,11 @@
   
   /* Spin keyframes */
   @keyframes sr-spin {
-    from { transform: rotate(0deg);   }
+    from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
   }
   
   /* Respect reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .ring-spin-once::before { animation: none !important; }
-  }
-  
+  }  

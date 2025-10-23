@@ -17,6 +17,9 @@
     --nn-accent:    var(--accent-hex, #6a5cff);
     --nn-accent-2:  var(--accent-2-hex, #00e0ff);
     --nn-accent-3:  var(--accent-3-hex, #ff00e0);
+  
+    /* nav foreground fallback */
+    --nav-fg:       var(--nn-text);
   }
   
   /* Root container */
@@ -42,6 +45,10 @@
     box-shadow:
       inset 0 -1px 0 color-mix(in oklab, #fff 7%, transparent),
       0 10px 40px -20px color-mix(in oklab, var(--nn-accent) 28%, transparent);
+  
+    /* Typography crispness */
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   
   /* Subtle top hairline light */
@@ -82,6 +89,11 @@
     box-shadow: 0 0 28px color-mix(in oklab, var(--nn-accent-2) 30%, transparent);
   }
   
+  /* Hide the little SS chip when the sidebar brand is visible on md+ */
+  @media (min-width: 768px) {
+    .with-sidebar .nav-left .logo { display: none; }
+  }
+  
   /* Search — pill with neon ring */
   .neon-nav .searchbar,
   .neon-nav input[type="search"] {
@@ -108,7 +120,7 @@
       0 0 32px -6px color-mix(in oklab, var(--nn-accent-2) 45%, transparent);
   }
   
-  /* Icon buttons */
+  /* Icon buttons — legible by default */
   .neon-nav .btn-icon,
   .neon-nav button.btn-icon,
   .neon-nav .icon-button {
@@ -116,16 +128,18 @@
     width:32px; height:32px; border-radius:10px;
     border:1px solid color-mix(in oklab, var(--nn-border) 80%, transparent);
     background: color-mix(in oklab, var(--nn-surface) 75%, #000 25%);
-    color: var(--nn-text);
+    color: var(--nav-fg, var(--nn-text));
     transition: transform .12s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
   }
   .neon-nav .btn-icon:hover {
     transform: translateY(-1px);
     border-color: color-mix(in oklab, var(--nn-accent) 40%, var(--nn-border));
+    background: color-mix(in oklab, var(--nav-fg, #ecf4ff) 10%, transparent);
     box-shadow:
       0 0 0 3px color-mix(in oklab, var(--nn-accent) 18%, transparent),
       0 8px 22px -10px color-mix(in oklab, var(--nn-accent-3) 45%, transparent);
   }
+  .neon-nav .btn-icon svg { width: 16px; height: 16px; }
   
   /* Primary tiny pill (if you render one in nav) */
   .neon-nav .btn-pill {
@@ -141,59 +155,33 @@
   }
   .neon-nav .btn-pill:active { transform: translateY(1px); }
   
-  /* Profile chip / avatar with glow ring */
+  /* Profile chip / avatar — fit + rely on story-ring for the halo */
   .neon-nav .avatar, .neon-nav [data-avatar] {
     position: relative; border-radius: 999px; overflow: hidden;
     box-shadow:
       0 0 0 1.5px color-mix(in oklab, var(--nn-border) 70%, transparent),
       0 0 28px -10px color-mix(in oklab, var(--nn-accent-2) 55%, transparent);
   }
-  .neon-nav .avatar::after {
-    content:""; position:absolute; inset:-2px;
-    border-radius:inherit; pointer-events:none;
-    background: conic-gradient(from 180deg,
-      color-mix(in oklab, var(--nn-accent) 70%, transparent),
-      color-mix(in oklab, var(--nn-accent-2) 70%, transparent),
-      color-mix(in oklab, var(--nn-accent-3) 70%, transparent),
-      color-mix(in oklab, var(--nn-accent) 70%, transparent));
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor; mask-composite: exclude;
-    padding: 2px; opacity:.45;
-  }
+  /* Tighten the ring & fix size */
+  .neon-nav .nav-right .story-ring { --ring-thickness: 2px; --ring-gap: 1px; }
+  .neon-nav .nav-right .avatar { width: 32px; height: 32px; border-radius: 999px; }
   
-  /* Online dot (if you place one) */
-  .neon-nav .presence-dot {
-    position:absolute; right:-2px; bottom:-2px; width:10px; height:10px; border-radius:999px;
-    background: #18ffb2; box-shadow: 0 0 8px #18ffb2, 0 0 16px #18ffb2aa;
-    border: 2px solid var(--nn-surface);
-  }
+  /* (Removed the old .avatar::after ring to avoid double-rings; story-ring handles it) */
+  
+  /* Toolbar spacing a touch tighter */
+  .neon-nav .nav-right { gap: .375rem; } /* ~6px */
   
   /* Compact on scroll (optional – add .is-compact on scroll) */
   .neon-nav.is-compact { backdrop-filter: blur(8px) saturate(120%); }
   .neon-nav.is-compact .searchbar { min-width: clamp(200px, 28vw, 420px); }
   
+  /* Selection color – on-brand but subtle */
+  .neon-nav ::selection {
+    background: color-mix(in oklab, var(--accent, #7c91ff) 35%, transparent);
+    color: #fff;
+  }
+  
   /* Respect reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .neon-nav, .neon-nav * { transition: none !important; }
   }  
-
-  /* src/components/Navbar.neon.css — add at end */
-.neon-nav .btn-icon { width: 32px; height: 32px; border-radius: 10px; }
-.neon-nav .btn-icon svg { width: 16px; height: 16px; }
-.neon-nav .nav-right { gap: var(--toolbar-gap); }
-
-/* One-spin orbit around the avatar on first render */
-.neon-nav .avatar::after {
-    animation: orbit-spin 1.4s linear 1;
-    will-change: transform;
-    /* reuse the same ring gradient to keep the system cohesive */
-    background:
-      conic-gradient(
-        from 0deg,
-        var(--orbit-blue-a) 0%,
-        var(--orbit-blue-b) 40%,
-        var(--orbit-blue-a) 80%,
-        transparent 100%
-      );
-  }
-  
