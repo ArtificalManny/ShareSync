@@ -43,4 +43,20 @@
     display: block;
     width: 100%;
   }
-  
+  /* =========================================================
+   Proton frosted search (overrides come last in the file)
+   ========================================================= */
+.searchbar {
+  background: color-mix(in oklab, rgb(var(--card)) 78%, black 22%);
+  border: 1px solid color-mix(in oklab, rgb(var(--border)) 80%, transparent);
+  color: rgb(var(--fg));
+}
+
+/* Focus glow tuned to Proton iris/blue */
+.searchbar:focus {
+  border-color: color-mix(in oklab, var(--proton-iris-hex) 55%, rgb(var(--border)));
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--proton-iris-hex) 22%, transparent),
+    0 0 40px -8px color-mix(in oklab, var(--proton-blue-hex) 45%, transparent);
+  outline: none;
+}

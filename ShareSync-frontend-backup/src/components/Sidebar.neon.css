@@ -30,7 +30,10 @@
   }  
   
   /* Vertical spine & ambient glow already exist; brighten slightly */
-  .ss-sidebar.neon-sidebar .sb-rail { background: linear-gradient(180deg, #5f6afc, #22d3ee); opacity:.28; }
+  .ss-sidebar.neon-sidebar .sb-rail {
+    background: linear-gradient(180deg, var(--proton-iris-hex), var(--proton-blue-hex));
+    opacity: .28;
+  }  
   .ss-sidebar.neon-sidebar .sb-ambient { box-shadow: 0 0 80px 20px rgba(99,102,241,.18) inset; }
   
   /* Make items readable */

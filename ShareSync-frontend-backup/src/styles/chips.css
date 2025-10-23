@@ -76,4 +76,17 @@
       animation: none !important;
     }
   }
-  
+  /* ── Proton-soft chips / tabs ─────────────────────────── */
+.chip-soft {
+  border: 1px solid color-mix(in oklab, rgb(var(--border)) 82%, white 6%);
+  background: color-mix(in oklab, rgb(var(--card)) 86%, #000 14%);
+  color: rgb(var(--fg));
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.chip-soft.is-active {
+  border-color: color-mix(in oklab, var(--proton-iris-hex) 50%, rgb(var(--border)));
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--proton-iris-hex) 18%, transparent) inset;
+  color: var(--proton-iris-hex);
+}

@@ -23,6 +23,7 @@ import "./styles/messenger.css";
 import "./styles/search.css";
 import "./styles/type.css";
 import "./styles/spacing.css";
+import "./styles/chips.css";
 
 // Neon rings, focus & shared UI styles
 //* import "./styles/rings.css";
