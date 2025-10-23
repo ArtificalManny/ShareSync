@@ -10,6 +10,23 @@
     --fs-micro: 12px; --lh-micro: 18px; --fw-micro: 500;
   }
   
+  /* === Crisp defaults (pull from tokens) ====================== */
+  body {
+    color: rgb(var(--fg));
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Ensure semantic headings inherit the readable fg color */
+  :where(h1, h2, h3, h4, h5, h6) {
+    color: rgb(var(--fg));
+  }
+  
+  /* Utility for muted copy */
+  .text-muted {
+    color: rgb(var(--muted));
+  }
+  
   /* Utilities (opt-in, won’t fight Tailwind) */
   .h1 { font-size: var(--fs-h1); line-height: var(--lh-h1); font-weight: var(--fw-h1); }
   .h2 { font-size: var(--fs-h2); line-height: var(--lh-h2); font-weight: var(--fw-h2); }
@@ -19,6 +36,5 @@
   .micro { font-size: var(--fs-micro); line-height: var(--lh-micro); font-weight: var(--fw-micro); }
   
   /* Nice little helpers */
-  .lead     { font-size: 15px; line-height: 24px; color: var(--muted, #64748b); }
-  .eyebrow  { font-size: 12px; line-height: 18px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #64748b); }
-  
+  .lead    { font-size: 15px; line-height: 24px; color: rgb(var(--muted)); }
+  .eyebrow { font-size: 12px; line-height: 18px; letter-spacing: .06em; text-transform: uppercase; color: rgb(var(--muted)); }  

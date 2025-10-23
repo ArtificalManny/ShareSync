@@ -8,6 +8,26 @@
     border-right: 1px solid rgba(148,163,184,.22);
     box-shadow: 0 10px 28px rgba(2,6,23,.45) inset;
   }
+
+  /* Brand visibility (avoid duplication with the Navbar chip) */
+.ss-sidebar.neon-sidebar .sb-brand {
+    display: none;              /* default: hidden on small screens */
+    align-items: center;
+    gap: 8px;
+  }
+  
+  @media (min-width: 768px) {   /* md+ */
+    .ss-sidebar.neon-sidebar .sb-brand {
+      display: inline-flex;     /* visible on desktop */
+    }
+  }
+  
+  /* Optional: make sure the title color uses tokens */
+  .ss-sidebar.neon-sidebar .sb-title {
+    color: rgb(var(--nav-fg, var(--fg)));
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }  
   
   /* Vertical spine & ambient glow already exist; brighten slightly */
   .ss-sidebar.neon-sidebar .sb-rail { background: linear-gradient(180deg, #5f6afc, #22d3ee); opacity:.28; }

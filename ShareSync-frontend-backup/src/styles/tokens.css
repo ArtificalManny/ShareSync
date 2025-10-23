@@ -5,6 +5,10 @@
   --bg:            248 250 252;
   --card:          248 250 252;   /* slate-50-ish */
   --text:          18 24 38;      /* slate-900 */
+    /* Foreground aliases (used by components/UI) */
+    --fg: var(--text);          /* main readable text color (channels) */
+    --nav-fg: var(--text);      /* navbar/icon text (light mode default) */
+    --nav-muted: var(--muted);  /* navbar secondary text (light mode default) */  
   --muted:         100 116 139;   /* slate-500 */
   --border:        226 232 240;   /* slate-200 */
   --ring:          99 102 241;    /* indigo-500 */
@@ -45,9 +49,12 @@
   --surface-800:   rgb(30 41 59);     /* slate-800 */
 
   /* Text helpers */
-  --text-primary:  rgb(var(--text));
+  --text-primary:  rgb(var(--fg));
   --text-muted:    rgb(var(--muted));
   --text-inverse:  255 255 255;
+
+  /* Global default copy color pulls from --fg */
+body { color: rgb(var(--fg)); }
 
   /* charts (channels) */
   --chart-1:  79 70 229;
@@ -284,9 +291,10 @@
 :root.dark {
   --bg:       15 23 42;     /* slate-900 */
   --card:      2  6 23;     /* slate-950-ish */
-  --text:     241 245 249;  /* slate-100 */
-  --muted:    148 163 184;  /* slate-400 */
-  --border:    51  65  85;  /* slate-700 */
+  --fg:       255 255 255;
+  --text:     var(--fg);  /* slate-100 */
+  --muted:    203 213 225;  /* slate-400 */
+  --border:    148 163 184;  /* slate-700 */
   --ring:     165 180 252;  /* indigo-300 */
 
   --accent-foreground: 255 255 255;
@@ -294,6 +302,9 @@
   /* stronger glow in dark */
   --shadow-glow: 0 8px 28px rgb(var(--accent) / .28);
 
+  /* Navbar text tokens (used by neon nav/icon buttons) */
+  --nav-fg:   236 244 255; /* ✅ icy-white, legible on dark glass */
+  --nav-muted: 170 186 210; /* cooler secondary for icons/hints */
   /* Slightly brighter gradient stops */
   --grad-pandora-a: 139 92 246;    /* violet-500/600 blend */
   --grad-pandora-b:  56 189 248;   /* sky-400 */
