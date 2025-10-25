@@ -5,8 +5,13 @@ import DiscoveryFeed from '../components/discovery/DiscoveryFeed.jsx';
 import FollowButton from '../components/social/FollowButton.jsx';
 import ReactionBar from '../components/social/ReactionBar.jsx';
 import { track } from '../utils/telemetry.js';
+import { useState } from "react";
+import EmptyState from '../components/ui/EmptyState.jsx';
+import SkeletonBlock from '../components/skeleton/SkeletonBlock.jsx';
 
 export default function Discover() {
+    const [feedLoading, setFeedLoading] = useState(true);
+    const [feedEmpty, setFeedEmpty] = useState(false);
       // Render actions under each project card in the feed
       const renderItemActions = (project) => {
         if (!SOCIAL_MINI_V1 || !project) return null;
@@ -42,8 +47,24 @@ export default function Discover() {
 
       {/* Feed */}
       <div className="mt-4">
-        <DiscoveryFeed itemActions={renderItemActions}/>
-      </div>
+  {feedLoading ? (
+    <SkeletonBlock height={104} repeat={3} />
+  ) : feedEmpty ? (
+    <EmptyState
+      icon="🔎"
+      title="No projects to discover yet"
+      secondary={{ label: "Refresh", onClick: () => location.reload() }}
+    >
+      Check back soon—new public projects appear as people start working.
+    </EmptyState>
+  ) : (
+    <DiscoveryFeed
+      itemActions={renderItemActions}
+      onLoadingChange={setFeedLoading}   // add in DiscoveryFeed (optional)
+      onEmptyChange={setFeedEmpty}       // add in DiscoveryFeed (optional)
+    />
+  )}
+</div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useSprint } from "../../context/SprintContext";
 import { useCommandPalette } from "../../hooks/useCommandPalette"; // to be created next
 import { fuzzyMatch } from "../../utils/fuzzy";                      // to be created next
 import { searchAll } from "../../api/search";                       // optional backend helper
+import { getBaseCommands } from "../command/command";
 
 /**
  * CommandPalette
@@ -97,9 +98,11 @@ export default function CommandPalette() {
   // Build candidate list (routes + sprint + dynamic projects/tasks)
   const candidates = useMemo(() => {
     const q = query.trim();
+    const extra = getBaseCommands(navigate);
     const base = [
       ...ROUTE_ITEMS.map(x => ({ ...x, kind: "route" })),
       ...sprintItems.map(x => ({ ...x, kind: "sprint" })),
+      ...extra.map(x=> ({ ...x, kind:"command"})),
       ...dynamic.projects.map(p => ({
         id: `proj:${p._id || p.id}`,
         kind: "project",
@@ -175,24 +178,15 @@ export default function CommandPalette() {
 
   return (
     <>
-      <div className="fixed inset-0 z-[60] bg-black/30 dark:bg-black/50" onClick={close} aria-hidden="true" />
+      <div className="cmdk-overlay" onClick={close} aria-hidden="true" />
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Command palette"
-        className="fixed z-[61] inset-x-4 top-20 md:left-1/2 md:-translate-x-1/2 md:inset-x-auto w-[min(720px,calc(100%-2rem))] rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 shadow-2xl backdrop-blur"
-        onKeyDown={onKeyDown}
+        className="cmdk-panel"
       >
         {/* Header / Input */}
         <div className="px-3 py-2 border-b border-slate-200/70 dark:border-slate-800 flex items-center gap-2">
           <Command className="h-4 w-4 text-indigo-600 shrink-0" aria-hidden="true" />
           <input
-            ref={inputRef}
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setActiveIdx(0); }}
-            placeholder="Search… (routes, projects, tasks) — try “start sprint”"
-            className="w-full bg-transparent outline-none text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
-            aria-label="Command search"
+            className="cmdk-panel"
           />
           <kbd className="ml-2 text-[10px] px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700 text-slate-500">
             Esc
@@ -223,10 +217,7 @@ export default function CommandPalette() {
                 key={c.id}
                 role="option"
                 aria-selected={active ? "true" : "false"}
-                className={`w-full text-left rounded-lg px-3 py-2 flex items-center gap-3 ${active
-                  ? "bg-indigo-50/80 dark:bg-indigo-950/40"
-                  : "hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                }`}
+                className="cmdk-input"
                 onMouseEnter={() => setActiveIdx(idx)}
                 onClick={() => { try { c.run(navigate); } finally { close(); } }}
               >

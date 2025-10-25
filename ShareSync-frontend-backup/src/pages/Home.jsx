@@ -34,6 +34,8 @@ import {
 import DiscoveryFeed from '../components/discovery/DiscoveryFeed.jsx';
 import TabbedFeed from '../components/feed/TabbedFeed.jsx';
 import ProjectStoriesBar from '../components/projects/ProjectStoriesBar.jsx';
+import EmptyState from '../components/ui/EmptyState.jsx';
+import SkeletonBlock from '../components/skeleton/SkeletonBlock.jsx';
 
 import './Home.css';
 
@@ -860,8 +862,20 @@ export default function Home() {
           <SectionHeader icon="LayoutDashboard">Your Projects</SectionHeader>
         </div>
         <div className="mt-3">
-          <ProjectsRail items={quickProjects} loading={quickLoading} />
-        </div>
+  {quickLoading ? (
+    <SkeletonBlock height={88} repeat={3} />
+  ) : (Array.isArray(quickProjects) && quickProjects.length > 0) ? (
+    <ProjectsRail items={quickProjects} loading={false} />
+  ) : (
+    <EmptyState
+      icon="📁"
+      title="No projects yet"
+      primary={{ label: "Create project", onClick: () => document.querySelector('button.btn.btn--primary, button:has(+ span:contains("New Project"))')?.click() }}
+    >
+      Start your first project to see momentum and KPIs here.
+    </EmptyState>
+  )}
+</div>
       </div>
 
       {/* KPIs section (full detail) */}
@@ -901,11 +915,9 @@ export default function Home() {
         </div>
 
         <div className="mt-3">
-          {statsLoading ? (
-            <div className="rounded-xl border border-border bg-surface p-4 animate-pulse">
-              Loading KPIs…
-            </div>
-          ) : statsError ? (
+        {statsLoading ? (
+  <SkeletonBlock height={112} repeat={2} />
+) : statsError ? (
             <div className="rounded-2xl border border-rose-200/60 bg-surface p-3 flex items-center justify-between">
               <span className="text-rose-600">Couldn’t load KPIs.</span>
               <button className="btn btn--outline focus-ring" onClick={() => setStatsRange(r => r)} title="Retry (Ctrl+R)">Retry</button>
@@ -944,7 +956,7 @@ export default function Home() {
               <a className="underline" href="#focus-sprint">Learn how to create activity</a>.
             </div>
           ) : (
-            <Suspense fallback={<div className="h-28 rounded-2xl bg-surface animate-pulse" />}>
+            <Suspense fallback={<SkeletonBlock height={128} repeat={1} />}>
               <ActivityOverTimeLive
                 range={statsRange}
                 projectId={statsProjectId !== 'all' ? statsProjectId : undefined}

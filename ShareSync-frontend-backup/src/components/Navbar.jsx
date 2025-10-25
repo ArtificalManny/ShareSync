@@ -58,6 +58,12 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   // Brand / Accent utilities (used by Palette button)
   const { cycleAccent } = useBrandTheme({ enabled: true });
 
+  useEffect(() => {
+    const onCycle = () => { try { cycleAccent(); } catch {} };
+    window.addEventListener("accent:cycle", onCycle);
+    return () => window.removeEventListener("accent:cycle", onCycle);
+  }, [cycleAccent]);  
+
   // Compact-on-scroll effect for the neon bar
   const headRef = useRef(null);
   useEffect(() => {

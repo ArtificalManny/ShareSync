@@ -1,15 +1,55 @@
 // /src/components/ui/toast.jsx
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { CheckCircle2, TriangleAlert, Info, X } from 'lucide-react';
 
 const ToastCtx = createContext({ push: () => {} });
 
 let idCounter = 1;
-export function toast({ title, description, variant = 'default', timeout = 3500 } = {}) {
+
+export function toast(input = {}) {
+  // Allow convenience: toast("Saved") or toast({title:"Saved", variant:"success"})
+  const opts = typeof input === 'string' ? { title: input } : input || {};
+  const {
+    title = '',
+    description = '',
+    variant = 'default',     // "success" | "error" | "default"
+    timeout = 3500,          // 0 = sticky
+  } = opts;
+
   const ev = new CustomEvent('app:toast', {
     detail: { id: idCounter++, title, description, variant, timeout },
   });
   window.dispatchEvent(ev);
+  return ev.detail.id;
 }
+
+// Shorthands
+toast.success = (msg, opts = {}) =>
+  toast({
+    title: typeof msg === 'string' ? msg : (msg?.title || 'Success'),
+    description: typeof msg === 'string' ? '' : msg?.description,
+    variant: 'success',
+    ...opts
+  });
+
+toast.error = (msg, opts = {}) =>
+  toast({
+    title: typeof msg === 'string' ? msg : (msg?.title || 'Something went wrong'),
+    description: typeof msg === 'string' ? '' : msg?.description,
+    variant: 'error',
+    ...opts
+  });
+
+toast.info = (msg, opts = {}) =>
+  toast({
+    title: typeof msg === 'string' ? msg : (msg?.title || 'Notice'),
+    description: typeof msg === 'string' ? '' : msg?.description,
+    variant: 'default',
+    ...opts
+  });
+
+const MAX_TOASTS = 3;
+const ICON = { success: CheckCircle2, error: TriangleAlert, default: Info };
 
 export function ToastHost() {
   const [toasts, setToasts] = useState([]);
@@ -18,7 +58,10 @@ export function ToastHost() {
   useEffect(() => {
     const onToast = (e) => {
       const t = e.detail;
-      setToasts((cur) => [...cur, t]);
+      setToasts((cur) => {
+        const next = [...cur, t];
+        return next.length > MAX_TOASTS ? next.slice(next.length - MAX_TOASTS) : next;
+      });
       if (t.timeout !== 0) setTimeout(() => remove(t.id), t.timeout);
     };
     window.addEventListener('app:toast', onToast);
@@ -31,25 +74,51 @@ export function ToastHost() {
       aria-atomic="false"
       role="region"
       aria-label="Notifications"
-      className="fixed z-[100] bottom-4 right-4 flex flex-col gap-2"
+      className="toast-stack"
     >
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          role="status"
-          tabIndex={0}
-          className={`rounded-xl border px-4 py-3 shadow-md max-w-sm outline-none ${
-            t.variant === 'success'
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-              : t.variant === 'error'
-              ? 'bg-rose-50 border-rose-200 text-rose-800'
-              : 'bg-slate-900 text-white border-slate-800'
-          }`}
-        >
-          {t.title && <div className="font-semibold">{t.title}</div>}
-          {t.description && <div className="text-sm mt-0.5">{t.description}</div>}
-        </div>
-      ))}
+      {toasts.map((t) => {
+        const Icon = ICON[t.variant] || ICON.default;
+        const kindClass =
+          t.variant === 'success' ? 'toast--success'
+          : t.variant === 'error' ? 'toast--error'
+          : 'toast--default';
+
+        return (
+          <div
+            key={t.id}
+            role="status"
+            tabIndex={0}
+            className={`toast ${kindClass}`}
+            onClick={() => remove(t.id)}
+          >
+            <div className="toast__icon" aria-hidden>
+              <Icon className="h-4 w-4" />
+            </div>
+
+            <div className="toast__content">
+              {t.title && <div className="toast__title">{t.title}</div>}
+              {t.description && <div className="toast__desc">{t.description}</div>}
+            </div>
+
+            <button
+              className="toast__close"
+              aria-label="Dismiss notification"
+              onClick={(e) => { e.stopPropagation(); remove(t.id); }}
+              title="Dismiss"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+
+            {t.timeout > 0 && (
+              <span
+                className="toast__progress"
+                style={{ animationDuration: `${t.timeout}ms` }}
+                aria-hidden
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

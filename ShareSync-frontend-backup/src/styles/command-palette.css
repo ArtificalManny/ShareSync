@@ -1,0 +1,74 @@
+/* Frosted Proton panel + neon focus ring for the command palette */
+
+.cmdk-overlay {
+    position: fixed; inset: 0;
+    background: rgb(0 0 0 / .38);
+    backdrop-filter: blur(2px);
+    z-index: 60;
+  }
+  
+  .cmdk-panel {
+    position: fixed;
+    z-index: 61;
+    inset: auto 1rem  auto 1rem;
+    top: 5.5rem;                   /* just under navbar */
+    max-width: 720px;
+    margin: 0 auto;
+    border-radius: 16px;
+    background: linear-gradient(180deg,
+      color-mix(in oklab, rgb(var(--card)) 88%, black 12%),
+      rgba(255,255,255,.02));
+    border: 1px solid color-mix(in oklab, rgb(var(--border)) 78%, white 6%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.06) inset,
+      0 0 0 1px rgba(255,255,255,.02) inset,
+      0 22px 60px rgba(2,6,23,.45);
+    backdrop-filter: blur(10px) saturate(140%);
+  }
+  
+  .cmdk-header,
+  .cmdk-footer {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .5rem .75rem;
+    border-bottom: 1px solid color-mix(in oklab, rgb(var(--border)) 78%, transparent);
+  }
+  .cmdk-footer { border-top: 1px solid color-mix(in oklab, rgb(var(--border)) 78%, transparent); border-bottom: 0; }
+  
+  .cmdk-input {
+    flex: 1;
+    background: transparent;
+    border: 0; outline: none;
+    color: rgb(var(--fg));
+    font-size: 13px;
+  }
+  .cmdk-input::placeholder { color: rgb(var(--muted)); }
+  
+  .cmdk-list { max-height: 60vh; overflow: auto; padding: .25rem; }
+  
+  .cmdk-item {
+    display: flex; gap: .75rem; align-items: center;
+    width: 100%; text-align: left;
+    border-radius: 12px;
+    padding: .5rem .625rem;
+    color: rgb(var(--fg));
+    background: transparent;
+    border: 0;
+  }
+  .cmdk-item:hover { background: color-mix(in oklab, rgb(var(--card)) 10%, transparent); }
+  
+  .cmdk-item.is-active {
+    background: color-mix(in oklab, var(--proton-iris-hex) 11%, transparent);
+    box-shadow:
+      0 0 0 2px color-mix(in oklab, var(--proton-iris-hex) 24%, transparent) inset,
+      0 8px 22px rgba(2,6,23,.32);
+    outline: 0;
+  }
+  
+  /* Neon caret ring when the input is focused */
+  .cmdk-panel:has(.cmdk-input:focus) {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--proton-iris-hex) 40%, transparent) inset,
+      0 0 0 3px color-mix(in oklab, var(--proton-iris-hex) 16%, transparent),
+      0 22px 60px rgba(2,6,23,.45);
+  }
+  

@@ -6,6 +6,8 @@ import { getMe, getPublicUser } from "../api/user";
 import AuditList from "../components/audit/AuditList.jsx";
 import { Lock } from "lucide-react";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
+import SkeletonBlock from "../components/skeleton/SkeletonBlock.jsx";
+import EmptyState from "../components/ui/EmptyState.jsx";
 import useReducedMotion from "../hooks/useReducedMotion";
 import { SOCIAL_MINI_V1 } from "../config/flags.js";
 
@@ -70,6 +72,15 @@ export default function Profile() {
   const [error, setError] = useState("");
   const [me, setMe] = useState(null);
   const [publicUser, setPublicUser] = useState(null);
+
+  // Public profile audit list UI gates
+const [pubAuditLoading, setPubAuditLoading] = useState(true);
+const [pubAuditCount, setPubAuditCount] = useState(0);
+
+// Owner profile audit list UI gates
+const [ownerAuditLoading, setOwnerAuditLoading] = useState(true);
+const [ownerAuditCount, setOwnerAuditCount] = useState(0);
+
 
   const load = async () => {
     setLoading(true);
@@ -274,16 +285,36 @@ export default function Profile() {
               <Badges user={userForPublic} isPublic className="" />
             </section>
 
-            <section className="card accent-activity rounded-2xl border border-border bg-surface p-6">
-              <SectionHeader icon="Megaphone">Recent public activity</SectionHeader>
-              <div className="mt-2">
-                {publicUserId ? (
-                  <AuditList scope="user" userId={publicUserId} />
-                ) : (
-                  <div className="text-sm text-muted">This user was not found.</div>
-                )}
-              </div>
-            </section>
+            <div className="mt-2" aria-busy={pubAuditLoading ? "true" : "false"}>
+  {publicUserId ? (
+    <>
+      {pubAuditLoading && (
+        <SkeletonBlock
+          className="space-y-2"
+          height={64}
+          radius={14}
+          repeat={3}
+        />
+      )}
+      <AuditList
+        scope="user"
+        userId={publicUserId}
+        onLoadingChange={setPubAuditLoading}
+        onCountChange={setPubAuditCount}
+        className={pubAuditLoading ? "sr-only" : ""}
+      />
+      {!pubAuditLoading && pubAuditCount === 0 && (
+        <EmptyState
+          icon="🗞️"
+          title="No activity yet"
+          children="When this person starts shipping, updates will show up here."
+        />
+      )}
+    </>
+  ) : (
+    <div className="text-sm text-muted">This user was not found.</div>
+  )}
+</div>
           </>
         )
       ) : (
@@ -347,13 +378,29 @@ export default function Profile() {
 
           {/* Highlights & Notifications */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="card accent-activity rounded-2xl border border-border bg-surface p-6">
-              <SectionHeader icon="UserRoundSearch">Recent highlights</SectionHeader>
-              <div className="mt-2">
-                {/* Reuse AuditList for now; you can swap to a dedicated Highlights list later */}
-                <AuditList scope="user" />
-              </div>
-            </div>
+          <div className="mt-2" aria-busy={ownerAuditLoading ? "true" : "false"}>
+  {ownerAuditLoading && (
+    <SkeletonBlock
+      className="space-y-2"
+      height={64}
+      radius={14}
+      repeat={3}
+    />
+  )}
+  <AuditList
+    scope="user"
+    onLoadingChange={setOwnerAuditLoading}
+    onCountChange={setOwnerAuditCount}
+    className={ownerAuditLoading ? "sr-only" : ""}
+  />
+  {!ownerAuditLoading && ownerAuditCount === 0 && (
+    <EmptyState
+      icon="✨"
+      title="Nothing highlighted yet"
+      children="Pin achievements or ship something and your highlights will appear."
+    />
+  )}
+</div>
             <div className="card accent-kpi rounded-2xl border border-border bg-surface p-6">
               <SectionHeader icon="Bell">Notifications</SectionHeader>
               <p className="text-sm text-muted">

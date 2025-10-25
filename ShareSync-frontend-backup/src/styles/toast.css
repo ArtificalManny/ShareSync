@@ -1,0 +1,80 @@
+/* Proton-styled toasts: frosted cards + variant glow */
+
+.toast-stack {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    z-index: 100;
+  }
+  
+  .toast {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: .5rem .75rem;
+    align-items: start;
+    min-width: 260px;
+    max-width: 360px;
+    padding: .625rem .75rem;
+    border-radius: 14px;
+    border: 1px solid color-mix(in oklab, rgb(var(--border)) 78%, white 6%);
+    background: linear-gradient(180deg,
+      color-mix(in oklab, rgb(var(--card)) 88%, black 12%),
+      rgba(255,255,255,.02));
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.06) inset,
+      0 0 0 1px rgba(255,255,255,.02) inset,
+      0 18px 48px rgba(2,6,23,.36);
+    color: rgb(var(--fg));
+  }
+  
+  .toast__icon { line-height: 0; padding-top: .125rem; opacity: .95; }
+  .toast__title { font-weight: 700; font-size: 13px; line-height: 1.3; }
+  .toast__desc  { font-size: 12px; opacity: .9; margin-top: 2px; }
+  .toast__content { min-width: 0; }
+  .toast__close {
+    appearance: none; border: 0; background: transparent; color: rgb(var(--muted));
+    border-radius: 8px; padding: 2px; margin-left: .25rem; cursor: pointer;
+  }
+  .toast__close:hover { color: rgb(var(--fg)); }
+  
+  /* Variant glows */
+  .toast--success {
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.06) inset,
+      0 0 0 1px rgba(255,255,255,.02) inset,
+      0 18px 48px rgba(2,6,23,.36),
+      0 0 34px -8px color-mix(in oklab, var(--proton-iris-hex) 40%, transparent);
+  }
+  .toast--error {
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.06) inset,
+      0 0 0 1px rgba(255,255,255,.02) inset,
+      0 18px 48px rgba(2,6,23,.36),
+      0 0 34px -8px color-mix(in oklab, #ff3a7d 45%, transparent);
+  }
+  
+  /* Progress underline (shrinks to 0 over the timeout) */
+  .toast__progress {
+    position: absolute; left: 6px; right: 6px; bottom: 6px; height: 2px;
+    border-radius: 2px;
+    background: color-mix(in oklab, var(--proton-iris-hex) 70%, white 0%);
+    animation-name: toast-progress;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+  .toast--error .toast__progress { background: color-mix(in oklab, #ff3a7d 70%, white 0%); }
+  
+  @keyframes toast-progress {
+    from { transform: scaleX(1); transform-origin: left; }
+    to   { transform: scaleX(0); transform-origin: left; }
+  }
+  
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .toast__progress { animation: none !important; }
+  }
+  

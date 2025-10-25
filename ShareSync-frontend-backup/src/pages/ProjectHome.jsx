@@ -12,6 +12,7 @@ import ProjectHeader from "../components/project/ProjectHeader";
 import ProjectKpis from "../components/project/ProjectKpis";
 import RisksPanel from "../components/project/RisksPanel";
 import SectionHeader from "../components/ui/SectionHeader.jsx";
+import AskAIButton from "../components/assistant/AskAIButton.jsx";
 import Card from "../components/ui/Card.jsx";
 import GradientPanel from "../components/frame/GradientPanel.jsx";
 import useSocket from "../hooks/useSocket";
@@ -41,6 +42,7 @@ import { CALENDAR_ACCOUNTABILITY, MENTOR_V1, IMPORT_WIZARD_V1, ETA_EXPLAINER_V1 
 import { getIcsUrl } from "../api/calendar.js";
 import { buildPublicStatusUrl } from "../api/public";
 import EmptyState from "../components/ui/EmptyState.jsx";
+import SkeletonBlock from "../components/skeleton/SkeletonBlock.jsx";
 import { REACTIONS_V1 } from "../config/flags.js";
 import ReactionBar from "../components/reactions/ReactionBar.jsx";
 import AvatarGroup from "../components/ui/AvatarGroup.jsx";
@@ -1162,7 +1164,32 @@ typeof presence?.isOnline === "function"
         )}
 
         {/* Unified Tabbed Feed (project-scoped) */}
-        <TabbedFeed projectId={project._id} showDiscover={false} className="mt-6" />
+        <section className="mt-6">
+  {loading ? (
+    <SkeletonBlock height={72} radius={16} repeat={4} />
+  ) : (
+    <TabbedFeed
+      projectId={project._id}
+      showDiscover={false}
+      // If TabbedFeed supports these, wire them:
+      emptyFallback={
+        <EmptyState
+          icon="📭"
+          title="No updates yet"
+          children="Ship a task or share a file to kick off the feed."
+        />
+      }
+      errorFallback={
+        <EmptyState
+          icon="🛠️"
+          title="Feed failed to load"
+          children="Please try again."
+          primary={{ label: "Retry", onClick: () => window.location.reload() }}
+        />
+      }
+    />
+  )}
+</section>
 
         {/* NEW: Files & Tasks Milestones */}
         <Card className="mt-6" role="region" aria-label="Milestones">
@@ -1180,9 +1207,25 @@ typeof presence?.isOnline === "function"
           <div className="flex items-start justify-between">
             <SectionHeader icon="Folder">Files</SectionHeader>
           </div>
-          <div className="mt-3">
-            <FileGrid projectId={project._id} initialFiles={files} canEdit={canEdit} canManage={canManage} />
-          </div>
+          <div className="mt-3" aria-busy={loading ? "true" : "false"}>
+  {loading ? (
+    <SkeletonBlock height={88} radius={16} repeat={2} />
+  ) : (Array.isArray(files) && files.length === 0) ? (
+    <EmptyState
+      icon="📁"
+      title="No files yet"
+      children="Drop files here or upload to get the team aligned."
+      primary={{ label: "Upload file", onClick: () => document.querySelector('[data-file-upload]')?.click() }}
+    />
+  ) : (
+    <FileGrid
+      projectId={project._id}
+      initialFiles={files}
+      canEdit={canEdit}
+      canManage={canManage}
+    />
+  )}
+</div>
         </Card>
 
         {/* Activity Over Time */}

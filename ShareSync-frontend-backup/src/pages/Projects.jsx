@@ -4,8 +4,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import ProjectsCreate from './ProjectsCreate.jsx';
 import ProjectListItem from '../components/projects/ProjectListItem.jsx';
-import ProjectSkeleton from '../components/projects/ProjectSkeleton.jsx';
-import ProjectsEmpty from '../components/projects/ProjectsEmpty.jsx';
+import SkeletonBlock from '../components/skeleton/SkeletonBlock.jsx';
+import EmptyState from '../components/ui/EmptyState.jsx';
 import RightRail from '../components/projects/RightRail.jsx';
 import { listProjects } from '../api/projects';
 import SectionHeader from '../components/ui/SectionHeader.jsx';
@@ -19,7 +19,7 @@ import './Projects.css';
 
 import { Users, Clock, Search } from 'lucide-react';
 import { track } from '../utils/telemetry';
-import { toast } from '../components/ui/Toaster.jsx';
+import { toast } from '../components/ui/toast.jsx';
 
 // 🔁 Shared avatars with presence dots
 import AvatarGroup from '../components/ui/AvatarGroup.jsx';
@@ -419,11 +419,12 @@ export default function Projects() {
             </div>
 
             {loading && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3" aria-busy="true" aria-live="polite">
-                {[...Array(6)].map((_, i) => (
-                  <ProjectSkeleton key={i} />
-                ))}
-              </div>
+              <SkeletonBlock
+                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+                height={164}
+                radius={16}
+                repeat={6}
+              />
             )}
 
             {!!error && !loading && (
@@ -436,7 +437,14 @@ export default function Projects() {
             )}
 
             {!loading && !error && filtered.length === 0 && (
-              <ProjectsEmpty onCreate={() => setShowCreate(true)} />
+              <EmptyState
+                icon="📂"
+                title="No projects match your filters"
+                primary={{ label: "+ New Project", onClick: () => setShowCreate(true) }}
+                secondary={{ label: "Clear filters", onClick: () => { setQuery(''); setStatus('all'); setOwner('all'); setUpdated('7d'); } }}
+              >
+                Try adjusting filters or start your first project.
+              </EmptyState>
             )}
 
             {!loading && !error && filtered.length > 0 && (

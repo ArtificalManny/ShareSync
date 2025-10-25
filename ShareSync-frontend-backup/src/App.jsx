@@ -24,6 +24,8 @@ import "./styles/search.css";
 import "./styles/type.css";
 import "./styles/spacing.css";
 import "./styles/chips.css";
+import "./styles/command-palette.css";
+import "./styles/toast.css"; // ⬅️ add Proton toast styles
 
 // Neon rings, focus & shared UI styles
 //* import "./styles/rings.css";
@@ -31,7 +33,7 @@ import "./styles/chips.css";
 //import "./components/ui/buttons.css";
 //import "./components/ui/skeleton.css";
 
-import { ToastHost } from "./components/ui/toast";
+import ToastProvider, { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
 
 import { SprintProvider } from "./context/SprintContext";
@@ -257,23 +259,25 @@ const App = () => {
     <AuthProvider>
       <UserProvider>
         <ErrorBoundary>
-          <Router>
-            {/* Accessibility helper */}
-            <a
-              href="#main"
-              className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 bg-white text-ink-900 px-3 py-2 rounded-lg shadow"
-            >
-              Skip to content
-            </a>
+          <ToastProvider>
+            <Router>
+              {/* Accessibility helper */}
+              <a
+                href="#main"
+                className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 bg-white text-ink-900 px-3 py-2 rounded-lg shadow"
+              >
+                Skip to content
+              </a>
 
-            {/* Route-aware accent & brand wrapper (must be inside Router) */}
-            <LayoutSkin>
-              <CommandPaletteProvider>
-                {FOCUS_DOCK_V1 ? <FocusProvider>{Shell}</FocusProvider> : Shell}
-                <CommandPalette />
-              </CommandPaletteProvider>
-            </LayoutSkin>
-          </Router>
+              {/* Route-aware accent & brand wrapper (must be inside Router) */}
+              <LayoutSkin>
+                <CommandPaletteProvider>
+                  {FOCUS_DOCK_V1 ? <FocusProvider>{Shell}</FocusProvider> : Shell}
+                  <CommandPalette />
+                </CommandPaletteProvider>
+              </LayoutSkin>
+            </Router>
+          </ToastProvider>
         </ErrorBoundary>
       </UserProvider>
     </AuthProvider>
