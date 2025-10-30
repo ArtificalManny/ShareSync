@@ -155,6 +155,7 @@ export default function Sidebar() {
       id="app-sidebar"
       className={["ss-sidebar", "neon-sidebar", collapsed ? "is-collapsed" : ""].join(" ")}
       aria-label="Primary"
+      aria-expanded={collapsed ? "false" : "true"}
     >
       {/* Neon vertical spine + subtle glow */}
       <span className="sb-rail" aria-hidden="true" />
@@ -168,18 +169,26 @@ export default function Sidebar() {
         </div>
         <button
           type="button"
-          className="sb-toggle"
+          className="sb-toggle focus-ring"
           aria-pressed={collapsed ? "true" : "false"}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={`Toggle sidebar [`}
+          aria-controls="app-sidebar"
+          aria-keyshortcuts="["
+          title="Toggle sidebar ["
           onClick={toggle}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggle();
+            }
+          }}
         >
           <ChevronsLeft className="w-4 h-4" />
-        </button>
+          </button>
       </div>
 
       {/* Primary nav */}
-      <nav className="sb-nav" aria-label="Primary">
+      <nav className="sb-nav" aria-label="Primary" aria-orientation="vertical">
         <SidebarItem
           to="/home"
           label="Home"

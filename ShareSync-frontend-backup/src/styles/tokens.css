@@ -175,6 +175,7 @@ body { color: rgb(var(--fg)); }
   --grad-cnbc: linear-gradient(135deg,
     rgb(var(--grad-cnbc-a)) 0%,
     rgb(var(--grad-cnbc-b)) 100%
+  );
 
     /* === Proton/MetaLab accent rail (hex + channels) ===================== */
 --proton-purple-hex: #7A5AF8; /* Proton-y violet */
@@ -192,7 +193,7 @@ body { color: rgb(var(--fg)); }
 
 /* Default UI foregrounds for dark UIs */
 --fg: 255 255 255;
-  );
+  
 
 
 
@@ -677,3 +678,47 @@ body { font-family: var(--font-sans); letter-spacing: 0; }
 :root.dark {
   --orbit-glow: 0 0 18px rgba(59,130,246,.65), 0 0 8px rgba(6,182,212,.45) inset;
 }
+/* =========================================================
+   Proton theme (light + dark)
+   ========================================================= */
+   [data-theme="proton"] {
+    /* Accents and ring */
+    --accent: 124 58 237;          /* violet-600 (channels) */
+    --accent-2: 56 189 248;        /* sky-400 */
+    --accent-3: 232 121 249;       /* fuchsia-400 */
+    --accent-hex:   #7C3AED;
+    --accent-2-hex: #38BDF8;
+    --accent-3-hex: #E879F9;
+    --ring: 129 140 248;           /* indigo-400/500 */
+  
+    /* Signature gradient: violet → sky */
+    --grad-signature: linear-gradient(135deg,
+      rgb(124 58 237) 0%,
+      rgb(56 189 248) 100%
+    );
+  
+    /* Surface & text nudges */
+    --card: 250 252 255;
+    --border: 221 227 238;
+    --muted: 100 116 139;
+    --shadow-glow: 0 8px 28px rgb(124 58 237 / .22);
+  }
+  
+  :root.dark[data-theme="proton"] {
+    --bg: 15 23 42;
+    --card: 10 16 28;
+    --fg: 255 255 255;
+    --text: var(--fg);
+    --muted: 170 186 210;
+    --border: 38 56 86;
+    --ring: 165 180 252;
+  
+    --shadow-glow: 0 10px 36px rgb(124 58 237 / .34);
+  
+    /* brighter signature for dark */
+    --grad-signature: linear-gradient(135deg,
+      rgb(139 92 246) 0%,
+      rgb(56 189 248) 100%
+    );
+  }
+  

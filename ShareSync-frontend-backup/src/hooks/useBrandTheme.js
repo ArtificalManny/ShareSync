@@ -30,6 +30,13 @@ export default function useBrandTheme(opts = {}) {
     defaultAccent = "pandora",
   } = opts;
 
+  const THEME_KEY = "ss.ui.theme";
+  const normalizeTheme = (v, fallback) => {
+    const s = String(v || "").toLowerCase().trim();
+    return ["classic", "neon", "proton"].includes(s) ? s : fallback;
+  };
+
+
   // --- Accent (family) persistence -----------------------------------------
   const ACCENT_KEY = "ss.brand.accent";
   const normalizeAccent = (v, fallback = "pandora") => {
@@ -54,8 +61,18 @@ export default function useBrandTheme(opts = {}) {
     return normalizeAccent(defaultAccent);
   })();
 
+  const initialTheme = (() => {
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved) return normalizeTheme(saved, null);
+    } catch {}
+    // derive default from brand if not explicitly set
+    return enabled && defaultBrand === BRAND_V2 ? "neon" : "classic";
+  })();
+
   const [brand, setBrandState] = useState(initialBrand);        // "classic" | "v2"
   const [accent, setAccentState] = useState(initialAccent);     // "pandora" | "cnbc" | "meta"
+  const [theme, setThemeState] = useState(initialTheme);
 
   // persist + reflect brand
   useEffect(() => {
@@ -72,10 +89,15 @@ export default function useBrandTheme(opts = {}) {
     try {
       localStorage.setItem(ACCENT_KEY, accent);
     } catch {}
-    if (applyToDocument && typeof document !== "undefined" && brand === BRAND_V2) {
-      document.documentElement.setAttribute("data-accent", accent);
-      document.documentElement.setAttribute("data-theme", "neon");
-    }
+    if (applyToDocument && typeof document !== "undefined") {
+            document.documentElement.setAttribute("data-accent", accent);
+            // If user picked a theme explicitly, honor it; otherwise derive from brand
+            const derived = brand === BRAND_V2 ? "neon" : "classic";
+            const current = document.documentElement.getAttribute("data-theme");
+            if (!current || !["classic", "neon", "proton"].includes(current)) {
+              document.documentElement.setAttribute("data-theme", derived);
+            }
+          }
   }, [accent, brand, applyToDocument]);
 
   // Optional telemetry (safe/no-op if not wired)
@@ -93,14 +115,12 @@ export default function useBrandTheme(opts = {}) {
 
   // Provide attributes to spread on a container (App.jsx already does this)
   const containerAttrs = useMemo(() => {
-    const attrs = { [BRAND_DATA_ATTR]: brand };
+    const attrs = { [BRAND_DATA_ATTR]: brand, "data-theme": theme };
     if (brand === BRAND_V2) {
-      // Activate the neon theme and chosen accent family
-      attrs["data-theme"] = "neon";
       attrs["data-accent"] = accent;
     }
     return attrs;
-  }, [brand, accent]);
+  }, [brand, accent, theme]);
 
   return {
     enabled,        // boolean

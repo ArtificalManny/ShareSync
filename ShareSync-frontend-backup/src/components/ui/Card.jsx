@@ -11,6 +11,7 @@ export default function Card({
   padding = 'md',     // 'sm' | 'md' | 'lg' | 'none'
   rounded = '2xl',    // 'lg' | 'xl' | '2xl' | 'full'
   border = true,
+  onKeyDown,
   ...rest
 }) {
   const pad = {
@@ -34,6 +35,7 @@ export default function Card({
     hover && 'transition-shadow duration-200 hover:shadow-pop',
     'focus:outline-none focus-visible:shadow-focus', //visible focus
     'min-h-[40px]', //ensure hit area minimum
+    rest.onClick ? 'card-clickabke' : ''
   );
 
   const byVariant = {
@@ -42,9 +44,24 @@ export default function Card({
     ghost:  'bg-transparent',
   }[variant];
 
+  const interactive = Boolean(rest.onClick);
+  const keyHandler = (e) => {
+    if (!interactive) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      rest.onClick?.(e);
+    }
+    onKeyDown?.(e);
+  };
   return (
-    <Tag className={cn(base, byVariant, className)} {...rest}>
-      {children}
+    <Tag
+      className={cn(base, byVariant, className)}
+      role={interactive ? (rest.role || 'button') : rest.role}
+      tabIndex={interactive ? (rest.tabIndex ?? 0) : rest.tabIndex}
+      aria-pressed={interactive && typeof rest['aria-pressed'] === 'undefined' ? undefined : rest['aria-pressed']}
+     onKeyDown={keyHandler}
+      {...rest}
+    >
     </Tag>
   );
 }

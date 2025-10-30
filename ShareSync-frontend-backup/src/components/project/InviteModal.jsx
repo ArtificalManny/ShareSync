@@ -176,9 +176,10 @@ export default function InviteModal({ open, onClose, projectId }) {
 
         <form onSubmit={onSubmit} className="p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="md:col-span-2">
-              <label className="block text-xs text-muted mb-1">Email</label>
+          <div className="md:col-span-2">
+              <label htmlFor="inv-email" className="block text-xs text-muted mb-1">Email</label>
               <input
+                id="inv-email"
                 ref={firstFieldRef}
                 type="email"
                 inputMode="email"
@@ -187,12 +188,14 @@ export default function InviteModal({ open, onClose, projectId }) {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
                 required
+                aria-required="true"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-muted mb-1">Role</label>
+              <label htmlFor="inv-role" className="block text-xs text-muted mb-1">Role</label>
               <select
+                id="inv-role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
@@ -204,12 +207,12 @@ export default function InviteModal({ open, onClose, projectId }) {
           </div>
 
           {err && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-sm px-3 py-2">
+            <div className="rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-sm px-3 py-2" role="alert" aria-live="assertive">
               {err}
             </div>
           )}
           {ok && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm px-3 py-2">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm px-3 py-2" role="status" aria-live="polite">
               {ok}
             </div>
           )}
@@ -235,7 +238,11 @@ export default function InviteModal({ open, onClose, projectId }) {
 
         <div className="px-4 pb-4">
           <h4 className="text-xs font-semibold text-muted mb-2">Pending invites</h4>
-          <div className="rounded-xl border border-border divide-y divide-border" aria-live="polite">
+          <div
+            className="rounded-xl border border-border divide-y divide-border"
+            aria-live="polite"
+            aria-busy={loadingList ? "true" : "false"}
+          >
             {loadingList ? (
               <div className="p-3 text-sm text-muted">Loading…</div>
             ) : pending?.length ? (

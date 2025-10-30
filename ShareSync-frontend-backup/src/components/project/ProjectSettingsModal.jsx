@@ -438,16 +438,20 @@ export default function ProjectSettingsModal({
 
             {/* Name */}
             <div>
-              <label className="block text-xs text-muted mb-1">
+              <label htmlFor="ps-name" className="block text-xs text-muted mb-1">
                 Project name <span className="text-rose-600">*</span>
               </label>
               <input
+                id="ps-name"
                 ref={firstFieldRef}
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Infra Revamp Q4"
                 className="w-full text-sm rounded-lg border border-border bg-surface px-3 py-2"
+                required
+                aria-required="true"
+                aria-invalid={(!name || !name.trim()) ? "true" : "false"}
               />
             </div>
 

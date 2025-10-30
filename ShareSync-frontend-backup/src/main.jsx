@@ -6,6 +6,7 @@ import './index.css';
 import './theme.css';
 import './styles/gradients.css';
 import './styles/motion.css';
+import './registerSW.js';
 
 if (import.meta.env.MODE !== 'production') {
   import('./utils/perfLog.js'); // dev-only

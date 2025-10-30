@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { X, PlusCircle, Save, Calendar as CalendarIcon, BadgeCheck } from "lucide-react";
 import { createTask as apiCreateTask, patchTask as apiPatchTask } from "../../api/tasks";
 import { getIcsUrl } from "../../api/calendar";
-import { toast } from "../ui/Toaster";
+import { toast } from "../ui/toast";
 import { track, trackScheduleCreated } from "../../utils/telemetry";
 import { CALENDAR_ACCOUNTABILITY } from "../../config/flags";
 import StateChip from "./StateChip";
@@ -290,11 +290,15 @@ export default function TaskSheet({
 
         {/* Body */}
         <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
-          {error ? (
-            <div className="rounded-lg border border-rose-200/70 bg-rose-50 text-rose-800 text-sm px-3 py-2">
-              {error}
-            </div>
-          ) : null}
+        {error ? (
+  <div
+    className="rounded-lg border border-rose-200/70 bg-rose-50 text-rose-800 text-sm px-3 py-2"
+    role="alert"
+    aria-live="assertive"
+  >
+    {error}
+  </div>
+) : null}
 
           {!canEdit && (
             <div className="rounded-lg border border-amber-200/70 bg-amber-50 text-amber-900 text-sm px-3 py-2">

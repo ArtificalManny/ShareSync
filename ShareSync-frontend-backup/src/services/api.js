@@ -1,29 +1,31 @@
-import axios from 'axios';
+// src/services/api.js
+// Canonical client-side API surface (uses utils/http; safe against "/api/api")
 
-const api = axios.create({
-  baseURL: 'http://localhost:3001',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+import http from "../utils/http";
 
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
+// --- AUDIT ---
+async function listAudit({ scope = "user", userId, projectId, limit = 20, cursor } = {}) {
+  const { data } = await http.get("/audit", {
+    params: { scope, userId, projectId, limit, cursor },
+  });
+  const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+  return { items, nextCursor: data?.nextCursor ?? null };
+}
 
-// Remove the automatic redirect on 401 to allow components to handle errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    return Promise.reject(error);
-  },
-);
+// --- PROJECTS (minimal, used by ProjectHome) ---
+async function getProject(projectId) {
+  const { data } = await http.get(`/projects/${projectId}`);
+  return data;
+}
+
+async function getProjectStats(projectId, { range = 30 } = {}) {
+  const { data } = await http.get(`/projects/${projectId}/stats`, { params: { range } });
+  return data;
+}
+
+export const api = {
+  audit: { list: listAudit },
+  projects: { get: getProject, stats: getProjectStats },
+};
 
 export default api;

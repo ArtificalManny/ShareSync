@@ -1,6 +1,6 @@
 // /src/components/audit/AuditList.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import client from "../../api/client";
+import { api } from "../../services/api.js"
 import { toCsv, downloadCsv } from "../../utils/csv";
 import { track } from "../../utils/telemetry";
 
@@ -44,20 +44,18 @@ export default function AuditList({
   }, [scope, userId, projectId, pageSize, cursor]);
 
   async function fetchPage(reset = false) {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await client.get("/api/audit", { params });
-      const list = Array.isArray(res?.data?.items) ? res.data.items : Array.isArray(res?.data) ? res.data : [];
-      const next = res?.data?.nextCursor ?? null;
-      setItems((prev) => (reset ? list : [...prev, ...list]));
-      setHasMore(Boolean(next));
-      setCursor(next);
-    } catch (e) {
-      setError(e?.response?.data?.message || e?.message || "Failed to load activity.");
-    } finally {
-      setLoading(false);
-    }
+      setLoading(true);
+  setError("");
+  try {
+    const { items: list, nextCursor } = await api.audit.list(params);
+    setItems((prev) => (reset ? list : [...prev, ...list]));
+    setHasMore(Boolean(nextCursor));
+    setCursor(nextCursor);
+  } catch (e) {
+    setError(e?.message || "Failed to load activity.");
+  } finally {
+    setLoading(false);
+  }
   }
 
   useEffect(() => {

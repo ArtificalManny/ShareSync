@@ -29,7 +29,7 @@ import "./styles/toast.css"; // ⬅️ add Proton toast styles
 
 // Neon rings, focus & shared UI styles
 //* import "./styles/rings.css";
-//import "./styles/focus.css";
+import "./styles/focus.css";
 //import "./components/ui/buttons.css";
 //import "./components/ui/skeleton.css";
 
@@ -46,7 +46,7 @@ import PinnedDrawer from "./components/global/PinnedDrawer.jsx";
 import LayoutSkin from "./components/LayoutSkin.jsx";
 
 import { CommandPaletteProvider } from "./hooks/useCommandPalette";
-import CommandPalette from "./components/global/CommandPalette";
+//import CommandPalette from "./components/global/CommandPalette";
 import { scrollToAnchorFromHash } from "./utils/anchor";
 
 import UserProvider, { UserContext } from "./context/UserContext";
@@ -258,27 +258,24 @@ const App = () => {
   return (
     <AuthProvider>
       <UserProvider>
+      <SprintProvider>
         <ErrorBoundary>
           <ToastProvider>
             <Router>
               {/* Accessibility helper */}
-              <a
-                href="#main"
-                className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 bg-white text-ink-900 px-3 py-2 rounded-lg shadow"
-              >
-                Skip to content
-              </a>
+              {/*<a href="#main" className="skip-link">Skip to main content</a>*/}
 
               {/* Route-aware accent & brand wrapper (must be inside Router) */}
               <LayoutSkin>
                 <CommandPaletteProvider>
                   {FOCUS_DOCK_V1 ? <FocusProvider>{Shell}</FocusProvider> : Shell}
-                  <CommandPalette />
+                 {/* <CommandPalette /> */}
                 </CommandPaletteProvider>
               </LayoutSkin>
             </Router>
           </ToastProvider>
         </ErrorBoundary>
+        </SprintProvider>
       </UserProvider>
     </AuthProvider>
   );
