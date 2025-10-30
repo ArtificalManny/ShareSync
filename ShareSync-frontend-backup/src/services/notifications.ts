@@ -74,7 +74,9 @@ class NotificationsClient {
       const seen = new Set(this.items.map((i) => i.id));
       const merged = [...rows.filter((r) => !seen.has(r.id)), ...this.items];
       // Keep only recent ~300
-      this.items = merged.sort((a, b) => b.ts - a.ts).slice(0, 300);
+      this.items = merged
+      .sort((a: InboxItem, b: InboxItem) => b.ts - a.ts)
+      .slice(0, 300);
       this.emit();
     }
   }

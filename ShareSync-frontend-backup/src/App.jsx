@@ -11,6 +11,7 @@ import {
 
 import Navbar from "./components/Navbar";
 import { AuthProvider, AuthContext } from "./AuthContext";
+import { ToastProvider } from "./context/ToastContext";
 
 // Global styles
 import "./theme.css";
@@ -25,15 +26,11 @@ import "./styles/type.css";
 import "./styles/spacing.css";
 import "./styles/chips.css";
 import "./styles/command-palette.css";
-import "./styles/toast.css"; // ⬅️ add Proton toast styles
+import "./styles/toast.css";
 
-// Neon rings, focus & shared UI styles
-//* import "./styles/rings.css";
 import "./styles/focus.css";
-//import "./components/ui/buttons.css";
-//import "./components/ui/skeleton.css";
 
-import ToastProvider, { ToastHost } from "./components/ui/toast";
+import ToastProviderOld, { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
 
 import { SprintProvider } from "./context/SprintContext";
@@ -46,8 +43,6 @@ import PinnedDrawer from "./components/global/PinnedDrawer.jsx";
 import LayoutSkin from "./components/LayoutSkin.jsx";
 
 import { CommandPaletteProvider } from "./hooks/useCommandPalette";
-//import CommandPalette from "./components/global/CommandPalette";
-import { scrollToAnchorFromHash } from "./utils/anchor";
 
 import UserProvider, { UserContext } from "./context/UserContext";
 import Sidebar from "./components/Sidebar";
@@ -55,15 +50,15 @@ import Sidebar from "./components/Sidebar";
 import MessengerPanel from "./components/messenger/MessengerPanel.jsx";
 import { ChatProvider } from "./context/ChatContext.jsx";
 
-// Focus (gated)
 import { FocusProvider } from "./context/FocusContext.jsx";
 import FocusDock from "./components/focus/FocusDock.jsx";
 import FocusToasts from "./components/toast/FocusToasts.jsx";
 
-// Public routes chunk (returns <Route/> children only)
+// NEW: Mentor Dock
+import MentorDock from "./components/mentor/MentorDock.jsx";
+
 import PublicRoutes from "./routes/publicRoutes.jsx";
 
-// Flags
 import {
   MESSENGER_V1,
   BRAND_V2,
@@ -77,6 +72,8 @@ import {
 
 import FeatureGate from "./utils/FeatureGate.jsx";
 import useBrandTheme from "./hooks/useBrandTheme.js";
+
+import { scrollToAnchorFromHash } from "./utils/anchor";
 
 // Lazy pages
 const Home = lazy(() => import("./pages/Home"));
@@ -113,14 +110,13 @@ function GuardedRoutes() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Paths allowed while logged out
   const openRoutes = [
     "/login",
     "/create-account",
     "/forgot-password",
-    "/p/",     // public project
-    "/u/",     // public profile
-    "/status", // legacy public status
+    "/p/",
+    "/u/",
+    "/status",
     "/invite",
   ];
 
@@ -140,39 +136,30 @@ function GuardedRoutes() {
         <Route path="/projects/:id" element={<ProjectHome />} />
         <Route path="/settings" element={<Settings />} />
 
-        {/* Auth */}
         <Route path="/login" element={<Login />} />
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Profile (authenticated) */}
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:username" element={<Profile />} />
         <Route path="/me" element={<Profile />} />
 
-        {/* Public (insert only <Route/>s) */}
         {PUBLIC_PAGES_V1 && <PublicRoutes />}
 
-        {/* Legacy public status */}
         <Route path="/status/:token" element={<PublicProjectStatus />} />
 
-        {/* Messenger full-page */}
         <Route path="/messages" element={<DMPage />} />
         <Route path="/messages/:id" element={<DMPage />} />
 
-        {/* Invite accept */}
         <Route path="/invite/accept" element={<AcceptInvite />} />
 
-        {/* Search */}
         <Route path="/search" element={<SearchPage />} />
 
-        {/* Discover (gated) */}
         <Route
           path="/discover"
           element={DISCOVERY_V1 ? <Discover /> : <Navigate to="/home" replace />}
         />
 
-        {/* Import Wizard (gated) */}
         <Route
           path="/import"
           element={
@@ -182,7 +169,6 @@ function GuardedRoutes() {
           }
         />
 
-        {/* Admin Console (gated) */}
         <Route
           path="/admin/console"
           element={
@@ -192,7 +178,6 @@ function GuardedRoutes() {
           }
         />
 
-        {/* Pulse Admin (gated) */}
         <Route
           path="/admin/pulse"
           element={
@@ -202,7 +187,6 @@ function GuardedRoutes() {
           }
         />
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Suspense>
@@ -239,42 +223,40 @@ const App = () => {
     defaultAccent: "pandora",
   });
 
-  // Tiny shell so we can conditionally wrap FocusProvider
   const Shell = (
     <>
       <div className="app-container" {...containerAttrs}>
         <AppRoutes />
       </div>
 
-      {/* Globals */}
       <MiniSprintWidget />
       <QuickNotesDrawer />
       <PinnedDrawer />
       {FOCUS_DOCK_V1 && <FocusDock />}
       {FOCUS_DOCK_V1 && <FocusToasts />}
+      <MentorDock /> {/* NEW: Always show */}
     </>
   );
 
   return (
     <AuthProvider>
       <UserProvider>
-      <SprintProvider>
-        <ErrorBoundary>
-          <ToastProvider>
-            <Router>
-              {/* Accessibility helper */}
-              {/*<a href="#main" className="skip-link">Skip to main content</a>*/}
-
-              {/* Route-aware accent & brand wrapper (must be inside Router) */}
-              <LayoutSkin>
-                <CommandPaletteProvider>
-                  {FOCUS_DOCK_V1 ? <FocusProvider>{Shell}</FocusProvider> : Shell}
-                 {/* <CommandPalette /> */}
-                </CommandPaletteProvider>
-              </LayoutSkin>
-            </Router>
-          </ToastProvider>
-        </ErrorBoundary>
+        <SprintProvider>
+          <ErrorBoundary>
+            <ToastProvider>
+              <Router>
+                <LayoutSkin>
+                  <CommandPaletteProvider>
+                    {FOCUS_DOCK_V1 ? (
+                      <FocusProvider>{Shell}</FocusProvider>
+                    ) : (
+                      Shell
+                    )}
+                  </CommandPaletteProvider>
+                </LayoutSkin>
+              </Router>
+            </ToastProvider>
+          </ErrorBoundary>
         </SprintProvider>
       </UserProvider>
     </AuthProvider>
