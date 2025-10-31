@@ -1,6 +1,5 @@
 // src/stats/stats.service.ts
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 
 type Activity = {
   projectId: string;
@@ -34,22 +33,29 @@ export type ProjectStats = {
 @Injectable()
 export class StatsService {
   private readonly logger = new Logger(StatsService.name);
-  constructor(private readonly prisma: PrismaService) {}
+
+  // MOCK DATA — Replace with real DB later
+  private mockActivities: Activity[] = [
+    { projectId: "1", type: "task.completed", createdAt: new Date() },
+    { projectId: "1", type: "update.posted", createdAt: new Date(Date.now() - 86400000) },
+    { projectId: "1", type: "task.completed", createdAt: new Date(Date.now() - 2 * 86400000) },
+  ];
+
+  private mockTasks: Task[] = [
+    { projectId: "1", status: "Done", completedAt: new Date(), dueDate: new Date() },
+    { projectId: "1", status: "Done", completedAt: new Date(Date.now() - 86400000), dueDate: new Date(Date.now() - 86400000) },
+  ];
 
   async getProjectActivities(projectId: string, sinceDays = 60): Promise<Activity[]> {
-    const since = new Date(Date.now() - sinceDays * 86400000);
-    return this.prisma.activity.findMany({
-      where: { projectId, createdAt: { gte: since } },
-      select: { projectId: true, userId: true, type: true, createdAt: true },
-    });
+    return this.mockActivities.filter(a => a.projectId === projectId);
   }
 
   async getProjectTasks(projectId: string, sinceDays = 60): Promise<Task[]> {
-    const since = new Date(Date.now() - sinceDays * 86400000);
-    return this.prisma.task.findMany({
-      where: { projectId, OR: [{ createdAt: { gte: since } }, { completedAt: { gte: since } }] },
-      select: { projectId: true, status: true, completedAt: true, dueDate: true, createdAt: true },
-    });
+    return this.mockTasks.filter(t => t.projectId === projectId);
+  }
+
+  async getProjectStats(projectId: string): Promise<ProjectStats> {
+    return this.computeProjectStats(projectId);
   }
 
   async computeProjectStats(projectId: string): Promise<ProjectStats> {
@@ -175,15 +181,10 @@ export class StatsService {
   }
 
   async getTopMomentum(limit: number) {
-    return this.prisma.user.findMany({
-      orderBy: { streak: 'desc' },
-      take: limit,
-      select: {
-        id: true,
-        name: true,
-        streak: true,
-        last7Activity: true,
-      },
-    });
+    // MOCK DATA
+    return [
+      { id: "1", name: "Manny", streak: 7, last7Activity: [1, 2, 1, 3, 2, 1, 4] },
+      { id: "2", name: "Alex", streak: 5, last7Activity: [0, 1, 1, 2, 1, 0, 3] },
+    ];
   }
 }
