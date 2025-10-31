@@ -12,8 +12,19 @@ export class StatsController {
   @Get()
   @CanViewProject()
   async getProjectStats(@Param('id') id: string) {
-    // Return KPIs + insights in one payload
     const data = await this.stats.computeProjectStats(id);
     return data;
+  }
+}
+
+// NEW: Global leaderboard
+@Controller('stats')
+@UseGuards(JwtAuthGuard)
+export class GlobalStatsController {
+  constructor(private readonly stats: StatsService) {}
+
+  @Get('leaderboard')
+  async getLeaderboard() {
+    return this.stats.getTopMomentum(10);
   }
 }

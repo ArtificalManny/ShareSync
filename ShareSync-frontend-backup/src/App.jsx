@@ -57,6 +57,9 @@ import FocusToasts from "./components/toast/FocusToasts.jsx";
 // NEW: Mentor Dock
 import MentorDock from "./components/mentor/MentorDock.jsx";
 
+// NEW: Leaderboard Dock
+import LeaderboardDock from "./components/momentum/LeaderboardDock.jsx";
+
 import PublicRoutes from "./routes/publicRoutes.jsx";
 
 import {
@@ -234,7 +237,8 @@ const App = () => {
       <PinnedDrawer />
       {FOCUS_DOCK_V1 && <FocusDock />}
       {FOCUS_DOCK_V1 && <FocusToasts />}
-      <MentorDock /> {/* NEW: Always show */}
+      <MentorDock />
+      <LeaderboardDock />
     </>
   );
 

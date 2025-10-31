@@ -77,7 +77,6 @@ class NotificationsClient {
       this.items = merged
       .sort((a: InboxItem, b: InboxItem) => b.ts - a.ts)
       .slice(0, 300);
-      this.emit();
     }
   }
 
