@@ -1,4 +1,4 @@
-// /src/pages/Projects.jsx
+// src/pages/Projects.jsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -21,7 +21,7 @@ import { Users, Clock, Search } from 'lucide-react';
 import { track } from '../utils/telemetry';
 import { toast } from '../components/ui/toast.jsx';
 
-// 🔁 Shared avatars with presence dots
+// Shared avatars with presence dots
 import AvatarGroup from '../components/ui/AvatarGroup.jsx';
 
 /** Debounce a value to limit API calls while typing */
@@ -98,7 +98,7 @@ function ProjectCard({ project, onOpen, onPrefetch, isHovered }) {
   return (
     <TraceOutline radius={16} paused={!isHovered}>
       <div
-        className="group relative rounded-2xl border border-border bg-surface shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(16,24,40,0.12)] focus-ring"
+        className="group relative card glass rounded-2xl border border-border bg-surface shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(16,24,40,0.12)] focus-ring"
         data-shine
         role="link"
         tabIndex={0}
@@ -107,6 +107,19 @@ function ProjectCard({ project, onOpen, onPrefetch, isHovered }) {
         onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}
         onMouseEnter={onPrefetch}
       >
+        {/* DNA + Pulse */}
+        <div
+          className="project-dna"
+          style={{ "--pulse": `${project.pulse || 2}s` }}
+        >
+          <span
+            className="icon"
+            style={{ color: project.color || "var(--accent)" }}
+          >
+            {project.icon || "Briefcase"}
+          </span>
+        </div>
+
         {/* Accent bar */}
         <div
           className={`absolute left-0 top-0 h-full w-1 origin-left bg-gradient-to-b ${accent.bar} transition-transform duration-300 ease-out group-hover:scale-x-[1.4]`}
@@ -119,7 +132,7 @@ function ProjectCard({ project, onOpen, onPrefetch, isHovered }) {
           aria-hidden="true"
         />
 
-        {/* Main content (reuse your list item for title/description badges) */}
+        {/* Main content */}
         <div className="px-3 sm:px-4 pt-3">
           <ProjectListItem project={project} />
         </div>
@@ -157,6 +170,31 @@ function ProjectCard({ project, onOpen, onPrefetch, isHovered }) {
             {labelledTimestamp(lastTs, 'Updated')}
           </div>
         </div>
+
+        <style jsx>{`
+          .project-dna {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(6px);
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            z-index: 10;
+          }
+          .project-dna .icon {
+            font-size: 18px;
+            animation: pulse var(--pulse, 2s) infinite;
+          }
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+          }
+        `}</style>
       </div>
     </TraceOutline>
   );
@@ -169,7 +207,6 @@ export default function Projects() {
   const rootRef = useRef(null);
   const init = readParams(location.search);
 
-  // UI + filter state
   const [projects, setProjects]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
@@ -180,16 +217,13 @@ export default function Projects() {
   const [owner, setOwner]     = useState(init.owner);
   const [updated, setUpdated] = useState(init.updated);
 
-  // hover state (for trace outline)
   const [hoverId, setHoverId] = useState(null);
 
-  // Bind blue-shine to this page only
   useEffect(() => {
     const unbind = bindShine(rootRef.current || document);
     return () => unbind();
   }, []);
 
-  // keep URL in sync
   useEffect(() => {
     const next = writeParams({ query, status, owner, updated });
     const current = location.search || '';
@@ -200,7 +234,6 @@ export default function Projects() {
 
   const debouncedQuery = useDebounce(query, 350);
 
-  // === FETCH PROJECTS (with abort + robust errors) ===
   const abortRef = useRef(null);
 
   async function fetchProjects() {
@@ -248,10 +281,8 @@ export default function Projects() {
   useEffect(() => {
     fetchProjects();
     return () => abortRef.current?.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery, status, owner, updated]);
 
-  // client-side filtering fallback (if backend ignores params)
   const filtered = useMemo(() => {
     const q = debouncedQuery.trim().toLowerCase();
     const now = Date.now();
@@ -286,7 +317,6 @@ export default function Projects() {
     });
   }, [projects, debouncedQuery, status, owner, updated]);
 
-  // when a project is created, prepend and close modal
   const handleProjectCreated = (newProject) => {
     setShowCreate(false);
     if (newProject) {
@@ -296,11 +326,8 @@ export default function Projects() {
     }
   };
 
-  // Prefetch on hover (lightweight stub)
   const prefetchProject = (id) => {
     try { track('project_card_hover', { projectId: id }); } catch {}
-    // If you have an endpoint like /projects/:id/summary, queue it here.
-    // client.get(`/projects/${id}/summary`, { params: { lite: 1 } }).catch(() => {});
   };
 
   const goToProject = (id) => {
@@ -316,15 +343,12 @@ export default function Projects() {
         data-accent="emerald"
         className="px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto"
       >
-        {/*Page Hero */}
         <h1 className="h-hero">Projects</h1>
         <p className="h-sub mt-1">Organize work by outcomes, track momentum.</p>
 
-        {/* Header + Filters + CTA */}
         <GradientPanel className="card accent-bar rounded-2xl border border-border bg-surface p-4 p-gradient specular">
           <span className="accent-bar__left" aria-hidden="true" />
           <div className="px-4 sm:px-6 md:px-8 py-4">
-            {/* Title + CTA */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold">
@@ -346,9 +370,7 @@ export default function Projects() {
               </div>
             </div>
 
-            {/* Controls row (search + filters) */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-2">
-              {/* Search */}
               <label className="relative flex items-center">
                 <span className="sr-only">Search projects</span>
                 <Search className="w-4 h-4 absolute left-3 text-slate-400 pointer-events-none" />
@@ -361,7 +383,6 @@ export default function Projects() {
                 />
               </label>
 
-              {/* Status */}
               <label className="block">
                 <span className="sr-only">Status</span>
                 <select
@@ -377,7 +398,6 @@ export default function Projects() {
                 </select>
               </label>
 
-              {/* Owner */}
               <label className="block">
                 <span className="sr-only">Owner</span>
                 <select
@@ -392,7 +412,6 @@ export default function Projects() {
                 </select>
               </label>
 
-              {/* Updated within */}
               <label className="block">
                 <span className="sr-only">Updated window</span>
                 <select
@@ -410,9 +429,7 @@ export default function Projects() {
           </div>
         </GradientPanel>
 
-        {/* Two-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mt-4">
-          {/* LEFT: Project grid */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <SectionHeader icon="FolderKanban">All Projects</SectionHeader>
@@ -438,7 +455,7 @@ export default function Projects() {
 
             {!loading && !error && filtered.length === 0 && (
               <EmptyState
-                icon="📂"
+                icon="folder"
                 title="No projects match your filters"
                 primary={{ label: "+ New Project", onClick: () => setShowCreate(true) }}
                 secondary={{ label: "Clear filters", onClick: () => { setQuery(''); setStatus('all'); setOwner('all'); setUpdated('7d'); } }}
@@ -469,7 +486,6 @@ export default function Projects() {
             )}
           </div>
 
-          {/* RIGHT: Rail */}
           <div className="hidden lg:block">
             <div className="mb-2">
               <SectionHeader icon="Users">Your workspace</SectionHeader>
@@ -482,7 +498,6 @@ export default function Projects() {
           </div>
         </div>
 
-        {/* Create modal */}
         {showCreate && (
           <ProjectsCreate
             onClose={() => setShowCreate(false)}
