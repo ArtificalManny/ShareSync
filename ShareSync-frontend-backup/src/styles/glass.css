@@ -1,0 +1,15 @@
+/* src/styles/glass.css */
+.glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .glass:hover {
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+  }

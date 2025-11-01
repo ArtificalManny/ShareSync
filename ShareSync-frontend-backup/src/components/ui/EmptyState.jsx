@@ -1,33 +1,34 @@
+// src/components/ui/EmptyState.jsx
 import React from "react";
 import { cn } from "./cn";
 
 export default function EmptyState({
-  icon = "✨",
+  icon = "Sparkles",
   title = "",
   children = null,
-  primary = null,   // { label, onClick }
-  secondary = null, // { label, onClick }
+  primary = null,
+  secondary = null,
   className = "",
 }) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-border bg-surface p-4 text-center",
-        "flex flex-col items-center justify-center gap-2",
+        "glass rounded-2xl border border-border bg-surface/50 p-6 text-center",
+        "flex flex-col items-center justify-center gap-3",
         className
       )}
       role="status"
       aria-live="polite"
     >
-      <div className="text-2xl" aria-hidden>{icon}</div>
-      {title && <div className="text-sm font-semibold">{title}</div>}
-      {children && <div className="text-xs text-muted">{children}</div>}
-      <div className="mt-1 flex items-center gap-2">
+      <div className="text-4xl" aria-hidden>{icon}</div>
+      {title && <div className="text-lg font-semibold">{title}</div>}
+      {children && <div className="text-sm text-muted max-w-sm mx-auto">{children}</div>}
+      <div className="mt-2 flex items-center gap-3">
         {primary && (
           <button
             type="button"
             onClick={primary.onClick}
-            className="inline-flex items-center gap-2 rounded-2xl px-3 py-1.5 text-sm text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus-visible:shadow-focus"
+            className="btn btn--primary"
           >
             {primary.label}
           </button>
@@ -36,7 +37,7 @@ export default function EmptyState({
           <button
             type="button"
             onClick={secondary.onClick}
-            className="inline-flex items-center gap-2 rounded-2xl px-3 py-1.5 text-sm border border-border bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/60 focus:outline-none focus-visible:shadow-focus"
+            className="btn btn--outline"
           >
             {secondary.label}
           </button>

@@ -27,6 +27,7 @@ import "./styles/spacing.css";
 import "./styles/chips.css";
 import "./styles/command-palette.css";
 import "./styles/toast.css";
+import "./styles/glass.css"
 
 import "./styles/focus.css";
 
