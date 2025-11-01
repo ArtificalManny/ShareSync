@@ -176,7 +176,6 @@ const RecentActivity = () => {
           : err.message || "Failed to load activity";
         if (mounted) {
           setError(msg);
-          // Only show toast on real errors (not 404)
           if (err.response?.status !== 404) {
             addToast({
               title: "Activity failed to load",
@@ -885,342 +884,57 @@ export default function Home() {
     start25();
   };
 
+  const generatePlan = () => {
+    try { track("ai_plan_regenerated", { source: "home" }); } catch {}
+    alert("AI Plan: Focus on “Launch Alpha” → 3 tasks → 25-min sprint");
+  };
+
+  const userRank = 1; // Mock — replace with real leaderboard rank
+
   return (
-    <div
-      className={`home-page relative ml-0 md:ml-24 max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-6 bg-bg text-text min-h-screen space-y-7 ${
-        celebrate ? "win-glow" : ""
-      }`}
-    >
-      <PageStyles />
-
-      {sprintActive && (
-        <div className="top-progress" role="status" aria-live="polite">
-          {(Date.now() - (sprintStart || 0)) < 2000 ? (
-            <span className="indet" />
-          ) : (
-            <div className="linear" style={{ width: `${linearPct}%` }} />
-          )}
-        </div>
-      )}
-
+    <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
       <PageHeader
         title="Home"
-        subtitle="Resume work fast. See momentum & recent activity."
-        actions={
-          <div className="flex items-center gap-2">
-            <button className="btn btn--primary focus-ring" onClick={continueProject} title="Open your most active project">
-              Continue Project
-            </button>
-            <button className="btn btn--outline focus-ring" onClick={start25} title="Start a 25:00 sprint">
-              Start 25:00
-            </button>
-          </div>
-        }
+        subtitle="AI plan + momentum + quick actions"
       />
 
-      <div className="mt-3">
+      {/* AI Planner */}
+      <div className="card glass p-6">
+        <h2 className="text-lg font-semibold mb-4">Today’s AI Plan</h2>
         <TodayCapsule />
+        <button className="btn btn--primary mt-4 w-full" onClick={generatePlan}>
+          Regenerate Plan
+        </button>
       </div>
 
-      {storiesProjects.length > 0 && (
-        <div className="card rounded-2xl border border-border bg-surface p-4 relative focus-ring">
-          <ProjectStoriesBar projects={storiesProjects} unread={unreadMap} onOpen={openStory} />
-        </div>
-      )}
-
-      <div className="row-accent row-accent-violet grid grid-cols-1 lg:grid-cols-3 gap-3 row-grid">
-        {SHOW_KPI_STRIP && (
-          <div className="lg:col-span-2" ref={kpiRef}>
-            <KpiStrip stats={stats} meId={meId} />
+      {/* Momentum */}
+      <div className="card glass p-6">
+        <h2 className="text-lg font-semibold mb-4">Your Momentum</h2>
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div className="text-3xl font-bold">{stats?.insights?.streakDays || 0}</div>
+            <div className="text-xs text-muted">Day Streak</div>
           </div>
-        )}
-        {SHOW_SMART_SEARCH && <SmartSearch onAsk={handleAsk} stats={stats} />}
-      </div>
-
-      {HABITS_ENABLED && (
-        <div className="relative" id="focus-sprint">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 -z-10 rounded-2xl blur-xl opacity-60 bg-gradient-to-r from-indigo-100 via-fuchsia-100 to-pink-100 dark:from-indigo-900/40 dark:via-fuchsia-900/35 dark:to-pink-900/35"
-          />
-          <div className="flex items-center justify-between mb-2">
-            <SectionHeader icon="Timer">Focus Sprint</SectionHeader>
-            <button
-              className="btn btn--primary marching focus-ring"
-              title="Start 25:00 now"
-              onClick={() => {
-                try { track("sprint_started", { mode: "10x", source: "start_button" }); } catch {}
-                try { window.dispatchEvent(new CustomEvent("start-tenx-sprint")); } catch {}
-              }}
-            >
-              Start 25:00
-            </button>
+          <div>
+            <div className="text-3xl font-bold">{stats?.xp || 0}</div>
+            <div className="text-xs text-muted">XP Earned</div>
           </div>
-          <FocusSprint nextTask={null} onFinish={() => setCelebrate(true)} />
-        </div>
-      )}
-
-      <TabbedFeed showDiscover className="mt-6" onTabChange={(tab) => { try { track("feed_tab_changed", { tab }); } catch {} }} />
-
-      {DISCOVERY_V1 && (
-        <div className="card rounded-2xl border border-border bg-surface p-4">
-          <div className="text-sm font-semibold mb-2">Discover</div>
-          <DiscoveryFeed />
-        </div>
-      )}
-
-      {TRANSPARENCY_ENABLED && publicMode && SHOW_LEADERBOARD && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Leaderboard />
-          <div className="card rounded-2xl p-3 shine accent-bar relative focus-ring">
-            <span className="accent-bar__left" aria-hidden="true" />
-            <div className="text-sm font-semibold mb-1">Public dashboard</div>
-            <div className="text-xs text-muted">Read-only URL</div>
-            <div className="mt-1 flex items-center gap-2">
-              <input
-                readOnly
-                className="flex-1 text-xs rounded-md border border-border bg-surface px-2 py-1"
-                value={`${window.location.origin}/u/${username || "me"}/public`}
-              />
-              <button
-                className="btn btn--outline focus-ring"
-                onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/u/${username || "me"}/public`)}
-              >
-                Copy link
-              </button>
-            </div>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300">
-                updated just now
-              </span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300">
-                viewers: 0
-              </span>
-            </div>
+          <div>
+            <div className="text-3xl font-bold">#{userRank}</div>
+            <div className="text-xs text-muted">Leaderboard</div>
           </div>
         </div>
-      )}
-
-      {HABITS_ENABLED && (
-        <div className="relative">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 -z-10 rounded-2xl blur-xl opacity-55 bg-gradient-to-r from-cyan-100 via-teal-100 to-emerald-100 dark:from-cyan-900/35 dark:via-teal-900/30 dark:to-emerald-900/30"
-          />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 row-grid habits">
-            <CadenceMeter activeDays={activeDays14} range={14} />
-            <div className="md:col-span-2">
-              <SprintMomentum data={sprintDays} range={7} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring">
-        <span className="accent-bar__left" aria-hidden="true" />
-        <div className="flex items-center justify-between">
-          <SectionHeader icon="LayoutDashboard">Your Projects</SectionHeader>
-        </div>
-        <div className="mt-3">
-          {quickLoading ? (
-            <SkeletonBlock height={88} repeat={3} />
-          ) : Array.isArray(quickProjects) && quickProjects.length > 0 ? (
-            <ProjectsRail items={quickProjects} loading={false} />
-          ) : (
-            <EmptyState
-              icon="files"
-              title="No projects yet"
-              primary={{
-                label: "Create project",
-                onClick: () =>
-                  document
-                    .querySelector('button.btn.btn--primary, button:has(+ span:contains("New Project"))')
-                    ?.click(),
-              }}
-            >
-              Start your first project to see momentum and KPIs here.
-            </EmptyState>
-          )}
-        </div>
       </div>
 
-      <div
-        className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring"
-        id="kpis"
-        aria-live="polite"
-      >
-        <span className="accent-bar__left" aria-hidden="true" />
-        <div className="flex items-center justify-between">
-          <SectionHeader icon="BarChartBig">Your KPIs</SectionHeader>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <label className="text-xs text-muted">Project</label>
-          <select
-            value={statsProjectId}
-            onChange={(e) => setStatsProjectId(e.target.value)}
-            className="text-sm rounded-md border border-border bg-surface text-text px-2 py-1"
-            aria-label="Project filter"
-          >
-            <option value="all">All projects</option>
-            {projects.map((p) => (
-              <option key={p._id || p.id} value={p._id || p.id}>
-                {p.title}
-              </option>
-            ))}
-          </select>
-
-          <label className="text-xs text-muted ml-2">Range</label>
-          <select
-            value={statsRange}
-            onChange={(e) => setStatsRange(Number(e.target.value))}
-            className="text-sm rounded-md border border-border bg-surface text-text px-2 py-1"
-            aria-label="Stats time range"
-          >
-            <option value={7}>7d</option>
-            <option value={30}>30d</option>
-            <option value={90}>90d</option>
-          </select>
-        </div>
-
-        <div className="mt-3">
-          {statsLoading ? (
-            <SkeletonBlock height={112} repeat={2} />
-          ) : statsError ? (
-            <div className="rounded-2xl border border-rose-200/60 bg-surface p-3 flex items-center justify-between">
-              <span className="text-rose-600">Couldn’t load KPIs.</span>
-              <button
-                className="btn btn--outline focus-ring"
-                onClick={() => setStatsRange((r) => r)}
-                title="Retry (Ctrl+R)"
-              >
-                Retry
-              </button>
-            </div>
-          ) : !stats ? (
-            <div className="rounded-xl border border-dashed border-border bg-surface p-4 text-sm text-muted">
-              No KPI data yet. Start a 25:00 sprint to generate your first metrics.{" "}
-              <a className="underline" href="#focus-sprint">
-                Learn how to create activity
-              </a>
-              .
-            </div>
-          ) : (
-            <>
-              <KpiRow
-                cadence={stats?.cadence}
-                onTimeCompletion={stats?.onTimeCompletion}
-                activeDays={stats?.activeDays}
-                throughputPerWeek={stats?.throughputPerWeek}
-              />
-              <div className="text-xs text-muted mt-2">
-                Benchmarks: top 10% users complete 5+ sprints/week · aim for on-time greater than 80%.
-              </div>
-            </>
-          )}
-        </div>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <button className="btn btn--primary" onClick={continueProject}>
+          Continue Last Project
+        </button>
+        <button className="btn btn--outline" onClick={start25}>
+          Start 25:00 Sprint
+        </button>
       </div>
-
-      <div
-        className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring"
-        data-section="activity-over-time"
-      >
-        <span className="accent-bar__left" aria-hidden="true" />
-        <SectionHeader icon="ActivitySquare">Activity Over Time</SectionHeader>
-        <div className="mt-3">
-          {statsLoading ? (
-            <div className="h-28 rounded-2xl bg-surface animate-pulse" />
-          ) : !stats?.activitySeries || stats?.activitySeries.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border bg-surface p-4 text-sm text-muted">
-              No activity yet. Sprints and task updates will appear here.{" "}
-              <a className="underline" href="#focus-sprint">
-                Learn how to create activity
-              </a>
-              .
-            </div>
-          ) : (
-            <Suspense fallback={<SkeletonBlock height={128} repeat={1} />}>
-              <ActivityOverTimeLive
-                range={statsRange}
-                projectId={statsProjectId !== "all" ? statsProjectId : undefined}
-                series={stats?.activitySeries ?? []}
-              />
-            </Suspense>
-          )}
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div
-        id="recent-activity"
-        className="card shine accent-bar rounded-2xl border border-border bg-surface p-4 relative focus-ring"
-      >
-        <span className="accent-bar__left" aria-hidden="true" />
-        <SectionHeader icon="History">Recent Activity</SectionHeader>
-        <div className="mt-3">
-          <RecentActivity />
-        </div>
-      </div>
-
-      {/* Drawer */}
-      {drawerItem && (
-        <div className="drawer" role="dialog" aria-modal="true" aria-label="Activity details">
-          <div onClick={() => setDrawerItem(null)} />
-          <div className="drawer__panel p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold">Activity details</div>
-              <button ref={drawerFirstBtnRef} className="btn btn--ghost focus-ring" onClick={() => setDrawerItem(null)}>
-                Close
-              </button>
-            </div>
-            <div className="mt-3 text-sm">
-              <div>
-                <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 uppercase">
-                  type
-                </span>
-              </div>
-              <div className="mt-2">
-                <span className="font-medium">{drawerItem.who}</span> {drawerItem.action}
-              </div>
-              {drawerItem.project && <div className="text-muted mt-1">Project: {drawerItem.project}</div>}
-              <div className="text-muted mt-1">{drawerItem.when}</div>
-              <div className="mt-3">
-                <a
-                  href="#recent-activity"
-                  className="btn btn--outline focus-ring"
-                  onClick={() => setDrawerItem(null)}
-                >
-                  View in timeline
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <SprintCompleteModal
-        open={sprintDoneOpen}
-        onClose={() => {
-          setSprintDoneOpen(false);
-          setShareToFeed(false);
-        }}
-        completedTasks={recentCompleted}
-        onShareToggleChange={(on) => {
-          setShareToFeed(on);
-          try { track("share_toggle_used", { on }); } catch {}
-        }}
-      />
-
-      {inviteOpen && (
-        <InviteModal
-          isOpen={inviteOpen}
-          onClose={() => setInviteOpen(false)}
-          inviterId={authUser?._id || user?._id || null}
-          projectId={null}
-        />
-      )}
-
-      <TenXOverlay open={tenxOpen} onClose={() => setTenxOpen(false)} />
     </div>
   );
 }
