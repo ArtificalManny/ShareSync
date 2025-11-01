@@ -8,12 +8,12 @@ import {
   Settings,
   ChevronsLeft,
   Compass,
+  Trophy,
   ShieldCheck,
 } from "lucide-react";
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
 
-// Keep base styles + add neon skin
 import "./Sidebar.css";
 import "./Sidebar.neon.css";
 
@@ -23,16 +23,6 @@ import useBrandTheme from "../hooks/useBrandTheme";
 
 const LS_KEY = "ss.sidebar.collapsed";
 
-/**
- * App Left Sidebar (collapsible, neon skin)
- * - Persists collapsed state in localStorage
- * - Adds/removes body classes so the content can offset via CSS vars
- * - Keyboard hint: '[' toggles collapse
- * - A11y: <nav> landmark, aria-expanded, focus-visible rings
- * - ✨ Neon upgrades:
- *    • Fluorescent route-colored rings via [data-route]
- *    • One-time Instagram-style orbit animation on the active icon
- */
 export default function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => {
@@ -44,7 +34,6 @@ export default function Sidebar() {
     }
   });
 
-  // brand/accent attrs so CSS can theme the rail (pandora/cnbc/meta)
   const { containerAttrs } = useBrandTheme({ enabled: true });
 
   const tooltipWhenCollapsed = collapsed;
@@ -57,7 +46,6 @@ export default function Sidebar() {
     } catch {}
   }, [collapsed]);
 
-  // Persist + body class & CSS var for layout
   useEffect(() => {
     try {
       localStorage.setItem(LS_KEY, collapsed ? "1" : "0");
@@ -66,16 +54,13 @@ export default function Sidebar() {
     document.body.classList.add("has-sidebar");
     document.body.classList.toggle("sidebar-collapsed", collapsed);
 
-    // Optional custom event for any listeners (analytics / layout)
     try {
       window.dispatchEvent(new CustomEvent("sidebar:toggle", { detail: { collapsed } }));
     } catch {}
   }, [collapsed]);
 
-  // Keyboard '[' to toggle collapse (as hinted in UI)
   useEffect(() => {
     const onKey = (e) => {
-      // Ignore when typing in inputs
       const tag = (document.activeElement?.tagName || "").toLowerCase();
       if (tag === "input" || tag === "textarea") return;
       if (e.key === "[") {
@@ -87,25 +72,19 @@ export default function Sidebar() {
     return () => window.removeEventListener("keydown", onKey);
   }, [toggle]);
 
-  // ---- Neon helpers --------------------------------------------------------
-
-  // 1) Wire data-route to each .sb-item so CSS can color its ring.
-  //    We infer from href/label if SidebarItem doesn't pass it.
   useEffect(() => {
     const items = Array.from(document.querySelectorAll(".sb-nav .sb-item"));
     items.forEach((el) => {
       if (el.dataset.route) return;
 
-      // Prefer href on the clickable node; else a child anchor
       const anchor = el.matches("a[href]") ? el : el.querySelector("a[href]");
       let href = anchor?.getAttribute("href") || "";
 
       let route = "";
       if (href && href.startsWith("/")) {
-        const seg = href.split("/")[1]; // "/projects/..." -> "projects"
+        const seg = href.split("/")[1];
         route = seg || "home";
       } else {
-        // Fallback: guess from visible text
         const text = (el.textContent || "").toLowerCase();
         if (text.includes("home")) route = "home";
         else if (text.includes("discover")) route = "discover";
@@ -119,7 +98,6 @@ export default function Sidebar() {
     });
   }, [location.pathname]);
 
-  // 2) One-time orbit animation on the active icon (on hard reload / first session)
   useEffect(() => {
     const activeIcon = document.querySelector(".sb-item.is-active .sb-icon");
     if (!activeIcon) return;
@@ -136,7 +114,6 @@ export default function Sidebar() {
     }
   }, [location.pathname]);
 
-  // Counts (wire up to real data if desired)
   const counts = useMemo(
     () => ({
       projects: undefined,
@@ -157,11 +134,9 @@ export default function Sidebar() {
       aria-label="Primary"
       aria-expanded={collapsed ? "false" : "true"}
     >
-      {/* Neon vertical spine + subtle glow */}
       <span className="sb-rail" aria-hidden="true" />
       <span className="sb-ambient" aria-hidden="true" />
 
-      {/* Header / Logo + collapse button */}
       <div className="sb-head">
         <div className="sb-brand" aria-hidden={collapsed ? "true" : "false"}>
           <span className="sb-logo">◆</span>
@@ -184,31 +159,19 @@ export default function Sidebar() {
           }}
         >
           <ChevronsLeft className="w-4 h-4" />
-          </button>
+        </button>
       </div>
 
-      {/* Primary nav */}
       <nav className="sb-nav" aria-label="Primary" aria-orientation="vertical">
         <SidebarItem
           to="/home"
           label="Home"
           icon={Home}
+          badge="AI"
           count={counts.home}
           collapsed={tooltipWhenCollapsed}
-          // If SidebarItem forwards props to the clickable root, this helps the CSS:
           data-route="home"
         />
-
-        {/* Discover (feature-gated) */}
-        {DISCOVERY_V1 && (
-          <SidebarItem
-            to="/discover"
-            label="Discover"
-            icon={Compass}
-            collapsed={tooltipWhenCollapsed}
-            data-route="discover"
-          />
-        )}
 
         <SidebarItem
           to="/projects"
@@ -218,6 +181,15 @@ export default function Sidebar() {
           collapsed={tooltipWhenCollapsed}
           data-route="projects"
         />
+
+        <SidebarItem
+          to="/discover"
+          label="Discover"
+          icon={Trophy}
+          collapsed={tooltipWhenCollapsed}
+          data-route="discover"
+        />
+
         <SidebarItem
           to="/profile"
           label="Profile"
@@ -226,6 +198,7 @@ export default function Sidebar() {
           collapsed={tooltipWhenCollapsed}
           data-route="profile"
         />
+
         <SidebarItem
           to="/settings"
           label="Settings"
@@ -235,7 +208,6 @@ export default function Sidebar() {
           data-route="settings"
         />
 
-        {/* Admin Console (feature-gated) */}
         {ADMIN_CONSOLE_V1 && (
           <SidebarItem
             to="/admin/console"
@@ -247,10 +219,8 @@ export default function Sidebar() {
         )}
       </nav>
 
-      {/* Spacer */}
       <div className="sb-spacer" />
 
-      {/* Bottom user block */}
       <div className="sb-user">
         <Avatar
           src={me.avatarUrl}

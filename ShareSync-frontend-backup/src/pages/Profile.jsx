@@ -30,8 +30,6 @@ import XpRing from "../components/Profile/XpRing";
 
 // ---------------- XP / Level helpers (client-side fallback) ----------------
 function xpForLevel(level) {
-  // Mildly exponential curve; tune as you like
-  // L1=0, L2=100, L3≈250, L4≈450, L5≈700, etc.
   if (level <= 1) return 0;
   let sum = 0;
   for (let i = 1; i < level; i++) {
@@ -73,14 +71,11 @@ export default function Profile() {
   const [me, setMe] = useState(null);
   const [publicUser, setPublicUser] = useState(null);
 
-  // Public profile audit list UI gates
-const [pubAuditLoading, setPubAuditLoading] = useState(true);
-const [pubAuditCount, setPubAuditCount] = useState(0);
+  const [pubAuditLoading, setPubAuditLoading] = useState(true);
+  const [pubAuditCount, setPubAuditCount] = useState(0);
 
-// Owner profile audit list UI gates
-const [ownerAuditLoading, setOwnerAuditLoading] = useState(true);
-const [ownerAuditCount, setOwnerAuditCount] = useState(0);
-
+  const [ownerAuditLoading, setOwnerAuditLoading] = useState(true);
+  const [ownerAuditCount, setOwnerAuditCount] = useState(0);
 
   const load = async () => {
     setLoading(true);
@@ -117,14 +112,11 @@ const [ownerAuditCount, setOwnerAuditCount] = useState(0);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPublicRoute, routeUsername]);
 
-  // --- Avatar change pipeline (client -> uploads -> user patch -> global propagate) ---
   const handleAvatarUploaded = async (file) => {
     if (!file) return;
     try {
-      // 1) upload the binary to /api/uploads/avatar → { url, blurhash? }
       const fd = new FormData();
       fd.append("avatar", file);
       const up = await client.post("/api/uploads/avatar", fd, {
@@ -137,14 +129,12 @@ const [ownerAuditCount, setOwnerAuditCount] = useState(0);
       const version = Date.now();
       const cacheBusted = `${rawUrl}${rawUrl.includes("?") ? "&" : "?"}v=${version}`;
 
-      // 2) PATCH user profile with new avatar (and optional blurhash)
       await client.patch("/api/users/me", {
-        avatarUrl: rawUrl, // store clean URL server-side
+        avatarUrl: rawUrl,
         avatarVersion: version,
         blurhash: up?.data?.blurhash,
       });
 
-      // 3) Update local state and propagate globally
       setMe((prev) =>
         prev ? { ...prev, profilePicture: cacheBusted, avatarUrl: cacheBusted } : prev
       );
@@ -186,7 +176,10 @@ const [ownerAuditCount, setOwnerAuditCount] = useState(0);
     (Array.isArray(userForPublic?.followers) ? userForPublic.followers.length : 0);
 
   return (
-    <div className="with-sidebar px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-5xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
+      <h1 className="h-hero">Profile</h1>
+      <p className="h-sub mt-1">XP, Streaks, Badges</p>
+
       {loading ? (
         <div className="rounded-2xl border border-border bg-surface p-6">
           <div className="animate-pulse flex items-start gap-4">
@@ -196,7 +189,6 @@ const [ownerAuditCount, setOwnerAuditCount] = useState(0);
               <div className="h-3 bg-[var(--surface-200)] w-64" />
               <div className="h-3 bg-[var(--surface-200)] w-48" />
             </div>
-            <div className="hidden sm:block h-[96px] w-[96px] rounded-full bg-[var(--surface-200)]" />
           </div>
         </div>
       ) : error ? (
@@ -212,206 +204,82 @@ const [ownerAuditCount, setOwnerAuditCount] = useState(0);
           <LockedCard />
         ) : (
           <>
-            {/* Public header (read-only) */}
-            <section className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular">
-  <ProfileHeader
-    user={userForPublic}
-    isOwner={false}
-    isPublic
-    prefersReduced={prefersReduced}
-    onAvatarUploaded={undefined}
-  />
-
-  {/* Social actions (public view) */}
-  {SOCIAL_MINI_V1 && publicUserId && (
-    <div className="mt-3 flex flex-wrap items-center gap-3">
-      <FollowButton
-        userId={publicUserId}
-        onChange={(following) => {
-          try {
-            track(following ? "follow_clicked" : "unfollow_clicked", {
-              userId: publicUserId,
-              surface: "profile_public",
-            });
-          } catch {}
-        }}
-      />
-      <ReactionBar
-        compact
-        targetId={`user:${publicUserId}`}
-        ownerId={publicUserId}
-        meId={"me"}
-        label="Profile"
-        onReact={(emoji) => {
-          try {
-            track("reaction_clicked", {
-              userId: publicUserId,
-              emoji,
-              surface: "profile_public",
-            });
-          } catch {}
-        }}
-      />
-      <div className="ml-auto text-xs text-muted">
-        {publicFollowers} followers · {publicFollowing} following
-      </div>
-    </div>
-  )}
-</section>
-
-            {/* Public: XP/Streak/Badges summary */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="rounded-2xl border border-border bg-surface p-4">
-                <SectionHeader icon="Trophy">XP</SectionHeader>
-                <div className="mt-3 flex justify-center">
-                  {(() => {
-                    const xp = Number(userForPublic?.xp ?? 0);
-                    const { level, progress, cur, next } = progressToNext(xp);
-                    return (
-                      <XpRing
-                        level={level}
-                        progress={progress}
-                        size={120}
-                        thickness={10}
-                        motionEnabled={!prefersReduced}
-                        label="XP"
-                        sublabel={`${xp - cur}/${next - cur}`}
-                      />
-                    );
-                  })()}
-                </div>
+            {/* XP Ring */}
+            <div className="card glass text-center p-8">
+              <XpRing
+                level={(() => {
+                  const xp = Number(userForPublic?.xp ?? 0);
+                  const { level } = progressToNext(xp);
+                  return level;
+                })()}
+                progress={(() => {
+                  const xp = Number(userForPublic?.xp ?? 0);
+                  const { progress } = progressToNext(xp);
+                  return progress;
+                })()}
+                size={160}
+                thickness={14}
+                motionEnabled={!prefersReduced}
+                label="XP"
+                sublabel={(() => {
+                  const xp = Number(userForPublic?.xp ?? 0);
+                  const { cur, next } = progressToNext(xp);
+                  return `${xp - cur}/${next - cur}`;
+                })()}
+              />
+              <div className="mt-4 text-sm text-muted">
+                Level {(() => {
+                  const xp = Number(userForPublic?.xp ?? 0);
+                  return levelForXp(xp);
+                })()}
               </div>
-              <Streak user={userForPublic} isPublic className="" />
-              <Badges user={userForPublic} isPublic className="" />
-            </section>
+            </div>
 
-            <div className="mt-2" aria-busy={pubAuditLoading ? "true" : "false"}>
-  {publicUserId ? (
-    <>
-      {pubAuditLoading && (
-        <SkeletonBlock
-          className="space-y-2"
-          height={64}
-          radius={14}
-          repeat={3}
-        />
-      )}
-      <AuditList
-        scope="user"
-        userId={publicUserId}
-        onLoadingChange={setPubAuditLoading}
-        onCountChange={setPubAuditCount}
-        className={pubAuditLoading ? "sr-only" : ""}
-      />
-      {!pubAuditLoading && pubAuditCount === 0 && (
-        <EmptyState
-          icon="🗞️"
-          title="No activity yet"
-          children="When this person starts shipping, updates will show up here."
-        />
-      )}
-    </>
-  ) : (
-    <div className="text-sm text-muted">This user was not found.</div>
-  )}
-</div>
+            {/* Streak + Badges */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Streak user={userForPublic} className="card glass p-6" />
+              <Badges user={userForPublic} className="card glass p-6" />
+            </div>
           </>
         )
       ) : (
         <>
-        <p className="text-xs text-muted mt-1">
-  Follows and reactions on this profile may appear here.
-</p>
-          {/* Owner header (edit controls enabled) */}
-          <section className="card rounded-2xl border border-border bg-surface p-4 p-gradient specular">
-  <ProfileHeader
-    user={me}
-    isOwner
-    isPublic={false}
-    prefersReduced={prefersReduced}
-    onAvatarUploaded={handleAvatarUploaded}
-  />
-
-  {SOCIAL_MINI_V1 && (
-    <div className="mt-3 text-xs text-muted">
-      {ownerFollowers} followers · {ownerFollowing} following
-    </div>
-  )}
-</section>
-
-          {/* Owner: Profile Photo editor */}
-          <section className="card rounded-2xl border border-border bg-surface p-6">
-            <SectionHeader icon="UserRoundCog">Profile Photo</SectionHeader>
-            <p className="text-sm text-muted mt-1">
-              Upload a clear, professional-looking avatar. Changes propagate everywhere instantly.
-            </p>
-            <div className="mt-3">
-              <AvatarUploader onUploaded={handleAvatarUploaded} />
+          {/* XP Ring */}
+          <div className="card glass text-center p-8">
+            <XpRing
+              level={(() => {
+                const xp = Number(me?.xp ?? 0);
+                const { level } = progressToNext(xp);
+                return level;
+              })()}
+              progress={(() => {
+                const xp = Number(me?.xp ?? 0);
+                const { progress } = progressToNext(xp);
+                return progress;
+              })()}
+              size={160}
+              thickness={14}
+              motionEnabled={!prefersReduced}
+              label="XP"
+              sublabel={(() => {
+                const xp = Number(me?.xp ?? 0);
+                const { cur, next } = progressToNext(xp);
+                return `${xp - cur}/${next - cur}`;
+              })()}
+            />
+            <div className="mt-4 text-sm text-muted">
+              Level {(() => {
+                const xp = Number(me?.xp ?? 0);
+                return levelForXp(xp);
+              })()}
             </div>
-          </section>
+          </div>
 
-          {/* Owner: XP / Streak / Badges */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-border bg-surface p-4">
-              <SectionHeader icon="Trophy">Your XP</SectionHeader>
-              <div className="mt-3 flex justify-center">
-                {(() => {
-                  const xp = Number(me?.xp ?? 0);
-                  const { level, progress, cur, next } = progressToNext(xp);
-                  return (
-                    <XpRing
-                      level={level}
-                      progress={progress}
-                      size={140}
-                      thickness={12}
-                      motionEnabled={!prefersReduced}
-                      label="XP"
-                      sublabel={`${xp - cur}/${next - cur}`}
-                    />
-                  );
-                })()}
-              </div>
-            </div>
-            <Streak user={me} isPublic={false} className="" />
-            <Badges user={me} isPublic={false} className="" />
-          </section>
-
-          {/* Highlights & Notifications */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="mt-2" aria-busy={ownerAuditLoading ? "true" : "false"}>
-  {ownerAuditLoading && (
-    <SkeletonBlock
-      className="space-y-2"
-      height={64}
-      radius={14}
-      repeat={3}
-    />
-  )}
-  <AuditList
-    scope="user"
-    onLoadingChange={setOwnerAuditLoading}
-    onCountChange={setOwnerAuditCount}
-    className={ownerAuditLoading ? "sr-only" : ""}
-  />
-  {!ownerAuditLoading && ownerAuditCount === 0 && (
-    <EmptyState
-      icon="✨"
-      title="Nothing highlighted yet"
-      children="Pin achievements or ship something and your highlights will appear."
-    />
-  )}
-</div>
-            <div className="card accent-kpi rounded-2xl border border-border bg-surface p-6">
-              <SectionHeader icon="Bell">Notifications</SectionHeader>
-              <p className="text-sm text-muted">
-                Manage in{" "}
-                <Link to="/settings" className="text-brand underline">
-                  Settings
-                </Link>
-                .
-              </p>
-            </div>
-          </section>
+          {/* Streak + Badges */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Streak user={me} className="card glass p-6" />
+            <Badges user={me} className="card glass p-6" />
+          </div>
         </>
       )}
     </div>
