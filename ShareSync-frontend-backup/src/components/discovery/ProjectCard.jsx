@@ -11,15 +11,6 @@ import {
 
 /**
  * ProjectCard — used by Discover feed after ranking.
- *
- * Props:
- *  - project: {
- *      id, title, description?, coverUrl?, icon?, lastActivityAt?,
- *      metrics?: { velocity_30d?: number, reactions_14d?: number },
- *      __rank?: number, __explain?: string
- *    }
- *  - to?: string            // optional override for click destination (defaults to /projects/:id)
- *  - onOpen?: (project) => void // optional; if provided, card is buttonlike and calls onOpen
  */
 export default function ProjectCard({ project, to, onOpen }) {
   const {
@@ -32,6 +23,8 @@ export default function ProjectCard({ project, to, onOpen }) {
     metrics = {},
     __rank,
     __explain,
+    color,
+    pulse,
   } = project || {};
 
   const dest = to || (id ? `/projects/${id}` : "#");
@@ -54,13 +47,25 @@ export default function ProjectCard({ project, to, onOpen }) {
       title={__explain || undefined}
       aria-label={`${title || "Project"} — score ${fmt(__rank)} — last active ${lastLabel}`}
     >
+      {/* DNA + Pulse */}
+      <div
+        className="project-dna"
+        style={{ "--pulse": `${pulse || 2}s` }}
+      >
+        <span
+          className="icon"
+          style={{ color: color || "var(--accent)" }}
+        >
+          {icon || "Briefcase"}
+        </span>
+      </div>
+
       {/* header row */}
       <div className="flex items-start gap-3">
-        <AvatarSquare src={icon || coverUrl} label={title} />
+        <AvatarSquare src={coverUrl} label={title} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <div className="font-semibold truncate">{title || "Untitled project"}</div>
-            {/* why tooltip via native title; also provide an explicit icon */}
             {__explain && (
               <Info
                 className="w-4 h-4 text-muted shrink-0"
@@ -90,7 +95,7 @@ export default function ProjectCard({ project, to, onOpen }) {
         <Chip icon={<Clock className="w-3.5 h-3.5" />} label="last active" value={lastLabel} />
       </div>
 
-      {/* tiny activity bar (visual affordance) */}
+      {/* tiny activity bar */}
       <div className="mt-3 h-1.5 rounded-full bg-[color-mix(in_srgb, rgb(var(--accent))_12%, transparent)] overflow-hidden">
         <div
           className="h-full"
@@ -110,16 +115,40 @@ export default function ProjectCard({ project, to, onOpen }) {
           Discover
         </span>
         <span className="underline decoration-dotted group-hover:no-underline">
-          View project →
+          View project
         </span>
       </div>
+
+      <style jsx>{`
+        .project-dna {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 36px;
+          height: 36px;
+          border-radius: 12px;
+          background: rgba(255,255,255,0.1);
+          backdrop-filter: blur(6px);
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(255,255,255,0.2);
+          z-index: 10;
+        }
+        .project-dna .icon {
+          font-size: 18px;
+          animation: pulse var(--pulse, 2s) infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.2); }
+        }
+      `}</style>
     </Tag>
   );
 }
 
 function AvatarSquare({ src, label }) {
   if (!src) {
-    // Fallback mono block w/ initial
     const letter = (label || "?").slice(0, 1).toUpperCase();
     return (
       <div

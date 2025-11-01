@@ -23,9 +23,10 @@ export async function listProjects(params = {}) {
     : [];
 }
 
-/** Create a project */
+/** Create a project with DNA */
 export async function createProject(payload) {
-  const { data } = await client.post(`/projects`, payload);
+  const dna = generateDNA(payload.name);
+  const { data } = await client.post(`/projects`, { ...payload, ...dna });
   return data;
 }
 
@@ -43,7 +44,6 @@ export async function getProjectsQuick() {
 
 /**
  * Project feed via Activities endpoint
- * GET /api/activities?scope=project&projectId=...&range=30d&cursor=&limit=
  */
 export async function getProjectFeed(id, { limit = 20, cursor } = {}) {
   const { data } = await client.get(`/activities`, {
@@ -55,12 +55,11 @@ export async function getProjectFeed(id, { limit = 20, cursor } = {}) {
       cursor: cursor || undefined,
     },
   });
-  return data; // { items, nextCursor }
+  return data;
 }
 
 /**
  * Post a project update
- * Server expects: { projectId, type, text, visibility?, meta? }
  */
 export async function postProjectUpdate(projectId, payload) {
   if (!projectId) throw new Error("projectId is required");
@@ -83,7 +82,7 @@ export async function postProjectUpdate(projectId, payload) {
   return data;
 }
 
-/** Tasks (kept for convenience) */
+/** Tasks */
 export async function createTask(id, payload) {
   const { data } = await client.post(`/projects/${id}/tasks`, payload);
   return data;
@@ -94,46 +93,53 @@ export async function patchTask(id, taskId, payload) {
   return data;
 }
 
-/** 🔹 Patch project icon (owner-only on backend) */
-export async function patchProjectIcon(projectId, icon /* { kind, value } or null */) {
+/** Patch project icon */
+export async function patchProjectIcon(projectId, icon) {
   if (!projectId) throw new Error("projectId is required");
   const { data } = await client.patch(`/projects/${projectId}/icon`, icon ?? null);
-  return data; // { projectId, patch: { icon } }
+  return data;
 }
 
 /* =======================================================================
- *  🔓 Transparency Layer (optional thin wrappers; mirrors src/api/public.js)
+ *  Transparency Layer
  * ======================================================================= */
 
-/** POST /api/public/projects/:id/enable -> { token } */
 export async function enablePublic(projectId) {
   if (!projectId) throw new Error("projectId is required");
   const { data } = await client.post(`/public/projects/${encodeURIComponent(projectId)}/enable`);
   return { token: data?.token };
 }
 
-/** POST /api/public/projects/:id/disable -> { ok:true } */
 export async function disablePublic(projectId) {
   if (!projectId) throw new Error("projectId is required");
   const { data } = await client.post(`/public/projects/${encodeURIComponent(projectId)}/disable`);
   return data ?? { ok: true };
 }
 
-/** POST /api/public/projects/:id/regenerate -> { token } */
 export async function regeneratePublicToken(projectId) {
   if (!projectId) throw new Error("projectId is required");
   const { data } = await client.post(`/public/projects/${encodeURIComponent(projectId)}/regenerate`);
   return { token: data?.token };
 }
 
-/** GET /api/public/projects/:token/status -> sanitized public snapshot */
 export async function getPublicStatus(token) {
   if (!token) throw new Error("token is required");
   const { data } = await client.get(`/public/projects/${encodeURIComponent(token)}/status`);
   return data;
 }
 
-/** Build a relative public status URL (client may absolutize it if needed). */
 export function buildPublicStatusUrl(token) {
   return `/status/${encodeURIComponent(String(token))}`;
+}
+
+/* NEW: DNA Generator */
+function generateDNA(name) {
+  const hash = name.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
+  const colors = ["#6366f1", "#ec4899", "#8b5cf6", "#3b82f6", "#10b981"];
+  const icons = ["Briefcase", "Rocket", "Target", "Lightbulb", "Zap"];
+  return {
+    color: colors[hash % colors.length],
+    icon: icons[hash % icons.length],
+    pulse: (hash % 3) + 1, // 1–3 beats
+  };
 }
