@@ -10,8 +10,8 @@ import "../../styles/chips.css";
  * TaskRow
  * Props:
  *  - task: { _id, id?, title, status?, projectTitle?, scheduleState?, dueDate?, completedAt? }
- *  - onPatch?: (id, patch) => void     // e.g., toggle status
- *  - onPin?: (task) => void            // caller decides pin/unpin
+ *  - onPatch?: (id, patch) => void
+ *  - onPin?: (task) => void
  *  - isPinned?: boolean
  *  - className?: string
  */
@@ -27,7 +27,6 @@ export default function TaskRow({
   const taskId = task._id || task.id;
   const rowId = `task-${taskId || makeAnchorId("task", task?.title || "")}`;
 
-  // Normalize status → boolean done
   const statusStr = String(task.status || "").toLowerCase();
   const isDone =
     statusStr === "done" ||
@@ -44,12 +43,19 @@ export default function TaskRow({
     if (onPin) onPin(task);
   };
 
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData("taskId", taskId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
   return (
     <div
       id={rowId}
       data-task-id={taskId || ""}
       tabIndex={-1}
-      className={`group flex items-center justify-between gap-3 rounded-xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 ${className}`}
+      draggable
+      onDragStart={handleDragStart}
+      className={`group flex items-center justify-between gap-3 rounded-xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 cursor-grab active:cursor-grabbing ${className}`}
     >
       {/* Left: status toggle + title */}
       <div className="flex items-center gap-3 min-w-0">
@@ -75,7 +81,6 @@ export default function TaskRow({
             {task.projectTitle ? (
               <div className="text-[11px] text-slate-500 truncate">{task.projectTitle}</div>
             ) : null}
-            {/* State chip (a11y color-contrast safe) */}
             {task.scheduleState ? (
               <StateChip state={task.scheduleState} className="ml-0" />
             ) : null}
@@ -85,7 +90,6 @@ export default function TaskRow({
 
       {/* Right: actions */}
       <div className="flex items-center gap-1">
-        {/* Copy deep link */}
         <AnchorLinkButton
           anchorId={rowId}
           className="opacity-60 hover:opacity-100"
@@ -93,7 +97,6 @@ export default function TaskRow({
           size="md"
         />
 
-        {/* Pin / Unpin */}
         <button
           type="button"
           onClick={handlePin}
