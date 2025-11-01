@@ -60,7 +60,7 @@ const MentorDock = () => {
 
   return (
     <>
-      <div className={`mentor-dock ${isOpen ? "open" : ""}`}>
+      <div className={`mentor-dock glass ${isOpen ? "open" : ""}`}>
         <button className="mentor-toggle" onClick={() => setIsOpen(!isOpen)}>
           <span className="icon">AI</span>
         </button>
@@ -126,7 +126,6 @@ const MentorDock = () => {
           bottom: 20px;
           right: 20px;
           z-index: 1000;
-          font-family: inherit;
         }
         .mentor-toggle {
           width: 56px;
@@ -146,9 +145,7 @@ const MentorDock = () => {
           bottom: 70px;
           right: 0;
           width: 340px;
-          background: var(--surface, #fff);
           border-radius: 16px;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.15);
           overflow: hidden;
           transform: scale(0);
           transform-origin: bottom right;

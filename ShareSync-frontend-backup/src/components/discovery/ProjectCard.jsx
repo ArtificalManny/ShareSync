@@ -9,9 +9,6 @@ import {
   Clock,
 } from "lucide-react";
 
-/**
- * ProjectCard — used by Discover feed after ranking.
- */
 export default function ProjectCard({ project, to, onOpen }) {
   const {
     id,
@@ -43,7 +40,7 @@ export default function ProjectCard({ project, to, onOpen }) {
   return (
     <Tag
       {...TagProps}
-      className="group relative block rounded-2xl border border-border bg-surface p-3 hover:shadow-sm hover:-translate-y-[1px] transition transform text-left"
+      className="group relative block card glass rounded-2xl p-3 hover:shadow-sm hover:-translate-y-[1px] transition transform text-left"
       title={__explain || undefined}
       aria-label={`${title || "Project"} — score ${fmt(__rank)} — last active ${lastLabel}`}
     >

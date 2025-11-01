@@ -6,15 +6,6 @@ import { makeAnchorId } from "../../utils/anchor";
 import StateChip from "./StateChip";
 import "../../styles/chips.css";
 
-/**
- * TaskRow
- * Props:
- *  - task: { _id, id?, title, status?, projectTitle?, scheduleState?, dueDate?, completedAt? }
- *  - onPatch?: (id, patch) => void
- *  - onPin?: (task) => void
- *  - isPinned?: boolean
- *  - className?: string
- */
 export default function TaskRow({
   task,
   onPatch,
@@ -55,14 +46,14 @@ export default function TaskRow({
       tabIndex={-1}
       draggable
       onDragStart={handleDragStart}
-      className={`group flex items-center justify-between gap-3 rounded-xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 cursor-grab active:cursor-grabbing ${className}`}
+      className={`group card glass flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-grab active:cursor-grabbing ${className}`}
     >
       {/* Left: status toggle + title */}
       <div className="flex items-center gap-3 min-w-0">
         <button
           type="button"
           onClick={toggleDone}
-          className="shrink-0 rounded-full p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          className="shrink-0 rounded-full p-1.5 hover:bg-surface/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           aria-label={isDone ? "Mark as not done" : "Mark as done"}
           title={isDone ? "Mark as not done" : "Mark as done"}
         >
@@ -100,7 +91,7 @@ export default function TaskRow({
         <button
           type="button"
           onClick={handlePin}
-          className="rounded-md p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          className="rounded-md p-1.5 text-slate-500 hover:text-slate-700 hover:bg-surface/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           aria-label={isPinned ? "Unpin task" : "Pin task"}
           title={isPinned ? "Unpin task" : "Pin task"}
         >
