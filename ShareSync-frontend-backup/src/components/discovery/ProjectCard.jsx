@@ -1,199 +1,162 @@
-// /src/components/discovery/ProjectCard.jsx
+// src/components/projects/ProjectCard.jsx
 import React from "react";
-import { Link } from "react-router-dom";
-import {
-  Info,
-  Activity as ActivityIcon,
-  TrendingUp,
-  Heart,
-  Clock,
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { Rocket, Users, Clock } from "lucide-react";
+import AvatarGroup from "../ui/AvatarGroup";
 
-export default function ProjectCard({ project, to, onOpen }) {
-  const {
-    id,
-    title,
-    description,
-    coverUrl,
-    icon,
-    lastActivityAt,
-    metrics = {},
-    __rank,
-    __explain,
-    color,
-    pulse,
-  } = project || {};
+export default function ProjectCard({
+  project,
+  onOpen,
+  onPrefetch,
+  isHovered,
+  onShip,
+}) {
+  const pid = project._id || project.id;
+  const lastTs = project.lastActivityAt || project.updatedAt || project.createdAt;
+  const rawStatus = project.status || '';
+  const key =
+    rawStatus === 'In Progress' ? 'in_progress' :
+    rawStatus === 'Completed'   ? 'completed'   : 'not_started';
 
-  const dest = to || (id ? `/projects/${id}` : "#");
+  const accent = {
+    in_progress: { bar: 'from-indigo-500 via-fuchsia-500 to-pink-500', chip: 'bg-indigo-50 text-indigo-700 border-indigo-200', label: 'In Progress' },
+    completed:   { bar: 'from-emerald-500 via-teal-500 to-cyan-500', chip: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Completed' },
+    not_started: { bar: 'from-slate-400 via-slate-500 to-slate-600', chip: 'bg-slate-50 text-slate-700 border-slate-200', label: 'Not Started' },
+  }[key] || accent.not_started;
 
-  const vel = safeNum(metrics.velocity_30d);
-  const reacts = safeNum(metrics.reactions_14d);
+  const m = project.metrics || {};
+  const onTime = (m.onTimePct ?? m.onTime ?? null);
+  const openTasks = (project.openTasks ?? m.openTasks ?? null);
+  const tput = (m.throughputPerWeek?.value ?? m.tputWk ?? null);
 
-  const last = lastActivityAt ? new Date(lastActivityAt) : null;
-  const lastLabel = last ? relTime(last) : "—";
-
-  const Tag = onOpen ? "button" : Link;
-  const TagProps = onOpen
-    ? { type: "button", onClick: () => onOpen?.(project) }
-    : { to: dest };
+  const members = Array.isArray(project.members) ? project.members.map((u) => ({
+    id: u.id || u._id || u.userId || u.username || u.email,
+    name: u.displayName || u.name || u.username || u.email,
+    avatar: u.avatar || u.avatarUrl || u.photoURL || u.profilePicture || '',
+  })) : [];
 
   return (
-    <Tag
-      {...TagProps}
-      className="group relative block card glass rounded-2xl p-3 hover:shadow-sm hover:-translate-y-[1px] transition transform text-left"
-      title={__explain || undefined}
-      aria-label={`${title || "Project"} — score ${fmt(__rank)} — last active ${lastLabel}`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+      className="relative"
     >
-      {/* DNA + Pulse */}
       <div
-        className="project-dna"
-        style={{ "--pulse": `${pulse || 2}s` }}
+        className="group relative card glass rounded-2xl border border-border bg-surface shadow-sm overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(16,24,40,0.12)] focus-ring cursor-pointer"
+        data-shine
+        role="button"
+        tabIndex={0}
+        aria-label={`Open project ${project.title || 'untitled'}`}
+        onClick={onOpen}
+        onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}
+        onMouseEnter={onPrefetch}
       >
-        <span
-          className="icon"
-          style={{ color: color || "var(--accent)" }}
-        >
-          {icon || "Briefcase"}
-        </span>
-      </div>
-
-      {/* header row */}
-      <div className="flex items-start gap-3">
-        <AvatarSquare src={coverUrl} label={title} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <div className="font-semibold truncate">{title || "Untitled project"}</div>
-            {__explain && (
-              <Info
-                className="w-4 h-4 text-muted shrink-0"
-                aria-hidden="true"
-                title={__explain}
-              />
-            )}
-          </div>
-          {description && (
-            <div className="text-xs text-muted line-clamp-2 mt-0.5">
-              {description}
-            </div>
-          )}
-        </div>
-        {Number.isFinite(__rank) && (
-          <div className="text-right shrink-0">
-            <div className="text-xs text-muted">Score</div>
-            <div className="text-sm font-semibold num">{fmt(__rank)}</div>
-          </div>
-        )}
-      </div>
-
-      {/* metric chips */}
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        <Chip icon={<TrendingUp className="w-3.5 h-3.5" />} label="v30d" value={vel} />
-        <Chip icon={<Heart className="w-3.5 h-3.5" />} label="r14d" value={reacts} />
-        <Chip icon={<Clock className="w-3.5 h-3.5" />} label="last active" value={lastLabel} />
-      </div>
-
-      {/* tiny activity bar */}
-      <div className="mt-3 h-1.5 rounded-full bg-[color-mix(in_srgb, rgb(var(--accent))_12%, transparent)] overflow-hidden">
+        {/* DNA + Pulse */}
         <div
-          className="h-full"
-          style={{
-            width: `${Math.max(4, Math.min(100, (vel / Math.max(1, vel + reacts)) * 100))}%`,
-            background:
-              "linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--info)) 100%)",
-          }}
+          className="project-dna"
+          style={{ "--pulse": `${project.pulse || 2}s` }}
+        >
+          <span
+            className="icon"
+            style={{ color: project.color || "var(--accent)" }}
+          >
+            {project.icon || "Briefcase"}
+          </span>
+        </div>
+
+        {/* Accent bar */}
+        <div
+          className={`absolute left-0 top-0 h-full w-1 origin-left bg-gradient-to-b ${accent.bar} transition-transform duration-300 ease-out group-hover:scale-x-[1.4]`}
           aria-hidden="true"
         />
+
+        {/* Sweep */}
+        <div
+          className="pointer-events-none absolute inset-0 -translate-x-full opacity-0 bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/10 transition duration-700 ease-out group-hover:opacity-100 group-hover:translate-x-full"
+          aria-hidden="true"
+        />
+
+        {/* Main content */}
+        <div className="px-3 sm:px-4 pt-3">
+          <h3 className="text-lg font-semibold truncate">{project.title || "Untitled"}</h3>
+          {project.description && (
+            <p className="text-sm text-muted line-clamp-2 mt-1">{project.description}</p>
+          )}
+        </div>
+
+        {/* Mini KPIs */}
+        <div className="px-3 sm:px-4 py-2 grid grid-cols-2 gap-2">
+          <div className="rounded-md border border-border/60 bg-white/60 dark:bg-slate-900/40 px-2 py-1.5">
+            <div className="text-[10px] text-muted">On-time %</div>
+            <div className="text-sm font-semibold">{onTime ?? '—'}</div>
+          </div>
+          <div className="rounded-md border border-border/60 bg-white/60 dark:bg-slate-900/40 px-2 py-1.5">
+            <div className="text-[10px] text-muted">Open tasks</div>
+            <div className="text-sm font-semibold">{openTasks ?? '—'}</div>
+          </div>
+          <div className="rounded-md border border-border/60 bg-white/60 dark:bg-slate-900/40 px-2 py-1.5 col-span-2">
+            <div className="text-[10px] text-muted">Throughput / wk</div>
+            <div className="text-sm font-semibold">{tput ?? '—'}</div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-t border-border bg-white/60 dark:bg-slate-900/40">
+          <div className="min-w-0 flex items-center gap-3">
+            <AvatarGroup members={members} />
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${accent.chip}`}>
+              <Users className="w-3 h-3" />
+              {accent.label}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted">
+              <Clock className="inline w-3 h-3 mr-1" />
+              {new Date(lastTs).toLocaleDateString()}
+            </span>
+
+            {/* SHIP BUTTON */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShip(project);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-1.5 text-xs font-medium text-white shadow-md hover:shadow-lg transition-all hover:scale-105 focus-ring"
+              aria-label={`Ship project ${project.title}`}
+            >
+              <Rocket className="w-3.5 h-3.5" />
+              Ship
+            </button>
+          </div>
+        </div>
+
+        <style jsx>{`
+          .project-dna {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(6px);
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            z-index: 10;
+          }
+          .project-dna .icon {
+            font-size: 18px;
+            animation: pulse var(--pulse, 2s) infinite;
+          }
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+          }
+        `}</style>
       </div>
-
-      {/* footer */}
-      <div className="mt-3 flex items-center justify-between text-[11px] text-muted">
-        <span className="inline-flex items-center gap-1">
-          <ActivityIcon className="w-3.5 h-3.5" />
-          Discover
-        </span>
-        <span className="underline decoration-dotted group-hover:no-underline">
-          View project
-        </span>
-      </div>
-
-      <style jsx>{`
-        .project-dna {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          width: 36px;
-          height: 36px;
-          border-radius: 12px;
-          background: rgba(255,255,255,0.1);
-          backdrop-filter: blur(6px);
-          display: grid;
-          place-items: center;
-          border: 1px solid rgba(255,255,255,0.2);
-          z-index: 10;
-        }
-        .project-dna .icon {
-          font-size: 18px;
-          animation: pulse var(--pulse, 2s) infinite;
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.2); }
-        }
-      `}</style>
-    </Tag>
+    </motion.div>
   );
-}
-
-function AvatarSquare({ src, label }) {
-  if (!src) {
-    const letter = (label || "?").slice(0, 1).toUpperCase();
-    return (
-      <div
-        className="w-10 h-10 rounded-xl grid place-items-center border border-border bg-surface-100 text-sm font-semibold"
-        aria-hidden="true"
-      >
-        {letter}
-      </div>
-    );
-  }
-  return (
-    <img
-      src={src}
-      alt=""
-      className="w-10 h-10 rounded-xl object-cover border border-border"
-      loading="lazy"
-      decoding="async"
-    />
-  );
-}
-
-function Chip({ icon, label, value }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2 py-0.5 text-[11px]">
-      {icon}
-      <span className="text-muted">{label}</span>
-      <span className="font-medium">{String(isFinite(value) ? value : value ?? "—")}</span>
-    </span>
-  );
-}
-
-function relTime(d) {
-  try {
-    const diff = (Date.now() - d.getTime()) / 1000;
-    if (diff < 60) return "just now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return d.toLocaleDateString();
-  } catch {
-    return "—";
-  }
-}
-
-function safeNum(n) {
-  const v = Number(n);
-  return Number.isFinite(v) ? v : 0;
-}
-function fmt(n) {
-  const v = Number(n);
-  return Number.isFinite(v) ? v.toFixed(2) : "—";
 }

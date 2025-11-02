@@ -17,12 +17,15 @@ import { labelledTimestamp } from '../utils/formatters.js';
 import Page from "../components/layout/Page.jsx";
 import './Projects.css';
 
-import { Users, Clock, Search } from 'lucide-react';
+import { Users, Clock, Search, Rocket } from 'lucide-react';
 import { track } from '../utils/telemetry';
 import { toast } from '../components/ui/toast.jsx';
 
 // Shared avatars with presence dots
 import AvatarGroup from '../components/ui/AvatarGroup.jsx';
+
+// NEW: Ship Celebration
+import ShipCelebration from '../components/momentum/ShipCelebration.jsx';
 
 /** Debounce a value to limit API calls while typing */
 function useDebounce(value, delay = 350) {
@@ -74,7 +77,7 @@ function statusAccent(status) {
 }
 
 /* ───────────────────────── ProjectCard (local) ───────────────────────── */
-function ProjectCard({ project, onOpen, onPrefetch, isHovered }) {
+function ProjectCard({ project, onOpen, onPrefetch, isHovered, onShip }) {
   const pid = project._id || project.id;
   const lastTs = project.lastActivityAt || project.updatedAt || project.createdAt;
   const rawStatus = project.status || '';
@@ -98,7 +101,7 @@ function ProjectCard({ project, onOpen, onPrefetch, isHovered }) {
   return (
     <TraceOutline radius={16} paused={!isHovered}>
       <div
-        className="group relative card glass rounded-2xl border border-border bg-surface shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(16,24,40,0.12)] focus-ring"
+        className="group relative card glass rounded-2xl border border-border bg-surface shadow-sm overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(16,24,40,0.12)] focus-ring"
         data-shine
         role="link"
         tabIndex={0}
@@ -162,12 +165,27 @@ function ProjectCard({ project, onOpen, onPrefetch, isHovered }) {
               {accent.label}
             </span>
           </div>
-          <div
-            className="whitespace-nowrap inline-flex items-center gap-1 timestamp"
-            title={lastTs ? new Date(lastTs).toLocaleString() : undefined}
-          >
-            <Clock className="w-3 h-3" />
-            {labelledTimestamp(lastTs, 'Updated')}
+          <div className="flex items-center gap-2">
+            <div
+              className="whitespace-nowrap inline-flex items-center gap-1 timestamp"
+              title={lastTs ? new Date(lastTs).toLocaleString() : undefined}
+            >
+              <Clock className="w-3 h-3" />
+              {labelledTimestamp(lastTs, 'Updated')}
+            </div>
+
+            {/* SHIP BUTTON */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShip(project);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-1.5 text-xs font-medium text-white shadow-md hover:shadow-lg transition-all hover:scale-105 focus-ring"
+              aria-label={`Ship project ${project.title}`}
+            >
+              <Rocket className="w-3.5 h-3.5" />
+              Ship
+            </button>
           </div>
         </div>
 
@@ -218,6 +236,7 @@ export default function Projects() {
   const [updated, setUpdated] = useState(init.updated);
 
   const [hoverId, setHoverId] = useState(null);
+  const [shipProject, setShipProject] = useState(null);
 
   useEffect(() => {
     const unbind = bindShine(rootRef.current || document);
@@ -334,6 +353,11 @@ export default function Projects() {
     try { performance?.mark?.('ss:nav-project-click'); } catch {}
     try { track('project_card_click', { projectId: id }); } catch {}
     navigate(`/projects/${id}`);
+  };
+
+  const handleShip = (project) => {
+    try { track('project_ship_clicked', { projectId: project._id }); } catch {}
+    setShipProject(project);
   };
 
   return (
@@ -479,6 +503,7 @@ export default function Projects() {
                         setHoverId(pid);
                         prefetchProject(pid);
                       }}
+                      onShip={handleShip}
                     />
                   );
                 })}
@@ -504,6 +529,13 @@ export default function Projects() {
             onProjectCreated={handleProjectCreated}
           />
         )}
+
+        {/* SHIP CELEBRATION */}
+        <ShipCelebration
+          project={shipProject}
+          open={!!shipProject}
+          onClose={() => setShipProject(null)}
+        />
       </div>
     </Page>
   );

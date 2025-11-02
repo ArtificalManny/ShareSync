@@ -46,17 +46,29 @@ export default function AvatarGroup({
         const uid = String(m.userId || m.id || i);
         const name = m.name || m.username || "User";
         const src = m.avatar || m.avatarUrl || m.profilePicture;
+        const online = isOnline?.(uid);
 
         return (
-          <div className="relative inline-block" role="listitem" key={uid} title={name}>
-            <Avatar name={name} src={src} size={size} className="ring-2 ring-white dark:ring-slate-900" />
+          <div
+            className="relative inline-block"
+            role="listitem"
+            key={uid}
+            title={name}
+          >
+            <Avatar
+              name={name}
+              src={src}
+              size={size}
+              className="ring-2 ring-white dark:ring-slate-900"
+            />
             {showPresence && (
               <span
                 className={[
-                  "presence-dot",
-                  isOnline?.(uid) ? "is-online" : "is-away",
+                  "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 transition-all duration-300",
+                  online ? "bg-emerald-400 ring-2 ring-emerald-400/50 animate-pulse" : "bg-slate-400",
                 ].join(" ")}
-                aria-hidden
+                aria-label={online ? "Online" : "Away"}
+                aria-hidden={!online}
               />
             )}
           </div>
