@@ -51,6 +51,8 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 import "./Home.css";
 import TodayCapsule from "../components/home/TodayCapsule.jsx";
+import MomentumScore from "../components/momentum/MomentumScore";
+import AICoachWhisper from "../components/momentum/AICoachWhisper";
 
 const ActivityOverTimeLive = React.lazy(() =>
   import("../components/analytics/ActivityOverTimeLive.jsx")
@@ -910,16 +912,17 @@ export default function Home() {
       {/* Momentum */}
       <div className="card glass p-6">
         <h2 className="text-lg font-semibold mb-4">Your Momentum</h2>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
+        <div className="flex items-center justify-center gap-6">
+          <MomentumScore size="lg" />
+          <div className="text-center">
             <div className="text-3xl font-bold">{stats?.insights?.streakDays || 0}</div>
             <div className="text-xs text-muted">Day Streak</div>
           </div>
-          <div>
+          <div className="text-center">
             <div className="text-3xl font-bold">{stats?.xp || 0}</div>
             <div className="text-xs text-muted">XP Earned</div>
           </div>
-          <div>
+          <div className="text-center">
             <div className="text-3xl font-bold">#{userRank}</div>
             <div className="text-xs text-muted">Leaderboard</div>
           </div>
@@ -935,6 +938,9 @@ export default function Home() {
           Start 25:00 Sprint
         </button>
       </div>
+
+      {/* AI Coach Whisper */}
+      <AICoachWhisper />
     </div>
   );
 }

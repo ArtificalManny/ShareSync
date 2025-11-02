@@ -7,7 +7,7 @@ import { ProjectsService } from './project.service';
 import { Project, ProjectSchema } from './schemas/project.schema';
 import { ProjectPermissionGuard } from './guards/project-permission.guard';
 
-// ⬇️ new invites pieces
+// new invites pieces
 import { InvitesService } from './invites.service';
 import { InvitesController, GlobalInvitesController } from './invites.controller';
 
@@ -27,18 +27,18 @@ import { NotificationsModule } from '../notifications/notifications.module';
   ],
   controllers: [
     ProjectController,
-    InvitesController,          // ⬅️ project-scoped invites routes
-    GlobalInvitesController,    // ⬅️ /invites/accept global endpoint
+    InvitesController,          // project-scoped invites routes
+    GlobalInvitesController,    // /invites/accept global endpoint
   ],
   providers: [
     ProjectsService,
     ProjectPermissionGuard,
-    InvitesService,             // ⬅️ provide invites service
+    InvitesService,             // provide invites service
   ],
   exports: [
-    ProjectsService,
+    ProjectsService,           // EXPORT THIS
     ProjectPermissionGuard,
-    InvitesService,             // ⬅️ export if other modules need it
+    InvitesService,            // export if other modules need it
   ],
 })
 export class ProjectModule {}

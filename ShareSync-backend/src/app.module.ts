@@ -1,3 +1,4 @@
+// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -11,17 +12,17 @@ import { FeedModule } from './feed/feed.module';
 import { ProfileModule } from './profile/profile.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { RealtimeModule } from './realtime/realtime.module';
-import { AnalyticsModule } from './analytics/analytics.module';
+// REMOVED: AnalyticsModule
 import { ModerationModule } from './moderation/moderation.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { StatsModule } from './stats/stats.module';
 import { TasksModule } from './tasks/tasks.module';
 
-// ✅ keep only the new notify module
+// keep only the new notify module
 import { NotifyModule } from './notifications/notify.module';
-// ✅ files module
+// files module
 import { FilesModule } from './files/files.module';
-// ✅ habits module
+// habits module
 import { HabitsModule } from './habits/habits.module';
 
 import { AppController } from './app.controller';
@@ -42,7 +43,7 @@ import { AppController } from './app.controller';
     ProfileModule,
     ActivitiesModule,
     RealtimeModule,
-    AnalyticsModule,
+    // AnalyticsModule,  // REMOVED
     ModerationModule,
     UploadsModule,
     StatsModule,
@@ -50,7 +51,7 @@ import { AppController } from './app.controller';
 
     NotifyModule,
     FilesModule,
-    HabitsModule, // ✅ now wired
+    HabitsModule, // now wired
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
