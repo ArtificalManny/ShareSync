@@ -1,3 +1,4 @@
+// src/projects/project.service.ts
 import {
   Injectable,
   ForbiddenException,
@@ -13,6 +14,7 @@ import {
 } from './schemas/project.schema';
 import { randomBytes } from 'crypto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { MomentumService } from '../momentum/momentum.service';
 
 type Role = ProjectMember['role'];
 const VALID_ROLES: Role[] = ['owner', 'member', 'viewer'];
@@ -39,13 +41,12 @@ export class ProjectsService {
   constructor(
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
     private readonly realtime: RealtimeGateway,
+    private readonly momentum: MomentumService,
   ) {}
 
-  /** Create with safe member normalization; ensures owner presence (by userId). */
   async create(data: Partial<Project> & { userId: string }) {
     const normalizedMembers = normalizeMembers((data as any).members);
 
-    // ensure owner is included in members as 'owner'
     const hasOwnerEntry = normalizedMembers.some(
       (m) => m.userId && String(m.userId) === String(data.userId),
     );
@@ -64,17 +65,15 @@ export class ProjectsService {
       status: data.status ?? 'Not Started',
       privacy: data.privacy ?? 'Private',
       icon: data.icon ?? null,
-      userId: data.userId, // legacy owner field
+      userId: data.userId,
       members: normalizedMembers,
       updatedAt: new Date(),
       createdAt: new Date(),
-      // public fields defaulted by schema
     });
 
     return created.save();
   }
 
-  /** List projects where the user is owner or member. */
   async findAll(userId: string) {
     const q: FilterQuery<ProjectDocument> = {
       $or: [{ userId }, { 'members.userId': userId }],
@@ -87,13 +86,11 @@ export class ProjectsService {
     return this.projectModel.findById(id).lean();
   }
 
-  /** Fetch only if the user is the owner (legacy behavior). */
   async findOneOwned(userId: string, id: string) {
     if (!Types.ObjectId.isValid(id)) return null;
     return this.projectModel.findOne({ _id: id, userId }).lean();
   }
 
-  /** Member-aware fetch (owner OR listed as member). */
   async findOneForUser(userId: string, id: string) {
     if (!Types.ObjectId.isValid(id)) return null;
     return this.projectModel
@@ -104,7 +101,6 @@ export class ProjectsService {
       .lean();
   }
 
-  /** Update members/roles — owner only. */
   async updateMembers(
     projectId: string,
     actingUserId: string,
@@ -112,7 +108,6 @@ export class ProjectsService {
   ) {
     if (!Types.ObjectId.isValid(projectId)) return null;
 
-    // Only owners can manage membership
     const proj = await this.projectModel.findById(projectId).lean();
     if (!proj) return null;
     if (String(proj.userId) !== String(actingUserId)) {
@@ -130,7 +125,6 @@ export class ProjectsService {
         addedAt: m?.addedAt ? new Date(m.addedAt) : new Date(),
       }));
 
-    // Ensure owner remains owner
     if (!members.some((m) => String(m.userId) === String(actingUserId))) {
       members.unshift({
         userId: String(actingUserId),
@@ -154,7 +148,6 @@ export class ProjectsService {
     return updated;
   }
 
-  /** Update project icon — owner only (pass null to clear). */
   async updateIcon(
     projectId: string,
     actingUserId: string,
@@ -193,16 +186,23 @@ export class ProjectsService {
     return updated;
   }
 
-  /* ===========================
-   *  🔓 Public Transparency
-   * =========================== */
+  // NEW: Ship project
+  async shipProject(projectId: string, userId: string) {
+    const project = await this.findOneForUser(userId, projectId);
+    if (!project) throw new NotFoundException('Project not found');
 
+    if (String(project.userId) !== String(userId)) {
+      throw new ForbiddenException('Only the owner can ship the project');
+    }
+
+    return this.momentum.shipProject(projectId, userId);
+  }
+
+  // Public transparency methods (unchanged)
   private generatePublicToken() {
-    // 32 hex chars
     return randomBytes(16).toString('hex');
   }
 
-  /** Enable public status and (if needed) create a token. */
   async enablePublic(projectId: string, actingUserId?: string) {
     if (!Types.ObjectId.isValid(projectId)) {
       throw new NotFoundException('Project not found');
@@ -210,7 +210,6 @@ export class ProjectsService {
     const proj = await this.projectModel.findById(projectId).lean();
     if (!proj) throw new NotFoundException('Project not found');
 
-    // Only owner can toggle public
     if (actingUserId && String(proj.userId) !== String(actingUserId)) {
       throw new ForbiddenException('Only the owner can change public status');
     }
@@ -227,7 +226,6 @@ export class ProjectsService {
       .findByIdAndUpdate(projectId, { $set: patch }, { new: true })
       .lean();
 
-    // Realtime broadcast
     this.realtime.emitProjectPublicChanged(String(projectId), {
       projectId: String(projectId),
       publicEnabled: true,
@@ -237,7 +235,6 @@ export class ProjectsService {
     return { publicEnabled: true, publicToken: token, project: updated };
   }
 
-  /** Disable public status and clear token. */
   async disablePublic(projectId: string, actingUserId?: string) {
     if (!Types.ObjectId.isValid(projectId)) {
       throw new NotFoundException('Project not found');
@@ -268,7 +265,6 @@ export class ProjectsService {
     return { publicEnabled: false, publicToken: null, project: updated };
   }
 
-  /** Regenerate token (ensures publicEnabled=true). */
   async regeneratePublicToken(projectId: string, actingUserId?: string) {
     if (!Types.ObjectId.isValid(projectId)) {
       throw new NotFoundException('Project not found');
@@ -301,7 +297,6 @@ export class ProjectsService {
     return { publicEnabled: true, publicToken: token, project: updated };
   }
 
-  /** Resolve a project by public token (public snapshot). */
   async getPublicSnapshotByToken(token: string) {
     if (!token) return null;
     const proj = await this.projectModel
@@ -310,12 +305,10 @@ export class ProjectsService {
 
     if (!proj) return null;
 
-    // Minimal, public-safe snapshot (extend with KPIs/events if you store them)
     return {
       title: proj.title || 'Untitled Project',
       icon: proj.icon ?? null,
       lastUpdatedAt: proj.updatedAt || proj.createdAt,
-      // Optionally include sanitized KPIs / activity here
       kpis: {},
       activity: [],
     };

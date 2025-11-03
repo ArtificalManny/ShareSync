@@ -2,13 +2,14 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { RealtimeGateway } from './realtime.gateway';
 import { ProjectModule } from '../projects/project.module';
+import { MomentumModule } from '../momentum/momentum.module';
 
 @Module({
   imports: [
-    // only if your gateway needs ProjectsService; keep/remove as your gateway requires
     forwardRef(() => ProjectModule),
+    forwardRef(() => MomentumModule), // NEW
   ],
   providers: [RealtimeGateway],
-  exports: [RealtimeGateway],            // ⬅️ critical
+  exports: [RealtimeGateway],
 })
 export class RealtimeModule {}
