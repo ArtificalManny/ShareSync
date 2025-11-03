@@ -16,3 +16,8 @@ export async function shareToDiscover(projectId) {
     throw err;
   }
 }
+
+// Track ship button click
+export function trackShipClicked(projectId) {
+  track("ship_clicked", { projectId });
+}

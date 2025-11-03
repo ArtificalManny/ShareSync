@@ -1,17 +1,36 @@
 // src/components/momentum/ShipCelebration.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Confetti from "react-confetti";
+import lottie from "lottie-web";
 import { shareToDiscover } from "../../services/ship";
 import { track } from "../../utils/telemetry";
+import { fireConfetti } from "../ui/Confetti";
 
 export default function ShipCelebration({ project, open = false, onClose }) {
-  const [showConfetti, setShowConfetti] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const lottieRef = useRef(null);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (open && containerRef.current) {
+      const anim = lottie.loadAnimation({
+        container: containerRef.current,
+        renderer: "svg",
+        loop: false,
+        autoplay: true,
+        path: "/assets/confetti.json",
+      });
+
+      anim.addEventListener("complete", () => {
+        fireConfetti({ particles: 120, spread: 100, duration: 1400 });
+      });
+
+      return () => anim.destroy();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open) {
-      setShowConfetti(true);
       track("ship_celebration_opened", { projectId: project._id });
     }
   }, [open, project._id]);
@@ -33,29 +52,21 @@ export default function ShipCelebration({ project, open = false, onClose }) {
     <AnimatePresence>
       {open && (
         <>
-          {showConfetti && (
-            <Confetti
-              width={window.innerWidth}
-              height={window.innerHeight}
-              recycle={false}
-              numberOfPieces={200}
-              gravity={0.15}
-              onConfettiComplete={() => setShowConfetti(false)}
-            />
-          )}
+          <div ref={containerRef} className="fixed inset-0 pointer-events-none z-50" />
 
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           >
             <motion.div
               className="bg-gradient-to-br from-purple-600 to-pink-600 p-1 rounded-3xl shadow-2xl"
               onClick={(e) => e.stopPropagation()}
-              initial={{ y: 20 }}
-              animate={{ y: 0 }}
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 20 }}
             >
               <div className="bg-surface rounded-3xl p-8 max-w-md w-full text-center">
                 <motion.div
@@ -63,7 +74,7 @@ export default function ShipCelebration({ project, open = false, onClose }) {
                   transition={{ duration: 0.5, repeat: 2 }}
                   className="text-6xl mb-4"
                 >
-                  
+                  Rocket
                 </motion.div>
                 <h2 className="text-2xl font-bold text-white mb-2">
                   {project.title} Shipped!
