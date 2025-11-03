@@ -3,20 +3,20 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useMomentumScore } from "../../hooks/useMomentumScore";
 
-const getColor = (score) => {
-  if (score >= 90) return "from-emerald-400 to-teal-600";
-  if (score >= 70) return "from-blue-400 to-cyan-600";
-  if (score >= 50) return "from-yellow-400 to-orange-600";
-  return "from-red-400 to-rose-600";
-};
-
 export default function MomentumScore({ size = "lg" }) {
-  const { score, label } = useMomentumScore();
+  const { score, label, isLoading } = useMomentumScore();
+
   const radius = size === "lg" ? 60 : 40;
   const stroke = size === "lg" ? 8 : 6;
   const normalizedRadius = radius - stroke * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset = circumference - (score / 100) * circumference;
+
+  const gradientId = `gradient-${size}`;
+
+  if (isLoading) {
+    return <div className={`w-${size === "lg" ? 32 : 20} h-${size === "lg" ? 32 : 20} bg-white/10 rounded-full animate-pulse`} />;
+  }
 
   return (
     <div className={`relative ${size === "lg" ? "w-32 h-32" : "w-20 h-20"}`}>
@@ -34,7 +34,7 @@ export default function MomentumScore({ size = "lg" }) {
           cy={radius}
         />
         <motion.circle
-          stroke="url(#gradient)"
+          stroke={`url(#${gradientId})`}
           fill="transparent"
           strokeWidth={stroke}
           strokeLinecap="round"
@@ -50,7 +50,7 @@ export default function MomentumScore({ size = "lg" }) {
           transition={{ duration: 1, ease: "easeOut" }}
         />
         <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#8b5cf6" />
             <stop offset="100%" stopColor="#ec4899" />
           </linearGradient>

@@ -1,11 +1,18 @@
 // src/components/momentum/TopTenPulse.jsx
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLeaderboard } from "../../hooks/useLeaderboard";
+import { trackLeaderboardViewed } from "../../utils/telemetry";
 import Avatar from "../ui/Avatar";
 
 export default function TopTenPulse() {
-  const { leaderboard, loading, error } = useLeaderboard();
+  const { leaderboard, loading, error } = useLeaderboard({ limit: 10 });
+
+  useEffect(() => {
+    if (!loading && leaderboard.length > 0) {
+      trackLeaderboardViewed({ count: leaderboard.length });
+    }
+  }, [loading, leaderboard]);
 
   if (loading) {
     return (
@@ -24,6 +31,9 @@ export default function TopTenPulse() {
     return null;
   }
 
+  const me = leaderboard.find(u => u.isMe);
+  const myRank = me ? leaderboard.indexOf(me) + 1 : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -36,16 +46,20 @@ export default function TopTenPulse() {
       </h3>
 
       <div className="space-y-2">
-        {leaderboard.slice(0, 10).map((user, i) => (
+        {leaderboard.map((user, i) => (
           <motion.div
             key={user.id}
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: i * 0.05 }}
-            className="flex items-center gap-3 group"
+            className={`flex items-center gap-3 group ${user.isMe ? 'bg-purple-500/10 rounded-lg p-1' : ''}`}
           >
-            <div className="text-xs font-bold text-purple-400 w-5">
-              {i < 3 ? ["1st", "2nd", "3rd"][i] : `#${i + 1}`}
+            <div className="text-xs font-bold text-purple-400 w-6 text-center">
+              {i < 3 ? (
+                <span className="text-lg">{["1st", "2nd", "3rd"][i]}</span>
+              ) : (
+                `#${i + 1}`
+              )}
             </div>
             <Avatar
               src={user.avatar}
@@ -59,18 +73,13 @@ export default function TopTenPulse() {
                 {user.streak}d streak • {user.xp} XP
               </div>
             </div>
-            {i < 3 && (
-              <span className="text-lg">
-                {i === 0 ? "1st" : i === 1 ? "2nd" : "3rd"}
-              </span>
-            )}
           </motion.div>
         ))}
       </div>
 
-      {leaderboard.find(u => u.isMe) && (
-        <div className="mt-3 pt-3 border-t border-purple-500/30 text-xs text-purple-300">
-          You’re #{leaderboard.findIndex(u => u.isMe) + 1} — keep shipping!
+      {myRank && (
+        <div className="mt-3 pt-3 border-t border-purple-500/30 text-xs text-purple-300 text-center font-medium">
+          You’re #{myRank} — keep shipping!
         </div>
       )}
     </motion.div>
