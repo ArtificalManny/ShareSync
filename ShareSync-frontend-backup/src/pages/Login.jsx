@@ -1,22 +1,17 @@
-// /src/pages/Login.jsx
-import React, { useContext, useState } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
-import { AuthContext } from "../AuthContext";
+// src/pages/Login.jsx
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
-  const { user, login } = useContext(AuthContext);
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  // If already logged in, bounce to home
-  if (user) {
-    return <Navigate to="/home" replace />;
-  }
-
-  async function onSubmit(e) {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
     if (!email || !password) {
@@ -25,7 +20,7 @@ export default function Login() {
     }
     setSubmitting(true);
     try {
-      await login({ email, password }); // sets ss.jwt + ss.user
+      await login({ email, password });
       navigate("/home", { replace: true });
     } catch (err) {
       const msg =
@@ -37,7 +32,7 @@ export default function Login() {
     } finally {
       setSubmitting(false);
     }
-  }
+  };
 
   return (
     <main className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-8 min-h-screen grid place-items-start">

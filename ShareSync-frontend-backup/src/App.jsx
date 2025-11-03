@@ -1,19 +1,17 @@
 // src/App.jsx
-import React, { useContext, Suspense, lazy, useEffect } from "react";
+import React, { useContext, Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
   useLocation,
-  useNavigate,
 } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
-import { AuthProvider, AuthContext } from "./AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 
-// Global styles
 import "./theme.css";
 import "./styles/card.css";
 import "./styles/tokens.css";
@@ -27,8 +25,7 @@ import "./styles/spacing.css";
 import "./styles/chips.css";
 import "./styles/command-palette.css";
 import "./styles/toast.css";
-import "./styles/glass.css"
-
+import "./styles/glass.css";
 import "./styles/focus.css";
 
 import ToastProviderOld, { ToastHost } from "./components/ui/toast";
@@ -55,10 +52,7 @@ import { FocusProvider } from "./context/FocusContext.jsx";
 import FocusDock from "./components/focus/FocusDock.jsx";
 import FocusToasts from "./components/toast/FocusToasts.jsx";
 
-// NEW: Mentor Dock
 import MentorDock from "./components/mentor/MentorDock.jsx";
-
-// NEW: Leaderboard Dock
 import LeaderboardDock from "./components/momentum/LeaderboardDock.jsx";
 
 import PublicRoutes from "./routes/publicRoutes.jsx";
@@ -79,7 +73,6 @@ import useBrandTheme from "./hooks/useBrandTheme.js";
 
 import { scrollToAnchorFromHash } from "./utils/anchor";
 
-// Lazy pages
 const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -99,7 +92,7 @@ const PulseAdmin = lazy(() => import("./pages/admin/PulseAdmin.jsx"));
 
 function ScrollToHash() {
   const location = useLocation();
-  useEffect(() => {
+  React.useEffect(() => {
     const ok = scrollToAnchorFromHash(location.hash);
     if (!ok && location.hash) {
       const t = setTimeout(() => scrollToAnchorFromHash(location.hash), 120);
@@ -109,96 +102,28 @@ function ScrollToHash() {
   return null;
 }
 
-function GuardedRoutes() {
-  const { user, ready } = useContext(AuthContext);
-  const location = useLocation();
-  const navigate = useNavigate();
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
 
-  const openRoutes = [
-    "/login",
-    "/create-account",
-    "/forgot-password",
-    "/p/",
-    "/u/",
-    "/status",
-    "/invite",
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-surface">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    if (!ready) return;
-    const isOpen = openRoutes.some((p) => location.pathname.startsWith(p));
-    if (!isOpen && !user) navigate("/login", { replace: true });
-  }, [user, ready, location.pathname, navigate]);
-
-  return (
-    <Suspense fallback={<div className="px-6 py-10 text-center text-slate-500">Loading page…</div>}>
-      <ScrollToHash />
-      <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/projects/:id" element={<ProjectHome />} />
-        <Route path="/settings" element={<Settings />} />
-
-        <Route path="/login" element={<Login />} />
-        <Route path="/create-account" element={<CreateAccount />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/profile/:username" element={<Profile />} />
-        <Route path="/me" element={<Profile />} />
-
-        {PUBLIC_PAGES_V1 && <PublicRoutes />}
-
-        <Route path="/status/:token" element={<PublicProjectStatus />} />
-
-        <Route path="/messages" element={<DMPage />} />
-        <Route path="/messages/:id" element={<DMPage />} />
-
-        <Route path="/invite/accept" element={<AcceptInvite />} />
-
-        <Route path="/search" element={<SearchPage />} />
-
-        <Route
-          path="/discover"
-          element={DISCOVERY_V1 ? <Discover /> : <Navigate to="/home" replace />}
-        />
-
-        <Route
-          path="/import"
-          element={
-            <FeatureGate flag={IMPORT_WIZARD_V1} fallback={<Navigate to="/home" replace />}>
-              <ImportWizard />
-            </FeatureGate>
-          }
-        />
-
-        <Route
-          path="/admin/console"
-          element={
-            <FeatureGate flag={ADMIN_CONSOLE_V1} fallback={<Navigate to="/home" replace />}>
-              <AdminConsole />
-            </FeatureGate>
-          }
-        />
-
-        <Route
-          path="/admin/pulse"
-          element={
-            <FeatureGate flag={PULSE_ADMIN_V1} fallback={<Navigate to="/home" replace />}>
-              <PulseAdmin />
-            </FeatureGate>
-          }
-        />
-
-        <Route path="*" element={<Navigate to="/home" replace />} />
-      </Routes>
-    </Suspense>
-  );
+  return user ? children : <Navigate to="/login" replace />;
 }
 
-const AppRoutes = () => {
-  const { user: authUser, logout } = useContext(AuthContext);
+function PublicOnlyRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user ? <Navigate to="/" replace /> : children;
+}
+
+function AppRoutes() {
+  const { user: authUser, logout } = useAuth();
   const { user: profileUser } = useContext(UserContext);
   const navbarUser = profileUser || authUser;
 
@@ -208,8 +133,74 @@ const AppRoutes = () => {
       <Navbar user={navbarUser} onLogout={logout} />
 
       <ChatProvider userId={navbarUser?._id || navbarUser?.id}>
-        <div id="main" role="main" className="main-content with-sidebar">
-          <GuardedRoutes />
+      <div role="main" className="main-content with-sidebar">
+          <Suspense fallback={<div className="px-6 py-10 text-center text-slate-500">Loading page…</div>}>
+            <ScrollToHash />
+            <Routes>
+              <Route path="/" element={<Navigate to="/home" replace />} />
+              <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+              <Route path="/projects/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+
+              <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+              <Route path="/create-account" element={<PublicOnlyRoute><CreateAccount /></PublicOnlyRoute>} />
+              <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/profile/:username" element={<Profile />} />
+              <Route path="/me" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+              {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
+              <Route path="/status/:token" element={<PublicProjectStatus />} />
+
+              <Route path="/messages" element={<ProtectedRoute><DMPage /></ProtectedRoute>} />
+              <Route path="/messages/:id" element={<ProtectedRoute><DMPage /></ProtectedRoute>} />
+
+              <Route path="/invite/accept" element={<AcceptInvite />} />
+              <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
+
+              <Route
+                path="/discover"
+                element={
+                  DISCOVERY_V1 ? (
+                    <ProtectedRoute><Discover /></ProtectedRoute>
+                  ) : (
+                    <Navigate to="/home" replace />
+                  )
+                }
+              />
+
+              <Route
+                path="/import"
+                element={
+                  <FeatureGate flag={IMPORT_WIZARD_V1} fallback={<Navigate to="/home" replace />}>
+                    <ProtectedRoute><ImportWizard /></ProtectedRoute>
+                  </FeatureGate>
+                }
+              />
+
+              <Route
+                path="/admin/console"
+                element={
+                  <FeatureGate flag={ADMIN_CONSOLE_V1} fallback={<Navigate to="/home" replace />}>
+                    <ProtectedRoute><AdminConsole /></ProtectedRoute>
+                  </FeatureGate>
+                }
+              />
+
+              <Route
+                path="/admin/pulse"
+                element={
+                  <FeatureGate flag={PULSE_ADMIN_V1} fallback={<Navigate to="/home" replace />}>
+                    <ProtectedRoute><PulseAdmin /></ProtectedRoute>
+                  </FeatureGate>
+                }
+              />
+
+              <Route path="*" element={<Navigate to="/home" replace />} />
+            </Routes>
+          </Suspense>
         </div>
         {MESSENGER_V1 && <MessengerPanel />}
       </ChatProvider>
@@ -217,7 +208,7 @@ const AppRoutes = () => {
       <ToastHost />
     </>
   );
-};
+}
 
 const App = () => {
   const { containerAttrs } = useBrandTheme({

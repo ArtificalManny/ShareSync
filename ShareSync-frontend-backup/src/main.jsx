@@ -1,20 +1,19 @@
 // src/main.jsx
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App.jsx';
-import './index.css';
-import './theme.css';
-import './styles/gradients.css';
-import './styles/motion.css';
-import './registerSW.js';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.jsx";
+import "./index.css";
+import "./theme.css";
+import "./styles/gradients.css";
+import "./styles/motion.css";
+import "./registerSW.js";
 
-if (import.meta.env.MODE !== 'production') {
-  import('./utils/perfLog.js');
+if (import.meta.env.MODE !== "production") {
+  import("./utils/perfLog.js");
 }
 
 // === PREVENT SKIP-TO-CONTENT FLASH + FIX 500 ERROR ===
 const fixSkipLinkAndErrors = () => {
-  // 1. Hide skip link immediately
   const skipLink = document.querySelector('a[href="#main"]');
   if (skipLink) {
     skipLink.style.cssText = `
@@ -29,32 +28,35 @@ const fixSkipLinkAndErrors = () => {
     `;
   }
 
-  // 2. Fix 500 error on main.jsx (CORS/socket.io)
-  // Suppress noisy errors in dev
   const originalError = console.error;
   console.error = (...args) => {
     const msg = args[0];
     if (
-      typeof msg === 'string' &&
-      (msg.includes('main.jsx') ||
-       msg.includes('manifest.webmanifest') ||
-       msg.includes('socket.io') ||
-       msg.includes('CORS') ||
-       msg.includes('ERR_ABORTED'))
+      typeof msg === "string" &&
+      (msg.includes("main.jsx") ||
+        msg.includes("manifest.webmanifest") ||
+        msg.includes("socket.io") ||
+        msg.includes("CORS") ||
+        msg.includes("ERR_ABORTED"))
     ) {
-      return; // silence
+      return;
     }
     originalError.apply(console, args);
   };
 };
 
-// Run before React
+// Run **immediately** (before React)
 fixSkipLinkAndErrors();
 
-// Re-run after hydration
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+// Wait for DOM + auth hydration
+document.addEventListener("DOMContentLoaded", () => {
+  const rootElement = document.getElementById("root");
+  if (rootElement) {
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  }
+});
 
-// Final safety net
+// Final safety net (after render)
 setTimeout(fixSkipLinkAndErrors, 0);
 setTimeout(fixSkipLinkAndErrors, 100);

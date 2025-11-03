@@ -63,15 +63,20 @@
     />
   </head>
   <body>
-    <!-- Skip link should be first focusable element -->
+    <!-- Skip link (hidden from start) -->
     <a
       href="#main"
       class="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:top-3 focus:left-3 focus:bg-white focus:text-slate-900 focus:px-3 focus:py-2 focus:rounded-md focus:ring-2"
+      aria-hidden="true"
     >
       Skip to main content
     </a>
 
     <div id="root"></div>
+
+    <!-- Main content area -->
+    <main id="main" tabindex="-1" class="min-h-screen"></main>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
