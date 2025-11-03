@@ -14,10 +14,10 @@ import {
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
 
-// ADD .jsx TO ALL MOMENTUM IMPORTS
+// FIXED: Correct relative paths from src/components/layout/
 import StreakFlame from "./momentum/StreakFlame.jsx";
-import TopTenPulse from "./momentum/TopTenPulse.jsx";
 import CoWorkingAvatars from "./momentum/CoWorkingAvatars.jsx";
+import LeaderboardDock from "./momentum/LeaderboardDock.jsx";
 
 import "./Sidebar.css";
 import "./Sidebar.neon.css";
@@ -26,7 +26,6 @@ import { track } from "../utils/telemetry";
 import { DISCOVERY_V1, ADMIN_CONSOLE_V1 } from "../config/flags";
 import useBrandTheme from "../hooks/useBrandTheme";
 
-// ... rest of file stays 100% the same
 const LS_KEY = "ss.sidebar.collapsed";
 
 export default function Sidebar() {
@@ -231,7 +230,7 @@ export default function Sidebar() {
           <StreakFlame size={36} showCountdown={!collapsed} />
           {!collapsed && <CoWorkingAvatars />}
         </div>
-        <TopTenPulse />
+        <LeaderboardDock />
       </div>
 
       <div className="sb-spacer" />
