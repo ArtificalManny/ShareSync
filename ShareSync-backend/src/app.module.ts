@@ -12,6 +12,7 @@ import { FeedModule } from './feed/feed.module';
 import { ProfileModule } from './profile/profile.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { MomentumModule } from 'momentum/momentum.module';
 // REMOVED: AnalyticsModule
 import { ModerationModule } from './moderation/moderation.module';
 import { UploadsModule } from './uploads/uploads.module';
@@ -48,7 +49,7 @@ import { AppController } from './app.controller';
     UploadsModule,
     StatsModule,
     TasksModule,
-
+    MomentumModule,
     NotifyModule,
     FilesModule,
     HabitsModule, // now wired

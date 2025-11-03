@@ -140,3 +140,17 @@ export function labelledTimestamp(dateish, prefix = "Updated") {
   const rel = formatRelativeTime(dateish);
   return rel ? `${prefix} ${rel}` : "";
 }
+
+// ─────────────────────────────────────────────────────────────
+// NEW MOMENTUM FORMATTERS
+// ─────────────────────────────────────────────────────────────
+export function formatMomentumScore(score) {
+  if (typeof score !== "number") return "—";
+  const s = Math.max(0, Math.min(100, Math.round(score)));
+  return `${s}`;
+}
+
+export function formatStreakDays(days) {
+  if (typeof days !== "number") return "0d";
+  return `${days}d`;
+}

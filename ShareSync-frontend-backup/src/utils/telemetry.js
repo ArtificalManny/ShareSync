@@ -62,41 +62,41 @@ export function trackSidebarToggled(collapsed) {
   track("sidebar_toggled", { collapsed: Boolean(collapsed) });
 }
 
-// ✅ Mentor typed helpers
+// Mentor typed helpers
 export const trackMentorNudgeShown   = (props = {}) => track("mentor_nudge_shown", props);
 export const trackMentorNudgeClicked = (props = {}) => track("mentor_nudge_clicked", props);
 export const trackMentorDismissed    = (props = {}) => track("mentor_dismissed", props);
 export const trackMentorSettings     = (props = {}) => track("mentor_settings_changed", props);
 
-// ✅ NEW: Calendar & accountability typed helpers
+// Calendar & accountability typed helpers
 export const trackCalendarLinked             = (props = {}) => track("calendar_linked", props);
 export const trackScheduleCreated            = (props = {}) => track("schedule_created", props);
 export const trackAccountabilityStateChanged = (props = {}) => track("accountability_state_changed", props);
 export const trackXpAwardedPunctual          = (props = {}) => track("xp_awarded_punctual", props);
 
-// ✅ NEW: Posts/mentions helpers
+// Posts/mentions helpers
 export const trackPostCreated    = (props = {}) => track("post_created", props);
 export const trackPostReacted    = (props = {}) => track("post_reacted", props);
 export const trackPostCommented  = (props = {}) => track("post_commented", props);
 export const trackMentionSent    = (props = {}) => track("mention_sent", props);
 
-// NEW: Search & discoverability helpers
+// Search & discoverability helpers
 export const trackSearchUsed             = (props = {}) => track("search_used", props);
 export const trackSearchFilterApplied    = (props = {}) => track("search_filter_applied", props);
 export const trackProfileDiscoverToggle  = (props = {}) => track("profile_discover_toggle", props);
 export const trackProjectDiscoverToggle  = (props = {}) => track("project_discover_toggle", props);
 
-// NEW: Messenger / Chat helpers
+// Messenger / Chat helpers
 export const trackDmSent            = (props = {}) => track("dm_sent", props);
 export const trackChatMessage       = (props = {}) => track("chat_message", props);
 export const trackChatReaction      = (props = {}) => track("chat_reaction", props);
 export const trackChatSummarized    = (props = {}) => track("chat_summarized", props);
 export const trackMessengerToggled  = (props = {}) => track("messenger_toggled", props);
 
-// ✅ NEW: Brand switcher telemetry
+// Brand switcher telemetry
 export const trackBrandSwitched     = (props = {}) => track("brand_switched", props);
 
-// ✅ NEW: Admin Console telemetry
+// Admin Console telemetry
 export const trackAdminConsoleOpened        = (props = {}) => track("admin_console_opened", props);
 export const trackAdminConsoleTabChanged    = (props = {}) => track("admin_console_tab_changed", props);
 export const trackAdminConsoleFilterChanged = (props = {}) => track("admin_console_filter_changed", props);
@@ -109,7 +109,7 @@ export const trackAdminCsvExported       = (props = {}) => track("admin_csv_expo
 // Optional, if you add CSV export per tab
 export const trackAdminConsoleExportClicked = (props = {}) => track("admin_console_export_clicked", props);
 
-// ✅ NEW: Import wizard helpers
+// Import wizard helpers
 export const trackImportStarted       = (props = {}) => track("import_started", props);
 export const trackImportPreviewShown  = (props = {}) => track("import_preview_shown", props);
 export const trackImportConfirmed     = (props = {}) => track("import_confirmed", props);
@@ -121,13 +121,9 @@ export const trackImportCtaClicked    = (props = {}) => track("import_cta_clicke
 export const trackPresenceHeartbeatSent = (props = {}) => track("presence_heartbeat_sent", props);
 export const trackPresenceMemberSeen    = (props = {}) => track("presence_member_seen", props);
 
-// ✅ NEW: Home polish telemetry
+// Home polish telemetry
 export const trackKpiStripViewed   = (props = {}) => track("kpi_strip_viewed", props);
 export const trackFeedTabChanged   = (props = {}) => track("feed_tab_changed", props);
-
-// ────────────────────────────────────────────────────────────────────────────
-// 🚀 NEW GROUPS matching the features you just wired
-// ────────────────────────────────────────────────────────────────────────────
 
 // Focus Dock (Plan → Focus → Share loop)
 export const trackFocusStartClicked  = (props = {}) => track("focus_start_clicked", props);
@@ -173,6 +169,13 @@ export const trackProjectMarkRead   = (props = {}) => track("project_mark_read",
 
 // Sprint share toggle (from SprintCompleteModal)
 export const trackShareToggleUsed   = (props = {}) => track("share_toggle_used", props);
+
+// ────────────────────────────────────────────────────────────────────────────
+// NEW MOMENTUM TELEMETRY
+// ────────────────────────────────────────────────────────────────────────────
+export const trackStreakViewed      = (props = {}) => track("streak_viewed", props);
+export const trackLeaderboardViewed = (props = {}) => track("leaderboard_viewed", props);
+export const trackShipClicked       = (props = {}) => track("ship_clicked", props);
 
 // ────────────────────────────────────────────────────────────────────────────
 // Internal: simple ephemeral session id (tab-scoped)
@@ -256,7 +259,7 @@ export default {
   trackKpiStripViewed,
   trackFeedTabChanged,
 
-  // NEW groups you added
+  // Focus Dock
   trackFocusStartClicked,
   trackFocusPaused,
   trackFocusResumed,
@@ -264,32 +267,45 @@ export default {
   trackFocusCompleted,
   trackFocusUpdatePosted,
 
+  // KPI interactions
   trackKpiTickerOpened,
   trackKpiDeltaHovered,
   trackKpiPointOpened,
   trackKpiCommentAdded,
 
+  // Today Capsule
   trackTodayCapsuleActionStarted,
   trackTodayCapsuleDismissed,
 
+  // ETA Explainer
   trackEtaExplainerOpened,
   trackEtaReasonExpanded,
 
+  // Focus awareness
   trackFocusJoinClicked,
   trackFocusToastSeen,
 
+  // Social mini
   trackFollowClicked,
   trackUnfollowClicked,
   trackReactionClicked,
 
+  // Public pages
   trackPublicToggleEnabled,
   trackPublicToggleDisabled,
   trackPublicLinkRegenerated,
   trackPublicLinkCopied,
   trackPublicPageViewed,
 
+  // Project
   trackProjectSeen,
   trackProjectMarkRead,
 
+  // Sprint share
   trackShareToggleUsed,
+
+  // Momentum
+  trackStreakViewed,
+  trackLeaderboardViewed,
+  trackShipClicked,
 };

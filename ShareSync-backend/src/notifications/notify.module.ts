@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { NotifyService } from './notify.service';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { ProjectModule } from '../projects/project.module';
-import { User, UserSchema } from '../user/user.schema';
+import { User, UserSchema } from '../user/schemas/user.schema';
 
 @Module({
   imports: [

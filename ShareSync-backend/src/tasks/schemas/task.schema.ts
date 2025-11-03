@@ -1,36 +1,43 @@
+// src/tasks/schemas/task.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
-export type TaskDocument = Task & Document;
-
-export type TaskStatus = 'Not Started' | 'In Progress' | 'Completed';
+export type TaskStatus = 'todo' | 'in_progress' | 'completed';
 
 @Schema({ timestamps: true })
-export class Task {
+export class Task extends Document {
   @Prop({ required: true })
   title: string;
 
-  @Prop({
-    required: true,
-    enum: ['Not Started', 'In Progress', 'Completed'],
-    default: 'Not Started',
-  })
+  @Prop()
+  description?: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'Project', required: true })
+  projectId: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  assigneeId?: Types.ObjectId;
+
+  @Prop({ enum: ['todo', 'in_progress', 'completed'], default: 'todo' })
   status: TaskStatus;
 
-  @Prop() description?: string;
-  @Prop() dueDate?: Date;
-  @Prop([String]) labels?: string[];
-  @Prop() notes?: string;
+  @Prop()
+  dueDate?: Date;
 
-  /** Project this task belongs to */
-  @Prop({ required: true })
-  projectId: string;
+  @Prop()
+  completedAt?: Date;
 
-  /** Optional assignee */
-  @Prop() assigneeId?: string;
-
-  /** Who created it */
-  @Prop() createdBy?: string;
+  @Prop({ type: [Types.ObjectId], ref: 'User', default: [] })
+  watchers: Types.ObjectId[];
 }
 
+export type TaskDocument = Task & Document;
 export const TaskSchema = SchemaFactory.createForClass(Task);
+
+// Auto-set completedAt when status changes to 'completed'
+TaskSchema.pre('save', function (next) {
+  if (this.isModified('status') && this.status === 'completed' && !this.completedAt) {
+    this.completedAt = new Date();
+  }
+  next();
+});

@@ -1,12 +1,8 @@
+// src/audit/audit.service.ts
 import { Injectable, Logger } from '@nestjs/common';
-
-/**
- * AuditService
- * Thin facade that exposes audit/system events in a way ActivitiesService can consume.
- * If you already have an audit repository, inject it here and adapt the mapping.
- *
- * This file is optional unless you need to centrally merge audit events into /activities.
- */
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Audit, AuditDocument } from './schemas/audit.schema';
 
 export type AuditListParams = {
   projectId?: string;
@@ -14,12 +10,12 @@ export type AuditListParams = {
   range?: '24h' | '7d' | '30d' | 'all';
   cursor?: string | null;
   limit?: number;
-  types?: string[]; // e.g., ['member_joined','permission']
+  types?: string[];
 };
 
 export type UnifiedAuditItem = {
   _id: string;
-  type: string;      // normalized like 'audit.member_joined'
+  type: string;
   text?: string;
   summary?: string;
   meta?: Record<string, any>;
@@ -32,35 +28,15 @@ export type UnifiedAuditItem = {
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
 
-  // constructor(private readonly repo: YourAuditRepo) {}
+  constructor(@InjectModel(Audit.name) private auditModel: Model<AuditDocument>) {}
 
-  /**
-   * List audit/system events, returning a page of items plus a nextCursor if more.
-   * Replace the mock implementation with your datastore queries.
-   */
   async list(params: AuditListParams): Promise<{ items: UnifiedAuditItem[]; nextCursor: string | null }> {
     const { limit = 20 } = params;
-
-    // TODO: Replace with real query. This is a safe placeholder so wiring compiles.
     const items: UnifiedAuditItem[] = [];
-
-    // Example mapping:
-    // const raw = await this.repo.find({ ...params });
-    // const items = raw.map(r => ({
-    //   _id: String(r._id),
-    //   type: `audit.${r.kind}`, // normalize
-    //   summary: r.message,
-    //   meta: r.meta ?? {},
-    //   projectId: r.projectId,
-    //   userId: r.userId,
-    //   createdAt: r.createdAt ?? new Date().toISOString(),
-    // }));
-
     const nextCursor = items.length === limit ? 'next-cursor-token' : null;
     return { items, nextCursor };
   }
 
-  /** Convert audit items into CSV lines (optional helper). */
   toCsv(items: UnifiedAuditItem[]): string {
     const headers = ['id', 'type', 'summary', 'projectId', 'userId', 'createdAt'];
     const rows = items.map((i) =>
@@ -76,5 +52,19 @@ export class AuditService {
         .join(',')
     );
     return `${headers.join(',')}\n${rows.join('\n')}\n`;
+  }
+
+  async logProjectShipped(projectId: string, userId: string, project: any) {
+    const audit = new this.auditModel({
+      type: 'project_shipped',
+      actor: { id: userId },
+      target: { id: projectId, type: 'project' },
+      action: 'shipped',
+      meta: {
+        projectTitle: project.title,
+        shippedAt: new Date(),
+      },
+    });
+    return audit.save();
   }
 }

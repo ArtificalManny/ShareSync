@@ -4,7 +4,7 @@ import { MulterModule }    from '@nestjs/platform-express'
 import { MongooseModule }  from '@nestjs/mongoose'
 import { ProfileController } from './profile.controller'
 import { ProfileService }    from './profile.service'
-import { User, UserSchema }  from '../user/user.schema'
+import { User, UserSchema }  from '../user/schemas/user.schema'
 
 @Module({
   imports: [

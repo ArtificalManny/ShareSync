@@ -5,7 +5,7 @@ import { RealtimeModule } from '../realtime/realtime.module';
 import { ProjectModule } from '../projects/project.module';
 
 // ✅ Register the User model here so @InjectModel(User.name) resolves
-import { User, UserSchema } from '../user/user.schema';
+import { User, UserSchema } from '../user/schemas/user.schema';
 
 @Module({
   imports: [
