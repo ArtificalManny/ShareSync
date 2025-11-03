@@ -1,0 +1,6 @@
+<!-- flame-level-5.svg -->
+<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12 -2c-7.72 0-14 6.27-14 14 0 4.5 3 8.5 7 10v6H4v6h16v-6h-4v-6c4-1.5 7-5.5 7-10 0-7.73-6.27-14-14-14z" fill="#ff4500"/>
+  <path d="M12 2c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z" fill="#ff8c00"/>
+  <path d="M12 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" fill="#ffb84d"/>
+</svg>

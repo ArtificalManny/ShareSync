@@ -1,0 +1,14 @@
+<!-- flame-level-10.svg (MAX) -->
+<svg width="64" height="64" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#ff4500" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M16 -4c-10.5 0-19 8.5-19 19 0 6 4 11 10 13v8H5v8h22v-8h-7v-8c6-2 10-7 10-13 0-10.5-8.5-19-19-19z" fill="#ff4500"/>
+  <path d="M16 0c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8z" fill="#ff8c00"/>
+  <path d="M16 4c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z" fill="#ffb84d"/>
+  <circle cx="16" cy="8" r="3" fill="#fff" opacity="0.6"/>
+  <circle cx="16" cy="8" r="6" fill="url(#glow)"/>
+</svg>

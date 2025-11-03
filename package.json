@@ -28,6 +28,7 @@
     "express": "^5.1.0",
     "framer-motion": "^12.23.9",
     "jsonwebtoken": "^9.0.2",
+    "lottie-web": "^5.13.0",
     "lucide-react": "^0.252.0",
     "mongoose": "^8.15.0",
     "particles.js": "^2.0.0",

@@ -91,6 +91,13 @@ export const PUBLIC_PAGES_V1 = flag('PUBLIC_PAGES_V1', 'VITE_FEATURE_PUBLIC_PAGE
 export const SOCIAL_MINI_V1 = flag('SOCIAL_MINI_V1', 'VITE_FEATURE_SOCIAL_MINI_V1', false);
 
 // ─────────────────────────────────────────────────────────────
+// NEW MOMENTUM FLAGS
+// ─────────────────────────────────────────────────────────────
+export const STREAK_FLAME_V1    = flag('STREAK_FLAME_V1',    'VITE_FEATURE_STREAK_FLAME_V1',    true);
+export const TOP_TEN_PULSE_V1   = flag('TOP_TEN_PULSE_V1',   'VITE_FEATURE_TOP_TEN_PULSE_V1',   true);
+export const MOMENTUM_SCORE_V1  = flag('MOMENTUM_SCORE_V1',  'VITE_FEATURE_MOMENTUM_SCORE_V1',  true);
+
+// ─────────────────────────────────────────────────────────────
 
 export const FLAGS = {
   TRANSPARENCY_ENABLED,
@@ -122,6 +129,11 @@ export const FLAGS = {
   PUBLIC_PAGES_V1,
   SOCIAL_MINI_V1,
   REACTIONS_V1,
+
+  // Momentum
+  STREAK_FLAME_V1,
+  TOP_TEN_PULSE_V1,
+  MOMENTUM_SCORE_V1,
 
   // SSO (for dashboards)
   SSO_ENABLED,
