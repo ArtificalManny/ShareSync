@@ -8,10 +8,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Single, global "/api" prefix for every controller
   app.setGlobalPrefix('api');
 
-  // CORS for dev/preview
+  // CORS for HTTP + WebSocket
   app.enableCors({
     origin: [
       'http://localhost:54693',
@@ -24,12 +23,10 @@ async function bootstrap() {
     maxAge: 86400,
   });
 
-  // Static uploads (if you use them)
   app.useStaticAssets(join(__dirname, '..', 'uploads'));
 
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   await app.listen(port);
-  // eslint-disable-next-line no-console
   console.log(`[Nest] API running at http://localhost:${port}`);
 }
 

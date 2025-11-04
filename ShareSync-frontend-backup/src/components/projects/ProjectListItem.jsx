@@ -1,13 +1,13 @@
+// src/components/projects/ProjectListItem.jsx
 import React, { useEffect, useMemo, useRef } from "react";
 import { Users, Clock, Link2 } from "lucide-react";
-import AvatarGroup from "../AvatarGroup.jsx";
+import AvatarGroup from "../ui/AvatarGroup.jsx";
 import StatusPill from "./StatusPill.jsx";
 import AnimatedRing from "../ui/AnimatedRing";
 import useRecentFlag from "../../hooks/useRecentFlag";
 import useReducedMotion from "../../hooks/useReducedMotion";
 import { formatRelativeTime } from "../../utils/formatters";
 import Button from "../ui/Button.jsx";
-
 
 // lazy import so first paint is fast; we call this on hover/focus
 let _prefetchStats = null;
@@ -57,7 +57,7 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
   const status = (project?.status || "In Progress").toString();
   const publicEnabled = !!(project?.publicEnabled || project?.publicToken);
 
-  // 🔷 icon support (emoji or preset svg)
+  // icon support (emoji or preset svg)
   const icon = project?.icon || null;
 
   const members = Array.isArray(project?.members) && project.members.length
@@ -103,7 +103,7 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
       {/* Header: icon + title + avatars */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex items-center gap-2">
-          {/* 🔷 Icon (emoji/svg) with recent halo */}
+          {/* Icon (emoji/svg) with recent halo */}
           <span className="relative shrink-0 h-7 w-7 rounded-lg grid place-content-center bg-slate-50 dark:bg-slate-800 text-xl">
             {/* Animated ring around icon if recent + not reduced motion */}
             {hasRecent && !prefersReduced && (
