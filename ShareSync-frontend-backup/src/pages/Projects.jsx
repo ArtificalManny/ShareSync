@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import ProjectsCreate from './ProjectsCreate.jsx';
-import ProjectListItem from '../components/projects/ProjectListItem.jsx';
+import ProjectCard from '../components/discovery/ProjectCard.jsx';
 import SkeletonBlock from '../components/skeleton/SkeletonBlock.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import RightRail from '../components/projects/RightRail.jsx';
@@ -13,21 +13,15 @@ import TraceOutline from '../components/ui/TraceOutline.jsx';
 import { bindShine } from '../utils/shine';
 import GradientText from '../components/ui/GradientText.jsx';
 import GradientPanel from "../components/frame/GradientPanel.jsx";
-import { labelledTimestamp } from '../utils/formatters.js';
 import Page from "../components/layout/Page.jsx";
 import './Projects.css';
 
-import { Users, Clock, Search, Rocket } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { track } from '../utils/telemetry';
 import { toast } from '../components/ui/toast.jsx';
 
-import AvatarGroup from '../components/ui/AvatarGroup.jsx';
-import ShipCelebration from '../components/momentum/ShipCelebration.jsx';
-
-// NEW: Import shared utils
 import { useDebounce, readParams, writeParams } from '../utils/urlParams';
 
-/* ────────────────────────────── EARLY RETURN ────────────────────────────── */
 export default function Projects() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -47,7 +41,6 @@ export default function Projects() {
   const [hoverId, setHoverId] = useState(null);
   const [shipProject, setShipProject] = useState(null);
 
-  /* ────────────────────────────── NULL GUARD ────────────────────────────── */
   if (!window.__SS_USER) {
     return (
       <Page>
@@ -60,7 +53,6 @@ export default function Projects() {
 
   const meId = window.__SS_USER.id || window.__SS_USER._id;
 
-  /* ────────────────────────────── REST OF FILE ────────────────────────────── */
   useEffect(() => {
     const unbind = bindShine(rootRef.current || document);
     return () => unbind();
@@ -161,33 +153,29 @@ export default function Projects() {
     setShowCreate(false);
     if (newProject) {
       setProjects((prev) => [newProject, ...prev]);
-      try { toast({ title: 'Project created', variant: 'success' }); } catch {}
-      try { track('project_created', { projectId: newProject._id || newProject.id }); } catch {}
+      toast({ title: 'Project created', variant: 'success' });
+      track('project_created', { projectId: newProject._id });
+      navigate(`/projects/${newProject._id}`);
     }
   };
 
   const prefetchProject = (id) => {
-    try { track('project_card_hover', { projectId: id }); } catch {}
+    track('project_card_hover', { projectId: id });
   };
 
   const goToProject = (id) => {
-    try { performance?.mark?.('ss:nav-project-click'); } catch {}
-    try { track('project_card_click', { projectId: id }); } catch {}
+    track('project_card_click', { projectId: id });
     navigate(`/projects/${id}`);
   };
 
   const handleShip = (project) => {
-    try { track('project_ship_clicked', { projectId: project._id }); } catch {}
+    track('project_ship_clicked', { projectId: project._id });
     setShipProject(project);
   };
 
   return (
     <Page>
-      <div
-        ref={rootRef}
-        data-accent="emerald"
-        className="px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto"
-      >
+      <div ref={rootRef} className="px-4 sm:px-6 lg:px-8 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
         <h1 className="h-hero">Projects</h1>
         <p className="h-sub mt-1">Organize work by outcomes, track momentum.</p>
 
@@ -199,9 +187,7 @@ export default function Projects() {
                 <h1 className="text-xl sm:text-2xl font-bold">
                   <GradientText variant="pandora">Projects</GradientText>
                 </h1>
-                <p className="text-sm text-muted mt-0.5">
-                  Organize work by outcomes, not just tasks.
-                </p>
+                <p className="text-sm text-muted mt-0.5">Organize work by outcomes, not just tasks.</p>
               </div>
 
               <div className="shrink-0">
@@ -234,7 +220,6 @@ export default function Projects() {
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                   className="w-full rounded-xl border border-border bg-white dark:bg-slate-900 px-3 py-2 text-sm"
-                  aria-label="Filter by status"
                 >
                   <option value="all">All status</option>
                   <option value="in_progress">In Progress</option>
@@ -249,7 +234,6 @@ export default function Projects() {
                   value={owner}
                   onChange={(e) => setOwner(e.target.value)}
                   className="w-full rounded-xl border border-border bg-white dark:bg-slate-900 px-3 py-2 text-sm"
-                  aria-label="Filter by owner"
                 >
                   <option value="all">All owners</option>
                   <option value="me">Owned by me</option>
@@ -263,7 +247,6 @@ export default function Projects() {
                   value={updated}
                   onChange={(e) => setUpdated(e.target.value)}
                   className="w-full rounded-xl border border-border bg-white dark:bg-slate-900 px-3 py-2 text-sm"
-                  aria-label="Filter by last updated"
                 >
                   <option value="7d">Updated in 7 days</option>
                   <option value="30d">Updated in 30 days</option>
@@ -290,11 +273,9 @@ export default function Projects() {
             )}
 
             {!!error && !loading && (
-              <div className="rounded-2xl p-4 bg-surface border border-rose-200/60 dark:border-rose-400/20 motion-quick">
+              <div className="rounded-2xl p-4 bg-surface border border-rose-200/60 dark:border-rose-400/20">
                 <p className="text-rose-600 dark:text-rose-400 mb-3">{error}</p>
-                <button onClick={fetchProjects} className="btn btn-primary" aria-label="Retry loading projects">
-                  Retry
-                </button>
+                <button onClick={fetchProjects} className="btn btn-primary">Retry</button>
               </div>
             )}
 
@@ -351,12 +332,6 @@ export default function Projects() {
             onProjectCreated={handleProjectCreated}
           />
         )}
-
-        <ShipCelebration
-          project={shipProject}
-          open={!!shipProject}
-          onClose={() => setShipProject(null)}
-        />
       </div>
     </Page>
   );

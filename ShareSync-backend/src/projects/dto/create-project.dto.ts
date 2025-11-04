@@ -1,28 +1,46 @@
-// src/projects/dto/create-project.dto.ts
-import { IsArray, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+// backend/src/projects/dto/create-project.dto.ts
+import { IsOptional, IsString, IsArray, ValidateNested, IsIn } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class ProjectMemberDto {
+  @IsOptional()
+  @IsString()
+  userId?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @IsString()
+  @IsIn(['owner', 'member', 'viewer'])
+  role: 'owner' | 'member' | 'viewer'; // REQUIRED
+}
 
 export class CreateProjectDto {
   @IsString()
-  @MinLength(1)
   title: string;
 
+  @IsOptional()
   @IsString()
-  @MinLength(1)
-  description: string;
+  description?: string;
 
   @IsOptional()
   @IsString()
   category?: string;
 
   @IsOptional()
+  @IsString()
   @IsIn(['Not Started', 'In Progress', 'Completed'])
   status?: string;
 
   @IsOptional()
+  @IsString()
   @IsIn(['Private', 'Public'])
   privacy?: string;
 
   @IsOptional()
   @IsArray()
-  members?: { email: string; role: string }[];
+  @ValidateNested({ each: true })
+  @Type(() => ProjectMemberDto)
+  members?: ProjectMemberDto[];
 }

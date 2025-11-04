@@ -2,7 +2,7 @@
 import React from "react";
 import { Rocket, Users, Clock } from "lucide-react";
 import AvatarGroup from "../ui/AvatarGroup";
-import ProjectListItem from "../projects/ProjectListItem.jsx"; // FIXED: same folder
+import ProjectListItem from "../projects/ProjectListItem.jsx";
 import TraceOutline from "../ui/TraceOutline.jsx";
 import { labelledTimestamp } from "../../utils/formatters.js";
 
@@ -38,6 +38,8 @@ export default function ProjectCard({ project, onOpen, onPrefetch, isHovered, on
     name: u.displayName || u.name || u.username || u.email,
     avatar: u.avatar || u.avatarUrl || u.photoURL || u.profilePicture || '',
   })) : [];
+
+  const isShipped = !!project.shippedAt;
 
   return (
     <TraceOutline radius={16} paused={!isHovered}>
@@ -100,17 +102,19 @@ export default function ProjectCard({ project, onOpen, onPrefetch, isHovered, on
               {labelledTimestamp(lastTs, 'Updated')}
             </div>
 
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onShip(project);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-1.5 text-xs font-medium text-white shadow-md hover:shadow-lg transition-all hover:scale-105 focus-ring"
-              aria-label={`Ship project ${project.title}`}
-            >
-              <Rocket className="w-3.5 h-3.5" />
-              Ship
-            </button>
+            {!isShipped && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShip(project);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-1.5 text-xs font-medium text-white shadow-md hover:shadow-lg transition-all hover:scale-105 focus-ring"
+                aria-label={`Ship project ${project.title}`}
+              >
+                <Rocket className="w-3.5 h-3.5" />
+                Ship
+              </button>
+            )}
           </div>
         </div>
 

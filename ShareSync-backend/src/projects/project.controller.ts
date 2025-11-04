@@ -1,3 +1,4 @@
+// backend/src/projects/project.controller.ts
 import {
   Body,
   Controller,
@@ -10,9 +11,11 @@ import {
   HttpException,
   HttpStatus,
   Query,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ProjectsService } from './project.service';
+import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import {
   CanManageProject,
@@ -26,7 +29,7 @@ import { UpdateProjectIconDto } from './dto/update-project-icon.dto';
 @UseGuards(JwtAuthGuard)
 export class ProjectController {
   constructor(
-    private readonly projects: ProjectsService,
+    private readonly project: ProjectService,
     private readonly realtime: RealtimeGateway,
   ) {}
 
@@ -37,57 +40,53 @@ export class ProjectController {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
-    if (!dto?.title || !dto?.description) {
-      throw new HttpException(
-        'title and description are required',
-        HttpStatus.BAD_REQUEST,
-      );
+    if (!dto?.title?.trim()) {
+      throw new HttpException('Title is required', HttpStatus.BAD_REQUEST);
     }
 
-    const doc = await this.projects.create({
+    const doc = await this.project.create({
       title: dto.title.trim(),
       description: dto.description?.trim() ?? '',
       category: dto.category ?? '',
       status: dto.status ?? 'Not Started',
       privacy: dto.privacy ?? 'Private',
-      // pass raw members, service will normalize
-      members: (dto as any).members ?? [],
-      userId, // legacy owner link
+      members: (dto.members ?? []).map(m => ({
+        ...m,
+        role: m.role ?? 'member', // DEFAULT
+        addedAt: new Date(),
+      })),
+      userId,
+    });
+
+    this.realtime.emitToProject(doc._id.toString(), 'project:created', {
+      projectId: doc._id.toString(),
+      project: doc,
     });
 
     return doc;
   }
 
-  // Put "quick" before ":id" so param route doesn’t catch it
   @Get('quick')
   async quick(@Req() req, @Query('limit') limit = '6') {
     const userId = req?.user?.sub;
     const n = Math.max(1, Math.min(12, parseInt(limit as string, 10) || 6));
 
-    let items: any[] = [];
-    try {
-      items =
-        (await (this.projects as any).findMany?.({ userId, limit: n })) ?? [];
-    } catch {
-      items = await this.projects.findAll(userId);
-    }
-
+    const items = await this.project.findAll(userId);
     return (items || [])
       .slice(0, n)
       .map((p: any) => ({
-        _id: String(p._id ?? p.id ?? ''),
+        _id: String(p._id),
         title: p.title ?? 'Untitled',
-        avatar: p.avatar ?? p.projectImage ?? '',
-        lastActivityAt:
-          p.updatedAt ?? p.createdAt ?? new Date().toISOString(),
+        avatar: p.avatar ?? '',
+        lastActivityAt: p.updatedAt ?? p.createdAt ?? new Date().toISOString(),
         unreadCount: 0,
       }));
   }
 
   @Get()
-  async list(@Req() req) {
+  async list(@Req() req, @Query() query: any) {
     const userId = req?.user?.sub;
-    return this.projects.findAll(userId);
+    return this.project.list(userId, query);
   }
 
   @Get(':id')
@@ -95,14 +94,57 @@ export class ProjectController {
   @CanViewProject()
   async getOne(@Req() req, @Param('id') id: string) {
     const userId = req?.user?.sub;
-    const project = await this.projects.findOneForUser(userId, id);
+    const project = await this.project.findOneForUser(userId, id);
     if (!project) {
-      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+      throw new NotFoundException('Project not found');
     }
     return project;
   }
 
-  /** Update members/roles — owner-only */
+  @Patch(':id')
+  @UseGuards(ProjectPermissionGuard)
+  @CanManageProject()
+  async update(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: Partial<CreateProjectDto>,
+  ) {
+    const userId = req?.user?.sub;
+    const updated = await this.project.update(id, userId, {
+      ...body,
+      members: body.members?.map(m => ({
+        ...m,
+        role: m.role ?? 'member',
+        addedAt: new Date(),
+      })),
+    });
+    if (!updated) {
+      throw new NotFoundException('Project not found');
+    }
+
+    this.realtime.emitToProject(id, 'project:updated', {
+      projectId: id,
+      patch: body,
+    });
+
+    return updated;
+  }
+
+  @Post(':id/ship')
+  @UseGuards(ProjectPermissionGuard)
+  @CanManageProject()
+  async ship(@Req() req, @Param('id') id: string) {
+    const userId = req?.user?.sub;
+    const result = await this.project.shipProject(id, userId);
+
+    this.realtime.emitToProject(id, 'project:shipped', {
+      projectId: id,
+      shippedAt: new Date().toISOString(),
+    });
+
+    return result;
+  }
+
   @Patch(':id/members')
   @UseGuards(ProjectPermissionGuard)
   @CanManageProject()
@@ -122,21 +164,28 @@ export class ProjectController {
     if (!Array.isArray(body?.members)) {
       throw new HttpException('members[] is required', HttpStatus.BAD_REQUEST);
     }
-    const updated = await this.projects.updateMembers(
+    const updated = await this.project.updateMembers(
       id,
       userId,
-      body.members as any,
+      body.members.map(m => ({
+        ...m,
+        role: m.role ?? 'member',
+        addedAt: new Date(),
+      })),
     );
     if (!updated) {
-      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+      throw new NotFoundException('Project not found');
     }
+
+    this.realtime.emitToProject(id, 'project:membersUpdated', {
+      projectId: id,
+      members: updated.members,
+      invites: updated.invites || [],
+    });
+
     return updated;
   }
 
-  /** Update icon — owner-only; emits realtime project:updated
-   *  - Send { kind, value } to set/update the icon
-   *  - Send an empty body (or null) to clear the icon
-   */
   @Patch(':id/icon')
   @UseGuards(ProjectPermissionGuard)
   @CanManageProject()
@@ -152,18 +201,16 @@ export class ProjectController {
         ? { kind: body.kind as 'emoji' | 'svg', value: String(body.value || '').trim() }
         : null;
 
-    const updated = await this.projects.updateIcon(id, userId, icon);
-
-    // Realtime fan-out (non-blocking)
-    try {
-      this.realtime.emitToProject(String(id), 'project:updated', {
-        projectId: String(id),
-        patch: { icon: updated?.icon ?? null },
-      });
-    } catch {
-      /* noop */
+    const updated = await this.project.updateIcon(id, userId, icon);
+    if (!updated) {
+      throw new NotFoundException('Project not found');
     }
 
-    return { projectId: String(id), patch: { icon: updated?.icon ?? null } };
+    this.realtime.emitToProject(id, 'project:updated', {
+      projectId: id,
+      patch: { icon: updated.icon ?? null },
+    });
+
+    return { projectId: id, patch: { icon: updated.icon ?? null } };
   }
 }

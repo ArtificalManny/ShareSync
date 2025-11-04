@@ -9,7 +9,6 @@ import { toast } from "../components/ui/toast";
 export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const navigate = useNavigate();
 
-  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -73,14 +72,9 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
   return (
     <Dialog open={true} onClose={onClose} className="fixed inset-0 z-50">
-      {/* Backdrop */}
       <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
-
-      {/* Centered panel */}
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        {/* Narrower shell so it doesn’t take over the screen */}
         <Dialog.Panel className="relative w-full max-w-3xl rounded-xl border border-border bg-white dark:bg-slate-900 shadow-xl">
-          {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <Dialog.Title className="text-base font-semibold">Create New Project</Dialog.Title>
             <button
@@ -93,14 +87,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
             </button>
           </div>
 
-          {/* Body */}
-          <form
-            onSubmit={handleSubmit}
-            className="px-5 py-6 space-y-6 w-full max-w-none"
-          >
-            {/* DETAILS */}
-            <section className="grid grid-cols-1 md:grid-cols-12 gap-4 w-full max-w-none">
-              {/* Title (6) */}
+          <form onSubmit={handleSubmit} className="px-5 py-6 space-y-6">
+            <section className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-6">
                 <label className="block text-sm text-slate-500">Title *</label>
                 <input
@@ -114,7 +102,6 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 />
               </div>
 
-              {/* Category (3) */}
               <div className="md:col-span-3">
                 <label className="block text-sm text-slate-500">Category</label>
                 <input
@@ -126,7 +113,6 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 />
               </div>
 
-              {/* Status (3) */}
               <div className="md:col-span-3">
                 <label className="block text-sm text-slate-500">Status</label>
                 <select
@@ -140,7 +126,6 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 </select>
               </div>
 
-              {/* Description (12) */}
               <div className="md:col-span-12">
                 <label className="block text-sm text-slate-500">Description *</label>
                 <textarea
@@ -153,8 +138,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               </div>
             </section>
 
-            {/* PRIVACY */}
-            <section className="w-full max-w-none">
+            <section>
               <label className="block text-sm text-slate-500 mb-2">Privacy</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
@@ -166,7 +150,6 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       : "border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                   aria-pressed={privacy === "Private"}
-                  aria-label="Set privacy to Private"
                 >
                   <div className="inline-flex items-center gap-2">
                     <Shield className="w-4 h-4" />
@@ -184,7 +167,6 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       : "border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                   aria-pressed={privacy === "Public"}
-                  aria-label="Set privacy to Public"
                 >
                   <div className="inline-flex items-center gap-2">
                     <Globe className="w-4 h-4" />
@@ -195,8 +177,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               </div>
             </section>
 
-            {/* MEMBERS */}
-            <section className="w-full max-w-none">
+            <section>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold">Add Members</span>
               </div>
@@ -250,7 +231,6 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               )}
             </section>
 
-            {/* Footer */}
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
               <button
                 type="button"
@@ -262,9 +242,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               </button>
               <button
                 type="submit"
-                className={`rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 ${
-                  submitting ? "opacity-70 cursor-wait" : ""
-                }`}
+                className={`rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 ${submitting ? "opacity-70 cursor-wait" : ""}`}
                 disabled={submitting}
               >
                 {submitting ? "Creating…" : "Create Project"}

@@ -1,3 +1,4 @@
+// backend/src/projects/schemas/project.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
@@ -6,9 +7,9 @@ export type ProjectDocument = Project & Document;
 export type ProjectRole = 'owner' | 'member' | 'viewer';
 
 export interface ProjectMember {
-  userId?: string;      // preferred when user exists
-  email?: string;       // fallback for invited emails
-  role: ProjectRole;    // owner | member | viewer
+  userId?: string;
+  email?: string;
+  role: ProjectRole;
   addedAt: Date;
 }
 
@@ -16,10 +17,10 @@ export type ProjectInviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired'
 
 export interface ProjectInvite {
   email: string;
-  role: Exclude<ProjectRole, 'owner'>; // 'member' | 'viewer'
+  role: Exclude<ProjectRole, 'owner'>;
   token: string;
   status: ProjectInviteStatus;
-  invitedBy?: string;         // actingUserId
+  invitedBy?: string;
   createdAt: Date;
   expiresAt?: Date;
   acceptedByUserId?: string;
@@ -27,15 +28,37 @@ export interface ProjectInvite {
 
 type ProjectIcon = { kind: 'emoji' | 'svg'; value: string };
 
+interface ProjectMetrics {
+  openTasks: number;
+  onTimePct: number;
+  throughputPerWeek: number;
+}
+
+interface ProjectTask {
+  title: string;
+  description?: string;
+  dueDate?: Date;
+  completedAt?: Date;
+  assignee?: string;
+}
+
 @Schema({ timestamps: true })
 export class Project {
-  @Prop({ required: true }) title: string;
-  @Prop() description: string;
-  @Prop() category: string;
-  @Prop() status: string;
-  @Prop() privacy: string;
+  @Prop({ required: true, trim: true })
+  title: string;
 
-  /** Small visual mark for the project (emoji or preset SVG key) */
+  @Prop({ trim: true })
+  description: string;
+
+  @Prop()
+  category: string;
+
+  @Prop({ default: 'Not Started' })
+  status: string;
+
+  @Prop({ default: 'Private' })
+  privacy: string;
+
   @Prop({
     type: {
       kind: { type: String, enum: ['emoji', 'svg'] },
@@ -56,10 +79,9 @@ export class Project {
   })
   members: ProjectMember[];
 
-  // Owner (legacy field; also duplicated in members[0] with role=owner)
-  @Prop({ required: true }) userId: string;
+  @Prop({ required: true, index: true })
+  userId: string;
 
-  // ✉️ Invites
   @Prop({
     type: [{
       email: { type: String, required: true },
@@ -75,7 +97,6 @@ export class Project {
   })
   invites: ProjectInvite[];
 
-  /** 🔓 Public transparency layer */
   @Prop({ type: Boolean, default: false })
   publicEnabled: boolean;
 
@@ -85,9 +106,39 @@ export class Project {
   @Prop({ type: Date })
   publicLastEnabledAt?: Date;
 
-  /** ✅ Explicit timestamps so TS sees them on lean docs */
+  @Prop({ type: Date })
+  shippedAt?: Date;
+
+  @Prop({
+    type: [{
+      title: { type: String, required: true },
+      description: String,
+      dueDate: Date,
+      completedAt: Date,
+      assignee: String,
+    }],
+    default: [],
+  })
+  tasks: ProjectTask[];
+
+  @Prop({
+    type: {
+      openTasks: { type: Number, default: 0 },
+      onTimePct: { type: Number, default: 0 },
+      throughputPerWeek: { type: Number, default: 0 },
+    },
+    default: {},
+  })
+  metrics: ProjectMetrics;
+
   @Prop() createdAt?: Date;
   @Prop() updatedAt?: Date;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
+
+ProjectSchema.index({ userId: 1 });
+ProjectSchema.index({ status: 1 });
+ProjectSchema.index({ updatedAt: -1 });
+ProjectSchema.index({ 'members.userId': 1 });
+ProjectSchema.index({ title: 'text', description: 'text' });
