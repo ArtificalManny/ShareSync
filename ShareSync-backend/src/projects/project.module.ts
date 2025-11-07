@@ -1,21 +1,17 @@
-// src/projects/project.module.ts
+// backend/src/projects/project.module.ts
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-
 import { ProjectController } from './project.controller';
 import { ProjectsService } from './project.service';
 import { Project, ProjectSchema } from './schemas/project.schema';
 import { ProjectPermissionGuard } from './guards/project-permission.guard';
-
-// new invites pieces
 import { InvitesService } from './invites.service';
 import { InvitesController, GlobalInvitesController } from './invites.controller';
-
-// deps used by services/guards
 import { UserModule } from '../user/user.module';
 import { ActivitiesModule } from '../activities/activities.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { MomentumModule } from '../momentum/momentum.module';
 
 @Module({
   imports: [
@@ -24,21 +20,10 @@ import { NotificationsModule } from '../notifications/notifications.module';
     forwardRef(() => ActivitiesModule),
     forwardRef(() => RealtimeModule),
     forwardRef(() => NotificationsModule),
+    forwardRef(() => MomentumModule),
   ],
-  controllers: [
-    ProjectController,
-    InvitesController,          // project-scoped invites routes
-    GlobalInvitesController,    // /invites/accept global endpoint
-  ],
-  providers: [
-    ProjectsService,
-    ProjectPermissionGuard,
-    InvitesService,             // provide invites service
-  ],
-  exports: [
-    ProjectsService,           // EXPORT THIS
-    ProjectPermissionGuard,
-    InvitesService,            // export if other modules need it
-  ],
+  controllers: [ProjectController, InvitesController, GlobalInvitesController],
+  providers: [ProjectsService, ProjectPermissionGuard, InvitesService],
+  exports: [ProjectsService, ProjectPermissionGuard, InvitesService, MongooseModule],
 })
 export class ProjectModule {}

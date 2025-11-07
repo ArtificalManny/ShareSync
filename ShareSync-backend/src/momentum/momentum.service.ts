@@ -1,4 +1,4 @@
-// src/momentum/momentum.service.ts
+// backend/src/momentum/momentum.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -7,120 +7,73 @@ import { Task, TaskDocument } from '../tasks/schemas/task.schema';
 import { User, UserDocument } from '../user/schemas/user.schema';
 import { AuditService } from '../audit/audit.service';
 
+interface LeaderboardEntry {
+  userId: string;
+  username: string;
+  streakDays: number;
+  xp: number;
+}
+
 @Injectable()
 export class MomentumService {
   constructor(
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private auditService: AuditService,
+    private readonly audit: AuditService,
   ) {}
 
-  async getStreak(userId: string) {
-    const tasks = await this.taskModel
-      .find({ assigneeId: userId, status: 'completed' })
-      .sort({ completedAt: -1 })
-      .select('completedAt')
-      .lean();
+  async shipProject(projectId: string, userId: string) {
+    const project = await this.projectModel.findById(projectId);
+    if (!project) throw new Error('Project not found');
 
-    if (!tasks.length) return { streak: 0, resetAt: null };
+    project.shippedAt = new Date();
+    await project.save();
 
-    const today = new Date().setHours(0, 0, 0, 0);
-    let streak = 0;
-    let current = new Date(today);
-
-    for (const task of tasks) {
-      if (!task.completedAt) continue;
-      const day = new Date(task.completedAt).setHours(0, 0, 0, 0);
-      if (day === current.getTime()) {
-        streak++;
-        current.setDate(current.getDate() - 1);
-      } else if (day < current.getTime()) {
-        break;
-      }
+    const user = await this.userModel.findById(userId);
+    if (user) {
+      user.xp = (user.xp || 0) + 250;
+      user.streakDays = (user.streakDays || 0) + 1;
+      await user.save();
     }
 
-    const resetAt = new Date(today + 24 * 60 * 60 * 1000);
-    return { streak, resetAt };
+    await this.audit.log({               // ← fixed: audit.log exists
+      userId,
+      action: 'project_shipped',
+      entity: 'Project',
+      entityId: projectId,
+      metadata: { title: project.title },
+    });
+
+    return { shipped: true };
   }
 
-  async getLeaderboard(limit = 10) {
-    const users = await this.userModel
-      .aggregate([
-        {
-          $lookup: {
-            from: 'tasks',
-            localField: '_id',
-            foreignField: 'assigneeId',
-            as: 'tasks',
-          },
-        },
-        {
-          $project: {
-            name: { $concat: ['$firstName', ' ', '$lastName'] },
-            username: 1,
-            profilePicture: 1,
-            xp: 1,
-            taskCount: {
-              $size: {
-                $filter: {
-                  input: '$tasks',
-                  cond: { $eq: ['$$this.status', 'completed'] },
-                },
-              },
-            },
-          },
-        },
-        { $sort: { xp: -1, taskCount: -1 } },
-        { $limit: limit },
-      ])
-      .exec();
+  async getStreak(userId: string): Promise<number> {
+    const user = await this.userModel.findById(userId).select('streakDays').lean();
+    return user?.streakDays ?? 0;
+  }
 
-    return users.map((u, i) => ({
-      userId: u._id,
-      name: u.name.trim() || u.username,
-      avatar: u.profilePicture,
+  async getLeaderboard(limit = 10): Promise<LeaderboardEntry[]> {
+    const users = await this.userModel
+      .find({}, { username: 1, streakDays: 1, xp: 1 })
+      .sort({ streakDays: -1, xp: -1 })
+      .limit(limit)
+      .lean();
+
+    return users.map(u => ({
+      userId: u._id.toString(),
+      username: u.username,
+      streakDays: u.streakDays || 0,
       xp: u.xp || 0,
-      streak: 0,
     }));
   }
 
-  async getMomentumScore(userId: string) {
-    const now = Date.now();
-    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+  async getMomentumScore(userId: string): Promise<number> {
+    const [projects, tasks] = await Promise.all([
+      this.projectModel.countDocuments({ userId }),
+      this.taskModel.countDocuments({ createdBy: userId, completedAt: { $exists: true } }),
+    ]);
 
-    const tasks = await this.taskModel
-      .find({
-        assigneeId: userId,
-        $or: [
-          { createdAt: { $gte: new Date(weekAgo) } },
-          { completedAt: { $gte: new Date(weekAgo) } },
-        ],
-      })
-      .select('status')
-      .lean();
-
-    const completed = tasks.filter(t => t.status === 'completed').length;
-    const total = tasks.length || 1;
-
-    const velocity = completed / total;
-    const recency = tasks.length > 0 ? 1 : 0;
-
-    const score = Math.round((velocity * 70) + (recency * 30));
-    return { score };
-  }
-
-  async shipProject(projectId: string, userId: string) {
-    const project = await this.projectModel.findByIdAndUpdate(
-      projectId,
-      { status: 'shipped', shippedAt: new Date(), shippedBy: userId },
-      { new: true },
-    );
-
-    if (!project) throw new Error('Project not found');
-
-    await this.auditService.logProjectShipped(projectId, userId, project);
-
-    return project;
+    return projects * 100 + tasks * 10;
   }
 }

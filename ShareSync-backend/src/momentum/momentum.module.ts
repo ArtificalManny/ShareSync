@@ -1,27 +1,23 @@
-// src/momentum/momentum.module.ts
-import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+// backend/src/momentum/momentum.module.ts
+import { Module, forwardRef } from '@nestjs/common';
 import { MomentumService } from './momentum.service';
-import { MomentumGateway } from './momentum.gateway';
 import { MomentumController } from './momentum.controller';
-import { Project, ProjectSchema } from '../projects/schemas/project.schema';
-import { Task, TaskSchema } from '../tasks/schemas/task.schema';
-import { User, UserSchema } from '../user/schemas/user.schema';
-import { AuditService } from '../audit/audit.service';
-import { Audit, AuditSchema } from '../audit/schemas/audit.schema';
-import { PresenceService } from '../presence/presence.service';
+import { MomentumGateway } from './momentum.gateway';
+
+import { ProjectModule } from '../projects/project.module';
+import { TaskModule } from '../tasks/task.module';
+import { UserModule } from '../user/user.module';     // ← NEW
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Project.name, schema: ProjectSchema },
-      { name: Task.name, schema: TaskSchema },
-      { name: User.name, schema: UserSchema },
-      { name: Audit.name, schema: AuditSchema },
-    ]),
+    forwardRef(() => ProjectModule),
+    forwardRef(() => TaskModule),
+    forwardRef(() => UserModule),   // ← NEW
+    forwardRef(() => AuditModule),
   ],
-  providers: [MomentumService, MomentumGateway, AuditService, PresenceService],
   controllers: [MomentumController],
+  providers: [MomentumService, MomentumGateway],
   exports: [MomentumService],
 })
 export class MomentumModule {}

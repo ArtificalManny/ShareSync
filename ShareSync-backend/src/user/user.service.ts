@@ -1,4 +1,4 @@
-// src/user/user.service.ts
+// backend/src/user/user.service.ts
 import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -9,10 +9,10 @@ import { ProjectsService } from '../projects/project.service';
 export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @Inject(forwardRef(() => ProjectsService))
+    @Inject(forwardRef(() => ProjectsService))   // ← NEW
     private readonly projects: ProjectsService,
   ) {}
-  
+
   /** -- Lookups -- */
   async findById(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id).exec();
@@ -22,7 +22,6 @@ export class UserService {
     return this.userModel.findOne({ username }).exec();
   }
 
-  /** Public profile view (respect publicProfile flag) */
   async findPublicByUsername(username: string): Promise<UserDocument | null> {
     const user = await this.userModel
       .findOne({ username })
@@ -50,7 +49,6 @@ export class UserService {
     return this.userModel.findOne({ email }).exec();
   }
 
-  /** Generic update by id (used by controller’s PATCH /users/me) */
   async updateById(id: string, patch: Partial<User>): Promise<UserDocument> {
     const updated = await this.userModel
       .findByIdAndUpdate(id, { $set: patch }, { new: true })
@@ -59,7 +57,6 @@ export class UserService {
     return updated;
   }
 
-  /** Existing update helper (kept for compatibility) */
   async update(id: string, updateUserDto: any): Promise<UserDocument> {
     const user = await this.userModel.findById(id).exec();
     if (!user) throw new NotFoundException('User not found');

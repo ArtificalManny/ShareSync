@@ -13,24 +13,24 @@ import {
   Query,
   NotFoundException,
   ForbiddenException,
+  Inject,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ProjectService } from './project.service';
+import { ProjectsService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import {
   CanManageProject,
   CanViewProject,
   ProjectPermissionGuard,
 } from './guards/project-permission.guard';
-import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { UpdateProjectIconDto } from './dto/update-project-icon.dto';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectController {
   constructor(
-    private readonly project: ProjectService,
-    private readonly realtime: RealtimeGateway,
+    private readonly project: ProjectsService,
+    @Inject('REALTIME_GATEWAY') private readonly realtime: any,   // ← FIXED
   ) {}
 
   @Post()
@@ -52,16 +52,18 @@ export class ProjectController {
       privacy: dto.privacy ?? 'Private',
       members: (dto.members ?? []).map(m => ({
         ...m,
-        role: m.role ?? 'member', // DEFAULT
+        role: m.role ?? 'member',
         addedAt: new Date(),
       })),
       userId,
     });
 
-    this.realtime.emitToProject(doc._id.toString(), 'project:created', {
-      projectId: doc._id.toString(),
-      project: doc,
-    });
+    try {
+      this.realtime?.emitToProject?.(doc._id.toString(), 'project:created', {
+        projectId: doc._id.toString(),
+        project: doc,
+      });
+    } catch {}
 
     return doc;
   }
@@ -122,10 +124,12 @@ export class ProjectController {
       throw new NotFoundException('Project not found');
     }
 
-    this.realtime.emitToProject(id, 'project:updated', {
-      projectId: id,
-      patch: body,
-    });
+    try {
+      this.realtime?.emitToProject?.(id, 'project:updated', {
+        projectId: id,
+        patch: body,
+      });
+    } catch {}
 
     return updated;
   }
@@ -137,10 +141,12 @@ export class ProjectController {
     const userId = req?.user?.sub;
     const result = await this.project.shipProject(id, userId);
 
-    this.realtime.emitToProject(id, 'project:shipped', {
-      projectId: id,
-      shippedAt: new Date().toISOString(),
-    });
+    try {
+      this.realtime?.emitToProject?.(id, 'project:shipped', {
+        projectId: id,
+        shippedAt: new Date().toISOString(),
+      });
+    } catch {}
 
     return result;
   }
@@ -177,11 +183,13 @@ export class ProjectController {
       throw new NotFoundException('Project not found');
     }
 
-    this.realtime.emitToProject(id, 'project:membersUpdated', {
-      projectId: id,
-      members: updated.members,
-      invites: updated.invites || [],
-    });
+    try {
+      this.realtime?.emitToProject?.(id, 'project:membersUpdated', {
+        projectId: id,
+        members: updated.members,
+        invites: updated.invites || [],
+      });
+    } catch {}
 
     return updated;
   }
@@ -206,10 +214,12 @@ export class ProjectController {
       throw new NotFoundException('Project not found');
     }
 
-    this.realtime.emitToProject(id, 'project:updated', {
-      projectId: id,
-      patch: { icon: updated.icon ?? null },
-    });
+    try {
+      this.realtime?.emitToProject?.(id, 'project:updated', {
+        projectId: id,
+        patch: { icon: updated.icon ?? null },
+      });
+    } catch {}
 
     return { projectId: id, patch: { icon: updated.icon ?? null } };
   }

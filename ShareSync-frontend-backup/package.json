@@ -13,6 +13,7 @@
     "lh:all": "node scripts/lh-run.js"
   },
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "@tsparticles/react": "^3.0.0",
     "axios": "^1.7.2",
     "canvas-confetti": "^1.9.3",

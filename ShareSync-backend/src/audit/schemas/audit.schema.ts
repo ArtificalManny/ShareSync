@@ -1,24 +1,25 @@
-// src/audit/schemas/audit.schema.ts
+// backend/src/audit/schemas/audit.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
+export type AuditLogDocument = AuditLog & Document;
+
 @Schema({ timestamps: true })
-export class Audit extends Document {
+export class AuditLog {
   @Prop({ required: true })
-  type: string;
-
-  @Prop({ type: Object, required: true })
-  actor: { id: string };
-
-  @Prop({ type: Object })
-  target?: { id: string; type: string };
+  userId: string;
 
   @Prop({ required: true })
   action: string;
 
+  @Prop({ required: true })
+  entity: string;
+
+  @Prop({ required: true })
+  entityId: string;
+
   @Prop({ type: Object })
-  meta?: Record<string, any>;
+  metadata?: any;
 }
 
-export type AuditDocument = Audit & Document;
-export const AuditSchema = SchemaFactory.createForClass(Audit);
+export const AuditLogSchema = SchemaFactory.createForClass(AuditLog);

@@ -79,7 +79,7 @@ export class Project {
   })
   members: ProjectMember[];
 
-  @Prop({ required: true, index: true })
+  @Prop({ required: true, index: true })          // ← ONLY ONE
   userId: string;
 
   @Prop({
@@ -137,7 +137,7 @@ export class Project {
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
 
-ProjectSchema.index({ userId: 1 });
+// Indexes (no duplicate)
 ProjectSchema.index({ status: 1 });
 ProjectSchema.index({ updatedAt: -1 });
 ProjectSchema.index({ 'members.userId': 1 });

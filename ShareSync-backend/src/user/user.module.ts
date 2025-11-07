@@ -1,27 +1,18 @@
-// src/user/user.module.ts
+// backend/src/user/user.module.ts
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-
-import { User, UserSchema } from './schemas/user.schema'; // keep your existing path
+import { User, UserSchema } from './schemas/user.schema';
 import { UserService } from './user.service';
-import { UserController } from './user.controller';
-
-import { ProjectModule } from '../projects/project.module';
 import { ActivitiesModule } from '../activities/activities.module';
-import { RealtimeModule } from '../realtime/realtime.module';
+import { ProjectModule } from '../projects/project.module';   // ← NEW
 
 @Module({
   imports: [
-    // Registers the User model in this module’s scope
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    // If UserService references ProjectService, keep forwardRef
-    forwardRef(() => ProjectModule),
     ActivitiesModule,
-    RealtimeModule,
+    forwardRef(() => ProjectModule),   // ← NEW (breaks circular ref)
   ],
-  controllers: [UserController],
   providers: [UserService],
-  // ⬅️ Export MongooseModule so other modules (like NotificationsModule) can inject UserModel
   exports: [UserService, MongooseModule],
 })
 export class UserModule {}

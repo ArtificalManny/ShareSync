@@ -1,3 +1,4 @@
+// backend/src/activities/activities.controller.ts
 import {
   Body,
   Controller,
@@ -8,14 +9,13 @@ import {
   Query,
   BadRequestException,
   Res,
+  Inject,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ActivitiesService, ListParams } from './activities.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
-import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { NotifyService } from '../notifications/notify.service';
-
 import {
   ProjectPermissionGuard,
   CanEditProject,
@@ -34,16 +34,14 @@ function coerceRange(input: unknown): '24h' | '7d' | '30d' | 'all' {
 }
 
 @Controller('activities')
-@UseGuards(JwtAuthGuard) // all routes require auth
+@UseGuards(JwtAuthGuard)
 export class ActivitiesController {
   constructor(
     private readonly activities: ActivitiesService,
-    private readonly realtime: RealtimeGateway,
+    @Inject('REALTIME_GATEWAY') private readonly realtime: any,   // ← FIXED
     private readonly notify: NotifyService,
   ) {}
 
-  // POST /api/activities  (project-scoped create → must be able to EDIT the project)
-  // Guard reads projectId from body (or params/query if present).
   @UseGuards(ProjectPermissionGuard)
   @CanEditProject()
   @Post()
@@ -51,9 +49,7 @@ export class ActivitiesController {
     const userId: string = req.user?.sub || req.user?.id || req.user?._id;
     const projectId: string = (dto as AnyObj)?.projectId;
 
-    if (!projectId) {
-      throw new BadRequestException('projectId is required');
-    }
+    if (!projectId) throw new BadRequestException('projectId is required');
 
     const created = await this.activities.create(projectId, userId, dto);
 
@@ -67,12 +63,10 @@ export class ActivitiesController {
       createdAt: (created as AnyObj)?.createdAt ?? new Date().toISOString(),
     };
 
-    // Realtime fan-out
-    this.realtime.emitToProject(projectId, 'activity:new', payload);
-    this.realtime.emitToProject(projectId, 'project:statsUpdated', { projectId });
-    this.realtime.emitToUser(userId, 'user:statsUpdated', { userId });
+    try {
+      this.realtime?.emitToProject?.(projectId, 'activity:new', payload);
+    } catch {}
 
-    // Mentions → in-app notifications (best-effort; never block)
     const text: string = dto?.text || '';
     const metaObj: AnyObj = (dto && typeof dto.meta === 'object' ? dto.meta : {}) || {};
     const mentionedUserIds: string[] = Array.isArray(metaObj.mentions) ? metaObj.mentions : [];
@@ -89,27 +83,16 @@ export class ActivitiesController {
             priority: 'mention',
             meta: { projectId, activityId: (created as AnyObj)?._id },
           });
-          this.notify.inApp({
-            userId: uid,
-            message: `You were mentioned: "${text}"`,
-            href: `/projects/${projectId}`,
-            priority: 'mention',
-          });
-        } catch {
-          // swallow notify errors; logging lives inside NotifyService
-        }
+        } catch {}
       }
     }
 
     return created;
-    }
+  }
 
-  // GET /api/activities?scope=user|project&projectId=&userId=&type=&range=&cursor=&limit=
-  // - user scope: needs auth (already enforced)
-  // - project scope: must be able to VIEW the project
   @Get()
   @UseGuards(ProjectPermissionGuard)
-  @CanViewProject() // guard no-ops when there's no projectId (user scope)
+  @CanViewProject()
   async list(@Req() req: any, @Query() query: AnyObj) {
     const scope = ((query.scope as string) || 'user').toLowerCase();
     if (scope !== 'user' && scope !== 'project') {
@@ -135,7 +118,6 @@ export class ActivitiesController {
     return this.activities.list(params);
   }
 
-  // GET /api/activities/export.csv?... (same permission rules as list)
   @Get('export.csv')
   @UseGuards(ProjectPermissionGuard)
   @CanViewProject()

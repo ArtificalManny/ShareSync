@@ -1,3 +1,4 @@
+// backend/src/tasks/tasks.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
@@ -22,14 +23,15 @@ export class TasksService {
   async create(projectId: string, createdBy: string, dto: CreateTaskDto) {
     const t = new this.taskModel({
       title: (dto.title || '').trim(),
-      status: dto.status || 'Not Started',
+      status: dto.status || 'todo',
       description: dto.description ?? '',
       dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
-      assigneeId: dto.assigneeId,
+      assigneeId: dto.assigneeId || undefined,
       labels: Array.isArray(dto.labels) ? dto.labels : [],
       notes: dto.notes,
       projectId,
       createdBy,
+      watchers: [],
     });
     return t.save();
   }

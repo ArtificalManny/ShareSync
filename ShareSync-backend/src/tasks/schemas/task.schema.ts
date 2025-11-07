@@ -1,4 +1,4 @@
-// src/tasks/schemas/task.schema.ts
+// backend/src/tasks/schemas/task.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
@@ -29,6 +29,15 @@ export class Task extends Document {
 
   @Prop({ type: [Types.ObjectId], ref: 'User', default: [] })
   watchers: Types.ObjectId[];
+
+  @Prop({ type: [String], default: [] })
+  labels?: string[];
+
+  @Prop()
+  notes?: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  createdBy: Types.ObjectId;
 }
 
 export type TaskDocument = Task & Document;
@@ -41,3 +50,8 @@ TaskSchema.pre('save', function (next) {
   }
   next();
 });
+
+TaskSchema.index({ projectId: 1 });
+TaskSchema.index({ assigneeId: 1 });
+TaskSchema.index({ status: 1 });
+TaskSchema.index({ createdAt: -1 });

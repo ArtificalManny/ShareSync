@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+// backend/src/habits/habits.service.ts
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ActivitiesService } from '../activities/activities.service';
@@ -8,17 +9,17 @@ type AnyObj = Record<string, any>;
 
 export interface HabitsPrefs {
   userId: string;
-  workdays?: number[];        // 0-6 (Sun..Sat)
-  quietHours?: { start?: string; end?: string }; // "HH:mm"
+  workdays?: number[];
+  quietHours?: { start?: string; end?: string };
   nudges?: { sprint?: boolean; update?: boolean; convertTask?: boolean };
-  weeklyReminder?: { day?: number; time?: string }; // day: 0-6; time: "HH:mm"
+  weeklyReminder?: { day?: number; time?: string };
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface Reflection {
   userId: string;
-  weekOf: string; // YYYY-WW
+  weekOf: string;
   wins?: string[];
   focus?: string;
   createdAt?: Date;
@@ -36,14 +37,13 @@ export class HabitsService {
 
   constructor(
     private readonly activities: ActivitiesService,
-    private readonly rt: RealtimeGateway,
+    @Inject('REALTIME_GATEWAY') private readonly rt: RealtimeGateway,   // ← FIXED
     @InjectModel('HabitsPrefs') private readonly prefsModel?: Model<HabitsPrefs>,
     @InjectModel('Reflection') private readonly reflectionModel?: Model<Reflection>,
     @InjectModel('NudgeDismissal') private readonly nudgeModel?: Model<NudgeDismissal>,
   ) {}
 
   // ---------- Cadence ----------
-
   async computeCadence({
     userId,
     projectId,
@@ -56,9 +56,8 @@ export class HabitsService {
     const prefs = await this.getPrefs(userId);
     const workdays = Array.isArray(prefs?.workdays) && prefs.workdays.length
       ? prefs.workdays
-      : [1,2,3,4,5]; // Mon-Fri default
+      : [1, 2, 3, 4, 5];
 
-    // pull “meaningful” activity within range days
     const since = new Date();
     since.setDate(since.getDate() - (range - 1));
     const { items } = await this.activities.list({
@@ -69,7 +68,7 @@ export class HabitsService {
       limit: 300,
     });
 
-    const dayKey = (d: Date) => new Date(d).toISOString().slice(0,10);
+    const dayKey = (d: Date) => new Date(d).toISOString().slice(0, 10);
     const meaningful = (ev: AnyObj) => {
       const t = String(ev?.type || ev?.kind || '').toLowerCase();
       return (
@@ -104,9 +103,6 @@ export class HabitsService {
   }
 
   // ---------- Sprint Momentum ----------
-  // No hard dependency on SprintsService. We infer “completions” from activity types:
-  // e.g., 'sprint.completed', 'focus.completed', or any event whose type includes both
-  // 'sprint' and 'complete' (case-insensitive).
   async getSprintMomentum({
     userId,
     projectId,
@@ -119,8 +115,8 @@ export class HabitsService {
       scope: projectId ? 'project' : 'user',
       projectId,
       userId,
-      range: 'all',   // we filter by date below
-      limit: 1000,    // generous upper bound; we filter/aggregate in memory
+      range: 'all',
+      limit: 1000,
     });
 
     const byDay = new Map<string, number>();
@@ -142,7 +138,6 @@ export class HabitsService {
       byDay.set(d, (byDay.get(d) || 0) + 1);
     }
 
-    // build contiguous bars for the requested range (oldest → newest)
     const bars: Array<{ date: string; count: number }> = [];
     for (let i = range - 1; i >= 0; i--) {
       const d = new Date();
@@ -156,12 +151,11 @@ export class HabitsService {
   }
 
   // ---------- Prefs ----------
-
   async getPrefs(userId: string): Promise<HabitsPrefs> {
     if (!this.prefsModel) {
       return {
         userId,
-        workdays: [1,2,3,4,5],
+        workdays: [1, 2, 3, 4, 5],
         quietHours: { start: '22:00', end: '07:00' },
         nudges: { sprint: true, update: true, convertTask: true },
       };
@@ -170,13 +164,12 @@ export class HabitsService {
     if (!doc) {
       doc = await this.prefsModel.create({
         userId,
-        workdays: [1,2,3,4,5],
+        workdays: [1, 2, 3, 4, 5],
         quietHours: { start: '22:00', end: '07:00' },
         nudges: { sprint: true, update: true, convertTask: true },
         createdAt: new Date(),
         updatedAt: new Date(),
       } as any);
-      // @ts-ignore
       if (typeof (doc as any).toObject === 'function') doc = (doc as any).toObject();
     }
     return doc as HabitsPrefs;
@@ -194,7 +187,6 @@ export class HabitsService {
   }
 
   // ---------- Reflections ----------
-
   async postReflection(userId: string, payload: { wins?: string[]; focus?: string }) {
     const weekOf = this.weekKey(new Date());
     if (!this.reflectionModel) return { userId, weekOf, ...payload, createdAt: new Date() };
@@ -203,7 +195,6 @@ export class HabitsService {
       { $set: { wins: payload?.wins || [], focus: payload?.focus || '', createdAt: new Date() } },
       { upsert: true, new: true },
     ).lean().exec();
-    // live update for dashboards
     try { this.rt.emitToUser(userId, 'habits:updated', { kind: 'reflection' }); } catch {}
     return doc;
   }
@@ -215,7 +206,6 @@ export class HabitsService {
   }
 
   // ---------- Nudges ----------
-
   async dismissNudge(userId: string, nudgeId: string) {
     if (!nudgeId) return { ok: false };
     if (!this.nudgeModel) return { ok: true };
@@ -224,19 +214,17 @@ export class HabitsService {
   }
 
   // ---------- utils ----------
-
   private weekKey(d: Date) {
     const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    const dayNum = date.getUTCDay() || 7; // 1-7
+    const dayNum = date.getUTCDay() || 7;
     date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
     const weekNo = Math.ceil((((date as any) - (yearStart as any)) / 86400000 + 1) / 7);
     const y = date.getUTCFullYear();
-    return `${y}-${String(weekNo).padStart(2,'0')}`;
+    return `${y}-${String(weekNo).padStart(2, '0')}`;
   }
 
   private dayKey(d: Date) {
-    // YYYY-MM-DD in local time (aligns with UI charts that use local dates)
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');

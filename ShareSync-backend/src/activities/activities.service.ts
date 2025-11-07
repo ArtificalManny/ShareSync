@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+// backend/src/activities/activities.service.ts
+import { Injectable, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery } from 'mongoose';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
@@ -9,22 +10,21 @@ export interface ListParams {
   scope: 'user' | 'project';
   userId?: string;
   projectId?: string;
-  type?: string;                 // e.g., 'task.create' or comma-separated
+  type?: string;
   range?: '24h' | '7d' | '30d' | 'all';
-  cursor?: string | null;        // ISO createdAt of last item to paginate older
-  limit?: number;                // page size (max 100)
+  cursor?: string | null;
+  limit?: number;
 }
 
 @Injectable()
 export class ActivitiesService {
   constructor(
     @InjectModel('Activity') private readonly activityModel: Model<AnyObj>,
-    private readonly rt: RealtimeGateway,
+    @Inject('REALTIME_GATEWAY') private readonly rt: RealtimeGateway,   // ← FIXED
   ) {}
 
   /**
    * Persist an activity row.
-   * Minimal contract: userId?, projectId?, type (string), payload? (free-form)
    */
   async record(event: {
     userId?: string;
@@ -43,18 +43,30 @@ export class ActivitiesService {
       updatedAt: now,
     });
 
-    // Emit feed & habits pings (fire-and-forget)
+    const plain = doc.toObject ? doc.toObject() : doc;
+
     try {
       const pid = event.projectId ? String(event.projectId) : '';
       const uid = event.userId ? String(event.userId) : '';
-      if (pid) this.rt.emitToProject(pid, 'activity:new', { projectId: pid });
-      if (uid) this.rt.emitToUser(uid, 'habits:updated', { projectId: pid, kind: 'activity' });
+      if (pid) {
+        this.rt.emitToProject(pid, 'activity:new', {
+          _id: plain._id.toString(),
+          type: plain.type,
+          text: plain.text,
+          meta: plain.meta,
+          userId: plain.userId,
+          projectId: plain.projectId,
+          createdAt: plain.createdAt,
+        });
+      }
+      if (uid) {
+        this.rt.emitToUser(uid, 'habits:updated', { projectId: pid, kind: 'activity' });
+      }
     } catch {}
 
-    return typeof (doc as any).toObject === 'function' ? (doc as any).toObject() : doc;
+    return plain;
   }
 
-  /** Back-compat wrapper used by ActivitiesController */
   async create(
     projectId: string,
     userId: string,
@@ -71,10 +83,6 @@ export class ActivitiesService {
     });
   }
 
-  /**
-   * List activities with simple filters + cursor pagination.
-   * Returns { items, nextCursor }, ordered newest -> oldest.
-   */
   async list(params: ListParams): Promise<{ items: AnyObj[]; nextCursor: string | null }> {
     const {
       scope,
@@ -91,15 +99,11 @@ export class ActivitiesService {
     if (scope === 'project' && projectId) q.projectId = projectId;
 
     if (type) {
-      const types = String(type)
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
+      const types = String(type).split(',').map(s => s.trim()).filter(Boolean);
       if (types.length === 1) q.type = types[0];
       else if (types.length > 1) q.type = { $in: types };
     }
 
-    // Range
     if (range !== 'all') {
       const now = Date.now();
       let sinceMs = 0;
@@ -109,7 +113,6 @@ export class ActivitiesService {
       q.createdAt = { ...(q.createdAt || {}), $gte: new Date(now - sinceMs) };
     }
 
-    // Cursor (older than createdAt)
     if (cursor) {
       q.createdAt = { ...(q.createdAt || {}), $lt: new Date(cursor) };
     }
@@ -135,7 +138,6 @@ export class ActivitiesService {
     return { items, nextCursor };
   }
 
-  /** Convenience: light-weight CSV exporter */
   toCsv(items: AnyObj[]): string {
     const header = ['createdAt', 'type', 'userId', 'projectId', 'message'];
     const rows = items.map((it) => [

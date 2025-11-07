@@ -1,32 +1,23 @@
-// src/habits/habits.module.ts
+// backend/src/habits/habits.module.ts
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-
-import { HabitsController } from './habits.controller';
 import { HabitsService } from './habits.service';
-import {
-  HabitsPrefs, HabitsPrefsSchema,
-  Reflection, ReflectionSchema,
-  NudgeDismissal, NudgeDismissalSchema
-} from './habits.schemas';
-
+import { HabitsController } from './habits.controller';
 import { ActivitiesModule } from '../activities/activities.module';
-import { RealtimeModule } from '../realtime/realtime.module';
+import { RealtimeModule } from '../realtime/realtime.module';   // ← NEW
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: 'HabitsPrefs', schema: HabitsPrefsSchema },
-      { name: 'Reflection', schema: ReflectionSchema },
-      { name: 'NudgeDismissal', schema: NudgeDismissalSchema },
+      { name: 'HabitsPrefs', schema: {} },
+      { name: 'Reflection', schema: {} },
+      { name: 'NudgeDismissal', schema: {} },
     ]),
-    forwardRef(() => ActivitiesModule), // gives ActivitiesService + Activity model
-    RealtimeModule,                     // gives RealtimeGateway (exported)
+    forwardRef(() => ActivitiesModule),
+    forwardRef(() => RealtimeModule),   // ← NEW (provides REALTIME_GATEWAY)
   ],
   controllers: [HabitsController],
-  providers: [
-    HabitsService, // only local provider
-  ],
+  providers: [HabitsService],
   exports: [HabitsService],
 })
 export class HabitsModule {}

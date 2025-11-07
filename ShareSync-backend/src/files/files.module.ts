@@ -1,23 +1,17 @@
-// src/files/files.module.ts
+// backend/src/files/files.module.ts
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-
-import { FilesController } from './files.controller';
-import { FilesService } from './files.service';
-
 import { File, FileSchema } from './schemas/file.schema';
-import { Project, ProjectSchema } from '../projects/schemas/project.schema'; // ⬅️ bring back
+import { FilesService } from './files.service';
+import { FilesController } from './files.controller';
 import { ProjectModule } from '../projects/project.module';
-import { RealtimeModule } from '../realtime/realtime.module';
+import { RealtimeModule } from '../realtime/realtime.module';   // ← NEW
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: File.name, schema: FileSchema },
-      { name: Project.name, schema: ProjectSchema }, // ⬅️ re-add this so @InjectModel(Project) works
-    ]),
-    forwardRef(() => ProjectModule), // ⬅️ for ProjectsService / guards
-    forwardRef(() => RealtimeModule),
+    MongooseModule.forFeature([{ name: File.name, schema: FileSchema }]),
+    forwardRef(() => ProjectModule),
+    forwardRef(() => RealtimeModule),   // ← NEW (provides REALTIME_GATEWAY)
   ],
   controllers: [FilesController],
   providers: [FilesService],

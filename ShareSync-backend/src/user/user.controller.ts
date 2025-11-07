@@ -1,103 +1,154 @@
-// src/user/user.controller.ts
+// backend/src/user/user.controller.ts
 import {
+  Body,
   Controller,
   Get,
-  Patch,
-  Body,
+  Post,
   UseGuards,
   Req,
-  Param,
-  NotFoundException,
+  Query,
+  BadRequestException,
+  Res,
+  Patch,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { UserService } from './user.service';
-import { ActivitiesService } from '../activities/activities.service';
-// If your gateway is NotificationsGateway instead, import that and inject it below.
+import { Response } from 'express';
+import { ActivitiesService, ListParams } from '../activities/activities.service';
+import { CreateActivityDto } from '../activities/dto/create-activity.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { NotifyService } from '../notifications/notify.service';
+import {
+  ProjectPermissionGuard,
+  CanEditProject,
+  CanViewProject,
+} from '../projects/guards/project-permission.guard';
 
-@Controller('users')
-export class UserController {
+type AnyObj = Record<string, any>;
+
+function coerceRange(input: unknown): '24h' | '7d' | '30d' | 'all' {
+  const v = String(input ?? '').trim().toLowerCase();
+  if (v === '24h' || v === '7d' || v === '30d' || v === 'all') return v as any;
+  if (v === '1' || v === '1d' || v === '24') return '24h';
+  if (v === '7' || v === '07' || v === '7d') return '7d';
+  if (v === '30' || v === '30d') return '30d';
+  return '7d';
+}
+
+@Controller('activities')
+@UseGuards(JwtAuthGuard)
+export class ActivitiesController {
   constructor(
-    private readonly users: UserService,
     private readonly activities: ActivitiesService,
-    private readonly realtime: RealtimeGateway, // or NotificationsGateway
+    private readonly realtime: RealtimeGateway,
+    private readonly notify: NotifyService,
   ) {}
 
-  /**
-   * GET /api/users/me
-   * Returns the authenticated user's profile.
-   */
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  async me(@Req() req: any) {
-    const id = req?.user?.sub || req?.user?.id;
-    return this.users.findById(id);
-  }
+  @UseGuards(ProjectPermissionGuard)
+  @CanEditProject()
+  @Post()
+  async create(@Req() req: any, @Body() dto: CreateActivityDto) {
+    const userId: string = req.user?.sub || req.user?.id || req.user?._id;
+    const projectId: string = (dto as AnyObj)?.projectId;
 
-  /**
-   * PATCH /api/users/me
-   * Updates profile fields. If display-related fields changed, emit `user:updated`
-   * so all tabs/clients refresh avatars/names.
-   */
-  @UseGuards(JwtAuthGuard)
-  @Patch('me')
-  async patchMe(@Req() req: any, @Body() patch: any) {
-    const id = req?.user?.sub || req?.user?.id;
+    if (!projectId) throw new BadRequestException('projectId is required');
 
-    const before = await this.users.findById(id);
-    const updated = await this.users.update(id, patch);
+    const created = await this.activities.create(projectId, userId, dto);
 
-    // Detect display-impacting changes
-    const fields = ['firstName', 'lastName', 'username', 'profilePicture', 'bio'];
-    const changed = fields.some((k) => (before as any)?.[k] !== (updated as any)?.[k]);
-    if (changed) {
-      // Broadcast to the user’s sockets; clients listen and refresh from /users/me
-      this.realtime.emitToUser(id, 'user:updated', {
-        userId: id,
-        firstName: (updated as any)?.firstName,
-        lastName: (updated as any)?.lastName,
-        username: (updated as any)?.username,
-        profilePicture: (updated as any)?.profilePicture,
-        bio: (updated as any)?.bio,
-        ts: new Date().toISOString(),
-      });
+    const payload = {
+      _id: String((created as AnyObj)?._id ?? ''),
+      type: (created as AnyObj)?.type ?? dto.type ?? 'update',
+      text: (created as AnyObj)?.text ?? dto.text ?? '',
+      meta: (created as AnyObj)?.meta ?? dto.meta ?? {},
+      userId,
+      projectId,
+      createdAt: (created as AnyObj)?.createdAt ?? new Date().toISOString(),
+    };
+
+    this.realtime.emitToProject(projectId, 'activity:new', payload);
+    this.realtime.emitToProject(projectId, 'project:statsUpdated', { projectId });
+    this.realtime.emitToUser(userId, 'user:statsUpdated', { userId });
+
+    const text: string = dto?.text || '';
+    const metaObj: AnyObj = (dto && typeof dto.meta === 'object' ? dto.meta : {}) || {};
+    const mentionedUserIds: string[] = Array.isArray(metaObj.mentions) ? metaObj.mentions : [];
+
+    if (mentionedUserIds.length) {
+      for (const uid of mentionedUserIds) {
+        if (!uid) continue;
+        try {
+          this.notify.inApp({
+            userId: uid,
+            title: 'Mention',
+            message: 'You were mentioned in a project update',
+            href: `/projects/${projectId}`,
+            priority: 'mention',
+            meta: { projectId, activityId: (created as AnyObj)?._id },
+          });
+        } catch {}
+      }
     }
 
-    // Optional: record activity (safe no-op if your ActivitiesService is just a stub)
-    await this.activities.record({
-      userId: id,
-      type: 'user.updated',
-      payload: { fields: Object.keys(patch || {}) },
-    });
-
-    return updated;
+    return created;
   }
 
-  /**
-   * GET /api/users/public/:username
-   * Public profile view honoring the `publicProfile` flag.
-   */
-  @Get('public/:username')
-  async publicUser(@Param('username') username: string) {
-    // Prefer the privacy-aware method you already have.
-    const user = await this.users.findPublicByUsername(username);
-    if (!user) throw new NotFoundException();
-    return user;
+  @Get()
+  @UseGuards(ProjectPermissionGuard)
+  @CanViewProject()
+  async list(@Req() req: any, @Query() query: AnyObj) {
+    const scope = ((query.scope as string) || 'user').toLowerCase();
+    if (scope !== 'user' && scope !== 'project') {
+      throw new BadRequestException('scope must be "user" or "project"');
+    }
+
+    const params: ListParams = {
+      scope,
+      userId:
+        (query.userId as string) ||
+        (scope === 'user' ? (req.user?.sub || req.user?.id || req.user?._id) : undefined),
+      projectId: (query.projectId as string) || undefined,
+      type: (query.type as string) || undefined,
+      range: coerceRange(query.range),
+      cursor: (query.cursor as string) || null,
+      limit: Number.isFinite(Number(query.limit)) ? Number(query.limit) : 20,
+    };
+
+    if (scope === 'project' && !params.projectId) {
+      throw new BadRequestException('projectId is required when scope=project');
+    }
+
+    return this.activities.list(params);
   }
 
-  /**
-   * GET /api/users/:id/activity
-   * Basic activity listing for a user (can add auth or privacy gates later).
-   * Supports your ActivitiesService cursor listing.
-   */
-  @Get(':id/activity')
-  async userActivity(@Param('id') id: string) {
-    return this.activities.list({
-      scope: 'user',
-      userId: id,
-      range: '7d',
-      limit: 20,
-      cursor: null,
-    });
+  @Get('export.csv')
+  @UseGuards(ProjectPermissionGuard)
+  @CanViewProject()
+  async export(@Req() req: any, @Query() query: AnyObj, @Res() res: Response) {
+    const scope = ((query.scope as string) || 'user').toLowerCase();
+    if (scope !== 'user' && scope !== 'project') {
+      throw new BadRequestException('scope must be "user" or "project"');
+    }
+
+    const params: ListParams = {
+      scope,
+      userId:
+        (query.userId as string) ||
+        (scope === 'user' ? (req.user?.sub || req.user?.id || req.user?._id) : undefined),
+      projectId: (query.projectId as string) || undefined,
+      type: (query.type as string) || undefined,
+      range: coerceRange(query.range),
+      cursor: (query.cursor as string) || null,
+      limit: Number.isFinite(Number(query.limit)) ? Number(query.limit) : 1000,
+    };
+
+    if (scope === 'project' && !params.projectId) {
+      throw new BadRequestException('projectId is required when scope=project');
+    }
+
+    const { items } = await this.activities.list(params);
+    const csv = this.activities.toCsv(items);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="activity_export.csv"');
+    res.send(csv);
   }
 }

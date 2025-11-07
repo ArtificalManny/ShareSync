@@ -12,12 +12,11 @@ import { FeedModule } from './feed/feed.module';
 import { ProfileModule } from './profile/profile.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { RealtimeModule } from './realtime/realtime.module';
-import { MomentumModule } from './momentum/momentum.module'; // FIXED PATH
+import { MomentumModule } from './momentum/momentum.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { StatsModule } from './stats/stats.module';
-import { TasksModule } from './tasks/tasks.module';
-
+import { TaskModule } from './tasks/task.module';
 import { NotifyModule } from './notifications/notify.module';
 import { FilesModule } from './files/files.module';
 import { HabitsModule } from './habits/habits.module';
@@ -27,9 +26,7 @@ import { AppController } from './app.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-
     MongooseModule.forRoot(process.env.MONGO_URI || 'mongodb://localhost:27017/sharesync'),
-
     ThrottlerModule.forRoot([{ ttl: 60, limit: 20 }]),
 
     AuthModule,
@@ -39,12 +36,11 @@ import { AppController } from './app.controller';
     ProfileModule,
     ActivitiesModule,
     RealtimeModule,
-    MomentumModule, // ADDED
+    MomentumModule,
     ModerationModule,
     UploadsModule,
     StatsModule,
-    TasksModule,
-
+    TaskModule,
     NotifyModule,
     FilesModule,
     HabitsModule,

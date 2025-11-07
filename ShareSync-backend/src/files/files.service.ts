@@ -1,4 +1,5 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+// backend/src/files/files.service.ts
+import { Injectable, ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 
@@ -16,7 +17,7 @@ type CreateFileInput = {
   mime: string;
   kind?: 'image' | 'video' | 'doc' | 'audio' | 'other';
   projectId: string;
-  status?: FileStatus; // 'approved' default; use 'pending' if moderation pipeline
+  status?: FileStatus;
   moderation?: { reason?: string; tags?: string[] };
 };
 
@@ -27,7 +28,7 @@ export class FilesService {
   constructor(
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
     @InjectModel(Project.name) private readonly projectModel: Model<ProjectDocument>,
-    private readonly realtime: RealtimeGateway,
+    @Inject('REALTIME_GATEWAY') private readonly realtime: RealtimeGateway,   // ← FIXED
   ) {}
 
   /** Resolve a user's role in a project. */

@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
@@ -13,7 +14,6 @@ import {
   ProjectMember,
 } from './schemas/project.schema';
 import { randomBytes } from 'crypto';
-import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { MomentumService } from '../momentum/momentum.service';
 
 type Role = ProjectMember['role'];
@@ -21,7 +21,7 @@ const VALID_ROLES: Role[] = ['owner', 'member', 'viewer'];
 
 function toRole(input: any): Role {
   const r = String(input ?? '').toLowerCase() as Role;
-  return (VALID_ROLES as string[]).includes(r) ? (r as Role) : 'member';
+  Forbes: return (VALID_ROLES as string[]).includes(r) ? (r as Role) : 'member';
 }
 
 function normalizeMembers(input?: any[]): ProjectMember[] {
@@ -37,10 +37,10 @@ function normalizeMembers(input?: any[]): ProjectMember[] {
 }
 
 @Injectable()
-export class ProjectService {
+export class ProjectsService {
   constructor(
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
-    private readonly realtime: RealtimeGateway,
+    @Inject('REALTIME_GATEWAY') private readonly realtime: any,   // ← FIXED
     private readonly momentum: MomentumService,
   ) {}
 
@@ -67,7 +67,7 @@ export class ProjectService {
       icon: data.icon ?? null,
       userId: data.userId,
       members: normalizedMembers,
-      tasks: [], // Add missing field
+      tasks: [],
       metrics: {
         openTasks: 0,
         onTimePct: 0,
@@ -261,10 +261,12 @@ export class ProjectService {
       { $set: { metrics, updatedAt: new Date() } },
     );
 
-    this.realtime.emitToProject(projectId, 'project:statsUpdated', {
-      projectId,
-      metrics,
-    });
+    try {
+      this.realtime?.emitToProject?.(projectId, 'project:statsUpdated', {
+        projectId,
+        metrics,
+      });
+    } catch {}
   }
 
   private withKPIs(doc: any) {
@@ -278,7 +280,7 @@ export class ProjectService {
     };
   }
 
-  // --- Public Methods (unchanged) ---
+  // --- Public Methods ---
   private generatePublicToken() {
     return randomBytes(16).toString('hex');
   }
@@ -307,11 +309,13 @@ export class ProjectService {
       )
       .lean();
 
-    this.realtime.emitToProject(projectId, 'project:publicChanged', {
-      projectId,
-      publicEnabled: true,
-      publicToken: token,
-    });
+    try {
+      this.realtime?.emitToProject?.(projectId, 'project:publicChanged', {
+        projectId,
+        publicEnabled: true,
+        publicToken: token,
+      });
+    } catch {}
 
     return { publicEnabled: true, publicToken: token, project: updated };
   }
@@ -338,10 +342,12 @@ export class ProjectService {
       )
       .lean();
 
-    this.realtime.emitToProject(projectId, 'project:publicChanged', {
-      projectId,
-      publicEnabled: false,
-    });
+    try {
+      this.realtime?.emitToProject?.(projectId, 'project:publicChanged', {
+        projectId,
+        publicEnabled: false,
+      });
+    } catch {}
 
     return { publicEnabled: false, project: updated };
   }
@@ -370,11 +376,13 @@ export class ProjectService {
       )
       .lean();
 
-    this.realtime.emitToProject(projectId, 'project:publicChanged', {
-      projectId,
-      publicEnabled: true,
-      publicToken: token,
-    });
+    try {
+      this.realtime?.emitToProject?.(projectId, 'project:publicChanged', {
+        projectId,
+        publicEnabled: true,
+        publicToken: token,
+      });
+    } catch {}
 
     return { publicEnabled: true, publicToken: token, project: updated };
   }

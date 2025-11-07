@@ -9,7 +9,6 @@ import EmptyState from '../components/ui/EmptyState.jsx';
 import RightRail from '../components/projects/RightRail.jsx';
 import { listProjects } from '../api/projects';
 import SectionHeader from '../components/ui/SectionHeader.jsx';
-import TraceOutline from '../components/ui/TraceOutline.jsx';
 import { bindShine } from '../utils/shine';
 import GradientText from '../components/ui/GradientText.jsx';
 import GradientPanel from "../components/frame/GradientPanel.jsx";
@@ -28,18 +27,17 @@ export default function Projects() {
   const rootRef = useRef(null);
   const init = readParams(location.search);
 
-  const [projects, setProjects]   = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState('');
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
-  const [query, setQuery]     = useState(init.query);
-  const [status, setStatus]   = useState(init.status);
-  const [owner, setOwner]     = useState(init.owner);
+  const [query, setQuery] = useState(init.query);
+  const [status, setStatus] = useState(init.status);
+  const [owner, setOwner] = useState(init.owner);
   const [updated, setUpdated] = useState(init.updated);
 
   const [hoverId, setHoverId] = useState(null);
-  const [shipProject, setShipProject] = useState(null);
 
   if (!window.__SS_USER) {
     return (
@@ -88,24 +86,13 @@ export default function Projects() {
         signal: controller.signal,
       });
 
-      const first = Array.isArray(items) ? items.slice(0, 12) : [];
-      const rest  = Array.isArray(items) ? items.slice(12) : [];
-      setProjects(first);
-      setTimeout(() => {
-        if (!controller.signal.aborted) {
-          setProjects((prev) => [...prev, ...rest]);
-          try {
-            performance?.mark?.('ss:projects:fetch:end');
-            performance?.measure?.('perf:projects:list-first-chunk', 'ss:projects:fetch:start', 'ss:projects:fetch:end');
-          } catch {}
-        }
-      }, 0);
+      setProjects(items || []);
     } catch (e) {
       if (controller.signal.aborted) return;
       console.error('[Projects] load error', e);
       setError('Failed to load projects.');
-      try { toast({ title: 'Failed to load projects', variant: 'error' }); } catch {}
-      try { track('projects_load_error'); } catch {}
+      toast({ title: 'Failed to load projects', variant: 'error' });
+      track('projects_load_error');
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
@@ -140,8 +127,8 @@ export default function Projects() {
 
       const matchOwner =
         owner === 'all' ||
-        (owner === 'me' && (p.ownerId === meId || p.owner === meId)) ||
-        (owner === 'team' && (p.ownerId !== meId && p.owner !== meId));
+        (owner === 'me' && (p.userId === meId || p.ownerId === meId)) ||
+        (owner === 'team' && (p.userId !== meId && p.ownerId !== meId));
 
       const matchUpdated = withinWindow(p.updatedAt || p.lastActivityAt || p.createdAt);
 
@@ -170,7 +157,6 @@ export default function Projects() {
 
   const handleShip = (project) => {
     track('project_ship_clicked', { projectId: project._id });
-    setShipProject(project);
   };
 
   return (
@@ -282,11 +268,10 @@ export default function Projects() {
             {!loading && !error && filtered.length === 0 && (
               <EmptyState
                 icon="folder"
-                title="No projects match your filters"
+                title="No projects yet"
                 primary={{ label: "+ New Project", onClick: () => setShowCreate(true) }}
-                secondary={{ label: "Clear filters", onClick: () => { setQuery(''); setStatus('all'); setOwner('all'); setUpdated('7d'); } }}
               >
-                Try adjusting filters or start your first project.
+                Start your first project to get going.
               </EmptyState>
             )}
 

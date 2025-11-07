@@ -1,3 +1,4 @@
+// backend/src/realtime/realtime.gateway.ts
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -5,55 +6,54 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
-  cors: { origin: '*', credentials: true },
+  cors: {
+    origin: 'http://localhost:54693',
+    credentials: true,
+  },
 })
 export class RealtimeGateway {
-  @WebSocketServer() server: Server;
-  private readonly logger = new Logger(RealtimeGateway.name);
+  @WebSocketServer()
+  server: Server;
 
-  // Clients join rooms like: user:{userId}, project:{projectId}
+  // Allow main.ts to inject the server
+  setServer(io: Server) {
+    this.server = io;
+  }
+
   @SubscribeMessage('join')
-  handleJoin(@MessageBody() data: { room: string }, @ConnectedSocket() client: Socket) {
-    if (!data?.room) return;
-    client.join(data.room);
-    this.logger.debug(`Client ${client.id} joined ${data.room}`);
+  handleJoin(
+    @MessageBody() data: { projectId?: string; userId?: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    if (data.projectId) {
+      client.join(`project:${data.projectId}`);
+    }
+    if (data.userId) {
+      client.join(`user:${data.userId}`);
+    }
   }
 
   @SubscribeMessage('leave')
-  handleLeave(@MessageBody() data: { room: string }, @ConnectedSocket() client: Socket) {
-    if (!data?.room) return;
-    client.leave(data.room);
-    this.logger.debug(`Client ${client.id} left ${data.room}`);
+  handleLeave(
+    @MessageBody() data: { projectId?: string; userId?: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    if (data.projectId) {
+      client.leave(`project:${data.projectId}`);
+    }
+    if (data.userId) {
+      client.leave(`user:${data.userId}`);
+    }
   }
 
-  // Emission helpers
-  emitToRoom(room: string, event: string, payload: any) {
-    this.server.to(room).emit(event, payload);
+  emitToProject(projectId: string, event: string, data: any) {
+    this.server?.to(`project:${projectId}`).emit(event, data);
   }
 
-  /** Emit to a specific project room: project:{projectId} */
-  emitToProject(projectId: string, event: string, payload: any) {
-    if (!projectId) return;
-    this.emitToRoom(`project:${projectId}`, event, payload);
-  }
-
-  /** Emit to a specific user room: user:{userId} */
-  emitToUser(userId: string, event: string, payload: any) {
-    if (!userId) return;
-    this.emitToRoom(`user:${userId}`, event, payload);
-  }
-
-  /** Convenience for public status change broadcasts */
-  emitProjectPublicChanged(projectId: string, payload: { projectId: string; publicEnabled: boolean; publicToken: boolean }) {
-    this.emitToProject(projectId, 'project:publicChanged', payload);
-  }
-
-  /** Convenience specifically for habits UI */
-  emitHabitsUpdated(userId: string, projectId?: string) {
-    if (userId) this.emitToUser(userId, 'habits:updated', { projectId: projectId || null });
+  emitToUser(userId: string, event: string, data: any) {
+    this.server?.to(`user:${userId}`).emit(event, data);
   }
 }
