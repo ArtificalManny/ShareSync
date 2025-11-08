@@ -1,7 +1,8 @@
+// src/api/client.js
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "/api", // dev proxy or same origin
+  baseURL: "/api",   // ← Vite proxy handles this (no absolute URL)
   withCredentials: true,
 });
 
@@ -14,7 +15,6 @@ api.interceptors.request.use((cfg) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    // Surface 401s and common errors
     if (err?.response?.status === 401) {
       try {
         localStorage.removeItem("ss.jwt");

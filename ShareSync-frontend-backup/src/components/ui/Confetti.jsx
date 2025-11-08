@@ -103,13 +103,13 @@ export function fireConfetti({
 /**
  * React wrapper for declarative use
  */
-export default function Confetti({ trigger = false, onComplete }) {
+export default function Confetti({ trigger = false, onComplete, ...props }) {
   useEffect(() => {
     if (trigger) {
-      fireConfetti();
+      fireConfetti(props);
       onComplete?.();
     }
-  }, [trigger, onComplete]);
+  }, [trigger, props, onComplete]);
 
   return null;
 }

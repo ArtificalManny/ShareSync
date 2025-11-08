@@ -4,53 +4,37 @@ import { join } from 'path';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-import { Server } from 'socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.setGlobalPrefix('api');
 
+  // CORS – allow pre‑flight + credentials
   app.enableCors({
     origin: ['http://localhost:54693', 'http://localhost:5173', 'http://localhost:4173'],
-    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
-    maxAge: 86400,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   app.useStaticAssets(join(__dirname, '..', 'uploads'));
 
-  const port = process.env.PORT ? Number(process.env.PORT) : 5000;
-  const httpServer = await app.listen(port);
-  console.log(`[Nest] API listening on http://localhost:${port}`);
-
-  const io = new Server(httpServer, {
-    path: '/socket.io',
-    cors: {
-      origin: 'http://localhost:54693',
-      methods: ['GET', 'POST'],
-      credentials: true,
-    },
-  });
-
-  if (process.env.REDIS_URL) {
-    try {
-      const { createAdapter } = await import('@socket.io/redis-adapter');
-      const { createClient } = await import('redis');
-      const pub = createClient({ url: process.env.REDIS_URL });
-      const sub = pub.duplicate();
-      await Promise.all([pub.connect(), sub.connect()]);
-      io.adapter(createAdapter(pub, sub));
-      console.log('[WebSocket] Redis adapter enabled');
-    } catch (e) {
-      console.warn('[WebSocket] Redis not available – using in‑memory', e);
+  const port = 5000;
+  try {
+    await app.listen(port);
+    console.log(`[Nest] API listening on http://localhost:${port}`);
+  } catch (err: any) {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`[Nest] Port ${port} in use. Trying ${port + 1}...`);
+      await app.listen(port + 1);
+      console.log(`[Nest] API listening on http://localhost:${port + 1}`);
+    } else {
+      throw err;
     }
   }
-
-  // Get gateway using string token
-  const realtimeGateway = app.get('REALTIME_GATEWAY');
-  realtimeGateway.setServer(io);
 }
 
 bootstrap();

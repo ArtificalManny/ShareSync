@@ -11,7 +11,7 @@ import { ProjectModule } from './projects/project.module';
 import { FeedModule } from './feed/feed.module';
 import { ProfileModule } from './profile/profile.module';
 import { ActivitiesModule } from './activities/activities.module';
-import { RealtimeModule } from './realtime/realtime.module';
+import { RealtimeModule } from './realtime/realtime.module';   // ← NEW
 import { MomentumModule } from './momentum/momentum.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { UploadsModule } from './uploads/uploads.module';
@@ -35,7 +35,7 @@ import { AppController } from './app.controller';
     FeedModule,
     ProfileModule,
     ActivitiesModule,
-    RealtimeModule,
+    RealtimeModule,   // ← NEW
     MomentumModule,
     ModerationModule,
     UploadsModule,

@@ -5,16 +5,14 @@ import Button from "../ui/Button";
 
 export default function ProjectHeader({
   name = "Untitled Project",
-  status = "In Progress",          // "In Progress" | "Paused" | "Done"
+  status = "In Progress",
   isPublic = false,
   metrics = { ontime: 0, throughput: 0, streak: 0 },
   onAddTask,
   onStartFocus,
   onDownloadICS,
-  // emoji, letter, or <img />
   icon = "U",
 }) {
-  // Spin the ring once on first mount, then settle to idle glow
   const [spinOnce, setSpinOnce] = useState(true);
   useEffect(() => {
     const t = setTimeout(() => setSpinOnce(false), 1600);
@@ -27,9 +25,7 @@ export default function ProjectHeader({
   return (
     <section className="project-header panel-neon specular" role="region" aria-label="Project header">
       <div className="ph-inner">
-        {/* Left cluster */}
         <div className="ph-left">
-          {/* Ringed avatar/icon */}
           <div className={`ph-icon story-ring ${spinOnce ? "ring-spin-once" : ""}`}>
             <div className="ph-avatar" aria-hidden>
               {typeof icon === "string" ? icon : icon}
@@ -47,7 +43,6 @@ export default function ProjectHeader({
               </span>
             </div>
 
-            {/* Micro KPIs */}
             <ul className="ph-kpis" aria-label="Project mini KPIs">
               <li>
                 <span className="kpi-label">On-time</span>
@@ -65,7 +60,6 @@ export default function ProjectHeader({
           </div>
         </div>
 
-        {/* Right actions (shared Button variants) */}
         <div className="ph-right">
           <Button variant="primary" size="md" onClick={onAddTask}>
             + Add task
@@ -73,9 +67,11 @@ export default function ProjectHeader({
           <Button variant="outline" size="md" onClick={onStartFocus}>
             Start 25:00
           </Button>
-          <Button variant="ghost" size="md" onClick={onDownloadICS}>
-            Download .ics
-          </Button>
+          {onDownloadICS && (
+            <Button variant="ghost" size="md" onClick={onDownloadICS}>
+              Download .ics
+            </Button>
+          )}
         </div>
       </div>
     </section>

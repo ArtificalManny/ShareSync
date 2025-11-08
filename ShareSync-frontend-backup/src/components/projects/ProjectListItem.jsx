@@ -9,7 +9,6 @@ import useReducedMotion from "../../hooks/useReducedMotion";
 import { formatRelativeTime } from "../../utils/formatters";
 import Button from "../ui/Button.jsx";
 
-// lazy import so first paint is fast; we call this on hover/focus
 let _prefetchStats = null;
 async function prefetchStats(projectId) {
   try {
@@ -21,7 +20,6 @@ async function prefetchStats(projectId) {
   } catch {}
 }
 
-/** Small SVG renderer for the preset keys used across the app */
 function SVGIcon({ name, className = "w-5 h-5" }) {
   const common = { className, "aria-hidden": true };
   switch (name) {
@@ -57,7 +55,6 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
   const status = (project?.status || "In Progress").toString();
   const publicEnabled = !!(project?.publicEnabled || project?.publicToken);
 
-  // icon support (emoji or preset svg)
   const icon = project?.icon || null;
 
   const members = Array.isArray(project?.members) && project.members.length
@@ -67,11 +64,9 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
   const rel = useMemo(() => formatRelativeTime(lastActivityAt), [lastActivityAt]);
   const { barCls } = useMemo(() => accentForStatus(status), [status]);
 
-  // Recent activity indicator
   const hasRecent = useRecentFlag(lastActivityAt, recentWindowMs);
   const prefersReduced = useReducedMotion();
 
-  // Debounced prefetch on hover/focus
   const hoverTimer = useRef(null);
   const handleEnter = () => {
     if (!id) return;
@@ -94,18 +89,12 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
       className="group relative w-full text-left rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 overflow-hidden marching"
       aria-label={`Open project ${title}`}
     >
-      {/* left gradient bar */}
       <span className={`absolute left-0 top-0 h-full w-1.5 rounded-l-2xl ${barCls} transition-[width] duration-200 group-hover:w-2`} />
-
-      {/* shine sweep (disabled under reduced motion via .shine rules) */}
       <span className="shine pointer-events-none" aria-hidden="true" />
 
-      {/* Header: icon + title + avatars */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex items-center gap-2">
-          {/* Icon (emoji/svg) with recent halo */}
           <span className="relative shrink-0 h-7 w-7 rounded-lg grid place-content-center bg-slate-50 dark:bg-slate-800 text-xl">
-            {/* Animated ring around icon if recent + not reduced motion */}
             {hasRecent && !prefersReduced && (
               <AnimatedRing
                 size="36px"
@@ -114,7 +103,6 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
                 className="absolute -inset-[5px] pointer-events-none rounded-xl"
               />
             )}
-            {/* Static tiny dot when reduced motion */}
             {hasRecent && prefersReduced && (
               <span
                 className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
@@ -172,7 +160,6 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
         </div>
       </div>
 
-      {/* Subtext: status pill + last update */}
       <div className="mt-2 flex items-center justify-between">
         <StatusPill status={status} />
         <span className="inline-flex items-center gap-1 text-xs text-slate-500">
@@ -181,7 +168,6 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
         </span>
       </div>
 
-      {/* Optional description */}
       {project?.description ? (
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
           {project.description}
@@ -190,8 +176,6 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
     </button>
   );
 }
-
-/* ---------- helpers ---------- */
 
 function normalizeMembers(list) {
   return list.map((u, i) => ({

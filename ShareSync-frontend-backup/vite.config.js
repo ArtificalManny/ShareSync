@@ -1,3 +1,4 @@
+// vite.config.js
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import compression from "vite-plugin-compression";
@@ -5,7 +6,6 @@ import compression from "vite-plugin-compression";
 export default defineConfig({
   plugins: [
     react(),
-    // Brotli + gzip for smaller assets in preview/production
     compression({ algorithm: "brotliCompress" }),
     compression({ algorithm: "gzip" })
   ],
@@ -13,20 +13,19 @@ export default defineConfig({
     port: 54693,
     proxy: {
       "/api": {
-        target: "http://localhost:3000",
+        target: "http://localhost:5001",   // ← Backend is on 5001
         changeOrigin: true,
         secure: false
       },
-      // Socket.IO websocket traffic
       "/socket.io": {
-        target: "http://localhost:3000",
+        target: "ws://localhost:5001",     // ← WebSocket also on 5001
         ws: true,
         changeOrigin: true
       }
     }
   },
   build: {
-    sourcemap: false, // slightly improves LH perf score
+    sourcemap: false,
     chunkSizeWarningLimit: 900
   }
 });
