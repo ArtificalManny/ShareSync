@@ -1,1 +1,0 @@
-import{a}from"./index-69706c91.js";async function n({range:t=30}={}){return(await a.get(`/users/me/stats?range=${t}`)).data}async function o(t,{range:r=30}={}){if(!t)throw new Error("projectId is required");return(await a.get(`/projects/${t}/stats?range=${r}`)).data}export{o as a,n as g};

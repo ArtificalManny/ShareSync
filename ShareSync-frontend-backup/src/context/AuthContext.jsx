@@ -16,6 +16,7 @@ export function AuthProvider({ children }) {
         .then((res) => setUser(res.data))
         .catch(() => {
           localStorage.removeItem("ss.jwt");
+          localStorage.removeItem("ss.user");
           setUser(null);
         })
         .finally(() => setLoading(false));
@@ -28,7 +29,9 @@ export function AuthProvider({ children }) {
   const login = async (credentials) => {
     const res = await client.post("/auth/login", credentials);
     const { token, user } = res.data;
+
     localStorage.setItem("ss.jwt", token);
+    localStorage.setItem("ss.user", JSON.stringify(user));
     setUser(user);
     return user;
   };
@@ -46,6 +49,9 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
+
+// THIS LINE WAS MISSING — THIS IS THE FINAL FIX
+export { AuthContext };
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
