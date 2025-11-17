@@ -22,6 +22,47 @@ const PageStyles = () => (
     }
     @media (min-width: 768px) { .home-page { row-gap: 1.5rem; } }
 
+    /* READINESS SCORE CARD */
+    .readiness-card {
+      background: rgba(30, 30, 40, 0.75);
+      backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+      border-radius: 1.5rem;
+      overflow: hidden;
+      color: #e2e8f0;
+      padding: 1.5rem;
+    }
+    .readiness-score {
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1;
+      background: linear-gradient(135deg, #6366f1, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .readiness-label {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+    .readiness-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      margin: 1rem 0;
+    }
+    .readiness-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s ease, background 0.3s ease;
+    }
+    .readiness-high { background: linear-gradient(90deg, #10b981, #34d399); }
+    .readiness-medium { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .readiness-low { background: linear-gradient(90deg, #ef4444, #f87171); }
+
     /* AI PLAN CAPSULE */
     .ai-plan { 
       background: rgba(30, 30, 40, 0.75); 
@@ -49,13 +90,13 @@ const PageStyles = () => (
       box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4); 
     }
 
-    /* MOMENTUM RING — VERTICAL TEXT */
+    /* MOMENTUM RING */
     .momentum-ring { 
       width: 160px; height: 160px; 
       display: flex; align-items: center; justify-content: center; 
     }
     .momentum-ring svg { 
-      transform: none; /* ← NO ROTATION */
+      transform: none;
     }
     .momentum-ring .bg { 
       stroke: rgba(255, 255, 255, 0.08); 
@@ -95,7 +136,7 @@ const PageStyles = () => (
       font-size: 0.75rem;
     }
 
-    /* QUICK ACTIONS — BIG, BOLD, VISIBLE */
+    /* QUICK ACTIONS */
     .quick-actions { 
       display: grid; 
       grid-template-columns: 1fr 1fr; 
@@ -160,11 +201,44 @@ const PageStyles = () => (
 );
 
 /* ------------------ COMPONENTS ------------------ */
+function ReadinessScoreCard({ score, label, insight, onStart }) {
+  const scoreClass = score >= 70 ? 'readiness-high' : score >= 40 ? 'readiness-medium' : 'readiness-low';
+
+  return (
+    <div className="readiness-card card">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="readiness-score">{score}</div>
+          <div className="readiness-label">{label}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-xs opacity-70 mb-1">Daily Readiness</div>
+          <div className="text-sm font-medium">{insight}</div>
+        </div>
+      </div>
+
+      <div className="readiness-bar mt-4">
+        <div 
+          className={`readiness-fill ${scoreClass}`} 
+          style={{ width: `${score}%` }}
+        />
+      </div>
+
+      <button 
+        onClick={onStart}
+        className="mt-4 w-full bg-gradient-to-r from-indigo-500 to-pink-500 text-white py-3 rounded-xl font-bold text-lg"
+      >
+        Launch Your Day
+      </button>
+    </div>
+  );
+}
+
 function AIPlanCapsule({ nextBestAction, onRegenerate, onStart }) {
   return (
     <div className="ai-plan card p-6 relative">
       <div className="glow" />
-      <h2 className="text-xl font-bold mb-4">Today’s_den AI Plan</h2>
+      <h2 className="text-xl font-bold mb-4">Today’s AI Plan</h2>
       
       <div className="space-y-3 mb-6">
         <div className="text-sm font-medium text-indigo-300">Next best action</div>
@@ -282,6 +356,9 @@ export default function Home() {
 
   const [quickProjects, setQuickProjects] = useState([]);
   const [stats, setStats] = useState({});
+  const [readinessScore, setReadinessScore] = useState(87);
+  const [readinessLabel, setReadinessLabel] = useState("High Focus");
+  const [readinessInsight, setReadinessInsight] = useState("Perfect time to ship.");
 
   const activeUsers = [
     { id: "1", name: "Alex", now: true },
@@ -295,9 +372,83 @@ export default function Home() {
     { id: "me", name: "You", streak: 7, xp: 1800 },
   ];
 
-  const nextBestAction = stats?.throughputPerWeek?.value >= 5
-    ? "Stack two 25-min sprints; finish with a 10-min review."
-    : "Start a 25-min sprint on your top project.";
+  // === DAILY READINESS SCORE ===
+  useEffect(() => {
+    let mounted = true;
+
+    const calculateReadiness = async () => {
+      let batteryLevel = 100;
+      let isCharging = true;
+
+      // 1. Battery API
+      if ('getBattery' in navigator) {
+        try {
+          const battery = await navigator.getBattery();
+          batteryLevel = Math.round(battery.level * 100);
+          isCharging = battery.charging;
+        } catch (err) {
+          console.warn("Battery API failed:", err);
+        }
+      }
+
+      // 2. Time of day
+      const now = new Date();
+      const hour = now.getHours();
+      const isPeak = (hour >= 9 && hour <= 11) || (hour >= 14 && hour <= 16);
+      const isLate = hour >= 22 || hour <= 5;
+
+      // 3. Streak momentum
+      const streak = stats?.insights?.streakDays || 0;
+      const momentumBonus = streak > 7 ? 25 : streak > 3 ? 15 : streak > 0 ? 8 : 0;
+
+      // 4. Calculate base score
+      let score = batteryLevel;
+      if (isCharging) score = Math.min(100, score + 20);
+      if (isPeak) score = Math.min(100, score + 18);
+      if (isLate) score = Math.max(0, score - 25);
+      score = Math.min(100, score + momentumBonus);
+
+      // 5. Generate label & insight
+      let label = "Low Energy";
+      let insight = "Take a break. Recharge.";
+      if (score >= 80) {
+        label = "Peak Focus";
+        insight = "You're in the zone — ship it now.";
+      } else if (score >= 60) {
+        label = "Strong";
+        insight = "Solid energy. Tackle your top task.";
+      } else if (score >= 40) {
+        label = "Moderate";
+        insight = "Light work only. Review or plan.";
+      }
+
+      if (mounted) {
+        setReadinessScore(Math.round(score));
+        setReadinessLabel(label);
+        setReadinessInsight(insight);
+      }
+    };
+
+    calculateReadiness();
+    const interval = setInterval(calculateReadiness, 5 * 60 * 1000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [stats]);
+
+  // === AI PLAN LOGIC ===
+  const nextBestAction = useMemo(() => {
+    const throughput = stats?.throughputPerWeek?.value || 0;
+    const base = throughput >= 5
+      ? "Stack two 25-min sprints; finish with a 10-min review."
+      : "Start a 25-min sprint on your top project.";
+
+    if (readinessScore < 40) return "Take a 5-min walk or stretch. Reset your mind.";
+    if (readinessScore < 60) return "Do a 10-min review on your top project.";
+    return base;
+  }, [stats, readinessScore]);
 
   useEffect(() => {
     Promise.all([
@@ -328,6 +479,14 @@ export default function Home() {
       <PageStyles />
       <div className="max-w-7xl mx-auto px-4 py-6 home-page">
         <PageHeader title="Home" subtitle="Your AI-powered mission control" />
+
+        {/* DAILY READINESS SCORE */}
+        <ReadinessScoreCard 
+          score={readinessScore}
+          label={readinessLabel}
+          insight={readinessInsight}
+          onStart={startSprint}
+        />
 
         {/* AI PLAN */}
         <AIPlanCapsule 
@@ -360,7 +519,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* QUICK ACTIONS — BIG, BOLD, VISIBLE */}
+        {/* QUICK ACTIONS */}
         <div className="quick-actions">
           <button 
             onClick={continueProject}
