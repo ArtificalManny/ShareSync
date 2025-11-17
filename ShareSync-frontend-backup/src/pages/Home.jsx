@@ -30,6 +30,7 @@ const PageStyles = () => (
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
       border-radius: 1.5rem;
       overflow: hidden;
+      color: #e2e8f0;
     }
     .ai-plan .glow { 
       position: absolute; inset: 0; 
@@ -48,13 +49,13 @@ const PageStyles = () => (
       box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4); 
     }
 
-    /* MOMENTUM RING */
+    /* MOMENTUM RING — VERTICAL TEXT */
     .momentum-ring { 
       width: 160px; height: 160px; 
       display: flex; align-items: center; justify-content: center; 
     }
     .momentum-ring svg { 
-      transform: rotate(-90deg); 
+      transform: none; /* ← NO ROTATION */
     }
     .momentum-ring .bg { 
       stroke: rgba(255, 255, 255, 0.08); 
@@ -63,6 +64,16 @@ const PageStyles = () => (
       stroke: url(#gradient); 
       stroke-linecap: round; 
       transition: stroke-dasharray 1.5s ease; 
+    }
+    .momentum-ring .score { 
+      fill: #e2e8f0; 
+      font-size: 2.5rem; 
+      font-weight: 700;
+    }
+    .momentum-ring .label { 
+      fill: #94a3b8; 
+      font-size: 0.75rem; 
+      font-weight: 500;
     }
 
     /* LIVE PULSE */
@@ -74,6 +85,57 @@ const PageStyles = () => (
       50% { opacity: 0.5; } 
     }
 
+    /* STATS */
+    .stats-value { 
+      color: #e2e8f0 !important; 
+      font-weight: 700;
+    }
+    .stats-label { 
+      color: #94a3b8 !important; 
+      font-size: 0.75rem;
+    }
+
+    /* QUICK ACTIONS — BIG, BOLD, VISIBLE */
+    .quick-actions { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 1.5rem; 
+    }
+    .quick-actions button { 
+      height: 4.5rem; 
+      font-size: 1.125rem; 
+      font-weight: 700;
+      border-radius: 1.25rem;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .quick-actions .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #ec4899);
+      color: white;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+    .quick-actions .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+    .quick-actions .btn-secondary {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(12px);
+      font-weight: 700;
+    }
+    .quick-actions .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
     /* LEADERBOARD */
     .leaderboard { 
       border-radius: 1.5rem; 
@@ -81,6 +143,7 @@ const PageStyles = () => (
       backdrop-filter: blur(24px); 
       border: 1px solid rgba(255, 255, 255, 0.08);
       flex: 1;
+      color: #e2e8f0;
     }
     .leaderboard .rank-you { 
       background: rgba(99, 102, 241, 0.15); 
@@ -90,31 +153,8 @@ const PageStyles = () => (
     .leaderboard .rank-1 { 
       color: #fbbf24; font-weight: 700; 
     }
-
-    /* QUICK ACTIONS */
-    .quick-actions { 
-      display: grid; 
-      grid-template-columns: 1fr 1fr; 
-      gap: 1rem; 
-    }
-    .quick-actions button { 
-      height: 4rem; 
-      font-size: 1.125rem; 
-      font-weight: 600; 
-      border-radius: 1rem; 
-      transition: all 0.2s ease;
-    }
-    .quick-actions button:hover { 
-      transform: translateY(-2px); 
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    /* FLEX GROW TO FILL SPACE */
-    .fill-space { 
-      flex: 1; 
-      display: flex; 
-      flex-direction: column; 
-      justify-content: flex-end;
+    .leaderboard .xp { 
+      color: #94a3b8;
     }
   `}</style>
 );
@@ -124,12 +164,12 @@ function AIPlanCapsule({ nextBestAction, onRegenerate, onStart }) {
   return (
     <div className="ai-plan card p-6 relative">
       <div className="glow" />
-      <h2 className="text-xl font-bold mb-4">Today’s AI Plan</h2>
+      <h2 className="text-xl font-bold mb-4">Today’s_den AI Plan</h2>
       
       <div className="space-y-3 mb-6">
-        <div className="text-sm font-medium text-indigo-400">Next best action</div>
+        <div className="text-sm font-medium text-indigo-300">Next best action</div>
         <p className="text-lg font-semibold">{nextBestAction}</p>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm opacity-90">
           Small wins compound. Grab the smallest outcome that moves a project.
         </p>
       </div>
@@ -139,7 +179,7 @@ function AIPlanCapsule({ nextBestAction, onRegenerate, onStart }) {
           onClick={onStart}
           className="flex-1 bg-gradient-to-r from-indigo-500 to-pink-500 text-white py-3 rounded-xl font-semibold text-lg"
         >
-          ▶ Start
+          Start
         </button>
         <button 
           onClick={onRegenerate}
@@ -157,6 +197,8 @@ function MomentumRing({ score = 78 }) {
   const circumference = 2 * Math.PI * radius;
   const dash = (score / 100) * circumference;
 
+  const label = score >= 90 ? "Elite" : score >= 70 ? "Strong" : "Good";
+
   return (
     <div className="momentum-ring">
       <svg width="160" height="160">
@@ -173,11 +215,11 @@ function MomentumRing({ score = 78 }) {
           strokeWidth="12" fill="none"
           strokeDasharray={`${dash} ${circumference}`}
         />
-        <text x="80" y="88" textAnchor="middle" className="text-4xl font-bold fill-white">
+        <text x="80" y="72" textAnchor="middle" className="score">
           {score}
         </text>
-        <text x="80" y="105" textAnchor="middle" className="text-xs fill-white/70">
-          {score >= 90 ? "Elite" : score >= 70 ? "Strong" : "Good"}
+        <text x="80" y="92" textAnchor="middle" className="label">
+          {label}
         </text>
       </svg>
     </div>
@@ -186,12 +228,12 @@ function MomentumRing({ score = 78 }) {
 
 function LivePulse({ activeUsers = [] }) {
   return (
-    <div className="flex flex-wrap gap-4 items-center">
+    <div className="flex flex-wrap gap-4 items-center live-pulse">
       {activeUsers.map((u) => (
         <div key={u.id} className="flex items-center gap-2">
           <div className={`w-3 h-3 rounded-full ${u.now ? 'bg-emerald-400 pulse' : 'bg-gray-500'}`} />
-          <span className="text-sm font-medium">{u.name}</span>
-          <span className="text-xs text-gray-400">{u.now ? 'now' : u.when}</span>
+          <span className="name text-sm">{u.name}</span>
+          <span className="time text-xs">{u.now ? 'now' : u.when}</span>
         </div>
       ))}
     </div>
@@ -219,7 +261,7 @@ function StreakLeaderboard({ users = [], myRank = 3 }) {
             </div>
             <div className="text-right">
               <div className="font-bold">{u.streak}d streak</div>
-              <div className="text-xs text-gray-400">{u.xp} XP</div>
+              <div className="xp text-xs">{u.xp} XP</div>
             </div>
           </li>
         ))}
@@ -302,39 +344,39 @@ export default function Home() {
           <div className="lg:col-span-2 space-y-4">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold">{stats?.insights?.streakDays || 0}</div>
-                <div className="text-xs text-gray-400">Day Streak</div>
+                <div className="stats-value text-2xl">{stats?.insights?.streakDays || 0}</div>
+                <div className="stats-label">Day Streak</div>
               </div>
               <div>
-                <div className="text-2xl font-bold">{stats?.xp || 0}</div>
-                <div className="text-xs text-gray-400">XP Earned</div>
+                <div className="stats-value text-2xl">{stats?.xp || 0}</div>
+                <div className="stats-label">XP Earned</div>
               </div>
               <div>
-                <div className="text-2xl font-bold">#{stats?.leaderboardRank || 1}</div>
-                <div className="text-xs text-gray-400">Leaderboard</div>
+                <div className="stats-value text-2xl">#{stats?.leaderboardRank || 1}</div>
+                <div className="stats-label">Leaderboard</div>
               </div>
             </div>
             <LivePulse activeUsers={activeUsers} />
           </div>
         </div>
 
-        {/* QUICK ACTIONS */}
+        {/* QUICK ACTIONS — BIG, BOLD, VISIBLE */}
         <div className="quick-actions">
           <button 
             onClick={continueProject}
-            className="bg-gradient-to-r from-indigo-500 to-pink-500 text-white"
+            className="btn-primary"
           >
             Continue Last Project
           </button>
           <button 
             onClick={startSprint}
-            className="bg-white/10 text-white backdrop-blur border border-white/20"
+            className="btn-secondary"
           >
             Start 25:00 Sprint
           </button>
         </div>
 
-        {/* LEADERBOARD + AI WHISPER — FILL REMAINING SPACE */}
+        {/* LEADERBOARD + AI WHISPER */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 fill-space">
           <StreakLeaderboard users={leaderboardData} myRank={3} />
           <AICoachWhisper />
