@@ -136,7 +136,7 @@ const PageStyles = () => (
       font-size: 0.75rem;
     }
 
-    /* QUICK ACTIONS */
+    /* QUICK ACTIONS — ROYAL PURPLE SPRINT BUTTON */
     .quick-actions { 
       display: grid; 
       grid-template-columns: 1fr 1fr; 
@@ -166,15 +166,17 @@ const PageStyles = () => (
       box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
     }
     .quick-actions .btn-secondary {
-      background: rgba(255, 255, 255, 0.15);
+      background: linear-gradient(135deg, #6b21a8, #9333ea); /* ← ROYAL PURPLE */
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.3);
       backdrop-filter: blur(12px);
       font-weight: 700;
+      box-shadow: 0 4px 12px rgba(107, 33, 168, 0.3);
     }
     .quick-actions .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.25);
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
       transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(107, 33, 168, 0.4);
     }
 
     /* LEADERBOARD */
