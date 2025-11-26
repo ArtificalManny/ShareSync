@@ -10,7 +10,14 @@ import {
   import { MomentumService } from './momentum.service';
   import { PresenceService } from '../presence/presence.service';
   
-  @WebSocketGateway({ cors: true })
+  @WebSocketGateway({
+    cors: {
+      origin: process.env.NODE_ENV === 'production'
+        ? ['https://yourdomain.com']  // change later
+        : true,  // allows localhost:54693 automatically in dev
+      credentials: true,
+    },
+  })
   export class MomentumGateway {
     @WebSocketServer() server: Server;
   

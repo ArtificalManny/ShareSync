@@ -9,7 +9,12 @@ import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
-  cors: { origin: '*', credentials: true },
+  cors: {
+    origin: process.env.NODE_ENV === 'production'
+      ? ['https://yourdomain.com']  // change later
+      : true,  // allows localhost:54693 automatically in dev
+    credentials: true,
+  },
 })
 export class RealtimeGateway {
   @WebSocketServer() server: Server;
