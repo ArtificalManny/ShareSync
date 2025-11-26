@@ -1,6 +1,7 @@
 // src/pages/Projects.jsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from "../context/AuthContext.jsx";
 
 import ProjectsCreate from './ProjectsCreate.jsx';
 import ProjectCard from '../components/discovery/ProjectCard.jsx';
@@ -9,7 +10,6 @@ import EmptyState from '../components/ui/EmptyState.jsx';
 import RightRail from '../components/projects/RightRail.jsx';
 import { listProjects } from '../api/projects';
 import SectionHeader from '../components/ui/SectionHeader.jsx';
-import TraceOutline from '../components/ui/TraceOutline.jsx';
 import { bindShine } from '../utils/shine';
 import GradientText from '../components/ui/GradientText.jsx';
 import GradientPanel from "../components/frame/GradientPanel.jsx";
@@ -19,7 +19,6 @@ import './Projects.css';
 import { Search } from 'lucide-react';
 import { track } from '../utils/telemetry';
 import { toast } from '../components/ui/toast.jsx';
-
 import { useDebounce, readParams, writeParams } from '../utils/urlParams';
 
 export default function Projects() {
@@ -28,34 +27,40 @@ export default function Projects() {
   const rootRef = useRef(null);
   const init = readParams(location.search);
 
-  const [projects, setProjects]   = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState('');
-  const [showCreate, setShowCreate] = useState(false);
+  const { user, loading: authLoading } = useAuth();
 
-  const [query, setQuery]     = useState(init.query);
-  const [status, setStatus]   = useState(init.status);
-  const [owner, setOwner]     = useState(init.owner);
-  const [updated, setUpdated] = useState(init.updated);
-
-  const [hoverId, setHoverId] = useState(null);
-  const [shipProject, setShipProject] = useState(null);
-
-  if (!window.__SS_USER) {
+  if (authLoading) {
     return (
       <Page>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
         </div>
       </Page>
     );
   }
 
-  const meId = window.__SS_USER.id || window.__SS_USER._id;
+  if (!user) {
+    navigate("/login", { replace: true });
+    return null;
+  }
+
+  const meId = user._id || user.id;
+
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
+
+  const [query, setQuery] = useState(init.query || '');
+  const [status, setStatus] = useState(init.status || 'all');
+  const [owner, setOwner] = useState(init.owner || 'all');
+  const [updated, setUpdated] = useState(init.updated || '7d');
+
+  const [hoverId, setHoverId] = useState(null);
 
   useEffect(() => {
     const unbind = bindShine(rootRef.current || document);
-    return () => unbind();
+    return () => unbind && unbind();
   }, []);
 
   useEffect(() => {
@@ -70,8 +75,6 @@ export default function Projects() {
   const abortRef = useRef(null);
 
   async function fetchProjects() {
-    try { performance?.mark?.('ss:projects:fetch:start'); } catch {}
-
     setLoading(true);
     setError('');
 
@@ -89,23 +92,19 @@ export default function Projects() {
       });
 
       const first = Array.isArray(items) ? items.slice(0, 12) : [];
-      const rest  = Array.isArray(items) ? items.slice(12) : [];
+      const rest = Array.isArray(items) ? items.slice(12) : [];
       setProjects(first);
       setTimeout(() => {
         if (!controller.signal.aborted) {
-          setProjects((prev) => [...prev, ...rest]);
-          try {
-            performance?.mark?.('ss:projects:fetch:end');
-            performance?.measure?.('perf:projects:list-first-chunk', 'ss:projects:fetch:start', 'ss:projects:fetch:end');
-          } catch {}
+          setProjects(prev => [...prev, ...rest]);
         }
       }, 0);
     } catch (e) {
       if (controller.signal.aborted) return;
       console.error('[Projects] load error', e);
       setError('Failed to load projects.');
-      try { toast({ title: 'Failed to load projects', variant: 'error' }); } catch {}
-      try { track('projects_load_error'); } catch {}
+      toast({ title: 'Failed to load projects', variant: 'error' });
+      track('projects_load_error');
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
@@ -126,6 +125,7 @@ export default function Projects() {
       const windowMs = updated === '7d' ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
       return now - dt <= windowMs;
     };
+
     const statusMap = { not_started: 'Not Started', in_progress: 'In Progress', completed: 'Completed' };
 
     return (projects || []).filter((p) => {
@@ -152,15 +152,11 @@ export default function Projects() {
   const handleProjectCreated = (newProject) => {
     setShowCreate(false);
     if (newProject) {
-      setProjects((prev) => [newProject, ...prev]);
+      setProjects(prev => [newProject, ...prev]);
       toast({ title: 'Project created', variant: 'success' });
       track('project_created', { projectId: newProject._id });
       navigate(`/projects/${newProject._id}`);
     }
-  };
-
-  const prefetchProject = (id) => {
-    track('project_card_hover', { projectId: id });
   };
 
   const goToProject = (id) => {
@@ -170,7 +166,7 @@ export default function Projects() {
 
   const handleShip = (project) => {
     track('project_ship_clicked', { projectId: project._id });
-    setShipProject(project);
+    // handle ship logic
   };
 
   return (
@@ -302,10 +298,7 @@ export default function Projects() {
                       project={p}
                       isHovered={isHovered}
                       onOpen={() => goToProject(pid)}
-                      onPrefetch={() => {
-                        setHoverId(pid);
-                        prefetchProject(pid);
-                      }}
+                      onPrefetch={() => setHoverId(pid)}
                       onShip={handleShip}
                     />
                   );
@@ -319,9 +312,9 @@ export default function Projects() {
               <SectionHeader icon="Users">Your workspace</SectionHeader>
             </div>
             <RightRail
-              onQuickStatus={(s) => setStatus(s)}
-              onQuickOwner={(o) => setOwner(o)}
-              onQuickUpdated={(u) => setUpdated(u)}
+              onQuickStatus={setStatus}
+              onQuickOwner={setOwner}
+              onQuickUpdated={setUpdated}
             />
           </div>
         </div>
