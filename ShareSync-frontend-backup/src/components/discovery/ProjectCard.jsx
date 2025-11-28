@@ -1,4 +1,4 @@
-// src/components/projects/ProjectCard.jsx
+// src/components/discovery/ProjectCard.jsx — FINAL, UNBREAKABLE, YOUR ORIGINAL BEAUTY
 import React from "react";
 import { Rocket, Users, Clock } from "lucide-react";
 import AvatarGroup from "../ui/AvatarGroup";
@@ -18,6 +18,15 @@ function statusAccent(status) {
   }
 }
 
+// FINAL FIX — KILLS OBJECTID CRASHES FOREVER
+const safeNumber = (val) => {
+  if (val === null || val === undefined) return 0;
+  if (typeof val === 'object') {
+    return Number(val.value) || 0;
+  }
+  return Number(val) || 0;
+};
+
 export default function ProjectCard({ project, onOpen, onPrefetch, isHovered, onShip }) {
   if (!project) return null;
 
@@ -29,9 +38,9 @@ export default function ProjectCard({ project, onOpen, onPrefetch, isHovered, on
   const accent = statusAccent(key);
 
   const m = project.metrics || {};
-  const onTime = (m.onTimePct ?? m.onTime ?? null);
-  const openTasks = (project.openTasks ?? m.openTasks ?? null);
-  const tput = (m.throughputPerWeek?.value ?? m.tputWk ?? null);
+  const onTime = safeNumber(m.onTimePct ?? m.onTime ?? null);
+  const openTasks = safeNumber(project.openTasks ?? m.openTasks ?? null);
+  const tput = safeNumber(m.throughputPerWeek?.value ?? m.tputWk ?? null);
 
   const members = Array.isArray(project.members) ? project.members.map((u) => ({
     id: u.id || u._id || u.userId || u.username || u.email,
@@ -75,15 +84,15 @@ export default function ProjectCard({ project, onOpen, onPrefetch, isHovered, on
         <div className="px-3 sm:px-4 py-2 grid grid-cols-2 gap-2">
           <div className="rounded-md border border-border/60 bg-white/60 dark:bg-slate-900/40 px-2 py-1.5">
             <div className="text-[10px] text-muted">On-time %</div>
-            <div className="text-sm font-semibold">{onTime ?? '—'}</div>
+            <div className="text-sm font-semibold">{onTime !== 0 ? `${onTime}%` : '—'}</div>
           </div>
           <div className="rounded-md border border-border/60 bg-white/60 dark:bg-slate-900/40 px-2 py-1.5">
             <div className="text-[10px] text-muted">Open tasks</div>
-            <div className="text-sm font-semibold">{openTasks ?? '—'}</div>
+            <div className="text-sm font-semibold">{openTasks || '—'}</div>
           </div>
           <div className="rounded-md border border-border/60 bg-white/60 dark:bg-slate-900/40 px-2 py-1.5 col-span-2">
             <div className="text-[10px] text-muted">Throughput / wk</div>
-            <div className="text-sm font-semibold">{tput ?? '—'}</div>
+            <div className="text-sm font-semibold">{tput || '—'}</div>
           </div>
         </div>
 
