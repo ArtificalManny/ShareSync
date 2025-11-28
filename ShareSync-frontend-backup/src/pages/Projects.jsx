@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, Flame, TrendingUp, Sparkles, Clock, Users, Zap } from 'lucide-react';
 import ProjectCard from '../components/discovery/ProjectCard';
 import { useAuth } from '../context/AuthContext';
+import ProjectsCreate from './ProjectsCreate';
 
 const Projects = () => {
   const { user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [useMockData, setUseMockData] = useState(false); // Toggle this to true for testing
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('featured');
   const [leaderboard, setLeaderboard] = useState([
@@ -112,6 +114,12 @@ const Projects = () => {
     }
   ];
 
+  const handleProjectCreated = (newProject) => {
+    // Add the new project to the list
+    setProjects(prev => [newProject, ...prev]);
+    // Modal will automatically close and navigate via ProjectsCreate component
+  };
+
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          project.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -193,10 +201,13 @@ const Projects = () => {
 
           {/* New Project Button */}
           <div className="flex justify-center mt-8">
-            <button className="group relative bg-gradient-to-r from-purple-600 to-fuchsia-600 
+            <button 
+              onClick={() => setShowCreateModal(true)}
+              className="group relative bg-gradient-to-r from-purple-600 to-fuchsia-600 
                              hover:from-purple-500 hover:to-fuchsia-500 text-white font-bold 
                              px-12 py-5 rounded-2xl text-xl transition-all transform hover:scale-105
-                             shadow-lg shadow-purple-500/50">
+                             shadow-lg shadow-purple-500/50"
+            >
               <Plus className="inline-block w-6 h-6 mr-2" />
               New Project
               <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -251,7 +262,10 @@ const Projects = () => {
                 <div className="text-6xl mb-4">📂</div>
                 <h3 className="text-xl font-semibold text-white mb-2">No projects match your filters</h3>
                 <p className="text-slate-400 mb-6">Try adjusting filters or start your first project.</p>
-                <button className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl transition-all">
+                <button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl transition-all"
+                >
                   + New Project
                 </button>
               </div>
@@ -347,13 +361,24 @@ const Projects = () => {
             <button className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg transition-all">
               Start sprint
             </button>
-            <button className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 
-                             hover:to-fuchsia-500 text-white px-6 py-2 rounded-lg transition-all font-semibold">
+            <button 
+              onClick={() => setShowCreateModal(true)}
+              className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 
+                             hover:to-fuchsia-500 text-white px-6 py-2 rounded-lg transition-all font-semibold"
+            >
               Ship something → +50 XP
             </button>
           </div>
         </div>
       </div>
+
+      {/* PROJECT CREATE MODAL */}
+      {showCreateModal && (
+        <ProjectsCreate 
+          onClose={() => setShowCreateModal(false)}
+          onProjectCreated={handleProjectCreated}
+        />
+      )}
 
       <style jsx>{`
         @keyframes marquee {

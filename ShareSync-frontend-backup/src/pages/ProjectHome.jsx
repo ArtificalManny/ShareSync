@@ -26,6 +26,7 @@ import {
   Settings as SettingsIcon,
   RefreshCcw,
   Trophy,
+  Rocket,
   Files as FilesIcon,
   CalendarDays,
   CheckCircle2,
