@@ -1,4 +1,4 @@
-// src/pages/ProjectHome.jsx
+// src/pages/ProjectHome.jsx — THE ULTIMATE PROJECT HOME — FINAL VERSION
 import React, { useEffect, useMemo, useState, useContext, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
@@ -55,6 +55,10 @@ import FileGrid from "../components/files/FileGrid";
 import InsightsBlock from "../components/insights/InsightsBlock";
 import SprintCompleteModal from "../components/focus/SprintCompleteModal.jsx";
 import TabbedFeed from "../components/feed/TabbedFeed.jsx";
+
+// NEW IMPORTS — KILLER FEATURES
+import ShipCelebration from "../components/momentum/ShipCelebration";
+import AICoachPanel from "../components/project/AICoachPanel";
 
 // KPI graphs
 import KpiGroup from "../components/analytics/KpiGroup";
@@ -243,34 +247,6 @@ function MilestoneBar({ icon, label, count, unit }) {
   );
 }
 
-function MentorPanel({ stats, projectId, onStartFocus, onOpenTasks }) {
-  const { chrono } = extractMentor(stats || {});
-  const Nudge = () => {
-    if (!inProductiveWindow(chrono)) return null;
-    return (
-      <div className="rounded-xl border border-indigo-200/60 bg-indigo-50/60 dark:bg-indigo-900/20 px-3 py-2 flex items-center justify-between">
-        <div className="text-sm">You’re usually strongest now. Want to tackle your top task?</div>
-        <button className="btn btn--primary" onClick={onStartFocus}>Start 25:00</button>
-      </div>
-    );
-  };
-
-  return (
-    <Card className="mt-6" role="region" aria-label="AI Mentor">
-      <div className="flex items-start justify-between">
-        <div className="inline-flex items-center gap-2">
-          <Brain className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-sm font-semibold">AI Charles Xavier – Predictive Mentor</h3>
-        </div>
-      </div>
-
-      <div className="mt-3"><Nudge /></div>
-
-      <div className="mt-3 text-[11px] text-muted">Phase 2: probability models, AI delegation, scenario planning.</div>
-    </Card>
-  );
-}
-
 export default function ProjectHome() {
   const { id } = useParams();
   const { user } = useContext(AuthContext) || {};
@@ -296,6 +272,9 @@ export default function ProjectHome() {
   const [showInvite, setShowInvite] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [sprintDoneOpen, setSprintDoneOpen] = useState(false);
+
+  // NEW STATE — SHIP CELEBRATION
+  const [showShipCelebration, setShowShipCelebration] = useState(false);
 
   const [files, setFiles] = useState([]);
   const invitesFetchedRef = useRef(false);
@@ -425,11 +404,16 @@ export default function ProjectHome() {
     track("task_updated", { projectId: id, taskId });
   };
 
+  // FINAL UPGRADED SHIP FUNCTION WITH CELEBRATION
   const handleShip = async () => {
     if (!canManage) return;
     try {
       await shipProject(id);
       setProject(p => ({ ...p, shippedAt: new Date().toISOString() }));
+      
+      // SHOW THE CELEBRATION
+      setShowShipCelebration(true);
+      
       toast({ title: "Project shipped!", variant: "success" });
       track("project_shipped", { projectId: id });
     } catch (e) {
@@ -520,6 +504,7 @@ export default function ProjectHome() {
   return (
     <main id="main" role="main" tabIndex={-1}>
       <div className="px-4 sm:px-6 lg:px-10 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
+        {/* ENHANCED HEADER WITH STATS */}
         <GradientPanel>
           <ProjectHeader
             name={project?.title || "Untitled"}
@@ -534,6 +519,9 @@ export default function ProjectHome() {
             onAddTask={() => canEdit && setShowTaskSheet(true)}
             onStartFocus={() => window.dispatchEvent(new CustomEvent("start-tenx-sprint"))}
             onDownloadICS={icsUrl ? () => window.open(icsUrl, "_blank") : null}
+            stats={stats}
+            shippedAt={project?.shippedAt}
+            membersCount={project?.members?.length || 0}
           />
           {Array.isArray(project?.members) && project.members.length > 0 && (
             <div className="mt-2 px-1 flex items-center justify-between">
@@ -601,14 +589,15 @@ export default function ProjectHome() {
           <div className="mt-3"><KpiCards /></div>
         </Card>
 
-        {MENTOR_V1 && (
-          <MentorPanel
-            stats={stats}
-            projectId={project?._id}
-            onStartFocus={() => window.dispatchEvent(new CustomEvent("start-tenx-sprint"))}
-            onOpenTasks={() => canEdit && setShowTaskSheet(true)}
-          />
-        )}
+        {/* AI COACH PANEL — REPLACES OLD MENTOR */}
+        <AICoachPanel
+          project={project}
+          stats={stats}
+          presence={presence}
+          onStartFocus={() => window.dispatchEvent(new CustomEvent("start-tenx-sprint"))}
+          onInviteTeam={() => setShowInvite(true)}
+          className="mt-6"
+        />
 
         <section className="mt-6">
           {loading ? (
@@ -657,6 +646,15 @@ export default function ProjectHome() {
           </div>
         </div>
       </div>
+
+      {/* SHIP CELEBRATION MODAL */}
+      {showShipCelebration && (
+        <ShipCelebration
+          project={project}
+          open={showShipCelebration}
+          onClose={() => setShowShipCelebration(false)}
+        />
+      )}
 
       <TaskSheet
         open={showTaskSheet}
