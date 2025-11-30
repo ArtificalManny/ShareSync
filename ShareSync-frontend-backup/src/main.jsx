@@ -12,7 +12,43 @@ if (import.meta.env.MODE !== "production") {
   import("./utils/perfLog.js");
 }
 
-// === PREVENT SKIP-TO-CONTENT FLASH + FIX 500 ERROR ===
+// ====================================================================
+// 1. TRACE ANYONE WHO TRIES TO DELETE AUTH DATA
+// ====================================================================
+const originalRemoveItem = localStorage.removeItem.bind(localStorage);
+localStorage.removeItem = function(key) {
+  if (key === 'ss.jwt' || key === 'ss.user') {
+    console.trace(`[STORAGE] localStorage.removeItem('${key}') called! Full stack trace:`);
+  }
+  return originalRemoveItem(key);
+};
+
+// ====================================================================
+// 2. PRELOAD AUTH STATE — fixes soft/hard refresh auth loss forever
+// ====================================================================
+const preloadAuthState = () => {
+  const token = localStorage.getItem("ss.jwt");
+  const userStr = localStorage.getItem("ss.user");
+
+  window.__INITIAL_AUTH_STATE__ = {
+    token: token || null,
+    user: userStr ? JSON.parse(userStr) : null,
+    hasToken: !!token,
+  };
+
+  console.log("[AUTH PRELOAD] Auth state injected into window", {
+    hasToken: !!token,
+    user: !!window.__INITIAL_AUTH_STATE__.user,
+    timestamp: new Date().toISOString(),
+  });
+};
+
+// Run FIRST — before anything else
+preloadAuthState();
+
+// ====================================================================
+// 3. FIX SKIP-TO-CONTENT FLASH + SUPPRESS NOISE IN DEV
+// ====================================================================
 const fixSkipLinkAndErrors = () => {
   const skipLink = document.querySelector('a[href="#main"]');
   if (skipLink) {
@@ -45,10 +81,12 @@ const fixSkipLinkAndErrors = () => {
   };
 };
 
-// Run **immediately** (before React)
+// Run immediately
 fixSkipLinkAndErrors();
 
-// Wait for DOM + auth hydration
+// ====================================================================
+// 4. RENDER APP
+// ====================================================================
 document.addEventListener("DOMContentLoaded", () => {
   const rootElement = document.getElementById("root");
   if (rootElement) {
@@ -57,6 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Final safety net (after render)
+// Final safety net
 setTimeout(fixSkipLinkAndErrors, 0);
 setTimeout(fixSkipLinkAndErrors, 100);
