@@ -1,10 +1,112 @@
-// src/pages/Settings.jsx
+// src/pages/Settings.jsx - "WHO DO YOU WANT TO BECOME?"
 import React, { useEffect, useRef, useState } from 'react';
 import { getMe, updateProfile, updateNotifications } from '../api/user';
-import SectionHeader from '../components/ui/SectionHeader';
 import { toast } from '../components/ui/Toaster.jsx';
 import { trackMentorSettings, trackProfileDiscoverToggle } from '../utils/telemetry';
 import { DISCOVERABILITY } from '../config/flags.js';
+import { 
+  Target, Brain, Users as UsersIcon, Shield, Heart, Sparkles, 
+  Play, Zap, Clock, Film, Star, Moon, Sun
+} from 'lucide-react';
+
+// Slider Component
+function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Icon }) {
+  const percentage = ((value - min) / (max - min)) * 100;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {Icon && <Icon className="w-5 h-5 text-purple-400" />}
+          <label className="text-sm font-medium text-white">{label}</label>
+        </div>
+        <span className="text-lg font-bold text-white">
+          {value}{unit}
+        </span>
+      </div>
+      
+      <div className="relative">
+        <div className="h-3 rounded-full bg-slate-700/50 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500 transition-all duration-300"
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="absolute inset-0 w-full opacity-0 cursor-pointer"
+        />
+      </div>
+      
+      <div className="flex justify-between text-xs text-slate-500">
+        <span>{min}{unit}</span>
+        <span>{max}{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+// Toggle Component
+function Toggle({ label, checked, onChange, description }) {
+  return (
+    <label className="flex items-start gap-3 cursor-pointer group">
+      <div className="relative flex-shrink-0">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="sr-only peer"
+        />
+        <div className="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-fuchsia-500 transition-all" />
+        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-5" />
+      </div>
+      <div className="flex-1">
+        <div className="text-sm font-medium text-white group-hover:text-purple-300 transition-colors">
+          {label}
+        </div>
+        {description && (
+          <div className="text-xs text-slate-400 mt-0.5">{description}</div>
+        )}
+      </div>
+    </label>
+  );
+}
+
+// Radio Group Component
+function RadioGroup({ label, options, value, onChange, icon: Icon }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        {Icon && <Icon className="w-5 h-5 text-purple-400" />}
+        <label className="text-sm font-medium text-white">{label}</label>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={`px-4 py-3 rounded-xl border-2 transition-all text-left ${
+              value === option.value
+                ? 'border-purple-500 bg-purple-500/10'
+                : 'border-slate-700 bg-slate-800/30 hover:border-purple-500/50'
+            }`}
+          >
+            <div className="text-sm font-medium text-white">{option.label}</div>
+            {option.description && (
+              <div className="text-xs text-slate-400 mt-1">{option.description}</div>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
@@ -12,18 +114,43 @@ export default function Settings() {
   const [err, setErr] = useState('');
   const [ok, setOk] = useState('');
 
+  // LAYER 1: Momentum Engine
+  const [dailyShipsGoal, setDailyShipsGoal] = useState(5);
+  const [weekendShipsCount, setWeekendShipsCount] = useState(true);
+  const [allowStreakFreeze, setAllowStreakFreeze] = useState(true);
+
+  // LAYER 2: Focus DNA
+  const [deepWorkTarget, setDeepWorkTarget] = useState(4);
+  const [autoStartFocus, setAutoStartFocus] = useState(false);
+  const [focusStartTime, setFocusStartTime] = useState('09:00');
+
+  // LAYER 3: Social Proof
+  const [showStreakTo, setShowStreakTo] = useState('friends');
+  const [celebratePublicly, setCelebratePublicly] = useState(true);
   const [publicProfile, setPublicProfile] = useState(true);
   const [discoverable, setDiscoverable] = useState(false);
+
+  // LAYER 4: AI Mentor Personality
+  const [mentorEnabled, setMentorEnabled] = useState(true);
+  const [mentorTone, setMentorTone] = useState('wise');
+  const [mentorIntensity, setMentorIntensity] = useState(3);
+
+  // LAYER 5: Distraction Shield
+  const [blockedApps, setBlockedApps] = useState(['slack', 'youtube', 'tiktok']);
+  const [emergencyBreaksLeft, setEmergencyBreaksLeft] = useState(1);
+
+  // LAYER 6: Legacy Mode
+  const [showLegacyEverywhere, setShowLegacyEverywhere] = useState(true);
+  const [yearlyMontage, setYearlyMontage] = useState(false);
+
+  // LAYER 7: Kid Mode / Pro Mode
+  const [userMode, setUserMode] = useState('pro'); // 'kid' or 'pro'
+
+  // Existing settings
   const [theme, setTheme] = useState('system');
   const [emailActivity, setEmailActivity] = useState(true);
   const [emailDigest, setEmailDigest] = useState(true);
   const [twoFA, setTwoFA] = useState(false);
-
-  const [allowShareLinks, setAllowShareLinks] = useState(false);
-  const [allowFollow, setAllowFollow] = useState(false);
-
-  const [mentorEnabled, setMentorEnabled] = useState(true);
-  const [mentorIntensity, setMentorIntensity] = useState('standard');
 
   const mqlRef = useRef(null);
 
@@ -70,6 +197,8 @@ export default function Settings() {
     getMe()
       .then((me) => {
         if (ignore) return;
+        
+        // Load existing settings
         setPublicProfile(Boolean(me?.publicProfile ?? true));
         setDiscoverable(Boolean(me?.discoverable ?? false));
         const initialTheme = me?.appearance?.theme ?? localStorage.getItem('ss.theme') ?? 'system';
@@ -81,25 +210,33 @@ export default function Settings() {
         setEmailDigest(Boolean(n.emailDigest ?? true));
         setTwoFA(Boolean(me?.security?.twoFA ?? false));
 
-        const sharing = me?.sharing || {};
-        setAllowShareLinks(Boolean(sharing.links ?? false));
-        setAllowFollow(Boolean(sharing.follow ?? false));
-
         const mentor = me?.mentor || me?.preferences?.mentor || {};
-        const lsEnabled = localStorage.getItem('ss.mentor.enabled');
-        const lsIntensity = localStorage.getItem('ss.mentor.intensity');
-        setMentorEnabled(
-          typeof mentor.enabled === 'boolean'
-            ? mentor.enabled
-            : lsEnabled != null
-              ? lsEnabled === 'true'
-              : true
-        );
-        setMentorIntensity(
-          mentor.intensity === 'light' || mentor.intensity === 'standard'
-            ? mentor.intensity
-            : (lsIntensity === 'light' ? 'light' : 'standard')
-        );
+        setMentorEnabled(Boolean(mentor.enabled ?? true));
+        setMentorTone(mentor.tone || 'wise');
+        setMentorIntensity(mentor.intensity || 3);
+
+        // Load momentum settings
+        const momentum = me?.momentum || {};
+        setDailyShipsGoal(momentum.dailyGoal || 5);
+        setWeekendShipsCount(Boolean(momentum.weekendCount ?? true));
+        setAllowStreakFreeze(Boolean(momentum.allowFreeze ?? true));
+
+        // Load focus settings
+        const focus = me?.focus || {};
+        setDeepWorkTarget(focus.dailyTarget || 4);
+        setAutoStartFocus(Boolean(focus.autoStart ?? false));
+        setFocusStartTime(focus.startTime || '09:00');
+
+        // Load social settings
+        setShowStreakTo(me?.social?.showStreakTo || 'friends');
+        setCelebratePublicly(Boolean(me?.social?.celebrate ?? true));
+
+        // Load legacy settings
+        setShowLegacyEverywhere(Boolean(me?.legacy?.showEverywhere ?? true));
+        setYearlyMontage(Boolean(me?.legacy?.yearlyVideo ?? false));
+
+        // Load user mode
+        setUserMode(me?.appearance?.mode || 'pro');
       })
       .catch((e) => !ignore && setErr(String(e?.message || e)))
       .finally(() => !ignore && setLoading(false));
@@ -108,56 +245,52 @@ export default function Settings() {
     };
   }, []);
 
-  useEffect(() => {
-    try { applyTheme(theme); } catch {}
-    return () => {
-      if (mqlRef.current?.removeEventListener) {
-        mqlRef.current.removeEventListener('change', mqlRef.current._handler);
-        mqlRef.current = null;
-      }
-    };
-  }, [theme]);
-
   const handleSave = async (e) => {
     e?.preventDefault?.();
     setErr('');
     setOk('');
     setSaving(true);
+    
     try {
       await updateProfile({
         publicProfile,
         discoverable: Boolean(discoverable),
-        appearance: { theme },
-        sharing: {
-          links: allowShareLinks,
-          follow: allowFollow,
-        },
+        appearance: { theme, mode: userMode },
         mentor: {
           enabled: Boolean(mentorEnabled),
-          intensity: mentorIntensity === 'light' ? 'light' : 'standard',
+          tone: mentorTone,
+          intensity: mentorIntensity,
         },
-        security: {
-          twoFA,
+        momentum: {
+          dailyGoal: dailyShipsGoal,
+          weekendCount: weekendShipsCount,
+          allowFreeze: allowStreakFreeze,
         },
+        focus: {
+          dailyTarget: deepWorkTarget,
+          autoStart: autoStartFocus,
+          startTime: focusStartTime,
+        },
+        social: {
+          showStreakTo,
+          celebrate: celebratePublicly,
+        },
+        legacy: {
+          showEverywhere: showLegacyEverywhere,
+          yearlyVideo: yearlyMontage,
+        },
+        security: { twoFA },
       });
-
-      try {
-        localStorage.setItem('ss.mentor.enabled', String(Boolean(mentorEnabled)));
-        localStorage.setItem('ss.mentor.intensity', mentorIntensity === 'light' ? 'light' : 'standard');
-      } catch {}
 
       await updateNotifications({
         emailActivity,
         emailDigest,
       });
 
-      if (DISCOVERABILITY) {
-        trackProfileDiscoverToggle({ on: Boolean(discoverable), source: 'settings_save'});
-      }
-
-      setOk('Settings saved.');
+      setOk('Settings saved successfully! 🎉');
       trackMentorSettings({
         enabled: Boolean(mentorEnabled),
+        tone: mentorTone,
         intensity: mentorIntensity,
         source: 'settings_save',
       });
@@ -165,75 +298,271 @@ export default function Settings() {
       setErr(e?.response?.data?.message || e?.message || 'Failed to save settings');
     } finally {
       setSaving(false);
-      setTimeout(() => setOk(''), 1800);
+      setTimeout(() => setOk(''), 3000);
     }
   };
 
-  const handleResetMentorTips = () => {
-    let removed = 0;
-    try {
-      const keys = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && (k.startsWith('ss.mentor.') || k.startsWith('mentor.'))) keys.push(k);
-      }
-      keys.forEach((k) => {
-        localStorage.removeItem(k);
-        removed++;
-      });
-      localStorage.setItem('ss.mentor.resetAt', String(Date.now()));
-    } catch {}
-    toast({ title: 'Mentor tips reset', description: removed ? `Cleared ${removed} cached items.` : undefined });
-    trackMentorSettings({ action: 'reset_tips', removed, source: 'settings_button' });
+  const handleGenerateYearMontage = () => {
+    toast({ 
+      title: 'Year in Ships video coming soon!', 
+      description: 'This will generate a cinematic montage of everything you shipped this year.' 
+    });
   };
 
   if (loading) {
     return (
-      <main id="main" role="main" tabIndex={-1}>
-        <div className="with-sidebar px-4 sm:px-6 lg:px-8 py-6 max-w-3xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-10 w-1/3 bg-slate-200/60 rounded" />
-            <div className="h-24 bg-slate-200/60 rounded" />
-            <div className="h-24 bg-slate-200/60 rounded" />
-          </div>
-        </div>
+      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="text-white text-lg">Loading your preferences...</div>
       </main>
     );
   }
 
   return (
-    <main id="main" role="main" tabIndex={-1}>
-      <div className="with-sidebar px-4 sm:px-6 lg:px-8 py-6 max-w-3xl mx-auto space-y-6">
-        <h1 className="h-hero">Settings</h1>
-        <p className="h-sub mt-1">Preferences, notifications, and account.</p>
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-6 py-12">
+      <div className="max-w-4xl mx-auto space-y-8">
+        
+        {/* Hero */}
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent mb-3">
+            Design Your Momentum
+          </h1>
+          <p className="text-slate-400 text-lg">Who do you want to become?</p>
+        </div>
 
+        {/* Notifications */}
         {err && (
-          <div
-            role="status"
-            aria-live="assertive"
-            className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-3 py-2"
-          >
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-6 py-4 text-red-300">
             {err}
           </div>
         )}
         {ok && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-2"
-          >
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-4 text-emerald-300">
             {ok}
           </div>
         )}
 
         <form onSubmit={handleSave} className="space-y-6">
-          {/* Theme */}
-          <div className="card glass p-6">
-            <h2 className="text-lg font-semibold mb-4">Theme</h2>
+          
+          {/* LAYER 1: Momentum Engine */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Target className="w-6 h-6 text-purple-400" />
+              <h2 className="text-xl font-bold text-white">Momentum Engine</h2>
+            </div>
+            
+            <div className="space-y-6">
+              <Slider
+                label="Daily Ships Goal"
+                value={dailyShipsGoal}
+                onChange={setDailyShipsGoal}
+                min={1}
+                max={10}
+                icon={Zap}
+              />
+              
+              <Toggle
+                label="Weekend ships count toward streak"
+                checked={weekendShipsCount}
+                onChange={setWeekendShipsCount}
+                description="Keep your streak alive on Saturdays and Sundays"
+              />
+              
+              <Toggle
+                label="Allow 1 Streak Freeze per month"
+                checked={allowStreakFreeze}
+                onChange={setAllowStreakFreeze}
+                description="Life happens. Protect your streak once a month."
+              />
+            </div>
+          </div>
+
+          {/* LAYER 2: Focus DNA */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Brain className="w-6 h-6 text-purple-400" />
+              <h2 className="text-xl font-bold text-white">Focus DNA</h2>
+            </div>
+            
+            <div className="space-y-6">
+              <Slider
+                label="Deep Work Target"
+                value={deepWorkTarget}
+                onChange={setDeepWorkTarget}
+                min={1}
+                max={8}
+                unit="h"
+                icon={Clock}
+              />
+              
+              <Toggle
+                label="Auto-start Focus Mode at 9:00 AM weekdays"
+                checked={autoStartFocus}
+                onChange={setAutoStartFocus}
+                description="Turn intention into automatic behavior"
+              />
+            </div>
+          </div>
+
+          {/* LAYER 3: Social Proof */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <UsersIcon className="w-6 h-6 text-purple-400" />
+              <h2 className="text-xl font-bold text-white">Social Proof</h2>
+            </div>
+            
+            <div className="space-y-6">
+              <RadioGroup
+                label="Show my streak to"
+                options={[
+                  { value: 'nobody', label: 'Nobody', description: 'Private' },
+                  { value: 'friends', label: 'Friends', description: 'Shared' },
+                  { value: 'everyone', label: 'Everyone', description: 'Public' },
+                ]}
+                value={showStreakTo}
+                onChange={setShowStreakTo}
+              />
+              
+              <Toggle
+                label="Celebrate my ships publicly"
+                checked={celebratePublicly}
+                onChange={setCelebratePublicly}
+                description="Let others see when you ship something great"
+              />
+              
+              <Toggle
+                label="Public Profile"
+                checked={publicProfile}
+                onChange={setPublicProfile}
+                description="Allow others to view your profile"
+              />
+            </div>
+          </div>
+
+          {/* LAYER 4: AI Mentor Personality */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Sparkles className="w-6 h-6 text-purple-400" />
+              <h2 className="text-xl font-bold text-white">AI Mentor Personality</h2>
+            </div>
+            
+            <div className="space-y-6">
+              <Toggle
+                label="Enable AI Mentor"
+                checked={mentorEnabled}
+                onChange={setMentorEnabled}
+                description="Get real-time coaching and insights"
+              />
+              
+              {mentorEnabled && (
+                <>
+                  <RadioGroup
+                    label="Tone"
+                    options={[
+                      { value: 'kind', label: 'Kind Coach', description: 'Gentle & supportive' },
+                      { value: 'wise', label: 'Wise Sage', description: 'Calm & insightful' },
+                      { value: 'drill', label: 'Drill Sergeant', description: 'Direct & tough' },
+                    ]}
+                    value={mentorTone}
+                    onChange={setMentorTone}
+                  />
+                  
+                  <Slider
+                    label="Intensity"
+                    value={mentorIntensity}
+                    onChange={setMentorIntensity}
+                    min={1}
+                    max={5}
+                  />
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* LAYER 6: Legacy Mode */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Heart className="w-6 h-6 text-purple-400" />
+              <h2 className="text-xl font-bold text-white">Legacy Mode</h2>
+            </div>
+            
+            <div className="space-y-6">
+              <Toggle
+                label="Show Legacy Counter everywhere"
+                checked={showLegacyEverywhere}
+                onChange={setShowLegacyEverywhere}
+                description="See your lifetime ship count on every page"
+              />
+              
+              <Toggle
+                label="Send me a yearly 'Year in Ships' video"
+                checked={yearlyMontage}
+                onChange={setYearlyMontage}
+                description="Cinematic montage of everything you shipped this year"
+              />
+              
+              <button
+                type="button"
+                onClick={handleGenerateYearMontage}
+                className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white px-6 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-3"
+              >
+                <Film className="w-5 h-5" />
+                Generate My 2025 Montage
+              </button>
+            </div>
+          </div>
+
+          {/* LAYER 7: Kid Mode / Pro Mode */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Star className="w-6 h-6 text-purple-400" />
+              <h2 className="text-xl font-bold text-white">Experience Mode</h2>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setUserMode('kid')}
+                className={`px-6 py-8 rounded-xl border-2 transition-all ${
+                  userMode === 'kid'
+                    ? 'border-purple-500 bg-purple-500/10'
+                    : 'border-slate-700 bg-slate-800/30 hover:border-purple-500/50'
+                }`}
+              >
+                <Moon className="w-8 h-8 text-purple-400 mx-auto mb-3" />
+                <div className="text-lg font-bold text-white">Kid Mode</div>
+                <div className="text-xs text-slate-400 mt-2">
+                  Bigger rings, confetti, private data
+                </div>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setUserMode('pro')}
+                className={`px-6 py-8 rounded-xl border-2 transition-all ${
+                  userMode === 'pro'
+                    ? 'border-purple-500 bg-purple-500/10'
+                    : 'border-slate-700 bg-slate-800/30 hover:border-purple-500/50'
+                }`}
+              >
+                <Sun className="w-8 h-8 text-fuchsia-400 mx-auto mb-3" />
+                <div className="text-lg font-bold text-white">Pro Mode</div>
+                <div className="text-xs text-slate-400 mt-2">
+                  Minimal, data-heavy, analytics
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Appearance */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+            <h2 className="text-xl font-bold text-white mb-4">Appearance</h2>
             <select
               value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+              onChange={(e) => {
+                setTheme(e.target.value);
+                applyTheme(e.target.value);
+              }}
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white"
             >
               <option value="system">System</option>
               <option value="light">Light</option>
@@ -241,62 +570,16 @@ export default function Settings() {
             </select>
           </div>
 
-          {/* AI Preferences */}
-          <div className="card glass p-6">
-            <h2 className="text-lg font-semibold mb-4">AI Preferences</h2>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={mentorEnabled}
-                onChange={(e) => setMentorEnabled(e.target.checked)}
-                className="h-4 w-4"
-              />
-              <span>Enable AI Mentor</span>
-            </label>
-            <div className="mt-3">
-              <label className="block text-sm mb-1">Intensity</label>
-              <select
-                value={mentorIntensity}
-                onChange={(e) => setMentorIntensity(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
-              >
-                <option value="light">Light</option>
-                <option value="standard">Standard</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Privacy */}
-          <div className="card glass p-6">
-            <h2 className="text-lg font-semibold mb-4">Privacy</h2>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={publicProfile}
-                onChange={(e) => setPublicProfile(e.target.checked)}
-                className="h-4 w-4"
-              />
-              <span>Public Profile</span>
-            </label>
-            <label className="flex items-center gap-3 mt-3">
-              <input
-                type="checkbox"
-                checked={discoverable}
-                onChange={(e) => setDiscoverable(e.target.checked)}
-                className="h-4 w-4"
-              />
-              <span>Discoverable in Search</span>
-            </label>
-          </div>
-
+          {/* Save Button */}
           <button
             type="submit"
             disabled={saving}
-            className="btn btn--primary w-full"
+            className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white px-8 py-5 rounded-2xl font-bold text-xl transition-all hover:scale-105 shadow-lg shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? 'Saving Your Future...' : 'Save Changes'}
           </button>
         </form>
+
       </div>
     </main>
   );
