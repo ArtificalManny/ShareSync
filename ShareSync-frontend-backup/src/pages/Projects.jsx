@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Flame, TrendingUp, Sparkles, Clock, Users, Zap } from 'lucide-react';
 import ProjectCard from '../components/discovery/ProjectCard';
 import { useAuth } from '../context/AuthContext';
@@ -6,9 +7,10 @@ import ProjectsCreate from './ProjectsCreate';
 
 const Projects = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [useMockData, setUseMockData] = useState(false); // Toggle this to true for testing
+  const [useMockData, setUseMockData] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('featured');
@@ -19,7 +21,6 @@ const Projects = () => {
   ]);
   const [currentLeaderIndex, setCurrentLeaderIndex] = useState(0);
 
-  // Auto-cycle leaderboard every 5s
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentLeaderIndex((prev) => (prev + 1) % leaderboard.length);
@@ -27,7 +28,6 @@ const Projects = () => {
     return () => clearInterval(interval);
   }, [leaderboard.length]);
 
-  // Fetch projects
   useEffect(() => {
     fetchProjects();
   }, [selectedFilter, searchQuery]);
@@ -36,7 +36,6 @@ const Projects = () => {
     try {
       setLoading(true);
       
-      // Use mock data if enabled or if API fails
       if (useMockData) {
         setProjects(getMockProjects());
         setLoading(false);
@@ -67,6 +66,7 @@ const Projects = () => {
     {
       _id: '1',
       name: 'ShareSync v2',
+      title: 'ShareSync v2',
       description: 'The momentum-based project tracker that keeps you shipping',
       owner: { _id: user?._id || '1', name: 'You' },
       status: 'active',
@@ -79,6 +79,7 @@ const Projects = () => {
     {
       _id: '2',
       name: 'AI Writing Tool',
+      title: 'AI Writing Tool',
       description: 'GPT-powered content generation platform',
       owner: { _id: '2', name: 'Alex' },
       status: 'active',
@@ -88,71 +89,70 @@ const Projects = () => {
       members: [{ _id: '2', name: 'Alex' }, { _id: '3', name: 'Jordan' }],
       updatedAt: new Date(Date.now() - 86400000).toISOString()
     },
-    {
-      _id: '3',
-      name: 'No-Code SaaS Builder',
-      description: 'Build and ship SaaS apps without writing code',
-      owner: { _id: '3', name: 'Jordan' },
-      status: 'active',
-      streak: { value: 45 },
-      momentum: { value: 78 },
-      metrics: { onTimePercent: { value: 85 }, openTasks: { value: 12 }, throughputPerWeek: { value: 9 } },
-      members: [{ _id: '3', name: 'Jordan' }],
-      updatedAt: new Date(Date.now() - 172800000).toISOString()
-    },
-    {
-      _id: '4',
-      name: 'Fitness Tracking App',
-      description: 'Track workouts, nutrition, and progress with AI insights',
-      owner: { _id: '4', name: 'Sarah' },
-      status: 'active',
-      streak: { value: 89 },
-      momentum: { value: 91 },
-      metrics: { onTimePercent: { value: 94 }, openTasks: { value: 3 }, throughputPerWeek: { value: 18 } },
-      members: [{ _id: '4', name: 'Sarah' }, { _id: '5', name: 'Mike' }],
-      updatedAt: new Date(Date.now() - 3600000).toISOString()
-    }
   ];
 
   const handleProjectCreated = (newProject) => {
-    // Add the new project to the list
-    setProjects(prev => [newProject, ...prev]);
-    // Modal will automatically close and navigate via ProjectsCreate component
+    // Normalize the project object to ensure it has both name and title
+    const normalizedProject = {
+      ...newProject,
+      name: newProject.title || newProject.name,
+      title: newProject.title || newProject.name,
+      streak: newProject.streak || { value: 0 },
+      momentum: newProject.momentum || { value: 0 },
+      metrics: newProject.metrics || { 
+        onTimePercent: { value: 0 }, 
+        openTasks: { value: 0 }, 
+        throughputPerWeek: { value: 0 } 
+      },
+      members: newProject.members || [],
+      updatedAt: new Date().toISOString()
+    };
+
+    // Add to the beginning of the list
+    setProjects(prev => [normalizedProject, ...prev]);
+    
+    // Close modal - navigation happens in ProjectsCreate
+  };
+
+  const handleProjectClick = (projectId) => {
+    navigate(`/projects/${projectId}`);
   };
 
   const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const projectName = project.name || project.title || '';
+    const projectDesc = project.description || '';
+    const matchesSearch = projectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         projectDesc.toLowerCase().includes(searchQuery.toLowerCase());
     
     switch(selectedFilter) {
       case 'my-projects':
         return matchesSearch && project.owner?._id === user?._id;
       case 'following':
-        return matchesSearch; // Add following logic later
+        return matchesSearch;
       case 'hot-streaks':
-        return matchesSearch && project.streak?.value > 30;
+        return matchesSearch && (project.streak?.value || 0) > 30;
       case 'just-shipped':
-        return matchesSearch; // Add recent ships logic
+        return matchesSearch;
       default:
         return matchesSearch;
     }
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pb-24">
       
-      {/* HERO SECTION - Full Bleed */}
+      {/* HERO SECTION */}
       <div className="relative overflow-hidden bg-gradient-to-br from-purple-900/40 via-fuchsia-900/30 to-slate-900/40 border-b border-purple-500/20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(139,92,246,0.1),transparent)]" />
         
-        <div className="relative max-w-7xl mx-auto px-6 py-12">
+        <div className="relative max-w-7xl mx-auto px-6 py-12 space-y-8">
           {/* Title */}
-          <h1 className="text-5xl font-bold text-center mb-8 bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-5xl font-bold text-center bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
             YOUR MOMENTUM STARTS HERE
           </h1>
 
-          {/* Leaderboard Carousel */}
-          <div className="flex justify-center gap-4 mb-8">
+          {/* Leaderboard */}
+          <div className="flex justify-center gap-4">
             {leaderboard.slice(currentLeaderIndex, currentLeaderIndex + 3).map((leader, idx) => (
               <div 
                 key={leader.rank}
@@ -176,7 +176,7 @@ const Projects = () => {
           </div>
 
           {/* Live Ticker */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-purple-500/20 rounded-lg p-3 mb-6 overflow-hidden">
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-purple-500/20 rounded-lg p-3 overflow-hidden">
             <div className="flex gap-8 animate-marquee whitespace-nowrap">
               <span className="text-purple-300">🔥 Alex just hit 120d streak · 2450 XP</span>
               <span className="text-fuchsia-300">🚀 Jordan shipped v3 of SaaS · +420 momentum</span>
@@ -185,7 +185,7 @@ const Projects = () => {
             </div>
           </div>
 
-          {/* Giant Search Bar */}
+          {/* Search Bar */}
           <div className="max-w-3xl mx-auto relative">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-purple-400" />
             <input
@@ -200,7 +200,7 @@ const Projects = () => {
           </div>
 
           {/* New Project Button */}
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center">
             <button 
               onClick={() => setShowCreateModal(true)}
               className="group relative bg-gradient-to-r from-purple-600 to-fuchsia-600 
@@ -221,38 +221,40 @@ const Projects = () => {
         <div className="grid grid-cols-12 gap-6">
           
           {/* LEFT RAIL - Quick Filters */}
-          <div className="col-span-2 space-y-4 sticky top-6 h-fit">
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-slate-400 mb-3">QUICK FILTERS</h3>
+          <div className="col-span-12 lg:col-span-2 space-y-4">
+            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 lg:sticky lg:top-6">
+              <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Quick Filters</h3>
               
-              {[
-                { id: 'featured', label: 'Featured', icon: Sparkles },
-                { id: 'my-projects', label: 'My Projects', icon: Users },
-                { id: 'following', label: 'Following', icon: Users },
-                { id: 'hot-streaks', label: 'Hot Streaks', icon: Flame },
-                { id: 'just-shipped', label: 'Just Shipped', icon: Zap }
-              ].map(filter => (
-                <button
-                  key={filter.id}
-                  onClick={() => setSelectedFilter(filter.id)}
-                  className={`
-                    w-full flex items-center gap-3 px-3 py-2 rounded-lg mb-2
-                    transition-all text-left text-sm
-                    ${selectedFilter === filter.id 
-                      ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30' 
-                      : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
-                    }
-                  `}
-                >
-                  <filter.icon className="w-4 h-4" />
-                  {filter.label}
-                </button>
-              ))}
+              <div className="space-y-2">
+                {[
+                  { id: 'featured', label: 'Featured', icon: Sparkles },
+                  { id: 'my-projects', label: 'My Projects', icon: Users },
+                  { id: 'following', label: 'Following', icon: Users },
+                  { id: 'hot-streaks', label: 'Hot Streaks', icon: Flame },
+                  { id: 'just-shipped', label: 'Just Shipped', icon: Zap }
+                ].map(filter => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setSelectedFilter(filter.id)}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-2 rounded-lg
+                      transition-all text-left text-sm
+                      ${selectedFilter === filter.id 
+                        ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30' 
+                        : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
+                      }
+                    `}
+                  >
+                    <filter.icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">{filter.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* CENTER - Infinite Grid */}
-          <div className="col-span-7">
+          {/* CENTER - Projects Grid */}
+          <div className="col-span-12 lg:col-span-7 space-y-8">
             {loading ? (
               <div className="text-center py-20">
                 <div className="inline-block w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
@@ -270,77 +272,81 @@ const Projects = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-6">
-                {filteredProjects.map(project => (
-                  <ProjectCard key={project._id} project={project} />
-                ))}
-              </div>
-            )}
-
-            {/* Discovery Carousels */}
-            {!loading && filteredProjects.length > 0 && (
-              <div className="mt-12 space-y-8">
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-yellow-400" />
-                    Just Shipped (last 4 hours)
-                  </h3>
-                  <div className="flex gap-4 overflow-x-auto pb-4">
-                    {/* Add carousel cards here */}
-                  </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {filteredProjects.map(project => (
+                    <div 
+                      key={project._id}
+                      onClick={() => handleProjectClick(project._id)}
+                      className="cursor-pointer transform transition-all hover:scale-105"
+                    >
+                      <ProjectCard project={project} />
+                    </div>
+                  ))}
                 </div>
 
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <Flame className="w-5 h-5 text-orange-400" />
-                    100d+ Streak Legends
-                  </h3>
-                  <div className="flex gap-4 overflow-x-auto pb-4">
-                    {/* Add carousel cards here */}
+                {/* Discovery Carousels */}
+                <div className="space-y-8 mt-12">
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-yellow-400" />
+                      Just Shipped (last 4 hours)
+                    </h3>
+                    <div className="text-sm text-slate-400 py-8 text-center bg-slate-800/30 rounded-xl border border-slate-700/50">
+                      Recent ships will appear here
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Flame className="w-5 h-5 text-orange-400" />
+                      100d+ Streak Legends
+                    </h3>
+                    <div className="text-sm text-slate-400 py-8 text-center bg-slate-800/30 rounded-xl border border-slate-700/50">
+                      Streak legends will appear here
+                    </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 
           {/* RIGHT RAIL - Personal Coach */}
-          <div className="col-span-3 space-y-4 sticky top-6 h-fit">
+          <div className="col-span-12 lg:col-span-3 space-y-4">
             <div className="bg-gradient-to-br from-purple-900/40 to-fuchsia-900/40 backdrop-blur-sm 
-                          border border-purple-500/30 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Your Personal Coach</h3>
+                          border border-purple-500/30 rounded-xl p-6 lg:sticky lg:top-6 space-y-4">
+              <h3 className="text-lg font-bold text-white">Your Personal Coach</h3>
               
-              <div className="space-y-4">
-                <button className="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 
-                                rounded-lg transition-all font-semibold">
-                  Start a 25-min sprint
-                </button>
+              <button className="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 
+                              rounded-lg transition-all font-semibold">
+                Start a 25-min sprint
+              </button>
 
-                <div className="bg-slate-800/50 rounded-lg p-4">
-                  <div className="text-sm text-slate-300 mb-2">Your top project:</div>
-                  <div className="text-white font-semibold">ShareSync v2</div>
-                  <div className="text-xs text-purple-300 mt-1">7 day streak 🔥</div>
+              <div className="bg-slate-800/50 rounded-lg p-4">
+                <div className="text-sm text-slate-300 mb-2">Your top project:</div>
+                <div className="text-white font-semibold">ShareSync v2</div>
+                <div className="text-xs text-purple-300 mt-1">7 day streak 🔥</div>
+              </div>
+
+              <div className="bg-slate-800/50 rounded-lg p-4">
+                <div className="text-sm text-slate-300 mb-2">Friends online:</div>
+                <div className="flex -space-x-2">
+                  {['🟢', '🟢', '🟢'].map((dot, i) => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-slate-700 border-2 border-slate-800 
+                                           flex items-center justify-center text-xs">
+                      {dot}
+                    </div>
+                  ))}
                 </div>
+              </div>
 
-                <div className="bg-slate-800/50 rounded-lg p-4">
-                  <div className="text-sm text-slate-300 mb-2">Friends online:</div>
-                  <div className="flex -space-x-2">
-                    {['🟢', '🟢', '🟢'].map((dot, i) => (
-                      <div key={i} className="w-8 h-8 rounded-full bg-slate-700 border-2 border-slate-800 
-                                             flex items-center justify-center text-xs">
-                        {dot}
-                      </div>
-                    ))}
-                  </div>
+              <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-orange-400 font-semibold mb-2">
+                  <Flame className="w-4 h-4" />
+                  Streak Protector
                 </div>
-
-                <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-orange-400 font-semibold mb-2">
-                    <Flame className="w-4 h-4" />
-                    Streak Protector
-                  </div>
-                  <div className="text-xs text-slate-300">
-                    Ship something in the next 8 hours to keep your streak alive!
-                  </div>
+                <div className="text-xs text-slate-300">
+                  Ship something in the next 8 hours to keep your streak alive!
                 </div>
               </div>
             </div>
@@ -349,22 +355,22 @@ const Projects = () => {
         </div>
       </div>
 
-      {/* BOTTOM BAR - Momentum Cart */}
+      {/* BOTTOM BAR */}
       <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-slate-900/95 to-purple-900/95 
-                    backdrop-blur-xl border-t border-purple-500/30 py-4 px-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="text-white">
+                    backdrop-blur-xl border-t border-purple-500/30 py-4 px-6 z-40">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-white text-sm sm:text-base">
             You're falling behind <span className="text-purple-400 font-bold">Alex</span> by 
             <span className="text-fuchsia-400 font-bold ml-1">380 XP</span>
           </div>
-          <div className="flex gap-4">
-            <button className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg transition-all">
+          <div className="flex gap-3">
+            <button className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg transition-all text-sm sm:text-base">
               Start sprint
             </button>
             <button 
               onClick={() => setShowCreateModal(true)}
               className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 
-                             hover:to-fuchsia-500 text-white px-6 py-2 rounded-lg transition-all font-semibold"
+                             hover:to-fuchsia-500 text-white px-6 py-2 rounded-lg transition-all font-semibold text-sm sm:text-base"
             >
               Ship something → +50 XP
             </button>
