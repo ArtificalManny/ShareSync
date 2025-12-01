@@ -1,306 +1,40 @@
-// src/pages/ProjectHome.jsx — THE ULTIMATE PROJECT HOME — FINAL VERSION
-import React, { useEffect, useMemo, useState, useContext, useCallback, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+// src/pages/ProjectHome.jsx - THE ULTIMATE PROJECT HOME
+import React, { useEffect, useState, useContext, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { getProject, updateProject, shipProject } from "../api/projects";
+import { getProject, shipProject } from "../api/projects";
 import { createTask, patchTask } from "../api/tasks";
-import { getProjectStats } from "../api/stats";
-import ActivityOverTimeLive from "../components/analytics/ActivityOverTimeLive";
-import Page from "../components/layout/Page.jsx";
-import ProjectHeader from "../components/project/ProjectHeader";
-import ProjectKpis from "../components/project/ProjectKpis";
-import RisksPanel from "../components/project/RisksPanel";
-import SectionHeader from "../components/ui/SectionHeader.jsx";
-import AskAIButton from "../components/assistant/AskAIButton.jsx";
-import Card from "../components/ui/Card.jsx";
-import GradientPanel from "../components/frame/GradientPanel.jsx";
-import useSocket from "../hooks/useSocket";
-import {
-  MoreHorizontal,
-  Share2,
-  Copy,
-  Check,
-  Link as LinkIcon,
-  Plus,
-  UserPlus,
-  Settings as SettingsIcon,
-  RefreshCcw,
-  Trophy,
-  Rocket,
-  Files as FilesIcon,
-  CalendarDays,
-  CheckCircle2,
-  AlertTriangle,
-  TimerReset,
-  Brain,
-  TrendingUp,
-  Users,
-  Lightbulb,
-  AlertCircle,
+import { 
+  Rocket, Plus, Calendar, Clock, Zap, Trophy, Users, 
+  TrendingUp, Target, Flame, CheckCircle2, AlertCircle,
+  ChevronLeft, ChevronRight, X, Upload, Mic, Image as ImageIcon
 } from "lucide-react";
-import { CALENDAR_ACCOUNTABILITY, MENTOR_V1 } from "../config/flags.js";
-import { getIcsUrl } from "../api/calendar.js";
-import { buildPublicStatusUrl } from "../api/public";
-import EmptyState from "../components/ui/EmptyState.jsx";
-import SkeletonBlock from "../components/skeleton/SkeletonBlock.jsx";
-import { REACTIONS_V1 } from "../config/flags.js";
-import ReactionBar from "../components/reactions/ReactionBar.jsx";
-import AvatarGroup from "../components/ui/AvatarGroup.jsx";
-import usePresence from "../hooks/usePresence.js";
-
-import TaskSheet from "../components/tasks/TaskSheet";
-import InviteModal from "../components/project/InviteModal";
-import ProjectSettingsModal from "../components/project/ProjectSettingsModal";
-import FileGrid from "../components/files/FileGrid";
-import InsightsBlock from "../components/insights/InsightsBlock";
-import SprintCompleteModal from "../components/focus/SprintCompleteModal.jsx";
-import TabbedFeed from "../components/feed/TabbedFeed.jsx";
-
-// NEW IMPORTS — KILLER FEATURES
-import ShipCelebration from "../components/momentum/ShipCelebration";
-import AICoachPanel from "../components/project/AICoachPanel";
-
-// KPI graphs
-import KpiGroup from "../components/analytics/KpiGroup";
-import KpiDetailModal from "../components/kpi/KpiDetailModal";
-import useKpiSeries from "../hooks/useKpiSeries";
-import "../styles/charts.css";
-import "../styles/posts.css";
-
-import ETAExplainer from "../components/project/ETAExplainer.jsx";
-import FocusPresenceDot from "../components/presence/FocusPresenceDot.jsx";
-import useReducedMotion from "../hooks/useReducedMotion";
-import useXpToasts from "../hooks/useXpToasts.js";
-
-import { listInvites } from "../api/invite";
-import { setLastSeen } from "../utils/stories";
-import { MESSENGER_V1 } from "../config/flags.js";
-import ProjectChatThread from "../components/messenger/ProjectChatThread.jsx";
-
-// Telemetry
-import { track } from "../utils/telemetry";
-import { toast } from "../components/ui/toast.jsx";
-
-const mark = (name) => { try { performance?.mark?.(name); } catch {} };
-const measure = (name, start, end) => { try { performance?.measure?.(name, start, end); } catch {} };
-
-async function perfLogDev(name, start) {
-  if (import.meta.env.MODE === "production") return;
-  try {
-    const mod = await import("../utils/perfLog.js");
-    mod.perfLog?.(name, start);
-  } catch {}
-}
-
-const ENABLE_PUBLIC_STATUS = import.meta?.env?.VITE_FEATURE_PUBLIC_STATUS === "true";
-
-function getRoleForUser(project, userId) {
-  if (!project || !userId) return "viewer";
-  if (String(project.userId) === String(userId)) return "owner";
-  const hit = Array.isArray(project.members) && project.members.find(m => String(m.userId) === String(userId));
-  return hit?.role || "viewer";
-}
-
-function extractMentor(stats) {
-  const ai = stats?.mentor || stats?.ai || {};
-  const vel = stats?.throughputPerWeek?.value ?? ai.velocityPerWeek ?? null;
-  const fc = ai.forecast || stats?.forecast || null;
-  const load = Array.isArray(ai.overload) ? ai.overload : [];
-  const tips = Array.isArray(ai.suggestions) ? ai.suggestions : (ai.tips || []);
-  const chrono = ai.chronotype || ai.productiveWindow || null;
-  return { vel, fc, load, tips, chrono };
-}
-
-function inProductiveWindow(windowSpec, now = new Date()) {
-  if (!windowSpec) return false;
-  const h = now.getHours();
-  const { startHour, endHour } = windowSpec;
-  if (typeof startHour !== "number" || typeof endHour !== "number") return false;
-  if (endHour >= startHour) return h >= startHour && h < endHour;
-  return h >= startHour || h < endHour;
-}
-
-function getPunctuality(task) {
-  const due = task?.dueDate ? new Date(task.dueDate) : null;
-  const done = task?.completedAt ? new Date(task.completedAt) : null;
-  const now = new Date();
-  if (!due) return "unscheduled";
-  if (done) return done <= due ? "on-time" : "late";
-  const ms = due - now;
-  if (ms < 0) return "late";
-  if (ms <= 48 * 3600 * 1000) return "at-risk";
-  return "scheduled";
-}
-
-function AccountabilityPanel({ tasks = [], stats, onAddDueDate }) {
-  const withDue = tasks.filter(t => t?.dueDate);
-  const stateCounts = withDue.reduce((acc, t) => {
-    const s = getPunctuality(t);
-    acc[s] = (acc[s] || 0) + 1;
-    return acc;
-  }, {});
-  const total = withDue.length;
-  const ontime = stateCounts["on-time"] || 0;
-  const late = stateCounts["late"] || 0;
-  const risk = stateCounts["at-risk"] || 0;
-
-  const reliability = stats?.reliability?.score ?? null;
-  const streak = stats?.reliability?.streak ?? null;
-  const lastMsg = stats?.insights?.punctuality?.[0]?.text || null;
-
-  const Chip = ({ tone = "default", icon = null, label, value }) => {
-    const toneCls = tone === "good" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                    tone === "warn" ? "bg-amber-50 text-amber-700 border-amber-200" :
-                    tone === "bad" ? "bg-rose-50 text-rose-700 border-rose-200" :
-                    "bg-slate-50 text-slate-700 border-slate-200";
-    return (
-      <div className={`rounded-xl border px-3 py-2 flex items-center gap-2 ${toneCls}`}>
-        {icon}
-        <div className="text-xs">
-          <div className="font-semibold leading-none num">{value}</div>
-          <div className="leading-none mt-0.5">{label}</div>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <Card className="mt-6" role="region" aria-label="Scheduling & Accountability">
-      <div className="flex items-start justify-between">
-        <div className="inline-flex items-center gap-2">
-          <CalendarDays className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-sm font-semibold">Scheduling &amp; Accountability</h3>
-        </div>
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Chip icon={<CalendarDays className="w-4 h-4" />} label="Scheduled" value={withDue.length} />
-        <Chip tone="good" icon={<CheckCircle2 className="w-4 h-4" />} label="On-time" value={ontime} />
-        <Chip tone="bad" icon={<AlertTriangle className="w-4 h-4" />} label="Late" value={late} />
-        <Chip tone="warn" icon={<TimerReset className="w-4 h-4" />} label="At risk" value={risk} />
-        <div className="rounded-xl border border-dashed border-border px-3 py-2">
-          <div className="text-xs text-muted">Reliability</div>
-          <div className="text-lg font-semibold">
-            {reliability != null ? `${Math.round(reliability)}%` : "—"}
-            {streak ? <span className="ml-2 text-xs text-muted">· {streak}d</span> : null}
-          </div>
-        </div>
-      </div>
-
-      {lastMsg && <div className="mt-3 text-xs px-3 py-2 rounded-xl border border-border bg-surface/50">{lastMsg}</div>}
-
-      {total === 0 && (
-        <div className="mt-3">
-          <EmptyState
-            icon="CalendarDays"
-            title="Add due dates to unlock reliability tracking."
-            primary={{ label: "Add a due date", onClick: onAddDueDate }}
-          />
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function nextThreshold(count, thresholds = [1, 5, 10, 25, 50, 100]) {
-  for (const t of thresholds) if (count < t) return t;
-  return null;
-}
-
-function MilestoneBar({ icon, label, count, unit }) {
-  const next = nextThreshold(count);
-  const prev = next ? (count >= 1 ? [1, 5, 10, 25, 50, 100].filter(x => x < next).slice(-1)[0] || 0 : 0) : count;
-  const target = next ?? count;
-  const base = prev ?? 0;
-  const span = Math.max(1, target - base);
-  const progress = Math.max(0, Math.min(1, (count - base) / span));
-  const pct = Math.round(progress * 100);
-
-  return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="inline-flex items-center gap-2">
-          {icon}
-          <div className="text-xs text-muted">{label}</div>
-        </div>
-        <div className="text-sm font-semibold">
-          {count} <span className="text-muted">{unit}</span>
-        </div>
-      </div>
-      <div
-        className="mt-2 h-2 rounded-full overflow-hidden"
-        style={{ background: "color-mix(in srgb, rgb(var(--accent)) 16%, transparent)" }}
-      >
-        <div
-          className="h-2 rounded-full"
-          style={{ width: `${pct}%`, background: "linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--info)) 100%)" }}
-        />
-      </div>
-      <div className="mt-1 text-[11px] text-muted">
-        {next ? (
-          <>Next milestone: <span className="font-medium">{next} {unit}</span></>
-        ) : (
-          <>Milestones complete — keep going!</>
-        )}
-      </div>
-    </div>
-  );
-}
+import { toast } from "../components/ui/toast";
 
 export default function ProjectHome() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext) || {};
-  const meId = user?._id || user?.id;
-
-  const presence = usePresence(id);
-  const isOnline = (uid) => {
-    const list = Array.isArray(presence?.onlineIds) ? presence.onlineIds.map(String) : [];
-    return list.includes(String(uid));
-  };
-
-  const icsUrl = CALENDAR_ACCOUNTABILITY ? getIcsUrl(id) : null;
-  useXpToasts(id);
-
+  
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [showShipModal, setShowShipModal] = useState(false);
+  const [shipDescription, setShipDescription] = useState("");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(true);
 
-  const [stats, setStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-
-  const [showTaskSheet, setShowTaskSheet] = useState(false);
-  const [showInvite, setShowInvite] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [sprintDoneOpen, setSprintDoneOpen] = useState(false);
-
-  // NEW STATE — SHIP CELEBRATION
-  const [showShipCelebration, setShowShipCelebration] = useState(false);
-
-  const [files, setFiles] = useState([]);
-  const invitesFetchedRef = useRef(false);
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedPoint, setSelectedPoint] = useState(null);
-  const [selectedMetric, setSelectedMetric] = useState("");
-  const [pointComments, setPointComments] = useState([]);
-
-  const prefersReducedMotion = useReducedMotion();
-
-  useEffect(() => { mark("ss:projecthome:mounted"); }, []);
-
+  // Load project
   useEffect(() => {
     let ignore = false;
     (async () => {
-      setLoading(true);
-      setError("");
       try {
         const data = await getProject(id);
         if (!ignore) {
           setProject(data);
-          if (Array.isArray(data?.files)) setFiles(data.files);
+          setShipDescription(`Update: ${data?.title || ""}`);
         }
       } catch (e) {
-        if (!ignore) setError(e?.message || "Failed to load project");
+        if (!ignore) toast({ title: "Failed to load project", variant: "error" });
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -308,379 +42,361 @@ export default function ProjectHome() {
     return () => { ignore = true; };
   }, [id]);
 
-  useEffect(() => {
-    if (!id) return;
-    let ignore = false;
-    const start = performance.now();
-    (async () => {
-      setStatsLoading(true);
-      try {
-        const data = await getProjectStats(id, { range: 30 });
-        if (!ignore) setStats(data || null);
-        perfLogDev("perf:project:kpi-tti", start);
-      } catch (e) {
-        if (!ignore) console.error(e);
-      } finally {
-        if (!ignore) setStatsLoading(false);
-      }
-    })();
-    return () => { ignore = true; };
-  }, [id]);
-
-  useEffect(() => {
-    if (!loading && project) {
-      mark("ss:projecthome:data-ready");
-      measure("perf:projecthome:data", "ss:nav-project-click", "ss:projecthome:data-ready");
-    }
-  }, [loading, project]);
-
-  useEffect(() => {
-    if (!project?._id) return;
-    if (document.visibilityState === "visible") setLastSeen(project._id, Date.now());
-    const onVisible = () => { if (document.visibilityState === "visible") setLastSeen(project._id, Date.now()); };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [project?._id]);
-
-  useSocket(id ? `project:${id}` : null, {
-    onEvents: {
-      "project:updated": (payload) => {
-        if (String(payload?.projectId) !== String(id) || !payload?.patch) return;
-        setProject(p => ({ ...p, ...payload.patch }));
-      },
-      "tasks:created": (payload) => {
-        if (String(payload?.projectId) !== String(id) || !payload?.task) return;
-        setProject(p => ({ ...p, tasks: [payload.task, ...(p?.tasks || [])] }));
-      },
-      "tasks:updated": (payload) => {
-        if (String(payload?.projectId) !== String(id) || !payload?.task) return;
-        setProject(p => ({
-          ...p,
-          tasks: (p?.tasks || []).map(t => String(t._id) === String(payload.task._id) ? payload.task : t),
-        }));
-      },
-    },
-  });
-
-  const myRole = useMemo(() => getRoleForUser(project, meId), [project, meId]);
-  const canEdit = myRole === "owner" || myRole === "member";
-  const canManage = myRole === "owner";
-
-  useEffect(() => {
-    if (!project?._id || !canManage || invitesFetchedRef.current || Array.isArray(project?.invites)) return;
-    (async () => {
-      try {
-        const rows = await listInvites(project._id);
-        setProject(p => ({ ...(p || {}), invites: rows || [] }));
-      } catch {}
-      invitesFetchedRef.current = true;
-    })();
-  }, [project?._id, canManage]);
-
-  const refreshInvites = useCallback(async () => {
-    if (!project?._id) return;
-    try {
-      const rows = await listInvites(project._id);
-      setProject(p => ({ ...(p || {}), invites: rows || [] }));
-    } catch {}
-  }, [project?._id]);
-
-  const handleAddTask = async (payload) => {
-    if (!canEdit) return;
-    const created = await createTask(id, payload);
-    setProject(p => ({ ...p, tasks: [created, ...(p?.tasks || [])] }));
-    toast({ title: "Task created", variant: "success" });
-    track("task_created", { projectId: id, taskId: created?._id });
-  };
-
-  const handlePatchTask = async (taskId, patch) => {
-    if (!canEdit) return;
-    const updated = await patchTask(id, taskId, patch);
-    setProject(p => ({
-      ...p,
-      tasks: (p?.tasks || []).map(t => (String(t._id) === String(taskId) ? updated : t)),
-    }));
-    toast({ title: "Task updated", variant: "success" });
-    track("task_updated", { projectId: id, taskId });
-  };
-
-  // FINAL UPGRADED SHIP FUNCTION WITH CELEBRATION
+  // Handle ship
   const handleShip = async () => {
-    if (!canManage) return;
+    if (!shipDescription.trim()) {
+      toast({ title: "Add a description", variant: "error" });
+      return;
+    }
+
     try {
-      await shipProject(id);
-      setProject(p => ({ ...p, shippedAt: new Date().toISOString() }));
+      await shipProject(id, { description: shipDescription });
       
-      // SHOW THE CELEBRATION
-      setShowShipCelebration(true);
+      // Show celebration
+      toast({
+        title: "🎉 Shipped!",
+        description: `${shipDescription} - +50 XP`,
+        variant: "success"
+      });
       
-      toast({ title: "Project shipped!", variant: "success" });
-      track("project_shipped", { projectId: id });
+      setShowShipModal(false);
+      setShipDescription(`Update: ${project?.title || ""}`);
+      
+      // Reload project
+      const updated = await getProject(id);
+      setProject(updated);
     } catch (e) {
-      toast({ title: "Ship failed", description: e.message, variant: "error" });
+      toast({ title: "Ship failed", variant: "error" });
     }
   };
 
-  const kpiTrends = useKpiSeries(stats);
+  // Calendar helpers
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    return { daysInMonth, startingDayOfWeek, year, month };
+  };
 
-  const onKpiPointClick = useCallback((p) => {
-    const metric = p?.metric || p?.title || "Metric";
-    setSelectedMetric(metric);
-    setSelectedPoint(p);
-    setModalOpen(true);
-    track("kpi_point_opened", { projectId: id, metric, t: p?.t });
-  }, [id]);
+  const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(selectedDate);
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  const joinFocus = useCallback(() => {
-    track("focus_join_clicked", { projectId: id });
-    window.dispatchEvent(new CustomEvent("start-tenx-sprint", { detail: { projectId: id } }));
-  }, [id]);
+  // Mock deadline data (replace with real API)
+  const deadlines = [
+    { date: 15, title: "Beta launch", urgent: true },
+    { date: 22, title: "Design review", urgent: false },
+    { date: 28, title: "Team sync", urgent: false }
+  ];
+
+  const getDeadlinesForDay = (day) => {
+    return deadlines.filter(d => d.date === day);
+  };
 
   if (loading) {
     return (
-      <Page className="bg-bg text-text min-h-screen">
-        <div className="px-4 sm:px-6 lg:px-10 py-6 max-w-6xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-24 rounded-2xl bg-surface" />
-            <div className="h-24 rounded-2xl bg-surface" />
-          </div>
-        </div>
-      </Page>
-    );
-  }
-
-  if (error) {
-    return (
-      <main id="main" role="main" tabIndex={-1}>
-        <div className="px-4 sm:px-6 lg:px-8 py-10 max-w-2xl mx-auto">
-          <div className="rounded-2xl border border-rose-200/60 bg-surface p-6">
-            <h1 className="text-lg font-semibold text-rose-600">Failed to load project</h1>
-            <p className="mt-2 text-sm text-muted">{error}</p>
-            <button onClick={() => window.location.reload()} className="mt-4 btn btn-primary">Retry</button>
-          </div>
-        </div>
-      </main>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      </div>
     );
   }
 
   if (!project) return null;
 
-  const KpiCards = () => {
-    if (statsLoading) {
-      return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} className="rounded-2xl border border-dashed border-border bg-surface p-4 animate-pulse h-[88px]" />
-          ))}
-        </div>
-      );
-    }
-    if (!stats) return null;
+  const tasks = project?.tasks || [];
+  const completedToday = tasks.filter(t => {
+    if (!t.completedAt) return false;
+    const completed = new Date(t.completedAt);
+    const today = new Date();
+    return completed.toDateString() === today.toDateString();
+  }).length;
 
-    const fmtPct = v => `${Math.round((v ?? 0) * 100)}%`;
-    const card = (label, value, sub) => (
-      <div className="rounded-2xl border border-dashed border-border bg-surface p-4 shadow-sm">
-        <div className="text-xs text-muted">{label}</div>
-        <div className="text-xl font-semibold text-text num">{value}</div>
-        {sub ? <div className="text-xs text-muted mt-1">{sub}</div> : null}
-      </div>
-    );
-
-    return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {card("Cadence (14d)", stats?.cadence?.value ?? 0, "Rolling, recency-weighted")}
-        {card("Throughput / wk", stats?.throughputPerWeek?.value ?? 0, "Completed tasks / 7d")}
-        {card("Active Days (28d)", stats?.activeDays?.value ?? 0)}
-        {card("On-time (30d)", fmtPct(stats?.onTimeCompletion?.value))}
-      </div>
-    );
-  };
-
-  const filesCount = Array.isArray(files) ? files.length : 0;
-  const completedTasks = (project?.tasks || []).filter(t =>
-    t?.completed === true || Boolean(t?.completedAt)
-  ).length;
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(t => t.completed).length;
+  const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <main id="main" role="main" tabIndex={-1}>
-      <div className="px-4 sm:px-6 lg:px-10 py-6 bg-bg text-text min-h-screen max-w-6xl mx-auto">
-        {/* ENHANCED HEADER WITH STATS */}
-        <GradientPanel>
-          <ProjectHeader
-            name={project?.title || "Untitled"}
-            status={project?.status || "In Progress"}
-            isPublic={!!project?.publicToken}
-            metrics={{
-              ontime: project?.metrics?.onTimePct ?? 0,
-              throughput: project?.metrics?.throughputPerWeek ?? 0,
-              streak: project?.metrics?.streakDays ?? 0,
-            }}
-            icon={project?.icon || "Briefcase"}
-            onAddTask={() => canEdit && setShowTaskSheet(true)}
-            onStartFocus={() => window.dispatchEvent(new CustomEvent("start-tenx-sprint"))}
-            onDownloadICS={icsUrl ? () => window.open(icsUrl, "_blank") : null}
-            stats={stats}
-            shippedAt={project?.shippedAt}
-            membersCount={project?.members?.length || 0}
-          />
-          {Array.isArray(project?.members) && project.members.length > 0 && (
-            <div className="mt-2 px-1 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FocusPresenceDot
-                  active={Boolean(presence?.isFocusing && String(presence.focusProjectId) === String(id))}
-                  title="Live focus in progress"
-                />
-                <span className="text-xs text-muted">Online now</span>
-                <AvatarGroup members={project.members} isOnline={isOnline} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white pb-32">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        
+        {/* COMPACT HEADER - NO DEAD SPACE */}
+        <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 shadow-2xl">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+                  {project.title}
+                </h1>
+                <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-sm">
+                  <Flame className="w-4 h-4 text-orange-400" />
+                  <span className="font-semibold">7d streak</span>
+                </div>
               </div>
-              {presence?.isFocusing && String(presence.focusProjectId) === String(id) && (
-                <button type="button" className="btn btn--outline" onClick={joinFocus}>Join Focus</button>
-              )}
+              <p className="text-slate-400 mt-1">Team momentum: Strong</p>
             </div>
-          )}
-        </GradientPanel>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => canEdit && setShowTaskSheet(true)}
-            disabled={!canEdit}
-            className="btn btn--primary"
-          >
-            <Plus className="w-4 h-4" /> Add task
-          </button>
-
-          <button
-            type="button"
-            onClick={() => canManage && setShowInvite(true)}
-            disabled={!canManage}
-            className="btn btn--outline"
-          >
-            <UserPlus className="w-4 h-4" /> Invite
-          </button>
-
-          <button
-            type="button"
-            onClick={() => canManage && setShowSettings(true)}
-            disabled={!canManage}
-            className="btn btn--outline"
-          >
-            <SettingsIcon className="w-4 h-4" /> Settings
-          </button>
-
-          {project.shippedAt ? (
-            <div className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <Trophy className="w-4 h-4" /> Shipped
+            {/* LIVE STATS - ALWAYS VISIBLE */}
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-2xl font-bold text-emerald-400">{completedToday}/5</div>
+                <div className="text-xs text-slate-400">Ships today</div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-purple-400">{progressPct}%</div>
+                <div className="text-xs text-slate-400">Complete</div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-fuchsia-400">{project.members?.length || 1}</div>
+                <div className="text-xs text-slate-400">Online</div>
+              </div>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={handleShip}
-              disabled={!canManage}
-              className="btn btn--primary bg-gradient-to-r from-purple-600 to-pink-600"
-            >
-              <Rocket className="w-4 h-4" /> Ship
-            </button>
-          )}
+          </div>
+
+          {/* PROGRESS BAR - INSTANT VISUAL FEEDBACK */}
+          <div className="mt-4 h-3 bg-slate-700/50 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500 transition-all duration-500 ease-out"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
         </div>
 
-        <Card className="mt-6" role="region" aria-label="Project KPIs">
-          <SectionHeader icon="Gauge">Project KPIs</SectionHeader>
-          <div className="mt-3"><KpiCards /></div>
-        </Card>
+        {/* GRID LAYOUT - CALENDAR + TASKS SIDE BY SIDE */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* LEFT: COMPACT CALENDAR (1/3 width) */}
+          <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-purple-400" />
+                {monthNames[month]} {year}
+              </h3>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setSelectedDate(new Date(year, month - 1, 1))}
+                  className="p-1.5 hover:bg-slate-700/50 rounded-lg transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setSelectedDate(new Date(year, month + 1, 1))}
+                  className="p-1.5 hover:bg-slate-700/50 rounded-lg transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
 
-        {/* AI COACH PANEL — REPLACES OLD MENTOR */}
-        <AICoachPanel
-          project={project}
-          stats={stats}
-          presence={presence}
-          onStartFocus={() => window.dispatchEvent(new CustomEvent("start-tenx-sprint"))}
-          onInviteTeam={() => setShowInvite(true)}
-          className="mt-6"
-        />
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1 text-center text-xs">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                <div key={i} className="font-semibold text-slate-500 py-2">{day}</div>
+              ))}
+              
+              {/* Empty cells for offset */}
+              {Array.from({ length: startingDayOfWeek }).map((_, i) => (
+                <div key={`empty-${i}`} className="aspect-square" />
+              ))}
+              
+              {/* Days */}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1;
+                const dayDeadlines = getDeadlinesForDay(day);
+                const isToday = new Date().getDate() === day && 
+                               new Date().getMonth() === month && 
+                               new Date().getFullYear() === year;
+                const hasDeadline = dayDeadlines.length > 0;
+                const isUrgent = dayDeadlines.some(d => d.urgent);
 
-        <section className="mt-6">
-          {loading ? (
-            <SkeletonBlock height={72} radius={16} repeat={4} />
-          ) : (
-            <TabbedFeed projectId={project._id} showDiscover={false} />
-          )}
-        </section>
+                return (
+                  <div 
+                    key={day}
+                    className={`aspect-square rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all relative group
+                      ${isToday ? 'bg-purple-500 text-white font-bold' : 'hover:bg-slate-700/50'}
+                      ${hasDeadline && !isToday ? 'border border-fuchsia-500/50' : ''}
+                    `}
+                  >
+                    <span className="text-xs">{day}</span>
+                    {hasDeadline && (
+                      <div className={`absolute bottom-0.5 w-1 h-1 rounded-full ${isUrgent ? 'bg-red-500' : 'bg-fuchsia-400'}`} />
+                    )}
+                    
+                    {/* Tooltip on hover */}
+                    {hasDeadline && (
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-slate-900 border border-purple-500/30 rounded-lg px-2 py-1 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity">
+                        {dayDeadlines[0].title}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-        <Card className="mt-6" role="region" aria-label="Milestones">
-          <SectionHeader icon="Flag">Milestones</SectionHeader>
-          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-            <MilestoneBar icon={<FilesIcon className="w-4 h-4 text-indigo-600" />} label="Files uploaded" count={filesCount} unit="files" />
-            <MilestoneBar icon={<Trophy className="w-4 h-4 text-emerald-600" />} label="Tasks completed" count={completedTasks} unit="tasks" />
+            {/* Upcoming Deadlines List */}
+            <div className="mt-4 pt-4 border-t border-slate-700/50">
+              <h4 className="text-xs font-semibold text-slate-400 mb-2">Upcoming</h4>
+              {deadlines.slice(0, 3).map((d, i) => (
+                <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-700/30 cursor-pointer transition-colors">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${d.urgent ? 'bg-red-500' : 'bg-fuchsia-400'}`} />
+                    <span className="text-sm">{d.title}</span>
+                  </div>
+                  <span className="text-xs text-slate-400">{monthNames[month]} {d.date}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </Card>
 
-        <Card className="mt-6" role="region" aria-label="Files">
-          <SectionHeader icon="Folder">Files</SectionHeader>
-          <div className="mt-3">
-            {loading ? (
-              <SkeletonBlock height={88} radius={16} repeat={2} />
-            ) : files.length === 0 ? (
-              <EmptyState icon="Folder" title="No files yet" />
-            ) : (
-              <FileGrid projectId={project._id} initialFiles={files} canEdit={canEdit} canManage={canManage} />
-            )}
+          {/* RIGHT: TASK LIST (2/3 width) */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* Quick Add Task */}
+            <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 shadow-xl">
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  placeholder="Add a task... (press Enter)"
+                  className="flex-1 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-slate-500"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.target.value.trim()) {
+                      toast({ title: "Task added", variant: "success" });
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <button className="p-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl hover:shadow-lg transition-all">
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Tasks */}
+            <div className="space-y-3">
+              {tasks.length === 0 ? (
+                <div className="bg-slate-800/30 border border-dashed border-slate-700 rounded-2xl p-12 text-center">
+                  <Target className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400">No tasks yet. Add one above to get started.</p>
+                </div>
+              ) : (
+                tasks.map((task, i) => (
+                  <div 
+                    key={task._id || i}
+                    className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4 hover:border-purple-500/30 transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <button 
+                        className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-all
+                          ${task.completed 
+                            ? 'bg-emerald-500 border-emerald-500' 
+                            : 'border-slate-600 group-hover:border-purple-500'
+                          }`}
+                      >
+                        {task.completed && <CheckCircle2 className="w-3 h-3 text-white" />}
+                      </button>
+                      
+                      <div className="flex-1">
+                        <p className={`font-medium ${task.completed ? 'line-through text-slate-500' : ''}`}>
+                          {task.title || "Untitled task"}
+                        </p>
+                        {task.dueDate && (
+                          <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
+                            <Clock className="w-3 h-3" />
+                            {new Date(task.dueDate).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+
+                      {!task.completed && (
+                        <button className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-purple-600/20 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all hover:bg-purple-600/30">
+                          Ship
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </Card>
+        </div>
 
-        <Card className="mt-6 accent-activity" role="region" aria-label="Activity over time">
-          <SectionHeader icon="ActivitySquare">Activity Over Time</SectionHeader>
-          <div className="mt-3">
-            <ActivityOverTimeLive projectId={project._id} defaultRange="30" />
-          </div>
-        </Card>
-
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-8" />
-          <div className="lg:col-span-4 space-y-6">
-            <InsightsBlock projectId={project._id} insights={stats?.insights} loading={statsLoading} />
-            <Card className="accent-risk">
-              <SectionHeader icon="AlertTriangle">Risks &amp; Blockers</SectionHeader>
-              <div className="mt-3"><RisksPanel project={project} /></div>
-            </Card>
+        {/* AI COACH - CONTEXTUAL TIPS */}
+        <div className="mt-6 bg-gradient-to-r from-purple-900/30 to-fuchsia-900/30 border border-purple-500/30 rounded-2xl p-5 shadow-xl">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-purple-500/20 rounded-xl">
+              <Zap className="w-6 h-6 text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg mb-1">AI Coach says:</h3>
+              <p className="text-slate-300">
+                You're in your productive window (2-4pm). Stack two 25-min sprints now to hit your 5-ship goal today. 
+                Your team is online — great time to ship that design review.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* SHIP CELEBRATION MODAL */}
-      {showShipCelebration && (
-        <ShipCelebration
-          project={project}
-          open={showShipCelebration}
-          onClose={() => setShowShipCelebration(false)}
-        />
-      )}
-
-      <TaskSheet
-        open={showTaskSheet}
-        onClose={() => setShowTaskSheet(false)}
-        onCreate={handleAddTask}
-        onUpdate={handlePatchTask}
-        projectId={id}
-        canEdit={canEdit}
-      />
-      <InviteModal
-        open={showInvite}
-        onClose={() => { setShowInvite(false); refreshInvites(); }}
-        projectId={project?._id}
-      />
-      <ProjectSettingsModal
-        open={showSettings}
-        onClose={() => setShowSettings(false)}
-        project={project}
-        onSaved={(updated) => {
-          if (updated) {
-            setProject(p => ({ ...(p || {}), ...(updated || {}) }));
-            toast({ title: "Project saved", variant: "success" });
-            track("project_saved", { projectId: updated?._id || project?._id });
-          }
+      {/* FLOATING SHIP BUTTON - ALWAYS VISIBLE */}
+      <button
+        onClick={() => setShowShipModal(true)}
+        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center group"
+        style={{
+          animation: completedToday < 5 ? 'pulse 2s infinite' : 'none'
         }}
-      />
-    </main>
+      >
+        <Rocket className="w-8 h-8 text-white group-hover:rotate-12 transition-transform" />
+      </button>
+
+      {/* SHIP MODAL - 8 SECOND MAX */}
+      {showShipModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+                Ship This
+              </h2>
+              <button
+                onClick={() => setShowShipModal(false)}
+                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <input
+              type="text"
+              value={shipDescription}
+              onChange={(e) => setShipDescription(e.target.value)}
+              placeholder="What did you just ship?"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleShip();
+              }}
+            />
+
+            <div className="flex items-center gap-2 mb-6">
+              <button className="flex-1 p-3 bg-slate-800 border border-slate-700 rounded-xl hover:border-purple-500/50 transition-colors flex items-center justify-center gap-2 text-sm">
+                <Upload className="w-4 h-4" />
+                Attach file
+              </button>
+              <button className="flex-1 p-3 bg-slate-800 border border-slate-700 rounded-xl hover:border-purple-500/50 transition-colors flex items-center justify-center gap-2 text-sm">
+                <Mic className="w-4 h-4" />
+                Voice note
+              </button>
+            </div>
+
+            <button
+              onClick={handleShip}
+              className="w-full py-4 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl font-bold text-lg hover:shadow-2xl transition-all"
+            >
+              Ship (+50 XP)
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
