@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
+import HeartbeatRing from "./realtime/HeartbeatRing"; // ⭐ ADD HEARTBEAT RING
 
 import "./Sidebar.css";
 import "./Sidebar.neon.css";
@@ -29,8 +30,8 @@ import useBrandTheme from "../hooks/useBrandTheme";
 
 const LS_KEY = "ss.sidebar.collapsed";
 
-// LAYER 1: GIANT MOMENTUM PULSE
-function MomentumPulse({ todayProgress = 0.65, streak = 7, isTopHundred = false, collapsed = false }) {
+// LAYER 1: GIANT MOMENTUM PULSE (with optional HeartbeatRing)
+function MomentumPulse({ todayProgress = 0.65, streak = 7, isTopHundred = false, collapsed = false, showHeartbeat = true }) {
   const getStreakColor = (s) => {
     if (s >= 100) return { gradient: 'from-indigo-900 to-purple-900', ring: '#312E81', glow: 'shadow-indigo-500/50' };
     if (s >= 75) return { gradient: 'from-purple-600 to-fuchsia-600', ring: '#7C3AED', glow: 'shadow-purple-500/50' };
@@ -44,7 +45,14 @@ function MomentumPulse({ todayProgress = 0.65, streak = 7, isTopHundred = false,
 
   return (
     <div className="relative flex items-center justify-center py-4" style={{ height: size + 32 }}>
-      <svg width={size} height={size} viewBox="0 0 100 100" className={`transform transition-all duration-500 ${colors.glow} shadow-2xl`}>
+      {/* ⭐ OPTIONAL: HeartbeatRing wraps the momentum pulse */}
+      {showHeartbeat && (
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 0 }}>
+          <HeartbeatRing size={size + 16} strokeWidth={3} />
+        </div>
+      )}
+
+      <svg width={size} height={size} viewBox="0 0 100 100" className={`transform transition-all duration-500 ${colors.glow} shadow-2xl relative z-10`}>
         {/* Background ring */}
         <circle
           cx="50"
@@ -440,12 +448,13 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* LAYER 1: MOMENTUM PULSE */}
+      {/* LAYER 1: MOMENTUM PULSE (⭐ with HeartbeatRing) */}
       <MomentumPulse 
         todayProgress={0.75} 
         streak={7} 
         isTopHundred={false}
         collapsed={collapsed}
+        showHeartbeat={true}
       />
 
       {/* LAYER 2: DAILY SHIP COUNTER */}
