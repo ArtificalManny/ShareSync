@@ -1,4 +1,4 @@
-// src/pages/ProjectHome.jsx - SAFE VERSION (NO BLUR)
+// src/pages/ProjectHome.jsx - UPDATED WITH CURSOR SYSTEM
 import React, { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
@@ -9,6 +9,11 @@ import {
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
 
+// ⭐ CURSOR SYSTEM IMPORTS
+import { useCursorContext } from "../context/CursorContext";
+import useCursor, { useCursorFlash } from "../hooks/useCursor";
+import usePresence, { useTeamPresence } from "../hooks/usePresence";
+
 export default function ProjectHome() {
   const { id } = useParams();
   const { user } = useContext(AuthContext) || {};
@@ -18,6 +23,47 @@ export default function ProjectHome() {
   const [showShipModal, setShowShipModal] = useState(false);
   const [shipDescription, setShipDescription] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // ⭐ CURSOR SYSTEM HOOKS
+  const { joinProject, leaveProject, isConnected } = useCursorContext();
+  
+  // Enable cursor tracking
+  const { position, activity, isTracking } = useCursor({
+    enabled: true,
+    detectActivity: true,
+    detectProximity: true,
+    proximityThreshold: 50,
+  });
+
+  // Enable presence tracking
+  const { 
+    status, 
+    isOnline, 
+    projectStats 
+  } = usePresence({
+    autoDetectIdle: true,
+    autoSendHeartbeat: true,
+    idleTimeout: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Team activity monitoring
+  const teamActivity = useTeamPresence();
+
+  // Flash system for ship events
+  const { flashShip, flashTyping, flashClicking } = useCursorFlash();
+
+  // ⭐ JOIN/LEAVE PROJECT CURSOR ROOM
+  useEffect(() => {
+    if (id) {
+      console.log('🎯 Joining project cursor room:', id);
+      joinProject(id);
+    }
+
+    return () => {
+      console.log('👋 Leaving project cursor room');
+      leaveProject();
+    };
+  }, [id, joinProject, leaveProject]);
 
   useEffect(() => {
     let ignore = false;
@@ -37,6 +83,7 @@ export default function ProjectHome() {
     return () => { ignore = true; };
   }, [id]);
 
+  // ⭐ ENHANCED SHIP HANDLER WITH CURSOR FLASH
   const handleShip = async () => {
     if (!shipDescription.trim()) {
       toast({ title: "Add a description", variant: "error" });
@@ -45,11 +92,16 @@ export default function ProjectHome() {
 
     try {
       await shipProject(id, { description: shipDescription });
+      
+      // ⭐ TRIGGER GOLD FLASH FOR EVERYONE IN PROJECT!
+      flashShip();
+      
       toast({
         title: "🎉 Shipped!",
         description: `${shipDescription} - +50 XP`,
         variant: "success"
       });
+      
       setShowShipModal(false);
       setShipDescription(`Update: ${project?.title || ""}`);
       const updated = await getProject(id);
@@ -109,7 +161,20 @@ export default function ProjectHome() {
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="text-white pb-20">
       <div className="max-w-7xl mx-auto px-4 py-6">
         
-        {/* HEADER */}
+        {/* ⭐ CURSOR CONNECTION INDICATOR (Dev Tool - Remove in production) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="fixed top-4 left-4 z-50 px-3 py-2 bg-slate-900 border border-purple-500/30 rounded-lg text-xs">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span>Cursor: {isConnected ? 'Connected' : 'Disconnected'}</span>
+            </div>
+            <div className="text-slate-400 mt-1">
+              Status: {status} • Team: {teamActivity.message}
+            </div>
+          </div>
+        )}
+
+        {/* HEADER - Updated with team activity */}
         <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 shadow-2xl">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -122,7 +187,11 @@ export default function ProjectHome() {
                   <span className="font-semibold">7d streak</span>
                 </div>
               </div>
-              <p className="text-slate-400 mt-1">Team momentum: Strong</p>
+              {/* ⭐ TEAM ACTIVITY FROM CURSOR SYSTEM */}
+              <p className="text-slate-400 mt-1">
+                {teamActivity.isActive ? '🔥 ' : '😴 '} 
+                {teamActivity.message}
+              </p>
             </div>
 
             <div className="flex items-center gap-4">
@@ -134,8 +203,11 @@ export default function ProjectHome() {
                 <div className="text-2xl font-bold text-purple-400">{progressPct}%</div>
                 <div className="text-xs text-slate-400">Complete</div>
               </div>
+              {/* ⭐ LIVE ONLINE COUNT FROM CURSOR SYSTEM */}
               <div className="text-right">
-                <div className="text-2xl font-bold text-fuchsia-400">{project.members?.length || 1}</div>
+                <div className="text-2xl font-bold text-fuchsia-400">
+                  {projectStats.online}
+                </div>
                 <div className="text-xs text-slate-400">Online</div>
               </div>
             </div>
@@ -239,12 +311,20 @@ export default function ProjectHome() {
                   className="flex-1 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-slate-500"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && e.target.value.trim()) {
+                      // ⭐ TRIGGER TYPING FLASH
+                      flashTyping();
                       toast({ title: "Task added", variant: "success" });
                       e.target.value = '';
                     }
                   }}
                 />
-                <button className="p-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl hover:shadow-lg transition-all">
+                <button 
+                  onClick={() => {
+                    // ⭐ TRIGGER CLICKING FLASH
+                    flashClicking();
+                  }}
+                  className="p-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl hover:shadow-lg transition-all"
+                >
                   <Plus className="w-5 h-5" />
                 </button>
               </div>
@@ -264,6 +344,10 @@ export default function ProjectHome() {
                   >
                     <div className="flex items-start gap-3">
                       <button 
+                        onClick={() => {
+                          // ⭐ TRIGGER CLICKING FLASH ON TASK COMPLETE
+                          flashClicking();
+                        }}
                         className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-all
                           ${task.completed 
                             ? 'bg-emerald-500 border-emerald-500' 
@@ -286,7 +370,14 @@ export default function ProjectHome() {
                       </div>
 
                       {!task.completed && (
-                        <button className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-purple-600/20 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all hover:bg-purple-600/30">
+                        <button 
+                          onClick={() => {
+                            // ⭐ Could trigger ship modal here
+                            setShowShipModal(true);
+                            setShipDescription(task.title);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-purple-600/20 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all hover:bg-purple-600/30"
+                        >
                           Ship
                         </button>
                       )}
@@ -307,8 +398,11 @@ export default function ProjectHome() {
             <div className="flex-1">
               <h3 className="font-semibold text-lg mb-1">AI Coach says:</h3>
               <p className="text-slate-300">
-                You're in your productive window (2-4pm). Stack two 25-min sprints now to hit your 5-ship goal today. 
-                Your team is online — great time to ship that design review.
+                {/* ⭐ CONTEXT-AWARE MESSAGES BASED ON PRESENCE */}
+                {projectStats.online > 3 
+                  ? `You're in your productive window (2-4pm). ${projectStats.online} teammates are online — great time to ship that design review!`
+                  : "You're working solo right now. Stack two 25-min sprints to hit your 5-ship goal today."
+                }
               </p>
             </div>
           </div>
@@ -344,15 +438,25 @@ export default function ProjectHome() {
               placeholder="What did you just ship?"
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 mb-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               autoFocus
-              onKeyDown={(e) => { if (e.key === 'Enter') handleShip(); }}
+              onKeyDown={(e) => { 
+                if (e.key === 'Enter') {
+                  handleShip();
+                }
+              }}
             />
 
             <div className="flex items-center gap-2 mb-6">
-              <button className="flex-1 p-3 bg-slate-800 border border-slate-700 rounded-xl hover:border-purple-500/50 transition-colors flex items-center justify-center gap-2 text-sm">
+              <button 
+                onClick={flashClicking}
+                className="flex-1 p-3 bg-slate-800 border border-slate-700 rounded-xl hover:border-purple-500/50 transition-colors flex items-center justify-center gap-2 text-sm"
+              >
                 <Upload className="w-4 h-4" />
                 Attach file
               </button>
-              <button className="flex-1 p-3 bg-slate-800 border border-slate-700 rounded-xl hover:border-purple-500/50 transition-colors flex items-center justify-center gap-2 text-sm">
+              <button 
+                onClick={flashClicking}
+                className="flex-1 p-3 bg-slate-800 border border-slate-700 rounded-xl hover:border-purple-500/50 transition-colors flex items-center justify-center gap-2 text-sm"
+              >
                 <Mic className="w-4 h-4" />
                 Voice note
               </button>
@@ -362,7 +466,7 @@ export default function ProjectHome() {
               onClick={handleShip}
               className="w-full py-4 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl font-bold text-lg hover:shadow-2xl transition-all"
             >
-              Ship (+50 XP)
+              Ship (+50 XP) 🚢
             </button>
           </div>
         </div>

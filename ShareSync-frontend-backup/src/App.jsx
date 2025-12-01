@@ -1,4 +1,4 @@
-// src/App.jsx
+// src/App.jsx - UPDATED WITH CURSOR SYSTEM
 import React, { useContext, Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
@@ -27,6 +27,7 @@ import "./styles/command-palette.css";
 import "./styles/toast.css";
 import "./styles/glass.css";
 import "./styles/focus.css";
+import "./styles/cursor-effects.css"; // ⭐ CURSOR ANIMATIONS
 
 import ToastProviderOld, { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
@@ -56,6 +57,12 @@ import MentorDock from "./components/mentor/MentorDock.jsx";
 import LeaderboardDock from "./components/momentum/LeaderboardDock.jsx";
 
 import PublicRoutes from "./routes/publicRoutes.jsx";
+
+// ⭐ CURSOR SYSTEM IMPORTS
+import { CursorProvider } from "./context/CursorContext";
+import CursorLayer from "./components/realtime/CursorLayer";
+import ShipFlash from "./components/effects/ShipFlash";
+import SyncPulse from "./components/effects/SyncPulse";
 
 import {
   MESSENGER_V1,
@@ -133,7 +140,7 @@ function AppRoutes() {
       <Navbar user={navbarUser} onLogout={logout} />
 
       <ChatProvider userId={navbarUser?._id || navbarUser?.id}>
-      <div role="main" className="main-content with-sidebar">
+        <div role="main" className="main-content with-sidebar">
           <Suspense fallback={<div className="px-6 py-10 text-center text-slate-500">Loading page…</div>}>
             <ScrollToHash />
             <Routes>
@@ -206,6 +213,13 @@ function AppRoutes() {
       </ChatProvider>
 
       <ToastHost />
+      
+      {/* ⭐ CURSOR OVERLAY - Renders over everything */}
+      <CursorLayer />
+      
+      {/* ⭐ CURSOR EFFECTS */}
+      <ShipFlash />
+      <SyncPulse />
     </>
   );
 }
@@ -237,23 +251,26 @@ const App = () => {
   return (
     <AuthProvider>
       <UserProvider>
-        <SprintProvider>
-          <ErrorBoundary>
-            <ToastProvider>
-              <Router>
-                <LayoutSkin>
-                  <CommandPaletteProvider>
-                    {FOCUS_DOCK_V1 ? (
-                      <FocusProvider>{Shell}</FocusProvider>
-                    ) : (
-                      Shell
-                    )}
-                  </CommandPaletteProvider>
-                </LayoutSkin>
-              </Router>
-            </ToastProvider>
-          </ErrorBoundary>
-        </SprintProvider>
+        {/* ⭐ CURSOR PROVIDER - Wraps entire app */}
+        <CursorProvider>
+          <SprintProvider>
+            <ErrorBoundary>
+              <ToastProvider>
+                <Router>
+                  <LayoutSkin>
+                    <CommandPaletteProvider>
+                      {FOCUS_DOCK_V1 ? (
+                        <FocusProvider>{Shell}</FocusProvider>
+                      ) : (
+                        Shell
+                      )}
+                    </CommandPaletteProvider>
+                  </LayoutSkin>
+                </Router>
+              </ToastProvider>
+            </ErrorBoundary>
+          </SprintProvider>
+        </CursorProvider>
       </UserProvider>
     </AuthProvider>
   );

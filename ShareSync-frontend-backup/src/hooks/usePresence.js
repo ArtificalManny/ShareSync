@@ -1,191 +1,395 @@
-// usePresence(roomId): minimal client-side presence with optional server fetch.
-// - Heartbeat every 30s updates your own lastSeen and emits a window event.
-// - Tries GET /api/presence/:roomId (soft-fail); otherwise keeps only self.
-// - Exposes: { onlineMap, isOnline(userId), lastSeen(userId) }
-// - NEW: Adds focus awareness: { isFocusing, focusProjectId, focusEndsAt, startFocus(), stopFocus() }
+/**
+ * usePresence.js
+ * Custom hook for managing user presence (online/idle/focus)
+ * 
+ * Features:
+ * - Automatic idle detection
+ * - Focus mode management
+ * - Ghost/team mode switching
+ * - Activity heartbeat
+ * - Presence analytics
+ */
 
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { AuthContext } from "../AuthContext";
-import {
-  subscribe,
-  setLastSeen,
-  getPresence,
-  isOnline as stateIsOnline,
-  lastSeen as stateLastSeen,
-} from "../state/presence";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCursorContext } from '../context/CursorContext';
 
-const HEARTBEAT_MS = 30_000;
+// Presence states
+export const PresenceStatus = {
+  ONLINE: 'online',
+  IDLE: 'idle',
+  FOCUS: 'focus',
+  OFFLINE: 'offline',
+};
 
-// Focus session defaults (25 minutes)
-const FOCUS_MINUTES = 25;
-const FOCUS_MS = FOCUS_MINUTES * 60_000;
+export const PresenceMode = {
+  GHOST: 'ghost',   // Anonymous viewing
+  TEAM: 'team',     // Full visibility
+  FOCUS: 'focus',   // Deep work mode
+};
 
-// Session storage keys for cross-reload continuity
-const FOCUS_SKEY = "ss.focus.active";
-const FOCUS_PID  = "ss.focus.projectId";
-const FOCUS_END  = "ss.focus.endsAt";
+export function usePresence(options = {}) {
+  const {
+    idleTimeout = 5 * 60 * 1000,        // 5 minutes
+    heartbeatInterval = 30 * 1000,      // 30 seconds
+    autoDetectIdle = true,
+    autoSendHeartbeat = true,
+  } = options;
 
-export default function usePresence(roomId) {
-  const { user } = useContext(AuthContext) || {};
-  const meId =
-    user?._id || user?.id || user?.userId || user?.username || user?.email || "me";
+  const { sendHeartbeat, cursors, isConnected } = useCursorContext();
 
-  const [onlineMap, setOnlineMap] = useState(() => getPresence());
-  const [focus, setFocus] = useState({ isFocusing: false, focusProjectId: null, endsAt: null });
-  const focusTimerRef = useRef(null);
+  // User's presence state
+  const [status, setStatus] = useState(PresenceStatus.ONLINE);
+  const [mode, setMode] = useState(PresenceMode.TEAM);
 
-  // Subscribe to global presence updates
-  useEffect(() => {
-    return subscribe((snap) => setOnlineMap(snap));
-  }, []);
+  // Timers
+  const idleTimer = useRef(null);
+  const heartbeatTimer = useRef(null);
+  const lastActivity = useRef(Date.now());
 
-  // Restore local focus state from sessionStorage on mount
-  useEffect(() => {
-    try {
-      const active = sessionStorage.getItem(FOCUS_SKEY) === "1";
-      const projectId = sessionStorage.getItem(FOCUS_PID) || null;
-      const endsAt = Number(sessionStorage.getItem(FOCUS_END) || 0);
-      if (active && endsAt && Date.now() < endsAt) {
-        setFocus({ isFocusing: true, focusProjectId: projectId, endsAt });
-        const msLeft = Math.max(0, endsAt - Date.now());
-        focusTimerRef.current && clearTimeout(focusTimerRef.current);
-        focusTimerRef.current = setTimeout(() => stopFocus(), msLeft);
-      } else {
-        sessionStorage.removeItem(FOCUS_SKEY);
-        sessionStorage.removeItem(FOCUS_PID);
-        sessionStorage.removeItem(FOCUS_END);
-      }
-    } catch {}
-    return () => {
-      focusTimerRef.current && clearTimeout(focusTimerRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // ============================================
+  // IDLE DETECTION
+  // ============================================
 
-  function startFocus(projectId = roomId, minutes = FOCUS_MINUTES) {
-    const endsAt = Date.now() + Math.max(1, minutes) * 60_000;
-    setFocus({ isFocusing: true, focusProjectId: projectId || null, endsAt });
-    try {
-      sessionStorage.setItem(FOCUS_SKEY, "1");
-      if (projectId) sessionStorage.setItem(FOCUS_PID, String(projectId));
-      sessionStorage.setItem(FOCUS_END, String(endsAt));
-    } catch {}
+  const resetIdleTimer = useCallback(() => {
+    lastActivity.current = Date.now();
 
-    focusTimerRef.current && clearTimeout(focusTimerRef.current);
-    focusTimerRef.current = setTimeout(() => stopFocus(), Math.max(0, endsAt - Date.now()));
-
-    try { window.dispatchEvent(new CustomEvent("presence:focus_started", { detail: { projectId, endsAt } })); } catch {}
-  }
-
-  function stopFocus() {
-    setFocus({ isFocusing: false, focusProjectId: null, endsAt: null });
-    try {
-      sessionStorage.removeItem(FOCUS_SKEY);
-      sessionStorage.removeItem(FOCUS_PID);
-      sessionStorage.removeItem(FOCUS_END);
-    } catch {}
-    focusTimerRef.current && clearTimeout(focusTimerRef.current);
-    try { window.dispatchEvent(new CustomEvent("presence:focus_ended")); } catch {}
-  }
-
-  // Initial fetch (optional) + heartbeat
-  useEffect(() => {
-    let ignore = false;
-
-    async function fetchRoom() {
-      if (!roomId) return;
-      try {
-        const res = await fetch(`/api/presence/${encodeURIComponent(roomId)}`);
-        if (!res.ok) throw new Error("Presence endpoint not available");
-        const data = await res.json();
-        // Normalize: either { users:[{userId,lastSeen}...] } or bare array
-        const list = Array.isArray(data?.users) ? data.users : (Array.isArray(data) ? data : []);
-        list.forEach((u) => {
-          if (u && u.userId) setLastSeen(u.userId, Number(u.lastSeen || Date.now()));
-        });
-
-        // Optional server focus payload normalization
-        const focusObj = data?.focus || null;
-        const active = typeof data?.isFocusing === "boolean" ? data.isFocusing : Boolean(focusObj?.active);
-        const pid = data?.focusProjectId ?? focusObj?.projectId ?? null;
-        const endsAt = Number(data?.focusEndsAt ?? focusObj?.endsAt ?? 0) || null;
-
-        if (active) {
-          setFocus({ isFocusing: true, focusProjectId: pid || roomId || null, endsAt });
-          if (endsAt) {
-            focusTimerRef.current && clearTimeout(focusTimerRef.current);
-            const msLeft = Math.max(0, endsAt - Date.now());
-            focusTimerRef.current = setTimeout(() => stopFocus(), msLeft);
-          }
-          try {
-            sessionStorage.setItem(FOCUS_SKEY, "1");
-            if (pid) sessionStorage.setItem(FOCUS_PID, String(pid));
-            if (endsAt) sessionStorage.setItem(FOCUS_END, String(endsAt));
-          } catch {}
-        }
-      } catch {
-        // Soft fallback: ensure at least self is present
-        setLastSeen(meId);
-      }
+    // If was idle, set back to online
+    if (status === PresenceStatus.IDLE) {
+      setStatus(PresenceStatus.ONLINE);
+      console.log('🔄 Presence: Back to ONLINE');
     }
 
-    // Do an immediate self mark + optional fetch
-    setLastSeen(meId);
-    fetchRoom();
+    // Clear and restart idle timer
+    if (idleTimer.current) {
+      clearTimeout(idleTimer.current);
+    }
 
-    // Heartbeat
-    const tick = () => {
-      try {
-        window.dispatchEvent(new CustomEvent("presence:heartbeat"));
-      } catch {}
-      setLastSeen(meId);
-    };
-    const id = setInterval(tick, HEARTBEAT_MS);
-    const t0 = setTimeout(tick, 250);
+    if (autoDetectIdle) {
+      idleTimer.current = setTimeout(() => {
+        setStatus(PresenceStatus.IDLE);
+        console.log('😴 Presence: Now IDLE');
+      }, idleTimeout);
+    }
+  }, [status, autoDetectIdle, idleTimeout]);
 
-    return () => {
-      clearInterval(id);
-      clearTimeout(t0);
-      ignore = true;
-    };
-  }, [roomId, meId]);
-
-  // Listen for app-level focus start/stop events (local fallback)
+  // Track user activity to reset idle timer
   useEffect(() => {
-    const startEvents = ["start-tenx-sprint", "focus:started", "tenx-sprint:started"];
-    const stopEvents  = ["focus:ended", "tenx-sprint:ended", "focus:stop", "stop-tenx-sprint"];
+    if (!autoDetectIdle) return;
 
-    const onStart = (e) => {
-      const projectId = e?.detail?.projectId ?? roomId ?? null;
-      const minutes = e?.detail?.minutes ?? FOCUS_MINUTES;
-      startFocus(projectId, minutes);
+    const handleActivity = () => {
+      resetIdleTimer();
     };
-    const onStop = () => stopFocus();
 
-    startEvents.forEach((n) => window.addEventListener(n, onStart));
-    stopEvents.forEach((n)  => window.addEventListener(n, onStop));
+    // Listen to various activity events
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity);
+    });
+
+    // Start initial timer
+    resetIdleTimer();
+
     return () => {
-      startEvents.forEach((n) => window.removeEventListener(n, onStart));
-      stopEvents.forEach((n)  => window.removeEventListener(n, onStop));
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+      
+      if (idleTimer.current) {
+        clearTimeout(idleTimer.current);
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
+  }, [autoDetectIdle, resetIdleTimer]);
 
-  const isOnline = useCallback((uid, opts) => stateIsOnline(uid, opts), [onlineMap]);
-  const lastSeen = useCallback((uid) => stateLastSeen(uid), [onlineMap]);
+  // ============================================
+  // HEARTBEAT
+  // ============================================
 
-  // Expose raw map (userId -> lastSeenMs) for simple dot UIs
-  const map = useMemo(() => onlineMap, [onlineMap]);
+  useEffect(() => {
+    if (!autoSendHeartbeat || !isConnected) return;
+
+    // Send initial heartbeat
+    sendHeartbeat();
+
+    // Send periodic heartbeats
+    heartbeatTimer.current = setInterval(() => {
+      // Only send if not offline
+      if (status !== PresenceStatus.OFFLINE) {
+        sendHeartbeat();
+      }
+    }, heartbeatInterval);
+
+    return () => {
+      if (heartbeatTimer.current) {
+        clearInterval(heartbeatTimer.current);
+      }
+    };
+  }, [autoSendHeartbeat, isConnected, sendHeartbeat, heartbeatInterval, status]);
+
+  // ============================================
+  // PRESENCE MODE MANAGEMENT
+  // ============================================
+
+  const enterGhostMode = useCallback(() => {
+    setMode(PresenceMode.GHOST);
+    console.log('🎭 Presence: Entered GHOST mode');
+  }, []);
+
+  const enterTeamMode = useCallback(() => {
+    setMode(PresenceMode.TEAM);
+    console.log('👥 Presence: Entered TEAM mode');
+  }, []);
+
+  const enterFocusMode = useCallback((duration) => {
+    setMode(PresenceMode.FOCUS);
+    setStatus(PresenceStatus.FOCUS);
+    console.log('🔥 Presence: Entered FOCUS mode');
+
+    // Auto-exit after duration (if specified)
+    if (duration) {
+      setTimeout(() => {
+        exitFocusMode();
+      }, duration);
+    }
+  }, []);
+
+  const exitFocusMode = useCallback(() => {
+    setMode(PresenceMode.TEAM);
+    setStatus(PresenceStatus.ONLINE);
+    console.log('✅ Presence: Exited FOCUS mode');
+  }, []);
+
+  // ============================================
+  // PRESENCE ANALYTICS
+  // ============================================
+
+  // Get presence stats for current project
+  const getProjectStats = useCallback(() => {
+    if (!cursors || cursors.length === 0) {
+      return {
+        total: 0,
+        online: 0,
+        idle: 0,
+        focus: 0,
+      };
+    }
+
+    return {
+      total: cursors.length,
+      online: cursors.filter(c => c.status === PresenceStatus.ONLINE).length,
+      idle: cursors.filter(c => c.status === PresenceStatus.IDLE).length,
+      focus: cursors.filter(c => c.status === PresenceStatus.FOCUS).length,
+    };
+  }, [cursors]);
+
+  // Get users by status
+  const getUsersByStatus = useCallback((targetStatus) => {
+    return cursors.filter(c => c.status === targetStatus);
+  }, [cursors]);
+
+  // Get users by mode
+  const getUsersByMode = useCallback((targetMode) => {
+    return cursors.filter(c => c.mode === targetMode);
+  }, [cursors]);
+
+  // Check if user is active (online or focus)
+  const isUserActive = useCallback((userId) => {
+    const cursor = cursors.find(c => c.userId === userId);
+    return cursor && (cursor.status === PresenceStatus.ONLINE || cursor.status === PresenceStatus.FOCUS);
+  }, [cursors]);
+
+  // Get time since last activity
+  const getTimeSinceActivity = useCallback(() => {
+    return Date.now() - lastActivity.current;
+  }, []);
+
+  // ============================================
+  // RETURN VALUE
+  // ============================================
 
   return {
-    onlineMap: map,
-    isOnline,
-    lastSeen,
-    // focus extras
-    isFocusing: Boolean(focus.isFocusing),
-    focusProjectId: focus.focusProjectId,
-    focusEndsAt: focus.endsAt,
-    startFocus,
-    stopFocus,
+    // Current user's state
+    status,
+    mode,
+    isOnline: status === PresenceStatus.ONLINE,
+    isIdle: status === PresenceStatus.IDLE,
+    isFocus: status === PresenceStatus.FOCUS,
+    
+    // Mode management
+    enterGhostMode,
+    enterTeamMode,
+    enterFocusMode,
+    exitFocusMode,
+    
+    // Activity
+    resetIdleTimer,
+    lastActivity: lastActivity.current,
+    timeSinceActivity: getTimeSinceActivity(),
+    
+    // Analytics
+    projectStats: getProjectStats(),
+    getUsersByStatus,
+    getUsersByMode,
+    isUserActive,
   };
 }
+
+// ============================================
+// SPECIALIZED PRESENCE HOOKS
+// ============================================
+
+/**
+ * Hook for monitoring team activity
+ */
+export function useTeamPresence() {
+  const { cursors } = useCursorContext();
+  const [teamActivity, setTeamActivity] = useState({
+    isActive: false,
+    activeCount: 0,
+    message: '',
+  });
+
+  useEffect(() => {
+    if (!cursors || cursors.length === 0) {
+      setTeamActivity({
+        isActive: false,
+        activeCount: 0,
+        message: 'Waiting for team...',
+      });
+      return;
+    }
+
+    const activeUsers = cursors.filter(c => 
+      c.status === PresenceStatus.ONLINE || c.status === PresenceStatus.FOCUS
+    );
+
+    const count = activeUsers.length;
+
+    let message = '';
+    if (count === 0) {
+      message = 'Team is quiet';
+    } else if (count === 1) {
+      message = '1 person working';
+    } else if (count <= 3) {
+      message = `${count} people working`;
+    } else if (count <= 7) {
+      message = `Team is active! (${count} online)`;
+    } else {
+      message = `🔥 Team is on FIRE! (${count} online)`;
+    }
+
+    setTeamActivity({
+      isActive: count > 0,
+      activeCount: count,
+      message,
+    });
+  }, [cursors]);
+
+  return teamActivity;
+}
+
+/**
+ * Hook for focus mode timer
+ */
+export function useFocusTimer(duration) {
+  const [timeRemaining, setTimeRemaining] = useState(duration);
+  const [isActive, setIsActive] = useState(false);
+  const timerRef = useRef(null);
+
+  const start = useCallback(() => {
+    setIsActive(true);
+    setTimeRemaining(duration);
+
+    timerRef.current = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1000) {
+          clearInterval(timerRef.current);
+          setIsActive(false);
+          return 0;
+        }
+        return prev - 1000;
+      });
+    }, 1000);
+  }, [duration]);
+
+  const pause = useCallback(() => {
+    setIsActive(false);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  }, []);
+
+  const reset = useCallback(() => {
+    setIsActive(false);
+    setTimeRemaining(duration);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  }, [duration]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
+
+  // Format time remaining as MM:SS
+  const formatted = `${Math.floor(timeRemaining / 60000)}:${String(Math.floor((timeRemaining % 60000) / 1000)).padStart(2, '0')}`;
+
+  return {
+    timeRemaining,
+    formatted,
+    isActive,
+    progress: ((duration - timeRemaining) / duration) * 100,
+    start,
+    pause,
+    reset,
+  };
+}
+
+/**
+ * Hook for detecting cursor loneliness (you're the only one)
+ */
+export function useLonelinessDetection() {
+  const { cursors } = useCursorContext();
+  const [isAlone, setIsAlone] = useState(false);
+  const [justJoined, setJustJoined] = useState(null);
+
+  useEffect(() => {
+    const activeUsers = cursors.filter(c => 
+      c.status === PresenceStatus.ONLINE || c.status === PresenceStatus.FOCUS
+    );
+
+    const wasAlone = isAlone;
+    const nowAlone = activeUsers.length === 0;
+
+    setIsAlone(nowAlone);
+
+    // Detect when someone joins while you're alone
+    if (wasAlone && !nowAlone && activeUsers.length === 1) {
+      const newUser = activeUsers[0];
+      setJustJoined(newUser);
+      
+      // Clear notification after 5 seconds
+      setTimeout(() => {
+        setJustJoined(null);
+      }, 5000);
+
+      console.log(`🎉 ${newUser.userName} just joined! You're not alone anymore.`);
+    }
+  }, [cursors, isAlone]);
+
+  return {
+    isAlone,
+    justJoined,
+    message: isAlone 
+      ? "You're working solo right now"
+      : justJoined 
+        ? `${justJoined.userName} just joined!`
+        : `${cursors.length} ${cursors.length === 1 ? 'person' : 'people'} here`,
+  };
+}
+
+export default usePresence;

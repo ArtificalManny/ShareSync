@@ -1,0 +1,190 @@
+/**
+ * cursor-effects.css
+ * All animations for Live Human Cursor system
+ * 
+ * Includes:
+ * - Breathing animations (pulsing)
+ * - Sparkle trails
+ * - Flash effects (white/gold bursts)
+ * - Sync pulse (proximity)
+ * - Heartbeat rings
+ */
+
+/* ============================================
+   BREATHING ANIMATIONS (Cursor Pulse)
+   ============================================ */
+
+   @keyframes cursor-breathe-idle {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.3;
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.5;
+    }
+  }
+  
+  @keyframes cursor-breathe-active {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 0.9;
+    }
+  }
+  
+  @keyframes cursor-breathe-typing {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    25% {
+      transform: scale(1.2);
+      opacity: 0.95;
+    }
+    75% {
+      transform: scale(1.1);
+      opacity: 1;
+    }
+  }
+  
+  /* ============================================
+     SPARKLE TRAILS
+     ============================================ */
+  
+  @keyframes sparkle-fade {
+    0% {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(0);
+      opacity: 0;
+    }
+  }
+  
+  .cursor-sparkle {
+    animation: sparkle-fade 300ms ease-out forwards;
+    pointer-events: none;
+  }
+  
+  /* ============================================
+     FLASH EFFECTS (Muzzle Flash)
+     ============================================ */
+  
+  @keyframes cursor-flash-white {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.5);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes cursor-flash-gold {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    30% {
+      transform: scale(1.2);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+  }
+  
+  /* ============================================
+     SYNC PULSE (Proximity Effect)
+     ============================================ */
+  
+  @keyframes sync-pulse-ring {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(3);
+      opacity: 0;
+    }
+  }
+  
+  /* ============================================
+     SHIP FLASH (Gold Celebration)
+     ============================================ */
+  
+  @keyframes ship-flash-burst {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+  }
+  
+  /* ============================================
+     SHIP CONFETTI
+     ============================================ */
+  
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh) rotate(720deg);
+      opacity: 0;
+    }
+  }
+  
+  .ship-confetti {
+    animation: confetti-fall 3000ms ease-in forwards;
+    pointer-events: none;
+  }
+  
+  /* ============================================
+     PERFORMANCE OPTIMIZATIONS
+     ============================================ */
+  
+  .live-cursor,
+  .cursor-dot,
+  .cursor-sparkle,
+  .cursor-flash,
+  .sync-pulse-ring,
+  .ship-flash-overlay {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+  }
+  
+  /* ============================================
+     REDUCED MOTION
+     ============================================ */
+  
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
