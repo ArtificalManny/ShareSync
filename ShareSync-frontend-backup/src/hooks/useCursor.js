@@ -2,22 +2,23 @@
  * useCursor.js
  * Custom hook for tracking cursor position and activity
  * 
- * Features:
- * - Mouse position tracking (viewport %)
- * - Activity detection (typing, clicking, dragging)
- * - Automatic cursor updates to server
- * - Proximity detection
+ * NOW WITH:
+ * - Spatial index for O(1) proximity detection
+ * - Smart throttling
+ * - Zustand integration
+ * - Performance optimizations
  */
 
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useCursorContext } from '../context/CursorContext';
+import { throttleFPS } from '../utils/cursorThrottle';
 
 export function useCursor(options = {}) {
   const {
-    enabled = true,           // Enable cursor tracking
-    detectActivity = true,    // Detect typing/clicking/dragging
-    detectProximity = true,   // Detect when near other cursors
-    proximityThreshold = 50,  // Distance in pixels to trigger proximity
+    enabled = true,
+    detectActivity = true,
+    detectProximity = true,
+    proximityThreshold = 50,
   } = options;
 
   const {
@@ -26,6 +27,7 @@ export function useCursor(options = {}) {
     sendProximity,
     cursorsMap,
     isConnected,
+    spatialIndex, // ⭐ NEW: Spatial index from context
   } = useCursorContext();
 
   // Local cursor position (viewport %)
@@ -34,10 +36,32 @@ export function useCursor(options = {}) {
 
   // Drag state
   const isDragging = useRef(false);
+  
+  // Typing timeout
+  const typingTimeoutRef = useRef(null);
 
-  // Last proximity check
-  const lastProximityCheck = useRef(0);
-  const PROXIMITY_CHECK_INTERVAL = 1000; // Check every second
+  // ============================================
+  // ⭐ OPTIMIZED PROXIMITY DETECTION
+  // ============================================
+
+  // Throttled proximity check using spatial index
+  const checkProximity = useRef(
+    throttleFPS((mouseX, mouseY) => {
+      if (!spatialIndex) return;
+
+      // Convert pixels to viewport %
+      const x = (mouseX / window.innerWidth) * 100;
+      const y = (mouseY / window.innerHeight) * 100;
+
+      // ⭐ USE SPATIAL INDEX: O(1) lookup instead of O(n)
+      const nearby = spatialIndex.findNearby(x, y, proximityThreshold);
+
+      nearby.forEach(({ cursor, distance }) => {
+        console.log(`💓 Near ${cursor.userName || cursor.userId} (${Math.round(distance)}px)`);
+        sendProximity(cursor.id);
+      });
+    }, 1) // Check once per second
+  ).current;
 
   // ============================================
   // MOUSE POSITION TRACKING
@@ -53,33 +77,30 @@ export function useCursor(options = {}) {
     // Update local state
     setPosition({ x, y });
 
-    // Determine activity based on mouse buttons
+    // Determine activity
     let currentActivity = 'idle';
-    
     if (isDragging.current) {
       currentActivity = 'dragging';
     }
 
-    // Send to server (throttled in CursorContext)
+    // ⭐ THROTTLED UPDATE (handled in CursorContext)
     updateCursorPosition(x, y, currentActivity);
 
-    // Check proximity to other cursors
+    // ⭐ PROXIMITY CHECK (using spatial index)
     if (detectProximity) {
       checkProximity(event.clientX, event.clientY);
     }
-  }, [enabled, isConnected, updateCursorPosition, detectProximity]);
+  }, [enabled, isConnected, updateCursorPosition, detectProximity, checkProximity]);
 
   // ============================================
   // ACTIVITY DETECTION
   // ============================================
 
-  const handleMouseDown = useCallback((event) => {
+  const handleMouseDown = useCallback(() => {
     if (!enabled || !detectActivity) return;
 
     setActivity('clicking');
     sendFlash('clicking');
-
-    // Track if dragging starts
     isDragging.current = true;
   }, [enabled, detectActivity, sendFlash]);
 
@@ -95,49 +116,23 @@ export function useCursor(options = {}) {
 
     // Ignore modifier keys
     if (event.metaKey || event.ctrlKey || event.altKey) return;
+    
+    // Ignore if typing in input/textarea (handled by component)
+    const tag = event.target?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
 
     setActivity('typing');
     sendFlash('typing');
 
     // Reset to idle after 500ms of no typing
-    clearTimeout(handleKeyDown.timeoutId);
-    handleKeyDown.timeoutId = setTimeout(() => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    typingTimeoutRef.current = setTimeout(() => {
       setActivity('idle');
     }, 500);
   }, [enabled, detectActivity, sendFlash]);
-
-  // ============================================
-  // PROXIMITY DETECTION
-  // ============================================
-
-  const checkProximity = useCallback((mouseX, mouseY) => {
-    const now = Date.now();
-    
-    // Throttle proximity checks
-    if (now - lastProximityCheck.current < PROXIMITY_CHECK_INTERVAL) {
-      return;
-    }
-    
-    lastProximityCheck.current = now;
-
-    // Check distance to all other cursors
-    cursorsMap.forEach((cursor, userId) => {
-      // Convert cursor's viewport % to pixels
-      const cursorX = (cursor.x / 100) * window.innerWidth;
-      const cursorY = (cursor.y / 100) * window.innerHeight;
-
-      // Calculate distance
-      const dx = mouseX - cursorX;
-      const dy = mouseY - cursorY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      // If within threshold, trigger proximity event
-      if (distance < proximityThreshold) {
-        console.log(`💓 Near ${cursor.userName} (${Math.round(distance)}px)`);
-        sendProximity(userId);
-      }
-    });
-  }, [cursorsMap, proximityThreshold, sendProximity]);
 
   // ============================================
   // EVENT LISTENERS
@@ -146,18 +141,20 @@ export function useCursor(options = {}) {
   useEffect(() => {
     if (!enabled) return;
 
-    // Add event listeners
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('keydown', handleKeyDown);
 
-    // Cleanup
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('keydown', handleKeyDown);
+      
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     };
   }, [enabled, handleMouseMove, handleMouseDown, handleMouseUp, handleKeyDown]);
 
@@ -166,8 +163,8 @@ export function useCursor(options = {}) {
   // ============================================
 
   return {
-    position,        // Current cursor position { x, y } (viewport %)
-    activity,        // Current activity: 'idle' | 'typing' | 'clicking' | 'dragging'
+    position,
+    activity,
     isTracking: enabled && isConnected,
   };
 }
@@ -180,11 +177,7 @@ export function useCursor(options = {}) {
  * Hook for tracking cursor within a specific element
  */
 export function useElementCursor(elementRef, options = {}) {
-  const {
-    updateCursorPosition,
-    isConnected,
-  } = useCursorContext();
-
+  const { updateCursorPosition, isConnected } = useCursorContext();
   const [relativePosition, setRelativePosition] = useState({ x: 0, y: 0 });
 
   const handleMouseMove = useCallback((event) => {
@@ -196,13 +189,13 @@ export function useElementCursor(elementRef, options = {}) {
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
-    // Clamp to element bounds
+    // Clamp to bounds
     const clampedX = Math.max(0, Math.min(100, x));
     const clampedY = Math.max(0, Math.min(100, y));
 
     setRelativePosition({ x: clampedX, y: clampedY });
 
-    // Convert back to viewport % for server
+    // Convert to viewport % for server
     const viewportX = (event.clientX / window.innerWidth) * 100;
     const viewportY = (event.clientY / window.innerHeight) * 100;
     
@@ -213,15 +206,12 @@ export function useElementCursor(elementRef, options = {}) {
     const element = elementRef.current;
     if (!element) return;
 
-    element.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      element.removeEventListener('mousemove', handleMouseMove);
-    };
+    element.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => element.removeEventListener('mousemove', handleMouseMove);
   }, [elementRef, handleMouseMove]);
 
   return {
-    position: relativePosition,  // Position relative to element (0-100%)
+    position: relativePosition,
     isTracking: isConnected,
   };
 }
@@ -236,17 +226,12 @@ export function useCursorFlash() {
     sendFlash(type);
   }, [sendFlash]);
 
-  const flashTyping = useCallback(() => flash('typing'), [flash]);
-  const flashClicking = useCallback(() => flash('clicking'), [flash]);
-  const flashDragging = useCallback(() => flash('dragging'), [flash]);
-  const flashShip = useCallback(() => flash('ship'), [flash]);
-
   return {
     flash,
-    flashTyping,
-    flashClicking,
-    flashDragging,
-    flashShip,
+    flashTyping: useCallback(() => flash('typing'), [flash]),
+    flashClicking: useCallback(() => flash('clicking'), [flash]),
+    flashDragging: useCallback(() => flash('dragging'), [flash]),
+    flashShip: useCallback(() => flash('ship'), [flash]),
   };
 }
 
@@ -268,9 +253,94 @@ export function useFocusTogether() {
     focusTogether(userId);
   }, [focusTogether, cursorsMap]);
 
-  return {
-    focusOnUser,
-  };
+  return { focusOnUser };
+}
+
+/**
+ * ⭐ NEW: Hook for advanced proximity detection
+ */
+export function useProximityDetection(options = {}) {
+  const {
+    threshold = 50,
+    interval = 1000,
+    onProximity = () => {},
+  } = options;
+
+  const { spatialIndex, cursorsMap } = useCursorContext();
+  const [nearbyUsers, setNearbyUsers] = useState([]);
+
+  useEffect(() => {
+    if (!spatialIndex) return;
+
+    const checkInterval = setInterval(() => {
+      const allCursors = Array.from(cursorsMap.values());
+      const nearby = [];
+
+      allCursors.forEach((cursor) => {
+        const found = spatialIndex.findNearby(
+          cursor.x,
+          cursor.y,
+          threshold,
+          cursor.userId
+        );
+
+        found.forEach(({ cursor: nearbyCursor, distance }) => {
+          nearby.push({
+            user1: cursor,
+            user2: nearbyCursor,
+            distance,
+          });
+          
+          onProximity({
+            user1: cursor,
+            user2: nearbyCursor,
+            distance,
+          });
+        });
+      });
+
+      setNearbyUsers(nearby);
+    }, interval);
+
+    return () => clearInterval(checkInterval);
+  }, [spatialIndex, cursorsMap, threshold, interval, onProximity]);
+
+  return { nearbyUsers };
+}
+
+/**
+ * ⭐ NEW: Hook to get cursor stats
+ */
+export function useCursorStats() {
+  const { cursorsMap, spatialIndex } = useCursorContext();
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    idle: 0,
+    typing: 0,
+    clicking: 0,
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const cursors = Array.from(cursorsMap.values());
+      
+      const newStats = {
+        total: cursors.length,
+        active: cursors.filter(c => c.activity !== 'idle').length,
+        idle: cursors.filter(c => c.activity === 'idle').length,
+        typing: cursors.filter(c => c.activity === 'typing').length,
+        clicking: cursors.filter(c => c.activity === 'clicking').length,
+        spatial: spatialIndex?.getStats() || {},
+      };
+
+      setStats(newStats);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [cursorsMap, spatialIndex]);
+
+  return stats;
 }
 
 export default useCursor;
