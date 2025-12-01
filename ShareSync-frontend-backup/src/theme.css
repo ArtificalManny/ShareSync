@@ -5,7 +5,7 @@
 /* ---------- Light (default) ---------- */
 :root {
   /* Semantics */
-  --bg-canvas:        #F7F9FC;
+  --bg-canvas:        #F7F9FC;  /* ← REVERTED */
   --bg-surface:       #FFFFFF;
   --bg-elevated:      #FFFFFF;
 
@@ -51,7 +51,7 @@
 }
 
 :root.dark {
-  --bg-canvas:   #0A0F1A;
+  --bg-canvas:   #0A0F1A;  /* ← REVERTED */
   --bg-surface:  #0B1220;
   --bg-elevated: #0B1220;
 
@@ -71,7 +71,7 @@
 
 /* ---------- Base ---------- */
 html, body, #root, .app-container {
-  background: var(--bg-canvas);
+  background: var(--bg-canvas);  /* ← REVERTED - NO MORE !important */
   color: var(--text-primary);
 }
 
@@ -149,14 +149,14 @@ html, body, #root, .app-container {
   border-radius: 999px; overflow: hidden;
   background: rgba(2,6,23,0.08);
   color: #fff; font-weight: 700;
-  border: 1.5px solid #fff; /* ring */
+  border: 1.5px solid #fff;
   box-shadow: 0 0 0 1px rgba(2,6,23,0.06);
 }
 :root.dark .avatar-stack .avatar {
   border-color: var(--bg-surface);
   box-shadow: 0 0 0 1px rgba(148,163,184,0.22);
 }
-.avatar-stack .avatar:not(:first-child) { margin-left: -10px; } /* overlap */
+.avatar-stack .avatar:not(:first-child) { margin-left: -10px; }
 .avatar-stack .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* Soft animated accent gradient shell */
@@ -178,7 +178,7 @@ html, body, #root, .app-container {
 
 /* 1) Core tokens (light) */
 :root {
-  --bg:            #0b0c0f05;
+  --bg:            #0b0c0f05;  /* ← REVERTED */
   --surface:       #ffffff;
   --text:          #0f172a;
   --muted:         #64748b;
@@ -198,13 +198,13 @@ html, body, #root, .app-container {
 
 /* 2) Dark tokens */
 :root.dark {
-  --bg:            #0b1220;
-  --surface:       #0f172a; /* slate-900 */
+  --bg:            #0b1220;  /* ← REVERTED */
+  --surface:       #0f172a;
   --text:          #e5e7eb;
   --muted:         #94a3b8;
   --border:        #1f2937;
 
-  --accent:        #818cf8; /* indigo-400/500 */
+  --accent:        #818cf8;
   --accent-50:     rgba(30, 27, 75, 0.35);
   --accent-100:    rgba(30, 27, 75, 0.55);
 
@@ -327,38 +327,33 @@ html, body, #root, .app-container {
   .shine:hover::after { animation: shine-sweep 900ms var(--ease-standard) 1; opacity: 1; }
 }
 
-/* subtle icon background ring */
 .icon-ring {
   background: radial-gradient(120% 120% at 30% 30%, rgba(255,255,255,0.12), transparent 50%), var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 12px;
 }
 
-/* Tiny utility dot */
 .dot { display:inline-block; width:6px; height:6px; border-radius:999px; }
 
-/* ---------- NEW: TraceOutline (SVG runner dot) ---------- */
 @keyframes trace-dash { from { stroke-dashoffset: 0; } to { stroke-dashoffset: var(--trace-len, 600px); } }
 .trace-wrapper { filter: none; }
 
-/* ---------- NEW: CSS-only marching border (visible pulse) ---------- */
-/* Default variables (override per element if needed) */
 :root {
-  --march-stroke: 3px;                 /* thickness of the runner */
-  --march-color: var(--accent);        /* hue of the runner */
-  --march-speed: 2400ms;               /* rotation period */
-  --march-arc: 18%;                    /* arc length of the lit segment */
-  --march-opacity: 1;                  /* overall visibility */
+  --march-stroke: 3px;
+  --march-color: var(--accent);
+  --march-speed: 2400ms;
+  --march-arc: 18%;
+  --march-opacity: 1;
 }
 .marching {
   position: relative;
   isolation: isolate;
-  border-radius: 12px;                 /* inherits if element has larger radius */
+  border-radius: 12px;
 }
 .marching::after {
   content: "";
   position: absolute;
-  inset: 0;                            /* draw inside the edge to avoid overflow clipping */
+  inset: 0;
   border-radius: inherit;
   padding: var(--march-stroke);
   background:
@@ -367,7 +362,6 @@ html, body, #root, .app-container {
       var(--march-color) 0 var(--march-arc),
       transparent var(--march-arc) 100%
     ) border-box;
-  /* Hollow center so only a ring remains */
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -377,17 +371,15 @@ html, body, #root, .app-container {
   transform: rotate(0deg);
   animation: marching-rotate var(--march-speed) linear infinite;
   opacity: var(--march-opacity);
-  z-index: 1;                          /* above element background/border, below content */
+  z-index: 1;
 }
 @keyframes marching-rotate { to { transform: rotate(360deg); } }
 
-/* Helpful variants */
 .marching--fast   { --march-speed: 1600ms; }
 .marching--slow   { --march-speed: 3600ms; }
 .marching--strong { --march-stroke: 4px; --march-arc: 24%; }
 .marching--calm   { --march-stroke: 2px; --march-arc: 12%; --march-opacity: .85; }
 
-/* Reduce motion: keep the ring, stop rotation */
 @media (prefers-reduced-motion: reduce) {
   .marching::after { animation: none !important; }
 }

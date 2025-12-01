@@ -1,19 +1,16 @@
-// src/pages/ProjectHome.jsx - THE ULTIMATE PROJECT HOME
-import React, { useEffect, useState, useContext, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+// src/pages/ProjectHome.jsx - SAFE VERSION (NO BLUR)
+import React, { useEffect, useState, useContext } from "react";
+import { useParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { getProject, shipProject } from "../api/projects";
-import { createTask, patchTask } from "../api/tasks";
 import { 
-  Rocket, Plus, Calendar, Clock, Zap, Trophy, Users, 
-  TrendingUp, Target, Flame, CheckCircle2, AlertCircle,
-  ChevronLeft, ChevronRight, X, Upload, Mic, Image as ImageIcon
+  Rocket, Plus, Calendar, Clock, Zap, Trophy, Flame, CheckCircle2, Target,
+  ChevronLeft, ChevronRight, X, Upload, Mic
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
 
 export default function ProjectHome() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useContext(AuthContext) || {};
   
   const [project, setProject] = useState(null);
@@ -21,9 +18,7 @@ export default function ProjectHome() {
   const [showShipModal, setShowShipModal] = useState(false);
   const [shipDescription, setShipDescription] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showCalendar, setShowCalendar] = useState(true);
 
-  // Load project
   useEffect(() => {
     let ignore = false;
     (async () => {
@@ -42,7 +37,6 @@ export default function ProjectHome() {
     return () => { ignore = true; };
   }, [id]);
 
-  // Handle ship
   const handleShip = async () => {
     if (!shipDescription.trim()) {
       toast({ title: "Add a description", variant: "error" });
@@ -51,18 +45,13 @@ export default function ProjectHome() {
 
     try {
       await shipProject(id, { description: shipDescription });
-      
-      // Show celebration
       toast({
         title: "🎉 Shipped!",
         description: `${shipDescription} - +50 XP`,
         variant: "success"
       });
-      
       setShowShipModal(false);
       setShipDescription(`Update: ${project?.title || ""}`);
-      
-      // Reload project
       const updated = await getProject(id);
       setProject(updated);
     } catch (e) {
@@ -70,35 +59,33 @@ export default function ProjectHome() {
     }
   };
 
-  // Calendar helpers
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-    
-    return { daysInMonth, startingDayOfWeek, year, month };
+    return { 
+      daysInMonth: lastDay.getDate(), 
+      startingDayOfWeek: firstDay.getDay(), 
+      year, 
+      month 
+    };
   };
 
   const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(selectedDate);
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  // Mock deadline data (replace with real API)
   const deadlines = [
     { date: 15, title: "Beta launch", urgent: true },
     { date: 22, title: "Design review", urgent: false },
     { date: 28, title: "Team sync", urgent: false }
   ];
 
-  const getDeadlinesForDay = (day) => {
-    return deadlines.filter(d => d.date === day);
-  };
+  const getDeadlinesForDay = (day) => deadlines.filter(d => d.date === day);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -119,10 +106,10 @@ export default function ProjectHome() {
   const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white pb-32">
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="text-white pb-20">
       <div className="max-w-7xl mx-auto px-4 py-6">
         
-        {/* COMPACT HEADER - NO DEAD SPACE */}
+        {/* HEADER */}
         <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 shadow-2xl">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -138,7 +125,6 @@ export default function ProjectHome() {
               <p className="text-slate-400 mt-1">Team momentum: Strong</p>
             </div>
 
-            {/* LIVE STATS - ALWAYS VISIBLE */}
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <div className="text-2xl font-bold text-emerald-400">{completedToday}/5</div>
@@ -155,19 +141,18 @@ export default function ProjectHome() {
             </div>
           </div>
 
-          {/* PROGRESS BAR - INSTANT VISUAL FEEDBACK */}
           <div className="mt-4 h-3 bg-slate-700/50 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500 transition-all duration-500 ease-out"
+              className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500 transition-all duration-500"
               style={{ width: `${progressPct}%` }}
             />
           </div>
         </div>
 
-        {/* GRID LAYOUT - CALENDAR + TASKS SIDE BY SIDE */}
+        {/* CALENDAR + TASKS */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* LEFT: COMPACT CALENDAR (1/3 width) */}
+          {/* CALENDAR */}
           <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg flex items-center gap-2">
@@ -190,18 +175,15 @@ export default function ProjectHome() {
               </div>
             </div>
 
-            {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 text-center text-xs">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
                 <div key={i} className="font-semibold text-slate-500 py-2">{day}</div>
               ))}
               
-              {/* Empty cells for offset */}
               {Array.from({ length: startingDayOfWeek }).map((_, i) => (
                 <div key={`empty-${i}`} className="aspect-square" />
               ))}
               
-              {/* Days */}
               {Array.from({ length: daysInMonth }).map((_, i) => {
                 const day = i + 1;
                 const dayDeadlines = getDeadlinesForDay(day);
@@ -221,21 +203,18 @@ export default function ProjectHome() {
                   >
                     <span className="text-xs">{day}</span>
                     {hasDeadline && (
-                      <div className={`absolute bottom-0.5 w-1 h-1 rounded-full ${isUrgent ? 'bg-red-500' : 'bg-fuchsia-400'}`} />
-                    )}
-                    
-                    {/* Tooltip on hover */}
-                    {hasDeadline && (
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-slate-900 border border-purple-500/30 rounded-lg px-2 py-1 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity">
-                        {dayDeadlines[0].title}
-                      </div>
+                      <>
+                        <div className={`absolute bottom-0.5 w-1 h-1 rounded-full ${isUrgent ? 'bg-red-500' : 'bg-fuchsia-400'}`} />
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-slate-900 border border-purple-500/30 rounded-lg px-2 py-1 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity">
+                          {dayDeadlines[0].title}
+                        </div>
+                      </>
                     )}
                   </div>
                 );
               })}
             </div>
 
-            {/* Upcoming Deadlines List */}
             <div className="mt-4 pt-4 border-t border-slate-700/50">
               <h4 className="text-xs font-semibold text-slate-400 mb-2">Upcoming</h4>
               {deadlines.slice(0, 3).map((d, i) => (
@@ -250,15 +229,14 @@ export default function ProjectHome() {
             </div>
           </div>
 
-          {/* RIGHT: TASK LIST (2/3 width) */}
+          {/* TASKS */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Quick Add Task */}
             <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 shadow-xl">
               <div className="flex items-center gap-3">
                 <input
                   type="text"
                   placeholder="Add a task... (press Enter)"
-                  className="flex-1 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-slate-500"
+                  className="flex-1 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-slate-500"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && e.target.value.trim()) {
                       toast({ title: "Task added", variant: "success" });
@@ -272,7 +250,6 @@ export default function ProjectHome() {
               </div>
             </div>
 
-            {/* Tasks */}
             <div className="space-y-3">
               {tasks.length === 0 ? (
                 <div className="bg-slate-800/30 border border-dashed border-slate-700 rounded-2xl p-12 text-center">
@@ -321,7 +298,7 @@ export default function ProjectHome() {
           </div>
         </div>
 
-        {/* AI COACH - CONTEXTUAL TIPS */}
+        {/* AI COACH */}
         <div className="mt-6 bg-gradient-to-r from-purple-900/30 to-fuchsia-900/30 border border-purple-500/30 rounded-2xl p-5 shadow-xl">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-purple-500/20 rounded-xl">
@@ -338,18 +315,16 @@ export default function ProjectHome() {
         </div>
       </div>
 
-      {/* FLOATING SHIP BUTTON - ALWAYS VISIBLE */}
+      {/* FLOATING SHIP BUTTON */}
       <button
         onClick={() => setShowShipModal(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center group"
-        style={{
-          animation: completedToday < 5 ? 'pulse 2s infinite' : 'none'
-        }}
+        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center group z-50"
+        style={{ animation: completedToday < 5 ? 'pulse 2s infinite' : 'none' }}
       >
         <Rocket className="w-8 h-8 text-white group-hover:rotate-12 transition-transform" />
       </button>
 
-      {/* SHIP MODAL - 8 SECOND MAX */}
+      {/* SHIP MODAL */}
       {showShipModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl">
@@ -357,10 +332,7 @@ export default function ProjectHome() {
               <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
                 Ship This
               </h2>
-              <button
-                onClick={() => setShowShipModal(false)}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-              >
+              <button onClick={() => setShowShipModal(false)} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -370,11 +342,9 @@ export default function ProjectHome() {
               value={shipDescription}
               onChange={(e) => setShipDescription(e.target.value)}
               placeholder="What did you just ship?"
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 mb-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleShip();
-              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleShip(); }}
             />
 
             <div className="flex items-center gap-2 mb-6">
