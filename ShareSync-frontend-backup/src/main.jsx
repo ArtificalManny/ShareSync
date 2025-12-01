@@ -85,16 +85,53 @@ const fixSkipLinkAndErrors = () => {
 fixSkipLinkAndErrors();
 
 // ====================================================================
-// 4. RENDER APP
+// 4. UNIVERSAL RENDER FUNCTION — works on soft/hard refresh/HMR
 // ====================================================================
-document.addEventListener("DOMContentLoaded", () => {
+function renderApp() {
   const rootElement = document.getElementById("root");
-  if (rootElement) {
-    const root = ReactDOM.createRoot(rootElement);
-    root.render(<App />);
+  
+  if (!rootElement) {
+    console.error("[MAIN] Root element not found!");
+    return;
   }
-});
 
-// Final safety net
-setTimeout(fixSkipLinkAndErrors, 0);
-setTimeout(fixSkipLinkAndErrors, 100);
+  // Check if already rendered (prevents double-render on HMR)
+  if (rootElement._reactRootContainer || rootElement.children.length > 0) {
+    console.log("[MAIN] App already rendered, skipping");
+    return;
+  }
+
+  console.log("[MAIN] Rendering React app...");
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(<App />);
+  
+  // Mark as rendered
+  rootElement._reactRootContainer = true;
+  
+  // Run skip-link fix after render
+  setTimeout(fixSkipLinkAndErrors, 0);
+  setTimeout(fixSkipLinkAndErrors, 100);
+}
+
+// ====================================================================
+// 5. DETECT RENDER TIMING — handle all cases
+// ====================================================================
+if (document.readyState === 'loading') {
+  // DOM not ready yet (rare in dev, common in production)
+  console.log("[MAIN] DOM loading, waiting for DOMContentLoaded...");
+  document.addEventListener("DOMContentLoaded", renderApp);
+} else {
+  // DOM already ready (soft refresh, HMR, etc)
+  console.log("[MAIN] DOM already loaded, rendering immediately");
+  renderApp();
+}
+
+// ====================================================================
+// 6. VITE HMR SUPPORT — re-render on hot updates in dev
+// ====================================================================
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    console.log("[HMR] Hot update detected, re-rendering...");
+    renderApp();
+  });
+}
