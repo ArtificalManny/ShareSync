@@ -1,4 +1,4 @@
-// src/auth/jwt.strategy.ts
+//Users/artificalmanny/Portfolio/ShareSync/ShareSync-backend/src/gateway/project.gateway.ts
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
