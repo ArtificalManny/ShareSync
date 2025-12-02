@@ -1,4 +1,4 @@
-// src/App.jsx - UPDATED WITH ALL CURSOR FEATURES
+// src/App.jsx - UPDATED WITH ANALYTICS & MOBILE SUPPORT
 import React, { useContext, Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
@@ -64,8 +64,9 @@ import CursorLayer from "./components/realtime/CursorLayer";
 import ShipFlash from "./components/effects/ShipFlash";
 import SyncPulse from "./components/effects/SyncPulse";
 import CursorRecorder from "./components/recording/CursorRecorder";
-import GhostMode from "./components/modes/GhostMode"; // ⭐ Ghost Mode
-import DeepWorkMode from "./components/modes/DeepWorkMode"; // ⭐ Deep Work Mode
+import GhostMode from "./components/modes/GhostMode";
+import DeepWorkMode from "./components/modes/DeepWorkMode";
+import TouchCursor from "./components/realtime/TouchCursor"; // ⭐ Mobile Support
 
 import {
   MESSENGER_V1,
@@ -99,6 +100,7 @@ const Discover = lazy(() => import("./pages/Discover.jsx"));
 const ImportWizard = lazy(() => import("./pages/import/ImportWizard.jsx"));
 const AdminConsole = lazy(() => import("./pages/admin/AdminConsole.jsx"));
 const PulseAdmin = lazy(() => import("./pages/admin/PulseAdmin.jsx"));
+const Analytics = lazy(() => import("./pages/Analytics.jsx")); // ⭐ NEW: Analytics page
 
 function ScrollToHash() {
   const location = useLocation();
@@ -170,6 +172,10 @@ function AppRoutes() {
               <Route path="/invite/accept" element={<AcceptInvite />} />
               <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
 
+              {/* ⭐ NEW: Analytics Route */}
+              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+              <Route path="/projects/:projectId/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+
               <Route
                 path="/discover"
                 element={
@@ -230,6 +236,9 @@ function AppRoutes() {
       {/* ⭐ CURSOR MODES */}
       <GhostMode />
       <DeepWorkMode />
+      
+      {/* ⭐ MOBILE SUPPORT */}
+      <TouchCursor />
     </>
   );
 }
