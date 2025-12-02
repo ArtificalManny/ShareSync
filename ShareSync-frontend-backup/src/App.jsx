@@ -1,4 +1,4 @@
-// src/App.jsx - UPDATED WITH CURSOR SYSTEM
+// src/App.jsx - UPDATED WITH ALL CURSOR FEATURES
 import React, { useContext, Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
@@ -63,6 +63,9 @@ import { CursorProvider } from "./context/CursorContext";
 import CursorLayer from "./components/realtime/CursorLayer";
 import ShipFlash from "./components/effects/ShipFlash";
 import SyncPulse from "./components/effects/SyncPulse";
+import CursorRecorder from "./components/recording/CursorRecorder";
+import GhostMode from "./components/modes/GhostMode"; // ⭐ Ghost Mode
+import DeepWorkMode from "./components/modes/DeepWorkMode"; // ⭐ Deep Work Mode
 
 import {
   MESSENGER_V1,
@@ -214,12 +217,19 @@ function AppRoutes() {
 
       <ToastHost />
       
-      {/* ⭐ CURSOR OVERLAY - Renders over everything */}
+      {/* ⭐ CURSOR OVERLAY */}
       <CursorLayer />
       
       {/* ⭐ CURSOR EFFECTS */}
       <ShipFlash />
       <SyncPulse />
+      
+      {/* ⭐ CURSOR RECORDER */}
+      <CursorRecorder enabled={true} />
+      
+      {/* ⭐ CURSOR MODES */}
+      <GhostMode />
+      <DeepWorkMode />
     </>
   );
 }
@@ -251,7 +261,6 @@ const App = () => {
   return (
     <AuthProvider>
       <UserProvider>
-        {/* ⭐ CURSOR PROVIDER - Wraps entire app */}
         <CursorProvider>
           <SprintProvider>
             <ErrorBoundary>
