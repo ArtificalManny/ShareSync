@@ -385,6 +385,7 @@ import {
     // DELETE OLD CURSOR DATA
     // ============================================
   
+    // FIXED: Required @CurrentUser first, optional @Query second
     @Delete('cleanup')
     @ApiOperation({ summary: 'Cleanup old cursor data (admin only)' })
     @ApiResponse({
@@ -392,8 +393,8 @@ import {
       description: 'Cleanup completed',
     })
     async cleanup(
-      @Query('daysOld') daysOld?: number,
       @CurrentUser() user: any,
+      @Query('daysOld') daysOld?: number,
     ): Promise<CursorResponseDto> {
       // Check if user is admin (implement your own logic)
       if (!user.isAdmin) {
@@ -462,4 +463,4 @@ import {
         totalPoints: cursors.length,
       };
     }
-  }
+  }  

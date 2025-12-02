@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 
@@ -25,40 +29,60 @@ type ListOpts = { cursor?: string | null; limit?: number | null };
 @Injectable()
 export class FilesService {
   constructor(
-    @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
-    @InjectModel(Project.name) private readonly projectModel: Model<ProjectDocument>,
+    @InjectModel(File.name)
+    private readonly fileModel: Model<FileDocument>,
+
+    @InjectModel(Project.name)
+    private readonly projectModel: Model<ProjectDocument>,
+
+    // ✅ Realtime DI: this is the RealtimeGateway Nest was complaining about
     private readonly realtime: RealtimeGateway,
   ) {}
 
   /** Resolve a user's role in a project. */
-  private async getUserRole(projectId: string, userId: string): Promise<'owner' | 'member' | 'viewer' | null> {
+  private async getUserRole(
+    projectId: string,
+    userId: string,
+  ): Promise<'owner' | 'member' | 'viewer' | null> {
     if (!Types.ObjectId.isValid(projectId)) return null;
+
     const proj = await this.projectModel
       .findById(projectId)
       .select({ userId: 1, members: 1 })
       .lean();
 
     if (!proj) return null;
+
     if (String(proj.userId) === String(userId)) return 'owner';
-    const m = (proj.members || []).find((x: any) => x?.userId && String(x.userId) === String(userId));
+
+    const m = (proj.members || []).find(
+      (x: any) => x?.userId && String(x.userId) === String(userId),
+    );
+
     return (m?.role as any) || null;
   }
 
   private async assertCanView(projectId: string, userId: string) {
     const role = await this.getUserRole(projectId, userId);
-    if (!role) throw new ForbiddenException('You do not have access to this project.');
+    if (!role) {
+      throw new ForbiddenException('You do not have access to this project.');
+    }
   }
 
   private async assertCanEdit(projectId: string, userId: string) {
     const role = await this.getUserRole(projectId, userId);
     if (!role || (role !== 'owner' && role !== 'member')) {
-      throw new ForbiddenException('You do not have permission to add/remove files.');
+      throw new ForbiddenException(
+        'You do not have permission to add/remove files.',
+      );
     }
   }
 
   /** FE-facing shape */
   private toPublic(d: File | (File & { _id?: any })) {
-    const anyd: any = typeof (d as any).toObject === 'function' ? (d as any).toObject() : d;
+    const anyd: any =
+      typeof (d as any).toObject === 'function' ? (d as any).toObject() : d;
+
     return {
       id: String(anyd._id ?? ''),
       storageKey: anyd.storageKey,
@@ -96,18 +120,25 @@ export class FilesService {
       moderation: input.moderation,
     });
 
+    // ✅ emit realtime event
     try {
       this.realtime.emitToProject(input.projectId, 'project:filesAdded', {
         projectId: input.projectId,
         files: [this.toPublic(doc)],
       });
-    } catch { /* ignore */ }
+    } catch {
+      // ignore websocket errors
+    }
 
     return this.toPublic(doc);
   }
 
   /** Bulk create and emit in one payload. */
-  async createMany(projectId: string, items: CreateFileInput[], actingUserId: string) {
+  async createMany(
+    projectId: string,
+    items: CreateFileInput[],
+    actingUserId: string,
+  ) {
     await this.assertCanEdit(projectId, actingUserId);
 
     const docs = await this.fileModel.insertMany(
@@ -130,14 +161,23 @@ export class FilesService {
 
     const payload = docs.map((d) => this.toPublic(d));
     try {
-      this.realtime.emitToProject(projectId, 'project:filesAdded', { projectId, files: payload });
-    } catch { /* ignore */ }
+      this.realtime.emitToProject(projectId, 'project:filesAdded', {
+        projectId,
+        files: payload,
+      });
+    } catch {
+      // ignore websocket errors
+    }
 
     return payload;
   }
 
   /** Paginated list by project (cursor = last seen _id; newest first). */
-  async listByProject(projectId: string, actingUserId: string, opts: ListOpts = {}) {
+  async listByProject(
+    projectId: string,
+    actingUserId: string,
+    opts: ListOpts = {},
+  ) {
     await this.assertCanView(projectId, actingUserId);
 
     const limit = Math.min(Math.max(Number(opts.limit ?? 20), 1), 100);
@@ -162,9 +202,14 @@ export class FilesService {
   }
 
   async remove(fileId: string, actingUserId: string) {
-    if (!Types.ObjectId.isValid(fileId)) throw new NotFoundException('File not found');
+    if (!Types.ObjectId.isValid(fileId)) {
+      throw new NotFoundException('File not found');
+    }
+
     const doc = await this.fileModel.findById(fileId);
-    if (!doc) throw new NotFoundException('File not found');
+    if (!doc) {
+      throw new NotFoundException('File not found');
+    }
 
     await this.assertCanEdit(doc.projectId, actingUserId);
 
@@ -175,16 +220,23 @@ export class FilesService {
         projectId: doc.projectId,
         fileIds: [String(doc._id)],
       });
-    } catch { /* ignore */ }
+    } catch {
+      // ignore websocket errors
+    }
 
     return { ok: true };
   }
 
   /** Optional moderation API */
   async updateStatus(fileId: string, status: FileStatus, reason?: string) {
-    if (!Types.ObjectId.isValid(fileId)) throw new NotFoundException('File not found');
+    if (!Types.ObjectId.isValid(fileId)) {
+      throw new NotFoundException('File not found');
+    }
+
     const doc = await this.fileModel.findById(fileId);
-    if (!doc) throw new NotFoundException('File not found');
+    if (!doc) {
+      throw new NotFoundException('File not found');
+    }
 
     doc.status = status;
     doc.moderation = { ...(doc.moderation || {}), reason };

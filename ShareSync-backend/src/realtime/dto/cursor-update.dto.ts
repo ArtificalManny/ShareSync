@@ -1,383 +1,290 @@
 /**
  * cursor-update.dto.ts
- * Data Transfer Objects for cursor updates
- * 
- * Validates all cursor-related WebSocket and HTTP requests
+ * Data Transfer Objects for cursor operations
  */
 
-import {
-    IsString,
-    IsNumber,
-    IsEnum,
-    IsOptional,
-    IsObject,
-    IsBoolean,
-    Min,
-    Max,
-    Length,
-    IsUrl,
-    ValidateNested,
-    IsArray,
-    IsHexColor,
-  } from 'class-validator';
-  import { Type } from 'class-transformer';
-  import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-  
-  /**
-   * Cursor Activity Enum
-   */
-  export enum CursorActivity {
-    IDLE = 'idle',
-    TYPING = 'typing',
-    CLICKING = 'clicking',
-    DRAGGING = 'dragging',
-    SCROLLING = 'scrolling',
-  }
-  
-  /**
-   * Viewport DTO
-   */
-  export class ViewportDto {
-    @ApiProperty({ description: 'Viewport width in pixels', minimum: 0 })
-    @IsNumber()
-    @Min(0)
-    width: number;
-  
-    @ApiProperty({ description: 'Viewport height in pixels', minimum: 0 })
-    @IsNumber()
-    @Min(0)
-    height: number;
-  }
-  
-  /**
-   * Cursor Customization DTO
-   */
-  export class CursorCustomizationDto {
-    @ApiPropertyOptional({ description: 'Cursor size multiplier', minimum: 0.5, maximum: 3 })
-    @IsOptional()
-    @IsNumber()
-    @Min(0.5)
-    @Max(3)
-    size?: number;
-  
-    @ApiPropertyOptional({ description: 'Cursor shape', example: 'circle' })
-    @IsOptional()
-    @IsString()
-    shape?: string;
-  
-    @ApiPropertyOptional({ description: 'Enable trail effect' })
-    @IsOptional()
-    @IsBoolean()
-    trail?: boolean;
-  
-    @ApiPropertyOptional({ description: 'Active effects', type: [String] })
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    effects?: string[];
-  }
-  
-  /**
-   * Main Cursor Update DTO
-   */
-  export class CursorUpdateDto {
-    @ApiProperty({ description: 'User ID' })
-    @IsString()
-    @Length(24, 24) // MongoDB ObjectId length
-    userId: string;
-  
-    @ApiProperty({ description: 'User display name', maxLength: 100 })
-    @IsString()
-    @Length(1, 100)
-    userName: string;
-  
-    @ApiProperty({ description: 'Project ID' })
-    @IsString()
-    @Length(24, 24)
-    projectId: string;
-  
-    @ApiPropertyOptional({ description: 'Room ID for specific context' })
-    @IsOptional()
-    @IsString()
-    @Length(1, 100)
-    roomId?: string;
-  
-    // ============================================
-    // POSITION
-    // ============================================
-  
-    @ApiProperty({ description: 'X position as viewport percentage', minimum: 0, maximum: 100 })
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    x: number;
-  
-    @ApiProperty({ description: 'Y position as viewport percentage', minimum: 0, maximum: 100 })
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    y: number;
-  
-    // ============================================
-    // ACTIVITY
-    // ============================================
-  
-    @ApiProperty({ enum: CursorActivity, description: 'Current cursor activity' })
-    @IsEnum(CursorActivity)
-    activity: CursorActivity;
-  
-    @ApiPropertyOptional({ description: 'CSS selector of element under cursor', maxLength: 500 })
-    @IsOptional()
-    @IsString()
-    @Length(0, 500)
-    targetElement?: string;
-  
-    @ApiPropertyOptional({ description: 'Text content under cursor', maxLength: 100 })
-    @IsOptional()
-    @IsString()
-    @Length(0, 100)
-    targetText?: string;
-  
-    // ============================================
-    // VISUAL
-    // ============================================
-  
-    @ApiProperty({ description: 'Cursor color (hex)', example: '#8B5CF6' })
-    @IsHexColor()
-    color: string;
-  
-    @ApiPropertyOptional({ description: 'User avatar URL' })
-    @IsOptional()
-    @IsUrl()
-    @Length(0, 500)
-    avatar?: string;
-  
-    @ApiPropertyOptional({ type: CursorCustomizationDto })
-    @IsOptional()
-    @ValidateNested()
-    @Type(() => CursorCustomizationDto)
-    customization?: CursorCustomizationDto;
-  
-    // ============================================
-    // CONTEXT
-    // ============================================
-  
-    @ApiPropertyOptional({ description: 'Current page URL' })
-    @IsOptional()
-    @IsUrl()
-    @Length(0, 500)
-    pageUrl?: string;
-  
-    @ApiPropertyOptional({ description: 'Current page title', maxLength: 200 })
-    @IsOptional()
-    @IsString()
-    @Length(0, 200)
-    pageTitle?: string;
-  
-    @ApiPropertyOptional({ description: 'Session ID' })
-    @IsOptional()
-    @IsString()
-    @Length(1, 100)
-    sessionId?: string;
-  
-    @ApiPropertyOptional({ type: ViewportDto })
-    @IsOptional()
-    @ValidateNested()
-    @Type(() => ViewportDto)
-    viewport?: ViewportDto;
-  
-    // ============================================
-    // METADATA
-    // ============================================
-  
-    @ApiPropertyOptional({ description: 'Event type', example: 'move' })
-    @IsOptional()
-    @IsString()
-    eventType?: string;
-  
-    @ApiPropertyOptional({ description: 'Additional metadata' })
-    @IsOptional()
-    @IsObject()
-    metadata?: Record<string, any>;
-  }
-  
-  /**
-   * Batch Cursor Update DTO
-   */
-  export class BatchCursorUpdateDto {
-    @ApiProperty({ type: [CursorUpdateDto], description: 'Array of cursor updates' })
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => CursorUpdateDto)
-    cursors: CursorUpdateDto[];
-  }
-  
-  /**
-   * Cursor Query DTO (for fetching history)
-   */
-  export class CursorQueryDto {
-    @ApiPropertyOptional({ description: 'Project ID to filter by' })
-    @IsOptional()
-    @IsString()
-    @Length(24, 24)
-    projectId?: string;
-  
-    @ApiPropertyOptional({ description: 'User ID to filter by' })
-    @IsOptional()
-    @IsString()
-    @Length(24, 24)
-    userId?: string;
-  
-    @ApiPropertyOptional({ description: 'Session ID to filter by' })
-    @IsOptional()
-    @IsString()
-    sessionId?: string;
-  
-    @ApiPropertyOptional({ description: 'Start time (ISO 8601)', example: '2025-01-01T00:00:00Z' })
-    @IsOptional()
-    @IsString()
-    startTime?: string;
-  
-    @ApiPropertyOptional({ description: 'End time (ISO 8601)', example: '2025-01-01T23:59:59Z' })
-    @IsOptional()
-    @IsString()
-    endTime?: string;
-  
-    @ApiPropertyOptional({ description: 'Maximum number of results', minimum: 1, maximum: 1000, default: 100 })
-    @IsOptional()
-    @IsNumber()
-    @Min(1)
-    @Max(1000)
-    limit?: number;
-  
-    @ApiPropertyOptional({ description: 'Number of results to skip', minimum: 0, default: 0 })
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    skip?: number;
-  }
-  
-  /**
-   * Cursor Event DTO (for WebSocket events)
-   */
-  export class CursorEventDto {
-    @ApiProperty({ description: 'Event type', example: 'cursor:move' })
-    @IsString()
-    @Length(1, 100)
-    event: string;
-  
-    @ApiProperty({ type: CursorUpdateDto, description: 'Cursor data' })
-    @ValidateNested()
-    @Type(() => CursorUpdateDto)
-    data: CursorUpdateDto;
-  
-    @ApiPropertyOptional({ description: 'Timestamp (ISO 8601)' })
-    @IsOptional()
-    @IsString()
-    timestamp?: string;
-  }
-  
-  /**
-   * Cursor Flash Event DTO
-   */
-  export class CursorFlashDto {
-    @ApiProperty({ description: 'User ID' })
-    @IsString()
-    @Length(24, 24)
-    userId: string;
-  
-    @ApiProperty({ description: 'Project ID' })
-    @IsString()
-    @Length(24, 24)
-    projectId: string;
-  
-    @ApiProperty({ description: 'X position', minimum: 0, maximum: 100 })
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    x: number;
-  
-    @ApiProperty({ description: 'Y position', minimum: 0, maximum: 100 })
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    y: number;
-  
-    @ApiPropertyOptional({ description: 'Flash type', example: 'ship' })
-    @IsOptional()
-    @IsString()
-    type?: string;
-  }
-  
-  /**
-   * Cursor Sync Pulse DTO
-   */
-  export class CursorSyncDto {
-    @ApiProperty({ description: 'User IDs that are in sync', type: [String] })
-    @IsArray()
-    @IsString({ each: true })
-    userIds: string[];
-  
-    @ApiProperty({ description: 'Project ID' })
-    @IsString()
-    @Length(24, 24)
-    projectId: string;
-  
-    @ApiPropertyOptional({ description: 'Sync reason', example: 'proximity' })
-    @IsOptional()
-    @IsString()
-    reason?: string;
-  }
-  
-  /**
-   * Cursor Response DTO
-   */
-  export class CursorResponseDto {
-    @ApiProperty({ description: 'Success status' })
-    success: boolean;
-  
-    @ApiPropertyOptional({ description: 'Message' })
-    message?: string;
-  
-    @ApiPropertyOptional({ description: 'Cursor data' })
-    data?: any;
-  
-    @ApiPropertyOptional({ description: 'Error details' })
-    error?: any;
-  }
-  
-  /**
-   * Cursor Stats DTO
-   */
-  export class CursorStatsDto {
-    @ApiProperty({ description: 'Total cursor movements' })
-    totalMovements: number;
-  
-    @ApiProperty({ description: 'Active users' })
-    activeUsers: number;
-  
-    @ApiProperty({ description: 'Activity breakdown' })
-    activityBreakdown: Record<CursorActivity, number>;
-  
-    @ApiProperty({ description: 'Average movements per user' })
-    averageMovementsPerUser: number;
-  
-    @ApiPropertyOptional({ description: 'Peak activity time' })
-    peakActivityTime?: string;
-  }
-  
-  // ============================================
-  // EXPORT ALL DTOs
-  // ============================================
-  
-  export {
-    ViewportDto,
-    CursorCustomizationDto,
-    BatchCursorUpdateDto,
-    CursorQueryDto,
-    CursorEventDto,
-    CursorFlashDto,
-    CursorSyncDto,
-    CursorResponseDto,
-    CursorStatsDto,
-  };
+import { IsString, IsNumber, IsEnum, IsOptional, IsArray, IsBoolean, Min, Max, IsUrl, Matches, ValidateNested, IsISO8601 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export enum CursorActivity {
+  IDLE = 'idle',
+  TYPING = 'typing',
+  CLICKING = 'clicking',
+  DRAGGING = 'dragging',
+  SCROLLING = 'scrolling',
+}
+
+export class ViewportDto {
+  @ApiProperty({ example: 1920 })
+  @IsNumber()
+  @Min(0)
+  width: number;
+
+  @ApiProperty({ example: 1080 })
+  @IsNumber()
+  @Min(0)
+  height: number;
+}
+
+export class CursorCustomizationDto {
+  @ApiPropertyOptional({ example: 1.2 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.5)
+  @Max(3)
+  size?: number;
+
+  @ApiPropertyOptional({ example: 'circle' })
+  @IsOptional()
+  @IsString()
+  shape?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  trail?: boolean;
+
+  @ApiPropertyOptional({ example: ['sparkle', 'glow'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  effects?: string[];
+}
+
+export class CursorUpdateDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  @IsString()
+  @Matches(/^[0-9a-fA-F]{24}$/)
+  userId: string;
+
+  @ApiProperty({ example: 'Alice' })
+  @IsString()
+  userName: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
+  @IsString()
+  @Matches(/^[0-9a-fA-F]{24}$/)
+  projectId: string;
+
+  @ApiPropertyOptional({ example: 'room-123' })
+  @IsOptional()
+  @IsString()
+  roomId?: string;
+
+  @ApiProperty({ example: 45.5 })
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  x: number;
+
+  @ApiProperty({ example: 67.8 })
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  y: number;
+
+  @ApiPropertyOptional({ enum: CursorActivity, example: CursorActivity.TYPING })
+  @IsOptional()
+  @IsEnum(CursorActivity)
+  activity?: CursorActivity;
+
+  @ApiPropertyOptional({ example: 'button.submit' })
+  @IsOptional()
+  @IsString()
+  targetElement?: string;
+
+  @ApiPropertyOptional({ example: 'Click me' })
+  @IsOptional()
+  @IsString()
+  targetText?: string;
+
+  @ApiPropertyOptional({ example: '#8B5CF6' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^#[0-9A-Fa-f]{6}$/)
+  color?: string;
+
+  @ApiPropertyOptional({ example: 'https://example.com/avatar.png' })
+  @IsOptional()
+  @IsUrl()
+  avatar?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CursorCustomizationDto)
+  customization?: CursorCustomizationDto;
+
+  @ApiPropertyOptional({ example: 'https://example.com/page' })
+  @IsOptional()
+  @IsUrl()
+  pageUrl?: string;
+
+  @ApiPropertyOptional({ example: 'Dashboard' })
+  @IsOptional()
+  @IsString()
+  pageTitle?: string;
+
+  @ApiPropertyOptional({ example: 'session-123' })
+  @IsOptional()
+  @IsString()
+  sessionId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ViewportDto)
+  viewport?: ViewportDto;
+
+  @ApiPropertyOptional({ example: 'move' })
+  @IsOptional()
+  @IsString()
+  eventType?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  metadata?: Record<string, any>;
+}
+
+export class BatchCursorUpdateDto {
+  @ApiProperty({ type: [CursorUpdateDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CursorUpdateDto)
+  cursors: CursorUpdateDto[];
+}
+
+export class CursorQueryDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  projectId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  userId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  sessionId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsISO8601()
+  startTime?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsISO8601()
+  endTime?: string;
+
+  @ApiPropertyOptional({ default: 100 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(1000)
+  limit?: number;
+
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  skip?: number;
+}
+
+export class CursorEventDto {
+  @ApiProperty({ example: 'cursor:move' })
+  @IsString()
+  event: string;
+
+  @ApiProperty()
+  @ValidateNested()
+  @Type(() => CursorUpdateDto)
+  data: CursorUpdateDto;
+
+  @ApiProperty()
+  @IsISO8601()
+  timestamp: string;
+}
+
+export class CursorFlashDto {
+  @ApiProperty()
+  @IsString()
+  userId: string;
+
+  @ApiProperty()
+  @IsString()
+  projectId: string;
+
+  @ApiProperty()
+  @IsNumber()
+  x: number;
+
+  @ApiProperty()
+  @IsNumber()
+  y: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  type?: string;
+}
+
+export class CursorSyncDto {
+  @ApiProperty()
+  @IsArray()
+  @IsString({ each: true })
+  userIds: string[];
+
+  @ApiProperty()
+  @IsString()
+  projectId: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+export class CursorResponseDto {
+  @ApiProperty()
+  @IsBoolean()
+  success: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  message?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  data?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  error?: any;
+}
+
+export class CursorStatsDto {
+  @ApiProperty()
+  @IsNumber()
+  totalMovements: number;
+
+  @ApiProperty()
+  @IsNumber()
+  activeUsers: number;
+
+  @ApiProperty()
+  activityBreakdown: Record<string, number>;
+
+  @ApiProperty()
+  @IsNumber()
+  averageMovementsPerUser: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  peakActivityTime?: string;
+}

@@ -2,10 +2,10 @@
  * realtime.module.ts
  * Module for all real-time features (cursors, presence, live updates)
  * 
- * Updated with:
+ * Includes:
  * - MongoDB schemas (Cursor, Presence)
  * - REST controllers (CursorController, PresenceController)
- * - WebSocket gateway
+ * - WebSocket gateways (CursorGateway, RealtimeGateway)
  * - Services
  */
 
@@ -31,6 +31,7 @@ import { PresenceController } from './presence.controller';
 import { CursorGateway } from './cursor.gateway';
 import { CursorService } from './cursor.service';
 import { PresenceService } from './presence.service';
+import { RealtimeGateway } from './realtime.gateway'; // ✅ NEW: import gateway
 
 // ============================================
 // GUARDS
@@ -63,16 +64,18 @@ import { WsJwtGuard } from '../auth/ws-jwt.guard';
   // WebSocket Gateways & Services
   providers: [
     CursorGateway,
+    RealtimeGateway,   // ✅ NEW: make gateway a provider
     CursorService,
     PresenceService,
     WsJwtGuard,
   ],
   
-  // Export services for use in other modules
+  // Export services & gateway for use in other modules
   exports: [
     CursorService,
     PresenceService,
-    MongooseModule, // Export for other modules to access schemas
+    RealtimeGateway,   // ✅ NEW: export so FilesModule can inject it
+    MongooseModule,    // (kept from your original)
   ],
 })
 export class RealtimeModule {}

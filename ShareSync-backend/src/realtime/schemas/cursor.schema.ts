@@ -86,7 +86,7 @@ export class Cursor {
   @Prop({ required: false })
   avatar?: string;
 
-  @Prop({ required: false })
+  @Prop({ required: false, type: Object })
   customization?: {
     size?: number;
     shape?: string;

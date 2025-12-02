@@ -12,7 +12,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type PresenceDocument = Presence & Document;
+export interface PresenceDocument extends Presence, Document {
+    isOnline: boolean;
+    isActive: boolean;
+    idleTime: number;
+    isVisible: boolean;
+    updateActivity(activityType?: string): Promise<this>;
+    setOnline(socketId?: string, sessionId?: string): Promise<this>;
+    setOffline(): Promise<this>;
+  }
 
 /**
  * User Status Type
@@ -365,9 +373,6 @@ PresenceSchema.pre('save', function (next) {
 PresenceSchema.pre('find', function (next) {
   const now = Date.now();
   const idleThreshold = 5 * 60 * 1000; // 5 minutes
-
-  this.where('lastActive').lt(new Date(now - idleThreshold));
-  this.update({}, { $set: { status: UserStatus.IDLE } }, { multi: true });
 
   next();
 });

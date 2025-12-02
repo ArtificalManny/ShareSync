@@ -469,6 +469,7 @@ import {
     // CLEANUP STALE PRESENCE
     // ============================================
   
+    // FIXED: Required @CurrentUser first, optional @Query second
     @Delete('cleanup')
     @ApiOperation({ summary: 'Cleanup stale presence records (admin only)' })
     @ApiResponse({
@@ -476,8 +477,8 @@ import {
       description: 'Cleanup completed',
     })
     async cleanup(
-      @Query('thresholdMinutes') thresholdMinutes?: number,
       @CurrentUser() user: any,
+      @Query('thresholdMinutes') thresholdMinutes?: number,
     ): Promise<any> {
       // Check if user is admin
       if (!user.isAdmin) {
@@ -530,3 +531,4 @@ import {
       };
     }
   }
+  

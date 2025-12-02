@@ -1,4 +1,4 @@
-// src/app.module.ts
+// src/app.module.ts - UPDATED WITH ANALYTICS MODULE
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -12,11 +12,12 @@ import { FeedModule } from './feed/feed.module';
 import { ProfileModule } from './profile/profile.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { RealtimeModule } from './realtime/realtime.module';
-import { MomentumModule } from './momentum/momentum.module'; // FIXED PATH
+import { MomentumModule } from './momentum/momentum.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { StatsModule } from './stats/stats.module';
 import { TasksModule } from './tasks/tasks.module';
+import { AnalyticsModule } from './analytics/analytics.module'; // ⭐ NEW
 
 import { NotifyModule } from './notifications/notify.module';
 import { FilesModule } from './files/files.module';
@@ -39,11 +40,12 @@ import { AppController } from './app.controller';
     ProfileModule,
     ActivitiesModule,
     RealtimeModule,
-    MomentumModule, // ADDED
+    MomentumModule,
     ModerationModule,
     UploadsModule,
     StatsModule,
     TasksModule,
+    AnalyticsModule, // ⭐ ADDED
 
     NotifyModule,
     FilesModule,

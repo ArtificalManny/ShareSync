@@ -11,8 +11,8 @@ import { Server, Socket } from 'socket.io';
 @WebSocketGateway({
   cors: {
     origin: process.env.NODE_ENV === 'production'
-      ? ['https://yourdomain.com']  // change later
-      : true,  // allows localhost:54693 automatically in dev
+      ? ['https://yourdomain.com']  // TODO: change to your real domain in prod
+      : true,  // allows localhost automatically in dev
     credentials: true,
   },
 })
@@ -22,14 +22,20 @@ export class RealtimeGateway {
 
   // Clients join rooms like: user:{userId}, project:{projectId}
   @SubscribeMessage('join')
-  handleJoin(@MessageBody() data: { room: string }, @ConnectedSocket() client: Socket) {
+  handleJoin(
+    @MessageBody() data: { room: string },
+    @ConnectedSocket() client: Socket,
+  ) {
     if (!data?.room) return;
     client.join(data.room);
     this.logger.debug(`Client ${client.id} joined ${data.room}`);
   }
 
   @SubscribeMessage('leave')
-  handleLeave(@MessageBody() data: { room: string }, @ConnectedSocket() client: Socket) {
+  handleLeave(
+    @MessageBody() data: { room: string },
+    @ConnectedSocket() client: Socket,
+  ) {
     if (!data?.room) return;
     client.leave(data.room);
     this.logger.debug(`Client ${client.id} left ${data.room}`);
@@ -53,12 +59,17 @@ export class RealtimeGateway {
   }
 
   /** Convenience for public status change broadcasts */
-  emitProjectPublicChanged(projectId: string, payload: { projectId: string; publicEnabled: boolean; publicToken: boolean }) {
+  emitProjectPublicChanged(
+    projectId: string,
+    payload: { projectId: string; publicEnabled: boolean; publicToken: boolean },
+  ) {
     this.emitToProject(projectId, 'project:publicChanged', payload);
   }
 
   /** Convenience specifically for habits UI */
   emitHabitsUpdated(userId: string, projectId?: string) {
-    if (userId) this.emitToUser(userId, 'habits:updated', { projectId: projectId || null });
+    if (userId) {
+      this.emitToUser(userId, 'habits:updated', { projectId: projectId || null });
+    }
   }
 }
