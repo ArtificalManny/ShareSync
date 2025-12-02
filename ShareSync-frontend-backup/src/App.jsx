@@ -1,5 +1,5 @@
-// src/App.jsx - UPDATED WITH ANALYTICS & MOBILE SUPPORT
-import React, { useContext, Suspense, lazy } from "react";
+// src/App.jsx - UPDATED WITH PROPER LAYOUT
+import React, { useContext, Suspense, lazy, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -27,7 +27,8 @@ import "./styles/command-palette.css";
 import "./styles/toast.css";
 import "./styles/glass.css";
 import "./styles/focus.css";
-import "./styles/cursor-effects.css"; // ⭐ CURSOR ANIMATIONS
+import "./styles/cursor-effects.css";
+import "./styles/layout-system.css"; // ⭐ NEW: Proper layout system
 
 import ToastProviderOld, { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
@@ -66,7 +67,7 @@ import SyncPulse from "./components/effects/SyncPulse";
 import CursorRecorder from "./components/recording/CursorRecorder";
 import GhostMode from "./components/modes/GhostMode";
 import DeepWorkMode from "./components/modes/DeepWorkMode";
-import TouchCursor from "./components/realtime/TouchCursor"; // ⭐ Mobile Support
+import TouchCursor from "./components/realtime/TouchCursor";
 
 import {
   MESSENGER_V1,
@@ -83,6 +84,7 @@ import FeatureGate from "./utils/FeatureGate.jsx";
 import useBrandTheme from "./hooks/useBrandTheme.js";
 
 import { scrollToAnchorFromHash } from "./utils/anchor";
+import { Menu, X } from "lucide-react";
 
 const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
@@ -100,7 +102,7 @@ const Discover = lazy(() => import("./pages/Discover.jsx"));
 const ImportWizard = lazy(() => import("./pages/import/ImportWizard.jsx"));
 const AdminConsole = lazy(() => import("./pages/admin/AdminConsole.jsx"));
 const PulseAdmin = lazy(() => import("./pages/admin/PulseAdmin.jsx"));
-const Analytics = lazy(() => import("./pages/Analytics.jsx")); // ⭐ NEW: Analytics page
+const Analytics = lazy(() => import("./pages/Analytics.jsx"));
 
 function ScrollToHash() {
   const location = useLocation();
@@ -134,94 +136,138 @@ function PublicOnlyRoute({ children }) {
   return user ? <Navigate to="/" replace /> : children;
 }
 
+// ⭐ NEW: Sidebar Toggle Component
+function SidebarToggle({ sidebarOpen, setSidebarOpen }) {
+  return (
+    <button
+      className="sidebar-toggle"
+      onClick={() => setSidebarOpen(!sidebarOpen)}
+      aria-label="Toggle Sidebar"
+    >
+      {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+    </button>
+  );
+}
+
+// ⭐ NEW: Sidebar Overlay (mobile)
+function SidebarOverlay({ show, onClick }) {
+  return <div className={`sidebar-overlay ${show ? 'active' : ''}`} onClick={onClick} />;
+}
+
 function AppRoutes() {
   const { user: authUser, logout } = useAuth();
   const { user: profileUser } = useContext(UserContext);
   const navbarUser = profileUser || authUser;
+  
+  // ⭐ NEW: Sidebar state for mobile
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <>
-      <Sidebar />
-      <Navbar user={navbarUser} onLogout={logout} />
+      {/* ⭐ Sidebar Toggle (mobile only) */}
+      <SidebarToggle sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      
+      {/* ⭐ Mobile Overlay */}
+      <SidebarOverlay show={sidebarOpen} onClick={() => setSidebarOpen(false)} />
+      
+      {/* ⭐ Sidebar with proper class */}
+      <div className={`sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
+        <Sidebar />
+      </div>
+      
+      {/* ⭐ Navbar with proper positioning */}
+      <div className="navbar">
+        <Navbar user={navbarUser} onLogout={logout} />
+      </div>
 
       <ChatProvider userId={navbarUser?._id || navbarUser?.id}>
-        <div role="main" className="main-content with-sidebar">
-          <Suspense fallback={<div className="px-6 py-10 text-center text-slate-500">Loading page…</div>}>
-            <ScrollToHash />
-            <Routes>
-              <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-              <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-              <Route path="/projects/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        {/* ⭐ Main Content with proper margin */}
+        <div className="main-content">
+          <div className="content-wrapper">
+            <Suspense fallback={<div className="px-6 py-10 text-center text-slate-500">Loading page…</div>}>
+              <ScrollToHash />
+              <Routes>
+                <Route path="/" element={<Navigate to="/home" replace />} />
+                <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+                <Route path="/projects/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
-              <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-              <Route path="/create-account" element={<PublicOnlyRoute><CreateAccount /></PublicOnlyRoute>} />
-              <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+                <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+                <Route path="/create-account" element={<PublicOnlyRoute><CreateAccount /></PublicOnlyRoute>} />
+                <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
 
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/profile/:username" element={<Profile />} />
-              <Route path="/me" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/profile/:username" element={<Profile />} />
+                <Route path="/me" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
-              {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
-              <Route path="/status/:token" element={<PublicProjectStatus />} />
+                {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
+                <Route path="/status/:token" element={<PublicProjectStatus />} />
 
-              <Route path="/messages" element={<ProtectedRoute><DMPage /></ProtectedRoute>} />
-              <Route path="/messages/:id" element={<ProtectedRoute><DMPage /></ProtectedRoute>} />
+                <Route path="/messages" element={<ProtectedRoute><DMPage /></ProtectedRoute>} />
+                <Route path="/messages/:id" element={<ProtectedRoute><DMPage /></ProtectedRoute>} />
 
-              <Route path="/invite/accept" element={<AcceptInvite />} />
-              <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
+                <Route path="/invite/accept" element={<AcceptInvite />} />
+                <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
 
-              {/* ⭐ NEW: Analytics Route */}
-              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-              <Route path="/projects/:projectId/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                {/* ⭐ Analytics Routes */}
+                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                <Route path="/projects/:projectId/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
 
-              <Route
-                path="/discover"
-                element={
-                  DISCOVERY_V1 ? (
-                    <ProtectedRoute><Discover /></ProtectedRoute>
-                  ) : (
-                    <Navigate to="/home" replace />
-                  )
-                }
-              />
+                <Route
+                  path="/discover"
+                  element={
+                    DISCOVERY_V1 ? (
+                      <ProtectedRoute><Discover /></ProtectedRoute>
+                    ) : (
+                      <Navigate to="/home" replace />
+                    )
+                  }
+                />
 
-              <Route
-                path="/import"
-                element={
-                  <FeatureGate flag={IMPORT_WIZARD_V1} fallback={<Navigate to="/home" replace />}>
-                    <ProtectedRoute><ImportWizard /></ProtectedRoute>
-                  </FeatureGate>
-                }
-              />
+                <Route
+                  path="/import"
+                  element={
+                    <FeatureGate flag={IMPORT_WIZARD_V1} fallback={<Navigate to="/home" replace />}>
+                      <ProtectedRoute><ImportWizard /></ProtectedRoute>
+                    </FeatureGate>
+                  }
+                />
 
-              <Route
-                path="/admin/console"
-                element={
-                  <FeatureGate flag={ADMIN_CONSOLE_V1} fallback={<Navigate to="/home" replace />}>
-                    <ProtectedRoute><AdminConsole /></ProtectedRoute>
-                  </FeatureGate>
-                }
-              />
+                <Route
+                  path="/admin/console"
+                  element={
+                    <FeatureGate flag={ADMIN_CONSOLE_V1} fallback={<Navigate to="/home" replace />}>
+                      <ProtectedRoute><AdminConsole /></ProtectedRoute>
+                    </FeatureGate>
+                  }
+                />
 
-              <Route
-                path="/admin/pulse"
-                element={
-                  <FeatureGate flag={PULSE_ADMIN_V1} fallback={<Navigate to="/home" replace />}>
-                    <ProtectedRoute><PulseAdmin /></ProtectedRoute>
-                  </FeatureGate>
-                }
-              />
+                <Route
+                  path="/admin/pulse"
+                  element={
+                    <FeatureGate flag={PULSE_ADMIN_V1} fallback={<Navigate to="/home" replace />}>
+                      <ProtectedRoute><PulseAdmin /></ProtectedRoute>
+                    </FeatureGate>
+                  }
+                />
 
-              <Route path="*" element={<Navigate to="/home" replace />} />
-            </Routes>
-          </Suspense>
+                <Route path="*" element={<Navigate to="/home" replace />} />
+              </Routes>
+            </Suspense>
+          </div>
         </div>
+        
         {MESSENGER_V1 && <MessengerPanel />}
       </ChatProvider>
 
       <ToastHost />
+      
+      {/* ⭐ CURSOR MODES - Properly positioned */}
+      <div className="cursor-modes">
+        <GhostMode />
+        <DeepWorkMode />
+      </div>
       
       {/* ⭐ CURSOR OVERLAY */}
       <CursorLayer />
@@ -232,10 +278,6 @@ function AppRoutes() {
       
       {/* ⭐ CURSOR RECORDER */}
       <CursorRecorder enabled={true} />
-      
-      {/* ⭐ CURSOR MODES */}
-      <GhostMode />
-      <DeepWorkMode />
       
       {/* ⭐ MOBILE SUPPORT */}
       <TouchCursor />

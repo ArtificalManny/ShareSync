@@ -1,11 +1,12 @@
 /* /src/theme.css
    ShareSync Design System — semantic tokens + motion + gradients + avatar utils
+   UPDATED: Removed background forcing on body/root
 */
 
 /* ---------- Light (default) ---------- */
 :root {
   /* Semantics */
-  --bg-canvas:        #F7F9FC;  /* ← REVERTED */
+  --bg-canvas:        #F7F9FC;
   --bg-surface:       #FFFFFF;
   --bg-elevated:      #FFFFFF;
 
@@ -51,7 +52,7 @@
 }
 
 :root.dark {
-  --bg-canvas:   #0A0F1A;  /* ← REVERTED */
+  --bg-canvas:   #0A0F1A;
   --bg-surface:  #0B1220;
   --bg-elevated: #0B1220;
 
@@ -69,11 +70,14 @@
   --tint-danger: color-mix(in srgb, var(--danger) 18%, #0B1220);
 }
 
-/* ---------- Base ---------- */
+/* ---------- Base - REMOVED background forcing ---------- */
+/* 
+DISABLED - Conflicts with layout-system.css
 html, body, #root, .app-container {
-  background: var(--bg-canvas);  /* ← REVERTED - NO MORE !important */
+  background: var(--bg-canvas);
   color: var(--text-primary);
 }
+*/
 
 /* ---------- Cards ---------- */
 .card {
@@ -178,7 +182,7 @@ html, body, #root, .app-container {
 
 /* 1) Core tokens (light) */
 :root {
-  --bg:            #0b0c0f05;  /* ← REVERTED */
+  --bg:            #0b0c0f05;
   --surface:       #ffffff;
   --text:          #0f172a;
   --muted:         #64748b;
@@ -198,7 +202,7 @@ html, body, #root, .app-container {
 
 /* 2) Dark tokens */
 :root.dark {
-  --bg:            #0b1220;  /* ← REVERTED */
+  --bg:            #0b1220;
   --surface:       #0f172a;
   --text:          #e5e7eb;
   --muted:         #94a3b8;
@@ -216,8 +220,8 @@ html, body, #root, .app-container {
   --shadow:        0 10px 28px rgba(2,6,23,0.45);
 }
 
-/* 3) Utility classes */
-.bg-bg        { background: var(--bg); }
+/* 3) Utility classes - REMOVED bg forcing */
+/* .bg-bg        { background: var(--bg); } */
 .bg-surface   { background: var(--surface); }
 .text-text    { color: var(--text); }
 .text-muted   { color: var(--muted); }
