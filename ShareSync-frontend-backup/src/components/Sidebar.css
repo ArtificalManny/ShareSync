@@ -1,4 +1,3 @@
-//*Users/artificalmanny/Portfolio/ShareSync/ShareSync-frontend-backup/src/components/Sidebar.css
 /* ========= Sidebar Skin (Modern) ========= */
 :root {
   --sidebar-w: 248px;
@@ -36,9 +35,103 @@ body.has-sidebar.sidebar-collapsed { --sidebar-width: var(--sidebar-w-collapsed)
   flex-direction: column;
   z-index: 40;
   transition: width 220ms ease, box-shadow 220ms ease;
+  
+  /* ⭐ SCROLL ENHANCEMENT */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 .ss-sidebar.is-collapsed { width: var(--sidebar-w-collapsed); }
+
+/* ========================================
+   BEAUTIFUL CUSTOM SCROLLBAR
+   ======================================== */
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.ss-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ss-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ss-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+/* Scrollbar becomes more visible on hover */
+.ss-sidebar:hover::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.6);
+}
+
+.ss-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.9);
+}
+
+/* Firefox scrollbar */
+.ss-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+}
+
+.ss-sidebar:hover {
+  scrollbar-color: rgba(99, 102, 241, 0.7) transparent;
+}
+
+/* ========================================
+   FADE INDICATORS (Top/Bottom)
+   ======================================== */
+
+/* Subtle fade at top to indicate scrollable content above */
+.ss-sidebar::before {
+  content: '';
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: linear-gradient(
+    to bottom,
+    var(--sb-bg) 0%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Subtle fade at bottom to indicate scrollable content below */
+.ss-sidebar::after {
+  content: '';
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: linear-gradient(
+    to top,
+    var(--sb-bg) 0%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 10;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+/* Show/hide fade indicators based on scroll position */
+.ss-sidebar:hover::before {
+  opacity: 1;
+}
+
+.ss-sidebar:hover::after {
+  opacity: 1;
+}
 
 /* Header */
 .sb-head {
@@ -48,6 +141,9 @@ body.has-sidebar.sidebar-collapsed { --sidebar-width: var(--sidebar-w-collapsed)
   gap: .5rem;
   padding: .75rem .5rem .5rem .75rem;
   border-bottom: 1px solid var(--sb-border);
+  flex-shrink: 0; /* Don't shrink header when scrolling */
+  position: relative;
+  z-index: 11; /* Above fade indicators */
 }
 
 .sb-brand {
@@ -167,6 +263,9 @@ body.has-sidebar.sidebar-collapsed { --sidebar-width: var(--sidebar-w-collapsed)
   gap: .6rem;
   padding: .6rem .75rem .8rem;
   border-top: 1px solid var(--sb-border);
+  flex-shrink: 0; /* Don't shrink user section when scrolling */
+  position: relative;
+  z-index: 11; /* Above fade indicators */
 }
 .sb-user-avatar { flex: 0 0 auto; }
 .sb-user-text { min-width: 0; }
@@ -191,6 +290,11 @@ body.has-sidebar.sidebar-collapsed { --sidebar-width: var(--sidebar-w-collapsed)
   .sb-item .sb-item-leftbar {
     transition: none !important;
   }
+  
+  /* Disable smooth scrolling for reduced motion */
+  .ss-sidebar {
+    scroll-behavior: auto;
+  }
 }
 
 /* ===== Brand V2 sidebar skin ===== */
@@ -205,4 +309,51 @@ body.has-sidebar.sidebar-collapsed { --sidebar-width: var(--sidebar-w-collapsed)
   --sb-neon:     rgb(var(--brand-v2-accent));
   --sb-count-bg: rgb(var(--brand-v2-accent));
   --sb-count-fg: #fff;
+}
+
+/* Brand V2 scrollbar uses accent color */
+[data-brand="v2"] .ss-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(var(--brand-v2-accent), 0.2);
+}
+
+[data-brand="v2"] .ss-sidebar:hover::-webkit-scrollbar-thumb {
+  background: rgba(var(--brand-v2-accent), 0.6);
+}
+
+[data-brand="v2"] .ss-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--brand-v2-accent), 0.9);
+}
+
+[data-brand="v2"] .ss-sidebar {
+  scrollbar-color: rgba(var(--brand-v2-accent), 0.3) transparent;
+}
+
+[data-brand="v2"] .ss-sidebar:hover {
+  scrollbar-color: rgba(var(--brand-v2-accent), 0.7) transparent;
+}
+
+/* ========================================
+   MOBILE OPTIMIZATIONS
+   ======================================== */
+
+@media (max-width: 1024px) {
+  /* Use native touch scrolling on mobile */
+  .ss-sidebar {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Hide custom scrollbar on mobile (native is better) */
+  .ss-sidebar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .ss-sidebar {
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  /* Remove fade indicators on mobile */
+  .ss-sidebar::before,
+  .ss-sidebar::after {
+    display: none;
+  }
 }
