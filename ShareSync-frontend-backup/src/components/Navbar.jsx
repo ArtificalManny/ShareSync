@@ -1,28 +1,164 @@
-// src/components/Navbar.jsx
+// src/components/Navbar.jsx - UPDATED WITH PROFILE PHOTO UPLOAD
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut, PanelLeftClose, MessageCircle, Palette } from 'lucide-react';
+import { Sun, Moon, LogOut, PanelLeftClose, MessageCircle, Palette, Camera } from 'lucide-react';
 import { formatProfilePicture } from '../utils/imageUtils';
 import { useChat } from "../context/ChatContext.jsx";
 import UnreadBadge from './messenger/UnreadBadge.jsx';
 import { BRAND_V2, ADMIN_CONSOLE_V1, KPI_TICKER_V1 } from '../config/flags.js';
 
-// Neon skin (glass + glow)
 import "./Navbar.neon.css";
 import useBrandTheme from '../hooks/useBrandTheme.js';
-
-// KPI ticker
 import KPITicker from './global/KPITicker.jsx';
 import { track } from '../utils/telemetry';
+import { updateProfile } from '../api/user';
+import { toast } from './ui/toast';
 
 const BrandSwitcher = lazy(() => import('./global/BrandSwitcher.jsx'));
 const DEFAULT_PIC = '/default-profile.png';
 const LS_KEY = 'ss.sidebar.collapsed';
 
+// ⭐ QUICK PROFILE PHOTO UPLOAD
+const QuickPhotoUpload = ({ user, onUploadComplete }) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Please select an image file", variant: "error" });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Image must be less than 5MB", variant: "error" });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+      
+      await updateProfile(formData);
+      
+      toast({ title: "Profile photo updated! 🎉", variant: "success" });
+      setShowMenu(false);
+      
+      if (onUploadComplete) onUploadComplete();
+      
+      track('profile_photo_updated_quick');
+    } catch (error) {
+      toast({ title: "Failed to update photo", variant: "error" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setShowMenu(!showMenu)}
+        className="relative inline-flex items-center gap-1.5 group"
+        title="Profile & Settings"
+      >
+        <div className="story-ring story-ring--tight story-ring--proton">
+          <div className="avatar rounded-full overflow-hidden relative" style={{ width: 32, height: 32 }}>
+            <img
+              src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC}
+              alt={user?.firstName || 'User'}
+              className="object-cover w-full h-full"
+            />
+            {/* Hover overlay */}
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <Camera className="w-4 h-4 text-white" />
+            </div>
+          </div>
+        </div>
+        <span
+          className="text-xs hidden sm:inline group-hover:opacity-80"
+          style={{ color: 'rgb(var(--nav-fg, 236 244 255))' }}
+        >
+          {user?.firstName || 'Profile'}
+        </span>
+      </button>
+
+      {/* Dropdown Menu */}
+      {showMenu && (
+        <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-purple-500/30 rounded-xl shadow-2xl overflow-hidden z-50">
+          {/* Profile preview */}
+          <Link
+            to="/profile"
+            className="flex items-center gap-3 p-4 hover:bg-slate-800 transition-colors border-b border-slate-700"
+            onClick={() => setShowMenu(false)}
+          >
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/30">
+              <img
+                src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC}
+                alt={user?.firstName || 'User'}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-semibold text-sm truncate">
+                {user?.firstName} {user?.lastName}
+              </p>
+              <p className="text-slate-400 text-xs truncate">View profile</p>
+            </div>
+          </Link>
+
+          {/* Upload photo */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="w-full flex items-center gap-3 p-4 hover:bg-slate-800 transition-colors text-left disabled:opacity-50"
+          >
+            <Camera className="w-5 h-5 text-purple-400" />
+            <div>
+              <p className="text-white text-sm font-medium">
+                {uploading ? 'Uploading...' : 'Change photo'}
+              </p>
+              <p className="text-slate-400 text-xs">Update your profile picture</p>
+            </div>
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   const navigate = useNavigate();
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Chat context (optional if provider not mounted yet)
   const chat = typeof useChat === 'function' ? useChat() : null;
   const unreadTotal = chat?.unreadTotal || 0;
 
@@ -55,16 +191,14 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
     try { window.dispatchEvent(new CustomEvent('sidebar:toggle', { detail: { collapsed: next } })); } catch {}
   };
 
-  // Brand / Accent utilities (used by Palette button)
   const { cycleAccent } = useBrandTheme({ enabled: true });
 
   useEffect(() => {
     const onCycle = () => { try { cycleAccent(); } catch {} };
     window.addEventListener("accent:cycle", onCycle);
     return () => window.removeEventListener("accent:cycle", onCycle);
-  }, [cycleAccent]);  
+  }, [cycleAccent]);
 
-  // Compact-on-scroll effect for the neon bar
   const headRef = useRef(null);
   useEffect(() => {
     const el = headRef.current;
@@ -78,19 +212,13 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Avatar: spin ring once per session on first render
-  const [spinAvatar, setSpinAvatar] = useState(false);
-  useEffect(() => {
-    const key = 'seen.nav.avatar.spin';
-    if (!sessionStorage.getItem(key)) {
-      setSpinAvatar(true);
-      const t = setTimeout(() => setSpinAvatar(false), 1600); // keep in sync with rings.css
-      sessionStorage.setItem(key, '1');
-      return () => clearTimeout(t);
-    }
-  }, []);
+  const handlePhotoUploadComplete = () => {
+    // Force re-render to show new photo
+    setRefreshKey(prev => prev + 1);
+    // Reload user data
+    window.location.reload();
+  };
 
-  // Old inline brand style not needed in v2 neon; CSS drives it
   const headerStyle = BRAND_V2 ? undefined : undefined;
 
   return (
@@ -100,7 +228,6 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
       style={headerStyle}
     >
       <div className="px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between nav-wrap">
-        {/* Left: sidebar toggle + (mobile-only) brand */}
         <div className="nav-left">
           <button
             type="button"
@@ -112,13 +239,11 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             <PanelLeftClose className="w-4 h-4" />
           </button>
 
-          {/* Brand / Home — keep on small screens, hide on md+ to avoid duplicate brand with sidebar */}
           <Link to="/home" className="logo sm:inline md:hidden" aria-label="ShareSync home">
             SS
           </Link>
         </div>
 
-        {/* Middle: search */}
         <form
           onSubmit={onSubmitSearch}
           className="header-search hidden md:flex items-center mx-3 flex-1 max-w-md nav-center"
@@ -133,9 +258,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           />
         </form>
 
-        {/* Right: KPI Ticker (flag), admin, messenger, theme, profile, logout */}
         <div className="flex items-center gap-1.5 nav-right">
-          {/* KPI Ticker — CNBC-style, shows only on md+ to keep it compact */}
           {KPI_TICKER_V1 && (
             <div
               className="hidden md:flex items-center"
@@ -152,7 +275,6 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             </Suspense>
           )}
 
-          {/* Accent family cycler (Pandora / CNBC / Meta-styled accents) */}
           <button
             type="button"
             className="btn-icon"
@@ -163,7 +285,6 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             <Palette className="w-4 h-4" />
           </button>
 
-          {/* Admin Console shortcut (feature-gated) */}
           {ADMIN_CONSOLE_V1 && (
             <Link
               to="/admin/console"
@@ -176,7 +297,6 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             </Link>
           )}
 
-          {/* Messenger */}
           <button
             type="button"
             onClick={openMessenger}
@@ -192,7 +312,6 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             )}
           </button>
 
-          {/* Theme toggle */}
           <button
             onClick={toggleDarkMode}
             className="btn-icon"
@@ -202,26 +321,13 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
-          {/* Profile (one-spin ring on first session) */}
-          <Link to="/profile" className="inline-flex items-center gap-1.5 group">
-  <div className={`story-ring story-ring--tight story-ring--proton ${spinAvatar ? 'ring-spin-once' : ''}`}>
-    <div className="avatar rounded-full overflow-hidden" style={{ width: 32, height: 32 }}>
-      <img
-        src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC}
-        alt={user?.firstName || 'User'}
-        className="object-cover w-full h-full"
-      />
-    </div>
-  </div>
-  <span
-    className="text-xs hidden sm:inline group-hover:opacity-80"
-    style={{ color: 'rgb(var(--nav-fg, 236 244 255))' }}
-  >
-    {user?.firstName || 'Profile'}
-  </span>
-</Link>
+          {/* ⭐ QUICK PHOTO UPLOAD */}
+          <QuickPhotoUpload
+            key={refreshKey}
+            user={user}
+            onUploadComplete={handlePhotoUploadComplete}
+          />
 
-          {/* Logout */}
           <button
             onClick={handleLogout}
             className="btn-icon"
