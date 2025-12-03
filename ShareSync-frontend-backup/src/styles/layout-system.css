@@ -1,10 +1,10 @@
 /**
- * layout-system.css - COORDINATED WITH SIDEBAR.CSS
- * Uses CSS variables from Sidebar.css for perfect alignment
+ * layout-system.css - DEAD SPACE FIXED VERSION
+ * COORDINATED WITH SIDEBAR.CSS
  */
 
 /* ============================================
-   Kill old layout systems
+   Kill old layout systems + FIX DEAD SPACE
    ============================================ */
 
    html,
@@ -18,8 +18,8 @@
      gap: 0 !important;
      margin: 0 !important;
      padding: 0 !important;
-     height: auto !important;
-     min-height: 100vh !important;
+     height: auto !important; /* ⭐ NATURAL HEIGHT */
+     min-height: auto !important; /* ⭐ FIXED: Was 100vh causing 2000px+ dead space */
    }
    
    body {
@@ -36,12 +36,11 @@
    }
    
    /* ============================================
-      SIDEBAR - Uses CSS variable from Sidebar.css
+      SIDEBAR
       ============================================ */
    
    .ss-sidebar,
    .sidebar {
-     /* Don't override width - let Sidebar.css control it */
      position: fixed !important;
      top: 0 !important;
      left: 0 !important;
@@ -50,13 +49,13 @@
    }
    
    /* ============================================
-      NAVBAR - Coordinates with sidebar width
+      NAVBAR
       ============================================ */
    
    .navbar {
      position: fixed !important;
      top: 0 !important;
-     left: var(--sidebar-w, 248px) !important;  /* Uses Sidebar.css variable */
+     left: var(--sidebar-w, 248px) !important;
      right: 0 !important;
      height: 64px !important;
      background: rgba(15, 23, 42, 0.95) !important;
@@ -66,34 +65,33 @@
      align-items: center !important;
      padding: 0 24px !important;
      margin: 0 !important;
-     transition: left 220ms ease !important;  /* Animates on collapse */
+     transition: left 220ms ease !important;
    }
    
-   /* When sidebar collapses */
    body.sidebar-collapsed .navbar {
      left: var(--sidebar-w-collapsed, 72px) !important;
    }
    
    /* ============================================
-      MAIN CONTENT - Coordinates with sidebar width
+      MAIN CONTENT - FIXED FOR NO DEAD SPACE
       ============================================ */
    
    .main-content {
      position: relative !important;
-     margin-left: var(--sidebar-w, 248px) !important;  /* Uses Sidebar.css variable */
+     margin-left: var(--sidebar-w, 248px) !important;
      margin-top: 0 !important;
      margin-right: 0 !important;
      margin-bottom: 0 !important;
      padding-top: 64px !important;
      padding-left: 0 !important;
      padding-right: 0 !important;
-     padding-bottom: 0 !important;
-     min-height: 100vh !important;
+     padding-bottom: 2rem !important; /* ⭐ Reasonable padding */
+     min-height: 100vh !important; /* Fill viewport */
+     height: auto !important; /* ⭐ NATURAL HEIGHT - no forcing */
      display: block !important;
-     transition: margin-left 220ms ease !important;  /* Animates on collapse */
+     transition: margin-left 220ms ease !important;
    }
    
-   /* When sidebar collapses */
    body.sidebar-collapsed .main-content {
      margin-left: var(--sidebar-w-collapsed, 72px) !important;
    }

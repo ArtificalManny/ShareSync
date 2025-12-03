@@ -1,9 +1,10 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   src/index.css - UPDATED: Grid layout disabled
+   src/index.css - UPDATED: Grid layout disabled + DEAD SPACE FIXED
 ───────────────────────────────────────────────────────────────────────────── */
 
 /* 1) Theme tokens first (CSS variables) */
 @import './styles/tokens.css';
+@import './styles/layout-system.css';
 
 /* Color/Motion layers */
 @import './styles/motion.css';
@@ -169,3 +170,26 @@ html.dark {
   100% { transform: scale(1);   box-shadow: 0 0 0px #FFD700; }
 }
 .badge-flash { animation: flash-badge 1.5s ease-in-out; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ⭐ DEAD SPACE FIX - MUST BE LAST TO OVERRIDE TAILWIND
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html,
+body,
+#root {
+  height: auto !important;
+  min-height: auto !important;
+}
+
+body {
+  min-height: 100vh !important;
+  height: auto !important;
+}
+
+main,
+.main-content {
+  min-height: 100vh !important;
+  height: auto !important;
+  padding-bottom: 2rem !important;
+}

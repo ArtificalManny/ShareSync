@@ -1,4 +1,4 @@
-/* App.css */
+/* App.css - FIXED: No dead space */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Lato:wght@400;500&display=swap');
 
 :root {
@@ -37,7 +37,7 @@ body {
   font-family: 'Lato', sans-serif;
   background: var(--light-blue);
   color: var(--black);
-  min-height: 100vh;
+  min-height: 100vh; /* ⭐ Kept - allows scrolling */
   transition: background-color 0.3s, color 0.3s;
 }
 
@@ -137,6 +137,7 @@ h1, h2, h3, h4, h5, h6 {
   transform: scale(1.05);
 }
 
+/* ⭐ REMOVED - This was causing dead space
 body::before {
   content: '';
   position: fixed;
@@ -148,6 +149,7 @@ body::before {
   opacity: 0;
   z-index: -1;
 }
+*/
 
 :focus-visible {
   outline: 2px solid var(--blue-accent);

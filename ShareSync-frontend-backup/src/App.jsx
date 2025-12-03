@@ -1,5 +1,5 @@
-// src/App.jsx - UPDATED WITH PROPER LAYOUT
-import React, { useContext, Suspense, lazy, useState } from "react";
+// src/App.jsx - ABSOLUTE FINAL NUCLEAR FIX
+import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,10 +8,68 @@ import {
   useLocation,
 } from "react-router-dom";
 
+// ⭐⭐⭐ ULTIMATE FIX - KILLS EVERYTHING ⭐⭐⭐
+(() => {
+  const styleId = 'dead-space-fix-ultimate';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      /* ULTIMATE DEAD SPACE FIX */
+      html, body, #root, .app-container {
+        height: auto !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      
+      /* Layout stage and has-sidebar - NO HEIGHT FORCING */
+      html.layout-stage,
+      body.has-sidebar {
+        height: auto !important;
+        min-height: 100vh !important;
+      }
+      
+      .layout-stage {
+        min-height: 100vh !important;
+        height: auto !important;
+      }
+      
+      body {
+        min-height: 100vh !important;
+        height: auto !important;
+      }
+      
+      /* ⭐ KILL ALL PSEUDO-ELEMENTS */
+      body::before,
+      body::after,
+      html::before,
+      html::after,
+      .ss-sidebar::before,
+      .ss-sidebar::after {
+        display: none !important;
+        content: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        position: static !important;
+      }
+      
+      main, .main-content {
+        min-height: 100vh !important;
+        height: auto !important;
+        padding-bottom: 2rem !important;
+      }
+    `;
+    document.head.appendChild(style);
+    console.log('🔥 ULTIMATE dead space fix injected - ALL pseudo-elements killed');
+  }
+})();
+
 import Navbar from "./components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 
+import "./index.css";
 import "./theme.css";
 import "./styles/card.css";
 import "./styles/tokens.css";
@@ -28,7 +86,7 @@ import "./styles/toast.css";
 import "./styles/glass.css";
 import "./styles/focus.css";
 import "./styles/cursor-effects.css";
-import "./styles/layout-system.css"; // ⭐ NEW: Proper layout system
+import "./styles/layout-system.css";
 
 import ToastProviderOld, { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
@@ -59,7 +117,6 @@ import LeaderboardDock from "./components/momentum/LeaderboardDock.jsx";
 
 import PublicRoutes from "./routes/publicRoutes.jsx";
 
-// ⭐ CURSOR SYSTEM IMPORTS
 import { CursorProvider } from "./context/CursorContext";
 import CursorLayer from "./components/realtime/CursorLayer";
 import ShipFlash from "./components/effects/ShipFlash";
@@ -136,7 +193,6 @@ function PublicOnlyRoute({ children }) {
   return user ? <Navigate to="/" replace /> : children;
 }
 
-// ⭐ NEW: Sidebar Toggle Component
 function SidebarToggle({ sidebarOpen, setSidebarOpen }) {
   return (
     <button
@@ -149,7 +205,6 @@ function SidebarToggle({ sidebarOpen, setSidebarOpen }) {
   );
 }
 
-// ⭐ NEW: Sidebar Overlay (mobile)
 function SidebarOverlay({ show, onClick }) {
   return <div className={`sidebar-overlay ${show ? 'active' : ''}`} onClick={onClick} />;
 }
@@ -159,29 +214,57 @@ function AppRoutes() {
   const { user: profileUser } = useContext(UserContext);
   const navbarUser = profileUser || authUser;
   
-  // ⭐ NEW: Sidebar state for mobile
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // ⭐⭐⭐ NUCLEAR OPTION - setProperty with 'important' ⭐⭐⭐
+  useEffect(() => {
+    // Kill HTML and BODY height forcing with setProperty (stronger)
+    const html = document.documentElement;
+    const body = document.body;
+    const root = document.getElementById('root');
+    
+    // Direct style override - stronger than CSS
+    html.style.setProperty('height', 'auto', 'important');
+    html.style.setProperty('min-height', 'auto', 'important');
+    body.style.setProperty('height', 'auto', 'important');
+    body.style.setProperty('min-height', '100vh', 'important');
+    
+    if (root) {
+      root.style.setProperty('height', 'auto', 'important');
+      root.style.setProperty('min-height', 'auto', 'important');
+    }
+    
+    console.log('✅ FINAL nuclear option applied - HTML/BODY forced with setProperty');
+    
+    // Keep checking and fixing every 100ms for 2 seconds
+    let checks = 0;
+    const interval = setInterval(() => {
+      if (html.offsetHeight > 2000 || body.offsetHeight > 2000) {
+        html.style.setProperty('height', 'auto', 'important');
+        body.style.setProperty('height', 'auto', 'important');
+        console.log('🔄 Re-applied fix, heights were:', html.offsetHeight, body.offsetHeight);
+      }
+      checks++;
+      if (checks >= 20) clearInterval(interval);
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
-      {/* ⭐ Sidebar Toggle (mobile only) */}
       <SidebarToggle sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      
-      {/* ⭐ Mobile Overlay */}
       <SidebarOverlay show={sidebarOpen} onClick={() => setSidebarOpen(false)} />
       
-      {/* ⭐ Sidebar with proper class */}
       <div className={`sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
         <Sidebar />
       </div>
       
-      {/* ⭐ Navbar with proper positioning */}
       <div className="navbar">
         <Navbar user={navbarUser} onLogout={logout} />
       </div>
 
       <ChatProvider userId={navbarUser?._id || navbarUser?.id}>
-        {/* ⭐ Main Content with proper margin */}
         <div className="main-content">
           <div className="content-wrapper">
             <Suspense fallback={<div className="px-6 py-10 text-center text-slate-500">Loading page…</div>}>
@@ -210,7 +293,6 @@ function AppRoutes() {
                 <Route path="/invite/accept" element={<AcceptInvite />} />
                 <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
 
-                {/* ⭐ Analytics Routes */}
                 <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                 <Route path="/projects/:projectId/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
 
@@ -263,23 +345,15 @@ function AppRoutes() {
 
       <ToastHost />
       
-      {/* ⭐ CURSOR MODES - Properly positioned */}
       <div className="cursor-modes">
         <GhostMode />
         <DeepWorkMode />
       </div>
       
-      {/* ⭐ CURSOR OVERLAY */}
       <CursorLayer />
-      
-      {/* ⭐ CURSOR EFFECTS */}
       <ShipFlash />
       <SyncPulse />
-      
-      {/* ⭐ CURSOR RECORDER */}
       <CursorRecorder enabled={true} />
-      
-      {/* ⭐ MOBILE SUPPORT */}
       <TouchCursor />
     </>
   );

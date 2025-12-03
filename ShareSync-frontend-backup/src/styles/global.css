@@ -1,4 +1,6 @@
-/* If this file is used in your build, import the shared layers here too */
+/* global.css - FIXED: No dead space, grid layout removed */
+
+/* Import shared layers */
 @import './tokens.css';
 @import './motion.css';
 @import './gradients.css';
@@ -6,25 +8,37 @@
 @import './charts.css';
 @import './feed.css';
 
-/* Existing layout styles (kept) */
+/* ⭐ REMOVED GRID LAYOUT - This was causing dead space
+   The new layout-system.css handles all layout now
+   
+body {
+  height: 100vh;  ← This forced fixed height
+  display: grid;  ← Grid layout conflicts with flex layout
+  grid-template-areas: ...
+  grid-template-rows: auto 1fr auto;  ← Forces height
+  grid-template-columns: 200px 1fr 300px;
+}
+*/
+
+/* ============================================
+   NEW: Minimal body styles for layout-system.css
+   ============================================ */
+
 body {
   margin: 0;
   font-family: 'Roboto', sans-serif;
   background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
   color: #ffffff;
-  height: 100vh;
-  display: grid;
-  grid-template-areas:
-    "header header header"
-    "sidebar main nav-right"
-    "footer footer footer";
-  grid-template-rows: auto 1fr auto;
-  grid-template-columns: 200px 1fr 300px;
-  gap: 10px;
+  /* ⭐ NO height or grid - layout-system.css handles this */
 }
 
+/* ============================================
+   Legacy styles kept for backward compatibility
+   (These don't conflict with the new layout)
+   ============================================ */
+
 header {
-  grid-area: header;
+  /* Kept for any legacy components */
   background-color: #2a2a3e;
   padding: 1rem;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
@@ -57,14 +71,12 @@ header .top-right img {
 }
 
 nav {
-  grid-area: nav-right;
   background-color: #3a3a50;
   padding: 1rem;
-  display: none;
+  display: none; /* Hidden by default */
 }
 
 sidebar {
-  grid-area: sidebar;
   background-color: #3a3a50;
   padding: 1rem;
 }
@@ -83,19 +95,34 @@ sidebar .profile-section img {
   margin-bottom: 0.5rem;
 }
 
-sidebar ul { list-style: none; padding: 0; }
-sidebar ul li { margin: 0.5rem 0; }
-sidebar ul li a { color: #6A5ACD; text-decoration: none; }
-sidebar ul li a:hover { text-decoration: underline; }
-
-main {
-  grid-area: main;
-  padding: 2rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+sidebar ul { 
+  list-style: none; 
+  padding: 0; 
 }
 
+sidebar ul li { 
+  margin: 0.5rem 0; 
+}
+
+sidebar ul li a { 
+  color: #6A5ACD; 
+  text-decoration: none; 
+}
+
+sidebar ul li a:hover { 
+  text-decoration: underline; 
+}
+
+/* ⭐ MAIN element - No forced positioning
+   layout-system.css handles this now */
+main {
+  padding: 2rem;
+  /* display: flex; ← Removed - conflicts with layout-system */
+  /* justify-content: center; ← Removed */
+  /* align-items: center; ← Removed */
+}
+
+/* Full-screen modal styles kept */
 main.full-screen {
   position: fixed;
   top: 0;
@@ -152,16 +179,27 @@ main.full-screen .birthday-container {
 }
 
 main.full-screen .name-container input,
-main.full-screen .birthday-container select { flex: 1; }
+main.full-screen .birthday-container select { 
+  flex: 1; 
+}
 
 @media (max-width: 600px) {
-  main.full-screen form { width: 85%; padding: 1rem; }
-  main.full-screen h2 { font-size: 2rem; }
-  main.full-screen .subtitle { font-size: 1rem; margin: 0 0.5rem 1rem 0.5rem; }
+  main.full-screen form { 
+    width: 85%; 
+    padding: 1rem; 
+  }
+  
+  main.full-screen h2 { 
+    font-size: 2rem; 
+  }
+  
+  main.full-screen .subtitle { 
+    font-size: 1rem; 
+    margin: 0 0.5rem 1rem 0.5rem; 
+  }
 }
 
 footer {
-  grid-area: footer;
   background-color: #2a2a3e;
   padding: 1rem;
   text-align: center;
