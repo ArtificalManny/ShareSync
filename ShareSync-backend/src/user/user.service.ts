@@ -2,17 +2,27 @@
 import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+
 import { User, UserDocument } from './schemas/user.schema';
 import { ProjectService } from '../projects/project.service';  // FIXED
+
+// ⬇️ NEW: import Activity + summary util
+import { Activity, ActivityDocument } from '../activities/schemas/activity.schema';
+import { buildActivitySummary } from '../utils/activitySummary';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+
     @Inject(forwardRef(() => ProjectService))  // FIXED
     private readonly projects: ProjectService,  // FIXED
+
+    // ⬇️ NEW: inject Activity model
+    @InjectModel(Activity.name)
+    private readonly activityModel: Model<ActivityDocument>,
   ) {}
-  
+
   /** -- Lookups -- */
   async findById(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id).exec();
@@ -114,7 +124,7 @@ export class UserService {
     if (!user) throw new NotFoundException('User not found');
 
     const now = new Date();
-    const last = user.lastLogin ? new Date(user.lastLogin) : null;
+    const last = user.lastLogin ? new Date(user.lastLogin as any) : null;
     const diffDays = last ? Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24)) : null;
 
     if (diffDays === 1) {
@@ -135,5 +145,44 @@ export class UserService {
       .sort({ streakDays: -1 })
       .limit(limit)
       .exec();
+  }
+
+  // ⬇️ NEW: activity summary for Home/MomentumRing/WelcomeCard
+  async getActivitySummary(userId: string) {
+    // 1) Load user for base XP
+    const user = await this.userModel.findById(userId).lean();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Prefer xp, fallback to points, otherwise 0
+    const baseXp =
+      (user as any).xp ??
+      (user as any).points ??
+      0;
+
+    // 2) Load activities for this user
+    const activities = await this.activityModel
+      .find(
+        {
+          // ⬇️ IF your schema uses "user" instead of "userId", change this line:
+          userId: userId,
+        },
+      )
+      .sort({ createdAt: 1 }) // oldest → newest so streak engine can walk in order
+      .lean();
+
+    // 3) Build summary using the pure util
+    const summary = buildActivitySummary(
+      activities.map((a: any) => ({
+        timestamp: a.createdAt,
+        type: a.type || a.eventType || 'UNKNOWN',
+        // ⬇️ If your field for XP is named differently, tweak this:
+        xpDelta: a.xpDelta ?? 0,
+      })),
+      baseXp,
+    );
+
+    return summary;
   }
 }

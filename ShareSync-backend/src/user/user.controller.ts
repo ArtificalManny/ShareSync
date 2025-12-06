@@ -74,6 +74,48 @@ export class UserController {
   }
 
   /**
+   * GET /api/users/activity-summary
+   * Returns streak + XP + monthly stats for the authenticated user.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('activity-summary')
+  async getActivitySummary(@Req() req: any) {
+    const id = req?.user?.sub || req?.user?.id;
+    // Delegates to UserService.getActivitySummary
+    return this.users.getActivitySummary(id);
+  }
+
+  /**
+   * ⬇️ NEW: GET /api/users/me/projects-by-category
+   * Uses UserService.getProjectsByCategory to group projects as School/Job/Personal.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('me/projects-by-category')
+  async myProjectsByCategory(@Req() req: any) {
+    const id = req?.user?.sub || req?.user?.id;
+    return this.users.getProjectsByCategory(id);
+  }
+
+  /**
+   * ⬇️ NEW: GET /api/users/leaderboard/streaks
+   * Returns top streaks for the streak leaderboard.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('leaderboard/streaks')
+  async streakLeaderboard() {
+    const top = await this.users.getTopStreaks(20);
+
+    // Map to a clean DTO so you don't leak internal fields
+    return top.map((u: any) => ({
+      id: u._id?.toString?.() ?? u._id,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      streakDays: u.streakDays ?? 0,
+      profilePicture: u.profilePicture ?? null,
+    }));
+  }
+
+  /**
    * GET /api/users/public/:username
    * Public profile view honoring the `publicProfile` flag.
    */
