@@ -30,33 +30,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
 
-    <!-- ⭐⭐⭐ DEAD SPACE FIX - MUST BE IN HEAD BEFORE ANY CSS ⭐⭐⭐ -->
-    <style id="dead-space-fix-critical">
-      /* CRITICAL: Override ALL height forcing */
-      html, body, #root, .app-container {
-        height: auto !important;
-        min-height: auto !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-      
-      html.layout-stage,
-      body.has-sidebar {
-        height: auto !important;
-        min-height: 100vh !important;
-      }
-      
-      body {
-        min-height: 100vh !important;
-        height: auto !important;
-      }
-      
-      main, .main-content {
-        min-height: 100vh !important;
-        height: auto !important;
-      }
-    </style>
-
     <!-- Early theme boot (prevents flash of wrong theme) -->
     <script>
       (function () {
@@ -91,7 +64,7 @@
   </head>
   <body>
     <!-- Skip link (hidden from start) -->
-    <a
+    
       href="#main"
       class="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:top-3 focus:left-3 focus:bg-white focus:text-slate-900 focus:px-3 focus:py-2 focus:rounded-md focus:ring-2"
       aria-hidden="true"
@@ -103,58 +76,6 @@
 
     <!-- Main content area -->
     <main id="main" tabindex="-1" class="min-h-screen"></main>
-
-    <!-- ⭐⭐⭐ DEAD SPACE FIX SCRIPT - RUNS BEFORE REACT ⭐⭐⭐ -->
-    <script>
-      (function() {
-        const applyFix = function() {
-          const html = document.documentElement;
-          const body = document.body;
-          const root = document.getElementById('root');
-          
-          // Use setAttribute to bypass style object
-          html.setAttribute('style', 'height: auto !important; min-height: auto !important;');
-          body.setAttribute('style', 'height: auto !important; min-height: 100vh !important;');
-          
-          if (root) {
-            root.setAttribute('style', 'height: auto !important; min-height: auto !important;');
-          }
-          
-          console.log('🔥 Dead space fix applied via setAttribute');
-        };
-        
-        // Apply immediately
-        applyFix();
-        
-        // Apply after DOM loads
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', applyFix);
-        }
-        
-        // Keep watching and re-applying
-        let observer = new MutationObserver(function(mutations) {
-          const html = document.documentElement;
-          const body = document.body;
-          
-          if (html.offsetHeight > 2000 || body.offsetHeight > 2000) {
-            applyFix();
-            console.log('🔄 Height reset detected, re-applied fix');
-          }
-        });
-        
-        // Observe style attribute changes
-        observer.observe(document.documentElement, { 
-          attributes: true, 
-          attributeFilter: ['style', 'class'] 
-        });
-        
-        observer.observe(document.body, { 
-          attributes: true, 
-          attributeFilter: ['style', 'class'] 
-        });
-      })();
-    </script>
-
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
