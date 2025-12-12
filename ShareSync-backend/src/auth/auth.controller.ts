@@ -1,44 +1,69 @@
 // src/auth/auth.controller.ts
-import { Body, Controller, Post, Res } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { Response } from 'express';
+import {
+  Controller,
+  Post,
+  Body,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from '../user/schemas/user.schema';
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly auth: AuthService,
-    private readonly jwt: JwtService, // used by /auth/verify
+    private readonly authService: AuthService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly jwtService: JwtService,
   ) {}
 
   @Post('login')
   async login(
     @Body() body: { email: string; password: string },
-    @Res({ passthrough: true }) res: Response,
   ) {
-    const { token, user } = await this.auth.login(body.email, body.password);
+    return this.authService.login(body.email, body.password);
+  }
 
-    // also set a cookie so requests without Authorization header still work
-    res.cookie('accessToken', token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false, // set true behind HTTPS
-      maxAge: 7 * 24 * 3600 * 1000,
-      path: '/',
+  @Post('register')
+  async register(
+    @Body() body: {
+      email: string;
+      username: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+    },
+  ) {
+    const hashedPassword = await bcrypt.hash(body.password, 10);
+
+    const user = await this.userModel.create({
+      email: body.email,
+      username: body.username,
+      password: hashedPassword,
+      firstName: body.firstName,
+      lastName: body.lastName,
+      verified: true,
     });
 
-    return { token, user };
+    return {
+      message: 'User created successfully',
+      userId: user._id,
+    };
   }
 
   @Post('verify')
   verify(@Body() body: { token: string }) {
     try {
-      const payload = this.jwt.verify(body.token, {
-        secret: process.env.JWT_SECRET || 'dev_secret_please_change',
+      const decoded = this.jwtService.verify(body.token, {
+        secret: process.env.JWT_SECRET || 'dev_secret_change_me',
       });
-      return { ok: true, payload };
-    } catch (e) {
-      return { ok: false, error: String(e) };
+      return { valid: true, user: decoded };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
     }
   }
 }
+
