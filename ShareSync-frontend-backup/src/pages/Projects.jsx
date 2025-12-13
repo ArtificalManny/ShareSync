@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Flame, TrendingUp, Sparkles, Clock, Users, Zap } from 'lucide-react';
+import { Search, Plus, Flame, TrendingUp, Sparkles, Clock, Users, Zap, Target, AlertCircle, Shield, PlayCircle, Grid, List, ChevronRight } from 'lucide-react';
 import ProjectCard from '../components/discovery/ProjectCard';
 import { useAuth } from '../context/AuthContext';
 import ProjectsCreate from './ProjectsCreate';
@@ -13,20 +13,16 @@ const Projects = () => {
   const [useMockData, setUseMockData] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('featured');
-  const [leaderboard, setLeaderboard] = useState([
-    { rank: 1, name: 'Alex', streak: '12d', xp: 2450, avatar: '👤' },
-    { rank: 2, name: 'Jordan', streak: '10d', xp: 2200, avatar: '👤' },
-    { rank: 3, name: 'You', streak: '7d', xp: 1850, avatar: '👤' }
-  ]);
-  const [currentLeaderIndex, setCurrentLeaderIndex] = useState(0);
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [selectedProject, setSelectedProject] = useState(null);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentLeaderIndex((prev) => (prev + 1) % leaderboard.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [leaderboard.length]);
+  // Simplified stats for compact header
+  const stats = {
+    active: 3,
+    onTrack: 2,
+    atRisk: 1
+  };
 
   useEffect(() => {
     fetchProjects();
@@ -42,7 +38,7 @@ const Projects = () => {
         return;
       }
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/projects`, {
+      const response = await fetch('http://localhost:3000/api/projects', {
         credentials: 'include'
       });
       
@@ -74,7 +70,10 @@ const Projects = () => {
       momentum: { value: 85 },
       metrics: { onTimePercent: { value: 92 }, openTasks: { value: 5 }, throughputPerWeek: { value: 12 } },
       members: [{ _id: '1', name: 'You' }],
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      season: 'shipping', // 🚀 Shipping, 🌱 Exploring, 🛠 Maintaining
+      nextMicroStep: 'Fix login page CSS bug',
+      timeEstimate: '15 min'
     },
     {
       _id: '2',
@@ -87,12 +86,31 @@ const Projects = () => {
       momentum: { value: 95 },
       metrics: { onTimePercent: { value: 88 }, openTasks: { value: 8 }, throughputPerWeek: { value: 15 } },
       members: [{ _id: '2', name: 'Alex' }, { _id: '3', name: 'Jordan' }],
-      updatedAt: new Date(Date.now() - 86400000).toISOString()
+      updatedAt: new Date(Date.now() - 86400000).toISOString(),
+      season: 'shipping',
+      nextMicroStep: 'Write API documentation',
+      timeEstimate: '25 min'
     },
+    {
+      _id: '3',
+      name: 'Math Homework',
+      title: 'Math Homework',
+      description: 'Algebra II problem sets and study notes',
+      owner: { _id: user?._id || '1', name: 'You' },
+      status: 'active',
+      streak: { value: 3 },
+      momentum: { value: 45 },
+      metrics: { onTimePercent: { value: 70 }, openTasks: { value: 12 }, throughputPerWeek: { value: 8 } },
+      members: [{ _id: '1', name: 'You' }],
+      updatedAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago - AT RISK
+      season: 'exploring',
+      nextMicroStep: null, // No micro-step set
+      timeEstimate: null,
+      isAtRisk: true
+    }
   ];
 
   const handleProjectCreated = (newProject) => {
-    // Normalize the project object to ensure it has both name and title
     const normalizedProject = {
       ...newProject,
       name: newProject.title || newProject.name,
@@ -105,17 +123,23 @@ const Projects = () => {
         throughputPerWeek: { value: 0 } 
       },
       members: newProject.members || [],
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      season: 'exploring', // New projects start in exploring mode
+      nextMicroStep: null,
+      timeEstimate: null
     };
 
-    // Add to the beginning of the list
     setProjects(prev => [normalizedProject, ...prev]);
-    
-    // Close modal - navigation happens in ProjectsCreate
   };
 
   const handleProjectClick = (projectId) => {
     navigate(`/projects/${projectId}`);
+  };
+
+  const handleStartSprint = (project) => {
+    setSelectedProject(project);
+    // TODO: Open sprint modal with project context
+    console.log('Starting sprint for:', project.name);
   };
 
   const filteredProjects = projects.filter(project => {
@@ -125,145 +149,174 @@ const Projects = () => {
                          projectDesc.toLowerCase().includes(searchQuery.toLowerCase());
     
     switch(selectedFilter) {
+      case 'all':
+        return matchesSearch;
       case 'my-projects':
         return matchesSearch && project.owner?._id === user?._id;
-      case 'following':
-        return matchesSearch;
+      case 'at-risk':
+        return matchesSearch && project.isAtRisk;
       case 'hot-streaks':
         return matchesSearch && (project.streak?.value || 0) > 30;
-      case 'just-shipped':
-        return matchesSearch;
+      case 'school':
+        return matchesSearch && ['Math', 'Science', 'History', 'English'].some(s => 
+          projectName.toLowerCase().includes(s.toLowerCase())
+        );
+      case 'work':
+        return matchesSearch && !['Math', 'Science', 'History', 'English'].some(s => 
+          projectName.toLowerCase().includes(s.toLowerCase())
+        );
       default:
         return matchesSearch;
     }
   });
 
+  const atRiskProjects = projects.filter(p => p.isAtRisk);
+  const canProtectStreak = projects.some(p => p.streak?.value > 0 && !p.nextMicroStep);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pb-24">
       
-      {/* HERO SECTION */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-purple-900/40 via-fuchsia-900/30 to-slate-900/40 border-b border-purple-500/20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(139,92,246,0.1),transparent)]" />
-        
-        <div className="relative max-w-7xl mx-auto px-6 py-12 space-y-8">
-          {/* Title */}
-          <h1 className="text-5xl font-bold text-center bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
-            YOUR MOMENTUM STARTS HERE
-          </h1>
-
-          {/* Leaderboard */}
-          <div className="flex justify-center gap-4">
-            {leaderboard.slice(currentLeaderIndex, currentLeaderIndex + 3).map((leader, idx) => (
-              <div 
-                key={leader.rank}
-                className={`
-                  bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-xl 
-                  border border-purple-500/30 rounded-2xl p-6 min-w-[200px]
-                  transform transition-all duration-500
-                  ${idx === 0 ? 'scale-110 border-purple-400/50' : 'scale-100'}
-                `}
-              >
-                <div className="text-center">
-                  <div className={`text-3xl mb-2 ${leader.rank === 1 ? 'animate-bounce' : ''}`}>
-                    {leader.rank === 1 ? '🏆' : leader.rank === 2 ? '🥈' : '🥉'}
-                  </div>
-                  <div className="text-xl font-bold text-white">{leader.name}</div>
-                  <div className="text-sm text-purple-300">{leader.streak} streak</div>
-                  <div className="text-lg text-fuchsia-400 font-semibold">{leader.xp} XP</div>
-                </div>
+      {/* COMPACT CONTROL BAR - Replaces massive hero */}
+      <div className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          
+          {/* Top row: Title + Stats */}
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-white">Projects</h1>
+              <p className="text-sm text-slate-400 mt-1">Choose where today's momentum goes</p>
+            </div>
+            
+            {/* Compact stats strip */}
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                <span className="text-slate-300">Active: <span className="font-semibold text-white">{stats.active}</span></span>
               </div>
-            ))}
-          </div>
-
-          {/* Live Ticker */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-purple-500/20 rounded-lg p-3 overflow-hidden">
-            <div className="flex gap-8 animate-marquee whitespace-nowrap">
-              <span className="text-purple-300">🔥 Alex just hit 120d streak · 2450 XP</span>
-              <span className="text-fuchsia-300">🚀 Jordan shipped v3 of SaaS · +420 momentum</span>
-              <span className="text-emerald-300">⚡ Sarah hit $10k MRR milestone</span>
-              <span className="text-purple-300">🔥 Alex just hit 120d streak · 2450 XP</span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                <span className="text-slate-300">On track: <span className="font-semibold text-white">{stats.onTrack}</span></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-orange-400"></div>
+                <span className="text-slate-300">At risk: <span className="font-semibold text-white">{stats.atRisk}</span></span>
+              </div>
             </div>
           </div>
 
-          {/* Search Bar */}
-          <div className="max-w-3xl mx-auto relative">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-purple-400" />
-            <input
-              type="text"
-              placeholder="Search projects, creators, tags..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-800/80 backdrop-blur-xl border-2 border-purple-500/30 
-                       rounded-2xl pl-16 pr-6 py-6 text-lg text-white placeholder-slate-400
-                       focus:outline-none focus:border-purple-400/60 transition-all"
-            />
-          </div>
-
-          {/* New Project Button */}
-          <div className="flex justify-center">
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="group relative bg-gradient-to-r from-purple-600 to-fuchsia-600 
-                             hover:from-purple-500 hover:to-fuchsia-500 text-white font-bold 
-                             px-12 py-5 rounded-2xl text-xl transition-all transform hover:scale-105
-                             shadow-lg shadow-purple-500/50"
-            >
-              <Plus className="inline-block w-6 h-6 mr-2" />
-              New Project
-              <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
+          {/* Quick filter chips */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+            {[
+              { id: 'all', label: 'All', icon: Sparkles },
+              { id: 'my-projects', label: 'My projects', icon: Users },
+              { id: 'at-risk', label: 'At risk', icon: AlertCircle },
+              { id: 'school', label: 'School', icon: Target },
+              { id: 'work', label: 'Work', icon: Target },
+              { id: 'hot-streaks', label: 'Hot streaks', icon: Flame }
+            ].map(filter => (
+              <button
+                key={filter.id}
+                onClick={() => setSelectedFilter(filter.id)}
+                className={`
+                  flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap
+                  transition-all text-sm font-medium
+                  ${selectedFilter === filter.id 
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30' 
+                    : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
+                  }
+                `}
+              >
+                <filter.icon className="w-4 h-4" />
+                {filter.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* THREE COLUMN LAYOUT */}
-      <div className="max-w-[1800px] mx-auto px-6 py-8">
-        <div className="grid grid-cols-12 gap-6">
-          
-          {/* LEFT RAIL - Quick Filters */}
-          <div className="col-span-12 lg:col-span-2 space-y-4">
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 lg:sticky lg:top-6">
-              <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Quick Filters</h3>
-              
-              <div className="space-y-2">
-                {[
-                  { id: 'featured', label: 'Featured', icon: Sparkles },
-                  { id: 'my-projects', label: 'My Projects', icon: Users },
-                  { id: 'following', label: 'Following', icon: Users },
-                  { id: 'hot-streaks', label: 'Hot Streaks', icon: Flame },
-                  { id: 'just-shipped', label: 'Just Shipped', icon: Zap }
-                ].map(filter => (
-                  <button
-                    key={filter.id}
-                    onClick={() => setSelectedFilter(filter.id)}
-                    className={`
-                      w-full flex items-center gap-3 px-3 py-2 rounded-lg
-                      transition-all text-left text-sm
-                      ${selectedFilter === filter.id 
-                        ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30' 
-                        : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
-                      }
-                    `}
-                  >
-                    <filter.icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate">{filter.label}</span>
-                  </button>
-                ))}
+      {/* At-Risk Alert Banner - Gentle nudge, not shame */}
+      {atRiskProjects.length > 0 && (
+        <div className="max-w-7xl mx-auto px-6 pt-4">
+          <div className="bg-orange-900/20 border border-orange-500/30 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-orange-400 flex-shrink-0" />
+              <div>
+                <p className="text-white font-medium">
+                  {atRiskProjects.length} project{atRiskProjects.length > 1 ? 's' : ''} been quiet for a bit
+                </p>
+                <p className="text-sm text-orange-300/80">Want to give it a tiny push?</p>
               </div>
             </div>
+            <button 
+              onClick={() => setSelectedFilter('at-risk')}
+              className="bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 px-4 py-2 rounded-lg transition-all text-sm font-medium"
+            >
+              View projects
+            </button>
           </div>
+        </div>
+      )}
 
-          {/* CENTER - Projects Grid */}
-          <div className="col-span-12 lg:col-span-7 space-y-8">
+      {/* TWO COLUMN LAYOUT */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="grid grid-cols-12 gap-6">
+          
+          {/* LEFT: Projects Grid (70%) */}
+          <div className="col-span-12 lg:col-span-8 space-y-6">
+            
+            {/* View controls + Search */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search projects..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl pl-12 pr-4 py-3 
+                           text-white placeholder-slate-400 focus:outline-none focus:border-purple-500/50 transition-all"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2 bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded transition-all ${
+                    viewMode === 'grid' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Grid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded transition-all ${
+                    viewMode === 'list' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+
+              <button 
+                onClick={() => setShowCreateModal(true)}
+                className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl 
+                         transition-all font-semibold flex items-center gap-2 shadow-lg shadow-purple-500/30"
+              >
+                <Plus className="w-5 h-5" />
+                New Project
+              </button>
+            </div>
+
+            {/* Projects Grid/List */}
             {loading ? (
               <div className="text-center py-20">
                 <div className="inline-block w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
               </div>
             ) : filteredProjects.length === 0 ? (
-              <div className="text-center py-20">
+              <div className="text-center py-20 bg-slate-800/30 rounded-2xl border border-slate-700/50">
                 <div className="text-6xl mb-4">📂</div>
-                <h3 className="text-xl font-semibold text-white mb-2">No projects match your filters</h3>
-                <p className="text-slate-400 mb-6">Try adjusting filters or start your first project.</p>
+                <h3 className="text-xl font-semibold text-white mb-2">No projects yet</h3>
+                <p className="text-slate-400 mb-6">Start with one thing that matters this week. School, work, or personal — it all counts.</p>
                 <button 
                   onClick={() => setShowCreateModal(true)}
                   className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl transition-all"
@@ -272,82 +325,122 @@ const Projects = () => {
                 </button>
               </div>
             ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredProjects.map(project => (
-                    <div 
-                      key={project._id}
-                      onClick={() => handleProjectClick(project._id)}
-                      className="cursor-pointer transform transition-all hover:scale-105"
-                    >
-                      <ProjectCard project={project} />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Discovery Carousels */}
-                <div className="space-y-8 mt-12">
-                  <div>
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Zap className="w-5 h-5 text-yellow-400" />
-                      Just Shipped (last 4 hours)
-                    </h3>
-                    <div className="text-sm text-slate-400 py-8 text-center bg-slate-800/30 rounded-xl border border-slate-700/50">
-                      Recent ships will appear here
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Flame className="w-5 h-5 text-orange-400" />
-                      100d+ Streak Legends
-                    </h3>
-                    <div className="text-sm text-slate-400 py-8 text-center bg-slate-800/30 rounded-xl border border-slate-700/50">
-                      Streak legends will appear here
-                    </div>
-                  </div>
-                </div>
-              </>
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-4'}>
+                {filteredProjects.map(project => (
+                  <EnhancedProjectCard 
+                    key={project._id}
+                    project={project}
+                    viewMode={viewMode}
+                    onProjectClick={handleProjectClick}
+                    onStartSprint={handleStartSprint}
+                  />
+                ))}
+              </div>
             )}
           </div>
 
-          {/* RIGHT RAIL - Personal Coach */}
-          <div className="col-span-12 lg:col-span-3 space-y-4">
+          {/* RIGHT: Coach + Momentum (30%) */}
+          <div className="col-span-12 lg:col-span-4 space-y-4">
+            
+            {/* Personal Coach Card */}
             <div className="bg-gradient-to-br from-purple-900/40 to-fuchsia-900/40 backdrop-blur-sm 
-                          border border-purple-500/30 rounded-xl p-6 lg:sticky lg:top-6 space-y-4">
-              <h3 className="text-lg font-bold text-white">Your Personal Coach</h3>
+                          border border-purple-500/30 rounded-xl p-6 lg:sticky lg:top-24 space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Your Personal Coach</h3>
+              </div>
               
+              <p className="text-sm text-slate-300">Pick one project. I'll plan the next 25 minutes.</p>
+
               <button className="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 
-                              rounded-lg transition-all font-semibold">
-                Start a 25-min sprint
+                              rounded-lg transition-all font-semibold flex items-center justify-center gap-2">
+                <PlayCircle className="w-5 h-5" />
+                Pick a 25-min mission
               </button>
 
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <div className="text-sm text-slate-300 mb-2">Your top project:</div>
-                <div className="text-white font-semibold">ShareSync v2</div>
-                <div className="text-xs text-purple-300 mt-1">7 day streak 🔥</div>
-              </div>
+              {/* Your top project */}
+              {projects.length > 0 && (
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                  <div className="text-sm text-slate-300 mb-2">Your top project:</div>
+                  <div className="text-white font-semibold">{projects[0].name}</div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Flame className="w-4 h-4 text-orange-400" />
+                    <span className="text-xs text-orange-300">{projects[0].streak?.value || 0} day streak</span>
+                  </div>
+                  {projects[0].season && (
+                    <div className="mt-2 inline-block">
+                      <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-300">
+                        {projects[0].season === 'shipping' && '🚀 Shipping'}
+                        {projects[0].season === 'exploring' && '🌱 Exploring'}
+                        {projects[0].season === 'maintaining' && '🛠 Maintaining'}
+                        {projects[0].season === 'shipping' && ' · +20% XP'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <div className="text-sm text-slate-300 mb-2">Friends online:</div>
-                <div className="flex -space-x-2">
-                  {['🟢', '🟢', '🟢'].map((dot, i) => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-slate-700 border-2 border-slate-800 
-                                           flex items-center justify-center text-xs">
-                      {dot}
+              {/* Friends online */}
+              <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                <div className="text-sm text-slate-300 mb-3">Friends online:</div>
+                <div className="space-y-2">
+                  {[
+                    { name: 'Alex', status: 'in focus session', color: 'green' },
+                    { name: 'Jordan', status: 'shipped 3 tasks', color: 'blue' },
+                    { name: 'Sarah', status: 'online', color: 'green' }
+                  ].map((friend, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full bg-${friend.color}-400`}></div>
+                      <span className="text-sm text-white">{friend.name}</span>
+                      <span className="text-xs text-slate-400">· {friend.status}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-orange-400 font-semibold mb-2">
-                  <Flame className="w-4 h-4" />
-                  Streak Protector
+              {/* Streak Insurance - Only show if needed */}
+              {canProtectStreak && (
+                <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-orange-400 font-semibold mb-2">
+                    <Shield className="w-4 h-4" />
+                    Streak Insurance
+                  </div>
+                  <div className="text-xs text-slate-300 mb-3">
+                    Protect your streak with a 2-minute action today
+                  </div>
+                  <button className="w-full bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 
+                                   px-3 py-2 rounded text-xs font-medium transition-all">
+                    Pick a tiny step
+                  </button>
                 </div>
-                <div className="text-xs text-slate-300">
-                  Ship something in the next 8 hours to keep your streak alive!
-                </div>
+              )}
+            </div>
+
+            {/* Mini Leaderboard */}
+            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" />
+                Today's Streak Leaders
+              </h4>
+              <div className="space-y-2">
+                {[
+                  { rank: 1, name: 'Alex', streak: '120d', xp: 2450, emoji: '🏆' },
+                  { rank: 2, name: 'Jordan', streak: '100d', xp: 2200, emoji: '🥈' },
+                  { rank: 3, name: 'You', streak: '7d', xp: 1850, emoji: '🥉' }
+                ].map(leader => (
+                  <div key={leader.rank} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-700/30">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{leader.emoji}</span>
+                      <div>
+                        <div className="text-sm font-medium text-white">{leader.name}</div>
+                        <div className="text-xs text-slate-400">{leader.streak} streak</div>
+                      </div>
+                    </div>
+                    <div className="text-sm font-semibold text-purple-400">{leader.xp} XP</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -355,24 +448,23 @@ const Projects = () => {
         </div>
       </div>
 
-      {/* BOTTOM BAR */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-slate-900/95 to-purple-900/95 
-                    backdrop-blur-xl border-t border-purple-500/30 py-4 px-6 z-40">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-white text-sm sm:text-base">
-            You're falling behind <span className="text-purple-400 font-bold">Alex</span> by 
-            <span className="text-fuchsia-400 font-bold ml-1">380 XP</span>
+      {/* SIMPLIFIED BOTTOM BAR - Thinner, more focused */}
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl 
+                    border-t border-slate-700/50 py-3 px-6 z-40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="text-sm text-slate-300">
+            Today: <span className="text-purple-400 font-bold">380 XP</span>
           </div>
           <div className="flex gap-3">
-            <button className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg transition-all text-sm sm:text-base">
+            <button className="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded-lg transition-all text-sm">
               Start sprint
             </button>
             <button 
               onClick={() => setShowCreateModal(true)}
               className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 
-                             hover:to-fuchsia-500 text-white px-6 py-2 rounded-lg transition-all font-semibold text-sm sm:text-base"
+                             hover:to-fuchsia-500 text-white px-5 py-2 rounded-lg transition-all font-semibold text-sm"
             >
-              Ship something → +50 XP
+              Ship a small win → +50 XP
             </button>
           </div>
         </div>
@@ -385,16 +477,181 @@ const Projects = () => {
           onProjectCreated={handleProjectCreated}
         />
       )}
+    </div>
+  );
+};
 
-      <style jsx>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-marquee {
-          animation: marquee 20s linear infinite;
-        }
-      `}</style>
+// Enhanced Project Card Component with behavioral science features
+const EnhancedProjectCard = ({ project, viewMode, onProjectClick, onStartSprint }) => {
+  const getSeasonColor = (season) => {
+    switch(season) {
+      case 'shipping': return 'from-purple-500/20 to-fuchsia-500/20 border-purple-500/30';
+      case 'exploring': return 'from-green-500/20 to-emerald-500/20 border-green-500/30';
+      case 'maintaining': return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30';
+      default: return 'from-slate-500/20 to-slate-600/20 border-slate-500/30';
+    }
+  };
+
+  const getSeasonEmoji = (season) => {
+    switch(season) {
+      case 'shipping': return '🚀';
+      case 'exploring': return '🌱';
+      case 'maintaining': return '🛠';
+      default: return '📁';
+    }
+  };
+
+  if (viewMode === 'list') {
+    return (
+      <div 
+        onClick={() => onProjectClick(project._id)}
+        className={`
+          group cursor-pointer bg-gradient-to-r ${getSeasonColor(project.season)} 
+          backdrop-blur-sm border rounded-xl p-4 hover:scale-[1.02] transition-all
+          ${project.isAtRisk ? 'ring-2 ring-orange-500/50' : ''}
+        `}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="text-3xl">{getSeasonEmoji(project.season)}</div>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors">
+                  {project.name}
+                </h3>
+                {project.season && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-300">
+                    {project.season === 'shipping' && '🚀 Shipping · +20% XP'}
+                    {project.season === 'exploring' && '🌱 Exploring'}
+                    {project.season === 'maintaining' && '🛠 Maintaining'}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-400 mt-1">{project.description}</p>
+              
+              {/* Next Micro-Step */}
+              {project.nextMicroStep ? (
+                <div className="mt-2 flex items-center gap-2 text-sm">
+                  <ChevronRight className="w-4 h-4 text-purple-400" />
+                  <span className="text-slate-300">
+                    Next: <span className="text-white">{project.nextMicroStep}</span>
+                  </span>
+                  {project.timeEstimate && (
+                    <span className="text-xs px-2 py-0.5 rounded bg-slate-700/50 text-slate-300">
+                      {project.timeEstimate}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-2 flex items-center gap-2 text-sm text-orange-300">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>No micro-step set. Pick a 5-min action to keep your streak alive.</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+              <div className="flex items-center gap-2 text-orange-400">
+                <Flame className="w-4 h-4" />
+                <span className="font-bold">{project.streak?.value || 0}d</span>
+              </div>
+              <div className="text-xs text-slate-400">streak</div>
+            </div>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onStartSprint(project);
+              }}
+              className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg 
+                       transition-all text-sm font-medium opacity-0 group-hover:opacity-100"
+            >
+              Start sprint
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Grid view
+  return (
+    <div 
+      onClick={() => onProjectClick(project._id)}
+      className={`
+        group cursor-pointer bg-gradient-to-br ${getSeasonColor(project.season)} 
+        backdrop-blur-sm border rounded-xl p-6 hover:scale-105 transition-all
+        ${project.isAtRisk ? 'ring-2 ring-orange-500/50 ring-offset-2 ring-offset-slate-950' : ''}
+      `}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="text-4xl">{getSeasonEmoji(project.season)}</div>
+        <div className="flex items-center gap-2">
+          <Flame className="w-4 h-4 text-orange-400" />
+          <span className="text-sm font-bold text-orange-300">{project.streak?.value || 0}d</span>
+        </div>
+      </div>
+
+      <h3 className="text-xl font-bold text-white group-hover:text-purple-300 transition-colors mb-2">
+        {project.name}
+      </h3>
+      <p className="text-sm text-slate-400 mb-4">{project.description}</p>
+
+      {/* Season Status */}
+      {project.season && (
+        <div className="mb-4">
+          <span className="text-xs px-3 py-1 rounded-full bg-purple-500/20 text-purple-300">
+            {project.season === 'shipping' && '🚀 Shipping · +20% XP'}
+            {project.season === 'exploring' && '🌱 Exploring'}
+            {project.season === 'maintaining' && '🛠 Maintaining'}
+          </span>
+        </div>
+      )}
+
+      {/* Next Micro-Step Slot */}
+      {project.nextMicroStep ? (
+        <div className="bg-slate-800/50 rounded-lg p-3 mb-4">
+          <div className="text-xs text-slate-400 mb-1">Next micro-step:</div>
+          <div className="text-sm text-white font-medium">{project.nextMicroStep}</div>
+          {project.timeEstimate && (
+            <div className="text-xs text-purple-300 mt-1">~{project.timeEstimate}</div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3 mb-4">
+          <div className="text-xs text-orange-300 mb-2">No micro-step set</div>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              // TODO: Open micro-step picker
+            }}
+            className="text-xs text-orange-400 hover:text-orange-300 underline"
+          >
+            Set a 5-min action →
+          </button>
+        </div>
+      )}
+
+      {/* Quick metrics */}
+      <div className="flex items-center justify-between text-xs text-slate-400 mb-4">
+        <span>On-time: {project.metrics?.onTimePercent?.value || 0}%</span>
+        <span>Tasks: {project.metrics?.openTasks?.value || 0}</span>
+        <span>Throughput: {project.metrics?.throughputPerWeek?.value || 0}/wk</span>
+      </div>
+
+      {/* CTA */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onStartSprint(project);
+        }}
+        className="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg 
+                 transition-all text-sm font-medium"
+      >
+        Start 25-min sprint
+      </button>
     </div>
   );
 };
