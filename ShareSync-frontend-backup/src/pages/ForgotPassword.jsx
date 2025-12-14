@@ -1,27 +1,27 @@
-import React, { useState, useContext } from 'react';
+// src/pages/ForgotPassword.jsx
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { Mail, AlertCircle } from 'lucide-react';
 import './ForgotPassword.css';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
-  const { forgotPassword, isAuthenticated, isLoading, authError, setAuthError } = useContext(AuthContext);
+  const { forgotPassword, user, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   React.useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (!loading && user) {
       navigate('/', { replace: true });
     }
-  }, [isLoading, isAuthenticated, navigate]);
+  }, [loading, user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    setAuthError(null);
 
     if (!email.trim()) {
       setError('Please enter your email.');
@@ -36,7 +36,7 @@ const ForgotPassword = () => {
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="forgot-password-container flex items-center justify-center min-h-screen">
         <div className="loader" aria-label="Loading forgot password page"></div>
@@ -49,9 +49,9 @@ const ForgotPassword = () => {
     <div className="forgot-password-container">
       <div className="forgot-password-card card p-6 glassmorphic card-3d">
         <h2 className="text-3xl font-orbitron font-bold text-emerald-green mb-6 text-center">Forgot Password</h2>
-        {(error || authError) && (
+        {error && (
           <p className="text-crimson-red mb-4 text-center font-inter flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" aria-hidden="true" /> {error || authError}
+            <AlertCircle className="w-5 h-5" aria-hidden="true" /> {error}
           </p>
         )}
         {success && (
