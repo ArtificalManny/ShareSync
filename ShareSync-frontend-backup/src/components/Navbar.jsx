@@ -1,4 +1,4 @@
-// src/components/Navbar.jsx - UPDATED WITH PROFILE PHOTO UPLOAD
+// src/components/Navbar.jsx - UPDATED WITH PROFILE PHOTO UPLOAD + OVERLAP FIX + ALL PHASE 1 & 2 COMPONENTS
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sun, Moon, LogOut, PanelLeftClose, MessageCircle, Palette, Camera } from 'lucide-react';
@@ -13,6 +13,15 @@ import KPITicker from './global/KPITicker.jsx';
 import { track } from '../utils/telemetry';
 import { updateProfile } from '../api/user';
 import { toast } from './ui/toast';
+
+// ⭐ NEW NAVBAR COMPONENTS - PHASE 1 & 2
+import NextMicroStep from './navbar/NextMicroStep';
+import MomentumPulse from './navbar/MomentumPulse';
+import FocusModeToggle from './navbar/FocusModeToggle';
+import SeasonBadge from './navbar/SeasonBadge';
+import TeamPresence from './navbar/TeamPresence.jsx';
+import SmartNotifications from './navbar/SmartNotifications';
+import QuickCapture from './navbar/QuickCapture.jsx';
 
 const BrandSwitcher = lazy(() => import('./global/BrandSwitcher.jsx'));
 const DEFAULT_PIC = '/default-profile.png';
@@ -227,8 +236,9 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
       className="with-sidebar neon-nav sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur"
       style={headerStyle}
     >
-      <div className="px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between nav-wrap">
-        <div className="nav-left">
+      <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between nav-wrap">
+        {/* ⭐ LEFT SECTION */}
+        <div className="nav-left flex items-center gap-3">
           <button
             type="button"
             onClick={toggleSidebar}
@@ -239,11 +249,12 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             <PanelLeftClose className="w-4 h-4" />
           </button>
 
-          <Link to="/home" className="logo sm:inline md:hidden" aria-label="ShareSync home">
-            SS
+          <Link to="/home" className="logo hidden sm:inline font-bold text-lg" aria-label="ShareSync home">
+            ShareSync
           </Link>
         </div>
 
+       {/* ⭐ CENTER SECTION - Search */}
         <form
           onSubmit={onSubmitSearch}
           className="header-search hidden md:flex items-center mx-3 flex-1 max-w-md nav-center"
@@ -258,7 +269,23 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           />
         </form>
 
-        <div className="flex items-center gap-1.5 nav-right">
+        {/* ⭐ NEW: QUICK CAPTURE (Phase 3) */}
+        <QuickCapture />
+
+        {/* ⭐ NEW: NEXT MICRO-STEP */}
+        <NextMicroStep />
+
+        {/* ⭐ NEW: FOCUS MODE TOGGLE */}
+        <FocusModeToggle />
+
+        {/* ⭐ NEW: SEASON BADGE */}
+        <SeasonBadge />
+
+        {/* ⭐ NEW: TEAM PRESENCE */}
+        <TeamPresence />
+
+        {/* ⭐ RIGHT SECTION */}
+        <div className="flex items-center gap-2 nav-right">
           {KPI_TICKER_V1 && (
             <div
               className="hidden md:flex items-center"
@@ -297,6 +324,10 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             </Link>
           )}
 
+          {/* ⭐ SMART NOTIFICATIONS (replaces generic bell) */}
+          <SmartNotifications />
+
+          {/* ⭐ MESSENGER (kept separate) */}
           <button
             type="button"
             onClick={openMessenger}
