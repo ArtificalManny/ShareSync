@@ -1,4 +1,4 @@
-// src/pages/ProjectHome.jsx - WORLD-CLASS BEHAVIORAL SCIENCE IMPLEMENTATION
+// src/pages/ProjectHome.jsx - WITH COLLABORATION PANEL INTEGRATION
 import React, { useEffect, useState, useContext, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
@@ -16,6 +16,9 @@ import { useCursorContext } from "../context/CursorContext";
 import useCursor, { useCursorFlash } from "../hooks/useCursor";
 import usePresence, { useTeamPresence } from "../hooks/usePresence";
 
+// ⭐ NEW: COLLABORATION PANEL
+import CollaborationPanel from "../components/project/CollaborationPanel";
+
 // =====================================
 // BEHAVIORAL SCIENCE COMPONENTS
 // =====================================
@@ -26,7 +29,7 @@ const MicroWinToast = ({ type, message, xp }) => {
     switch(type) {
       case 'task_started': return '🎯';
       case '5min_worked': return '🔥';
-      case 'stuck_resolved': return '💡';
+      case 'stuck_resolved': return '��';
       case 'comeback': return '💪';
       case 'flow_state': return '⚡';
       default: return '✨';
@@ -46,67 +49,7 @@ const MicroWinToast = ({ type, message, xp }) => {
   );
 };
 
-// 2. LIVE WORK FEED (Social Proof)
-const LiveWorkFeed = ({ teammates = [] }) => {
-  return (
-    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
-      <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="w-5 h-5 text-fuchsia-500" />
-        <h3 className="font-bold text-lg">Live Team Activity</h3>
-      </div>
-
-      <div className="space-y-3 max-h-60 overflow-y-auto">
-        {teammates.length === 0 ? (
-          <div className="text-center py-8 text-slate-400">
-            <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No teammates online right now</p>
-            <p className="text-xs mt-1">You're blazing the trail! 🔥</p>
-          </div>
-        ) : (
-          teammates.map((user, i) => (
-            <div key={i} className="flex items-center gap-3 p-3 bg-slate-900/50 rounded-xl hover:bg-slate-900/70 transition-all cursor-pointer">
-              <div className="relative">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center text-white font-bold">
-                  {user.name[0]}
-                </div>
-                {user.isWorking && (
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-800 rounded-full animate-pulse" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-medium text-sm">{user.name}</p>
-                <p className="text-slate-400 text-xs truncate">{user.currentTask || 'Taking a break'}</p>
-                {user.flowDuration > 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <Flame className="w-3 h-3 text-orange-400" />
-                    <span className="text-xs text-orange-400">{user.flowDuration}min flow</span>
-                  </div>
-                )}
-              </div>
-              {user.isWorking && (
-                <button className="px-3 py-1 bg-purple-600/20 border border-purple-500/30 rounded-lg text-xs font-semibold hover:bg-purple-600/30 transition-all">
-                  Join
-                </button>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Motivation message */}
-      {teammates.filter(u => u.isWorking).length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-700/50">
-          <p className="text-sm text-slate-300 flex items-center gap-2">
-            <Eye className="w-4 h-4 text-purple-400" />
-            {teammates.filter(u => u.isWorking).length} teammate{teammates.filter(u => u.isWorking).length > 1 ? 's' : ''} working now
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// 3. ENERGY TRACKER
+// 2. ENERGY TRACKER
 const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
   const getEnergyIcon = (level) => {
     switch(level) {
@@ -171,7 +114,6 @@ const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
         </div>
       </div>
 
-      {/* Recommended tasks based on energy */}
       <div className="pt-4 border-t border-slate-700/50">
         <p className="text-sm font-semibold text-white mb-2">
           {currentEnergy === 'high' && '🔥 Tackle your hardest tasks now:'}
@@ -192,7 +134,7 @@ const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
   );
 };
 
-// 4. STREAK PROTECTION WARNING
+// 3. STREAK PROTECTION WARNING
 const StreakGuard = ({ streak, hoursSinceLastShip, onQuickWin }) => {
   const isEndangered = hoursSinceLastShip > 20;
   
@@ -230,7 +172,7 @@ const StreakGuard = ({ streak, hoursSinceLastShip, onQuickWin }) => {
   );
 };
 
-// 5. AI ACCOUNTABILITY PARTNER
+// 4. AI ACCOUNTABILITY PARTNER
 const AIAccountabilityPartner = ({ onSetGoal, morningGoal, eveningReview }) => {
   const [showMorningCheckin, setShowMorningCheckin] = useState(false);
   const [showEveningReview, setShowEveningReview] = useState(false);
@@ -241,11 +183,9 @@ const AIAccountabilityPartner = ({ onSetGoal, morningGoal, eveningReview }) => {
   const isEvening = hour >= 17 && hour < 22;
 
   useEffect(() => {
-    // Show morning check-in once per day
     if (isMorning && !morningGoal) {
       setTimeout(() => setShowMorningCheckin(true), 2000);
     }
-    // Show evening review
     if (isEvening && !eveningReview) {
       setTimeout(() => setShowEveningReview(true), 2000);
     }
@@ -353,7 +293,7 @@ const AIAccountabilityPartner = ({ onSetGoal, morningGoal, eveningReview }) => {
   return null;
 };
 
-// 6. TASK MOMENTUM PROTECTION
+// 5. TASK MOMENTUM PROTECTION
 const TaskGuardModal = ({ activeTask, taskDuration, onKeepWorking, onSwitch }) => {
   if (taskDuration < 2 || taskDuration > 10) return null;
 
@@ -403,108 +343,6 @@ const TaskGuardModal = ({ activeTask, taskDuration, onKeepWorking, onSwitch }) =
   );
 };
 
-// 7. CO-WORKING SESSION
-const CoWorkingSession = ({ teammates = [], onJoinSession }) => {
-  const activeWorkers = teammates.filter(t => t.isWorking);
-  
-  if (activeWorkers.length === 0) return null;
-
-  return (
-    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
-      <div className="flex items-center gap-2 mb-4">
-        <Users className="w-5 h-5 text-purple-400" />
-        <h3 className="font-bold text-lg">🎥 Live Co-Working</h3>
-      </div>
-
-      <div className="space-y-3">
-        {activeWorkers.map((user, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 bg-slate-900/50 rounded-xl">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-bold">
-                {user.name[0]}
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full animate-pulse" />
-            </div>
-            <div className="flex-1">
-              <p className="text-white font-medium text-sm">{user.name}</p>
-              <p className="text-slate-400 text-xs">{user.currentTask}</p>
-              <div className="flex items-center gap-1 mt-1">
-                <Timer className="w-3 h-3 text-purple-400" />
-                <span className="text-xs text-purple-400">{user.flowDuration}min in flow</span>
-              </div>
-            </div>
-            <button
-              onClick={() => onJoinSession(user)}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-sm font-semibold transition-all"
-            >
-              Join
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* Pomodoro sync */}
-      <div className="mt-4 pt-4 border-t border-slate-700/50">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-sm font-semibold text-white">Team Pomodoro</span>
-          </div>
-          <span className="text-xs text-slate-400">Next break in 12 min</span>
-        </div>
-        <button className="w-full bg-gradient-to-r from-red-500 to-orange-500 px-4 py-2 rounded-lg text-white text-sm font-semibold hover:shadow-lg transition-all">
-          🍅 Sync your timer
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// 8. TEMPTATION BUNDLING (Reward System)
-const RewardBundleModal = ({ task, onComplete, onSkip }) => {
-  const [selectedReward, setSelectedReward] = useState('podcast');
-
-  const rewards = [
-    { id: 'podcast', label: '10min podcast break', icon: '🎧' },
-    { id: 'music', label: '5min music break', icon: '🎵' },
-    { id: 'coffee', label: 'Coffee break', icon: '☕' },
-    { id: 'game', label: '5min game break', icon: '🎮' },
-    { id: 'walk', label: 'Quick walk outside', icon: '🚶' },
-  ];
-
-  return (
-    <div className="mb-4 p-4 bg-gradient-to-r from-purple-900/30 to-fuchsia-900/30 border border-purple-500/30 rounded-xl">
-      <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="w-5 h-5 text-yellow-400" />
-        <h4 className="font-semibold text-white">🎁 Unlock a reward!</h4>
-      </div>
-      
-      <p className="text-sm text-slate-300 mb-3">
-        Complete this task and unlock your chosen reward:
-      </p>
-
-      <select
-        value={selectedReward}
-        onChange={(e) => setSelectedReward(e.target.value)}
-        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
-      >
-        {rewards.map(r => (
-          <option key={r.id} value={r.id}>
-            {r.icon} {r.label}
-          </option>
-        ))}
-      </select>
-
-      <button
-        onClick={() => onComplete(selectedReward)}
-        className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 px-4 py-2 rounded-lg text-white font-semibold hover:shadow-lg transition-all"
-      >
-        Complete task & claim reward
-      </button>
-    </div>
-  );
-};
-
 // =====================================
 // MAIN PROJECT HOME COMPONENT
 // =====================================
@@ -529,13 +367,6 @@ export default function ProjectHome() {
   const [microWin, setMicroWin] = useState(null);
   const [hoursSinceLastShip, setHoursSinceLastShip] = useState(0);
   const [workSessionDuration, setWorkSessionDuration] = useState(0);
-
-  // Mock team data (replace with real data from cursor system)
-  const [teammates] = useState([
-    { name: 'Sarah', isWorking: true, currentTask: 'Design review', flowDuration: 47, avatar: 'S' },
-    { name: 'Jordan', isWorking: true, currentTask: 'Beta testing', flowDuration: 23, avatar: 'J' },
-    { name: 'Alex', isWorking: false, currentTask: 'Taking a break', flowDuration: 0, avatar: 'A' },
-  ]);
 
   // ⭐ CURSOR SYSTEM HOOKS
   const { joinProject, leaveProject, isConnected } = useCursorContext();
@@ -589,14 +420,13 @@ export default function ProjectHome() {
     return () => { ignore = true; };
   }, [id]);
 
-  // ⭐ WORK SESSION TIMER (for micro-wins)
+  // ⭐ WORK SESSION TIMER
   useEffect(() => {
     if (activeTask) {
       const interval = setInterval(() => {
         setWorkSessionDuration(prev => {
           const newDuration = prev + 1;
           
-          // Trigger micro-wins at milestones
           if (newDuration === 5) {
             setMicroWin({ type: '5min_worked', message: '5 min flow state!', xp: 10 });
             setTimeout(() => setMicroWin(null), 3000);
@@ -608,13 +438,13 @@ export default function ProjectHome() {
           
           return newDuration;
         });
-      }, 60000); // Every minute
+      }, 60000);
 
       return () => clearInterval(interval);
     }
   }, [activeTask]);
 
-  // ⭐ ENHANCED SHIP HANDLER
+  // ⭐ SHIP HANDLER
   const handleShip = async () => {
     if (!shipDescription.trim()) {
       toast({ title: "Add a description", variant: "error" });
@@ -626,7 +456,6 @@ export default function ProjectHome() {
       
       flashShip();
       
-      // Show epic celebration
       setMicroWin({ type: 'task_started', message: '🎉 Shipped! Amazing work!', xp: 50 });
       setTimeout(() => setMicroWin(null), 4000);
       
@@ -641,14 +470,13 @@ export default function ProjectHome() {
       const updated = await getProject(id);
       setProject(updated);
       
-      // Reset last ship time
       setHoursSinceLastShip(0);
     } catch (e) {
       toast({ title: "Ship failed", variant: "error" });
     }
   };
 
-  // ⭐ START TASK WITH MOMENTUM TRACKING
+  // ⭐ TASK HANDLERS
   const handleStartTask = (task) => {
     setActiveTask(task.title);
     setTaskStartTime(Date.now());
@@ -658,7 +486,6 @@ export default function ProjectHome() {
     setTimeout(() => setMicroWin(null), 2000);
   };
 
-  // ⭐ HANDLE TASK SWITCHING
   const handleTaskSwitch = (newTask) => {
     if (activeTask && taskStartTime) {
       const duration = Math.floor((Date.now() - taskStartTime) / (1000 * 60));
@@ -718,12 +545,10 @@ export default function ProjectHome() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="text-white pb-20">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-[1600px] mx-auto px-4 py-6">
         
-        {/* ⭐ MICRO-WIN TOAST */}
         {microWin && <MicroWinToast {...microWin} />}
         
-        {/* ⭐ STREAK GUARD */}
         <StreakGuard
           streak={7}
           hoursSinceLastShip={hoursSinceLastShip}
@@ -733,7 +558,6 @@ export default function ProjectHome() {
           }}
         />
         
-        {/* ⭐ TASK MOMENTUM GUARD */}
         {showTaskGuard && (
           <TaskGuardModal
             activeTask={activeTask}
@@ -747,7 +571,6 @@ export default function ProjectHome() {
           />
         )}
         
-        {/* ⭐ AI ACCOUNTABILITY PARTNER */}
         <AIAccountabilityPartner
           onSetGoal={(goal) => {
             setMorningGoal(goal);
@@ -775,7 +598,6 @@ export default function ProjectHome() {
                 {teamActivity.message}
               </p>
               
-              {/* Today's goal display */}
               {morningGoal && (
                 <div className="mt-3 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
                   <p className="text-xs text-purple-300 mb-1">Today's goal:</p>
@@ -810,12 +632,11 @@ export default function ProjectHome() {
           </div>
         </div>
 
-        {/* MAIN GRID: CALENDAR + TASKS + BEHAVIORAL FEATURES */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* MAIN GRID */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
           
-          {/* LEFT COLUMN: CALENDAR + ENERGY TRACKER */}
-          <div className="space-y-6">
-            {/* CALENDAR */}
+          {/* LEFT COLUMN */}
+          <div className="lg:col-span-3 space-y-6">
             <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-lg flex items-center gap-2">
@@ -892,7 +713,6 @@ export default function ProjectHome() {
               </div>
             </div>
 
-            {/* ⭐ ENERGY TRACKER */}
             <EnergyTracker
               currentEnergy={currentEnergy}
               onEnergyChange={setCurrentEnergy}
@@ -900,8 +720,8 @@ export default function ProjectHome() {
             />
           </div>
 
-          {/* MIDDLE COLUMN: TASKS */}
-          <div className="space-y-4">
+          {/* MIDDLE COLUMN */}
+          <div className="lg:col-span-5 space-y-4">
             <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 shadow-xl">
               <div className="flex items-center gap-3">
                 <input
@@ -990,21 +810,12 @@ export default function ProjectHome() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: SOCIAL FEATURES */}
-          <div className="space-y-6">
-            {/* ⭐ LIVE WORK FEED */}
-            <LiveWorkFeed teammates={teammates} />
-            
-            {/* ⭐ CO-WORKING SESSION */}
-            <CoWorkingSession
-              teammates={teammates}
-              onJoinSession={(user) => {
-                toast({ 
-                  title: `Joined ${user.name}'s session!`, 
-                  description: "Your timers are now synced 🤝",
-                  variant: "success" 
-                });
-              }}
+          {/* RIGHT COLUMN - COLLABORATION PANEL */}
+          <div className="lg:col-span-4">
+            <CollaborationPanel
+              projectId={id}
+              projectName={project.title}
+              defaultTab="chat"
             />
           </div>
         </div>
@@ -1093,7 +904,6 @@ export default function ProjectHome() {
         </div>
       )}
 
-      {/* CSS for animations */}
       <style jsx>{`
         @keyframes slide-in-right {
           from {
