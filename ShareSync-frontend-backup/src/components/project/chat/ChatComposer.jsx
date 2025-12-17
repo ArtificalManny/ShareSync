@@ -1,4 +1,4 @@
-// src/components/project/chat/ChatComposer.jsx - PHASE 3 ENHANCED
+// src/components/project/chat/ChatComposer.jsx - WITH TYPING INDICATORS
 import React, { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import MessageTypeSelector from './MessageTypeSelector';
@@ -9,13 +9,17 @@ export default function ChatComposer({
   onSendMessage, 
   sending,
   focusedMembers = [],
-  projectId
+  projectId,
+  onTypingStart,
+  onTypingStop
 }) {
   const [messageType, setMessageType] = useState('update');
   const [content, setContent] = useState('');
   const [respectFocus, setRespectFocus] = useState(true);
   const [showFocusWarning, setShowFocusWarning] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -23,6 +27,37 @@ export default function ChatComposer({
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
   }, [content]);
+
+  // Handle typing indicators
+  const handleContentChange = (e) => {
+    const newContent = e.target.value;
+    setContent(newContent);
+
+    // Start typing indicator
+    if (newContent.trim() && !isTyping) {
+      setIsTyping(true);
+      onTypingStart?.();
+    }
+
+    // Reset typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Stop typing after 2 seconds of no input
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      onTypingStop?.();
+    }, 2000);
+  };
+
+  // Stop typing on blur
+  const handleBlur = () => {
+    if (isTyping) {
+      setIsTyping(false);
+      onTypingStop?.();
+    }
+  };
 
   const handleSendAttempt = () => {
     if (!content.trim() || sending) return;
@@ -38,6 +73,12 @@ export default function ChatComposer({
 
   const handleSend = async (scheduleForBreak = false) => {
     if (!content.trim() || sending) return;
+
+    // Stop typing indicator
+    if (isTyping) {
+      setIsTyping(false);
+      onTypingStop?.();
+    }
 
     try {
       await onSendMessage(content.trim(), messageType, {
@@ -80,8 +121,9 @@ export default function ChatComposer({
           <textarea
             ref={textareaRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={handleContentChange}
             onKeyDown={handleKeyDown}
+            onBlur={handleBlur}
             placeholder={placeholder}
             disabled={sending}
             className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"

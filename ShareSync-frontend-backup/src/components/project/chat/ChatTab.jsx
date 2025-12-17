@@ -1,4 +1,4 @@
-// src/components/project/chat/ChatTab.jsx - PHASE 3 ENHANCED
+// src/components/project/chat/ChatTab.jsx - WITH TYPING INDICATORS
 import React from 'react';
 import ChatHeader from './ChatHeader';
 import MessageList from './MessageList';
@@ -12,10 +12,13 @@ export default function ChatTab({ projectId, projectName }) {
     messages, 
     loading, 
     sending, 
-    error, 
+    error,
+    typingUsers,
     sendMessage,
     reactToMessage,
-    resolveMessage
+    resolveMessage,
+    startTyping,
+    stopTyping
   } = useProjectChat(projectId);
 
   const { focusedMembers } = useFocusStatus(projectId);
@@ -83,8 +86,29 @@ export default function ChatTab({ projectId, projectName }) {
         onResolve={handleResolve}
       />
 
+      {/* Typing Indicators */}
+      {typingUsers.length > 0 && (
+        <div className="px-4 py-2 border-t border-slate-700/50 bg-slate-900/30">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <div className="flex gap-1">
+              <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+              <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+              <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+            </div>
+            <span>
+              {typingUsers.length === 1 
+                ? `${typingUsers[0].userName} is typing...`
+                : `${typingUsers.length} people are typing...`
+              }
+            </span>
+          </div>
+        </div>
+      )}
+
       <ChatComposer 
         onSendMessage={handleSendMessage}
+        onTypingStart={startTyping}
+        onTypingStop={stopTyping}
         sending={sending}
         focusedMembers={focusedMembers}
         projectId={projectId}
