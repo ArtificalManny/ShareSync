@@ -41,6 +41,11 @@ app.use('/api/users', require('./src/routes/users'));
 // POST /api/uploads/avatar → same handler as /api/users/me/avatar
 app.use('/api/uploads', require('./src/routes/uploads'));
 
+// ⭐ NEW: Messages API (nested under projects)
+// This handles: /api/projects/:projectId/messages
+const messageRoutes = require('./routes/messages');
+app.use('/api/projects/:projectId/messages', messageRoutes);
+
 // ---------------------------------------------------------------------------
 // Below: existing mock data routes kept for local dev convenience
 // ---------------------------------------------------------------------------
@@ -97,7 +102,7 @@ const mockActivity = ({ scope }) => ({
       _id: 'a1',
       type: 'task',
       icon: 'check',
-      summary: scope === 'project' ? 'Completed task “Wire sidebar”' : 'You completed “Wire sidebar”',
+      summary: scope === 'project' ? 'Completed task "Wire sidebar"' : 'You completed "Wire sidebar"',
       meta: 'Project Alpha',
       createdAt: new Date().toISOString(),
     },
@@ -158,4 +163,5 @@ app.get('/api/activity', (req, res) => {
 httpServer.listen(PORT, () => {
   console.log(`API running on http://localhost:${PORT}`);
   console.log(`Socket.io on path /socket.io`);
+  console.log('✅ Message routes registered: /api/projects/:projectId/messages');
 });

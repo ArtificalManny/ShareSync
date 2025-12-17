@@ -1,22 +1,23 @@
-// backend/controllers/messageController.js
+// backend/controllers/messageController.js - WITH SOCKET.IO
 const Message = require('../models/Message');
 const Project = require('../models/Project');
 
+// Helper to get socket.io instance
+const getIO = (req) => req.app.get('io');
+
 // @desc    Get all messages for a project
 // @route   GET /api/projects/:projectId/messages
-// @access  Private (must be project member)
+// @access  Private
 exports.getMessages = async (req, res) => {
   try {
     const { projectId } = req.params;
     const { page = 1, limit = 50, type, resolved } = req.query;
 
-    // Verify user has access to project
     const project = await Project.findById(projectId);
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    // Check if user is project owner or member
     const isOwner = project.owner.toString() === req.user.id;
     const isMember = project.members?.some(m => m.user.toString() === req.user.id);
     
@@ -24,17 +25,15 @@ exports.getMessages = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    // Build query
     const query = { 
       project: projectId,
       deleted: false,
-      parentMessage: null // Only get top-level messages (not replies)
+      parentMessage: null
     };
 
     if (type) query.type = type;
     if (resolved !== undefined) query.resolved = resolved === 'true';
 
-    // Execute query with pagination
     const messages = await Message.find(query)
       .populate('author', 'firstName lastName profilePicture')
       .populate('resolvedBy', 'firstName lastName')
@@ -44,7 +43,6 @@ exports.getMessages = async (req, res) => {
       .skip((page - 1) * limit)
       .lean();
 
-    // Get total count
     const count = await Message.countDocuments(query);
 
     res.json({
@@ -68,12 +66,10 @@ exports.createMessage = async (req, res) => {
     const { projectId } = req.params;
     const { content, type = 'update' } = req.body;
 
-    // Validation
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ message: 'Message content is required' });
     }
 
-    // Verify project access
     const project = await Project.findById(projectId);
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -86,7 +82,6 @@ exports.createMessage = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    // Create message
     const message = await Message.create({
       project: projectId,
       author: req.user.id,
@@ -94,8 +89,11 @@ exports.createMessage = async (req, res) => {
       type
     });
 
-    // Populate author info
     await message.populate('author', 'firstName lastName profilePicture');
+
+    // ⭐ EMIT SOCKET EVENT
+    const io = getIO(req);
+    io.to(`project:${projectId}`).emit('message:new', message);
 
     res.status(201).json(message);
 
@@ -107,35 +105,35 @@ exports.createMessage = async (req, res) => {
 
 // @desc    Update a message
 // @route   PUT /api/projects/:projectId/messages/:messageId
-// @access  Private (author only)
+// @access  Private
 exports.updateMessage = async (req, res) => {
   try {
-    const { messageId } = req.params;
+    const { projectId, messageId } = req.params;
     const { content } = req.body;
 
-    // Validation
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ message: 'Message content is required' });
     }
 
-    // Find message
     const message = await Message.findById(messageId);
     if (!message) {
       return res.status(404).json({ message: 'Message not found' });
     }
 
-    // Check if user is author
     if (message.author.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Only the author can edit this message' });
     }
 
-    // Update message
     message.content = content.trim();
     message.edited = true;
     message.editedAt = new Date();
     await message.save();
 
     await message.populate('author', 'firstName lastName profilePicture');
+
+    // ⭐ EMIT SOCKET EVENT
+    const io = getIO(req);
+    io.to(`project:${projectId}`).emit('message:updated', message);
 
     res.json(message);
 
@@ -147,18 +145,16 @@ exports.updateMessage = async (req, res) => {
 
 // @desc    Delete a message
 // @route   DELETE /api/projects/:projectId/messages/:messageId
-// @access  Private (author or project owner)
+// @access  Private
 exports.deleteMessage = async (req, res) => {
   try {
     const { projectId, messageId } = req.params;
 
-    // Find message
     const message = await Message.findById(messageId);
     if (!message) {
       return res.status(404).json({ message: 'Message not found' });
     }
 
-    // Check if user is author or project owner
     const project = await Project.findById(projectId);
     const isAuthor = message.author.toString() === req.user.id;
     const isOwner = project.owner.toString() === req.user.id;
@@ -167,9 +163,12 @@ exports.deleteMessage = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    // Soft delete
     message.softDelete();
     await message.save();
+
+    // ⭐ EMIT SOCKET EVENT
+    const io = getIO(req);
+    io.to(`project:${projectId}`).emit('message:deleted', { messageId });
 
     res.json({ message: 'Message deleted successfully' });
 
@@ -184,21 +183,18 @@ exports.deleteMessage = async (req, res) => {
 // @access  Private
 exports.addReaction = async (req, res) => {
   try {
-    const { messageId } = req.params;
+    const { projectId, messageId } = req.params;
     const { emoji } = req.body;
 
-    // Validation
     if (!emoji) {
       return res.status(400).json({ message: 'Emoji is required' });
     }
 
-    // Find message
     const message = await Message.findById(messageId);
     if (!message) {
       return res.status(404).json({ message: 'Message not found' });
     }
 
-    // Add reaction
     const added = message.addReaction(emoji, req.user.id);
     if (!added) {
       return res.status(400).json({ message: 'You already reacted with this emoji' });
@@ -206,6 +202,17 @@ exports.addReaction = async (req, res) => {
 
     await message.save();
     await message.populate('reactions.user', 'firstName lastName');
+
+    // ⭐ EMIT SOCKET EVENT
+    const io = getIO(req);
+    const reaction = message.reactions[message.reactions.length - 1];
+    io.to(`project:${projectId}`).emit('reaction:added', {
+      messageId,
+      reaction: {
+        emoji: reaction.emoji,
+        userId: reaction.user._id
+      }
+    });
 
     res.json(message);
 
@@ -220,15 +227,13 @@ exports.addReaction = async (req, res) => {
 // @access  Private
 exports.removeReaction = async (req, res) => {
   try {
-    const { messageId, emoji } = req.params;
+    const { projectId, messageId, emoji } = req.params;
 
-    // Find message
     const message = await Message.findById(messageId);
     if (!message) {
       return res.status(404).json({ message: 'Message not found' });
     }
 
-    // Remove reaction
     const removed = message.removeReaction(emoji, req.user.id);
     if (!removed) {
       return res.status(400).json({ message: 'Reaction not found' });
@@ -236,6 +241,14 @@ exports.removeReaction = async (req, res) => {
 
     await message.save();
     await message.populate('reactions.user', 'firstName lastName');
+
+    // ⭐ EMIT SOCKET EVENT
+    const io = getIO(req);
+    io.to(`project:${projectId}`).emit('reaction:removed', {
+      messageId,
+      emoji,
+      userId: req.user.id
+    });
 
     res.json(message);
 
@@ -250,23 +263,32 @@ exports.removeReaction = async (req, res) => {
 // @access  Private
 exports.resolveMessage = async (req, res) => {
   try {
-    const { messageId } = req.params;
+    const { projectId, messageId } = req.params;
 
-    // Find message
     const message = await Message.findById(messageId);
     if (!message) {
       return res.status(404).json({ message: 'Message not found' });
     }
 
-    // Check if it's a question
     if (message.type !== 'question') {
       return res.status(400).json({ message: 'Only questions can be resolved' });
     }
 
-    // Mark as resolved
     message.markResolved(req.user.id);
     await message.save();
     await message.populate('resolvedBy', 'firstName lastName');
+
+    // ⭐ EMIT SOCKET EVENT
+    const io = getIO(req);
+    io.to(`project:${projectId}`).emit('message:resolved', {
+      messageId,
+      resolvedBy: {
+        _id: message.resolvedBy._id,
+        firstName: message.resolvedBy.firstName,
+        lastName: message.resolvedBy.lastName
+      },
+      resolvedAt: message.resolvedAt
+    });
 
     res.json(message);
 
@@ -281,17 +303,19 @@ exports.resolveMessage = async (req, res) => {
 // @access  Private
 exports.unresolveMessage = async (req, res) => {
   try {
-    const { messageId } = req.params;
+    const { projectId, messageId } = req.params;
 
-    // Find message
     const message = await Message.findById(messageId);
     if (!message) {
       return res.status(404).json({ message: 'Message not found' });
     }
 
-    // Mark as unresolved
     message.markUnresolved();
     await message.save();
+
+    // ⭐ EMIT SOCKET EVENT
+    const io = getIO(req);
+    io.to(`project:${projectId}`).emit('message:unresolved', { messageId });
 
     res.json(message);
 
@@ -308,7 +332,6 @@ exports.getUnreadCount = async (req, res) => {
   try {
     const { projectId } = req.params;
 
-    // Find messages where user hasn't read
     const count = await Message.countDocuments({
       project: projectId,
       deleted: false,
@@ -330,13 +353,11 @@ exports.markAsRead = async (req, res) => {
   try {
     const { messageId } = req.params;
 
-    // Find message
     const message = await Message.findById(messageId);
     if (!message) {
       return res.status(404).json({ message: 'Message not found' });
     }
 
-    // Check if already read
     const alreadyRead = message.readBy.some(
       r => r.user.toString() === req.user.id
     );
