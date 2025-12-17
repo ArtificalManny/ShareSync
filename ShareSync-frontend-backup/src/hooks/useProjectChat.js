@@ -1,5 +1,6 @@
-// src/hooks/useProjectChat.js - PHASE 2 ENHANCED
+// src/hooks/useProjectChat.js - WITH REAL API
 import { useState, useEffect } from 'react';
+import * as messagesAPI from '../api/messages';
 
 export default function useProjectChat(projectId) {
   const [messages, setMessages] = useState([]);
@@ -8,7 +9,9 @@ export default function useProjectChat(projectId) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadMessages();
+    if (projectId) {
+      loadMessages();
+    }
   }, [projectId]);
 
   async function loadMessages() {
@@ -16,10 +19,27 @@ export default function useProjectChat(projectId) {
       setLoading(true);
       setError(null);
 
-      // TODO: Replace with actual API call
-      const mockMessages = getMockMessages();
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setMessages(mockMessages);
+      const data = await messagesAPI.getMessages(projectId);
+      
+      // Transform backend data to match frontend format
+      const transformedMessages = data.messages.map(msg => ({
+        id: msg._id,
+        authorId: msg.author._id,
+        authorName: `${msg.author.firstName} ${msg.author.lastName}`,
+        authorAvatar: msg.author.profilePicture,
+        type: msg.type,
+        content: msg.content,
+        timestamp: msg.createdAt,
+        reactions: msg.reactions.map(r => ({
+          emoji: r.emoji,
+          userId: r.user._id
+        })),
+        resolved: msg.resolved,
+        resolvedBy: msg.resolvedBy ? `${msg.resolvedBy.firstName} ${msg.resolvedBy.lastName}` : null,
+        replyCount: msg.replyCount || 0
+      }));
+
+      setMessages(transformedMessages);
     } catch (err) {
       console.error('[useProjectChat] Load error:', err);
       setError('Failed to load messages');
@@ -33,24 +53,25 @@ export default function useProjectChat(projectId) {
       setSending(true);
       setError(null);
 
-      const currentUser = JSON.parse(localStorage.getItem('ss.user') || '{}');
-      const newMessage = {
-        id: `msg_${Date.now()}`,
-        authorId: currentUser.id || 'user_1',
-        authorName: currentUser.firstName || 'You',
-        authorAvatar: currentUser.profilePicture || '/default-avatar.png',
-        type,
-        content,
-        timestamp: new Date().toISOString(),
+      const newMessage = await messagesAPI.sendMessage(projectId, { content, type });
+      
+      // Transform and add to messages
+      const transformed = {
+        id: newMessage._id,
+        authorId: newMessage.author._id,
+        authorName: `${newMessage.author.firstName} ${newMessage.author.lastName}`,
+        authorAvatar: newMessage.author.profilePicture,
+        type: newMessage.type,
+        content: newMessage.content,
+        timestamp: newMessage.createdAt,
         reactions: [],
         resolved: false,
         replyCount: 0
       };
 
-      setMessages(prev => [...prev, newMessage]);
-      await new Promise(resolve => setTimeout(resolve, 300));
+      setMessages(prev => [transformed, ...prev]);
 
-      return newMessage;
+      return transformed;
     } catch (err) {
       console.error('[useProjectChat] Send error:', err);
       setError('Failed to send message');
@@ -62,24 +83,25 @@ export default function useProjectChat(projectId) {
 
   async function reactToMessage(messageId, emoji, action = 'add') {
     try {
-      // TODO: Replace with actual API call
+      let updatedMessage;
       
-      // Optimistic update
+      if (action === 'add') {
+        updatedMessage = await messagesAPI.addReaction(projectId, messageId, emoji);
+      } else {
+        updatedMessage = await messagesAPI.removeReaction(projectId, messageId, emoji);
+      }
+
+      // Update local state
       setMessages(prev => prev.map(msg => {
         if (msg.id !== messageId) return msg;
 
-        const reactions = [...(msg.reactions || [])];
-        const currentUser = JSON.parse(localStorage.getItem('ss.user') || '{}');
-        const userId = currentUser.id || 'user_1';
-
-        if (action === 'add') {
-          reactions.push({ emoji, userId });
-        } else {
-          const index = reactions.findIndex(r => r.emoji === emoji && r.userId === userId);
-          if (index > -1) reactions.splice(index, 1);
-        }
-
-        return { ...msg, reactions };
+        return {
+          ...msg,
+          reactions: updatedMessage.reactions.map(r => ({
+            emoji: r.emoji,
+            userId: r.user._id
+          }))
+        };
       }));
 
       return true;
@@ -91,21 +113,21 @@ export default function useProjectChat(projectId) {
 
   async function resolveMessage(messageId) {
     try {
-      // TODO: Replace with actual API call
-      
-      const currentUser = JSON.parse(localStorage.getItem('ss.user') || '{}');
-      
-      // Optimistic update
+      const updatedMessage = await messagesAPI.resolveMessage(projectId, messageId);
+
+      // Update local state
       setMessages(prev => prev.map(msg => {
         if (msg.id !== messageId) return msg;
+
         return {
           ...msg,
           resolved: true,
-          resolvedBy: currentUser.firstName || 'You'
+          resolvedBy: updatedMessage.resolvedBy 
+            ? `${updatedMessage.resolvedBy.firstName} ${updatedMessage.resolvedBy.lastName}` 
+            : 'Someone'
         };
       }));
 
-      await new Promise(resolve => setTimeout(resolve, 300));
       return true;
     } catch (err) {
       console.error('[useProjectChat] Resolve error:', err);
@@ -123,61 +145,4 @@ export default function useProjectChat(projectId) {
     resolveMessage,
     refresh: loadMessages
   };
-}
-
-function getMockMessages() {
-  const now = Date.now();
-  const twoHoursAgo = now - 2 * 60 * 60 * 1000;
-  const fourHoursAgo = now - 4 * 60 * 60 * 1000;
-  const yesterday = now - 24 * 60 * 60 * 1000;
-
-  return [
-    {
-      id: 'msg_1',
-      authorId: 'user_2',
-      authorName: 'Sarah',
-      authorAvatar: '/avatars/sarah.jpg',
-      type: 'update',
-      content: 'Beta testing complete. Found 2 bugs, both fixed. Ready to deploy! 🚀',
-      timestamp: new Date(twoHoursAgo).toISOString(),
-      reactions: [
-        { emoji: '👍', userId: 'user_1' },
-        { emoji: '👍', userId: 'user_3' },
-        { emoji: '🎉', userId: 'user_1' }
-      ],
-      resolved: false,
-      replyCount: 0
-    },
-    {
-      id: 'msg_2',
-      authorId: 'user_3',
-      authorName: 'Jordan',
-      authorAvatar: '/avatars/jordan.jpg',
-      type: 'question',
-      content: 'Should we deploy before or after the client demo on Friday?',
-      timestamp: new Date(fourHoursAgo).toISOString(),
-      reactions: [
-        { emoji: '👀', userId: 'user_1' }
-      ],
-      resolved: false,
-      replyCount: 3
-    },
-    {
-      id: 'msg_3',
-      authorId: 'user_1',
-      authorName: 'Manny',
-      authorAvatar: '/avatars/manny.jpg',
-      type: 'decision',
-      content: "Let's use Tailwind instead of custom CSS for consistency across components.",
-      timestamp: new Date(yesterday).toISOString(),
-      reactions: [
-        { emoji: '👍', userId: 'user_2' },
-        { emoji: '👍', userId: 'user_3' },
-        { emoji: '🚀', userId: 'user_2' }
-      ],
-      resolved: true,
-      resolvedBy: 'Sarah',
-      replyCount: 0
-    }
-  ];
 }
