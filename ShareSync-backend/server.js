@@ -41,16 +41,20 @@ app.use('/api/users', require('./src/routes/users'));
 // POST /api/uploads/avatar → same handler as /api/users/me/avatar
 app.use('/api/uploads', require('./src/routes/uploads'));
 
-// ⭐ NEW: Messages API (nested under projects)
+// ⭐ NEW: Projects API (with tasks & ships)
+const projectRoutes = require('./routes/projects');
+app.use('/api/projects', projectRoutes);
+
+// ⭐ Messages API (nested under projects)
 // This handles: /api/projects/:projectId/messages
 const messageRoutes = require('./routes/messages');
 app.use('/api/projects/:projectId/messages', messageRoutes);
 
 // ---------------------------------------------------------------------------
-// Below: existing mock data routes kept for local dev convenience
+// Below: Mock data routes for backwards compatibility (can be removed later)
 // ---------------------------------------------------------------------------
 
-// ***** IN-MEMORY MOCK DATA *****
+// ***** MOCK DATA (LEGACY) *****
 let mockUser = {
   _id: 'u_1',
   username: 'manny',
@@ -59,31 +63,10 @@ let mockUser = {
   bio: 'Trying to ship daily.',
   publicProfile: true,
   profilePicture: '',
-  appearance: { theme: 'system' },             // 'system' | 'light' | 'dark'
+  appearance: { theme: 'system' },
   notifications: { emailActivity: true, emailDigest: true },
   lastLogin: new Date().toISOString(),
 };
-
-let mockProjects = [
-  {
-    _id: 'p_1',
-    title: 'Project Alpha',
-    description: 'Kickoff milestones',
-    status: 'Active',
-    privacy: 'private',
-    members: [{ _id: 'u_1', username: 'manny', firstName: 'Manny' }],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    _id: 'p_2',
-    title: 'Docs Refresh',
-    description: 'Polish and publish',
-    status: 'Active',
-    privacy: 'public',
-    members: [{ _id: 'u_1', username: 'manny', firstName: 'Manny' }],
-    createdAt: new Date().toISOString(),
-  },
-];
 
 const mockStats = () => ({
   cadence: { value: 7 },
@@ -118,29 +101,14 @@ const mockActivity = ({ scope }) => ({
   nextCursor: null,
 });
 
-// Projects (list + create)
-app.get('/api/projects', (req, res) => {
-  res.json(mockProjects);
-});
-
-app.post('/api/projects/create', (req, res) => {
-  const { title, description, status = 'Active', privacy = 'private', members = [] } = req.body || {};
-  const proj = {
-    _id: `p_${Date.now()}`,
-    title,
-    description,
-    status,
-    privacy,
-    members,
-    createdAt: new Date().toISOString(),
-  };
-  mockProjects.unshift(proj);
-  res.status(201).json(proj);
-});
-
-// Quick-rail helper (optional)
+// Legacy mock project endpoints (kept for backwards compatibility)
+// NOTE: These will be overridden by the real /api/projects routes above
 app.get('/api/projects/quick', (req, res) => {
-  res.json(mockProjects.slice(0, 6).map(p => ({ _id: p._id, title: p.title })));
+  // This is now a mock - real projects come from database
+  res.json([
+    { _id: 'p_1', title: 'Project Alpha' },
+    { _id: 'p_2', title: 'Docs Refresh' }
+  ]);
 });
 
 // User stats (supports ?range=&projectId=)
@@ -155,7 +123,7 @@ app.get('/api/user/me/stats', (req, res) => {
 
 // Activity feed (user or project scope)
 app.get('/api/activity', (req, res) => {
-  const scope = req.query.scope || 'user'; // 'user' | 'project'
+  const scope = req.query.scope || 'user';
   res.json(mockActivity({ scope }));
 });
 
@@ -163,5 +131,8 @@ app.get('/api/activity', (req, res) => {
 httpServer.listen(PORT, () => {
   console.log(`API running on http://localhost:${PORT}`);
   console.log(`Socket.io on path /socket.io`);
+  console.log('✅ Project routes registered: /api/projects');
   console.log('✅ Message routes registered: /api/projects/:projectId/messages');
+  console.log('✅ Task routes registered: /api/projects/:id/tasks');
+  console.log('✅ Ship routes registered: /api/projects/:id/ships');
 });
