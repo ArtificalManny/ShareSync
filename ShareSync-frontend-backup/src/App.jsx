@@ -15,7 +15,7 @@ import { ToastProvider } from "./context/ToastContext";
 import ToastProviderOld, { ToastHost } from "./components/ui/toast";
 import ErrorBoundary from "./ErrorBoundary";
 
-// CSS imports (these are fine - get cached)
+// CSS imports
 import "./index.css";
 import "./theme.css";
 import "./styles/card.css";
@@ -49,12 +49,12 @@ import {
   FOCUS_DOCK_V1,
 } from "./config/flags.js";
 
-// ⭐ Auth pages - regular imports (not lazy)
+// ⭐ Auth pages
 import Login from "./pages/Login";
 import CreateAccount from "./pages/CreateAccount";
 import ForgotPassword from "./pages/ForgotPassword";
 
-// ⭐ Protected pages - lazy load these
+// ⭐ Protected pages - lazy load
 const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -69,7 +69,7 @@ const AdminConsole = lazy(() => import("./pages/admin/AdminConsole.jsx"));
 const PulseAdmin = lazy(() => import("./pages/admin/PulseAdmin.jsx"));
 const Analytics = lazy(() => import("./pages/Analytics.jsx"));
 
-// ⭐ Lazy load heavy components (only loaded for authenticated users)
+// ⭐ Lazy load heavy components
 const Sidebar = lazy(() => import("./components/Sidebar"));
 const LayoutSkin = lazy(() => import("./components/LayoutSkin.jsx"));
 const MiniSprintWidget = lazy(() => import("./components/global/MiniSprintWidget"));
@@ -80,24 +80,21 @@ const FocusToasts = lazy(() => import("./components/toast/FocusToasts.jsx"));
 const MentorDock = lazy(() => import("./components/mentor/MentorDock.jsx"));
 const LeaderboardDock = lazy(() => import("./components/momentum/LeaderboardDock.jsx"));
 const MessengerPanel = lazy(() => import("./components/messenger/MessengerPanel.jsx"));
-const CursorLayer = lazy(() => import("./components/realtime/CursorLayer"));
 const ShipFlash = lazy(() => import("./components/effects/ShipFlash"));
-const SyncPulse = lazy(() => import("./components/effects/SyncPulse"));
-const CursorRecorder = lazy(() => import("./components/recording/CursorRecorder"));
-const GhostMode = lazy(() => import("./components/modes/GhostMode"));
-const DeepWorkMode = lazy(() => import("./components/modes/DeepWorkMode"));
-const TouchCursor = lazy(() => import("./components/realtime/TouchCursor"));
+// ❌ DISABLED: Uses useCursorContext
+// const SyncPulse = lazy(() => import("./components/effects/SyncPulse"));
+// const GhostMode = lazy(() => import("./components/modes/GhostMode"));
+// const DeepWorkMode = lazy(() => import("./components/modes/DeepWorkMode"));
+// const TouchCursor = lazy(() => import("./components/realtime/TouchCursor"));
 const PublicRoutes = lazy(() => import("./routes/publicRoutes.jsx"));
 
-// ⭐ Lazy load heavy context providers
+// ⭐ Lazy load context providers
 const UserProvider = lazy(() => import("./context/UserContext").then(m => ({ default: m.default })));
 const SprintProvider = lazy(() => import("./context/SprintContext").then(m => ({ default: m.SprintProvider })));
 const ChatProvider = lazy(() => import("./context/ChatContext.jsx").then(m => ({ default: m.ChatProvider })));
-const CursorProvider = lazy(() => import("./context/CursorContext").then(m => ({ default: m.CursorProvider })));
 const FocusProvider = lazy(() => import("./context/FocusContext.jsx").then(m => ({ default: m.FocusProvider })));
 const CommandPaletteProvider = lazy(() => import("./hooks/useCommandPalette").then(m => ({ default: m.CommandPaletteProvider })));
 
-// Import UserContext for the consumer part only
 import { UserContext } from "./context/UserContext";
 import FeatureGate from "./utils/FeatureGate.jsx";
 import useBrandTheme from "./hooks/useBrandTheme.js";
@@ -114,7 +111,6 @@ function ScrollToHash() {
   return null;
 }
 
-// ⭐ Simple loading spinner
 function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-slate-950">
@@ -125,11 +121,7 @@ function LoadingSpinner() {
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
+  if (loading) return <LoadingSpinner />;
   return user ? children : <Navigate to="/login" replace />;
 }
 
@@ -155,22 +147,19 @@ function SidebarOverlay({ show, onClick }) {
   return <div className={`sidebar-overlay ${show ? 'active' : ''}`} onClick={onClick} />;
 }
 
-// ⭐ NEW: Wrap authenticated app content with heavy contexts
 function AuthenticatedApp({ children }) {
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <UserProvider>
-        <CursorProvider>
-          <SprintProvider>
-            <CommandPaletteProvider>
-              {FOCUS_DOCK_V1 ? (
-                <FocusProvider>{children}</FocusProvider>
-              ) : (
-                children
-              )}
-            </CommandPaletteProvider>
-          </SprintProvider>
-        </CursorProvider>
+        <SprintProvider>
+          <CommandPaletteProvider>
+            {FOCUS_DOCK_V1 ? (
+              <FocusProvider>{children}</FocusProvider>
+            ) : (
+              children
+            )}
+          </CommandPaletteProvider>
+        </SprintProvider>
       </UserProvider>
     </Suspense>
   );
@@ -181,10 +170,7 @@ function AppRoutes() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ⭐ Check if we're on an auth page (login/register/forgot-password)
   const isAuthPage = ['/login', '/create-account', '/forgot-password'].includes(location.pathname);
-
-  // ⭐ Only render sidebar and heavy UI for authenticated users NOT on auth pages
   const showAppChrome = authUser && !isAuthPage;
 
   return (
@@ -213,7 +199,6 @@ function AppRoutes() {
             <Routes>
               <Route path="/" element={<Navigate to="/home" replace />} />
               
-              {/* Public routes - NO heavy contexts */}
               <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
               <Route path="/create-account" element={<PublicOnlyRoute><CreateAccount /></PublicOnlyRoute>} />
               <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
@@ -221,7 +206,6 @@ function AppRoutes() {
               {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
               <Route path="/status/:token" element={<PublicProjectStatus />} />
 
-              {/* Protected routes - WITH heavy contexts */}
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
               <Route path="/projects/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
@@ -233,7 +217,6 @@ function AppRoutes() {
               <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
               <Route path="/projects/:projectId/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
 
-              {/* Messages with ChatProvider */}
               <Route 
                 path="/messages" 
                 element={
@@ -259,26 +242,9 @@ function AppRoutes() {
                 } 
               />
 
-              {DISCOVERY_V1 && (
-                <Route
-                  path="/discover"
-                  element={<ProtectedRoute><Discover /></ProtectedRoute>}
-                />
-              )}
-
-              {ADMIN_CONSOLE_V1 && (
-                <Route
-                  path="/admin/console"
-                  element={<ProtectedRoute><AdminConsole /></ProtectedRoute>}
-                />
-              )}
-
-              {PULSE_ADMIN_V1 && (
-                <Route
-                  path="/admin/pulse"
-                  element={<ProtectedRoute><PulseAdmin /></ProtectedRoute>}
-                />
-              )}
+              {DISCOVERY_V1 && <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />}
+              {ADMIN_CONSOLE_V1 && <Route path="/admin/console" element={<ProtectedRoute><AdminConsole /></ProtectedRoute>} />}
+              {PULSE_ADMIN_V1 && <Route path="/admin/pulse" element={<ProtectedRoute><PulseAdmin /></ProtectedRoute>} />}
 
               <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
@@ -286,7 +252,6 @@ function AppRoutes() {
         </div>
       </div>
       
-      {/* Only load these for authenticated users */}
       {showAppChrome && (
         <Suspense fallback={null}>
           {MESSENGER_V1 && <MessengerPanel />}
@@ -297,15 +262,14 @@ function AppRoutes() {
           {FOCUS_DOCK_V1 && <FocusToasts />}
           <MentorDock />
           <LeaderboardDock />
-          <div className="cursor-modes">
+          {/* ❌ DISABLED: All use useCursorContext */}
+          {/* <div className="cursor-modes">
             <GhostMode />
             <DeepWorkMode />
           </div>
-          <CursorLayer />
-          <ShipFlash />
           <SyncPulse />
-          {/* <CursorRecorder enabled={true} /> */}
-          <TouchCursor />
+          <TouchCursor /> */}
+          <ShipFlash />
         </Suspense>
       )}
 
@@ -330,7 +294,6 @@ const App = () => {
             <Suspense fallback={<LoadingSpinner />}>
               <LayoutSkin>
                 <div className="app-container" {...containerAttrs}>
-                  {/* ⭐ Only authenticated users get heavy contexts */}
                   <AuthCheck />
                 </div>
               </LayoutSkin>
@@ -342,12 +305,10 @@ const App = () => {
   );
 };
 
-// ⭐ Check auth and conditionally wrap with heavy contexts
 function AuthCheck() {
   const { user } = useAuth();
   
   if (user) {
-    // User is logged in - load ALL the heavy stuff
     return (
       <AuthenticatedApp>
         <AppRoutes />
@@ -355,7 +316,6 @@ function AuthCheck() {
     );
   }
   
-  // User not logged in - just render routes (no heavy contexts)
   return <AppRoutes />;
 }
 

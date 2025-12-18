@@ -19,7 +19,7 @@ class SocketService {
 
     const token = localStorage.getItem('ss.token');
     
-    this.socket = io('http://localhost:5000', {
+    this.socket = io('http://localhost:3000', { // ← CHANGED FROM 5000 TO 3000
       auth: { token },
       transports: ['websocket', 'polling']
     });

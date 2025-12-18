@@ -2,10 +2,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  baseURL: 'http://localhost:3000/api',
+  headers: { 'Content-Type': 'application/json' }
 });
 
 // Add auth token to every request
@@ -17,20 +15,22 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Handle response errors
+// ⚠️ TEMPORARILY DISABLED AUTO-REDIRECT
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Unauthorized - token expired or invalid
-      localStorage.removeItem('ss.token');
-      localStorage.removeItem('ss.user');
-      window.location.href = '/login';
+    // Log error instead of redirecting
+    console.error('❌ API Error:', error.response?.status, error.response?.data);
+    
+    // Only redirect on 401 if NOT a login/register request
+    if (error.response?.status === 401 && !error.config.url.includes('/auth/')) {
+      console.warn('⚠️ Unauthorized - but NOT redirecting (debug mode)');
+      // localStorage.removeItem('ss.token');
+      // localStorage.removeItem('ss.user');
+      // window.location.href = '/login';
     }
     return Promise.reject(error);
   }
