@@ -1,11 +1,11 @@
 /**
  * realtime.module.ts
- * Module for all real-time features (cursors, presence, live updates)
+ * Module for all real-time features (cursors, presence, focus sessions, live updates)
  * 
  * Includes:
- * - MongoDB schemas (Cursor, Presence)
- * - REST controllers (CursorController, PresenceController)
- * - WebSocket gateways (CursorGateway, RealtimeGateway)
+ * - MongoDB schemas (Cursor, Presence, FocusSession)
+ * - REST controllers (CursorController, PresenceController, FocusController)
+ * - WebSocket gateways (CursorGateway, RealtimeGateway, FocusGateway)
  * - Services
  */
 
@@ -18,12 +18,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 // ============================================
 import { Cursor, CursorSchema } from './schemas/cursor.schema';
 import { Presence, PresenceSchema } from './schemas/presence.schema';
+import { FocusSession, FocusSessionSchema } from './schemas/focus-session.schema';
 
 // ============================================
 // CONTROLLERS
 // ============================================
 import { CursorController } from './cursor.controller';
 import { PresenceController } from './presence.controller';
+import { FocusController } from './focus.controller';
 
 // ============================================
 // GATEWAYS & SERVICES
@@ -31,7 +33,9 @@ import { PresenceController } from './presence.controller';
 import { CursorGateway } from './cursor.gateway';
 import { CursorService } from './cursor.service';
 import { PresenceService } from './presence.service';
-import { RealtimeGateway } from './realtime.gateway'; // ✅ NEW: import gateway
+import { FocusService } from './focus.service';
+import { FocusGateway } from './focus.gateway';
+import { RealtimeGateway } from './realtime.gateway';
 
 // ============================================
 // GUARDS
@@ -52,6 +56,7 @@ import { WsJwtGuard } from '../auth/ws-jwt.guard';
     MongooseModule.forFeature([
       { name: Cursor.name, schema: CursorSchema },
       { name: Presence.name, schema: PresenceSchema },
+      { name: FocusSession.name, schema: FocusSessionSchema },
     ]),
   ],
   
@@ -59,23 +64,28 @@ import { WsJwtGuard } from '../auth/ws-jwt.guard';
   controllers: [
     CursorController,
     PresenceController,
+    FocusController,
   ],
   
   // WebSocket Gateways & Services
   providers: [
     CursorGateway,
-    RealtimeGateway,   // ✅ NEW: make gateway a provider
+    RealtimeGateway,
+    FocusGateway,
     CursorService,
     PresenceService,
+    FocusService,
     WsJwtGuard,
   ],
   
-  // Export services & gateway for use in other modules
+  // Export services & gateways for use in other modules
   exports: [
     CursorService,
     PresenceService,
-    RealtimeGateway,   // ✅ NEW: export so FilesModule can inject it
-    MongooseModule,    // (kept from your original)
+    FocusService,
+    RealtimeGateway,
+    FocusGateway,
+    MongooseModule,
   ],
 })
 export class RealtimeModule {}
