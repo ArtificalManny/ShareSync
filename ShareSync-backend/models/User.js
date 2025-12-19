@@ -90,6 +90,106 @@ const UserSchema = new mongoose.Schema({
   },
 
   // ============================================
+  // ✅ DAILY GOALS SYSTEM
+  // ============================================
+  dailyGoals: {
+    // Current active goals
+    goals: [
+      {
+        id: { type: String, required: true },
+        type: { type: String, enum: ['ship', 'task', 'focus', 'custom'], required: true },
+        title: { type: String, required: true },
+        description: { type: String },
+        target: { type: Number, default: 1 }, // How many to complete
+        progress: { type: Number, default: 0 }, // Current progress
+        completed: { type: Boolean, default: false },
+        completedAt: { type: Date },
+        date: { type: Date, default: Date.now }, // Which day this goal is for
+        xpReward: { type: Number, default: 25 },
+        priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+      }
+    ],
+    
+    // Goal history for analytics
+    history: [
+      {
+        date: { type: Date, required: true },
+        goalsSet: { type: Number, default: 0 },
+        goalsCompleted: { type: Number, default: 0 },
+        completionRate: { type: Number, default: 0 }, // percentage
+        totalXPEarned: { type: Number, default: 0 },
+      }
+    ],
+    
+    // Settings
+    settings: {
+      autoGenerateGoals: { type: Boolean, default: true },
+      dailyGoalCount: { type: Number, default: 3 }, // How many goals per day
+      notifyOnGoalCompletion: { type: Boolean, default: true },
+      resetTime: { type: String, default: '00:00' }, // When to reset daily goals
+    },
+    
+    // Streaks
+    goalCompletionStreak: { type: Number, default: 0 }, // Days in a row completing all goals
+    longestGoalStreak: { type: Number, default: 0 },
+    lastGoalCompletionDate: { type: Date },
+  },
+
+  // ============================================
+  // ✅ ENERGY TRACKING SYSTEM
+  // ============================================
+  energyLog: {
+    // Current energy state
+    currentEnergy: { type: Number, default: 100, min: 0, max: 100 }, // 0-100 scale
+    lastEnergyUpdate: { type: Date, default: Date.now },
+    
+    // Energy entries (hourly tracking)
+    entries: [
+      {
+        timestamp: { type: Date, default: Date.now },
+        energyLevel: { type: Number, required: true, min: 0, max: 100 },
+        mood: { type: String, enum: ['exhausted', 'tired', 'neutral', 'good', 'energized'] },
+        context: {
+          timeOfDay: { type: String, enum: ['morning', 'afternoon', 'evening', 'night'] },
+          afterActivity: { type: String }, // e.g., 'focus_session', 'break', 'meeting'
+          notes: { type: String },
+        },
+      }
+    ],
+    
+    // Daily summaries
+    dailySummaries: [
+      {
+        date: { type: Date, required: true },
+        avgEnergy: { type: Number, default: 0 },
+        peakEnergy: { type: Number, default: 0 },
+        lowestEnergy: { type: Number, default: 0 },
+        peakTime: { type: String }, // Time when energy was highest
+        totalEntries: { type: Number, default: 0 },
+        mood: { type: String },
+      }
+    ],
+    
+    // AI Insights
+    insights: {
+      peakHours: [{ type: String }], // e.g., ['09:00', '14:00']
+      lowHours: [{ type: String }],
+      bestDaysOfWeek: [{ type: String }], // e.g., ['Monday', 'Wednesday']
+      averageEnergy: { type: Number, default: 100 },
+      recommendations: [{ type: String }], // AI-generated suggestions
+      lastUpdated: { type: Date },
+    },
+    
+    // Settings
+    settings: {
+      trackEnergy: { type: Boolean, default: true },
+      remindToLog: { type: Boolean, default: true },
+      reminderInterval: { type: Number, default: 4 }, // hours
+      useAIInsights: { type: Boolean, default: true },
+    },
+  },
+
+  // ============================================
   // PROJECTS (KEPT AS IS)
   // ============================================
   projects: [
@@ -214,7 +314,7 @@ const UserSchema = new mongoose.Schema({
 });
 
 // ============================================
-// ✅ INSTANCE METHODS
+// ✅ INSTANCE METHODS - GAMIFICATION
 // ============================================
 
 /**
@@ -378,12 +478,259 @@ UserSchema.methods.resetWeeklyStats = function() {
 };
 
 // ============================================
+// ✅ INSTANCE METHODS - DAILY GOALS
+// ============================================
+
+/**
+ * Add a daily goal
+ */
+UserSchema.methods.addDailyGoal = function(goal) {
+  const newGoal = {
+    id: goal.id || `goal-${Date.now()}`,
+    type: goal.type,
+    title: goal.title,
+    description: goal.description,
+    target: goal.target || 1,
+    progress: 0,
+    completed: false,
+    date: new Date(),
+    xpReward: goal.xpReward || 25,
+    priority: goal.priority || 'medium',
+  };
+  
+  this.dailyGoals.goals.push(newGoal);
+  return this;
+};
+
+/**
+ * Update goal progress
+ */
+UserSchema.methods.updateGoalProgress = function(goalId, progress) {
+  const goal = this.dailyGoals.goals.id(goalId);
+  
+  if (goal) {
+    goal.progress = progress;
+    
+    // Check if goal is now completed
+    if (progress >= goal.target && !goal.completed) {
+      goal.completed = true;
+      goal.completedAt = new Date();
+      
+      // Award XP
+      this.addXP(goal.xpReward, `Completed daily goal: ${goal.title}`);
+      
+      console.log(`✅ ${this.username} completed goal: ${goal.title}`);
+    }
+  }
+  
+  return this;
+};
+
+/**
+ * Reset daily goals (call this at midnight)
+ */
+UserSchema.methods.resetDailyGoals = function() {
+  const today = new Date().toDateString();
+  const goalsToday = this.dailyGoals.goals.filter(g => 
+    new Date(g.date).toDateString() === today
+  );
+  
+  // Archive today's goals to history
+  if (goalsToday.length > 0) {
+    const completed = goalsToday.filter(g => g.completed).length;
+    const completionRate = (completed / goalsToday.length) * 100;
+    const totalXP = goalsToday.filter(g => g.completed).reduce((sum, g) => sum + g.xpReward, 0);
+    
+    this.dailyGoals.history.push({
+      date: new Date(),
+      goalsSet: goalsToday.length,
+      goalsCompleted: completed,
+      completionRate,
+      totalXPEarned: totalXP,
+    });
+    
+    // Update goal completion streak
+    if (completed === goalsToday.length) {
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      const lastCompletion = this.dailyGoals.lastGoalCompletionDate?.toDateString();
+      
+      if (lastCompletion === yesterday) {
+        this.dailyGoals.goalCompletionStreak += 1;
+      } else {
+        this.dailyGoals.goalCompletionStreak = 1;
+      }
+      
+      if (this.dailyGoals.goalCompletionStreak > this.dailyGoals.longestGoalStreak) {
+        this.dailyGoals.longestGoalStreak = this.dailyGoals.goalCompletionStreak;
+      }
+      
+      this.dailyGoals.lastGoalCompletionDate = new Date();
+    } else {
+      this.dailyGoals.goalCompletionStreak = 0;
+    }
+  }
+  
+  // Clear goals for new day
+  this.dailyGoals.goals = [];
+  
+  return this;
+};
+
+// ============================================
+// ✅ INSTANCE METHODS - ENERGY TRACKING
+// ============================================
+
+/**
+ * Log energy level
+ */
+UserSchema.methods.logEnergy = function(energyLevel, mood, context) {
+  const entry = {
+    timestamp: new Date(),
+    energyLevel: Math.max(0, Math.min(100, energyLevel)), // Clamp to 0-100
+    mood: mood || 'neutral',
+    context: {
+      timeOfDay: this.getTimeOfDay(),
+      afterActivity: context?.afterActivity,
+      notes: context?.notes,
+    },
+  };
+  
+  this.energyLog.entries.push(entry);
+  this.energyLog.currentEnergy = energyLevel;
+  this.energyLog.lastEnergyUpdate = new Date();
+  
+  // Keep only last 30 days of entries
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  this.energyLog.entries = this.energyLog.entries.filter(e => 
+    e.timestamp > thirtyDaysAgo
+  );
+  
+  console.log(`⚡ ${this.username} logged energy: ${energyLevel}`);
+  
+  return this;
+};
+
+/**
+ * Generate daily energy summary
+ */
+UserSchema.methods.generateDailySummary = function() {
+  const today = new Date().toDateString();
+  const todayEntries = this.energyLog.entries.filter(e => 
+    new Date(e.timestamp).toDateString() === today
+  );
+  
+  if (todayEntries.length === 0) return this;
+  
+  const energyLevels = todayEntries.map(e => e.energyLevel);
+  const avgEnergy = energyLevels.reduce((sum, e) => sum + e, 0) / energyLevels.length;
+  const peakEnergy = Math.max(...energyLevels);
+  const lowestEnergy = Math.min(...energyLevels);
+  
+  // Find peak time
+  const peakEntry = todayEntries.find(e => e.energyLevel === peakEnergy);
+  const peakTime = peakEntry ? new Date(peakEntry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null;
+  
+  // Most common mood
+  const moods = todayEntries.map(e => e.mood);
+  const mood = moods.sort((a, b) =>
+    moods.filter(m => m === a).length - moods.filter(m => m === b).length
+  ).pop();
+  
+  this.energyLog.dailySummaries.push({
+    date: new Date(),
+    avgEnergy: Math.round(avgEnergy),
+    peakEnergy,
+    lowestEnergy,
+    peakTime,
+    totalEntries: todayEntries.length,
+    mood,
+  });
+  
+  // Keep only last 90 days
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  this.energyLog.dailySummaries = this.energyLog.dailySummaries.filter(s => 
+    s.date > ninetyDaysAgo
+  );
+  
+  return this;
+};
+
+/**
+ * Generate AI insights from energy data
+ */
+UserSchema.methods.generateEnergyInsights = function() {
+  const entries = this.energyLog.entries;
+  
+  if (entries.length < 7) {
+    // Not enough data yet
+    return this;
+  }
+  
+  // Find peak hours (hours with highest average energy)
+  const hourlyEnergy = {};
+  entries.forEach(e => {
+    const hour = new Date(e.timestamp).getHours();
+    if (!hourlyEnergy[hour]) hourlyEnergy[hour] = [];
+    hourlyEnergy[hour].push(e.energyLevel);
+  });
+  
+  const hourlyAverages = Object.entries(hourlyEnergy).map(([hour, levels]) => ({
+    hour,
+    avg: levels.reduce((sum, l) => sum + l, 0) / levels.length,
+  }));
+  
+  hourlyAverages.sort((a, b) => b.avg - a.avg);
+  
+  const peakHours = hourlyAverages.slice(0, 3).map(h => `${h.hour}:00`);
+  const lowHours = hourlyAverages.slice(-3).map(h => `${h.hour}:00`);
+  
+  // Calculate overall average
+  const avgEnergy = entries.reduce((sum, e) => sum + e.energyLevel, 0) / entries.length;
+  
+  // Generate recommendations
+  const recommendations = [];
+  if (avgEnergy < 60) {
+    recommendations.push('Consider taking more breaks throughout the day');
+    recommendations.push('Try scheduling deep work during your peak energy hours');
+  }
+  if (peakHours.length > 0) {
+    recommendations.push(`Schedule important tasks during ${peakHours[0]}-${peakHours[1]}`);
+  }
+  if (lowHours.length > 0) {
+    recommendations.push(`Avoid demanding work during ${lowHours[0]}-${lowHours[1]}`);
+  }
+  
+  this.energyLog.insights = {
+    peakHours,
+    lowHours,
+    averageEnergy: Math.round(avgEnergy),
+    recommendations,
+    lastUpdated: new Date(),
+  };
+  
+  return this;
+};
+
+/**
+ * Get time of day
+ */
+UserSchema.methods.getTimeOfDay = function() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 21) return 'evening';
+  return 'night';
+};
+
+// ============================================
 // INDEXES
 // ============================================
 UserSchema.index({ 'gamification.totalXP': -1 }); // Leaderboard
 UserSchema.index({ 'gamification.level': -1 });
 UserSchema.index({ username: 1 });
 UserSchema.index({ email: 1 });
+UserSchema.index({ 'dailyGoals.goals.date': -1 }); // Quick lookup of today's goals
+UserSchema.index({ 'energyLog.lastEnergyUpdate': -1 }); // Recent energy logs
 
 const User = mongoose.model('User', UserSchema);
 
