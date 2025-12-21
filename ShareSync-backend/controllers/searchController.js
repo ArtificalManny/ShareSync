@@ -12,6 +12,7 @@ const {
   parseSort,
   buildTaskFilter,
   buildProjectFilter,
+  buildMessageFilter,
 } = require('../utils/search');
 
 // ============================================
@@ -38,11 +39,17 @@ exports.globalSearch = async (req, res) => {
     
     // Search projects
     if (!type || type === 'projects') {
-      const projectQuery = createMultiFieldSearch(q, ['title', 'description']);
-      projectQuery.$or = [
-        { owner: req.user.id },
-        { 'members.user': req.user.id },
-      ];
+      const projectQuery = {
+        $and: [
+          createMultiFieldSearch(q, ['title', 'description']),
+          {
+            $or: [
+              { owner: req.user.id },
+              { 'members.user': req.user.id },
+            ],
+          },
+        ],
+      };
       
       results.projects = await Project.find(projectQuery)
         .select('title description status createdAt')
@@ -263,6 +270,72 @@ exports.filterShips = async (req, res) => {
     });
   } catch (error) {
     console.error('Filter ships error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ============================================
+// MESSAGE SEARCH (Optional - for future use)
+// ============================================
+
+/**
+ * Search messages in a project
+ */
+exports.searchMessages = async (req, res) => {
+  try {
+    const { q, sender, type, before, after, page = 1, limit = 50 } = req.query;
+    
+    // Check if Message model exists
+    let Message;
+    try {
+      Message = require('../models/Message');
+    } catch (error) {
+      // Message model doesn't exist yet
+      return res.status(501).json({ 
+        message: 'Message search not implemented yet',
+        note: 'Message model not found'
+      });
+    }
+    
+    const project = await Project.findById(req.params.projectId);
+    
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    
+    // Check permission
+    if (!project.isMember(req.user.id)) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    const query = { projectId: req.params.projectId };
+    
+    // Text search
+    if (q) {
+      Object.assign(query, createMultiFieldSearch(q, ['content', 'text']));
+    }
+    
+    // Filters
+    const filters = buildMessageFilter({ sender, type, before, after });
+    Object.assign(query, filters);
+    
+    const pagination = createPagination(page, limit);
+    
+    const [messages, total] = await Promise.all([
+      Message.find(query)
+        .populate('sender', 'username profilePicture')
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .sort({ createdAt: -1 }),
+      Message.countDocuments(query),
+    ]);
+    
+    res.json({
+      messages,
+      pagination: createPaginationMeta(total, page, limit),
+    });
+  } catch (error) {
+    console.error('Search messages error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

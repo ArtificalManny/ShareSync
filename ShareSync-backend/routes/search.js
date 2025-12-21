@@ -11,6 +11,7 @@ const {
   searchProjects,
   filterTasks,
   filterShips,
+  searchMessages,
 } = require('../controllers/searchController');
 
 // Require auth middleware
@@ -39,5 +40,9 @@ router.get('/projects/:projectId/tasks', filterTasks);
 // GET /api/search/projects/:projectId/ships?author=userId&after=2025-01-01
 // Filter ships within a project
 router.get('/projects/:projectId/ships', filterShips);
+
+// GET /api/search/projects/:projectId/messages?q=hello&sender=userId
+// Search messages within a project (if Message model exists)
+router.get('/projects/:projectId/messages', searchMessages);
 
 module.exports = router;
