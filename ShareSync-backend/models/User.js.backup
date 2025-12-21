@@ -302,24 +302,9 @@ const UserSchema = new mongoose.Schema({
     },
   ],
   
-  // ============================================
-  // ✅ NOTIFICATIONS
-  // ============================================
   notifications: [
     {
       message: { type: String, required: true },
-      type: { 
-        type: String, 
-        enum: [
-          'task_assigned', 'task_completed', 'task_comment', 'task_due_soon',
-          'project_invite', 'member_joined', 'member_left',
-          'ship_created', 'mention',
-          'badge_earned', 'level_up', 'streak_milestone', 'achievement_complete',
-          'system_update', 'welcome'
-        ]
-      },
-      data: { type: Object }, // Additional data about the notification
-      metadata: { type: Object }, // Links, IDs, etc.
       timestamp: { type: String, default: new Date().toISOString() },
       read: { type: Boolean, default: false },
     },

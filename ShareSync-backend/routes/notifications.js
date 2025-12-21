@@ -1,52 +1,63 @@
+/**
+ * routes/notifications.js
+ * Routes for notification management
+ */
+
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
-const auth = require('../middleware/auth');
 
-// Fetch notifications for the logged-in user
-router.get('/', auth, async (req, res) => {
-  try {
-    console.log('Notifications Route - Fetching notifications for user:', req.user.id);
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      console.log('Notifications Route - User not found:', req.user.id);
-      return res.status(404).json({ message: 'User not found' });
-    }
+const {
+  getNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+  clearAll,
+  createNotification,
+  getPreferences,
+  updatePreferences,
+} = require('../controllers/notificationController');
 
-    console.log('Notifications Route - Notifications fetched:', user.notifications.length);
-    res.json(user.notifications);
-  } catch (err) {
-    console.error('Notifications Route - Error fetching notifications:', err.message);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+// Require auth middleware
+let requireAuth;
+try { requireAuth = require('../middleware/auth'); } catch { requireAuth = require('../auth'); }
 
-// Mark a notification as read
-router.put('/:notificationIndex', auth, async (req, res) => {
-  try {
-    console.log('Notifications Route - Marking notification as read for user:', req.user.id);
-    const { notificationIndex } = req.params;
-    const user = await User.findById(req.user.id);
+// All routes require authentication
+router.use(requireAuth);
 
-    if (!user) {
-      console.log('Notifications Route - User not found:', req.user.id);
-      return res.status(404).json({ message: 'User not found' });
-    }
+// ============================================
+// NOTIFICATION ROUTES
+// ============================================
 
-    if (notificationIndex >= user.notifications.length) {
-      console.log('Notifications Route - Notification not found:', notificationIndex);
-      return res.status(404).json({ message: 'Notification not found' });
-    }
+// GET /api/notifications - Get user's notifications
+router.get('/', getNotifications);
 
-    user.notifications[notificationIndex].read = true;
-    await user.save();
+// GET /api/notifications/unread - Get unread count
+router.get('/unread', getUnreadCount);
 
-    console.log('Notifications Route - Notification marked as read:', notificationIndex);
-    res.json(user.notifications[notificationIndex]);
-  } catch (err) {
-    console.error('Notifications Route - Error marking notification as read:', err.message);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+// PUT /api/notifications/read-all - Mark all as read
+router.put('/read-all', markAllAsRead);
+
+// DELETE /api/notifications/clear - Clear all notifications
+router.delete('/clear', clearAll);
+
+// PUT /api/notifications/:notificationId/read - Mark as read
+router.put('/:notificationId/read', markAsRead);
+
+// DELETE /api/notifications/:notificationId - Delete notification
+router.delete('/:notificationId', deleteNotification);
+
+// POST /api/notifications - Create notification (admin/system)
+router.post('/', createNotification);
+
+// ============================================
+// PREFERENCES ROUTES
+// ============================================
+
+// GET /api/notifications/preferences - Get notification preferences
+router.get('/preferences/settings', getPreferences);
+
+// PUT /api/notifications/preferences - Update notification preferences
+router.put('/preferences/settings', updatePreferences);
 
 module.exports = router;
