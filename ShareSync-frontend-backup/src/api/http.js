@@ -1,7 +1,7 @@
 // /src/api/http.js
 import axios from "axios";
 
-// Use Vite dev-server proxy: baseURL '/api' → proxied to http://localhost:5000
+// Use Vite dev-server proxy: baseURL '/api' → proxied to http://localhost:3000
 const BASE_URL = "/api";
 
 function getToken() {
