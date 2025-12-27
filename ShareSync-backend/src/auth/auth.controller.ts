@@ -21,9 +21,10 @@ export class AuthController {
   ) {}
 
   @Post('login')
-  async login(
-    @Body() body: { email: string; password: string },
-  ) {
+  async login(@Body() body: { email: string; password: string }) {
+    console.log('🔵 CONTROLLER RECEIVED:', body);
+    console.log('🔵 Calling service with:', body.email, body.password?.length, 'chars');
+    
     return this.authService.login(body.email, body.password);
   }
 
@@ -66,4 +67,3 @@ export class AuthController {
     }
   }
 }
-

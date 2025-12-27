@@ -14,10 +14,12 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
-  /** Validate email/password and return the user (without password).
-   *  NOTE: public so LocalStrategy can call it.
-   */
+  /** Validate email/password and return the user (without password) */
   public async validateUser(email: string, password: string) {
+    console.log('🔵 VALIDATE USER CALLED');
+    console.log('🔵 email type:', typeof email, 'value:', email);
+    console.log('🔵 password type:', typeof password, 'length:', password?.length);
+    
     const user = await this.userModel.findOne({ email }).lean<UserDocument & { password?: string }>();
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
@@ -39,14 +41,40 @@ export class AuthService {
 
   /** Issue JWT and return it along with the safe user object */
   async login(email: string, password: string) {
+    console.log('🔵 LOGIN SERVICE CALLED');
+    console.log('🔵 email type:', typeof email, 'value:', email);
+    console.log('🔵 password type:', typeof password, 'length:', password?.length);
+    
     const user = await this.validateUser(email, password);
 
-    const payload = { sub: String(user._id), email: user.email, roles: user.roles || [] };
-    const token = await this.jwt.signAsync(payload, {
+    // ✅ FIXED: Only include fields that definitely exist
+    const payload = { 
+      sub: String(user._id), 
+      email: user.email,
+      ...(user.roles && { roles: user.roles }),
+      ...(user.firstName && { firstName: user.firstName }),
+      ...(user.lastName && { lastName: user.lastName }),
+      ...(user.username && { username: user.username })
+    };
+    
+    const access_token = await this.jwt.signAsync(payload, {
       secret: process.env.JWT_SECRET || 'dev_secret_change_me',
       expiresIn: '7d',
     });
 
-    return { token, user };
+    console.log('🟢 LOGIN SUCCESS - Token generated');
+
+    // ✅ Return clean user object
+    return { 
+      access_token, 
+      user: {
+        _id: user._id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        username: user.username || '',
+        roles: user.roles || []
+      }
+    };
   }
 }
