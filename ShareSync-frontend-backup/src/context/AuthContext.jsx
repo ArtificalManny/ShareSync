@@ -1,98 +1,133 @@
-// src/context/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect } from "react";
-import client from "../api/client";
-
-// ====================================================================
-// GLOBAL AUTH STATE — injected by server-side render or main.jsx
-// This is the magic that fixes soft/hard refresh auth loss
-// ====================================================================
-const initialAuth = window.__INITIAL_AUTH_STATE__ || {
-  token: null,
-  user: null,
-  hasToken: false,
-};
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '../api/client';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(initialAuth.user);
-  const [loading, setLoading] = useState(initialAuth.hasToken); // Only verify if we had a token
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  console.log("[AuthContext] RENDER", {
-    user: !!user,
-    loading,
-    hasToken: initialAuth.hasToken,
-    timestamp: new Date().toISOString(),
-  });
-
+  // ✅ CHECK TOKEN ON APP STARTUP
   useEffect(() => {
-    if (!initialAuth.hasToken) {
-      setLoading(false);
-      return;
+    async function checkAuth() {
+      const token = localStorage.getItem('ss.jwt');
+      
+      if (!token) {
+        console.log('[AuthContext] No token found');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        console.log('[AuthContext] Token found, verifying...');
+        
+        const response = await api.post('/auth/verify', { token });
+        
+        console.log('[AuthContext] Verify response:', response.data);
+        
+        if (response.data && response.data.user) {
+          console.log('[AuthContext] Token valid, user:', response.data.user.email);
+          setUser(response.data.user);
+          localStorage.setItem('ss.user', JSON.stringify(response.data.user));
+        } else {
+          console.log('[AuthContext] Token invalid');
+          localStorage.removeItem('ss.jwt');
+          localStorage.removeItem('ss.user');
+        }
+      } catch (error) {
+        console.error('[AuthContext] Token verification failed:', error);
+        localStorage.removeItem('ss.jwt');
+        localStorage.removeItem('ss.user');
+      } finally {
+        setLoading(false);
+      }
     }
 
-    console.log("[AUTH] Verifying token on mount...");
-    client
-      .get("/auth/me")
-      .then((res) => {
-        console.log("[AUTH] Token valid → user loaded", res.data);
-        setUser(res.data);
-        localStorage.setItem("ss.user", JSON.stringify(res.data));
-      })
-      .catch((err) => {
-        console.error("[AUTH] Token invalid or expired → logging out", err);
-        localStorage.removeItem("ss.jwt");
-        localStorage.removeItem("ss.user");
-        window.__INITIAL_AUTH_STATE__ = { token: null, user: null, hasToken: false };
-        setUser(null);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []); // ← Runs exactly once on mount — survives HMR, soft/hard refresh
+    checkAuth();
+  }, []);
 
-  const login = async (credentials) => {
-    const res = await client.post("/auth/login", credentials);
-    const { token, user } = res.data;
-
-    localStorage.setItem("ss.jwt", token);
-    localStorage.setItem("ss.user", JSON.stringify(user));
-
-    // Critical: Update global state for next refresh
-    window.__INITIAL_AUTH_STATE__ = { token, user, hasToken: true };
-
-    setUser(user);
-    return user;
+  const login = async (email, password) => {
+    try {
+      console.log('[AuthContext] 🔵 Attempting login for:', email);
+      
+      const response = await api.post('/auth/login', { email, password });
+      
+      console.log('[AuthContext] 🔵 Full login response:', response.data);
+      
+      // ✅ CRITICAL FIX: Backend returns either "token" or "access_token"
+      // Try both to be safe
+      const token = response.data.access_token || response.data.token;
+      const userData = response.data.user;
+      
+      console.log('[AuthContext] 🔵 Extracted token:', token ? 'YES ✅' : 'NO ❌');
+      console.log('[AuthContext] 🔵 Extracted user:', userData ? 'YES ✅' : 'NO ❌');
+      
+      if (!token) {
+        console.error('[AuthContext] ❌ NO TOKEN IN RESPONSE!', response.data);
+        throw new Error('No token received from server');
+      }
+      
+      if (!userData) {
+        console.error('[AuthContext] ❌ NO USER DATA IN RESPONSE!', response.data);
+        throw new Error('No user data received from server');
+      }
+      
+      console.log('[AuthContext] 🟢 Saving to localStorage...');
+      console.log('[AuthContext] 🟢 Token length:', token.length);
+      console.log('[AuthContext] 🟢 User email:', userData.email);
+      
+      // ✅ Save to localStorage
+      localStorage.setItem('ss.jwt', token);
+      localStorage.setItem('ss.user', JSON.stringify(userData));
+      
+      // ✅ Verify it was saved
+      const savedToken = localStorage.getItem('ss.jwt');
+      console.log('[AuthContext] 🟢 Verified saved token:', savedToken ? 'YES ✅' : 'NO ❌');
+      
+      // ✅ Update state
+      setUser(userData);
+      
+      console.log('[AuthContext] 🎉 Login successful!');
+      
+      return { success: true };
+    } catch (error) {
+      console.error('[AuthContext] ❌ Login error:', error);
+      console.error('[AuthContext] ❌ Error response:', error.response?.data);
+      return { 
+        success: false, 
+        error: error.response?.data?.error || error.response?.data?.message || error.message || 'Login failed' 
+      };
+    }
   };
 
   const logout = () => {
-    console.trace("[AUTH] LOGOUT CALLED — Full stack trace:");
-    // ↑ This will show you EXACTLY who triggered logout (401 interceptor? button? bug?)
-
-    localStorage.removeItem("ss.jwt");
-    localStorage.removeItem("ss.user");
-
-    // Reset global state
-    window.__INITIAL_AUTH_STATE__ = { token: null, user: null, hasToken: false };
-
+    console.log('[AuthContext] 🔴 Logging out...');
+    localStorage.removeItem('ss.jwt');
+    localStorage.removeItem('ss.user');
     setUser(null);
-    window.location.href = "/login";
+    window.location.href = '/login';
+  };
+
+  const value = {
+    user,
+    loading,
+    login,
+    logout,
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Export context itself (rarely needed but safe)
-export { AuthContext };
-
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used within AuthProvider");
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
   }
-  return ctx;
-};
+  return context;
+}
+
+export default AuthContext;

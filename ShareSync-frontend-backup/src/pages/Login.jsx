@@ -21,8 +21,14 @@ export default function Login() {
     }
     setSubmitting(true);
     try {
-      await login({ email, password });
-      navigate("/home", { replace: true });
+      // ✅ CRITICAL FIX: Pass email and password as separate arguments, not as an object
+      const result = await login(email, password);
+      
+      if (result.success) {
+        navigate("/home", { replace: true });
+      } else {
+        setError(result.error || "Login failed");
+      }
     } catch (err) {
       const msg =
         err?.response?.data?.message ||

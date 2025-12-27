@@ -1,4 +1,3 @@
-// src/api/client.js
 import axios from "axios";
 
 const isDev = import.meta.env.DEV;
@@ -11,58 +10,75 @@ const api = axios.create({
 // ====================================================================
 // REQUEST INTERCEPTOR - Attach JWT to every request
 // ====================================================================
-api.interceptors.request.use((cfg) => {
-  const token = localStorage.getItem("ss.jwt");
-  if (token) {
-    cfg.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("ss.jwt");
+    
+    console.log('[API Client] 🔵 Request to:', config.url);
+    console.log('[API Client] 🔵 Token exists:', !!token);
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('[API Client] ✅ Attached token to request:', config.url);
+    } else {
+      console.log('[API Client] ❌ No token found for request:', config.url);
+    }
+    
+    return config;
+  },
+  (error) => {
+    console.error('[API Client] Request interceptor error:', error);
+    return Promise.reject(error);
   }
-  return cfg;
-});
+);
 
 // ====================================================================
 // RESPONSE INTERCEPTOR - Smart 401 handling
 // ====================================================================
-let isLoggingOut = false; // Prevent multiple logout calls
+let isLoggingOut = false;
 
 api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    const status = err?.response?.status;
-    const config = err?.config;
+  (response) => {
+    return response;
+  },
+  (error) => {
+    const status = error?.response?.status;
+    const config = error?.config;
+    const url = config?.url || '';
 
-    // Only handle 401s that indicate ACTUAL auth failures
-    if (status === 401 && !isLoggingOut) {
-      // Ignore 401s from:
-      // 1. /auth/login (wrong password is expected)
-      // 2. /auth/me when checking if token is valid (expected during logout)
-      const isLoginEndpoint = config?.url?.includes('/auth/login');
-      const isMeEndpoint = config?.url?.includes('/auth/me');
+    console.error('❌ API Error:', status, error.response?.data);
+
+    if (status === 401) {
+      const isLoginEndpoint = url.includes('/auth/login');
+      const isRegisterEndpoint = url.includes('/auth/register');
+      const isVerifyEndpoint = url.includes('/auth/verify');
       
-      if (isLoginEndpoint) {
-        // Login failed - don't clear tokens (user might be retrying)
-        console.log("[CLIENT] Login failed (wrong credentials) - not clearing tokens");
-        return Promise.reject(err);
+      if (isLoginEndpoint || isRegisterEndpoint) {
+        console.log('[API Client] Login/Register failed - wrong credentials');
+        return Promise.reject(error);
       }
 
-      if (isMeEndpoint) {
-        // Token verification failed - this is handled by AuthContext
-        console.log("[CLIENT] Token verification failed - AuthContext will handle cleanup");
-        return Promise.reject(err);
+      if (isVerifyEndpoint) {
+        console.log('[API Client] Token verification failed');
+        return Promise.reject(error);
       }
 
-      // All other 401s = genuine auth failure (token expired mid-session)
-      console.warn("[CLIENT] 401 Unauthorized on", config?.url, "- clearing auth");
-      
-      isLoggingOut = true;
-      localStorage.removeItem("ss.jwt");
-      localStorage.removeItem("ss.user");
-      window.__INITIAL_AUTH_STATE__ = { token: null, user: null, hasToken: false };
-      
-      // Use replace to avoid history pollution
-      window.location.replace("/login");
+      if (!isLoggingOut) {
+        console.warn('⚠️ Unauthorized - but NOT redirecting (debug mode)');
+        
+        isLoggingOut = true;
+        
+        localStorage.removeItem("ss.jwt");
+        localStorage.removeItem("ss.user");
+        
+        setTimeout(() => {
+          isLoggingOut = false;
+          window.location.href = "/login";
+        }, 100);
+      }
     }
 
-    return Promise.reject(err);
+    return Promise.reject(error);
   }
 );
 

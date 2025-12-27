@@ -1,7 +1,7 @@
 // src/pages/ProjectHome.jsx - WITH REAL TASKS & SHIPS
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { AuthContext } from "../context/AuthContext";
 import { getProject, shipProject, completeTask } from "../api/projects";
 import useProjectTasks from "../hooks/useProjectTasks";
 import { 
@@ -33,7 +33,7 @@ import CollaborationPanel from "../components/project/CollaborationPanel";
 
 export default function ProjectHome() {
   const { id } = useParams();
-  const { user } = useAuth() || {};
+  const { user } = useContext(AuthContext) || {};
   
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);

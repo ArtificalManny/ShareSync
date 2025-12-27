@@ -1,5 +1,5 @@
 // src/api/projects.js - ENHANCED WITH TASKS & SHIPS
-import api from './axios';
+import api from './client';
 
 // ============================================
 // PROJECTS
