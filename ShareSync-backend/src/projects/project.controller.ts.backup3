@@ -135,73 +135,7 @@ export class ProjectController {
   @Get()
   async list(@Req() req, @Query() query: any) {
     const userId = req?.user?.sub;
-    const projects = await this.project.list(userId, query);
-    
-    // Add team balance to each project
-    const projectsWithBalance = await Promise.all(
-      projects.map(async (project: any) => {
-        const balance = await this.calculateTeamBalance(project);
-        return { ...project, teamBalance: balance };
-      })
-    );
-    
-    return projectsWithBalance;
-  }
-
-  // Helper method to calculate team balance
-  private async calculateTeamBalance(project: any) {
-    // Get ships from last 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    const recentShips = (project.ships || []).filter(
-      (ship: any) => new Date(ship.createdAt) >= sevenDaysAgo
-    );
-    
-    if (recentShips.length === 0) {
-      return {
-        status: 'balanced',
-        message: '✅ No recent activity',
-        distribution: []
-      };
-    }
-    
-    // Count contributions per user
-    const contributionCounts: { [key: string]: number } = {};
-    recentShips.forEach((ship: any) => {
-      const userId = ship.userId || ship.createdBy;
-      contributionCounts[userId] = (contributionCounts[userId] || 0) + 1;
-    });
-    
-    // Calculate percentages
-    const total = recentShips.length;
-    const distribution = Object.entries(contributionCounts).map(([userId, count]) => ({
-      userId,
-      count,
-      percentage: (count / total) * 100
-    }));
-    
-    // Sort by contribution count
-    distribution.sort((a, b) => b.count - a.count);
-    
-    // Determine balance status
-    const topTwoPercentage = distribution.slice(0, 2).reduce((sum, d) => sum + d.percentage, 0);
-    
-    let status: string;
-    let message: string;
-    
-    if (topTwoPercentage > 80) {
-      status = 'heavy';
-      message = '⚠️ 2 people carrying most work';
-    } else if (topTwoPercentage > 60) {
-      status = 'moderate';
-      message = '⚡ Work somewhat concentrated';
-    } else {
-      status = 'balanced';
-      message = '✅ Work well distributed';
-    }
-    
-    return { status, message, distribution };
+    return this.project.list(userId, query);
   }
 
   @Get(':id')
