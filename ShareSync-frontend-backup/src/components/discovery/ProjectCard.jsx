@@ -1,6 +1,6 @@
-// src/components/discovery/ProjectCard.jsx — FINAL, UNBREAKABLE, YOUR ORIGINAL BEAUTY
+// src/components/discovery/ProjectCard.jsx — WITH PHASE 1 TEAM BALANCE
 import React from "react";
-import { Rocket, Users, Clock } from "lucide-react";
+import { Rocket, Users, Clock, AlertTriangle, CheckCircle } from "lucide-react";
 import AvatarGroup from "../ui/AvatarGroup";
 import ProjectListItem from "../projects/ProjectListItem.jsx";
 import TraceOutline from "../ui/TraceOutline.jsx";
@@ -27,6 +27,35 @@ const safeNumber = (val) => {
   return Number(val) || 0;
 };
 
+// ⭐ PHASE 1: Get team balance indicator styles
+function getBalanceStyle(status) {
+  switch(status) {
+    case 'heavy':
+      return {
+        bg: 'rgba(251, 146, 60, 0.1)',
+        border: 'rgba(251, 146, 60, 0.3)',
+        text: 'text-orange-400',
+        icon: AlertTriangle
+      };
+    case 'moderate':
+      return {
+        bg: 'rgba(250, 204, 21, 0.1)',
+        border: 'rgba(250, 204, 21, 0.3)',
+        text: 'text-yellow-400',
+        icon: AlertTriangle
+      };
+    case 'balanced':
+      return {
+        bg: 'rgba(52, 211, 153, 0.1)',
+        border: 'rgba(52, 211, 153, 0.3)',
+        text: 'text-emerald-400',
+        icon: CheckCircle
+      };
+    default:
+      return null;
+  }
+}
+
 export default function ProjectCard({ project, onOpen, onPrefetch, isHovered, onShip }) {
   if (!project) return null;
 
@@ -49,6 +78,10 @@ export default function ProjectCard({ project, onOpen, onPrefetch, isHovered, on
   })) : [];
 
   const isShipped = !!project.shippedAt;
+
+  // ⭐ PHASE 1: Team balance from backend
+  const teamBalance = project.teamBalance;
+  const balanceStyle = teamBalance ? getBalanceStyle(teamBalance.status) : null;
 
   return (
     <TraceOutline radius={16} paused={!isHovered}>
@@ -79,6 +112,22 @@ export default function ProjectCard({ project, onOpen, onPrefetch, isHovered, on
         <div className="px-3 sm:px-4 pt-3">
           <ProjectListItem project={project} />
         </div>
+
+        {/* ⭐ PHASE 1: Team Balance Indicator */}
+        {balanceStyle && teamBalance.status !== 'quiet' && teamBalance.status !== 'unknown' && (
+          <div className="px-3 sm:px-4 pb-2">
+            <div 
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
+              style={{
+                background: balanceStyle.bg,
+                borderColor: balanceStyle.border
+              }}
+            >
+              <balanceStyle.icon className={`w-3.5 h-3.5 ${balanceStyle.text}`} />
+              <span className={balanceStyle.text}>{teamBalance.message}</span>
+            </div>
+          </div>
+        )}
 
         {/* Mini KPIs */}
         <div className="px-3 sm:px-4 py-2 grid grid-cols-2 gap-2">

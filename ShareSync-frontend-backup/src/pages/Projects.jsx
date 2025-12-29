@@ -5,6 +5,9 @@ import ProjectCard from '../components/discovery/ProjectCard';
 import { useAuth } from '../context/AuthContext';
 import ProjectsCreate from './ProjectsCreate';
 
+// ⭐ PHASE 1: Import QuietProjectsBanner
+import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
+
 const Projects = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -71,7 +74,7 @@ const Projects = () => {
       metrics: { onTimePercent: { value: 92 }, openTasks: { value: 5 }, throughputPerWeek: { value: 12 } },
       members: [{ _id: '1', name: 'You' }],
       updatedAt: new Date().toISOString(),
-      season: 'shipping', // 🚀 Shipping, 🌱 Exploring, 🛠 Maintaining
+      season: 'shipping',
       nextMicroStep: 'Fix login page CSS bug',
       timeEstimate: '15 min'
     },
@@ -102,9 +105,9 @@ const Projects = () => {
       momentum: { value: 45 },
       metrics: { onTimePercent: { value: 70 }, openTasks: { value: 12 }, throughputPerWeek: { value: 8 } },
       members: [{ _id: '1', name: 'You' }],
-      updatedAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago - AT RISK
+      updatedAt: new Date(Date.now() - 259200000).toISOString(),
       season: 'exploring',
-      nextMicroStep: null, // No micro-step set
+      nextMicroStep: null,
       timeEstimate: null,
       isAtRisk: true
     }
@@ -124,7 +127,7 @@ const Projects = () => {
       },
       members: newProject.members || [],
       updatedAt: new Date().toISOString(),
-      season: 'exploring', // New projects start in exploring mode
+      season: 'exploring',
       nextMicroStep: null,
       timeEstimate: null
     };
@@ -138,7 +141,6 @@ const Projects = () => {
 
   const handleStartSprint = (project) => {
     setSelectedProject(project);
-    // TODO: Open sprint modal with project context
     console.log('Starting sprint for:', project.name);
   };
 
@@ -176,7 +178,7 @@ const Projects = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pb-24">
       
-      {/* COMPACT CONTROL BAR - Replaces massive hero */}
+      {/* COMPACT CONTROL BAR */}
       <div className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           
@@ -234,28 +236,10 @@ const Projects = () => {
         </div>
       </div>
 
-      {/* At-Risk Alert Banner - Gentle nudge, not shame */}
-      {atRiskProjects.length > 0 && (
-        <div className="max-w-7xl mx-auto px-6 pt-4">
-          <div className="bg-orange-900/20 border border-orange-500/30 rounded-xl p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-orange-400 flex-shrink-0" />
-              <div>
-                <p className="text-white font-medium">
-                  {atRiskProjects.length} project{atRiskProjects.length > 1 ? 's' : ''} been quiet for a bit
-                </p>
-                <p className="text-sm text-orange-300/80">Want to give it a tiny push?</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => setSelectedFilter('at-risk')}
-              className="bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 px-4 py-2 rounded-lg transition-all text-sm font-medium"
-            >
-              View projects
-            </button>
-          </div>
-        </div>
-      )}
+      {/* ⭐ PHASE 1: Quiet Projects Banner - REPLACES the old at-risk banner */}
+      <div className="max-w-7xl mx-auto px-6 pt-4">
+        <QuietProjectsBanner />
+      </div>
 
       {/* TWO COLUMN LAYOUT */}
       <div className="max-w-7xl mx-auto px-6 py-6">
@@ -400,7 +384,7 @@ const Projects = () => {
                 </div>
               </div>
 
-              {/* Streak Insurance - Only show if needed */}
+              {/* Streak Insurance */}
               {canProtectStreak && (
                 <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
                   <div className="flex items-center gap-2 text-orange-400 font-semibold mb-2">
@@ -448,7 +432,7 @@ const Projects = () => {
         </div>
       </div>
 
-      {/* SIMPLIFIED BOTTOM BAR - Thinner, more focused */}
+      {/* SIMPLIFIED BOTTOM BAR */}
       <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl 
                     border-t border-slate-700/50 py-3 px-6 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -481,7 +465,7 @@ const Projects = () => {
   );
 };
 
-// Enhanced Project Card Component with behavioral science features
+// Enhanced Project Card Component
 const EnhancedProjectCard = ({ project, viewMode, onProjectClick, onStartSprint }) => {
   const getSeasonColor = (season) => {
     switch(season) {
@@ -529,7 +513,6 @@ const EnhancedProjectCard = ({ project, viewMode, onProjectClick, onStartSprint 
               </div>
               <p className="text-sm text-slate-400 mt-1">{project.description}</p>
               
-              {/* Next Micro-Step */}
               {project.nextMicroStep ? (
                 <div className="mt-2 flex items-center gap-2 text-sm">
                   <ChevronRight className="w-4 h-4 text-purple-400" />
@@ -599,7 +582,6 @@ const EnhancedProjectCard = ({ project, viewMode, onProjectClick, onStartSprint 
       </h3>
       <p className="text-sm text-slate-400 mb-4">{project.description}</p>
 
-      {/* Season Status */}
       {project.season && (
         <div className="mb-4">
           <span className="text-xs px-3 py-1 rounded-full bg-purple-500/20 text-purple-300">
@@ -610,7 +592,6 @@ const EnhancedProjectCard = ({ project, viewMode, onProjectClick, onStartSprint 
         </div>
       )}
 
-      {/* Next Micro-Step Slot */}
       {project.nextMicroStep ? (
         <div className="bg-slate-800/50 rounded-lg p-3 mb-4">
           <div className="text-xs text-slate-400 mb-1">Next micro-step:</div>
@@ -625,7 +606,6 @@ const EnhancedProjectCard = ({ project, viewMode, onProjectClick, onStartSprint 
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              // TODO: Open micro-step picker
             }}
             className="text-xs text-orange-400 hover:text-orange-300 underline"
           >
@@ -634,14 +614,12 @@ const EnhancedProjectCard = ({ project, viewMode, onProjectClick, onStartSprint 
         </div>
       )}
 
-      {/* Quick metrics */}
       <div className="flex items-center justify-between text-xs text-slate-400 mb-4">
         <span>On-time: {project.metrics?.onTimePercent?.value || 0}%</span>
         <span>Tasks: {project.metrics?.openTasks?.value || 0}</span>
         <span>Throughput: {project.metrics?.throughputPerWeek?.value || 0}/wk</span>
       </div>
 
-      {/* CTA */}
       <button
         onClick={(e) => {
           e.stopPropagation();

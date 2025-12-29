@@ -11,15 +11,17 @@ import client from "../api/client";
 import { getProjectsQuick } from "../api/projects";
 import { track } from "../utils/telemetry";
 
+// ⭐ PHASE 1: Import WeeklyNarrative component
+import WeeklyNarrative from "../components/home/WeeklyNarrative";
+
 const DEFAULT_PROFILE_PIC = "/default-profile.png";
 
-/* ------------------ STYLES ------------------ */
+/* ------------------ STYLES (FIXED: Removed min-height) ------------------ */
 const PageStyles = () => (
   <style>{`
     .home-page {
       row-gap: 1.25rem;
       padding-bottom: 1rem;
-      min-height: calc(100vh - 4rem);
       display: flex;
       flex-direction: column;
     }
@@ -407,6 +409,9 @@ export default function Home() {
         <PageHeader title="Home" subtitle="Your AI-powered mission control" />
         
         <SocialProofTicker events={socialEvents} />
+        
+        {/* ⭐ PHASE 1: Weekly Narrative */}
+        <WeeklyNarrative />
         
         <ReadinessScoreCard
           score={readinessScore}
