@@ -280,16 +280,4 @@ router.get('/me/energy/history', requireAuth, async (req, res) => {
   }
 });
 
-// ============================================
-// 🚀 PHASE 1: MOMENTUM & NARRATIVE ENDPOINTS
-// ============================================
-
-const { calculateMomentumIndex, getWeeklyNarrative } = require('../../controllers/userController');
-
-// GET /api/users/momentum -> get momentum index
-router.get('/momentum', requireAuth, calculateMomentumIndex);
-
-// GET /api/users/weekly-narrative -> get weekly narrative
-router.get('/weekly-narrative', requireAuth, getWeeklyNarrative);
-
 module.exports = router;

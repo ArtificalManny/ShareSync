@@ -12,6 +12,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserService } from './user.service';
 import { ActivitiesService } from '../activities/activities.service';
+// If your gateway is NotificationsGateway instead, import that and inject it below.
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Controller('users')
@@ -19,7 +20,7 @@ export class UserController {
   constructor(
     private readonly users: UserService,
     private readonly activities: ActivitiesService,
-    private readonly realtime: RealtimeGateway,
+    private readonly realtime: RealtimeGateway, // or NotificationsGateway
   ) {}
 
   /**
@@ -50,6 +51,7 @@ export class UserController {
     const fields = ['firstName', 'lastName', 'username', 'profilePicture', 'bio'];
     const changed = fields.some((k) => (before as any)?.[k] !== (updated as any)?.[k]);
     if (changed) {
+      // Broadcast to the user’s sockets; clients listen and refresh from /users/me
       this.realtime.emitToUser(id, 'user:updated', {
         userId: id,
         firstName: (updated as any)?.firstName,
@@ -61,6 +63,7 @@ export class UserController {
       });
     }
 
+    // Optional: record activity (safe no-op if your ActivitiesService is just a stub)
     await this.activities.record({
       userId: id,
       type: 'user.updated',
@@ -78,11 +81,12 @@ export class UserController {
   @Get('activity-summary')
   async getActivitySummary(@Req() req: any) {
     const id = req?.user?.sub || req?.user?.id;
+    // Delegates to UserService.getActivitySummary
     return this.users.getActivitySummary(id);
   }
 
   /**
-   * GET /api/users/me/projects-by-category
+   * ⬇️ NEW: GET /api/users/me/projects-by-category
    * Uses UserService.getProjectsByCategory to group projects as School/Job/Personal.
    */
   @UseGuards(JwtAuthGuard)
@@ -93,7 +97,7 @@ export class UserController {
   }
 
   /**
-   * GET /api/users/leaderboard/streaks
+   * ⬇️ NEW: GET /api/users/leaderboard/streaks
    * Returns top streaks for the streak leaderboard.
    */
   @UseGuards(JwtAuthGuard)
@@ -101,6 +105,7 @@ export class UserController {
   async streakLeaderboard() {
     const top = await this.users.getTopStreaks(20);
 
+    // Map to a clean DTO so you don't leak internal fields
     return top.map((u: any) => ({
       id: u._id?.toString?.() ?? u._id,
       firstName: u.firstName,
@@ -116,6 +121,7 @@ export class UserController {
    */
   @Get('public/:username')
   async publicUser(@Param('username') username: string) {
+    // Prefer the privacy-aware method you already have.
     const user = await this.users.findPublicByUsername(username);
     if (!user) throw new NotFoundException();
     return user;
@@ -123,7 +129,8 @@ export class UserController {
 
   /**
    * GET /api/users/:id/activity
-   * Basic activity listing for a user.
+   * Basic activity listing for a user (can add auth or privacy gates later).
+   * Supports your ActivitiesService cursor listing.
    */
   @Get(':id/activity')
   async userActivity(@Param('id') id: string) {
@@ -134,69 +141,5 @@ export class UserController {
       limit: 20,
       cursor: null,
     });
-  }
-
-  // ============================================
-  // 🚀 PHASE 1: MOMENTUM & NARRATIVE ENDPOINTS
-  // ============================================
-
-  /**
-   * GET /api/users/momentum
-   * Calculate momentum index (0-100) based on ships, focus time, streaks
-   */
-  @UseGuards(JwtAuthGuard)
-  @Get('momentum')
-  async getMomentumIndex(@Req() req: any) {
-    const userId = req?.user?.sub || req?.user?.id;
-    
-    // For now, return mock data - you can implement full logic later
-    const momentumIndex = 75;
-    const status = 'Strong';
-    const message = 'Solid progress - you\'re on track';
-    
-    return {
-      momentumIndex,
-      status,
-      message,
-      comparison: 'You\'re ahead of your usual pace',
-      breakdown: {
-        shipsToday: 3,
-        shipsGoal: 5,
-        focusMinutes: 42,
-        projectsTouched: 2,
-        streakProtected: true,
-        currentStreak: 7,
-      },
-    };
-  }
-
-  /**
-   * GET /api/users/weekly-narrative
-   * Harry Enten-style conversational weekly summary
-   */
-  @UseGuards(JwtAuthGuard)
-  @Get('weekly-narrative')
-  async getWeeklyNarrative(@Req() req: any) {
-    const userId = req?.user?.sub || req?.user?.id;
-    
-    // For now, return mock data - you can implement full logic later
-    return {
-      shipCount: {
-        thisWeek: 7,
-        lastWeek: 5,
-        delta: 2,
-        direction: 'up',
-        text: 'You\'ve shipped 7 tasks (↑+2 vs last week)',
-      },
-      peakTime: {
-        window: 'Tue 14-15',
-        text: 'Most work happened Tue 2-4pm',
-      },
-      prediction: {
-        text: 'If you ship 2 more tasks this week, you\'ll beat your usual average',
-        projectedTotal: 9,
-        willBeatAverage: true,
-      },
-    };
   }
 }

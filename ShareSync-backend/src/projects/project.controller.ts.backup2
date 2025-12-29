@@ -52,7 +52,7 @@ export class ProjectController {
       privacy: dto.privacy ?? 'Private',
       members: (dto.members ?? []).map(m => ({
         ...m,
-        role: m.role ?? 'member',
+        role: m.role ?? 'member', // DEFAULT
         addedAt: new Date(),
       })),
       userId,
@@ -81,55 +81,6 @@ export class ProjectController {
         lastActivityAt: p.updatedAt ?? p.createdAt ?? new Date().toISOString(),
         unreadCount: 0,
       }));
-  }
-
-  @Get('quiet')
-  async getQuietProjects(@Req() req) {
-    const userId = req?.user?.sub;
-    if (!userId) {
-      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
-    }
-
-    const projects = await this.project.findAll(userId);
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-    
-    const quietProjects = [];
-    
-    for (const project of projects) {
-      if (project.status === 'Completed') continue;
-      
-      const lastActivity = project.updatedAt || project.createdAt;
-      const isQuiet = new Date(lastActivity) < threeDaysAgo;
-      
-      if (isQuiet) {
-        const daysSinceActivity = Math.floor(
-          (Date.now() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24)
-        );
-        
-        const quickWins = [
-          'Update README (2 min)',
-          'Review pending tasks (5 min)',
-          'Add one small task (3 min)',
-          'Check in with team (1 min)',
-          'Document one decision (4 min)',
-          'Update project status (2 min)',
-        ];
-        const quickWin = quickWins[Math.floor(Math.random() * quickWins.length)];
-        
-        quietProjects.push({
-          _id: project._id,
-          title: project.title,
-          daysSinceActivity,
-          quickWin,
-        });
-      }
-    }
-    
-    return {
-      count: quietProjects.length,
-      projects: quietProjects,
-    };
   }
 
   @Get()
@@ -261,5 +212,53 @@ export class ProjectController {
     });
 
     return { projectId: id, patch: { icon: updated.icon ?? null } };
+  }
+@Get('quiet')
+  async getQuietProjects(@Req() req) {
+    const userId = req?.user?.sub;
+    if (!userId) {
+      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
+
+    const projects = await this.project.findAll(userId);
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    
+    const quietProjects = [];
+    
+    for (const project of projects) {
+      if (project.status === 'Completed') continue;
+      
+      const lastActivity = project.updatedAt || project.createdAt;
+      const isQuiet = new Date(lastActivity) < threeDaysAgo;
+      
+      if (isQuiet) {
+        const daysSinceActivity = Math.floor(
+          (Date.now() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        
+        const quickWins = [
+          'Update README (2 min)',
+          'Review pending tasks (5 min)',
+          'Add one small task (3 min)',
+          'Check in with team (1 min)',
+          'Document one decision (4 min)',
+          'Update project status (2 min)',
+        ];
+        const quickWin = quickWins[Math.floor(Math.random() * quickWins.length)];
+        
+        quietProjects.push({
+          _id: project._id,
+          title: project.title,
+          daysSinceActivity,
+          quickWin,
+        });
+      }
+    }
+    
+    return {
+      count: quietProjects.length,
+      projects: quietProjects,
+    };
   }
 }
