@@ -114,7 +114,7 @@ export default function ProjectCard({ project, onOpen, onPrefetch, isHovered, on
         </div>
 
         {/* ⭐ PHASE 1: Team Balance Indicator */}
-        {balanceStyle && teamBalance.status !== 'quiet' && teamBalance.status !== 'unknown' && (
+        {balanceStyle && teamBalance.message !== '✅ No recent activity' && (
           <div className="px-3 sm:px-4 pb-2">
             <div 
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
