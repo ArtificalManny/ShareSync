@@ -22,6 +22,10 @@ import CollaborationPanel from "../components/project/CollaborationPanel";
 
 // =====================================
 // BEHAVIORAL SCIENCE COMPONENTS
+
+// ⭐ PHASE 2: PROJECT DEEP DIVE COMPONENTS
+import ProjectHeartbeat from "../components/project/ProjectHeartbeat";
+import WorkBalanceGauge from "../components/project/WorkBalanceGauge";
 // =====================================
 
 // 1. MICRO-WIN CELEBRATION
@@ -368,14 +372,11 @@ export default function ProjectHome() {
           
           {/* LEFT COLUMN: CALENDAR + ENERGY (3 cols) */}
           <div className="lg:col-span-3 space-y-6">
-            {/* CALENDAR (simplified) */}
-            <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
-              <h3 className="font-bold text-lg flex items-center gap-2 mb-4">
-                <Calendar className="w-5 h-5 text-purple-400" />
-                {monthNames[month]} {year}
-              </h3>
-              <p className="text-sm text-slate-400">Calendar view coming soon...</p>
-            </div>
+            {/* ⭐ PHASE 2: PROJECT HEARTBEAT */}
+            <ProjectHeartbeat projectId={id} />
+            
+            {/* ⭐ PHASE 2: WORK BALANCE GAUGE */}
+            <WorkBalanceGauge projectId={id} />
 
             {/* ⭐ ENERGY TRACKER */}
             <EnergyTracker
