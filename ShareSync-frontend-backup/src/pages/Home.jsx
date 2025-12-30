@@ -14,6 +14,7 @@ import { track } from "../utils/telemetry";
 // ⭐ PHASE 1: Import WeeklyNarrative component
 import WeeklyNarrative from "../components/home/WeeklyNarrative";
 
+import MomentumIndex from "../components/home/MomentumIndex";
 const DEFAULT_PROFILE_PIC = "/default-profile.png";
 
 /* ------------------ STYLES (FIXED: Removed min-height) ------------------ */
@@ -428,15 +429,13 @@ export default function Home() {
           onStart={startSprint}
         />
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <div className="flex justify-center">
-            <MomentumRing score={readinessScore} />
-          </div>
-          <div className="lg:col-span-2 space-y-4">
-            <StatsGrid stats={stats} yesterdayComparison={{ streak: 1, xp: 15 }} />
-          </div>
-        </div>
         
+        {/* ⭐ PHASE 1: Momentum Index */}
+        <MomentumIndex />
+        
+        <div className="lg:col-span-2 space-y-4">
+          <StatsGrid stats={stats} yesterdayComparison={{ streak: 1, xp: 15 }} />
+        </div>
         <TeamMomentumMeter status="fire" activeCount={3} totalCount={5} />
         
         <div className="quick-actions">
