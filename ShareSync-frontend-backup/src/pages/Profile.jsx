@@ -14,6 +14,11 @@ import { UserContext } from "../context/UserContext";
 import { track } from "../utils/telemetry.js";
 import { toast } from "../components/ui/toast";
 
+// ⭐ PHASE 3: PROFILE SABERMETRICS COMPONENTS
+import CollaborationStyleCard from "../components/Profile/CollaborationStyleCard";
+import ReliabilityLens from "../components/Profile/ReliabilityLens";
+import RoleClassificationCard from "../components/Profile/RoleClassificationCard";
+
 // XP / Level helpers
 function xpForLevel(level) {
   if (level <= 1) return 0;
@@ -562,6 +567,7 @@ export default function Profile() {
   const [me, setMe] = useState(null);
   const [publicUser, setPublicUser] = useState(null);
   const [isProfilePublic, setIsProfilePublic] = useState(true);
+  const [profileAnalytics, setProfileAnalytics] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -581,6 +587,13 @@ export default function Profile() {
         setMe(data || null);
         setIsProfilePublic(data?.publicProfile !== false);
       }
+        // ⭐ PHASE 3: Fetch profile analytics
+        try {
+          const analytics = await client.get("/users/profile-analytics");
+          setProfileAnalytics(analytics.data);
+        } catch (err) {
+          console.error("Failed to load profile analytics:", err);
+        }
     } catch (e) {
       if (isPublicRoute) {
         setLocked(true);
@@ -740,6 +753,21 @@ export default function Profile() {
           />
         </div>
 
+
+        {/* ⭐ PHASE 3: PROFILE SABERMETRICS (own profile only) */}
+        {isOwnProfile && profileAnalytics && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <Trophy className="w-6 h-6 text-yellow-400" />
+              Your Work DNA
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <CollaborationStyleCard data={profileAnalytics.collaborationStyle} />
+              <ReliabilityLens data={profileAnalytics.reliability} />
+              <RoleClassificationCard data={profileAnalytics.roleClassification} />
+            </div>
+          </div>
+        )}
         {/* Share Card */}
         <ShareableCard user={user} stats={mockStats} />
 
