@@ -5,10 +5,14 @@ import { toast } from '../components/ui/Toaster.jsx';
 import { trackMentorSettings, trackProfileDiscoverToggle } from '../utils/telemetry';
 import { DISCOVERABILITY } from '../config/flags.js';
 import { 
+  Beaker,
   Target, Brain, Users as UsersIcon, Shield, Heart, Sparkles, 
   Play, Zap, Clock, Film, Star, Moon, Sun, Eye
 } from 'lucide-react';
-import PresenceSettings from '../components/settings/PresenceSettings'; // ⭐ NEW
+import PresenceSettings from '../components/settings/PresenceSettings';
+import ExperimentHistory from "../components/settings/ExperimentHistory";
+import WhatWorksAnalyzer from "../components/settings/WhatWorksAnalyzer";
+import PrivacyCard from "../components/settings/PrivacyCard";
 
 // Slider Component
 function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Icon }) {
@@ -112,7 +116,7 @@ function RadioGroup({ label, options, value, onChange, icon: Icon }) {
 export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(''); // ⭐ FIXED: Renamed from 'err'
+  const [errorMsg, setErrorMsg] = useState('');
   const [ok, setOk] = useState('');
 
   // LAYER 1: Momentum Engine
@@ -145,7 +149,7 @@ export default function Settings() {
   const [yearlyMontage, setYearlyMontage] = useState(false);
 
   // LAYER 7: Kid Mode / Pro Mode
-  const [userMode, setUserMode] = useState('pro'); // 'kid' or 'pro'
+  const [userMode, setUserMode] = useState('pro');
 
   // Existing settings
   const [theme, setTheme] = useState('system');
@@ -199,7 +203,6 @@ export default function Settings() {
       .then((me) => {
         if (ignore) return;
         
-        // Load existing settings
         setPublicProfile(Boolean(me?.publicProfile ?? true));
         setDiscoverable(Boolean(me?.discoverable ?? false));
         const initialTheme = me?.appearance?.theme ?? localStorage.getItem('ss.theme') ?? 'system';
@@ -216,30 +219,25 @@ export default function Settings() {
         setMentorTone(mentor.tone || 'wise');
         setMentorIntensity(mentor.intensity || 3);
 
-        // Load momentum settings
         const momentum = me?.momentum || {};
         setDailyShipsGoal(momentum.dailyGoal || 5);
         setWeekendShipsCount(Boolean(momentum.weekendCount ?? true));
         setAllowStreakFreeze(Boolean(momentum.allowFreeze ?? true));
 
-        // Load focus settings
         const focus = me?.focus || {};
         setDeepWorkTarget(focus.dailyTarget || 4);
         setAutoStartFocus(Boolean(focus.autoStart ?? false));
         setFocusStartTime(focus.startTime || '09:00');
 
-        // Load social settings
         setShowStreakTo(me?.social?.showStreakTo || 'friends');
         setCelebratePublicly(Boolean(me?.social?.celebrate ?? true));
 
-        // Load legacy settings
         setShowLegacyEverywhere(Boolean(me?.legacy?.showEverywhere ?? true));
         setYearlyMontage(Boolean(me?.legacy?.yearlyVideo ?? false));
 
-        // Load user mode
         setUserMode(me?.appearance?.mode || 'pro');
       })
-      .catch((e) => !ignore && setErrorMsg(String(e?.message || e))) // ⭐ FIXED
+      .catch((e) => !ignore && setErrorMsg(String(e?.message || e)))
       .finally(() => !ignore && setLoading(false));
     return () => {
       ignore = true;
@@ -248,7 +246,7 @@ export default function Settings() {
 
   const handleSave = async (e) => {
     e?.preventDefault?.();
-    setErrorMsg(''); // ⭐ FIXED
+    setErrorMsg('');
     setOk('');
     setSaving(true);
     
@@ -296,7 +294,7 @@ export default function Settings() {
         source: 'settings_save',
       });
     } catch (e) {
-      setErrorMsg(e?.response?.data?.message || e?.message || 'Failed to save settings'); // ⭐ FIXED
+      setErrorMsg(e?.response?.data?.message || e?.message || 'Failed to save settings');
     } finally {
       setSaving(false);
       setTimeout(() => setOk(''), 3000);
@@ -322,7 +320,6 @@ export default function Settings() {
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-6 py-12">
       <div className="max-w-4xl mx-auto space-y-8">
         
-        {/* Hero */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent mb-3">
             Design Your Momentum
@@ -330,8 +327,7 @@ export default function Settings() {
           <p className="text-slate-400 text-lg">Who do you want to become?</p>
         </div>
 
-        {/* Notifications */}
-        {errorMsg && ( // ⭐ FIXED
+        {errorMsg && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-6 py-4 text-red-300">
             {errorMsg}
           </div>
@@ -479,7 +475,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* ⭐ NEW: CURSOR PRESENCE & PRIVACY SETTINGS */}
+          {/* Cursor Presence Settings */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
             <div className="flex items-center gap-3 mb-6">
               <Eye className="w-6 h-6 text-purple-400" />
@@ -521,7 +517,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* LAYER 7: Kid Mode / Pro Mode */}
+          {/* LAYER 7: Experience Mode */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
             <div className="flex items-center gap-3 mb-6">
               <Star className="w-6 h-6 text-purple-400" />
@@ -562,6 +558,21 @@ export default function Settings() {
               </button>
             </div>
           </div>
+
+          {/* ⭐ PHASE 4: SETTINGS LAB */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Beaker className="w-6 h-6 text-purple-400" />
+              <h2 className="text-xl font-bold text-white">Settings Lab</h2>
+            </div>
+            <div className="space-y-6">
+              <ExperimentHistory />
+              <WhatWorksAnalyzer />
+            </div>
+          </div>
+
+          {/* ⭐ PHASE 4: PRIVACY TRANSPARENCY */}
+          <PrivacyCard />
 
           {/* Appearance */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
