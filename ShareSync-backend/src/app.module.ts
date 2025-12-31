@@ -1,4 +1,4 @@
-// src/app.module.ts - UPDATED WITH ANALYTICS MODULE
+// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -8,6 +8,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { ProjectModule } from './projects/project.module';
+import { ExperimentsModule } from './experiments/experiments.module';
 import { FeedModule } from './feed/feed.module';
 import { ProfileModule } from './profile/profile.module';
 import { ActivitiesModule } from './activities/activities.module';
@@ -17,7 +18,7 @@ import { ModerationModule } from './moderation/moderation.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { StatsModule } from './stats/stats.module';
 import { TasksModule } from './tasks/tasks.module';
-import { AnalyticsModule } from './analytics/analytics.module'; // ⭐ NEW
+import { AnalyticsModule } from './analytics/analytics.module';
 
 import { NotifyModule } from './notifications/notify.module';
 import { FilesModule } from './files/files.module';
@@ -27,15 +28,22 @@ import { AppController } from './app.controller';
 
 @Module({
   imports: [
+    // Load environment variables globally
     ConfigModule.forRoot({ isGlobal: true }),
 
-    MongooseModule.forRoot(process.env.MONGO_URI || 'mongodb://localhost:27017/sharesync'),
+    // MongoDB connection
+    MongooseModule.forRoot(
+      process.env.MONGO_URI || 'mongodb://localhost:27017/sharesync',
+    ),
 
+    // Rate limiting
     ThrottlerModule.forRoot([{ ttl: 60, limit: 20 }]),
 
+    // Feature modules
     AuthModule,
     UserModule,
     ProjectModule,
+    ExperimentsModule,
     FeedModule,
     ProfileModule,
     ActivitiesModule,
@@ -45,8 +53,7 @@ import { AppController } from './app.controller';
     UploadsModule,
     StatsModule,
     TasksModule,
-    AnalyticsModule, // ⭐ ADDED
-
+    AnalyticsModule,
     NotifyModule,
     FilesModule,
     HabitsModule,
