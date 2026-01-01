@@ -1,83 +1,87 @@
 import React from 'react';
-import { Target, Calendar, TrendingUp, Lightbulb } from 'lucide-react';
+import { Target, TrendingUp } from 'lucide-react';
 
 export default function ReliabilityLens({ data }) {
   if (!data) return null;
 
-  const {
-    streakDays,
-    daysShowedUp,
-    totalDays,
-    missedDays,
-    showUpRate,
-    missedReason,
-    insight
-  } = data;
-
-  // Color based on show-up rate
-  const getColor = () => {
-    if (showUpRate >= 90) return { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400' };
-    if (showUpRate >= 70) return { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400' };
-    if (showUpRate >= 50) return { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400' };
-    return { bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-400' };
-  };
-
-  const colors = getColor();
+  const { streakDaysShownUp, totalDays, missedDays, mostCommonReason, insight } = data;
+  const showUpRate = Math.round((streakDaysShownUp / totalDays) * 100);
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 shadow-xl">
-      <div className="flex items-center gap-2 mb-4">
-        <Target className="w-5 h-5 text-green-400" />
-        <h3 className="text-lg font-semibold">Reliability</h3>
+    <div className="modern-card p-6 space-y-5">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
+          <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+        </div>
+        <h3 className="heading-3">Reliability</h3>
       </div>
 
-      {/* Show-up Rate */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <div className="text-center">
-          <div className="text-3xl font-bold text-emerald-400">{daysShowedUp}/{totalDays}</div>
-          <div className="text-xs text-slate-400">Days shown up</div>
+      {/* Show-up rate */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="caption-text">Show-up rate</span>
+          <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            {showUpRate}%
+          </span>
         </div>
         
-        <div className="text-center">
-          <div className={`text-3xl font-bold ${colors.text}`}>{showUpRate}%</div>
-          <div className="text-xs text-slate-400">Show-up rate</div>
+        {/* Progress bar */}
+        <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+            style={{ width: `${showUpRate}%` }}
+          />
         </div>
         
-        <div className="text-center">
-          <div className="text-3xl font-bold text-orange-400">{missedDays}</div>
-          <div className="text-xs text-slate-400">Missed this month</div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="caption-text">
+            {streakDaysShownUp}/{totalDays} days
+          </span>
+          {missedDays > 0 && (
+            <span className="text-amber-600 dark:text-amber-400 font-medium">
+              {missedDays} missed
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden mb-4">
-        <div 
-          className={`h-full bg-gradient-to-r ${colors.bg.replace('/10', '')} ${colors.border.replace('/20', '')} transition-all duration-500`}
-          style={{ width: `${showUpRate}%` }}
-        />
+      <div className="divider-modern" />
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="stat-card-modern">
+          <div className="stat-label">Shown up</div>
+          <div className="stat-value text-xl">{streakDaysShownUp}</div>
+        </div>
+        <div className="stat-card-modern">
+          <div className="stat-label">Missed</div>
+          <div className="stat-value text-xl">{missedDays}</div>
+        </div>
       </div>
 
-      {/* Most Common Reason */}
-      {missedReason && (
-        <div className="bg-slate-900/50 rounded-xl p-4 mb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <span className="text-sm font-semibold text-slate-300">Most common reason for missed days:</span>
-          </div>
-          <p className="text-sm text-slate-400">{missedReason}</p>
+      {/* Most common reason */}
+      {mostCommonReason && (
+        <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+          <div className="caption-text mb-1">Most common skip reason</div>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            {mostCommonReason}
+          </p>
         </div>
       )}
 
-      {/* Self-Knowledge Insight */}
-      <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
-        <div className="flex items-start gap-2">
-          <Lightbulb className="w-4 h-4 text-purple-400 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-purple-300 mb-1">💡 Self-knowledge, not guilt:</p>
-            <p className="text-sm text-slate-300">{insight}</p>
+      {/* Insight */}
+      {insight && (
+        <>
+          <div className="divider-modern" />
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-primary-50 dark:bg-primary-500/10">
+            <TrendingUp className="w-4 h-4 text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm font-medium text-primary-700 dark:text-primary-300">
+              {insight}
+            </p>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }
