@@ -1,4 +1,4 @@
-import { toast } from "../ui/Toast";
+import { toast } from "./ui/toast";
 // src/components/layout/Sidebar.jsx - THE MOST ADDICTIVE SIDEBAR EVER BUILT
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";

@@ -1,4 +1,4 @@
-import { toast } from "../ui/Toast";
+import { toast } from "../ui/toast";
 // /src/components/messenger/DMThread.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Send, Smile } from "lucide-react";

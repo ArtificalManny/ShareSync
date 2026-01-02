@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Zap, Shield } from 'lucide-react';
 import api from '../../api/client';
+import AnimatedNumber from '../ui/AnimatedNumber'; // ⭐ NEW: Import AnimatedNumber
 
 export default function MomentumIndex() {
   const [data, setData] = useState(null);
@@ -23,7 +24,7 @@ export default function MomentumIndex() {
 
   if (loading) {
     return (
-      <div className="modern-card p-6 space-y-4">
+      <div className="modern-card p-6 space-y-4 animate-pulse">
         <div className="skeleton h-6 w-32" />
         <div className="flex items-center gap-6">
           <div className="skeleton h-32 w-32 rounded-full" />
@@ -92,7 +93,7 @@ export default function MomentumIndex() {
               fill="none"
               className="text-slate-200 dark:text-slate-700"
             />
-            {/* Progress ring */}
+            {/* Progress ring - ⭐ ANIMATED with spring */}
             <circle
               cx="72"
               cy="72"
@@ -108,9 +109,11 @@ export default function MomentumIndex() {
           
           {/* Center content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className={`text-4xl font-bold bg-gradient-to-br ${colors.gradient} bg-clip-text text-transparent`}>
-              {momentumIndex}
-            </div>
+            {/* ⭐ ANIMATED NUMBER - smoothly counts up */}
+            <AnimatedNumber 
+              value={momentumIndex}
+              className={`text-4xl font-bold bg-gradient-to-br ${colors.gradient} bg-clip-text text-transparent`}
+            />
             <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
               {status}
             </div>
@@ -121,7 +124,7 @@ export default function MomentumIndex() {
         <div className="flex-1 space-y-4">
           <p className="body-text text-sm">{message}</p>
           
-          {/* Stats grid */}
+          {/* Stats grid - ⭐ ALL NUMBERS ANIMATED */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -129,7 +132,9 @@ export default function MomentumIndex() {
                 <span className="caption-text">Ships today</span>
               </div>
               <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                {breakdown.shipsToday}/{breakdown.shipsGoal}
+                <AnimatedNumber value={breakdown.shipsToday} />
+                /
+                <AnimatedNumber value={breakdown.shipsGoal} />
               </span>
             </div>
             
@@ -139,7 +144,7 @@ export default function MomentumIndex() {
                 <span className="caption-text">Streak</span>
               </div>
               <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                {breakdown.currentStreak}d
+                <AnimatedNumber value={breakdown.currentStreak} suffix="d" />
               </span>
             </div>
             
@@ -149,7 +154,7 @@ export default function MomentumIndex() {
                 <span className="caption-text">Focus time</span>
               </div>
               <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                {breakdown.focusMinutes} min
+                <AnimatedNumber value={breakdown.focusMinutes} suffix=" min" />
               </span>
             </div>
           </div>
