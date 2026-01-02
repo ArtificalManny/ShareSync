@@ -15,28 +15,15 @@
     @apply transition-all duration-200;
   }
   
-  /* ⭐ ENHANCED: Lift + Glow on Hover */
   .modern-card:hover {
     @apply shadow-lg;
     @apply border-slate-300/80 dark:border-slate-600/80;
-    transform: translateY(-2px);
-    box-shadow: 
-      0 8px 24px rgba(0, 0, 0, 0.12),
-      0 0 0 1px rgba(99, 102, 241, 0.08);
   }
   
   /* Elevated card (for important content) */
   .modern-card-elevated {
     @apply modern-card;
     @apply shadow-pop;
-  }
-  
-  /* ⭐ ENHANCED: Elevated card hover gets more dramatic lift */
-  .modern-card-elevated:hover {
-    transform: translateY(-4px);
-    box-shadow: 
-      0 12px 32px rgba(0, 0, 0, 0.15),
-      0 0 0 1px rgba(99, 102, 241, 0.12);
   }
   
   /* ─────────────────────────────────────────────────────────────────────────
