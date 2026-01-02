@@ -36,4 +36,24 @@ export class InsightsController {
     const userId = req?.user?.sub || req?.user?.id;
     return this.insights.getSmartNudgeTiming(userId);
   }
+
+  /**
+   * GET /api/insights/critical
+   * Get critical insights for dashboard (top priority alerts)
+   */
+  @Get('critical')
+  async getCriticalInsights(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.id;
+    return this.insights.getCriticalInsights(userId);
+  }
+
+  /**
+   * GET /api/insights/workload-warnings
+   * Get workload imbalance warnings
+   */
+  @Get('workload-warnings')
+  async getWorkloadWarnings(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.id;
+    return this.insights.detectWorkloadImbalance(userId);
+  }
 }
