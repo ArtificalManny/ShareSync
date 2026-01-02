@@ -1,8 +1,8 @@
-// src/pages/ProjectHome.jsx - WITH REAL TASKS & SHIPS
-import React, { useEffect, useState, useContext, useCallback } from "react";
+// src/pages/ProjectHome.jsx - WITH COLLABORATION PANEL + REAL TASKS
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
-import { getProject, shipProject, completeTask } from "../api/projects";
+import { useAuth } from "../context/AuthContext";
+import { getProject, shipProject } from "../api/projects";
 import useProjectTasks from "../hooks/useProjectTasks";
 import { 
   Rocket, Plus, Calendar, Clock, Zap, Trophy, Flame, CheckCircle2, Target,
@@ -17,15 +17,128 @@ import { useCursorContext } from "../context/CursorContext";
 import useCursor, { useCursorFlash } from "../hooks/useCursor";
 import usePresence, { useTeamPresence } from "../hooks/usePresence";
 
-// ⭐ COLLABORATION PANEL
+// ⭐ NEW: COLLABORATION PANEL
 import CollaborationPanel from "../components/project/CollaborationPanel";
 
 // =====================================
 // BEHAVIORAL SCIENCE COMPONENTS
-// (Keep all the existing components: MicroWinToast, EnergyTracker, StreakGuard, AIAccountabilityPartner, TaskGuardModal)
+
+// ⭐ PHASE 2: PROJECT DEEP DIVE COMPONENTS
+import ProjectHeartbeat from "../components/project/ProjectHeartbeat";
+import WorkBalanceGauge from "../components/project/WorkBalanceGauge";
 // =====================================
 
-// ... [Keep all your existing behavioral science components unchanged] ...
+// 1. MICRO-WIN CELEBRATION
+const MicroWinToast = ({ type, message, xp }) => {
+  const getEmoji = () => {
+    switch(type) {
+      case 'task_started': return '🎯';
+      case '5min_worked': return '🔥';
+      case 'stuck_resolved': return '💡';
+      case 'comeback': return '💪';
+      case 'flow_state': return '⚡';
+      default: return '✨';
+    }
+  };
+
+  return (
+    <div className="fixed top-20 right-4 bg-gradient-to-r from-purple-600 to-fuchsia-600 px-4 py-3 rounded-xl shadow-2xl animate-slide-in-right z-50">
+      <div className="flex items-center gap-2">
+        <span className="text-2xl">{getEmoji()}</span>
+        <div>
+          <p className="text-white font-bold text-sm">{message}</p>
+          <p className="text-purple-100 text-xs">+{xp} XP</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 2. ENERGY TRACKER
+const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
+  const getEnergyIcon = (level) => {
+    switch(level) {
+      case 'high': return <Battery className="w-5 h-5 text-emerald-400" />;
+      case 'medium': return <BatteryMedium className="w-5 h-5 text-yellow-400" />;
+      case 'low': return <BatteryLow className="w-5 h-5 text-orange-400" />;
+      default: return <Battery className="w-5 h-5" />;
+    }
+  };
+
+  const getMatchedTasks = (energy) => {
+    if (energy === 'high') return tasks.filter(t => t.effort === 'high' || !t.effort);
+    if (energy === 'medium') return tasks.filter(t => t.effort === 'medium' || !t.effort);
+    return tasks.filter(t => t.effort === 'low' || t.estimatedTime < 15);
+  };
+
+  const matchedTasks = getMatchedTasks(currentEnergy);
+
+  return (
+    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
+      <div className="flex items-center gap-2 mb-4">
+        {getEnergyIcon(currentEnergy)}
+        <h3 className="font-bold text-lg">Energy-Based Planning</h3>
+      </div>
+
+      <div className="mb-4">
+        <p className="text-sm text-slate-400 mb-3">How's your energy right now?</p>
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={() => onEnergyChange('high')}
+            className={`p-3 rounded-xl border-2 transition-all ${
+              currentEnergy === 'high'
+                ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-emerald-500/50'
+            }`}
+          >
+            <Battery className="w-5 h-5 mx-auto mb-1" />
+            <p className="text-xs font-semibold">High</p>
+          </button>
+          <button
+            onClick={() => onEnergyChange('medium')}
+            className={`p-3 rounded-xl border-2 transition-all ${
+              currentEnergy === 'medium'
+                ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400'
+                : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-yellow-500/50'
+            }`}
+          >
+            <BatteryMedium className="w-5 h-5 mx-auto mb-1" />
+            <p className="text-xs font-semibold">Medium</p>
+          </button>
+          <button
+            onClick={() => onEnergyChange('low')}
+            className={`p-3 rounded-xl border-2 transition-all ${
+              currentEnergy === 'low'
+                ? 'bg-orange-500/20 border-orange-500 text-orange-400'
+                : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-orange-500/50'
+            }`}
+          >
+            <BatteryLow className="w-5 h-5 mx-auto mb-1" />
+            <p className="text-xs font-semibold">Low</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Recommended tasks based on energy */}
+      <div className="pt-4 border-t border-slate-700/50">
+        <p className="text-sm font-semibold text-white mb-2">
+          {currentEnergy === 'high' && '🔥 Tackle your hardest tasks now:'}
+          {currentEnergy === 'medium' && '⚡ Good time for medium-effort work:'}
+          {currentEnergy === 'low' && '🧘 Easy wins for low energy:'}
+        </p>
+        <div className="space-y-2">
+          {matchedTasks.slice(0, 3).map((task, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs text-slate-300 p-2 bg-slate-900/30 rounded-lg">
+              <CheckCircle2 className="w-3 h-3 text-purple-400" />
+              <span className="flex-1 truncate">{task.title}</span>
+              <span className="text-slate-500">{task.estimatedTime || 15}m</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // =====================================
 // MAIN PROJECT HOME COMPONENT
@@ -33,7 +146,7 @@ import CollaborationPanel from "../components/project/CollaborationPanel";
 
 export default function ProjectHome() {
   const { id } = useParams();
-  const { user } = useContext(AuthContext) || {};
+  const { user } = useAuth();
   
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,37 +166,17 @@ export default function ProjectHome() {
 
   // ⭐ BEHAVIORAL SCIENCE STATE
   const [currentEnergy, setCurrentEnergy] = useState('medium');
-  const [morningGoal, setMorningGoal] = useState('');
-  const [eveningReview, setEveningReview] = useState(false);
-  const [activeTask, setActiveTask] = useState(null);
-  const [taskStartTime, setTaskStartTime] = useState(null);
-  const [showTaskGuard, setShowTaskGuard] = useState(false);
   const [microWin, setMicroWin] = useState(null);
-  const [hoursSinceLastShip, setHoursSinceLastShip] = useState(0);
-  const [workSessionDuration, setWorkSessionDuration] = useState(0);
 
   // ⭐ CURSOR SYSTEM HOOKS
-  const { joinProject, leaveProject, isConnected } = useCursorContext();
-  
-  const { position, activity, isTracking } = useCursor({
-    enabled: true,
-    detectActivity: true,
-    detectProximity: true,
-    proximityThreshold: 50,
-  });
-
-  const { 
-    status, 
-    isOnline, 
-    projectStats 
-  } = usePresence({
+  const { joinProject, leaveProject } = useCursorContext();
+  const { flashShip, flashTyping, flashClicking } = useCursorFlash();
+  const { projectStats } = usePresence({
     autoDetectIdle: true,
     autoSendHeartbeat: true,
     idleTimeout: 5 * 60 * 1000,
   });
-
   const teamActivity = useTeamPresence();
-  const { flashShip, flashTyping, flashClicking } = useCursorFlash();
 
   // ⭐ JOIN/LEAVE PROJECT
   useEffect(() => {
@@ -114,31 +207,7 @@ export default function ProjectHome() {
     return () => { ignore = true; };
   }, [id]);
 
-  // ⭐ WORK SESSION TIMER
-  useEffect(() => {
-    if (activeTask) {
-      const interval = setInterval(() => {
-        setWorkSessionDuration(prev => {
-          const newDuration = prev + 1;
-          
-          if (newDuration === 5) {
-            setMicroWin({ type: '5min_worked', message: '5 min flow state!', xp: 10 });
-            setTimeout(() => setMicroWin(null), 3000);
-          }
-          if (newDuration === 15) {
-            setMicroWin({ type: 'flow_state', message: '15 min deep work!', xp: 25 });
-            setTimeout(() => setMicroWin(null), 3000);
-          }
-          
-          return newDuration;
-        });
-      }, 60000);
-
-      return () => clearInterval(interval);
-    }
-  }, [activeTask]);
-
-  // ⭐ ENHANCED SHIP HANDLER (WITH REAL API)
+  // ⭐ ENHANCED SHIP HANDLER
   const handleShip = async () => {
     if (!shipDescription.trim()) {
       toast({ title: "Add a description", variant: "error" });
@@ -146,60 +215,25 @@ export default function ProjectHome() {
     }
 
     try {
-      const result = await shipProject(id, { 
-        description: shipDescription 
-      });
+      await shipProject(id, { description: shipDescription });
       
       flashShip();
       
-      // Show celebration with XP and streak
-      setMicroWin({ 
-        type: 'task_started', 
-        message: `🎉 Shipped! +${result.xpAwarded} XP`, 
-        xp: result.xpAwarded 
-      });
+      setMicroWin({ type: 'task_started', message: '�� Shipped! Amazing work!', xp: 50 });
       setTimeout(() => setMicroWin(null), 4000);
       
       toast({
         title: "🎉 Shipped!",
-        description: `${shipDescription} - +${result.xpAwarded} XP | ${result.streak} day streak 🔥`,
+        description: `${shipDescription} - +50 XP`,
         variant: "success"
       });
       
       setShowShipModal(false);
       setShipDescription(`Update: ${project?.title || ""}`);
-      
-      // Reload project to get updated ships
       const updated = await getProject(id);
       setProject(updated);
-      
-      setHoursSinceLastShip(0);
     } catch (e) {
       toast({ title: "Ship failed", variant: "error" });
-    }
-  };
-
-  // ⭐ HANDLE TASK COMPLETION (WITH REAL API)
-  const handleCompleteTask = async (task) => {
-    try {
-      flashClicking();
-      
-      const result = await completeTaskAPI(task._id);
-      
-      setMicroWin({ 
-        type: 'task_started', 
-        message: `✅ Task complete! +${result.xpAwarded} XP`, 
-        xp: result.xpAwarded 
-      });
-      setTimeout(() => setMicroWin(null), 3000);
-      
-      toast({ 
-        title: "Task completed! 🎉", 
-        description: `+${result.xpAwarded} XP earned`,
-        variant: "success" 
-      });
-    } catch (error) {
-      toast({ title: "Failed to complete task", variant: "error" });
     }
   };
 
@@ -210,7 +244,6 @@ export default function ProjectHome() {
     try {
       await createTask({
         title: title.trim(),
-        createdBy: user?.id
       });
       
       flashTyping();
@@ -220,26 +253,21 @@ export default function ProjectHome() {
     }
   };
 
-  // ⭐ START TASK WITH MOMENTUM TRACKING
-  const handleStartTask = (task) => {
-    setActiveTask(task.title);
-    setTaskStartTime(Date.now());
-    setWorkSessionDuration(0);
+  // ⭐ HANDLE TASK COMPLETION (WITH REAL API)
+  const handleCompleteTask = async (task) => {
+    if (task.completed) return;
     
-    setMicroWin({ type: 'task_started', message: 'Lock in!', xp: 5 });
-    setTimeout(() => setMicroWin(null), 2000);
-  };
-
-  // ⭐ HANDLE TASK SWITCHING
-  const handleTaskSwitch = (task) => {
-    if (activeTask && taskStartTime) {
-      const duration = Math.floor((Date.now() - taskStartTime) / (1000 * 60));
-      if (duration > 2 && duration < 10) {
-        setShowTaskGuard(true);
-        return;
-      }
+    try {
+      flashClicking();
+      await completeTaskAPI(task._id);
+      
+      setMicroWin({ type: 'task_started', message: '✅ Task complete!', xp: 25 });
+      setTimeout(() => setMicroWin(null), 3000);
+      
+      toast({ title: "Task completed! 🎉", variant: "success" });
+    } catch (error) {
+      toast({ title: "Failed to complete task", variant: "error" });
     }
-    handleStartTask(task);
   };
 
   const getDaysInMonth = (date) => {
@@ -258,11 +286,13 @@ export default function ProjectHome() {
   const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(selectedDate);
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  const deadlines = project?.deadlines || [];
+  const deadlines = [
+    { date: 15, title: "Beta launch", urgent: true },
+    { date: 22, title: "Design review", urgent: false },
+    { date: 28, title: "Team sync", urgent: false }
+  ];
 
-  const getDeadlinesForDay = (day) => deadlines.filter(d => 
-    new Date(d.date).getDate() === day
-  );
+  const getDeadlinesForDay = (day) => deadlines.filter(d => d.date === day);
 
   if (loading || tasksLoading) {
     return (
@@ -289,111 +319,226 @@ export default function ProjectHome() {
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="text-white pb-20">
       <div className="max-w-[1600px] mx-auto px-4 py-6">
         
-        {/* Keep all behavioral science components */}
+        {/* ⭐ MICRO-WIN TOAST */}
         {microWin && <MicroWinToast {...microWin} />}
-        
-        {/* ... rest of your JSX remains the same ... */}
 
-        {/* TASKS SECTION - NOW WITH REAL DATA */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 shadow-xl">
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                placeholder="Add a task... (press Enter)"
-                className="flex-1 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-slate-500"
-                disabled={creatingTask}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.target.value.trim()) {
-                    handleAddTask(e.target.value);
-                    e.target.value = '';
-                  }
-                }}
-              />
-              <button 
-                onClick={flashClicking}
-                disabled={creatingTask}
-                className="p-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
+        {/* HEADER */}
+        <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 shadow-2xl">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+                  {project.title}
+                </h1>
+                <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-sm">
+                  <Flame className="w-4 h-4 text-orange-400" />
+                  <span className="font-semibold">7d streak</span>
+                </div>
+              </div>
+              <p className="text-slate-400 mt-1">
+                {teamActivity.isActive ? '🔥 ' : '😴 '} 
+                {teamActivity.message}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-2xl font-bold text-emerald-400">{completedToday}/5</div>
+                <div className="text-xs text-slate-400">Ships today</div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-purple-400">{progressPct}%</div>
+                <div className="text-xs text-slate-400">Complete</div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-fuchsia-400">
+                  {projectStats.online}
+                </div>
+                <div className="text-xs text-slate-400">Online</div>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-3">
-            {tasks.length === 0 ? (
-              <div className="bg-slate-800/30 border border-dashed border-slate-700 rounded-2xl p-12 text-center">
-                <Target className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-400">No tasks yet. Add one above to get started.</p>
-              </div>
-            ) : (
-              tasks.map((task) => (
-                <div 
-                  key={task._id}
-                  onClick={() => !task.completed && handleTaskSwitch(task)}
-                  className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4 hover:border-purple-500/30 transition-all cursor-pointer group"
-                >
-                  <div className="flex items-start gap-3">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!task.completed) {
-                          handleCompleteTask(task);
-                        }
-                      }}
-                      className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-all
-                        ${task.completed 
-                          ? 'bg-emerald-500 border-emerald-500' 
-                          : 'border-slate-600 group-hover:border-purple-500'
-                        }`}
-                    >
-                      {task.completed && <CheckCircle2 className="w-3 h-3 text-white" />}
-                    </button>
-                    
-                    <div className="flex-1">
-                      <p className={`font-medium ${task.completed ? 'line-through text-slate-500' : ''}`}>
-                        {task.title}
-                      </p>
-                      {task.dueDate && (
-                        <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
-                          <Clock className="w-3 h-3" />
-                          {new Date(task.dueDate).toLocaleDateString()}
-                        </div>
-                      )}
-                      {activeTask === task.title && (
-                        <div className="flex items-center gap-1 mt-2">
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                          <span className="text-xs text-emerald-400">Working on this ({workSessionDuration} min)</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {!task.completed && (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowShipModal(true);
-                          setShipDescription(task.title);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-purple-600/20 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all hover:bg-purple-600/30"
-                      >
-                        Ship
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
+          <div className="mt-4 h-3 bg-slate-700/50 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500 transition-all duration-500"
+              style={{ width: `${progressPct}%` }}
+            />
           </div>
         </div>
 
-        {/* Rest of your layout remains the same */}
-        
+        {/* MAIN GRID: 3 COLUMNS */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* LEFT COLUMN: CALENDAR + ENERGY (3 cols) */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* ⭐ PHASE 2: PROJECT HEARTBEAT */}
+            <ProjectHeartbeat projectId={id} />
+            
+            {/* ⭐ PHASE 2: WORK BALANCE GAUGE */}
+            <WorkBalanceGauge projectId={id} />
+
+            {/* ⭐ ENERGY TRACKER */}
+            <EnergyTracker
+              currentEnergy={currentEnergy}
+              onEnergyChange={setCurrentEnergy}
+              tasks={tasks}
+            />
+          </div>
+
+          {/* MIDDLE COLUMN: TASKS (5 cols) */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 shadow-xl">
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  placeholder="Add a task... (press Enter)"
+                  disabled={creatingTask}
+                  className="flex-1 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-slate-500 disabled:opacity-50"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.target.value.trim()) {
+                      handleAddTask(e.target.value);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <button 
+                  onClick={flashClicking}
+                  disabled={creatingTask}
+                  className="p-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {tasks.length === 0 ? (
+                <div className="bg-slate-800/30 border border-dashed border-slate-700 rounded-2xl p-12 text-center">
+                  <Target className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400">No tasks yet. Add one above to get started.</p>
+                </div>
+              ) : (
+                tasks.map((task) => (
+                  <div 
+                    key={task._id}
+                    className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4 hover:border-purple-500/30 transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <button 
+                        onClick={() => handleCompleteTask(task)}
+                        className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-all
+                          ${task.completed 
+                            ? 'bg-emerald-500 border-emerald-500' 
+                            : 'border-slate-600 group-hover:border-purple-500'
+                          }`}
+                      >
+                        {task.completed && <CheckCircle2 className="w-3 h-3 text-white" />}
+                      </button>
+                      
+                      <div className="flex-1">
+                        <p className={`font-medium ${task.completed ? 'line-through text-slate-500' : ''}`}>
+                          {task.title}
+                        </p>
+                        {task.dueDate && (
+                          <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
+                            <Clock className="w-3 h-3" />
+                            {new Date(task.dueDate).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+
+                      {!task.completed && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowShipModal(true);
+                            setShipDescription(task.title);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-purple-600/20 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all hover:bg-purple-600/30"
+                        >
+                          Ship
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: COLLABORATION PANEL (4 cols) */}
+          <div className="lg:col-span-4">
+            <CollaborationPanel
+              projectId={id}
+              projectName={project.title}
+              defaultTab="chat"
+            />
+          </div>
+        </div>
       </div>
+
+      {/* FLOATING SHIP BUTTON */}
+      <button
+        onClick={() => setShowShipModal(true)}
+        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center group z-50"
+      >
+        <Rocket className="w-8 h-8 text-white group-hover:rotate-12 transition-transform" />
+      </button>
+
+      {/* SHIP MODAL */}
+      {showShipModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+                Ship This
+              </h2>
+              <button onClick={() => setShowShipModal(false)} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <input
+              type="text"
+              value={shipDescription}
+              onChange={(e) => setShipDescription(e.target.value)}
+              placeholder="What did you just ship?"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 mb-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              autoFocus
+              onKeyDown={(e) => { 
+                if (e.key === 'Enter') {
+                  handleShip();
+                }
+              }}
+            />
+
+            <button
+              onClick={handleShip}
+              className="w-full py-4 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl font-bold text-lg hover:shadow-2xl transition-all"
+            >
+              Ship (+50 XP) 🚢
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CSS for animations */}
+      <style jsx>{`
+        @keyframes slide-in-right {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
-
-// Keep all your behavioral science components at the end
-// (MicroWinToast, EnergyTracker, StreakGuard, AIAccountabilityPartner, TaskGuardModal)
-

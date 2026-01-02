@@ -1,0 +1,30 @@
+STEP 1: Add import after line 24 (after CollaborationPanel import):
+import ActivityFeed from "../components/project/ActivityFeed";
+
+STEP 2: Change grid from 3 columns to 4 columns (around line 345):
+BEFORE:
+<div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+  {/* LEFT COLUMN: CALENDAR + ENERGY (3 cols) */}
+  <div className="lg:col-span-3 space-y-6">
+  
+  {/* MIDDLE COLUMN: TASKS (5 cols) */}
+  <div className="lg:col-span-5 space-y-4">
+  
+  {/* RIGHT COLUMN: COLLABORATION PANEL (4 cols) */}
+  <div className="lg:col-span-4">
+
+AFTER:
+<div className="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-6">
+  {/* LEFT: CALENDAR + ENERGY (2 cols) */}
+  <div className="xl:col-span-2 space-y-6">
+  
+  {/* MIDDLE: TASKS (4 cols) */}
+  <div className="xl:col-span-4 space-y-4">
+  
+  {/* CENTER-RIGHT: COLLABORATION (3 cols) */}
+  <div className="xl:col-span-3">
+  
+  {/* FAR RIGHT: ACTIVITY FEED (3 cols) - ADD THIS */}
+  <div className="xl:col-span-3">
+    <ActivityFeed projectId={id} />
+  </div>
