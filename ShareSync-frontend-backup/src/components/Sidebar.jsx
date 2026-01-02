@@ -1,3 +1,4 @@
+import { toast } from "../ui/Toast";
 // src/components/layout/Sidebar.jsx - THE MOST ADDICTIVE SIDEBAR EVER BUILT
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -385,7 +386,7 @@ export default function Sidebar() {
       setFocusTime(prev => {
         if (prev <= 0) {
           setFocusActive(false);
-          alert('Focus session complete! 🎉');
+          toast.success('Focus session complete! 🎉', { description: 'Great work!', duration: 4000 });
           return 1500;
         }
         return prev - 1;

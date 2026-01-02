@@ -1,3 +1,4 @@
+import { toast } from "../ui/Toast";
 // /src/components/audit/AuditList.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../../services/api.js"
@@ -82,7 +83,7 @@ export default function AuditList({
       downloadCsv(fname, csv);
       track?.("audit_export_clicked", { count: rows.length, scope });
     } catch {
-      alert("Could not export CSV.");
+      toast.error('Export failed', { description: 'Could not export CSV', duration: 3000 });
     }
   };
 

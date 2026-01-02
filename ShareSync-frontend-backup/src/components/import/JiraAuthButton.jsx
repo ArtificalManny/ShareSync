@@ -1,3 +1,4 @@
+import { toast } from "../ui/Toast";
 // src/components/import/JiraAuthButton.jsx
 import React, { useState } from "react";
 import { track } from "../../utils/telemetry";
@@ -13,7 +14,7 @@ export default function JiraAuthButton({ onAuthed }) {
     try {
       if (!CLIENT_ID) {
         track("import_started", { provider: "jira", configured: false });
-        alert("Jira SSO not configured. Continuing with a demo token.");
+        toast.warning("Demo mode", { description: "Jira SSO not configured - using demo token", duration: 3000 });
         await new Promise((r) => setTimeout(r, 600));
         onAuthed?.({ accessToken: "demo-jira-token" });
         return;

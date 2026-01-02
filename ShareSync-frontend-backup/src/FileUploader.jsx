@@ -1,3 +1,4 @@
+import { toast } from "./components/ui/Toast";
 // src/components/files/FileUploader.jsx
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -35,10 +36,10 @@ const FileUploader = ({ projectId }) => {
       });
 
       setFile(null);
-      alert('File uploaded and activity logged!');
+      toast.success('File uploaded!', { description: 'Activity has been logged', duration: 3000 });
     } catch (err) {
       console.error('Upload failed:', err);
-      alert('Upload failed.');
+      toast.error('Upload failed', { description: 'Please try again', duration: 3000 });
     } finally {
       setUploading(false);
     }

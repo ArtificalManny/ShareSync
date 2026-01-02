@@ -1,4 +1,4 @@
-// src/pages/Home.jsx - MODERNIZED
+// src/pages/Home.jsx - MODERNIZED WITH CRITICAL INSIGHTS
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -9,10 +9,12 @@ import {
 import { useAuth } from "../context/AuthContext.jsx";
 import client from "../api/client";
 import { getProjectsQuick } from "../api/projects";
+import { toast } from "../components/ui/toast.jsx"; // ⭐ NEW: Import toast
 
 // ⭐ Modern components
 import WeeklyNarrative from "../components/home/WeeklyNarrative";
 import MomentumIndex from "../components/home/MomentumIndex";
+import CriticalInsights from "../components/home/CriticalInsights"; // ⭐ NEW: Import CriticalInsights
 
 /* ─────────────────────────────────────────────────────────────────────────
    MODERN COMPONENTS
@@ -335,7 +337,7 @@ export default function Home() {
     });
   }, []);
 
-  // Actions
+  // Actions (⭐ UPDATED: Using toast instead of alert)
   const continueProject = () => {
     const last = quickProjects[0];
     if (last?._id) navigate(`/projects/${last._id}`);
@@ -346,11 +348,17 @@ export default function Home() {
   };
 
   const regeneratePlan = () => {
-    alert("AI Plan regenerated: Focus on top 3 quick wins → Start 25-min sprint");
+    toast.success("AI Plan regenerated", {
+      description: "Focus on top 3 quick wins → Start 25-min sprint",
+      duration: 3000
+    });
   };
 
   const ship60Seconds = () => {
-    alert("Quick Ship: What did you just complete? (opens modal)");
+    toast.info("Quick Ship", {
+      description: "What did you just complete?",
+      duration: 3000
+    });
   };
 
   return (
@@ -360,6 +368,9 @@ export default function Home() {
         title="Home" 
         subtitle="Your AI-powered mission control" 
       />
+      
+      {/* ⭐ NEW: Critical Insights - The "30-second wow" */}
+      <CriticalInsights />
       
       {/* Social proof ticker */}
       <SocialProofTicker events={socialEvents} />

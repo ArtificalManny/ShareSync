@@ -1,3 +1,4 @@
+import { toast } from "../ui/Toast";
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   History,
@@ -93,7 +94,7 @@ export default function ProjectActivityFeed({
       setComposer("");
     } catch (e) {
       // eslint-disable-next-line no-alert
-      alert(e?.message || "Failed to post update.");
+      toast.error('Failed to post update', { description: e?.message || 'Please try again', duration: 3000 });
     } finally {
       setPosting(false);
     }

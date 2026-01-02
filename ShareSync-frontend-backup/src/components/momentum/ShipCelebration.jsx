@@ -1,3 +1,4 @@
+import { toast } from "../ui/Toast";
 // src/components/momentum/ShipCelebration.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -78,7 +79,7 @@ export default function ShipCelebration({ project, open = false, onClose }) {
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert('Link copied to clipboard!');
+    toast.success('Link copied!', { description: 'Share your achievement', duration: 2000 });
   };
 
   return (

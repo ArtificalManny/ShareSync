@@ -321,7 +321,7 @@ export default function ProjectSettingsModal({
       });
     } catch (e) {
       // eslint-disable-next-line no-alert
-      alert(e?.message || "Failed to update icon.");
+      toast.error('Failed to update icon', { description: e?.message || 'Please try again', duration: 3000 });
       toast({ title: "Icon update failed", description: String(e?.message || e), variant: "error" });
     } finally {
       setIconPickerOpen(false);
@@ -344,7 +344,7 @@ export default function ProjectSettingsModal({
       toast({ title: "Public status disabled", variant: "warning" });
     } catch (e) {
       // eslint-disable-next-line no-alert
-      alert(e?.message || "Failed to disable public status.");
+      toast.error('Failed to disable public status', { description: e?.message || 'Please try again', duration: 3000 });
       toast({ title: "Disable failed", description: String(e?.message || e), variant: "error" });
     }
   };
@@ -376,7 +376,7 @@ export default function ProjectSettingsModal({
       }
     } catch (e) {
       // eslint-disable-next-line no-alert
-      alert(e?.message || "Failed to regenerate link.");
+      toast.error('Failed to regenerate link', { description: e?.message || 'Please try again', duration: 3000 });
       toast({ title: "Regenerate failed", description: String(e?.message || e), variant: "error" });
     } finally {
       setRegenLoading(false);

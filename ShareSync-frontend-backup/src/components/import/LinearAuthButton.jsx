@@ -1,3 +1,4 @@
+import { toast } from "../ui/Toast";
 // src/components/import/LinearAuthButton.jsx
 import React, { useState } from "react";
 import { track } from "../../utils/telemetry";
@@ -14,18 +15,18 @@ export default function LinearAuthButton({ onAuthed }) {
       // MVP: no real OAuth. If not configured, show friendly message and proceed with a fake token
       if (!CLIENT_ID) {
         track("import_started", { provider: "linear", configured: false });
-        alert("Linear SSO not configured. Continuing with a demo token.");
+        toast.warning("Demo mode", { description: "Linear SSO not configured - using demo token", duration: 3000 });
         await new Promise((r) => setTimeout(r, 600));
         onAuthed?.({ accessToken: "demo-linear-token" });
         return;
       }
       // If you wire OAuth later, replace this block.
       track("import_started", { provider: "linear", configured: true });
-      alert("Linear OAuth not implemented in this stub. Using demo token.");
+      toast.info("Demo mode", { description: "Using demo token for testing", duration: 3000 });
       await new Promise((r) => setTimeout(r, 400));
       onAuthed?.({ accessToken: "demo-linear-token" });
     } catch (e) {
-      alert(e?.message || "Auth failed.");
+      toast.error('Auth failed', { description: e?.message || 'Please try again', duration: 3000 });
     } finally {
       setLoading(false);
     }

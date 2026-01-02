@@ -1,3 +1,4 @@
+import { toast } from "../ui/Toast";
 // /src/components/messenger/DMThread.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Send, Smile } from "lucide-react";
@@ -51,7 +52,7 @@ export default function DMThread() {
       await actions?.send?.(activeId, { text: t });
     } catch (e) {
       // Soft-error UI
-      alert(e?.message || "Failed to send");
+      toast.error('Failed to send message', { description: e?.message || 'Please try again', duration: 3000 });
     }
   };
 

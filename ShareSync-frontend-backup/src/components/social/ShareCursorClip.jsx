@@ -1,3 +1,4 @@
+import { toast } from "../ui/Toast";
 /**
  * ShareCursorClip.jsx
  * Share cursor recordings to social media
@@ -89,7 +90,7 @@ export function ShareCursorClip({ frames, onClose, isOpen }) {
       console.log('✅ Video exported successfully');
     } catch (error) {
       console.error('❌ Export failed:', error);
-      alert('Failed to export video. Please try again.');
+      toast.error('Export failed', { description: 'Please try again', duration: 3000 });
     } finally {
       setIsExporting(false);
     }
@@ -113,7 +114,7 @@ export function ShareCursorClip({ frames, onClose, isOpen }) {
   const shareToInstagram = () => {
     // Instagram doesn't support direct sharing via URL
     // Would need to download video and open Instagram app
-    alert('Download the video and share it to Instagram Stories manually.');
+    toast.info('Manual share required', { description: 'Download and share to Instagram Stories', duration: 4000 });
   };
 
   const copyLink = async () => {

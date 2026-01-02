@@ -1,3 +1,4 @@
+import { toast } from "./components/ui/Toast";
 // src/components/forum/ThreadForm.jsx
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -35,10 +36,10 @@ const ThreadForm = ({ projectId }) => {
 
       setTitle('');
       setContent('');
-      alert('Thread created and activity logged!');
+      toast.success('Thread created!', { description: 'Activity has been logged', duration: 3000 });
     } catch (error) {
       console.error('Error creating thread:', error);
-      alert('Failed to create thread.');
+      toast.error('Failed to create thread', { description: 'Please try again', duration: 3000 });
     } finally {
       setSubmitting(false);
     }

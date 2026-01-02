@@ -1,4 +1,4 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -11,8 +11,8 @@ import {
 // ⭐ PERFORMANCE: Only load heavy contexts AFTER authentication
 import Navbar from "./components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { ToastProvider } from "./context/ToastContext";
-import ToastProviderOld, { ToastHost } from "./components/ui/toast";
+import { ToastProvider as OldToastProvider } from "./context/ToastContext";
+import ToastProvider, { ToastHost } from "./components/ui/toast.jsx"; // ⭐ NEW: Enhanced toast system
 import ErrorBoundary from "./ErrorBoundary";
 
 // CSS imports
@@ -81,11 +81,6 @@ const MentorDock = lazy(() => import("./components/mentor/MentorDock.jsx"));
 const LeaderboardDock = lazy(() => import("./components/momentum/LeaderboardDock.jsx"));
 const MessengerPanel = lazy(() => import("./components/messenger/MessengerPanel.jsx"));
 const ShipFlash = lazy(() => import("./components/effects/ShipFlash"));
-// ❌ DISABLED: Uses useCursorContext
-// const SyncPulse = lazy(() => import("./components/effects/SyncPulse"));
-// const GhostMode = lazy(() => import("./components/modes/GhostMode"));
-// const DeepWorkMode = lazy(() => import("./components/modes/DeepWorkMode"));
-// const TouchCursor = lazy(() => import("./components/realtime/TouchCursor"));
 const PublicRoutes = lazy(() => import("./routes/publicRoutes.jsx"));
 
 // ⭐ Lazy load context providers
@@ -121,14 +116,30 @@ function LoadingSpinner() {
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <LoadingSpinner />;
-  return user ? children : <Navigate to="/login" replace />;
+  
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
 }
 
 function PublicOnlyRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <LoadingSpinner />;
-  return user ? <Navigate to="/" replace /> : children;
+  
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+  
+  if (user) {
+    return <Navigate to="/home" replace />;
+  }
+  
+  return children;
 }
 
 function SidebarToggle({ sidebarOpen, setSidebarOpen }) {
@@ -166,12 +177,16 @@ function AuthenticatedApp({ children }) {
 }
 
 function AppRoutes() {
-  const { user: authUser, logout } = useAuth();
+  const { user: authUser, logout, loading } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isAuthPage = ['/login', '/create-account', '/forgot-password'].includes(location.pathname);
   const showAppChrome = authUser && !isAuthPage;
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <>
@@ -197,7 +212,14 @@ function AppRoutes() {
           <Suspense fallback={<div className="px-6 py-10 text-center text-slate-500">Loading...</div>}>
             <ScrollToHash />
             <Routes>
-              <Route path="/" element={<Navigate to="/home" replace />} />
+              <Route 
+                path="/" 
+                element={
+                  <ProtectedRoute>
+                    <Navigate to="/home" replace />
+                  </ProtectedRoute>
+                } 
+              />
               
               <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
               <Route path="/create-account" element={<PublicOnlyRoute><CreateAccount /></PublicOnlyRoute>} />
@@ -246,7 +268,14 @@ function AppRoutes() {
               {ADMIN_CONSOLE_V1 && <Route path="/admin/console" element={<ProtectedRoute><AdminConsole /></ProtectedRoute>} />}
               {PULSE_ADMIN_V1 && <Route path="/admin/pulse" element={<ProtectedRoute><PulseAdmin /></ProtectedRoute>} />}
 
-              <Route path="*" element={<Navigate to="/home" replace />} />
+              <Route 
+                path="*" 
+                element={
+                  <ProtectedRoute>
+                    <Navigate to="/home" replace />
+                  </ProtectedRoute>
+                } 
+              />
             </Routes>
           </Suspense>
         </div>
@@ -262,17 +291,11 @@ function AppRoutes() {
           {FOCUS_DOCK_V1 && <FocusToasts />}
           <MentorDock />
           <LeaderboardDock />
-          {/* ❌ DISABLED: All use useCursorContext */}
-          {/* <div className="cursor-modes">
-            <GhostMode />
-            <DeepWorkMode />
-          </div>
-          <SyncPulse />
-          <TouchCursor /> */}
           <ShipFlash />
         </Suspense>
       )}
 
+      {/* ⭐ NEW: Enhanced toast system with haptic feedback */}
       <ToastHost />
     </>
   );
@@ -289,16 +312,19 @@ const App = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
+        {/* ⭐ NEW: Wrap with enhanced ToastProvider */}
         <ToastProvider>
-          <Router>
-            <Suspense fallback={<LoadingSpinner />}>
-              <LayoutSkin>
-                <div className="app-container" {...containerAttrs}>
-                  <AuthCheck />
-                </div>
-              </LayoutSkin>
-            </Suspense>
-          </Router>
+          <OldToastProvider>
+            <Router>
+              <Suspense fallback={<LoadingSpinner />}>
+                <LayoutSkin>
+                  <div className="app-container" {...containerAttrs}>
+                    <AuthCheck />
+                  </div>
+                </LayoutSkin>
+              </Suspense>
+            </Router>
+          </OldToastProvider>
         </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
@@ -306,7 +332,11 @@ const App = () => {
 };
 
 function AuthCheck() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <LoadingSpinner />;
+  }
   
   if (user) {
     return (

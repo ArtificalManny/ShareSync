@@ -1,3 +1,4 @@
+import { toast } from "../ui/Toast";
 // src/components/projects/PendingInvitesCard.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import Button from "../ui/Button.jsx";
@@ -44,7 +45,7 @@ export default function PendingInvitesCard() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setInvites(prev => prev.filter(i => i.token !== token));
     } catch (e) {
-      alert('Failed to accept invite.');
+      toast.error('Failed to accept invite', { description: 'Please try again', duration: 3000 });
     }
   };
 
