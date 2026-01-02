@@ -42,7 +42,7 @@ export default function ProfilePicChanger() {
       updateProfile(updatedUser);
     } catch (err) {
       console.error(err);
-      alert(`Upload failed:\n${err.message}`);
+      toast.error("Upload failed", { description: err.message, duration: 3000 });
     } finally {
       setUploading(false);
     }

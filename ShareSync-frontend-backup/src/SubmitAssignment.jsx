@@ -35,10 +35,10 @@ const SubmitAssignment = ({ projectId }) => {
       });
 
       setFile(null);
-      alert('Assignment submitted and activity logged!');
+      toast.success('Assignment submitted!', { description: 'Activity has been logged', duration: 3000 });
     } catch (err) {
       console.error('Submission failed:', err);
-      alert('Submission failed.');
+      toast.error('Submission failed', { description: 'Please try again', duration: 3000 });
     } finally {
       setSubmitting(false);
     }

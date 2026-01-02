@@ -20,11 +20,11 @@ export default function JiraAuthButton({ onAuthed }) {
         return;
       }
       track("import_started", { provider: "jira", configured: true });
-      alert("Jira OAuth not implemented in this stub. Using demo token.");
+      toast.info("Demo mode", { description: "Using demo token for testing", duration: 3000 });
       await new Promise((r) => setTimeout(r, 400));
       onAuthed?.({ accessToken: "demo-jira-token" });
     } catch (e) {
-      alert(e?.message || "Auth failed.");
+      toast.error('Auth failed', { description: e?.message || 'Please try again', duration: 3000 });
     } finally {
       setLoading(false);
     }

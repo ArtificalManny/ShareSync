@@ -27,7 +27,7 @@
   }
   
   /* ─────────────────────────────────────────────────────────────────────────
-     Modern Buttons (crisp, minimal)
+     Modern Buttons (crisp, minimal) + RIPPLE EFFECT
   ───────────────────────────────────────────────────────────────────────── */
   .btn-modern {
     @apply inline-flex items-center justify-center;
@@ -36,6 +36,8 @@
     @apply font-semibold text-sm;
     @apply transition-all duration-150;
     @apply focus:outline-none focus:ring-4 focus:ring-primary-500/10;
+    position: relative;
+    overflow: hidden;
   }
   
   .btn-primary-modern {
@@ -58,6 +60,54 @@
     @apply bg-transparent hover:bg-slate-100;
     @apply dark:hover:bg-slate-800;
     @apply text-slate-700 dark:text-slate-300;
+  }
+
+  /* ⭐ NEW: Button Ripple Effect */
+  .btn-modern::after,
+  .btn-primary-modern::after,
+  .btn-secondary-modern::after,
+  .btn-ghost-modern::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease-out, height 0.6s ease-out, opacity 0.6s ease-out;
+    opacity: 0;
+  }
+
+  .btn-modern:active::after,
+  .btn-primary-modern:active::after,
+  .btn-secondary-modern:active::after,
+  .btn-ghost-modern:active::after {
+    width: 300px;
+    height: 300px;
+    opacity: 1;
+    transition: width 0s, height 0s, opacity 0s;
+  }
+
+  /* ⭐ NEW: Loading State */
+  .btn-loading {
+    pointer-events: none;
+    opacity: 0.7;
+    position: relative;
+  }
+
+  .btn-loading::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    animation: shimmer 1.5s infinite;
   }
   
   /* ─────────────────────────────────────────────────────────────────────────
@@ -188,4 +238,13 @@
   .divider-modern {
     @apply border-t border-slate-200 dark:border-slate-700;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Animations (outside @layer to avoid conflicts)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }

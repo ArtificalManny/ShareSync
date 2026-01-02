@@ -78,11 +78,11 @@ export default function ImportWizard() {
     try {
       // In MVP we don't hit backend; pretend to create tasks/projects.
       track("import_confirmed", { provider, selected: selected.length });
-      alert(`Imported ${selected.length} items from ${provider}.`);
+      toast.success("Import complete", { description: `Imported ${selected.length} items from ${provider}`, duration: 3000 });
       nav("/projects"); // or wherever you want to land
     } catch (e) {
       track("import_failed", { provider, message: e?.message });
-      alert(e?.message || "Import failed.");
+      toast.error('Import failed', { description: e?.message || 'Please try again', duration: 3000 });
     }
   };
 
