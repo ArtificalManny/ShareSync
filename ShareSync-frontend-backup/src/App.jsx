@@ -12,7 +12,7 @@ import {
 import Navbar from "./components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider as OldToastProvider } from "./context/ToastContext";
-import ToastProvider, { ToastHost } from "./components/ui/toast.jsx"; // ⭐ NEW: Enhanced toast system
+import ToastProvider, { ToastHost } from "./components/ui/toast.jsx";
 import ErrorBoundary from "./ErrorBoundary";
 
 // CSS imports
@@ -49,12 +49,13 @@ import {
   FOCUS_DOCK_V1,
 } from "./config/flags.js";
 
-// ⭐ Auth pages
+// ⭐ Auth pages (NOT lazy - needed immediately)
 import Login from "./pages/Login";
 import CreateAccount from "./pages/CreateAccount";
 import ForgotPassword from "./pages/ForgotPassword";
 
-// ⭐ Protected pages - lazy load
+// ⭐ ALL other pages - lazy load
+const Landing = lazy(() => import("./pages/Landing"));
 const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -181,7 +182,7 @@ function AppRoutes() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const isAuthPage = ['/login', '/create-account', '/forgot-password'].includes(location.pathname);
+  const isAuthPage = ['/login', '/create-account', '/forgot-password', '/landing'].includes(location.pathname);
   const showAppChrome = authUser && !isAuthPage;
 
   if (loading) {
@@ -214,16 +215,13 @@ function AppRoutes() {
             <Routes>
               <Route 
                 path="/" 
-                element={
-                  <ProtectedRoute>
-                    <Navigate to="/home" replace />
-                  </ProtectedRoute>
-                } 
+                element={<Landing />}
               />
               
               <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
               <Route path="/create-account" element={<PublicOnlyRoute><CreateAccount /></PublicOnlyRoute>} />
               <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+              <Route path="/landing" element={<Landing />} />
               <Route path="/invite/accept" element={<AcceptInvite />} />
               {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
               <Route path="/status/:token" element={<PublicProjectStatus />} />
@@ -270,11 +268,7 @@ function AppRoutes() {
 
               <Route 
                 path="*" 
-                element={
-                  <ProtectedRoute>
-                    <Navigate to="/home" replace />
-                  </ProtectedRoute>
-                } 
+                element={<Navigate to="/" replace />}
               />
             </Routes>
           </Suspense>
@@ -295,7 +289,6 @@ function AppRoutes() {
         </Suspense>
       )}
 
-      {/* ⭐ NEW: Enhanced toast system with haptic feedback */}
       <ToastHost />
     </>
   );
@@ -312,7 +305,6 @@ const App = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        {/* ⭐ NEW: Wrap with enhanced ToastProvider */}
         <ToastProvider>
           <OldToastProvider>
             <Router>
