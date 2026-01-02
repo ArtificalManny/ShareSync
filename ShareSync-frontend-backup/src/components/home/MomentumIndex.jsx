@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Zap, Shield } from 'lucide-react';
 import api from '../../api/client';
-import AnimatedNumber from '../ui/AnimatedNumber'; // ⭐ NEW: Import AnimatedNumber
+import AnimatedNumber from '../ui/AnimatedNumber';
+import { SkeletonMomentumRing } from '../ui/Skeletons'; // ⭐ NEW: Import skeleton
 
 export default function MomentumIndex() {
   const [data, setData] = useState(null);
@@ -22,19 +23,9 @@ export default function MomentumIndex() {
     fetchMomentum();
   }, []);
 
+  // ⭐ UPDATED: Use SkeletonMomentumRing instead of inline skeleton
   if (loading) {
-    return (
-      <div className="modern-card p-6 space-y-4 animate-pulse">
-        <div className="skeleton h-6 w-32" />
-        <div className="flex items-center gap-6">
-          <div className="skeleton h-32 w-32 rounded-full" />
-          <div className="flex-1 space-y-3">
-            <div className="skeleton-text w-3/4" />
-            <div className="skeleton-text w-1/2" />
-          </div>
-        </div>
-      </div>
-    );
+    return <SkeletonMomentumRing />;
   }
 
   if (!data) return null;
@@ -93,7 +84,7 @@ export default function MomentumIndex() {
               fill="none"
               className="text-slate-200 dark:text-slate-700"
             />
-            {/* Progress ring - ⭐ ANIMATED with spring */}
+            {/* Progress ring */}
             <circle
               cx="72"
               cy="72"
@@ -109,7 +100,6 @@ export default function MomentumIndex() {
           
           {/* Center content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            {/* ⭐ ANIMATED NUMBER - smoothly counts up */}
             <AnimatedNumber 
               value={momentumIndex}
               className={`text-4xl font-bold bg-gradient-to-br ${colors.gradient} bg-clip-text text-transparent`}
@@ -124,7 +114,7 @@ export default function MomentumIndex() {
         <div className="flex-1 space-y-4">
           <p className="body-text text-sm">{message}</p>
           
-          {/* Stats grid - ⭐ ALL NUMBERS ANIMATED */}
+          {/* Stats grid */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

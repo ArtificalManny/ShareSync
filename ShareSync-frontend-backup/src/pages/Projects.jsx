@@ -7,6 +7,7 @@ import ProjectsCreate from './ProjectsCreate';
 
 // ⭐ PHASE 1: Import QuietProjectsBanner
 import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
+import { SkeletonProjectCard } from "../components/ui/Skeletons";
 
 const Projects = () => {
   const { user } = useAuth();
@@ -292,9 +293,9 @@ const Projects = () => {
             </div>
 
             {/* Projects Grid/List */}
-            {loading ? (
-              <div className="text-center py-20">
-                <div className="inline-block w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+            <div>{loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1,2,3,4,5,6].map(i => <SkeletonProjectCard key={i} />)}
               </div>
             ) : filteredProjects.length === 0 ? (
               <div className="text-center py-20 bg-slate-800/30 rounded-2xl border border-slate-700/50">
