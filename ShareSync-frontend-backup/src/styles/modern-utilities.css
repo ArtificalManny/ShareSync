@@ -248,3 +248,50 @@
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ⭐ NEW: Stagger Animations
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.stagger-item {
+  animation: slideUp 0.3s ease-out backwards;
+}
+
+/* Apply stagger delays via inline styles: style={{ animationDelay: `${idx * 50}ms` }} */
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade in animation */
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Scale in animation */
+.scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

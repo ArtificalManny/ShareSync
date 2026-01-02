@@ -118,7 +118,8 @@ function AIPlanCard({ nextBestAction, quickWins, onRegenerate, onStart }) {
             {quickWins.map((win, i) => (
               <div 
                 key={i}
-                className="modern-card p-3 hover:shadow-md transition-all cursor-pointer group"
+                className="modern-card p-3 hover:shadow-md transition-all cursor-pointer group stagger-item"
+                style={{ animationDelay: `${i * 50}ms` }}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
@@ -180,7 +181,8 @@ function StatsGrid({ stats }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {statItems.map((stat, idx) => (
-        <div key={idx} className="stat-card-modern">
+        <div key={idx} className="stat-card-modern stagger-item"
+          style={{ animationDelay: `${idx * 50}ms` }}>
           <div className="flex items-center justify-between mb-2">
             <stat.icon className={`w-5 h-5 ${stat.color}`} />
           </div>
