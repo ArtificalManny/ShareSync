@@ -1,4 +1,4 @@
-// src/pages/ProjectHome.jsx - WITH COLLABORATION PANEL + REAL TASKS
+// src/pages/ProjectHome.jsx - WITH COLLABORATION PANEL + ANNOUNCEMENTS + REAL TASKS
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -17,15 +17,12 @@ import { useCursorContext } from "../context/CursorContext";
 import useCursor, { useCursorFlash } from "../hooks/useCursor";
 import usePresence, { useTeamPresence } from "../hooks/usePresence";
 
-// ⭐ NEW: COLLABORATION PANEL
+// ⭐ COMPONENT IMPORTS
 import CollaborationPanel from "../components/project/CollaborationPanel";
+import Announcements from "../components/project/Announcements";
 
 // =====================================
 // BEHAVIORAL SCIENCE COMPONENTS
-
-// ⭐ PHASE 2: PROJECT DEEP DIVE COMPONENTS
-import ProjectHeartbeat from "../components/project/ProjectHeartbeat";
-import WorkBalanceGauge from "../components/project/WorkBalanceGauge";
 // =====================================
 
 // 1. MICRO-WIN CELEBRATION
@@ -219,7 +216,7 @@ export default function ProjectHome() {
       
       flashShip();
       
-      setMicroWin({ type: 'task_started', message: '�� Shipped! Amazing work!', xp: 50 });
+      setMicroWin({ type: 'task_started', message: '🎉 Shipped! Amazing work!', xp: 50 });
       setTimeout(() => setMicroWin(null), 4000);
       
       toast({
@@ -367,16 +364,24 @@ export default function ProjectHome() {
           </div>
         </div>
 
+        {/* ⭐ ANNOUNCEMENTS SECTION (NEW!) */}
+        <div className="mt-6">
+          <Announcements projectId={id} currentUserId={user?.id} />
+        </div>
+
         {/* MAIN GRID: 3 COLUMNS */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* LEFT COLUMN: CALENDAR + ENERGY (3 cols) */}
           <div className="lg:col-span-3 space-y-6">
-            {/* ⭐ PHASE 2: PROJECT HEARTBEAT */}
-            <ProjectHeartbeat projectId={id} />
-            
-            {/* ⭐ PHASE 2: WORK BALANCE GAUGE */}
-            <WorkBalanceGauge projectId={id} />
+            {/* CALENDAR (simplified) */}
+            <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
+              <h3 className="font-bold text-lg flex items-center gap-2 mb-4">
+                <Calendar className="w-5 h-5 text-purple-400" />
+                {monthNames[month]} {year}
+              </h3>
+              <p className="text-sm text-slate-400">Calendar view coming soon...</p>
+            </div>
 
             {/* ⭐ ENERGY TRACKER */}
             <EnergyTracker
