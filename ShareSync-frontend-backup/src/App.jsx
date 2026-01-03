@@ -1,4 +1,4 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -69,6 +69,7 @@ const Discover = lazy(() => import("./pages/Discover.jsx"));
 const AdminConsole = lazy(() => import("./pages/admin/AdminConsole.jsx"));
 const PulseAdmin = lazy(() => import("./pages/admin/PulseAdmin.jsx"));
 const Analytics = lazy(() => import("./pages/Analytics.jsx"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 
 // ⭐ Lazy load heavy components
 const Sidebar = lazy(() => import("./components/Sidebar"));
@@ -230,6 +231,7 @@ function AppRoutes() {
               <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
               <Route path="/projects/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/:username" element={<Profile />} />
               <Route path="/me" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

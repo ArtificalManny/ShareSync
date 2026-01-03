@@ -1,4 +1,4 @@
-// src/components/Navbar.jsx - UPDATED WITH PROFILE PHOTO UPLOAD + OVERLAP FIX + ALL PHASE 1 & 2 COMPONENTS
+// src/components/Navbar.jsx - UPDATED WITH NOTIFICATION DROPDOWN
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sun, Moon, LogOut, PanelLeftClose, MessageCircle, Palette, Camera } from 'lucide-react';
@@ -20,7 +20,7 @@ import MomentumPulse from './navbar/MomentumPulse';
 import FocusModeToggle from './navbar/FocusModeToggle';
 import SeasonBadge from './navbar/SeasonBadge';
 import TeamPresence from './navbar/TeamPresence.jsx';
-import SmartNotifications from './navbar/SmartNotifications';
+import NotificationDropdown from './NotificationDropdown';
 import QuickCapture from './navbar/QuickCapture.jsx';
 
 const BrandSwitcher = lazy(() => import('./global/BrandSwitcher.jsx'));
@@ -324,8 +324,8 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             </Link>
           )}
 
-          {/* ⭐ SMART NOTIFICATIONS (replaces generic bell) */}
-          <SmartNotifications />
+          {/* ⭐ NOTIFICATION DROPDOWN (replaces SmartNotifications) */}
+          <NotificationDropdown />
 
           {/* ⭐ MESSENGER (kept separate) */}
           <button
