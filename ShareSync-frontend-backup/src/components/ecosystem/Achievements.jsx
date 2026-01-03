@@ -74,7 +74,6 @@ const Achievements = () => {
     }
   };
 
-  // ⭐ FIX: Helper function for achievement background colors
   const getAchievementBgClass = (color) => {
     const colorMap = {
       orange: 'bg-orange-500/20',
@@ -87,7 +86,6 @@ const Achievements = () => {
     return colorMap[color] || 'bg-slate-500/20';
   };
 
-  // ⭐ FIX: Helper function for achievement icon colors
   const getAchievementIconClass = (color) => {
     const colorMap = {
       orange: 'text-orange-400',
@@ -100,7 +98,6 @@ const Achievements = () => {
     return colorMap[color] || 'text-slate-400';
   };
 
-  // ⭐ FIX: Helper function for milestone icon colors
   const getMilestoneIconClass = (color) => {
     const colorMap = {
       orange: 'text-orange-400',
@@ -113,7 +110,6 @@ const Achievements = () => {
     return colorMap[color] || 'text-slate-400';
   };
 
-  // ⭐ FIX: Helper function for milestone progress bar colors
   const getMilestoneProgressClass = (color) => {
     const colorMap = {
       orange: 'from-orange-600 to-orange-400',
@@ -136,34 +132,42 @@ const Achievements = () => {
         </div>
 
         {/* Recent achievement */}
-        {achievements.recent.length > 0 && (
-          <div className={`bg-gradient-to-r ${getRarityColor(achievements.recent[0].rarity)} p-0.5 rounded-xl mb-3`}>
-            <div className="bg-slate-900 rounded-xl p-3">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 ${getAchievementBgClass(achievements.recent[0].color)} rounded-xl flex items-center justify-center`}>
-                  <achievements.recent[0].icon className={`w-6 h-6 ${getAchievementIconClass(achievements.recent[0].color)}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white text-sm">{achievements.recent[0].name}</p>
-                  <p className="text-xs text-slate-400">+{achievements.recent[0].xp} XP</p>
+        {achievements.recent.length > 0 && (() => {
+          const achievement = achievements.recent[0];
+          const IconComponent = achievement.icon; // ⭐ FIX: Extract component first
+          
+          return (
+            <div className={`bg-gradient-to-r ${getRarityColor(achievement.rarity)} p-0.5 rounded-xl mb-3`}>
+              <div className="bg-slate-900 rounded-xl p-3">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 ${getAchievementBgClass(achievement.color)} rounded-xl flex items-center justify-center`}>
+                    <IconComponent className={`w-6 h-6 ${getAchievementIconClass(achievement.color)}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-white text-sm">{achievement.name}</p>
+                    <p className="text-xs text-slate-400">+{achievement.xp} XP</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Badges */}
         <div className="flex gap-2 justify-center">
-          {achievements.badges.slice(0, 6).map((badge, idx) => (
-            <div
-              key={idx}
-              className={`w-10 h-10 rounded-lg ${
-                badge.unlocked ? 'bg-slate-700' : 'bg-slate-800/50'
-              } flex items-center justify-center`}
-            >
-              <badge.icon className={`w-5 h-5 ${badge.color}`} />
-            </div>
-          ))}
+          {achievements.badges.slice(0, 6).map((badge, idx) => {
+            const BadgeIcon = badge.icon; // ⭐ FIX: Extract component first
+            return (
+              <div
+                key={idx}
+                className={`w-10 h-10 rounded-lg ${
+                  badge.unlocked ? 'bg-slate-700' : 'bg-slate-800/50'
+                } flex items-center justify-center`}
+              >
+                <BadgeIcon className={`w-5 h-5 ${badge.color}`} />
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -188,31 +192,35 @@ const Achievements = () => {
           <Sparkles className="w-4 h-4 text-purple-400" />
           Recently Earned
         </h4>
-        {achievements.recent.map(achievement => (
-          <div
-            key={achievement.id}
-            className={`bg-gradient-to-r ${getRarityColor(achievement.rarity)} p-0.5 rounded-xl`}
-          >
-            <div className="bg-slate-900 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className={`w-12 h-12 ${getAchievementBgClass(achievement.color)} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                  <achievement.icon className={`w-6 h-6 ${getAchievementIconClass(achievement.color)}`} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <h5 className="font-semibold text-white">{achievement.name}</h5>
-                    <span className="text-xs text-slate-400">{achievement.date}</span>
+        {achievements.recent.map(achievement => {
+          const IconComponent = achievement.icon; // ⭐ FIX: Extract component first
+          
+          return (
+            <div
+              key={achievement.id}
+              className={`bg-gradient-to-r ${getRarityColor(achievement.rarity)} p-0.5 rounded-xl`}
+            >
+              <div className="bg-slate-900 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className={`w-12 h-12 ${getAchievementBgClass(achievement.color)} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                    <IconComponent className={`w-6 h-6 ${getAchievementIconClass(achievement.color)}`} />
                   </div>
-                  <p className="text-sm text-slate-400 mb-2">{achievement.description}</p>
-                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-purple-500/20 rounded-full">
-                    <Zap className="w-3 h-3 text-purple-400" />
-                    <span className="text-xs font-semibold text-purple-300">+{achievement.xp} XP</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <h5 className="font-semibold text-white">{achievement.name}</h5>
+                      <span className="text-xs text-slate-400">{achievement.date}</span>
+                    </div>
+                    <p className="text-sm text-slate-400 mb-2">{achievement.description}</p>
+                    <div className="inline-flex items-center gap-1 px-2 py-1 bg-purple-500/20 rounded-full">
+                      <Zap className="w-3 h-3 text-purple-400" />
+                      <span className="text-xs font-semibold text-purple-300">+{achievement.xp} XP</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Milestones in progress */}
@@ -222,13 +230,13 @@ const Achievements = () => {
           Next Milestones
         </h4>
         {achievements.milestones.map(milestone => {
-          const Icon = milestone.icon;
+          const IconComponent = milestone.icon; // ⭐ FIX: Extract component first
           const progress = (milestone.current / milestone.target) * 100;
           
           return (
             <div key={milestone.id} className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
-                <Icon className={getMilestoneIconClass(milestone.color)} />
+                <IconComponent className={`w-5 h-5 ${getMilestoneIconClass(milestone.color)}`} />
                 <span className="font-semibold text-white">{milestone.name}</span>
               </div>
               
@@ -253,25 +261,29 @@ const Achievements = () => {
       <div>
         <h4 className="text-sm font-semibold text-slate-300 mb-3">Badge Collection</h4>
         <div className="grid grid-cols-6 gap-3">
-          {achievements.badges.map((badge, idx) => (
-            <div
-              key={idx}
-              className={`
-                aspect-square rounded-xl flex flex-col items-center justify-center gap-1 
-                transition-all cursor-pointer
-                ${badge.unlocked 
-                  ? 'bg-slate-700 hover:bg-slate-600 hover:scale-110' 
-                  : 'bg-slate-800/30 opacity-50'
-                }
-              `}
-              title={badge.unlocked ? `${badge.label} Badge` : 'Locked'}
-            >
-              <badge.icon className={`w-6 h-6 ${badge.color}`} />
-              {badge.unlocked && (
-                <span className="text-xs text-slate-400">{badge.label}</span>
-              )}
-            </div>
-          ))}
+          {achievements.badges.map((badge, idx) => {
+            const BadgeIcon = badge.icon; // ⭐ FIX: Extract component first
+            
+            return (
+              <div
+                key={idx}
+                className={`
+                  aspect-square rounded-xl flex flex-col items-center justify-center gap-1 
+                  transition-all cursor-pointer
+                  ${badge.unlocked 
+                    ? 'bg-slate-700 hover:bg-slate-600 hover:scale-110' 
+                    : 'bg-slate-800/30 opacity-50'
+                  }
+                `}
+                title={badge.unlocked ? `${badge.label} Badge` : 'Locked'}
+              >
+                <BadgeIcon className={`w-6 h-6 ${badge.color}`} />
+                {badge.unlocked && (
+                  <span className="text-xs text-slate-400">{badge.label}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
