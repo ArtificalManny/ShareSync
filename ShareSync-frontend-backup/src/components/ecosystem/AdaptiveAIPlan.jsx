@@ -1,22 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Brain, Clock, Zap, Users, AlertCircle, ChevronRight,
   Calendar, Target, Sparkles, TrendingUp
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '../../hooks/useMobile';
+import ecosystemApi from '../../services/ecosystemApi';
 
 const AdaptiveAIPlan = () => {
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   
-  // Mock data - will be replaced with real AI recommendations
+  // ⭐ State with initial mock data (fallback)
   const [plan, setPlan] = useState({
     greeting: 'Good evening, Manny!',
-    timeOfDay: 'evening', // morning, afternoon, evening, night
+    timeOfDay: 'evening',
     focusWindow: {
       start: '9:00 PM',
       end: '11:00 PM',
       productivity: '3x',
-      reason: 'You ship 3x more during this time'
+      reason: 'You ship 3x more during this time',
+      isCurrent: false
     },
     highEnergyTasks: [
       {
@@ -36,23 +40,38 @@ const AdaptiveAIPlan = () => {
         icon: '🎨'
       }
     ],
-    coworkOpportunities: [
-      {
-        user: 'Sarah',
-        project: 'Mobile App',
-        online: true,
-        activity: 'Working on API endpoints'
-      }
-    ],
-    riskAlerts: [
-      {
-        project: 'Web Redesign',
-        deadline: '3 days',
-        progress: 45,
-        severity: 'high'
-      }
-    ]
+    coworkOpportunities: [],
+    riskAlerts: [],
+    loading: true
   });
+
+  // ⭐ Fetch real AI plan from API
+  useEffect(() => {
+    fetchDailyPlan();
+  }, []);
+
+  const fetchDailyPlan = async () => {
+    try {
+      const data = await ecosystemApi.getDailyPlan();
+      if (data) {
+        setPlan({
+          greeting: data.greeting,
+          timeOfDay: data.timeOfDay,
+          focusWindow: data.focusWindow,
+          currentEnergy: data.currentEnergy,
+          highEnergyTasks: data.highEnergyTasks || [],
+          coworkOpportunities: data.coworkOpportunities || [],
+          riskAlerts: data.riskAlerts || [],
+          loading: false
+        });
+      } else {
+        setPlan(prev => ({ ...prev, loading: false }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch daily plan:', error);
+      setPlan(prev => ({ ...prev, loading: false }));
+    }
+  };
 
   const getGreetingEmoji = (timeOfDay) => {
     switch(timeOfDay) {
@@ -64,6 +83,18 @@ const AdaptiveAIPlan = () => {
     }
   };
 
+  const getTaskIcon = (task) => {
+    return task.icon || '📌';
+  };
+
+  if (plan.loading) {
+    return (
+      <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 mb-6 animate-pulse">
+        <div className="h-32 bg-slate-700/50 rounded"></div>
+      </div>
+    );
+  }
+
   if (isMobile) {
     // Mobile compact version
     return (
@@ -74,34 +105,41 @@ const AdaptiveAIPlan = () => {
         </div>
 
         {/* Focus Window */}
-        <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-3 mb-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Clock className="w-4 h-4 text-purple-400" />
-            <span className="text-sm font-semibold text-white">Focus Window</span>
+        {plan.focusWindow && (
+          <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-3 mb-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="w-4 h-4 text-purple-400" />
+              <span className="text-sm font-semibold text-white">
+                {plan.focusWindow.isCurrent ? 'Focus Now' : 'Next Focus Window'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-300">
+              {plan.focusWindow.start} - {plan.focusWindow.end}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">{plan.focusWindow.reason}</p>
           </div>
-          <p className="text-xs text-slate-300">
-            {plan.focusWindow.start} - {plan.focusWindow.end}
-          </p>
-          <p className="text-xs text-slate-400 mt-1">{plan.focusWindow.reason}</p>
-        </div>
+        )}
 
         {/* Quick Tasks */}
-        <div className="space-y-2">
-          {plan.highEnergyTasks.slice(0, 2).map(task => (
-            <button
-              key={task.id}
-              className="w-full bg-slate-900/50 border border-slate-700 hover:border-purple-500/50 rounded-xl p-3 text-left transition-all active:scale-95"
-            >
-              <div className="flex items-start gap-2">
-                <span className="text-lg">{task.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{task.title}</p>
-                  <p className="text-xs text-slate-400">{task.project} · {task.estimatedTime}</p>
+        {plan.highEnergyTasks.length > 0 && (
+          <div className="space-y-2">
+            {plan.highEnergyTasks.slice(0, 2).map((task, idx) => (
+              <button
+                key={idx}
+                className="w-full bg-slate-900/50 border border-slate-700 hover:border-purple-500/50 rounded-xl p-3 text-left transition-all active:scale-95"
+                onClick={() => task.projectId && navigate(`/projects/${task.projectId}`)}
+              >
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">{getTaskIcon(task)}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{task.title}</p>
+                    <p className="text-xs text-slate-400">{task.project} · {task.estimatedTime}</p>
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -130,55 +168,74 @@ const AdaptiveAIPlan = () => {
       </div>
 
       {/* Focus Window */}
-      <div className="bg-gradient-to-r from-purple-500/10 to-fuchsia-500/10 border border-purple-500/30 rounded-xl p-4 mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Clock className="w-5 h-5 text-purple-400" />
-          <span className="font-semibold text-white">Your Focus Window</span>
+      {plan.focusWindow && (
+        <div className="bg-gradient-to-r from-purple-500/10 to-fuchsia-500/10 border border-purple-500/30 rounded-xl p-4 mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-5 h-5 text-purple-400" />
+            <span className="font-semibold text-white">
+              {plan.focusWindow.isCurrent ? 'Your Focus Window (Now)' : 'Your Next Focus Window'}
+            </span>
+          </div>
+          <p className="text-lg text-white mb-1">
+            {plan.focusWindow.start} - {plan.focusWindow.end}
+          </p>
+          <p className="text-sm text-slate-400">
+            {plan.focusWindow.reason}
+          </p>
+          {plan.focusWindow.productivity && (
+            <p className="text-xs text-purple-300 font-semibold mt-2">
+              {plan.focusWindow.productivity} productivity boost
+            </p>
+          )}
         </div>
-        <p className="text-lg text-white mb-1">
-          {plan.focusWindow.start} - {plan.focusWindow.end} tonight
-        </p>
-        <p className="text-sm text-slate-400">
-          {plan.focusWindow.reason}
-        </p>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* High Energy Tasks */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Zap className="w-5 h-5 text-yellow-400" />
-            <h5 className="font-semibold text-white">High Energy Tasks</h5>
+            <h5 className="font-semibold text-white">Recommended Tasks</h5>
           </div>
-          <div className="space-y-2">
-            {plan.highEnergyTasks.map(task => (
-              <button
-                key={task.id}
-                className="w-full bg-slate-900/50 border border-slate-700 hover:border-purple-500/50 rounded-xl p-4 text-left transition-all group"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">{task.icon}</span>
-                  <div className="flex-1">
-                    <p className="font-medium text-white group-hover:text-purple-400 transition-colors">
-                      {task.title}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1 text-sm text-slate-400">
-                      <span>{task.project}</span>
-                      <span>·</span>
-                      <span>{task.estimatedTime}</span>
+          {plan.highEnergyTasks.length > 0 ? (
+            <div className="space-y-2">
+              {plan.highEnergyTasks.map((task, idx) => (
+                <button
+                  key={idx}
+                  className="w-full bg-slate-900/50 border border-slate-700 hover:border-purple-500/50 rounded-xl p-4 text-left transition-all group"
+                  onClick={() => task.projectId && navigate(`/projects/${task.projectId}`)}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">{getTaskIcon(task)}</span>
+                    <div className="flex-1">
+                      <p className="font-medium text-white group-hover:text-purple-400 transition-colors">
+                        {task.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1 text-sm text-slate-400">
+                        <span>{task.project}</span>
+                        <span>·</span>
+                        <span>{task.estimatedTime}</span>
+                      </div>
+                      {task.reason && (
+                        <p className="text-xs text-slate-500 mt-1">{task.reason}</p>
+                      )}
                     </div>
+                    <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-purple-400 transition-colors" />
                   </div>
-                  <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-purple-400 transition-colors" />
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-6 text-center">
+              <p className="text-sm text-slate-500">No tasks recommended right now</p>
+            </div>
+          )}
         </div>
 
         {/* Co-work & Alerts */}
         <div className="space-y-4">
-          {/* Co-work Opportunity */}
-          {plan.coworkOpportunities.length > 0 && (
+          {/* Co-work Opportunities */}
+          {plan.coworkOpportunities && plan.coworkOpportunities.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Users className="w-5 h-5 text-emerald-400" />
@@ -192,16 +249,16 @@ const AdaptiveAIPlan = () => {
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 bg-emerald-500/20 rounded-full flex items-center justify-center">
                       <span className="text-sm font-bold text-emerald-400">
-                        {opp.user[0]}
+                        {opp.userName?.[0] || 'U'}
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-white">{opp.user} is online now</p>
-                      <p className="text-xs text-slate-400">{opp.activity}</p>
+                      <p className="font-medium text-white">{opp.userName} is available</p>
+                      <p className="text-xs text-slate-400">{opp.project}</p>
                     </div>
                   </div>
                   <button className="w-full mt-2 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-semibold text-sm transition-all">
-                    Schedule Pairing Session
+                    Schedule Session
                   </button>
                 </div>
               ))}
@@ -209,7 +266,7 @@ const AdaptiveAIPlan = () => {
           )}
 
           {/* Risk Alerts */}
-          {plan.riskAlerts.length > 0 && (
+          {plan.riskAlerts && plan.riskAlerts.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <AlertCircle className="w-5 h-5 text-red-400" />
@@ -220,7 +277,7 @@ const AdaptiveAIPlan = () => {
                   key={idx}
                   className="bg-red-500/10 border border-red-500/30 rounded-xl p-4"
                 >
-                  <p className="font-medium text-white mb-2">"{alert.project}"</p>
+                  <p className="font-medium text-white mb-2">"{alert.projectName}"</p>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-400">Deadline in {alert.deadline}</span>
@@ -233,11 +290,24 @@ const AdaptiveAIPlan = () => {
                       />
                     </div>
                   </div>
-                  <button className="w-full mt-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold text-sm transition-all">
+                  <button 
+                    className="w-full mt-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold text-sm transition-all"
+                    onClick={() => alert.projectId && navigate(`/projects/${alert.projectId}`)}
+                  >
                     View Project
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Empty state */}
+          {(!plan.coworkOpportunities || plan.coworkOpportunities.length === 0) && 
+           (!plan.riskAlerts || plan.riskAlerts.length === 0) && (
+            <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-6 text-center">
+              <Sparkles className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+              <p className="text-sm text-slate-400">All clear! 🎉</p>
+              <p className="text-xs text-slate-500 mt-1">No urgent items right now</p>
             </div>
           )}
         </div>

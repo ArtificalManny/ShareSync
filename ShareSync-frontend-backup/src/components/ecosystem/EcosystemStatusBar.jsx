@@ -3,20 +3,80 @@ import {
   Rocket, TrendingUp, Flame, AlertTriangle, DollarSign, 
   Users, ChevronRight, Activity 
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '../../hooks/useMobile';
+import useSocket from '../../hooks/useSocket';
+import ecosystemApi from '../../services/ecosystemApi';
 
 const EcosystemStatusBar = () => {
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   
-  // Mock data - will be replaced with real API calls
+  // ⭐ State with initial mock data
   const [stats, setStats] = useState({
     activeProjects: 3,
     shipsToday: 5,
     usersOnStreaks: 2,
     projectsAtRisk: 1,
     revenueThisMonth: 2450,
-    teamMomentum: 'high', // low, medium, high
-    loading: false,
+    teamMomentum: 'high',
+    loading: true,
+  });
+
+  // ⭐ Fetch real data from API
+  useEffect(() => {
+    fetchEcosystemStatus();
+    
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchEcosystemStatus, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchEcosystemStatus = async () => {
+    try {
+      const data = await ecosystemApi.getStatus();
+      if (data) {
+        setStats({
+          activeProjects: data.activeProjects,
+          shipsToday: data.shipsToday,
+          usersOnStreaks: data.onStreaks,
+          projectsAtRisk: data.atRisk,
+          revenueThisMonth: data.revenue,
+          teamMomentum: data.momentum,
+          loading: false
+        });
+      } else {
+        setStats(prev => ({ ...prev, loading: false }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch ecosystem status:', error);
+      setStats(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  // ⭐ Listen for real-time ecosystem updates
+  useSocket(null, {
+    onEvents: {
+      'ecosystem:update': (data) => {
+        console.log('Ecosystem update received:', data);
+        if (data.stats) {
+          setStats(prev => ({
+            ...prev,
+            ...data.stats,
+            activeProjects: data.stats.activeProjects ?? prev.activeProjects,
+            shipsToday: data.stats.shipsToday ?? prev.shipsToday,
+            usersOnStreaks: data.stats.onStreaks ?? prev.usersOnStreaks,
+            projectsAtRisk: data.stats.atRisk ?? prev.projectsAtRisk,
+            revenueThisMonth: data.stats.revenue ?? prev.revenueThisMonth,
+            teamMomentum: data.stats.momentum ?? prev.teamMomentum
+          }));
+        }
+      },
+      'team:ship': () => {
+        // Increment ships count
+        setStats(prev => ({ ...prev, shipsToday: prev.shipsToday + 1 }));
+      }
+    }
   });
 
   const getMomentumColor = (momentum) => {
@@ -47,6 +107,9 @@ const EcosystemStatusBar = () => {
               <Activity className="w-4 h-4 text-purple-400" />
             </div>
             <h2 className="text-sm font-bold text-white">Your World</h2>
+            {!stats.loading && (
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse ml-auto" title="Live" />
+            )}
           </div>
           
           <div className="grid grid-cols-3 gap-2 text-xs">
@@ -83,11 +146,19 @@ const EcosystemStatusBar = () => {
         </div>
 
         {/* Momentum indicator */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-xl border border-slate-700">
-          {getMomentumIcon(stats.teamMomentum)}
-          <span className={`font-semibold ${getMomentumColor(stats.teamMomentum)}`}>
-            {stats.teamMomentum.toUpperCase()} MOMENTUM
-          </span>
+        <div className="flex items-center gap-3">
+          {!stats.loading && (
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+              <span>Live</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-xl border border-slate-700">
+            {getMomentumIcon(stats.teamMomentum)}
+            <span className={`font-semibold ${getMomentumColor(stats.teamMomentum)}`}>
+              {stats.teamMomentum.toUpperCase()} MOMENTUM
+            </span>
+          </div>
         </div>
       </div>
 
@@ -96,7 +167,7 @@ const EcosystemStatusBar = () => {
         {/* Active Projects */}
         <button 
           className="group bg-slate-900/50 hover:bg-slate-900/70 border border-slate-700 hover:border-purple-500/50 rounded-xl p-4 transition-all text-left"
-          onClick={() => console.log('Navigate to projects')}
+          onClick={() => navigate('/projects')}
         >
           <div className="flex items-center justify-between mb-2">
             <Rocket className="w-5 h-5 text-purple-400" />
@@ -135,7 +206,7 @@ const EcosystemStatusBar = () => {
         {/* Projects at Risk */}
         <button 
           className="group bg-slate-900/50 hover:bg-slate-900/70 border border-slate-700 hover:border-red-500/50 rounded-xl p-4 transition-all text-left"
-          onClick={() => console.log('Navigate to at-risk projects')}
+          onClick={() => stats.projectsAtRisk > 0 && navigate('/projects')}
         >
           <div className="flex items-center justify-between mb-2">
             <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -169,7 +240,7 @@ const EcosystemStatusBar = () => {
         </div>
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4" />
-          <span>5 teammates online</span>
+          <span>Team connected</span>
         </div>
       </div>
     </div>
