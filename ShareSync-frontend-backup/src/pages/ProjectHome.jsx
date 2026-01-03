@@ -1,4 +1,4 @@
-// src/pages/ProjectHome.jsx - WITH COLLABORATION PANEL + ANNOUNCEMENTS + REAL TASKS
+// src/pages/ProjectHome.jsx - MOBILE OPTIMIZED
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -11,6 +11,11 @@ import {
   Star, Sparkles, Award, MessageCircle, Timer, Coffee, Music
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
+
+// ⭐ MOBILE IMPORTS
+import { useIsMobile } from "../hooks/useMobile";
+import BottomSheet from "../components/mobile/BottomSheet";
+import MobileAnnouncementCreate from "../components/mobile/MobileAnnouncementCreate";
 
 // ⭐ CURSOR SYSTEM IMPORTS
 import { useCursorContext } from "../context/CursorContext";
@@ -53,6 +58,8 @@ const MicroWinToast = ({ type, message, xp }) => {
 
 // 2. ENERGY TRACKER
 const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
+  const isMobile = useIsMobile();
+  
   const getEnergyIcon = (level) => {
     switch(level) {
       case 'high': return <Battery className="w-5 h-5 text-emerald-400" />;
@@ -71,7 +78,7 @@ const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
   const matchedTasks = getMatchedTasks(currentEnergy);
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
+    <div className={`bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl ${isMobile ? 'mobile-card' : ''}`}>
       <div className="flex items-center gap-2 mb-4">
         {getEnergyIcon(currentEnergy)}
         <h3 className="font-bold text-lg">Energy-Based Planning</h3>
@@ -82,10 +89,10 @@ const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
         <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => onEnergyChange('high')}
-            className={`p-3 rounded-xl border-2 transition-all ${
+            className={`p-3 rounded-xl border-2 transition-all tap-target ${
               currentEnergy === 'high'
                 ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-emerald-500/50'
+                : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-emerald-500/50 active:scale-95'
             }`}
           >
             <Battery className="w-5 h-5 mx-auto mb-1" />
@@ -93,10 +100,10 @@ const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
           </button>
           <button
             onClick={() => onEnergyChange('medium')}
-            className={`p-3 rounded-xl border-2 transition-all ${
+            className={`p-3 rounded-xl border-2 transition-all tap-target ${
               currentEnergy === 'medium'
                 ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400'
-                : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-yellow-500/50'
+                : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-yellow-500/50 active:scale-95'
             }`}
           >
             <BatteryMedium className="w-5 h-5 mx-auto mb-1" />
@@ -104,10 +111,10 @@ const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
           </button>
           <button
             onClick={() => onEnergyChange('low')}
-            className={`p-3 rounded-xl border-2 transition-all ${
+            className={`p-3 rounded-xl border-2 transition-all tap-target ${
               currentEnergy === 'low'
                 ? 'bg-orange-500/20 border-orange-500 text-orange-400'
-                : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-orange-500/50'
+                : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-orange-500/50 active:scale-95'
             }`}
           >
             <BatteryLow className="w-5 h-5 mx-auto mb-1" />
@@ -144,11 +151,15 @@ const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
 export default function ProjectHome() {
   const { id } = useParams();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showShipModal, setShowShipModal] = useState(false);
+  const [showAddTaskSheet, setShowAddTaskSheet] = useState(false);
+  const [showAnnouncementSheet, setShowAnnouncementSheet] = useState(false);
   const [shipDescription, setShipDescription] = useState("");
+  const [newTaskTitle, setNewTaskTitle] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   // ⭐ USE REAL TASKS HOOK
@@ -235,16 +246,18 @@ export default function ProjectHome() {
   };
 
   // ⭐ HANDLE ADD TASK (WITH REAL API)
-  const handleAddTask = async (title) => {
-    if (!title.trim()) return;
+  const handleAddTask = async () => {
+    if (!newTaskTitle.trim()) return;
 
     try {
       await createTask({
-        title: title.trim(),
+        title: newTaskTitle.trim(),
       });
       
       flashTyping();
       toast({ title: "Task added", variant: "success" });
+      setNewTaskTitle("");
+      setShowAddTaskSheet(false);
     } catch (error) {
       toast({ title: "Failed to add task", variant: "error" });
     }
@@ -314,17 +327,17 @@ export default function ProjectHome() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="text-white pb-20">
-      <div className="max-w-[1600px] mx-auto px-4 py-6">
+      <div className={`max-w-[1600px] mx-auto ${isMobile ? 'px-0' : 'px-4'} py-6`}>
         
         {/* ⭐ MICRO-WIN TOAST */}
         {microWin && <MicroWinToast {...microWin} />}
 
         {/* HEADER */}
-        <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 shadow-2xl">
+        <div className={`bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 ${isMobile ? 'rounded-none border-x-0' : 'rounded-2xl'} p-6 shadow-2xl ${isMobile ? 'mobile-card' : ''}`}>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent`}>
                   {project.title}
                 </h1>
                 <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-sm">
@@ -332,29 +345,49 @@ export default function ProjectHome() {
                   <span className="font-semibold">7d streak</span>
                 </div>
               </div>
-              <p className="text-slate-400 mt-1">
+              <p className="text-slate-400 mt-1 text-sm">
                 {teamActivity.isActive ? '🔥 ' : '😴 '} 
                 {teamActivity.message}
               </p>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-2xl font-bold text-emerald-400">{completedToday}/5</div>
-                <div className="text-xs text-slate-400">Ships today</div>
+            {!isMobile && (
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-emerald-400">{completedToday}/5</div>
+                  <div className="text-xs text-slate-400">Ships today</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-purple-400">{progressPct}%</div>
+                  <div className="text-xs text-slate-400">Complete</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-fuchsia-400">
+                    {projectStats.online}
+                  </div>
+                  <div className="text-xs text-slate-400">Online</div>
+                </div>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-purple-400">{progressPct}%</div>
+            )}
+          </div>
+
+          {/* Mobile stats row */}
+          {isMobile && (
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="text-center">
+                <div className="text-xl font-bold text-emerald-400">{completedToday}/5</div>
+                <div className="text-xs text-slate-400">Ships</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-purple-400">{progressPct}%</div>
                 <div className="text-xs text-slate-400">Complete</div>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-fuchsia-400">
-                  {projectStats.online}
-                </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-fuchsia-400">{projectStats.online}</div>
                 <div className="text-xs text-slate-400">Online</div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="mt-4 h-3 bg-slate-700/50 rounded-full overflow-hidden">
             <div 
@@ -364,26 +397,102 @@ export default function ProjectHome() {
           </div>
         </div>
 
-        {/* ⭐ ANNOUNCEMENTS SECTION (NEW!) */}
-        <div className="mt-6">
+        {/* ⭐ ANNOUNCEMENTS SECTION */}
+        <div className={`mt-6 ${isMobile ? 'px-4' : ''}`}>
           <Announcements projectId={id} currentUserId={user?.id} />
         </div>
 
-        {/* MAIN GRID: 3 COLUMNS */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* MAIN GRID - RESPONSIVE */}
+        <div className={`mt-6 ${isMobile ? 'mobile-stack px-4' : 'grid grid-cols-1 lg:grid-cols-12'} gap-6`}>
           
-          {/* LEFT COLUMN: CALENDAR + ENERGY (3 cols) */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* CALENDAR (simplified) */}
-            <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
-              <h3 className="font-bold text-lg flex items-center gap-2 mb-4">
-                <Calendar className="w-5 h-5 text-purple-400" />
-                {monthNames[month]} {year}
-              </h3>
-              <p className="text-sm text-slate-400">Calendar view coming soon...</p>
-            </div>
+          {/* TASKS SECTION */}
+          <div className={isMobile ? '' : 'lg:col-span-6'}>
+            <div className={`bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 ${isMobile ? 'rounded-2xl' : 'rounded-2xl'} p-4 shadow-xl`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-lg">Tasks</h3>
+                <button
+                  onClick={() => isMobile ? setShowAddTaskSheet(true) : null}
+                  className="p-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl hover:shadow-lg transition-all tap-target"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
 
-            {/* ⭐ ENERGY TRACKER */}
+              {!isMobile && (
+                <div className="flex items-center gap-3 mb-4">
+                  <input
+                    type="text"
+                    placeholder="Add a task... (press Enter)"
+                    disabled={creatingTask}
+                    className="flex-1 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-slate-500 disabled:opacity-50"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.target.value.trim()) {
+                        createTask({ title: e.target.value.trim() });
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-3 mobile-scroll" style={{ maxHeight: isMobile ? '400px' : 'none', overflowY: isMobile ? 'auto' : 'visible' }}>
+                {tasks.length === 0 ? (
+                  <div className="bg-slate-800/30 border border-dashed border-slate-700 rounded-2xl p-12 text-center">
+                    <Target className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                    <p className="text-slate-400">No tasks yet. Add one above to get started.</p>
+                  </div>
+                ) : (
+                  tasks.map((task) => (
+                    <div 
+                      key={task._id}
+                      className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4 hover:border-purple-500/30 transition-all cursor-pointer group tap-target"
+                    >
+                      <div className="flex items-start gap-3">
+                        <button 
+                          onClick={() => handleCompleteTask(task)}
+                          className={`mt-0.5 w-6 h-6 rounded border-2 flex items-center justify-center transition-all tap-target
+                            ${task.completed 
+                              ? 'bg-emerald-500 border-emerald-500' 
+                              : 'border-slate-600 group-hover:border-purple-500 active:scale-90'
+                            }`}
+                        >
+                          {task.completed && <CheckCircle2 className="w-4 h-4 text-white" />}
+                        </button>
+                        
+                        <div className="flex-1">
+                          <p className={`font-medium ${task.completed ? 'line-through text-slate-500' : ''}`}>
+                            {task.title}
+                          </p>
+                          {task.dueDate && (
+                            <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
+                              <Clock className="w-3 h-3" />
+                              {new Date(task.dueDate).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+
+                        {!task.completed && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowShipModal(true);
+                              setShipDescription(task.title);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-purple-600/20 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all hover:bg-purple-600/30 tap-target"
+                          >
+                            Ship
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ENERGY TRACKER */}
+          <div className={isMobile ? '' : 'lg:col-span-3'}>
             <EnergyTracker
               currentEnergy={currentEnergy}
               onEnergyChange={setCurrentEnergy}
@@ -391,108 +500,30 @@ export default function ProjectHome() {
             />
           </div>
 
-          {/* MIDDLE COLUMN: TASKS (5 cols) */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  placeholder="Add a task... (press Enter)"
-                  disabled={creatingTask}
-                  className="flex-1 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-slate-500 disabled:opacity-50"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.target.value.trim()) {
-                      handleAddTask(e.target.value);
-                      e.target.value = '';
-                    }
-                  }}
-                />
-                <button 
-                  onClick={flashClicking}
-                  disabled={creatingTask}
-                  className="p-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-              </div>
+          {/* COLLABORATION PANEL - Hide on mobile by default */}
+          {!isMobile && (
+            <div className="lg:col-span-3">
+              <CollaborationPanel
+                projectId={id}
+                projectName={project.title}
+                defaultTab="chat"
+              />
             </div>
-
-            <div className="space-y-3">
-              {tasks.length === 0 ? (
-                <div className="bg-slate-800/30 border border-dashed border-slate-700 rounded-2xl p-12 text-center">
-                  <Target className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400">No tasks yet. Add one above to get started.</p>
-                </div>
-              ) : (
-                tasks.map((task) => (
-                  <div 
-                    key={task._id}
-                    className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4 hover:border-purple-500/30 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-start gap-3">
-                      <button 
-                        onClick={() => handleCompleteTask(task)}
-                        className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-all
-                          ${task.completed 
-                            ? 'bg-emerald-500 border-emerald-500' 
-                            : 'border-slate-600 group-hover:border-purple-500'
-                          }`}
-                      >
-                        {task.completed && <CheckCircle2 className="w-3 h-3 text-white" />}
-                      </button>
-                      
-                      <div className="flex-1">
-                        <p className={`font-medium ${task.completed ? 'line-through text-slate-500' : ''}`}>
-                          {task.title}
-                        </p>
-                        {task.dueDate && (
-                          <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
-                            <Clock className="w-3 h-3" />
-                            {new Date(task.dueDate).toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
-
-                      {!task.completed && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowShipModal(true);
-                            setShipDescription(task.title);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-purple-600/20 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all hover:bg-purple-600/30"
-                        >
-                          Ship
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT COLUMN: COLLABORATION PANEL (4 cols) */}
-          <div className="lg:col-span-4">
-            <CollaborationPanel
-              projectId={id}
-              projectName={project.title}
-              defaultTab="chat"
-            />
-          </div>
+          )}
         </div>
       </div>
 
-      {/* FLOATING SHIP BUTTON */}
+      {/* FLOATING SHIP BUTTON - Mobile optimized */}
       <button
         onClick={() => setShowShipModal(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center group z-50"
+        className={`fixed ${isMobile ? 'bottom-6 right-6' : 'bottom-8 right-8'} ${isMobile ? 'w-14 h-14' : 'w-16 h-16'} bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-transform flex items-center justify-center group z-50 tap-target`}
+        aria-label="Ship this"
       >
-        <Rocket className="w-8 h-8 text-white group-hover:rotate-12 transition-transform" />
+        <Rocket className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-white group-hover:rotate-12 transition-transform`} />
       </button>
 
-      {/* SHIP MODAL */}
-      {showShipModal && (
+      {/* SHIP MODAL - Desktop & Mobile */}
+      {showShipModal && !isMobile && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <div className="flex items-center justify-between mb-4">
@@ -526,6 +557,71 @@ export default function ProjectHome() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* MOBILE BOTTOM SHEETS */}
+      {isMobile && (
+        <>
+          {/* Ship Bottom Sheet */}
+          <BottomSheet
+            isOpen={showShipModal}
+            onClose={() => setShowShipModal(false)}
+            title="Ship This"
+          >
+            <div className="p-6 space-y-4">
+              <input
+                type="text"
+                value={shipDescription}
+                onChange={(e) => setShipDescription(e.target.value)}
+                placeholder="What did you just ship?"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-white text-base focus:outline-none focus:ring-2 focus:ring-purple-500"
+                autoFocus
+              />
+              <button
+                onClick={handleShip}
+                className="w-full py-4 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl font-bold text-lg active:scale-95 transition-all"
+              >
+                Ship (+50 XP) ��
+              </button>
+            </div>
+          </BottomSheet>
+
+          {/* Add Task Bottom Sheet */}
+          <BottomSheet
+            isOpen={showAddTaskSheet}
+            onClose={() => setShowAddTaskSheet(false)}
+            title="Add Task"
+          >
+            <div className="p-6 space-y-4">
+              <input
+                type="text"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                placeholder="What needs to be done?"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-white text-base focus:outline-none focus:ring-2 focus:ring-purple-500"
+                autoFocus
+              />
+              <button
+                onClick={handleAddTask}
+                disabled={!newTaskTitle.trim() || creatingTask}
+                className="w-full py-4 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl font-bold text-lg active:scale-95 transition-all disabled:opacity-50"
+              >
+                {creatingTask ? 'Adding...' : 'Add Task'}
+              </button>
+            </div>
+          </BottomSheet>
+
+          {/* Mobile Announcement Create */}
+          <MobileAnnouncementCreate
+            projectId={id}
+            isOpen={showAnnouncementSheet}
+            onClose={() => setShowAnnouncementSheet(false)}
+            onCreated={() => {
+              // Refresh announcements
+              window.location.reload();
+            }}
+          />
+        </>
       )}
 
       {/* CSS for animations */}

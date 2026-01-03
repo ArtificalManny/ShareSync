@@ -1,35 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  CheckCircle2, 
-  Upload, 
-  Trash2, 
-  MessageCircle, 
-  DollarSign,
-  Mail,
-  UserPlus,
-  UserMinus,
-  Megaphone,
-  Rocket,
-  FileText,
-  Clock,
-  RefreshCw
+  CheckCircle2, Upload, Trash2, MessageCircle, DollarSign,
+  Mail, UserPlus, UserMinus, Megaphone, Rocket, FileText,
+  Clock, RefreshCw, ChevronDown, Filter
 } from 'lucide-react';
+import { useIsMobile } from '../../hooks/useMobile';
+import BottomSheet from '../mobile/BottomSheet';
 
 const ActivityFeed = ({ projectId }) => {
+  const isMobile = useIsMobile();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+  
+  // Pull-to-refresh state
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const containerRef = useRef(null);
+  const startYRef = useRef(0);
 
   useEffect(() => {
-    fetchActivities();
+    fetchActivities(true);
   }, [projectId, filter]);
 
-  const fetchActivities = async () => {
+  const fetchActivities = async (reset = false) => {
     try {
       setLoading(true);
+      const currentPage = reset ? 1 : page;
+      
       const response = await fetch(
-        `http://localhost:3000/api/projects/${projectId}/activity?type=${filter}&limit=50`,
+        `http://localhost:3000/api/projects/${projectId}/activity?type=${filter}&limit=20&page=${currentPage}`,
         { credentials: 'include' }
       );
       
@@ -40,7 +43,14 @@ const ActivityFeed = ({ projectId }) => {
       }
       
       const data = await response.json();
-      setActivities(data.activities || []);
+      
+      if (reset) {
+        setActivities(data.activities || []);
+        setPage(1);
+      } else {
+        setActivities(prev => [...prev, ...(data.activities || [])]);
+      }
+      
       setHasMore(data.hasMore || false);
     } catch (error) {
       console.error('Activity fetch error:', error);
@@ -49,6 +59,69 @@ const ActivityFeed = ({ projectId }) => {
       setLoading(false);
     }
   };
+
+  // Load more for infinite scroll
+  const loadMore = useCallback(() => {
+    if (!loading && hasMore) {
+      setPage(prev => prev + 1);
+      fetchActivities(false);
+    }
+  }, [loading, hasMore]);
+
+  // Pull to refresh handlers
+  const handleTouchStart = (e) => {
+    if (!isMobile || containerRef.current?.scrollTop > 0) return;
+    startYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isMobile || containerRef.current?.scrollTop > 0) return;
+    
+    const currentY = e.touches[0].clientY;
+    const distance = currentY - startYRef.current;
+    
+    if (distance > 0 && distance < 150) {
+      setIsPulling(true);
+      setPullDistance(distance);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (!isMobile) return;
+    
+    if (pullDistance > 80) {
+      await fetchActivities(true);
+    }
+    
+    setIsPulling(false);
+    setPullDistance(0);
+  };
+
+  // Intersection observer for infinite scroll
+  const observerTarget = useRef(null);
+  
+  useEffect(() => {
+    if (!isMobile) return;
+    
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [hasMore, loading, loadMore, isMobile]);
 
   const getActivityIcon = (action) => {
     const iconMap = {
@@ -112,8 +185,16 @@ const ActivityFeed = ({ projectId }) => {
     }
   };
 
+  const filterOptions = [
+    { id: 'all', label: 'All', icon: Clock },
+    { id: 'task', label: 'Tasks', icon: CheckCircle2 },
+    { id: 'file', label: 'Files', icon: Upload },
+    { id: 'message', label: 'Messages', icon: MessageCircle },
+    { id: 'payment', label: 'Payments', icon: DollarSign }
+  ];
+
   return (
-    <div className="h-full flex flex-col bg-slate-800/30 backdrop-blur-xl border border-purple-500/20 rounded-2xl overflow-hidden">
+    <div className={`h-full flex flex-col bg-slate-800/30 backdrop-blur-xl border border-purple-500/20 ${isMobile ? 'rounded-none border-x-0' : 'rounded-2xl'} overflow-hidden`}>
       {/* Header */}
       <div className="p-4 border-b border-slate-700/50">
         <div className="flex items-center justify-between mb-3">
@@ -122,42 +203,68 @@ const ActivityFeed = ({ projectId }) => {
             Activity Feed
           </h3>
           <button
-            onClick={fetchActivities}
+            onClick={() => fetchActivities(true)}
             disabled={loading}
-            className="text-xs text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="text-xs text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-50 flex items-center gap-1 tap-target"
           >
             <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {!isMobile && 'Refresh'}
           </button>
         </div>
 
         {/* Filter Buttons */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {[
-            { id: 'all', label: 'All' },
-            { id: 'task', label: 'Tasks' },
-            { id: 'file', label: 'Files' },
-            { id: 'message', label: 'Messages' },
-            { id: 'payment', label: 'Payments' }
-          ].map(f => (
-            <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
-                filter === f.id
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        {isMobile ? (
+          <button
+            onClick={() => setShowFilterSheet(true)}
+            className="w-full px-4 py-2 bg-slate-700/50 hover:bg-slate-700 rounded-xl text-sm font-medium transition-all flex items-center justify-between tap-target"
+          >
+            <span className="flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              {filterOptions.find(f => f.id === filter)?.label || 'All'}
+            </span>
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        ) : (
+          <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+            {filterOptions.map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                  filter === f.id
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* Pull to Refresh Indicator */}
+      {isMobile && isPulling && (
+        <div 
+          className="flex items-center justify-center py-2 bg-purple-500/10 transition-all"
+          style={{ height: `${Math.min(pullDistance, 60)}px` }}
+        >
+          <RefreshCw 
+            className={`w-4 h-4 text-purple-400 ${pullDistance > 80 ? 'animate-spin' : ''}`}
+            style={{ transform: `rotate(${pullDistance * 2}deg)` }}
+          />
+        </div>
+      )}
+
       {/* Activity List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {loading ? (
+      <div 
+        ref={containerRef}
+        className={`flex-1 overflow-y-auto p-4 space-y-3 ${isMobile ? 'mobile-scroll' : ''}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {loading && activities.length === 0 ? (
           <div className="text-center py-8">
             <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" />
           </div>
@@ -168,33 +275,79 @@ const ActivityFeed = ({ projectId }) => {
             <p className="text-slate-500 text-xs mt-1">Actions will appear here as you work</p>
           </div>
         ) : (
-          activities.map((activity) => (
-            <div
-              key={activity._id}
-              className="flex gap-3 p-3 bg-slate-900/30 rounded-lg hover:bg-slate-900/50 transition-colors"
-            >
-              <div className="mt-0.5">{getActivityIcon(activity.action)}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white leading-relaxed">
-                  {getActivityText(activity)}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {getTimeAgo(activity.createdAt)}
-                </p>
+          <>
+            {activities.map((activity) => (
+              <div
+                key={activity._id}
+                className={`flex gap-3 p-3 bg-slate-900/30 rounded-lg hover:bg-slate-900/50 transition-colors ${isMobile ? 'active:scale-98' : ''}`}
+              >
+                <div className="mt-0.5">{getActivityIcon(activity.action)}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white leading-relaxed">
+                    {getActivityText(activity)}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {getTimeAgo(activity.createdAt)}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))
-        )}
+            ))}
 
-        {hasMore && !loading && (
-          <button
-            onClick={() => {/* Load more logic */}}
-            className="w-full py-2 text-xs text-purple-400 hover:text-purple-300 transition-colors"
-          >
-            Load more...
-          </button>
+            {/* Infinite Scroll Target */}
+            {isMobile && hasMore && (
+              <div ref={observerTarget} className="flex items-center justify-center py-4">
+                {loading ? (
+                  <div className="w-6 h-6 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <p className="text-xs text-slate-500">Scroll for more...</p>
+                )}
+              </div>
+            )}
+
+            {!isMobile && hasMore && !loading && (
+              <button
+                onClick={loadMore}
+                className="w-full py-2 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Load more...
+              </button>
+            )}
+          </>
         )}
       </div>
+
+      {/* Mobile Filter Bottom Sheet */}
+      {isMobile && (
+        <BottomSheet
+          isOpen={showFilterSheet}
+          onClose={() => setShowFilterSheet(false)}
+          title="Filter Activity"
+          height="auto"
+        >
+          <div className="p-6 space-y-3">
+            {filterOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => {
+                  setFilter(option.id);
+                  setShowFilterSheet(false);
+                }}
+                className={`w-full p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 tap-target ${
+                  filter === option.id
+                    ? 'bg-purple-500/20 border-purple-500 text-white'
+                    : 'bg-slate-800/50 border-slate-700 text-slate-400 active:scale-95'
+                }`}
+              >
+                <option.icon className="w-5 h-5" />
+                <span className="font-medium">{option.label}</span>
+                {filter === option.id && (
+                  <CheckCircle2 className="w-5 h-5 text-purple-400 ml-auto" />
+                )}
+              </button>
+            ))}
+          </div>
+        </BottomSheet>
+      )}
     </div>
   );
 };
