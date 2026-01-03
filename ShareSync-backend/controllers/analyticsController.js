@@ -1,6 +1,7 @@
 /**
  * analyticsController.js
  * Handles analytics and insights endpoints
+ * MERGED: Existing analytics + Week 6 Ecosystem analytics
  */
 
 const User = require('../models/User');
@@ -14,8 +15,11 @@ const {
   generateInsights,
 } = require('../utils/analytics');
 
+// ⭐ WEEK 6: New imports
+const analyticsService = require('../services/analyticsService');
+
 // ============================================
-// PERSONAL ANALYTICS
+// EXISTING PERSONAL ANALYTICS
 // ============================================
 
 /**
@@ -92,7 +96,7 @@ exports.getInsights = async (req, res) => {
 };
 
 // ============================================
-// PROJECT ANALYTICS
+// EXISTING PROJECT ANALYTICS
 // ============================================
 
 /**
@@ -177,6 +181,102 @@ exports.getDashboard = async (req, res) => {
   } catch (error) {
     console.error('Get dashboard error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ============================================
+// ⭐ WEEK 6: ECOSYSTEM ANALYTICS
+// ============================================
+
+/**
+ * Track user activity
+ * POST /api/analytics/track-activity
+ */
+exports.trackActivity = async (req, res) => {
+  try {
+    const { action, projectId, metadata } = req.body;
+    const userId = req.user._id || req.user.id;
+    
+    if (!action) {
+      return res.status(400).json({ error: 'Action is required' });
+    }
+    
+    const activity = await analyticsService.trackActivity(
+      userId,
+      action,
+      projectId,
+      metadata
+    );
+    
+    res.status(201).json({
+      success: true,
+      activity
+    });
+  } catch (error) {
+    console.error('Error in trackActivity:', error);
+    res.status(500).json({ error: 'Failed to track activity' });
+  }
+};
+
+/**
+ * Get user patterns
+ * GET /api/analytics/patterns
+ */
+exports.getUserPatterns = async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id;
+    
+    const patterns = await analyticsService.getUserPatterns(userId);
+    
+    res.json({
+      success: true,
+      patterns
+    });
+  } catch (error) {
+    console.error('Error in getUserPatterns:', error);
+    res.status(500).json({ error: 'Failed to get user patterns' });
+  }
+};
+
+/**
+ * Force recompute user patterns
+ * POST /api/analytics/recompute-patterns
+ */
+exports.recomputePatterns = async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id;
+    
+    const patterns = await analyticsService.computePatterns(userId);
+    
+    res.json({
+      success: true,
+      patterns,
+      message: 'Patterns recomputed successfully'
+    });
+  } catch (error) {
+    console.error('Error in recomputePatterns:', error);
+    res.status(500).json({ error: 'Failed to recompute patterns' });
+  }
+};
+
+/**
+ * Get activity summary
+ * GET /api/analytics/summary
+ */
+exports.getActivitySummary = async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id;
+    const days = parseInt(req.query.days) || 30;
+    
+    const summary = await analyticsService.getActivitySummary(userId, days);
+    
+    res.json({
+      success: true,
+      summary
+    });
+  } catch (error) {
+    console.error('Error in getActivitySummary:', error);
+    res.status(500).json({ error: 'Failed to get activity summary' });
   }
 };
 
