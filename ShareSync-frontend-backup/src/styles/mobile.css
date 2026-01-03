@@ -1,0 +1,95 @@
+/* Mobile-specific utilities */
+
+/* Safe area for iOS notch */
+@supports (padding: max(0px)) {
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .pt-safe {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+}
+
+/* Touch-friendly tap targets */
+.tap-target {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 12px;
+}
+
+/* Mobile-optimized scrolling */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Pull to refresh indicator */
+.pull-to-refresh {
+  overscroll-behavior-y: contain;
+}
+
+/* Bottom sheet safe area */
+.bottom-sheet-content {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+/* Mobile card spacing */
+@media (max-width: 768px) {
+  .mobile-card {
+    margin: 0 -1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .mobile-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .mobile-full-width {
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+  }
+}
+
+/* Prevent zoom on input focus (iOS) */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Hide scrollbar on mobile */
+@media (max-width: 768px) {
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Swipe gesture indicator */
+.swipe-indicator {
+  position: relative;
+}
+
+.swipe-indicator::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 100%;
+  background: linear-gradient(to left, rgba(15, 23, 42, 1), transparent);
+  pointer-events: none;
+}
