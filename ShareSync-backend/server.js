@@ -124,12 +124,30 @@ try {
   console.log('⚠️ Notifications routes not loaded:', e.message);
 }
 
-// Analytics routes
+// Analytics routes (EXISTING - kept as is)
 try {
   app.use('/api/analytics', apiLimiter, require('./routes/analytics'));
   console.log('✅ Analytics routes loaded');
 } catch (e) {
   console.log('⚠️ Analytics routes not loaded:', e.message);
+}
+
+// ⭐ WEEK 6: AI Routes (NEW)
+try {
+  const aiRoutes = require('./routes/ai');
+  app.use('/api/ai', apiLimiter, aiRoutes);
+  console.log('✅ AI routes loaded (Week 6 Ecosystem)');
+} catch (e) {
+  console.log('⚠️ AI routes not loaded:', e.message);
+}
+
+// ⭐ WEEK 6: Ecosystem Routes (NEW)
+try {
+  const ecosystemRoutes = require('./routes/ecosystem');
+  app.use('/api/ecosystem', apiLimiter, ecosystemRoutes);
+  console.log('✅ Ecosystem routes loaded (Week 6)');
+} catch (e) {
+  console.log('⚠️ Ecosystem routes not loaded:', e.message);
 }
 
 // Project routes
@@ -219,11 +237,20 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json(errorResponse);
 });
 
+// ⭐ WEEK 6: Start Burnout Detection Cron Job (NEW)
+try {
+  const startBurnoutDetection = require('./jobs/burnoutDetection');
+  startBurnoutDetection();
+  console.log('✅ Burnout detection cron job initialized');
+} catch (e) {
+  console.log('⚠️ Burnout detection cron job not loaded:', e.message);
+}
+
 // ***** START SERVER *****
 httpServer.listen(PORT, () => {
   console.log('');
   console.log('='.repeat(70));
-  console.log('🚀 ShareSync Backend Server - OPTIMIZED');
+  console.log('🚀 ShareSync Backend Server - OPTIMIZED + WEEK 6 ECOSYSTEM');
   console.log('='.repeat(70));
   console.log(`📍 Server: http://localhost:${PORT}`);
   console.log(`🔌 Socket: ws://localhost:${PORT}/socket.io`);
@@ -231,7 +258,9 @@ httpServer.listen(PORT, () => {
   console.log(`🔒 Security: Helmet enabled`);
   console.log(`⚡ Compression: Enabled`);
   console.log(`🛡️  Rate Limiting: Active`);
-  console.log(`📊 Performance Monitoring: Active`);
+  console.log(`�� Performance Monitoring: Active`);
+  console.log(`🧠 AI Recommendations: Active`);
+  console.log(`�� Burnout Detection: Active (daily 6 AM)`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('='.repeat(70));
   console.log('');
