@@ -12,6 +12,7 @@ import { ExperimentsModule } from './experiments/experiments.module';
 import { FeedModule } from './feed/feed.module';
 import { ProfileModule } from './profile/profile.module';
 import { ActivitiesModule } from './activities/activities.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { MomentumModule } from './momentum/momentum.module';
 import { ModerationModule } from './moderation/moderation.module';
@@ -19,8 +20,7 @@ import { UploadsModule } from './uploads/uploads.module';
 import { StatsModule } from './stats/stats.module';
 import { TasksModule } from './tasks/tasks.module';
 import { AnalyticsModule } from './analytics/analytics.module';
-
-import { NotifyModule } from './notifications/notify.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { FilesModule } from './files/files.module';
 import { HabitsModule } from './habits/habits.module';
 
@@ -47,6 +47,7 @@ import { AppController } from './app.controller';
     FeedModule,
     ProfileModule,
     ActivitiesModule,
+    AnnouncementsModule,
     RealtimeModule,
     MomentumModule,
     ModerationModule,
@@ -54,7 +55,7 @@ import { AppController } from './app.controller';
     StatsModule,
     TasksModule,
     AnalyticsModule,
-    NotifyModule,
+    NotificationsModule,
     FilesModule,
     HabitsModule,
   ],
