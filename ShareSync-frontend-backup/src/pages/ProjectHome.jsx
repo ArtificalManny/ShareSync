@@ -1,4 +1,4 @@
-// src/pages/ProjectHome.jsx - MOBILE OPTIMIZED
+// src/pages/ProjectHome.jsx - MOBILE OPTIMIZED + QUICK ACTIONS + HEALTH MONITORING
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -8,7 +8,8 @@ import {
   Rocket, Plus, Calendar, Clock, Zap, Trophy, Flame, CheckCircle2, Target,
   ChevronLeft, ChevronRight, X, Upload, Mic, Eye, Users, TrendingUp,
   Battery, BatteryLow, BatteryMedium, Play, Pause, AlertCircle,
-  Star, Sparkles, Award, MessageCircle, Timer, Coffee, Music
+  Star, Sparkles, Award, MessageCircle, Timer, Coffee, Music,
+  Activity, TrendingDown, BarChart3, PieChart, UserCheck
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
 
@@ -16,6 +17,10 @@ import { toast } from "../components/ui/toast";
 import { useIsMobile } from "../hooks/useMobile";
 import BottomSheet from "../components/mobile/BottomSheet";
 import MobileAnnouncementCreate from "../components/mobile/MobileAnnouncementCreate";
+
+// ⭐ QUICK ACTIONS IMPORTS
+import QuickActionsManager from '../components/quick-actions/QuickActionsManager';
+import KeyboardShortcuts from '../components/quick-actions/KeyboardShortcuts';
 
 // ⭐ CURSOR SYSTEM IMPORTS
 import { useCursorContext } from "../context/CursorContext";
@@ -25,6 +30,9 @@ import usePresence, { useTeamPresence } from "../hooks/usePresence";
 // ⭐ COMPONENT IMPORTS
 import CollaborationPanel from "../components/project/CollaborationPanel";
 import Announcements from "../components/project/Announcements";
+
+// ⭐ WEEK 6: ECOSYSTEM API
+import ecosystemApi from "../services/ecosystemApi";
 
 // =====================================
 // BEHAVIORAL SCIENCE COMPONENTS
@@ -144,6 +152,241 @@ const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
   );
 };
 
+// ⭐ WEEK 6: PROJECT HEARTBEAT CARD
+const ProjectHeartbeatCard = ({ projectId, isMobile }) => {
+  const [heartbeat, setHeartbeat] = useState({
+    shipsThisWeek: 4,
+    shipsLastWeek: 7,
+    activeMembers: 2,
+    totalMembers: 5,
+    mostActiveTime: 'Tuesday evenings',
+    daysSinceLastShip: 2,
+    trend: 'down',
+    loading: true
+  });
+
+  useEffect(() => {
+    // TODO: Fetch real heartbeat data from API
+    // For now using mock data
+    setTimeout(() => {
+      setHeartbeat(prev => ({ ...prev, loading: false }));
+    }, 500);
+  }, [projectId]);
+
+  const getTrendIcon = () => {
+    if (heartbeat.trend === 'up') return <TrendingUp className="w-4 h-4 text-emerald-400" />;
+    if (heartbeat.trend === 'down') return <TrendingDown className="w-4 h-4 text-orange-400" />;
+    return <Activity className="w-4 h-4 text-blue-400" />;
+  };
+
+  const getTrendColor = () => {
+    if (heartbeat.trend === 'up') return 'text-emerald-400';
+    if (heartbeat.trend === 'down') return 'text-orange-400';
+    return 'text-blue-400';
+  };
+
+  if (heartbeat.loading) {
+    return (
+      <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 animate-pulse">
+        <div className="h-32 bg-slate-700/50 rounded"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
+      <div className="flex items-center gap-2 mb-4">
+        <Activity className="w-5 h-5 text-purple-400" />
+        <h3 className="font-bold text-lg">Project Heartbeat</h3>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {/* Ships this week */}
+        <div className="bg-slate-900/50 rounded-xl p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Rocket className="w-4 h-4 text-purple-400" />
+            <span className="text-xs text-slate-400">Ships this week</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-white">{heartbeat.shipsThisWeek}</span>
+            <div className={`flex items-center gap-1 text-xs ${getTrendColor()}`}>
+              {getTrendIcon()}
+              <span>from {heartbeat.shipsLastWeek}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Active members */}
+        <div className="bg-slate-900/50 rounded-xl p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Users className="w-4 h-4 text-blue-400" />
+            <span className="text-xs text-slate-400">Active members</span>
+          </div>
+          <div className="text-2xl font-bold text-white">
+            {heartbeat.activeMembers}/{heartbeat.totalMembers}
+          </div>
+        </div>
+
+        {/* Most activity */}
+        <div className="bg-slate-900/50 rounded-xl p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Clock className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs text-slate-400">Most activity</span>
+          </div>
+          <div className="text-sm font-semibold text-white">{heartbeat.mostActiveTime}</div>
+        </div>
+
+        {/* Days since last ship */}
+        <div className="bg-slate-900/50 rounded-xl p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Calendar className="w-4 h-4 text-orange-400" />
+            <span className="text-xs text-slate-400">Last ship</span>
+          </div>
+          <div className="text-2xl font-bold text-white">{heartbeat.daysSinceLastShip}d</div>
+        </div>
+      </div>
+
+      {/* Health indicator */}
+      <div className={`mt-4 p-3 rounded-xl border ${
+        heartbeat.trend === 'up' 
+          ? 'bg-emerald-500/10 border-emerald-500/30' 
+          : heartbeat.trend === 'down'
+          ? 'bg-orange-500/10 border-orange-500/30'
+          : 'bg-blue-500/10 border-blue-500/30'
+      }`}>
+        <p className="text-sm font-medium text-white">
+          {heartbeat.trend === 'up' && '✨ Project momentum is strong!'}
+          {heartbeat.trend === 'down' && '⚠️ Activity is slowing down'}
+          {heartbeat.trend === 'stable' && '📊 Steady progress'}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// ⭐ WEEK 6: TEAM BALANCE MONITOR
+const TeamBalanceMonitor = ({ projectId, userId, isMobile }) => {
+  const [balance, setBalance] = useState({
+    userPercentage: 71,
+    breakdown: [
+      { userId: 'user1', name: 'You', percentage: 71, color: 'purple' },
+      { userId: 'user2', name: 'Sarah', percentage: 18, color: 'blue' },
+      { userId: 'user3', name: 'Mike', percentage: 11, color: 'emerald' }
+    ],
+    loading: true
+  });
+
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
+  useEffect(() => {
+    // TODO: Fetch real balance data from API
+    setTimeout(() => {
+      setBalance(prev => ({ ...prev, loading: false }));
+    }, 500);
+  }, [projectId, userId]);
+
+  const getBalanceColor = (percentage) => {
+    if (percentage >= 70) return 'orange';
+    if (percentage >= 50) return 'yellow';
+    return 'emerald';
+  };
+
+  const getBalanceMessage = (percentage) => {
+    if (percentage >= 70) return "You're carrying this project";
+    if (percentage >= 50) return "You're doing most of the work";
+    return "Work is well distributed";
+  };
+
+  const getColorClasses = (color) => {
+    const colors = {
+      purple: 'bg-purple-500',
+      blue: 'bg-blue-500',
+      emerald: 'bg-emerald-500',
+      orange: 'bg-orange-500',
+      yellow: 'bg-yellow-500'
+    };
+    return colors[color] || 'bg-slate-500';
+  };
+
+  if (balance.loading) {
+    return (
+      <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 animate-pulse">
+        <div className="h-24 bg-slate-700/50 rounded"></div>
+      </div>
+    );
+  }
+
+  const balanceColor = getBalanceColor(balance.userPercentage);
+
+  return (
+    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 shadow-xl">
+      <div className="flex items-center gap-2 mb-4">
+        <PieChart className="w-5 h-5 text-purple-400" />
+        <h3 className="font-bold text-lg">Team Balance</h3>
+      </div>
+
+      {/* Main stat */}
+      <div className={`bg-${balanceColor}-500/10 border border-${balanceColor}-500/30 rounded-xl p-4 mb-4`}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className={`text-4xl font-bold text-${balanceColor}-400`}>
+            {balance.userPercentage}%
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-white">{getBalanceMessage(balance.userPercentage)}</p>
+            <p className="text-xs text-slate-400">of total project work</p>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+          {balance.breakdown.map((member, idx) => (
+            <div
+              key={idx}
+              className={`h-full ${getColorClasses(member.color)} inline-block`}
+              style={{ width: `${member.percentage}%` }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Review button */}
+      <button
+        onClick={() => setShowBreakdown(!showBreakdown)}
+        className="w-full py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+      >
+        <BarChart3 className="w-4 h-4" />
+        {showBreakdown ? 'Hide Breakdown' : 'Review Allocation'}
+      </button>
+
+      {/* Breakdown */}
+      {showBreakdown && (
+        <div className="mt-4 space-y-2 pt-4 border-t border-slate-700/50">
+          <p className="text-xs font-semibold text-slate-400 mb-2">Work Distribution:</p>
+          {balance.breakdown.map((member, idx) => (
+            <div key={idx} className="flex items-center gap-3">
+              <div className={`w-8 h-8 ${getColorClasses(member.color)} rounded-full flex items-center justify-center text-white text-xs font-bold`}>
+                {member.name[0]}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-white">{member.name}</span>
+                  <span className="text-sm font-bold text-white">{member.percentage}%</span>
+                </div>
+                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getColorClasses(member.color)}`}
+                    style={{ width: `${member.percentage}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // =====================================
 // MAIN PROJECT HOME COMPONENT
 // =====================================
@@ -227,6 +470,12 @@ export default function ProjectHome() {
       
       flashShip();
       
+      // ⭐ Track activity for ecosystem
+      await ecosystemApi.trackActivity('ship', id, {
+        shipDescription: shipDescription,
+        xp: 50
+      });
+      
       setMicroWin({ type: 'task_started', message: '🎉 Shipped! Amazing work!', xp: 50 });
       setTimeout(() => setMicroWin(null), 4000);
       
@@ -270,6 +519,12 @@ export default function ProjectHome() {
     try {
       flashClicking();
       await completeTaskAPI(task._id);
+      
+      // ⭐ Track activity for ecosystem
+      await ecosystemApi.trackActivity('task_complete', id, {
+        taskTitle: task.title,
+        xp: 25
+      });
       
       setMicroWin({ type: 'task_started', message: '✅ Task complete!', xp: 25 });
       setTimeout(() => setMicroWin(null), 3000);
@@ -397,6 +652,12 @@ export default function ProjectHome() {
           </div>
         </div>
 
+        {/* ⭐ WEEK 6: PROJECT HEALTH MONITORING */}
+        <div className={`mt-6 ${isMobile ? 'mobile-stack px-4' : 'grid grid-cols-1 lg:grid-cols-2'} gap-6`}>
+          <ProjectHeartbeatCard projectId={id} isMobile={isMobile} />
+          <TeamBalanceMonitor projectId={id} userId={user?.id} isMobile={isMobile} />
+        </div>
+
         {/* ⭐ ANNOUNCEMENTS SECTION */}
         <div className={`mt-6 ${isMobile ? 'px-4' : ''}`}>
           <Announcements projectId={id} currentUserId={user?.id} />
@@ -513,16 +774,13 @@ export default function ProjectHome() {
         </div>
       </div>
 
-      {/* FLOATING SHIP BUTTON - Mobile optimized */}
-      <button
-        onClick={() => setShowShipModal(true)}
-        className={`fixed ${isMobile ? 'bottom-6 right-6' : 'bottom-8 right-8'} ${isMobile ? 'w-14 h-14' : 'w-16 h-16'} bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-transform flex items-center justify-center group z-50 tap-target`}
-        aria-label="Ship this"
-      >
-        <Rocket className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-white group-hover:rotate-12 transition-transform`} />
-      </button>
+      {/* ⭐ QUICK ACTIONS - Better than old ship button */}
+      <QuickActionsManager projectId={id} />
+      
+      {/* ⭐ KEYBOARD SHORTCUTS HELPER */}
+      <KeyboardShortcuts />
 
-      {/* SHIP MODAL - Desktop & Mobile */}
+      {/* SHIP MODAL - Desktop only (kept as fallback) */}
       {showShipModal && !isMobile && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl">
@@ -581,7 +839,7 @@ export default function ProjectHome() {
                 onClick={handleShip}
                 className="w-full py-4 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl font-bold text-lg active:scale-95 transition-all"
               >
-                Ship (+50 XP) ��
+                Ship (+50 XP) 🚢
               </button>
             </div>
           </BottomSheet>
