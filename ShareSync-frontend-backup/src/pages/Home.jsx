@@ -1,4 +1,4 @@
-// src/pages/Home.jsx - MODERNIZED WITH CRITICAL INSIGHTS
+// src/pages/Home.jsx - COMPLETE ECOSYSTEM INTEGRATED
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -9,15 +9,26 @@ import {
 import { useAuth } from "../context/AuthContext.jsx";
 import client from "../api/client";
 import { getProjectsQuick } from "../api/projects";
-import { toast } from "../components/ui/toast.jsx"; // ⭐ NEW: Import toast
+import { toast } from "../components/ui/toast.jsx";
+
+// ⭐ ECOSYSTEM COMPONENTS - ALL 7
+import {
+  EcosystemStatusBar,
+  AdaptiveAIPlan,
+  BurnoutAlert,
+  ActivityFeed,
+  ProjectsOverview,
+  TeamStories,
+  Achievements
+} from "../components/ecosystem";
 
 // ⭐ Modern components
 import WeeklyNarrative from "../components/home/WeeklyNarrative";
 import MomentumIndex from "../components/home/MomentumIndex";
-import CriticalInsights from "../components/home/CriticalInsights"; // ⭐ NEW: Import CriticalInsights
+import CriticalInsights from "../components/home/CriticalInsights";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MODERN COMPONENTS
+   MODERN COMPONENTS (Kept from original)
 ───────────────────────────────────────────────────────────────────────── */
 
 function PageHeader({ title, subtitle }) {
@@ -56,7 +67,6 @@ function ReadinessScoreCard({ score, label, insight, bestHour, onStart }) {
 
   return (
     <div className="modern-card-elevated p-6 space-y-5">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <div className={`text-6xl font-bold bg-gradient-to-br ${colors.bg} bg-clip-text text-transparent`}>
@@ -76,7 +86,6 @@ function ReadinessScoreCard({ score, label, insight, bestHour, onStart }) {
         </div>
       </div>
 
-      {/* Progress bar */}
       <div className="space-y-2">
         <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
           <div 
@@ -86,7 +95,6 @@ function ReadinessScoreCard({ score, label, insight, bestHour, onStart }) {
         </div>
       </div>
 
-      {/* CTA */}
       <button onClick={onStart} className="btn-primary-modern w-full">
         <Play className="w-4 h-4" />
         Launch Your Day
@@ -98,19 +106,16 @@ function ReadinessScoreCard({ score, label, insight, bestHour, onStart }) {
 function AIPlanCard({ nextBestAction, quickWins, onRegenerate, onStart }) {
   return (
     <div className="modern-card p-6 space-y-5 bg-gradient-to-br from-primary-50/50 to-fuchsia-50/50 dark:from-primary-500/5 dark:to-fuchsia-500/5">
-      {/* Header */}
       <div className="flex items-center gap-2">
         <Sparkles className="w-5 h-5 text-primary-600 dark:text-primary-400" />
         <h2 className="heading-3">Today's AI Plan</h2>
       </div>
 
-      {/* Next action */}
       <div className="space-y-2">
         <div className="caption-text">Next best action</div>
         <p className="body-text font-semibold">{nextBestAction}</p>
       </div>
 
-      {/* Quick wins */}
       {quickWins?.length > 0 && (
         <div className="space-y-3">
           <div className="caption-text">Quick wins (under 15 min)</div>
@@ -118,8 +123,7 @@ function AIPlanCard({ nextBestAction, quickWins, onRegenerate, onStart }) {
             {quickWins.map((win, i) => (
               <div 
                 key={i}
-                className="modern-card p-3 hover:shadow-md transition-all cursor-pointer group stagger-item"
-                style={{ animationDelay: `${i * 50}ms` }}
+                className="modern-card p-3 hover:shadow-md transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
@@ -136,7 +140,6 @@ function AIPlanCard({ nextBestAction, quickWins, onRegenerate, onStart }) {
         </div>
       )}
 
-      {/* Actions */}
       <div className="flex gap-3 pt-2">
         <button onClick={onStart} className="btn-primary-modern flex-1">
           Start Now
@@ -181,8 +184,7 @@ function StatsGrid({ stats }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {statItems.map((stat, idx) => (
-        <div key={idx} className="stat-card-modern stagger-item"
-          style={{ animationDelay: `${idx * 50}ms` }}>
+        <div key={idx} className="stat-card-modern">
           <div className="flex items-center justify-between mb-2">
             <stat.icon className={`w-5 h-5 ${stat.color}`} />
           </div>
@@ -230,7 +232,7 @@ function TeamMomentumCard({ status, activeCount, totalCount }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN HOME PAGE
+   MAIN HOME PAGE - COMPLETE ECOSYSTEM
 ───────────────────────────────────────────────────────────────────────── */
 
 export default function Home() {
@@ -339,7 +341,7 @@ export default function Home() {
     });
   }, []);
 
-  // Actions (⭐ UPDATED: Using toast instead of alert)
+  // Actions
   const continueProject = () => {
     const last = quickProjects[0];
     if (last?._id) navigate(`/projects/${last._id}`);
@@ -371,13 +373,22 @@ export default function Home() {
         subtitle="Your AI-powered mission control" 
       />
       
-      {/* ⭐ NEW: Critical Insights - The "30-second wow" */}
+      {/* ⭐ ECOSYSTEM STATUS BAR - Mission Control */}
+      <EcosystemStatusBar />
+      
+      {/* ⭐ ADAPTIVE AI PLAN - Personalized Recommendations */}
+      <AdaptiveAIPlan />
+      
+      {/* ⭐ BURNOUT ALERT - Health Monitoring (conditional) */}
+      <BurnoutAlert onDismiss={() => console.log('Burnout alert dismissed')} />
+      
+      {/* Critical Insights - The "30-second wow" */}
       <CriticalInsights />
       
       {/* Social proof ticker */}
       <SocialProofTicker events={socialEvents} />
       
-      {/* Grid layout */}
+      {/* ⭐ MAIN DASHBOARD GRID - 2 columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left column */}
         <div className="space-y-6">
@@ -389,11 +400,12 @@ export default function Home() {
             bestHour={bestHour}
             onStart={startSprint}
           />
+          <MomentumIndex />
         </div>
         
         {/* Right column */}
         <div className="space-y-6">
-          <MomentumIndex />
+          <ActivityFeed />
           <AIPlanCard
             nextBestAction={nextBestAction}
             quickWins={quickWins}
@@ -401,6 +413,18 @@ export default function Home() {
             onStart={startSprint}
           />
         </div>
+      </div>
+
+      {/* ⭐ ECOSYSTEM SHOWCASE GRID - Projects, Stories, Achievements */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Projects Overview */}
+        <ProjectsOverview />
+        
+        {/* Team Stories */}
+        <TeamStories />
+        
+        {/* Achievements */}
+        <Achievements />
       </div>
       
       {/* Stats grid */}
