@@ -74,6 +74,58 @@ const Achievements = () => {
     }
   };
 
+  // ⭐ FIX: Helper function for achievement background colors
+  const getAchievementBgClass = (color) => {
+    const colorMap = {
+      orange: 'bg-orange-500/20',
+      yellow: 'bg-yellow-500/20',
+      purple: 'bg-purple-500/20',
+      blue: 'bg-blue-500/20',
+      green: 'bg-green-500/20',
+      red: 'bg-red-500/20'
+    };
+    return colorMap[color] || 'bg-slate-500/20';
+  };
+
+  // ⭐ FIX: Helper function for achievement icon colors
+  const getAchievementIconClass = (color) => {
+    const colorMap = {
+      orange: 'text-orange-400',
+      yellow: 'text-yellow-400',
+      purple: 'text-purple-400',
+      blue: 'text-blue-400',
+      green: 'text-green-400',
+      red: 'text-red-400'
+    };
+    return colorMap[color] || 'text-slate-400';
+  };
+
+  // ⭐ FIX: Helper function for milestone icon colors
+  const getMilestoneIconClass = (color) => {
+    const colorMap = {
+      orange: 'text-orange-400',
+      yellow: 'text-yellow-400',
+      purple: 'text-purple-400',
+      blue: 'text-blue-400',
+      green: 'text-green-400',
+      red: 'text-red-400'
+    };
+    return colorMap[color] || 'text-slate-400';
+  };
+
+  // ⭐ FIX: Helper function for milestone progress bar colors
+  const getMilestoneProgressClass = (color) => {
+    const colorMap = {
+      orange: 'from-orange-600 to-orange-400',
+      yellow: 'from-yellow-600 to-yellow-400',
+      purple: 'from-purple-600 to-purple-400',
+      blue: 'from-blue-600 to-blue-400',
+      green: 'from-green-600 to-green-400',
+      red: 'from-red-600 to-red-400'
+    };
+    return colorMap[color] || 'from-slate-600 to-slate-400';
+  };
+
   if (isMobile) {
     // Mobile compact view
     return (
@@ -88,8 +140,8 @@ const Achievements = () => {
           <div className={`bg-gradient-to-r ${getRarityColor(achievements.recent[0].rarity)} p-0.5 rounded-xl mb-3`}>
             <div className="bg-slate-900 rounded-xl p-3">
               <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 bg-${achievements.recent[0].color}-500/20 rounded-xl flex items-center justify-center`}>
-                  <achievements.recent[0].icon className={`w-6 h-6 text-${achievements.recent[0].color}-400`} />
+                <div className={`w-12 h-12 ${getAchievementBgClass(achievements.recent[0].color)} rounded-xl flex items-center justify-center`}>
+                  <achievements.recent[0].icon className={`w-6 h-6 ${getAchievementIconClass(achievements.recent[0].color)}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-white text-sm">{achievements.recent[0].name}</p>
@@ -143,8 +195,8 @@ const Achievements = () => {
           >
             <div className="bg-slate-900 rounded-xl p-4">
               <div className="flex items-start gap-3">
-                <div className={`w-12 h-12 bg-${achievement.color}-500/20 rounded-xl flex items-center justify-center flex-shrink-0`}>
-                  <achievement.icon className={`w-6 h-6 text-${achievement.color}-400`} />
+                <div className={`w-12 h-12 ${getAchievementBgClass(achievement.color)} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                  <achievement.icon className={`w-6 h-6 ${getAchievementIconClass(achievement.color)}`} />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
@@ -176,7 +228,7 @@ const Achievements = () => {
           return (
             <div key={milestone.id} className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
-                <Icon className={`w-5 h-5 text-${milestone.color}-400`} />
+                <Icon className={getMilestoneIconClass(milestone.color)} />
                 <span className="font-semibold text-white">{milestone.name}</span>
               </div>
               
@@ -187,7 +239,7 @@ const Achievements = () => {
                 </div>
                 <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full bg-gradient-to-r from-${milestone.color}-600 to-${milestone.color}-400 transition-all duration-500`}
+                    className={`h-full bg-gradient-to-r ${getMilestoneProgressClass(milestone.color)} transition-all duration-500`}
                     style={{ width: `${progress}%` }}
                   />
                 </div>
