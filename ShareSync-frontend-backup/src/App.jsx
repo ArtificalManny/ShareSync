@@ -1,4 +1,4 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -14,6 +14,11 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider as OldToastProvider } from "./context/ToastContext";
 import ToastProvider, { ToastHost } from "./components/ui/toast.jsx";
 import ErrorBoundary from "./ErrorBoundary";
+
+// ⭐ PWA Components
+import InstallPrompt from "./components/pwa/InstallPrompt";
+
+import PrivacyManifesto from './pages/PrivacyManifesto';
 
 // CSS imports
 import "./index.css";
@@ -70,6 +75,10 @@ const AdminConsole = lazy(() => import("./pages/admin/AdminConsole.jsx"));
 const PulseAdmin = lazy(() => import("./pages/admin/PulseAdmin.jsx"));
 const Analytics = lazy(() => import("./pages/Analytics.jsx"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const PWASettings = lazy(() => import("./components/pwa/PWASettings"));
+
+// ⭐ WEEK 9 DAY 1-2: COMMUNITY PAGE
+const Community = lazy(() => import("./pages/Community"));
 
 // ⭐ Lazy load heavy components
 const Sidebar = lazy(() => import("./components/Sidebar"));
@@ -232,12 +241,17 @@ function AppRoutes() {
               <Route path="/projects/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
+              <Route path="/settings/app" element={<ProtectedRoute><PWASettings /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/:username" element={<Profile />} />
               <Route path="/me" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
               <Route path="/projects/:projectId/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+              <Route path="/privacy-manifesto" element={<PrivacyManifesto />} />
+
+              {/* ⭐ WEEK 9 DAY 1-2: COMMUNITY ROUTE */}
+              <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
 
               <Route 
                 path="/messages" 
@@ -288,6 +302,8 @@ function AppRoutes() {
           <MentorDock />
           <LeaderboardDock />
           <ShipFlash />
+          {/* ⭐ PWA Install Prompt */}
+          <InstallPrompt />
         </Suspense>
       )}
 
