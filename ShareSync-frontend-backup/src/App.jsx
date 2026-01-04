@@ -1,4 +1,4 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -82,6 +82,9 @@ const Community = lazy(() => import("./pages/Community"));
 
 // ⭐ WEEK 9 DAY 3-4: PUBLIC PROFILE PAGE
 const PublicProfile = lazy(() => import("./pages/profile/PublicProfile"));
+
+// ⭐ WEEK 9 DAY 5-6: HALL OF FAME PAGE
+const HallOfFame = lazy(() => import("./pages/HallOfFame"));
 
 // ⭐ Lazy load heavy components
 const Sidebar = lazy(() => import("./components/Sidebar"));
@@ -258,6 +261,9 @@ function AppRoutes() {
 
               {/* ⭐ WEEK 9 DAY 1-2: COMMUNITY ROUTE */}
               <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+
+              {/* ⭐ WEEK 9 DAY 5-6: HALL OF FAME ROUTE */}
+              <Route path="/hall-of-fame" element={<ProtectedRoute><HallOfFame /></ProtectedRoute>} />
 
               <Route 
                 path="/messages" 
