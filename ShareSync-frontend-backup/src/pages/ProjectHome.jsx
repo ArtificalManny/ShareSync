@@ -1,4 +1,4 @@
-// src/pages/ProjectHome.jsx - MOBILE OPTIMIZED + QUICK ACTIONS + HEALTH MONITORING + TEAM SPRINTS
+// src/pages/ProjectHome.jsx - MOBILE + QUICK ACTIONS + HEALTH + SPRINTS + HAND-OFFS
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -24,6 +24,11 @@ import KeyboardShortcuts from '../components/quick-actions/KeyboardShortcuts';
 
 // ⭐ WEEK 8 DAY 3-4: TEAM SPRINTS IMPORT
 import TeamSprintManager from '../components/sprints/TeamSprintManager';
+
+// ⭐ WEEK 8 DAY 5-6: HAND-OFF IMPORTS
+import HandoffRequest from '../components/handoff/HandoffRequest';
+import HandoffManager from '../components/handoff/HandoffManager';
+import HandoffButton from '../components/handoff/HandoffButton';
 
 // ⭐ CURSOR SYSTEM IMPORTS
 import { useCursorContext } from "../context/CursorContext";
@@ -260,7 +265,7 @@ const ProjectHeartbeatCard = ({ projectId, isMobile }) => {
         <p className="text-sm font-medium text-white">
           {heartbeat.trend === 'up' && '✨ Project momentum is strong!'}
           {heartbeat.trend === 'down' && '⚠️ Activity is slowing down'}
-          {heartbeat.trend === 'stable' && '📊 Steady progress'}
+          {heartbeat.trend === 'stable' && '�� Steady progress'}
         </p>
       </div>
     </div>
@@ -408,6 +413,10 @@ export default function ProjectHome() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
 
+  // ⭐ WEEK 8 DAY 5-6: HAND-OFF STATE
+  const [showHandoffRequest, setShowHandoffRequest] = useState(false);
+  const [selectedTaskForHandoff, setSelectedTaskForHandoff] = useState(null);
+
   // ⭐ USE REAL TASKS HOOK
   const { 
     tasks, 
@@ -431,6 +440,13 @@ export default function ProjectHome() {
     idleTimeout: 5 * 60 * 1000,
   });
   const teamActivity = useTeamPresence();
+
+  // ⭐ WEEK 8 DAY 5-6: MOCK PROJECT MEMBERS (Replace with real data from project)
+  const projectMembers = [
+    { id: 'user2', name: 'Sarah', avatar: '👩', online: true },
+    { id: 'user3', name: 'Mike', avatar: '👨', online: true },
+    { id: 'user4', name: 'Alex', avatar: '🧑', online: false }
+  ];
 
   // ⭐ JOIN/LEAVE PROJECT
   useEffect(() => {
@@ -547,6 +563,49 @@ export default function ProjectHome() {
       description: `Great work team! ${retroData.ships.length} ships logged.`,
       variant: 'success' 
     });
+  };
+
+  // ⭐ WEEK 8 DAY 5-6: HAND-OFF HANDLERS
+  const handleRequestHandoff = async (handoffData) => {
+    try {
+      // TODO: Replace with real API call
+      // await requestHandoff(handoffData);
+      console.log('Hand-off requested:', handoffData);
+      
+      // Simulate Socket.IO broadcast
+      // socket.emit('handoff:request', handoffData);
+      
+      setShowHandoffRequest(false);
+      setSelectedTaskForHandoff(null);
+    } catch (error) {
+      console.error('Failed to request hand-off:', error);
+      throw error;
+    }
+  };
+
+  const handleAcceptHandoff = async (request) => {
+    try {
+      // TODO: Replace with real API call
+      // await acceptHandoff(request.id);
+      console.log('Hand-off accepted:', request);
+      
+      // TODO: Update task ownership in local state
+      // This would reassign the task to current user
+    } catch (error) {
+      console.error('Failed to accept hand-off:', error);
+      throw error;
+    }
+  };
+
+  const handleDeclineHandoff = async (request) => {
+    try {
+      // TODO: Replace with real API call
+      // await declineHandoff(request.id);
+      console.log('Hand-off declined:', request);
+    } catch (error) {
+      console.error('Failed to decline hand-off:', error);
+      throw error;
+    }
   };
 
   const getDaysInMonth = (date) => {
@@ -764,17 +823,30 @@ export default function ProjectHome() {
                           )}
                         </div>
 
+                        {/* ⭐ WEEK 8 DAY 5-6: SHIP & HANDOFF BUTTONS */}
                         {!task.completed && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowShipModal(true);
-                              setShipDescription(task.title);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-purple-600/20 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all hover:bg-purple-600/30 tap-target"
-                          >
-                            Ship
-                          </button>
+                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowShipModal(true);
+                                setShipDescription(task.title);
+                              }}
+                              className="px-3 py-1 bg-purple-600/20 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all hover:bg-purple-600/30 tap-target"
+                            >
+                              Ship
+                            </button>
+                            
+                            {/* ⭐ HAND-OFF BUTTON */}
+                            <HandoffButton
+                              compact
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTaskForHandoff(task);
+                                setShowHandoffRequest(true);
+                              }}
+                            />
+                          </div>
                         )}
                       </div>
                     </div>
@@ -811,6 +883,26 @@ export default function ProjectHome() {
       
       {/* ⭐ KEYBOARD SHORTCUTS HELPER */}
       <KeyboardShortcuts />
+
+      {/* ⭐ WEEK 8 DAY 5-6: HAND-OFF NOTIFICATIONS */}
+      <HandoffManager
+        userId={user?.id}
+        onAcceptHandoff={handleAcceptHandoff}
+        onDeclineHandoff={handleDeclineHandoff}
+      />
+
+      {/* ⭐ WEEK 8 DAY 5-6: HAND-OFF REQUEST MODAL */}
+      {showHandoffRequest && selectedTaskForHandoff && (
+        <HandoffRequest
+          task={selectedTaskForHandoff}
+          projectMembers={projectMembers}
+          onRequest={handleRequestHandoff}
+          onClose={() => {
+            setShowHandoffRequest(false);
+            setSelectedTaskForHandoff(null);
+          }}
+        />
+      )}
 
       {/* SHIP MODAL - Desktop only (kept as fallback) */}
       {showShipModal && !isMobile && (
