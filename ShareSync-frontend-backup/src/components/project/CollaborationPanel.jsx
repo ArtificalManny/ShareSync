@@ -1,144 +1,129 @@
-// src/components/project/CollaborationPanel.jsx - PHASE 3 WITH LIVE TAB ENHANCEMENT
 import React, { useState } from 'react';
-import ChatTab from './chat/ChatTab';
-import useFocusStatus from '../../hooks/useFocusStatus';
+import { MessageCircle, Users, X, Send } from 'lucide-react';
+import TrustBadge from '../trust/TrustBadge';
 
-const TABS = [
-  { id: 'live', label: 'Live', icon: '🔴' },
-  { id: 'chat', label: 'Chat', icon: '��' },
-];
-
-export default function CollaborationPanel({ projectId, projectName, defaultTab = 'live' }) {
+const CollaborationPanel = ({ projectId, projectName, defaultTab = 'chat' }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
-  const { focusedMembers, loading: focusLoading } = useFocusStatus(projectId);
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([
+    { id: 1, user: 'Sarah', text: 'Just pushed the login fix!', time: '2m ago' },
+    { id: 2, user: 'You', text: 'Nice! Testing now', time: '1m ago' }
+  ]);
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+    
+    setMessages([...messages, {
+      id: Date.now(),
+      user: 'You',
+      text: message,
+      time: 'Just now'
+    }]);
+    setMessage('');
+  };
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
-      {/* Tab navigation */}
-      <div className="flex items-center border-b border-slate-700 bg-slate-900/50">
-        {TABS.map(tab => {
-          const isActive = activeTab === tab.id;
-          
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                flex-1 px-4 py-3 text-sm font-medium transition-colors relative
-                ${isActive
-                  ? 'text-white bg-slate-800/50'
-                  : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/30'
-                }
-              `}
-            >
-              <span className="mr-1.5">{tab.icon}</span>
-              {tab.label}
-              
-              {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500"></div>
-              )}
-
-              {tab.id === 'live' && focusedMembers.length > 0 && !isActive && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold">
-                  {focusedMembers.length}
-                </span>
-              )}
-            </button>
-          );
-        })}
+    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl h-full flex flex-col shadow-xl">
+      {/* Header with Trust Badge */}
+      <div className="p-4 border-b border-slate-700/50">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-bold text-white">Team Chat</h3>
+        </div>
+        {/* ⭐ WEEK 7: Trust Badge */}
+        <TrustBadge type="encrypted" size="xs" />
       </div>
 
-      {/* Tab content */}
-      <div className="flex-1 overflow-hidden">
-        {activeTab === 'live' && (
-          <div className="h-full overflow-y-auto">
-            {focusLoading ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                  <p className="text-sm text-slate-400">Loading team status...</p>
-                </div>
-              </div>
-            ) : focusedMembers.length > 0 ? (
-              <div className="p-6 space-y-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                    In Focus Mode ({focusedMembers.length})
-                  </h3>
-                  <div className="space-y-3">
-                    {focusedMembers.map((member, i) => (
-                      <div 
-                        key={i} 
-                        className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors"
-                      >
-                        <div className="relative flex-shrink-0">
-                          <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden">
-                            {member.avatar ? (
-                              <img 
-                                src={member.avatar} 
-                                alt={member.name} 
-                                className="w-full h-full object-cover" 
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-white font-semibold">
-                                {member.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </div>
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-red-500 border-2 border-slate-900 rounded-full animate-pulse" />
-                        </div>
+      {/* Tabs */}
+      <div className="flex gap-2 px-4 py-2 border-b border-slate-700/50">
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'chat'
+              ? 'bg-purple-500/20 text-purple-300'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <MessageCircle className="w-4 h-4 inline-block mr-1" />
+          Chat
+        </button>
+        <button
+          onClick={() => setActiveTab('members')}
+          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'members'
+              ? 'bg-purple-500/20 text-purple-300'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Users className="w-4 h-4 inline-block mr-1" />
+          Online
+        </button>
+      </div>
 
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium text-sm">{member.name}</p>
-                          <p className="text-slate-400 text-xs truncate">{member.activity}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <span className="text-xs text-orange-400 font-medium">
-                              �� {member.remainingMinutes} min left
-                            </span>
-                          </div>
-                        </div>
-
-                        {member.sessionType && (
-                          <div className="flex-shrink-0">
-                            <span className="text-xs px-2 py-1 rounded-md bg-slate-700/50 text-slate-300 capitalize">
-                              {member.sessionType === 'pomodoro' ? '🍅' : '🧠'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+      {/* Chat Messages */}
+      {activeTab === 'chat' && (
+        <>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`p-3 rounded-xl ${
+                  msg.user === 'You'
+                    ? 'bg-purple-500/20 ml-8'
+                    : 'bg-slate-700/30 mr-8'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-semibold text-purple-300">{msg.user}</span>
+                  <span className="text-xs text-slate-500">{msg.time}</span>
                 </div>
-
-                <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-                  <p className="text-xs text-orange-300 leading-relaxed">
-                    💡 <strong>Focus Mode Active:</strong> Messages to these teammates will respect their deep work time. 
-                    Notifications will be delayed until their break.
-                  </p>
-                </div>
+                <p className="text-sm text-white">{msg.text}</p>
               </div>
-            ) : (
-              <div className="h-full flex items-center justify-center p-6">
-                <div className="text-center max-w-sm">
-                  <div className="text-5xl mb-4">💤</div>
-                  <h3 className="text-lg font-semibold text-white mb-2">No one in focus mode</h3>
-                  <p className="text-sm text-slate-400 mb-6">
-                    Start a focus session to let your team know you're doing deep work
-                  </p>
-                  <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
-                    Start Focus Session
-                  </button>
-                </div>
-              </div>
-            )}
+            ))}
           </div>
-        )}
 
-        {activeTab === 'chat' && (
-          <ChatTab projectId={projectId} projectName={projectName} />
-        )}
-      </div>
+          {/* Message Input */}
+          <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-700/50">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-1 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <button
+                type="submit"
+                className="p-2 bg-purple-600 hover:bg-purple-500 rounded-xl transition-all"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </div>
+          </form>
+        </>
+      )}
+
+      {/* Members List */}
+      {activeTab === 'members' && (
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          {['Sarah', 'Mike', 'Alex'].map((member) => (
+            <div
+              key={member}
+              className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl"
+            >
+              <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
+                <span className="text-sm font-bold text-purple-300">{member[0]}</span>
+              </div>
+              <div className="flex-1">
+                <div className="font-medium text-white">{member}</div>
+                <div className="text-xs text-emerald-400">● Online</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default CollaborationPanel;
