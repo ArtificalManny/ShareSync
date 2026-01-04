@@ -1,4 +1,4 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -85,6 +85,9 @@ const PublicProfile = lazy(() => import("./pages/profile/PublicProfile"));
 
 // ⭐ WEEK 9 DAY 5-6: HALL OF FAME PAGE
 const HallOfFame = lazy(() => import("./pages/HallOfFame"));
+
+// ⭐ PROJECT SETTINGS PAGE
+const ProjectSettings = lazy(() => import("./pages/project/ProjectSettings"));
 
 // ⭐ Lazy load heavy components
 const Sidebar = lazy(() => import("./components/Sidebar"));
@@ -245,6 +248,10 @@ function AppRoutes() {
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
               <Route path="/projects/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
+              
+              {/* ⭐ PROJECT SETTINGS ROUTE */}
+              <Route path="/projects/:id/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
+              
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
               <Route path="/settings/app" element={<ProtectedRoute><PWASettings /></ProtectedRoute>} />
