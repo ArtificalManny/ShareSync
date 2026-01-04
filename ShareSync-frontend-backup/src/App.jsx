@@ -1,4 +1,4 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -79,6 +79,9 @@ const PWASettings = lazy(() => import("./components/pwa/PWASettings"));
 
 // ⭐ WEEK 9 DAY 1-2: COMMUNITY PAGE
 const Community = lazy(() => import("./pages/Community"));
+
+// ⭐ WEEK 9 DAY 3-4: PUBLIC PROFILE PAGE
+const PublicProfile = lazy(() => import("./pages/profile/PublicProfile"));
 
 // ⭐ Lazy load heavy components
 const Sidebar = lazy(() => import("./components/Sidebar"));
@@ -243,7 +246,10 @@ function AppRoutes() {
               <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
               <Route path="/settings/app" element={<ProtectedRoute><PWASettings /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/profile/:username" element={<Profile />} />
+              
+              {/* ⭐ WEEK 9 DAY 3-4: PUBLIC PROFILE ROUTE */}
+              <Route path="/profile/:username" element={<PublicProfile />} />
+              
               <Route path="/me" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
