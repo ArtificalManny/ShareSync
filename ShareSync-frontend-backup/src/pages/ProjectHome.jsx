@@ -1,4 +1,4 @@
-// src/pages/ProjectHome.jsx - MOBILE OPTIMIZED + QUICK ACTIONS + HEALTH MONITORING
+// src/pages/ProjectHome.jsx - MOBILE OPTIMIZED + QUICK ACTIONS + HEALTH MONITORING + TEAM SPRINTS
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -21,6 +21,9 @@ import MobileAnnouncementCreate from "../components/mobile/MobileAnnouncementCre
 // ⭐ QUICK ACTIONS IMPORTS
 import QuickActionsManager from '../components/quick-actions/QuickActionsManager';
 import KeyboardShortcuts from '../components/quick-actions/KeyboardShortcuts';
+
+// ⭐ WEEK 8 DAY 3-4: TEAM SPRINTS IMPORT
+import TeamSprintManager from '../components/sprints/TeamSprintManager';
 
 // ⭐ CURSOR SYSTEM IMPORTS
 import { useCursorContext } from "../context/CursorContext";
@@ -535,6 +538,17 @@ export default function ProjectHome() {
     }
   };
 
+  // ⭐ WEEK 8 DAY 3-4: SPRINT COMPLETE HANDLER
+  const handleSprintComplete = (retroData) => {
+    console.log('Sprint completed:', retroData);
+    // TODO: Save sprint results to backend
+    toast({ 
+      title: '🎉 Sprint complete!', 
+      description: `Great work team! ${retroData.ships.length} ships logged.`,
+      variant: 'success' 
+    });
+  };
+
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -599,6 +613,14 @@ export default function ProjectHome() {
                   <Flame className="w-4 h-4 text-orange-400" />
                   <span className="font-semibold">7d streak</span>
                 </div>
+
+                {/* ⭐ WEEK 8 DAY 3-4: TEAM SPRINT BUTTON */}
+                {!isMobile && (
+                  <TeamSprintManager 
+                    projectId={id}
+                    onSprintComplete={handleSprintComplete}
+                  />
+                )}
               </div>
               <p className="text-slate-400 mt-1 text-sm">
                 {teamActivity.isActive ? '🔥 ' : '😴 '} 
@@ -626,22 +648,32 @@ export default function ProjectHome() {
             )}
           </div>
 
-          {/* Mobile stats row */}
+          {/* Mobile stats row + Sprint button */}
           {isMobile && (
-            <div className="grid grid-cols-3 gap-3 mt-4">
-              <div className="text-center">
-                <div className="text-xl font-bold text-emerald-400">{completedToday}/5</div>
-                <div className="text-xs text-slate-400">Ships</div>
+            <>
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-emerald-400">{completedToday}/5</div>
+                  <div className="text-xs text-slate-400">Ships</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-purple-400">{progressPct}%</div>
+                  <div className="text-xs text-slate-400">Complete</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-fuchsia-400">{projectStats.online}</div>
+                  <div className="text-xs text-slate-400">Online</div>
+                </div>
               </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-purple-400">{progressPct}%</div>
-                <div className="text-xs text-slate-400">Complete</div>
+
+              {/* ⭐ WEEK 8 DAY 3-4: MOBILE SPRINT BUTTON */}
+              <div className="mt-4">
+                <TeamSprintManager 
+                  projectId={id}
+                  onSprintComplete={handleSprintComplete}
+                />
               </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-fuchsia-400">{projectStats.online}</div>
-                <div className="text-xs text-slate-400">Online</div>
-              </div>
-            </div>
+            </>
           )}
 
           <div className="mt-4 h-3 bg-slate-700/50 rounded-full overflow-hidden">
