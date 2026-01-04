@@ -1,13 +1,45 @@
 import React, { useState } from 'react';
 import { MessageCircle, Users, X, Send } from 'lucide-react';
 import TrustBadge from '../trust/TrustBadge';
+import OnlineIndicator from '../presence/OnlineIndicator';
+import TypingIndicator from '../presence/TypingIndicator';
+import UserPresenceCard from '../presence/UserPresenceCard';
 
 const CollaborationPanel = ({ projectId, projectName, defaultTab = 'chat' }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [message, setMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState([
     { id: 1, user: 'Sarah', text: 'Just pushed the login fix!', time: '2m ago' },
     { id: 2, user: 'You', text: 'Nice! Testing now', time: '1m ago' }
+  ]);
+
+  // ⭐ WEEK 8: Simulated typing indicator
+  const [typingUsers, setTypingUsers] = useState([]);
+
+  // ⭐ WEEK 8: Online users
+  const [onlineUsers, setOnlineUsers] = useState([
+    { 
+      id: 1, 
+      name: 'Sarah', 
+      avatar: '👩',
+      status: 'online',
+      currentActivity: 'Working on login page'
+    },
+    { 
+      id: 2, 
+      name: 'Mike', 
+      avatar: '👨',
+      status: 'online',
+      currentActivity: 'Reviewing code'
+    },
+    { 
+      id: 3, 
+      name: 'Alex', 
+      avatar: '🧑',
+      status: 'away',
+      lastSeen: '10m ago'
+    }
   ]);
 
   const handleSendMessage = (e) => {
@@ -21,6 +53,28 @@ const CollaborationPanel = ({ projectId, projectName, defaultTab = 'chat' }) => 
       time: 'Just now'
     }]);
     setMessage('');
+    setIsTyping(false);
+  };
+
+  const handleTyping = (e) => {
+    setMessage(e.target.value);
+    
+    // ⭐ WEEK 8: Broadcast typing indicator
+    if (!isTyping && e.target.value) {
+      setIsTyping(true);
+      // In real app: socket.emit('typing:start', { projectId, userName: 'You' })
+      
+      // Simulate someone else typing
+      setTimeout(() => {
+        setTypingUsers(['Sarah']);
+        setTimeout(() => setTypingUsers([]), 3000);
+      }, 2000);
+    }
+    
+    if (!e.target.value) {
+      setIsTyping(false);
+      // In real app: socket.emit('typing:stop', { projectId })
+    }
   };
 
   return (
@@ -29,8 +83,12 @@ const CollaborationPanel = ({ projectId, projectName, defaultTab = 'chat' }) => 
       <div className="p-4 border-b border-slate-700/50">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-bold text-white">Team Chat</h3>
+          {/* ⭐ WEEK 8: Online count */}
+          <div className="flex items-center gap-2 text-xs text-emerald-400">
+            <OnlineIndicator size="xs" isOnline={true} />
+            <span>{onlineUsers.filter(u => u.status === 'online').length} online</span>
+          </div>
         </div>
-        {/* ⭐ WEEK 7: Trust Badge */}
         <TrustBadge type="encrypted" size="xs" />
       </div>
 
@@ -56,7 +114,7 @@ const CollaborationPanel = ({ projectId, projectName, defaultTab = 'chat' }) => 
           }`}
         >
           <Users className="w-4 h-4 inline-block mr-1" />
-          Online
+          Online ({onlineUsers.filter(u => u.status === 'online').length})
         </button>
       </div>
 
@@ -80,6 +138,11 @@ const CollaborationPanel = ({ projectId, projectName, defaultTab = 'chat' }) => 
                 <p className="text-sm text-white">{msg.text}</p>
               </div>
             ))}
+
+            {/* ⭐ WEEK 8: Typing Indicator */}
+            {typingUsers.map((userName, idx) => (
+              <TypingIndicator key={idx} userName={userName} isTyping={true} />
+            ))}
           </div>
 
           {/* Message Input */}
@@ -88,7 +151,7 @@ const CollaborationPanel = ({ projectId, projectName, defaultTab = 'chat' }) => 
               <input
                 type="text"
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={handleTyping}
                 placeholder="Type a message..."
                 className="flex-1 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
@@ -103,23 +166,23 @@ const CollaborationPanel = ({ projectId, projectName, defaultTab = 'chat' }) => 
         </>
       )}
 
-      {/* Members List */}
+      {/* Members List with Presence */}
       {activeTab === 'members' && (
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {['Sarah', 'Mike', 'Alex'].map((member) => (
-            <div
-              key={member}
-              className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl"
-            >
-              <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
-                <span className="text-sm font-bold text-purple-300">{member[0]}</span>
-              </div>
-              <div className="flex-1">
-                <div className="font-medium text-white">{member}</div>
-                <div className="text-xs text-emerald-400">● Online</div>
-              </div>
-            </div>
+          {onlineUsers.map((user) => (
+            <UserPresenceCard
+              key={user.id}
+              user={user}
+              showActivity={true}
+              size="md"
+            />
           ))}
+
+          {onlineUsers.filter(u => u.status === 'online').length === 0 && (
+            <div className="text-center py-8 text-slate-500 text-sm">
+              No one is online right now
+            </div>
+          )}
         </div>
       )}
     </div>
