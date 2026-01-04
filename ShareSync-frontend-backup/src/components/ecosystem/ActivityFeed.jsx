@@ -4,6 +4,7 @@ import {
   MessageCircle, TrendingUp, Clock, RefreshCw, Sparkles
 } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useMobile';
+import TrustBadge from '../trust/TrustBadge';
 
 const ActivityFeed = () => {
   const isMobile = useIsMobile();
@@ -105,7 +106,8 @@ const ActivityFeed = () => {
           </div>
           <div>
             <h3 className="font-bold text-white">Activity Feed</h3>
-            <p className="text-xs text-slate-400">Real-time team updates</p>
+            {/* ⭐ WEEK 7 DAY 3-4: Trust Badge */}
+            <TrustBadge type="private" size="xs" inline />
           </div>
         </div>
         
