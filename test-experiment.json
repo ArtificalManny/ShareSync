@@ -1,0 +1,9 @@
+{
+  "name": "Pomodoro vs Flow",
+  "type": "focus_method",
+  "hypothesis": "I complete more tasks with Pomodoro technique than deep flow sessions",
+  "settings": {
+    "control": "25min Pomodoro + 5min breaks",
+    "variation": "90min deep flow sessions"
+  }
+}
