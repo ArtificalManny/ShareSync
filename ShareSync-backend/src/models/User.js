@@ -15,6 +15,14 @@ const userSchema = new mongoose.Schema(
     // Auth / identity
     username: { type: String, index: true, unique: false, sparse: true },
     password: { type: String }, // keep as-is if you already hash elsewhere
+    
+    // ⭐ EMAIL VERIFICATION FIELDS (NEW)
+    email: { type: String, required: true, unique: true, index: true },
+    firstName: { type: String },
+    lastName: { type: String },
+    isVerified: { type: Boolean, default: false },
+    verificationCode: { type: String },
+    verificationCodeExpiry: { type: Date },
 
     // Legacy field (kept for compatibility)
     profilePic: String,

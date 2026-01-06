@@ -2,7 +2,13 @@
 import { IsOptional, IsString, IsArray, ValidateNested, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class ProjectMemberDto {
+export const PROJECT_STATUSES = ['Not Started', 'In Progress', 'Completed'] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
+export const PROJECT_PRIVACIES = ['Private', 'Public'] as const;
+export type ProjectPrivacy = (typeof PROJECT_PRIVACIES)[number];
+
+export class ProjectMemberDto {
   @IsOptional()
   @IsString()
   userId?: string;
@@ -30,13 +36,13 @@ export class CreateProjectDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['Not Started', 'In Progress', 'Completed'])
-  status?: string;
+  @IsIn(PROJECT_STATUSES as unknown as string[])
+  status?: ProjectStatus;
 
   @IsOptional()
   @IsString()
-  @IsIn(['Private', 'Public'])
-  privacy?: string;
+  @IsIn(PROJECT_PRIVACIES as unknown as string[])
+  privacy?: ProjectPrivacy;
 
   @IsOptional()
   @IsArray()

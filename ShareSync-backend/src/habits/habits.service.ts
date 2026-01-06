@@ -8,7 +8,7 @@ type AnyObj = Record<string, any>;
 
 export interface HabitsPrefs {
   userId: string;
-  workdays?: number[];        // 0-6 (Sun..Sat)
+  workdays?: number[]; // 0-6 (Sun..Sat)
   quietHours?: { start?: string; end?: string }; // "HH:mm"
   nudges?: { sprint?: boolean; update?: boolean; convertTask?: boolean };
   weeklyReminder?: { day?: number; time?: string }; // day: 0-6; time: "HH:mm"
@@ -54,13 +54,15 @@ export class HabitsService {
     range?: number;
   }) {
     const prefs = await this.getPrefs(userId);
-    const workdays = Array.isArray(prefs?.workdays) && prefs.workdays.length
-      ? prefs.workdays
-      : [1,2,3,4,5]; // Mon-Fri default
+    const workdays =
+      Array.isArray(prefs?.workdays) && prefs.workdays.length
+        ? prefs.workdays
+        : [1, 2, 3, 4, 5]; // Mon-Fri default
 
     // pull “meaningful” activity within range days
     const since = new Date();
     since.setDate(since.getDate() - (range - 1));
+
     const { items } = await this.activities.list({
       scope: projectId ? 'project' : 'user',
       projectId,
@@ -69,17 +71,23 @@ export class HabitsService {
       limit: 300,
     });
 
-    const dayKey = (d: Date) => new Date(d).toISOString().slice(0,10);
-    const meaningful = (ev: AnyObj) => {
-      const t = String(ev?.type || ev?.kind || '').toLowerCase();
+    const dayKey = (d: Date) => new Date(d).toISOString().slice(0, 10);
+
+    const meaningful = (ev: any) => {
+      const t = this.getEventType(ev).toLowerCase();
       return (
         t.startsWith('update') ||
-        t === 'task.created' || t === 'task.completed' ||
+        t === 'task.created' ||
+        t === 'task.completed' ||
         t.startsWith('file')
       );
     };
+
     const activeSet = new Set<string>();
-    for (const ev of items || []) {
+
+    // IMPORTANT: items is typed as Activity[] in your ActivitiesService, so we cast to any[]
+    // because Activity may not declare "type/kind" at the TS level.
+    for (const ev of ((items as unknown) as any[]) || []) {
       try {
         if (!meaningful(ev)) continue;
         const ts = new Date(ev?.createdAt ?? Date.now());
@@ -111,7 +119,11 @@ export class HabitsService {
     userId,
     projectId,
     range = 28,
-  }: { userId: string; projectId?: string; range?: number }) {
+  }: {
+    userId: string;
+    projectId?: string;
+    range?: number;
+  }) {
     const since = new Date();
     since.setDate(since.getDate() - (range - 1));
 
@@ -119,8 +131,8 @@ export class HabitsService {
       scope: projectId ? 'project' : 'user',
       projectId,
       userId,
-      range: 'all',   // we filter by date below
-      limit: 1000,    // generous upper bound; we filter/aggregate in memory
+      range: 'all', // we filter by date below
+      limit: 1000, // generous upper bound; we filter/aggregate in memory
     });
 
     const byDay = new Map<string, number>();
@@ -133,8 +145,8 @@ export class HabitsService {
       );
     };
 
-    for (const ev of items || []) {
-      const t = String(ev?.type || ev?.kind || '');
+    for (const ev of ((items as unknown) as any[]) || []) {
+      const t = this.getEventType(ev);
       if (!isCompletion(t)) continue;
       const ts = new Date(ev?.createdAt ?? Date.now());
       if (ts < since) continue;
@@ -161,7 +173,7 @@ export class HabitsService {
     if (!this.prefsModel) {
       return {
         userId,
-        workdays: [1,2,3,4,5],
+        workdays: [1, 2, 3, 4, 5],
         quietHours: { start: '22:00', end: '07:00' },
         nudges: { sprint: true, update: true, convertTask: true },
       };
@@ -170,7 +182,7 @@ export class HabitsService {
     if (!doc) {
       doc = await this.prefsModel.create({
         userId,
-        workdays: [1,2,3,4,5],
+        workdays: [1, 2, 3, 4, 5],
         quietHours: { start: '22:00', end: '07:00' },
         nudges: { sprint: true, update: true, convertTask: true },
         createdAt: new Date(),
@@ -185,11 +197,14 @@ export class HabitsService {
   async updatePrefs(userId: string, patch: Partial<HabitsPrefs>) {
     if (!this.prefsModel) return { ok: true, userId, ...patch };
     const now = new Date();
-    const doc = await this.prefsModel.findOneAndUpdate(
-      { userId },
-      { $set: { ...(patch || {}), updatedAt: now } },
-      { new: true, upsert: true },
-    ).lean().exec();
+    const doc = await this.prefsModel
+      .findOneAndUpdate(
+        { userId },
+        { $set: { ...(patch || {}), updatedAt: now } },
+        { new: true, upsert: true },
+      )
+      .lean()
+      .exec();
     return doc;
   }
 
@@ -198,13 +213,18 @@ export class HabitsService {
   async postReflection(userId: string, payload: { wins?: string[]; focus?: string }) {
     const weekOf = this.weekKey(new Date());
     if (!this.reflectionModel) return { userId, weekOf, ...payload, createdAt: new Date() };
-    const doc = await this.reflectionModel.findOneAndUpdate(
-      { userId, weekOf },
-      { $set: { wins: payload?.wins || [], focus: payload?.focus || '', createdAt: new Date() } },
-      { upsert: true, new: true },
-    ).lean().exec();
+    const doc = await this.reflectionModel
+      .findOneAndUpdate(
+        { userId, weekOf },
+        { $set: { wins: payload?.wins || [], focus: payload?.focus || '', createdAt: new Date() } },
+        { upsert: true, new: true },
+      )
+      .lean()
+      .exec();
     // live update for dashboards
-    try { this.rt.emitToUser(userId, 'habits:updated', { kind: 'reflection' }); } catch {}
+    try {
+      this.rt.emitToUser(userId, 'habits:updated', { kind: 'reflection' });
+    } catch {}
     return doc;
   }
 
@@ -225,14 +245,25 @@ export class HabitsService {
 
   // ---------- utils ----------
 
+  private getEventType(ev: any) {
+    return String(
+      ev?.type ??
+        ev?.kind ??
+        ev?.eventType ??
+        ev?.action ??
+        ev?.name ??
+        '',
+    );
+  }
+
   private weekKey(d: Date) {
     const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     const dayNum = date.getUTCDay() || 7; // 1-7
     date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
     const weekNo = Math.ceil((((date as any) - (yearStart as any)) / 86400000 + 1) / 7);
     const y = date.getUTCFullYear();
-    return `${y}-${String(weekNo).padStart(2,'0')}`;
+    return `${y}-${String(weekNo).padStart(2, '0')}`;
   }
 
   private dayKey(d: Date) {

@@ -8,13 +8,13 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
-import { JwtRefreshStrategy } from './jwt-refresh.strategy'; // NEW
+import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy'; // ✅ FIXED: Added ./strategies/
 
 import { User, UserSchema } from '../user/schemas/user.schema';
 
 @Module({
   imports: [
-    ConfigModule, // NEW: For environment variables
+    ConfigModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'dev_secret_change_me',
@@ -26,8 +26,8 @@ import { User, UserSchema } from '../user/schemas/user.schema';
   providers: [
     AuthService, 
     JwtStrategy,
-    JwtRefreshStrategy, // NEW: Add refresh strategy
+    JwtRefreshStrategy, // ✅ This is correct
   ],
-  exports: [JwtModule, PassportModule, AuthService], // Export AuthService
+  exports: [JwtModule, PassportModule, AuthService],
 })
 export class AuthModule {}

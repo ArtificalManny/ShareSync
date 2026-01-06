@@ -1,7 +1,7 @@
 // src/projects/dto/update-project.dto.ts
 import {
   IsArray,
-  IsEnum,
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
@@ -13,6 +13,9 @@ import {
   ProjectPrivacy,
   ProjectStatus,
 } from './create-project.dto';
+
+const PROJECT_STATUSES = ['active', 'archived', 'completed'] as const;
+const PROJECT_PRIVACIES = ['private', 'public'] as const;
 
 export class UpdateProjectDto {
   @IsOptional()
@@ -31,11 +34,11 @@ export class UpdateProjectDto {
   category?: string;
 
   @IsOptional()
-  @IsEnum(ProjectStatus)
+  @IsIn(PROJECT_STATUSES)
   status?: ProjectStatus;
 
   @IsOptional()
-  @IsEnum(ProjectPrivacy)
+  @IsIn(PROJECT_PRIVACIES)
   privacy?: ProjectPrivacy;
 
   @IsOptional()
