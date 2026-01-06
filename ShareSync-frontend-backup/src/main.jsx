@@ -6,7 +6,38 @@ import "./index.css";
 import "./theme.css";
 import "./styles/gradients.css";
 import "./styles/motion.css";
-import "./registerSW.js";
+
+// ====================================================================
+// 0. SERVICE WORKER SAFETY
+//    - Never register SW in DEV (causes stale chunks + blank screens)
+//    - In DEV, proactively unregister any previously installed SW + clear caches (once per tab)
+// ====================================================================
+const DEV_SW_CLEAN_KEY = "__SS_DEV_SW_CLEANED__";
+
+if (import.meta.env.PROD) {
+  // Only load/register the SW in production builds
+  import("./registerSW.js");
+} else {
+  // DEV: kill any old service worker that might still be controlling localhost
+  if ("serviceWorker" in navigator && !sessionStorage.getItem(DEV_SW_CLEAN_KEY)) {
+    sessionStorage.setItem(DEV_SW_CLEAN_KEY, "1");
+
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+      .then(() => {
+        if ("caches" in window) {
+          return caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))));
+        }
+      })
+      .then(() => {
+        console.log("[SW] DEV cleanup complete: unregistered SW + cleared caches");
+      })
+      .catch((err) => {
+        console.warn("[SW] DEV cleanup failed:", err);
+      });
+  }
+}
 
 if (import.meta.env.MODE !== "production") {
   import("./utils/perfLog.js");
@@ -16,8 +47,8 @@ if (import.meta.env.MODE !== "production") {
 // 1. TRACE ANYONE WHO TRIES TO DELETE AUTH DATA
 // ====================================================================
 const originalRemoveItem = localStorage.removeItem.bind(localStorage);
-localStorage.removeItem = function(key) {
-  if (key === 'ss.jwt' || key === 'ss.user') {
+localStorage.removeItem = function (key) {
+  if (key === "ss.jwt" || key === "ss.user") {
     console.trace(`[STORAGE] localStorage.removeItem('${key}') called! Full stack trace:`);
   }
   return originalRemoveItem(key);
@@ -48,6 +79,7 @@ preloadAuthState();
 
 // ====================================================================
 // 3. FIX SKIP-TO-CONTENT FLASH + SUPPRESS NOISE IN DEV
+//    NOTE: Do NOT suppress "manifest.webmanifest" errors — they indicate real cache/SW issues.
 // ====================================================================
 const fixSkipLinkAndErrors = () => {
   const skipLink = document.querySelector('a[href="#main"]');
@@ -70,7 +102,7 @@ const fixSkipLinkAndErrors = () => {
     if (
       typeof msg === "string" &&
       (msg.includes("main.jsx") ||
-        msg.includes("manifest.webmanifest") ||
+        // msg.includes("manifest.webmanifest") ||   // <-- intentionally NOT suppressed
         msg.includes("socket.io") ||
         msg.includes("CORS") ||
         msg.includes("ERR_ABORTED"))
@@ -89,7 +121,7 @@ fixSkipLinkAndErrors();
 // ====================================================================
 function renderApp() {
   const rootElement = document.getElementById("root");
-  
+
   if (!rootElement) {
     console.error("[MAIN] Root element not found!");
     return;
@@ -104,10 +136,10 @@ function renderApp() {
   console.log("[MAIN] Rendering React app...");
   const root = ReactDOM.createRoot(rootElement);
   root.render(<App />);
-  
+
   // Mark as rendered
   rootElement._reactRootContainer = true;
-  
+
   // Run skip-link fix after render
   setTimeout(fixSkipLinkAndErrors, 0);
   setTimeout(fixSkipLinkAndErrors, 100);
@@ -116,12 +148,10 @@ function renderApp() {
 // ====================================================================
 // 5. DETECT RENDER TIMING — handle all cases
 // ====================================================================
-if (document.readyState === 'loading') {
-  // DOM not ready yet (rare in dev, common in production)
+if (document.readyState === "loading") {
   console.log("[MAIN] DOM loading, waiting for DOMContentLoaded...");
   document.addEventListener("DOMContentLoaded", renderApp);
 } else {
-  // DOM already ready (soft refresh, HMR, etc)
   console.log("[MAIN] DOM already loaded, rendering immediately");
   renderApp();
 }

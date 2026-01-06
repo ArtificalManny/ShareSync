@@ -1,5 +1,6 @@
 // src/registerSW.js
 // Registers /public/sw.js and handles "new content available" upgrades.
+// IMPORTANT: This file is safe to import anywhere, but it will ONLY register in PROD.
 
 const SW_URL = "/sw.js";
 
@@ -20,18 +21,27 @@ function showReloadPrompt() {
 }
 
 async function register() {
+  // ✅ Never run SW in dev
+  if (!import.meta.env.PROD) {
+    console.log("[SW] Skipping service worker (dev mode)");
+    return;
+  }
+
   if (!("serviceWorker" in navigator)) return;
-  if (window.location.protocol === "file:") return; // safety for local previews
+  if (window.location.protocol === "file:") return;
 
   try {
+    // Best practice: register after full page load
     const reg = await navigator.serviceWorker.register(SW_URL, { scope: "/" });
 
-    // If a new worker is installing, listen for it
+    // Force check for updates
+    reg.update();
+
     function trackInstalling(worker) {
       if (!worker) return;
       worker.addEventListener("statechange", () => {
         if (worker.state === "installed") {
-          // If there’s an existing controller, we have an update
+          // If there’s an existing controller, this is an update
           if (navigator.serviceWorker.controller) {
             showReloadPrompt();
           }
@@ -43,7 +53,12 @@ async function register() {
     if (reg.installing) trackInstalling(reg.installing);
     reg.addEventListener("updatefound", () => trackInstalling(reg.installing));
 
-    // Optional: listen for controllerchange and refresh once
+    // If already waiting, prompt immediately
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      showReloadPrompt();
+    }
+
+    // Reload once when the new SW takes control (prevents chunk mismatch)
     let refreshing = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (refreshing) return;
@@ -51,16 +66,17 @@ async function register() {
       window.location.reload();
     });
 
-    // Ping SW to check for updates on load
-    if (reg.waiting && navigator.serviceWorker.controller) showReloadPrompt();
+    console.log("[SW] Service worker registered");
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.warn("[SW] Register failed:", e);
   }
 }
 
-// Auto-run on import
-register();
+// Auto-run on import (PROD only)
+if (import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    register();
+  });
+}
 
-// Named export in case you want to call manually elsewhere
 export default register;

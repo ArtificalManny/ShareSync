@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLeaderboard } from "../../hooks/useLeaderboard";
-import { trackLeaderboardViewed } from "../../utils/telemetry"; // FIXED
+import { trackLeaderboardViewed } from "../../utils/telemetry";
 import Avatar from "../ui/Avatar";
 
 export default function LeaderboardDock() {
@@ -16,7 +16,7 @@ export default function LeaderboardDock() {
 
   if (loading) {
     return (
-      <div className="bg-surface/80 backdrop-blur-sm rounded-2xl p-4 space-y-3">
+      <div className="fixed bottom-24 right-6 w-80 max-w-[calc(100vw-3rem)] z-50 bg-surface/80 backdrop-blur-sm rounded-2xl p-4 space-y-3">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-white/20 animate-pulse" />
@@ -38,7 +38,7 @@ export default function LeaderboardDock() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-b from-purple-900/20 to-transparent rounded-2xl p-4 border border-purple-500/20"
+      className="fixed bottom-24 right-6 w-80 max-w-[calc(100vw-3rem)] z-50 bg-gradient-to-b from-purple-900/20 to-transparent rounded-2xl p-4 border border-purple-500/20 backdrop-blur-sm"
     >
       <h3 className="text-sm font-bold text-purple-300 mb-3 flex items-center gap-2">
         <span className="inline-block w-2 h-2 bg-purple-400 rounded-full animate-ping" />
@@ -79,7 +79,7 @@ export default function LeaderboardDock() {
 
       {myRank && (
         <div className="mt-3 pt-3 border-t border-purple-500/30 text-xs text-purple-300 text-center font-medium">
-          You’re #{myRank} — keep shipping!
+          You're #{myRank} — keep shipping!
         </div>
       )}
     </motion.div>
