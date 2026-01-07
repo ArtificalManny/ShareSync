@@ -1,4 +1,3 @@
-// src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
@@ -16,11 +15,10 @@ export class AuthService {
 
   /** Validate email/password and return the user (without password) */
   public async validateUser(email: string, password: string) {
-    console.log('🔵 VALIDATE USER CALLED');
-    console.log('🔵 email type:', typeof email, 'value:', email);
-    console.log('🔵 password type:', typeof password, 'length:', password?.length);
-    
-    const user = await this.userModel.findOne({ email }).lean<UserDocument & { password?: string }>();
+    const user = await this.userModel
+      .findOne({ email })
+      .lean<UserDocument & { password?: string }>();
+
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const stored = user.password || '';
@@ -39,42 +37,42 @@ export class AuthService {
     return safe;
   }
 
+  /** Validate by id (used by JwtStrategy) */
+  public async validateUserById(userId: string) {
+    const user = await this.userModel.findById(userId).lean<UserDocument>();
+    if (!user) throw new UnauthorizedException('Invalid token');
+    const { password: _pw, ...safe } = user as any;
+    return safe;
+  }
+
   /** Issue JWT and return it along with the safe user object */
   async login(email: string, password: string) {
-    console.log('🔵 LOGIN SERVICE CALLED');
-    console.log('🔵 email type:', typeof email, 'value:', email);
-    console.log('🔵 password type:', typeof password, 'length:', password?.length);
-    
     const user = await this.validateUser(email, password);
 
-    // ✅ FIXED: Only include fields that definitely exist
-    const payload = { 
-      sub: String(user._id), 
-      email: user.email,
-      ...(user.roles && { roles: user.roles }),
-      ...(user.firstName && { firstName: user.firstName }),
-      ...(user.lastName && { lastName: user.lastName }),
-      ...(user.username && { username: user.username })
+    const payload = {
+      sub: String((user as any)._id),
+      email: (user as any).email,
+      ...(user && (user as any).roles && { roles: (user as any).roles }),
+      ...((user as any).firstName && { firstName: (user as any).firstName }),
+      ...((user as any).lastName && { lastName: (user as any).lastName }),
+      ...((user as any).username && { username: (user as any).username }),
     };
-    
+
     const access_token = await this.jwt.signAsync(payload, {
       secret: process.env.JWT_SECRET || 'dev_secret_change_me',
       expiresIn: '7d',
     });
 
-    console.log('🟢 LOGIN SUCCESS - Token generated');
-
-    // ✅ Return clean user object
-    return { 
-      access_token, 
+    return {
+      access_token,
       user: {
-        _id: user._id,
-        email: user.email,
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        username: user.username || '',
-        roles: user.roles || []
-      }
+        _id: (user as any)._id,
+        email: (user as any).email,
+        firstName: (user as any).firstName || '',
+        lastName: (user as any).lastName || '',
+        username: (user as any).username || '',
+        roles: (user as any).roles || [],
+      },
     };
   }
 }

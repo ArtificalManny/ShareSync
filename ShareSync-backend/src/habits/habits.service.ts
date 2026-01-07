@@ -56,7 +56,7 @@ export class HabitsService {
     const prefs = await this.getPrefs(userId);
     const workdays = Array.isArray(prefs?.workdays) && prefs.workdays.length
       ? prefs.workdays
-      : [1,2,3,4,5]; // Mon-Fri default
+      : [1, 2, 3, 4, 5]; // Mon-Fri default
 
     // pull “meaningful” activity within range days
     const since = new Date();
@@ -69,22 +69,22 @@ export class HabitsService {
       limit: 300,
     });
 
-    const dayKey = (d: Date) => new Date(d).toISOString().slice(0,10);
     const meaningful = (ev: AnyObj) => {
-      const t = String(ev?.type || ev?.kind || '').toLowerCase();
+      const t = this.getEventType(ev).toLowerCase();
       return (
         t.startsWith('update') ||
         t === 'task.created' || t === 'task.completed' ||
         t.startsWith('file')
       );
     };
+
     const activeSet = new Set<string>();
     for (const ev of items || []) {
       try {
-        if (!meaningful(ev)) continue;
-        const ts = new Date(ev?.createdAt ?? Date.now());
+        if (!meaningful(ev as any)) continue;
+        const ts = new Date((ev as any)?.createdAt ?? Date.now());
         if (ts < since) continue;
-        const dk = dayKey(ts);
+        const dk = this.dayKey(ts);
         const dow = new Date(dk).getDay();
         if (workdays.includes(dow)) activeSet.add(dk);
       } catch {}
@@ -104,9 +104,6 @@ export class HabitsService {
   }
 
   // ---------- Sprint Momentum ----------
-  // No hard dependency on SprintsService. We infer “completions” from activity types:
-  // e.g., 'sprint.completed', 'focus.completed', or any event whose type includes both
-  // 'sprint' and 'complete' (case-insensitive).
   async getSprintMomentum({
     userId,
     projectId,
@@ -119,8 +116,8 @@ export class HabitsService {
       scope: projectId ? 'project' : 'user',
       projectId,
       userId,
-      range: 'all',   // we filter by date below
-      limit: 1000,    // generous upper bound; we filter/aggregate in memory
+      range: 'all',
+      limit: 1000,
     });
 
     const byDay = new Map<string, number>();
@@ -134,15 +131,14 @@ export class HabitsService {
     };
 
     for (const ev of items || []) {
-      const t = String(ev?.type || ev?.kind || '');
+      const t = this.getEventType(ev);
       if (!isCompletion(t)) continue;
-      const ts = new Date(ev?.createdAt ?? Date.now());
+      const ts = new Date((ev as any)?.createdAt ?? Date.now());
       if (ts < since) continue;
       const d = this.dayKey(ts);
       byDay.set(d, (byDay.get(d) || 0) + 1);
     }
 
-    // build contiguous bars for the requested range (oldest → newest)
     const bars: Array<{ date: string; count: number }> = [];
     for (let i = range - 1; i >= 0; i--) {
       const d = new Date();
@@ -161,7 +157,7 @@ export class HabitsService {
     if (!this.prefsModel) {
       return {
         userId,
-        workdays: [1,2,3,4,5],
+        workdays: [1, 2, 3, 4, 5],
         quietHours: { start: '22:00', end: '07:00' },
         nudges: { sprint: true, update: true, convertTask: true },
       };
@@ -170,7 +166,7 @@ export class HabitsService {
     if (!doc) {
       doc = await this.prefsModel.create({
         userId,
-        workdays: [1,2,3,4,5],
+        workdays: [1, 2, 3, 4, 5],
         quietHours: { start: '22:00', end: '07:00' },
         nudges: { sprint: true, update: true, convertTask: true },
         createdAt: new Date(),
@@ -203,7 +199,6 @@ export class HabitsService {
       { $set: { wins: payload?.wins || [], focus: payload?.focus || '', createdAt: new Date() } },
       { upsert: true, new: true },
     ).lean().exec();
-    // live update for dashboards
     try { this.rt.emitToUser(userId, 'habits:updated', { kind: 'reflection' }); } catch {}
     return doc;
   }
@@ -225,18 +220,22 @@ export class HabitsService {
 
   // ---------- utils ----------
 
+  private getEventType(ev: unknown) {
+    const e = ev as { type?: unknown; kind?: unknown } | null | undefined;
+    return String(e?.type ?? e?.kind ?? '');
+  }
+
   private weekKey(d: Date) {
     const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     const dayNum = date.getUTCDay() || 7; // 1-7
     date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
     const weekNo = Math.ceil((((date as any) - (yearStart as any)) / 86400000 + 1) / 7);
     const y = date.getUTCFullYear();
-    return `${y}-${String(weekNo).padStart(2,'0')}`;
+    return `${y}-${String(weekNo).padStart(2, '0')}`;
   }
 
   private dayKey(d: Date) {
-    // YYYY-MM-DD in local time (aligns with UI charts that use local dates)
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
