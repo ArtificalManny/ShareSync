@@ -6,7 +6,6 @@ import { useAuth } from '../context/AuthContext';
 import ProjectsCreate from './ProjectsCreate';
 import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
 import { SkeletonProjectCard } from '../components/ui/Skeletons';
-import api from '../api/client';
 
 // ⭐ Enhanced Project Card Component - MOVED OUTSIDE
 function EnhancedProjectCard({ project, viewMode, onProjectClick, onStartSprint }) {
@@ -202,20 +201,25 @@ const Projects = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-
+      
       if (useMockData) {
         setProjects(getMockProjects());
         setLoading(false);
         return;
       }
-
-      // ✅ Use the shared API client so JWT is attached consistently
-      const res = await api.get('/projects');
-      const data = res?.data;
-
-      // Accept either array or { projects: [] }
-      const list = Array.isArray(data) ? data : (Array.isArray(data?.projects) ? data.projects : []);
-      setProjects(list);
+      
+      const response = await fetch('http://localhost:3000/api/projects', {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        console.warn('Projects API returned non-200:', response.status, '- using mock data');
+        setProjects(getMockProjects());
+        return;
+      }
+      
+      const data = await response.json();
+      setProjects(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching projects:', error, '- using mock data');
       setProjects(getMockProjects());
@@ -340,8 +344,10 @@ const Projects = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pb-24">
+      
       <div className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50">
         <div className="max-w-7xl mx-auto px-6 py-4">
+          
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-white">Projects</h1>
@@ -399,7 +405,9 @@ const Projects = () => {
 
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="grid grid-cols-12 gap-6">
+          
           <div className="col-span-12 lg:col-span-8 space-y-6">
+            
             <div className="flex items-center justify-between gap-4">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -474,6 +482,7 @@ const Projects = () => {
           </div>
 
           <div className="col-span-12 lg:col-span-4 space-y-4">
+            
             <div className="bg-gradient-to-br from-purple-900/40 to-fuchsia-900/40 backdrop-blur-sm 
                           border border-purple-500/30 rounded-xl p-6 lg:sticky lg:top-24 space-y-4">
               <div className="flex items-center gap-3 mb-4">
@@ -555,7 +564,7 @@ const Projects = () => {
                 {[
                   { rank: 1, name: 'Alex', streak: '120d', xp: 2450, emoji: '🏆' },
                   { rank: 2, name: 'Jordan', streak: '100d', xp: 2200, emoji: '🥈' },
-                  { rank: 3, name: 'You', streak: '7d', xp: 1850, emoji: '🥉' }
+                  { rank: 3, name: 'You', streak: '7d', xp: 1850, emoji: '��' }
                 ].map(leader => (
                   <div key={leader.rank} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-700/30">
                     <div className="flex items-center gap-3">
