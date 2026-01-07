@@ -6,24 +6,39 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <title>ShareSync</title>
+    <title>ShareSync - Stop Burning Out, Start Shipping</title>
 
     <!-- SEO -->
     <meta
       name="description"
-      content="ShareSync — plan projects, track daily goals, and celebrate team progress with a public cadence feed."
+      content="The only project tracker that prevents burnout before it happens. Stop burning out, start shipping."
     />
     <link rel="canonical" href="https://example.com/" />
 
-    <!-- PWA-ish basics -->
-    <meta name="theme-color" content="#0f172a" />
+    <!-- ⭐ PWA Meta Tags -->
+    <meta name="theme-color" content="#a855f7" />
     <meta name="color-scheme" content="light dark" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ShareSync" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
 
     <!-- Icons -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
     <link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#a855f7" />
+
+    <!-- iOS Splash Screens (Optional) -->
+    <link rel="apple-touch-startup-image" href="/splash/iphone5_splash.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/splash/iphone6_splash.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/splash/iphonex_splash.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
 
     <!-- Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -62,20 +77,44 @@
       href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
     />
   </head>
+
   <body>
-    <!-- Skip link (hidden from start) -->
-    
+    <!-- ✅ Proper skip link (won't render as plain text) -->
+    <a
       href="#main"
       class="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:top-3 focus:left-3 focus:bg-white focus:text-slate-900 focus:px-3 focus:py-2 focus:rounded-md focus:ring-2"
-      aria-hidden="true"
     >
       Skip to main content
     </a>
 
     <div id="root"></div>
 
-    <!-- Main content area -->
-    <main id="main" tabindex="-1" class="min-h-screen"></main>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- ✅ Service Worker Registration (PROD only; never on localhost) -->
+    <script>
+      (function () {
+        var isLocalhost =
+          location.hostname === 'localhost' ||
+          location.hostname === '127.0.0.1' ||
+          location.hostname.endsWith('.local');
+
+        if (!isLocalhost && 'serviceWorker' in navigator) {
+          window.addEventListener('load', function () {
+            navigator.serviceWorker
+              .register('/sw.js')
+              .then(function (registration) {
+                console.log('[SW] Registered:', registration.scope);
+                setInterval(function () {
+                  registration.update();
+                }, 60 * 60 * 1000);
+              })
+              .catch(function (error) {
+                console.error('[SW] Registration failed:', error);
+              });
+          });
+        }
+      })();
+    </script>
   </body>
 </html>
