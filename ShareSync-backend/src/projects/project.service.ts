@@ -67,7 +67,7 @@ export class ProjectService {
       icon: data.icon ?? null,
       userId: data.userId,
       members: normalizedMembers,
-      tasks: [], // Add missing field
+      tasks: [],
       metrics: {
         openTasks: 0,
         onTimePct: 0,
@@ -229,7 +229,20 @@ export class ProjectService {
     return this.withKPIs(updated);
   }
 
-  // --- KPI Calculation ---
+  async delete(projectId: string, userId: string) {
+    const project = await this.findOneForUser(userId, projectId);
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    if (String(project.userId) !== String(userId)) {
+      throw new ForbiddenException('Only project owner can delete the project');
+    }
+
+    const deleted = await this.projectModel.findByIdAndDelete(projectId);
+    return deleted;
+  }
+
   private async updateKPIs(projectId: string) {
     const project = await this.projectModel.findById(projectId).lean();
     if (!project) return;
@@ -242,13 +255,13 @@ export class ProjectService {
     const completed = tasks.filter(t => t.completedAt);
     const onTime = completed.filter(t => {
       if (!t.dueDate) return false;
-      return new Date(t.completedAt!) <= new Date(t.dueDate);
+      return new Date(t.completedAt) <= new Date(t.dueDate);
     }).length;
 
     const onTimePct = completed.length > 0 ? (onTime / completed.length) * 100 : 0;
 
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const throughputPerWeek = completed.filter(t => new Date(t.completedAt!) > weekAgo).length;
+    const throughputPerWeek = completed.filter(t => new Date(t.completedAt) > weekAgo).length;
 
     const metrics = {
       openTasks,
@@ -278,7 +291,6 @@ export class ProjectService {
     };
   }
 
-  // --- Public Methods (unchanged) ---
   private generatePublicToken() {
     return randomBytes(16).toString('hex');
   }

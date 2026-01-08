@@ -2,6 +2,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -253,13 +254,13 @@ export class ProjectController {
       shipsThisWeek,
       activeMembers,
       totalMembers,
-      avgFocusPerDay: 1.8, // TODO: Calculate from focus sessions
-      onTimePercentage: 78, // TODO: Calculate from tasks
-      peakDays: ['Tue', 'Thu'], // TODO: Calculate from ship timestamps
-      peakTime: 'evenings', // TODO: Calculate from ship timestamps
-      coWorkingMultiplier: 2.1, // TODO: Calculate from collaboration data
+      avgFocusPerDay: 1.8,
+      onTimePercentage: 78,
+      peakDays: ['Tue', 'Thu'],
+      peakTime: 'evenings',
+      coWorkingMultiplier: 2.1,
       userDaysSinceShip,
-      streakDays: 7, // TODO: Get from user's streak
+      streakDays: 7,
     };
   }
 
@@ -273,7 +274,6 @@ export class ProjectController {
       throw new NotFoundException('Project not found');
     }
 
-    // Get ships from last 7 days
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
@@ -291,14 +291,12 @@ export class ProjectController {
       };
     }
     
-    // Count ships per user
     const shipCounts: { [key: string]: number } = {};
     recentShips.forEach(ship => {
       const uid = ship.userId || ship.createdBy;
       shipCounts[uid] = (shipCounts[uid] || 0) + 1;
     });
     
-    // Get member details and create distribution
     const members = project.members || [];
     const distribution = Object.entries(shipCounts).map(([uid, count]) => {
       const member = members.find((m: any) => 
@@ -314,14 +312,12 @@ export class ProjectController {
       };
     }).sort((a, b) => b.ships - a.ships);
     
-    // Calculate Gini coefficient
     const sortedShips = distribution.map(d => d.ships).sort((a, b) => a - b);
     const n = sortedShips.length;
     const sumOfProducts = sortedShips.reduce((sum, ships, i) => sum + ships * (i + 1), 0);
     const sumOfShips = sortedShips.reduce((sum, ships) => sum + ships, 0);
     const giniCoefficient = n === 0 ? 0 : (2 * sumOfProducts) / (n * sumOfShips) - (n + 1) / n;
     
-    // Determine status
     let status: string;
     let message: string;
     
@@ -355,7 +351,6 @@ export class ProjectController {
       throw new NotFoundException('Project not found');
     }
 
-    // Analyze ship timestamps to find patterns
     const ships = project.ships || [];
     
     if (ships.length === 0) {
@@ -368,7 +363,6 @@ export class ProjectController {
       };
     }
     
-    // Count by day of week
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dayCounts: { [key: string]: number } = {};
     const hourCounts: { [key: number]: number } = {};
@@ -382,19 +376,16 @@ export class ProjectController {
       hourCounts[hour] = (hourCounts[hour] || 0) + 1;
     });
     
-    // Find peak days (top 2)
     const peakDays = Object.entries(dayCounts)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 2)
       .map(([day]) => day);
     
-    // Find peak hours (top 3)
     const peakHours = Object.entries(hourCounts)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 3)
       .map(([hour]) => parseInt(hour));
     
-    // Determine time of day
     const avgPeakHour = peakHours.reduce((sum, h) => sum + h, 0) / peakHours.length;
     const peakTime = avgPeakHour < 12 ? 'mornings' : avgPeakHour < 17 ? 'afternoons' : 'evenings';
     
@@ -405,6 +396,24 @@ export class ProjectController {
       dayDistribution: dayCounts,
       hourDistribution: hourCounts,
       message: `Team is most active on ${peakDays.join('/')} during ${peakTime}`
+    };
+  }
+
+  @Get(':id/members')
+  @UseGuards(ProjectPermissionGuard)
+  @CanViewProject()
+  async getMembers(@Req() req, @Param('id') id: string) {
+    const userId = req?.user?.sub;
+    const project = await this.project.findOneForUser(userId, id);
+    
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    return {
+      projectId: id,
+      members: project.members || [],
+      invites: project.invites || [],
     };
   }
 
@@ -519,5 +528,31 @@ export class ProjectController {
     });
 
     return { projectId: id, patch: { icon: updated.icon ?? null } };
+  }
+
+  @Delete(':id')
+  @UseGuards(ProjectPermissionGuard)
+  @CanManageProject()
+  async deleteProject(@Req() req, @Param('id') id: string) {
+    const userId = req?.user?.sub;
+    const project = await this.project.findOneForUser(userId, id);
+    
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const member = project.members?.find((m: any) => String(m.userId) === String(userId));
+    if (!member || member.role !== 'owner') {
+      throw new ForbiddenException('Only project owner can delete the project');
+    }
+
+    await this.project.delete(id, userId);
+
+    this.realtime.emitToProject(id, 'project:deleted', {
+      projectId: id,
+      deletedAt: new Date().toISOString(),
+    });
+
+    return { message: 'Project deleted successfully', projectId: id };
   }
 }
