@@ -417,6 +417,75 @@ export class ProjectController {
     };
   }
 
+  @Get(':id/momentum')
+  @UseGuards(ProjectPermissionGuard)
+  @CanViewProject()
+  async getProjectMomentum(@Req() req, @Param('id') id: string) {
+    const userId = req?.user?.sub;
+    const project = await this.project.findOneForUser(userId, id);
+    
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    // Calculate project momentum metrics
+    const now = Date.now();
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
+
+    const tasks = project.tasks || [];
+    const ships = project.ships || [];
+
+    // Task velocity (last 7 days)
+    const recentTasks = tasks.filter(t => new Date(t.createdAt).getTime() >= weekAgo);
+    const completedRecent = recentTasks.filter(t => t.status === 'completed').length;
+    const velocity = recentTasks.length > 0 ? (completedRecent / recentTasks.length) * 100 : 0;
+
+    // Ship frequency
+    const shipsThisWeek = ships.filter(s => new Date(s.createdAt).getTime() >= weekAgo).length;
+    const shipsThisMonth = ships.filter(s => new Date(s.createdAt).getTime() >= monthAgo).length;
+
+    // Team activity
+    const activeMembers = new Set(
+      ships.filter(s => new Date(s.createdAt).getTime() >= weekAgo)
+        .map(s => s.userId || s.createdBy)
+    ).size;
+
+    // Calculate momentum score (0-100)
+    const velocityScore = velocity * 0.4;
+    const shipScore = Math.min(shipsThisWeek * 10, 40);
+    const teamScore = Math.min(activeMembers * 5, 20);
+    const momentumScore = Math.round(velocityScore + shipScore + teamScore);
+
+    return {
+      projectId: id,
+      momentumScore,
+      velocity: Math.round(velocity),
+      shipsThisWeek,
+      shipsThisMonth,
+      activeMembers,
+      totalMembers: (project.members || []).length,
+      trend: this.calculateTrend(ships, tasks),
+    };
+  }
+
+  private calculateTrend(ships: any[], tasks: any[]) {
+    const now = Date.now();
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const twoWeeksAgo = now - 14 * 24 * 60 * 60 * 1000;
+
+    const thisWeekShips = ships.filter(s => new Date(s.createdAt).getTime() >= weekAgo).length;
+    const lastWeekShips = ships.filter(
+      s => new Date(s.createdAt).getTime() >= twoWeeksAgo && new Date(s.createdAt).getTime() < weekAgo
+    ).length;
+
+    if (lastWeekShips === 0 && thisWeekShips > 0) return 'up';
+    if (thisWeekShips === 0 && lastWeekShips > 0) return 'down';
+    if (thisWeekShips > lastWeekShips) return 'up';
+    if (thisWeekShips < lastWeekShips) return 'down';
+    return 'stable';
+  }
+
   @Patch(':id')
   @UseGuards(ProjectPermissionGuard)
   @CanManageProject()
