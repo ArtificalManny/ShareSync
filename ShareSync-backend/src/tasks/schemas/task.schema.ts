@@ -2,7 +2,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type TaskStatus = 'todo' | 'in_progress' | 'completed';
+export type TaskStatus = 'Not Started' | 'todo' | 'in_progress' | 'completed';
 
 @Schema({ timestamps: true })
 export class Task extends Document {
@@ -18,7 +18,7 @@ export class Task extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   assigneeId?: Types.ObjectId;
 
-  @Prop({ enum: ['todo', 'in_progress', 'completed'], default: 'todo' })
+  @Prop({ enum: ['Not Started', 'todo', 'in_progress', 'completed'], default: 'todo' })
   status: TaskStatus;
 
   @Prop()
