@@ -564,7 +564,7 @@ const Projects = () => {
                 {[
                   { rank: 1, name: 'Alex', streak: '120d', xp: 2450, emoji: '🏆' },
                   { rank: 2, name: 'Jordan', streak: '100d', xp: 2200, emoji: '🥈' },
-                  { rank: 3, name: 'You', streak: '7d', xp: 1850, emoji: '��' }
+                  { rank: 3, name: 'You', streak: '7d', xp: 1850, emoji: '🥉' }
                 ].map(leader => (
                   <div key={leader.rank} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-700/30">
                     <div className="flex items-center gap-3">
