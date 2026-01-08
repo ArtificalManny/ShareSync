@@ -2,7 +2,10 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
+  UseGuards,
+  Req,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -11,6 +14,7 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from '../user/schemas/user.schema';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -65,5 +69,21 @@ export class AuthController {
     } catch (error) {
       throw new UnauthorizedException('Invalid token');
     }
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getMe(@Req() req) {
+    const userId = req?.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('User not found');
+    }
+    
+    const user = await this.userModel.findById(userId).select('-password');
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    
+    return user;
   }
 }
