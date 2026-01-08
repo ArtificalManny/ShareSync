@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import ProjectsCreate from './ProjectsCreate';
 import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
 import { SkeletonProjectCard } from '../components/ui/Skeletons';
+import api from '../api/client';
 
 // ⭐ Enhanced Project Card Component - MOVED OUTSIDE
 function EnhancedProjectCard({ project, viewMode, onProjectClick, onStartSprint }) {
@@ -208,20 +209,12 @@ const Projects = () => {
         return;
       }
       
-      const response = await fetch('http://localhost:3000/api/projects', {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        console.warn('Projects API returned non-200:', response.status, '- using mock data');
-        setProjects(getMockProjects());
-        return;
-      }
-      
-      const data = await response.json();
-      setProjects(Array.isArray(data) ? data : []);
+      // ✅ FIXED: Now using api client instead of fetch
+      const response = await api.get('/projects');
+      setProjects(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
-      console.error('Error fetching projects:', error, '- using mock data');
+      console.error('Error fetching projects:', error);
+      // Fallback to mock data on error
       setProjects(getMockProjects());
     } finally {
       setLoading(false);

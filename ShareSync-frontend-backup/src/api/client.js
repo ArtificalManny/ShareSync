@@ -4,7 +4,7 @@ const isDev = import.meta.env.DEV;
 const envBaseURL = import.meta.env.VITE_API_URL;
 
 // Prefer env, otherwise default dev/prod values
-const baseURL = envBaseURL || (isDev ? "http://localhost:3000/api" : "/api");
+const baseURL = envBaseURL || (isDev ? "http://localhost:5050/api" : "/api");
 
 console.log("[API Client] 🔵 BaseURL:", baseURL);
 
