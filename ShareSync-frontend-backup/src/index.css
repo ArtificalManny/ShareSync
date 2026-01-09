@@ -1,75 +1,46 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   src/index.css - UPDATED: Grid layout disabled + DEAD SPACE FIXED
+   src/index.css - FIXED: Removed problematic @apply classes
 ───────────────────────────────────────────────────────────────────────────── */
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   1) ALL @import STATEMENTS FOR CSS VARIABLES FIRST
+   1) CSS VARIABLE IMPORTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Theme tokens first (CSS variables) */
 @import './styles/tokens.css';
 @import './styles/layout-system.css';
-
-/* Color/Motion layers */
 @import './styles/motion.css';
 @import './styles/gradients.css';
 @import './styles/shine.css';
-
-/* Charts + Feed skins (use tokens/motion) */
 @import './styles/charts.css';
 @import './styles/feed.css';
-
-/* Chips primitive (non-Frankenstein guardrail) */
 @import './styles/chip.css';
-
-/* Admin console tables */
 @import './styles/admin.css';
-
-/* Typography + themed background */
 @import './styles/theme.css';
-
-/* Type & spacing tokens */
 @import './styles/type.css';
 @import './styles/spacing.css';
-
-/* Feature-specific styles */
 @import './styles/focus.neon.css';
 @import './styles/kpi-ticker.css';
 @import './styles/today-capsule.css';
 @import './styles/eta-explainer.css';
 @import './styles/social-mini.css';
 @import './styles/public-pages.css';
-
-/* Mobile styles */
 @import './styles/mobile.css';
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   2) TAILWIND BASE & COMPONENTS
+   2) TAILWIND DIRECTIVES
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @tailwind base;
 @tailwind components;
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   3) COMPONENT UTILITIES (uses @apply, so AFTER @tailwind components)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-@import './styles/components.css';
-@import './styles/modern-utilities.css';
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   4) TAILWIND UTILITIES
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   5) @layer BLOCKS
+   3) BASE STYLES
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @layer base {
   html, body, #root {
-    @apply bg-bg text-text;
+    @apply bg-[#0a0a0f] text-gray-100;
   }
 
   html, body {
@@ -84,7 +55,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   6) CUSTOM UTILITY CLASSES
+   4) CUSTOM UTILITY CLASSES
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .profile-picture-ring {
@@ -171,12 +142,10 @@
 .badge-flash { animation: flash-badge 1.5s ease-in-out; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   7) DEAD SPACE FIX - MUST BE LAST TO OVERRIDE TAILWIND
+   5) DEAD SPACE FIX
    ═══════════════════════════════════════════════════════════════════════════ */
 
-html,
-body,
-#root {
+html, body, #root {
   height: auto !important;
   min-height: auto !important;
 }
@@ -186,8 +155,7 @@ body {
   height: auto !important;
 }
 
-main,
-.main-content {
+main, .main-content {
   min-height: 100vh !important;
   height: auto !important;
   padding-bottom: 2rem !important;
