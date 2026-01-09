@@ -21,8 +21,8 @@ export default function Login() {
     }
     setSubmitting(true);
     try {
-      // ✅ CRITICAL FIX: Pass email and password as separate arguments, not as an object
-      const result = await login(email, password);
+      // ✅ FIXED: Pass as object to match AuthContext signature
+      const result = await login({ email, password });
       
       if (result.success) {
         navigate("/home", { replace: true });

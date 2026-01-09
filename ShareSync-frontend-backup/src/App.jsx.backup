@@ -93,8 +93,7 @@ const ProjectSettings = lazy(() => import("./pages/project/ProjectSettings"));
 const Sidebar = lazy(() => import("./components/Sidebar"));
 const LayoutSkin = lazy(() => import("./components/LayoutSkin.jsx"));
 const MiniSprintWidget = lazy(() => import("./components/global/MiniSprintWidget"));
-// ❌ TEMPORARILY DISABLED - Component has dependency issues
-// const QuickNotesDrawer = lazy(() => import("./components/global/QuickNotesDrawer"));
+const QuickNotesDrawer = lazy(() => import("./components/global/QuickNotesDrawer"));
 const PinnedDrawer = lazy(() => import("./components/global/PinnedDrawer.jsx"));
 const FocusDock = lazy(() => import("./components/focus/FocusDock.jsx"));
 const FocusToasts = lazy(() => import("./components/toast/FocusToasts.jsx"));
@@ -315,8 +314,7 @@ function AppRoutes() {
         <Suspense fallback={null}>
           {MESSENGER_V1 && <MessengerPanel />}
           <MiniSprintWidget />
-          {/* ❌ TEMPORARILY DISABLED - Component has dependency issues */}
-          {/* <QuickNotesDrawer /> */}
+          <QuickNotesDrawer />
           <PinnedDrawer />
           {FOCUS_DOCK_V1 && <FocusDock />}
           {FOCUS_DOCK_V1 && <FocusToasts />}

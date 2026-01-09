@@ -46,9 +46,10 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, []);
 
-  const login = async (email, password) => {
+  // ✅ FIXED: Accept object parameter
+  const login = async ({ email, password }) => {
     try {
-      console.log('[AuthContext] 🔵 Attempting login for:', email);
+      console.log('[AuthContext] 🔵 Attempting login for:', { email, password });
       
       const response = await api.post('/auth/login', { email, password });
       
@@ -82,7 +83,7 @@ export function AuthProvider({ children }) {
       
       // ✅ Verify it was saved
       const savedToken = localStorage.getItem('ss.jwt');
-      console.log('[AuthContext] 🟢 Verified saved token:', savedToken ? 'YES ✅' : 'NO ❌');
+      console.log('[AuthContext] �� Verified saved token:', savedToken ? 'YES ✅' : 'NO ❌');
       
       // ✅ Update state
       setUser(userData);
