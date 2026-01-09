@@ -1,14 +1,20 @@
-/** @type {import('jest').Config} */
 module.exports = {
-    preset: 'ts-jest',
-    testEnvironment: 'node',
-    roots: ['<rootDir>/src/__tests__'],
-    moduleFileExtensions: ['ts', 'js', 'json'],
-    transform: {
-      '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
-    },
-    clearMocks: true,
-    restoreMocks: true,
-    resetMocks: true,
-  };
-  
+  moduleFileExtensions: ['js', 'json', 'ts'],
+  rootDir: 'src',
+  testRegex: '.*\\.(spec|test)\\.ts$',
+  transform: {
+    '^.+\\.(t|j)s$': 'ts-jest',
+  },
+  collectCoverageFrom: [
+    '**/*.(t|j)s',
+    '!**/*.module.ts',
+    '!**/*.interface.ts',
+    '!**/*.dto.ts',
+    '!**/main.ts',
+  ],
+  coverageDirectory: '../coverage',
+  testEnvironment: 'node',
+  moduleNameMapper: {
+    '^src/(.*)$': '<rootDir>/$1',
+  },
+};

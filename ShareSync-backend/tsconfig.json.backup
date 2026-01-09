@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2017",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "baseUrl": "./src",
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "typeRoots": ["node_modules/@types"],
+    "types": ["node", "express", "multer"]
+  },
+  "include": ["src/**/*"],        // ← only backend sources
+  "exclude": ["node_modules", "dist"]
+}
