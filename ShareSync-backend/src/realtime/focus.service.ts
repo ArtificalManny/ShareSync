@@ -1,11 +1,6 @@
 /**
  * focus.service.ts
  * Business logic for focus sessions
- * 
- * Handles:
- * - Session creation and lifecycle
- * - Statistics and analytics
- * - XP calculation
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -20,13 +15,6 @@ export class FocusService {
     private focusSessionModel: Model<FocusSessionDocument>,
   ) {}
 
-  // ============================================
-  // SESSION CREATION
-  // ============================================
-
-  /**
-   * Start a new focus session
-   */
   async startSession(
     userId: string,
     data: {
@@ -36,7 +24,6 @@ export class FocusService {
       goal?: string;
     },
   ): Promise<FocusSessionDocument> {
-    // Check if user already has an active session
     const existingSession = await this.getActiveSession(userId);
     if (existingSession) {
       throw new BadRequestException('User already has an active focus session');
@@ -59,40 +46,28 @@ export class FocusService {
     
     console.log(`🔥 Focus session started: ${userId} (${data.duration} min)`);
     
-    return session;
+    // FIX: Cast after save
+    return session as any as FocusSessionDocument;
   }
 
-  // ============================================
-  // SESSION CONTROL
-  // ============================================
-
-  /**
-   * Pause a session
-   */
   async pauseSession(sessionId: string, userId: string): Promise<FocusSessionDocument> {
     const session = await this.findSession(sessionId, userId);
     await session.pause();
     
     console.log(`⏸️ Session paused: ${sessionId}`);
     
-    return session;
+    return session as any as FocusSessionDocument;
   }
 
-  /**
-   * Resume a session
-   */
   async resumeSession(sessionId: string, userId: string): Promise<FocusSessionDocument> {
     const session = await this.findSession(sessionId, userId);
     await session.resume();
     
     console.log(`▶️ Session resumed: ${sessionId}`);
     
-    return session;
+    return session as any as FocusSessionDocument;
   }
 
-  /**
-   * Complete a session
-   */
   async completeSession(
     sessionId: string,
     userId: string,
@@ -108,12 +83,9 @@ export class FocusService {
     
     console.log(`✅ Session completed: ${sessionId} (+${session.xpEarned} XP)`);
     
-    return session;
+    return session as any as FocusSessionDocument;
   }
 
-  /**
-   * Cancel a session
-   */
   async cancelSession(
     sessionId: string,
     userId: string,
@@ -124,100 +96,67 @@ export class FocusService {
     
     console.log(`❌ Session cancelled: ${sessionId}`);
     
-    return session;
+    return session as any as FocusSessionDocument;
   }
 
-  // ============================================
-  // SESSION UPDATES
-  // ============================================
-
-  /**
-   * Record an interruption
-   */
   async recordInterruption(sessionId: string, userId: string): Promise<FocusSessionDocument> {
     const session = await this.findSession(sessionId, userId);
     await session.recordInterruption();
     
-    return session;
+    return session as any as FocusSessionDocument;
   }
 
-  /**
-   * Add a task to the session
-   */
   async addTask(sessionId: string, userId: string, taskId: string): Promise<FocusSessionDocument> {
     const session = await this.findSession(sessionId, userId);
     await session.addTask(new Types.ObjectId(taskId));
     
-    return session;
+    return session as any as FocusSessionDocument;
   }
 
-  /**
-   * Mark task as completed
-   */
   async completeTask(sessionId: string, userId: string): Promise<FocusSessionDocument> {
     const session = await this.findSession(sessionId, userId);
     await session.completeTask();
     
-    return session;
+    return session as any as FocusSessionDocument;
   }
 
-  // ============================================
-  // QUERIES
-  // ============================================
-
-  /**
-   * Get user's active session
-   */
   async getActiveSession(userId: string): Promise<FocusSessionDocument | null> {
-    return this.focusSessionModel
+    return (await this.focusSessionModel
       .findOne({
         userId: new Types.ObjectId(userId),
         status: { $in: [SessionStatus.ACTIVE, SessionStatus.PAUSED] },
       })
-      .exec();
+      .exec()) as any as FocusSessionDocument | null;
   }
 
-  /**
-   * Get user's session history
-   */
   async getSessionHistory(
     userId: string,
     limit = 20,
   ): Promise<FocusSessionDocument[]> {
-    return this.focusSessionModel
+    return (await this.focusSessionModel
       .find({ userId: new Types.ObjectId(userId) })
       .sort({ startTime: -1 })
       .limit(limit)
-      .exec();
+      .exec()) as any as FocusSessionDocument[];
   }
 
-  /**
-   * Get sessions for a project
-   */
   async getProjectSessions(projectId: string): Promise<FocusSessionDocument[]> {
-    return this.focusSessionModel
+    return (await this.focusSessionModel
       .find({ projectId: new Types.ObjectId(projectId) })
       .sort({ startTime: -1 })
-      .exec();
+      .exec()) as any as FocusSessionDocument[];
   }
 
-  // ============================================
-  // STATISTICS
-  // ============================================
-
-  /**
-   * Get user's focus statistics
-   */
   async getUserStats(userId: string, days = 30) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const sessions = await this.focusSessionModel
+    const sessions = (await this.focusSessionModel
       .find({
         userId: new Types.ObjectId(userId),
         startTime: { $gte: startDate },
       })
-      .exec();
+      .exec()) as any as FocusSessionDocument[];
 
     const completed = sessions.filter(s => s.status === SessionStatus.COMPLETED);
 
@@ -237,17 +176,14 @@ export class FocusService {
     };
   }
 
-  /**
-   * Calculate focus streak (consecutive days)
-   */
   async calculateStreak(userId: string): Promise<number> {
-    const sessions = await this.focusSessionModel
+    const sessions = (await this.focusSessionModel
       .find({
         userId: new Types.ObjectId(userId),
         status: SessionStatus.COMPLETED,
       })
       .sort({ startTime: -1 })
-      .exec();
+      .exec()) as any as FocusSessionDocument[];
 
     if (sessions.length === 0) return 0;
 
@@ -260,24 +196,17 @@ export class FocusService {
       
       if (sessionDate === checkDate) {
         streak++;
-        checkDate -= 24 * 60 * 60 * 1000; // Previous day
+        checkDate -= 24 * 60 * 60 * 1000;
       } else if (sessionDate < checkDate) {
-        break; // Gap in streak
+        break;
       }
     }
 
     return streak;
   }
 
-  // ============================================
-  // HELPERS
-  // ============================================
-
-  /**
-   * Find session with permission check
-   */
   private async findSession(sessionId: string, userId: string): Promise<FocusSessionDocument> {
-    const session = await this.focusSessionModel.findById(sessionId).exec();
+    const session = (await this.focusSessionModel.findById(sessionId).exec()) as any as FocusSessionDocument | null;
     
     if (!session) {
       throw new NotFoundException('Focus session not found');
@@ -290,9 +219,6 @@ export class FocusService {
     return session;
   }
 
-  /**
-   * Get time of day
-   */
   private getTimeOfDay(): 'morning' | 'afternoon' | 'evening' | 'night' {
     const hour = new Date().getHours();
     

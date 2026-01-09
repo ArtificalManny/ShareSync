@@ -20,7 +20,7 @@ type CreateFileInput = {
   mime: string;
   kind?: 'image' | 'video' | 'doc' | 'audio' | 'other';
   projectId: string;
-  status?: FileStatus; // 'approved' default; use 'pending' if moderation pipeline
+  status?: FileStatus;
   moderation?: { reason?: string; tags?: string[] };
 };
 
@@ -35,11 +35,9 @@ export class FilesService {
     @InjectModel(Project.name)
     private readonly projectModel: Model<ProjectDocument>,
 
-    // ✅ Realtime DI: this is the RealtimeGateway Nest was complaining about
     private readonly realtime: RealtimeGateway,
   ) {}
 
-  /** Resolve a user's role in a project. */
   private async getUserRole(
     projectId: string,
     userId: string,
@@ -78,7 +76,6 @@ export class FilesService {
     }
   }
 
-  /** FE-facing shape */
   private toPublic(d: File | (File & { _id?: any })) {
     const anyd: any =
       typeof (d as any).toObject === 'function' ? (d as any).toObject() : d;
@@ -101,7 +98,6 @@ export class FilesService {
     };
   }
 
-  /** Create a single file record and emit realtime. */
   async createOne(input: CreateFileInput, actingUserId: string) {
     await this.assertCanEdit(input.projectId, actingUserId);
 
@@ -120,7 +116,6 @@ export class FilesService {
       moderation: input.moderation,
     });
 
-    // ✅ emit realtime event
     try {
       this.realtime.emitToProject(input.projectId, 'project:filesAdded', {
         projectId: input.projectId,
@@ -133,7 +128,6 @@ export class FilesService {
     return this.toPublic(doc);
   }
 
-  /** Bulk create and emit in one payload. */
   async createMany(
     projectId: string,
     items: CreateFileInput[],
@@ -159,7 +153,10 @@ export class FilesService {
       { ordered: false },
     );
 
-    const payload = docs.map((d) => this.toPublic(d));
+    // FIX: Cast docs to any to avoid TS2590
+    const docsArray: any[] = docs as any;
+    const payload = docsArray.map((d) => this.toPublic(d));
+
     try {
       this.realtime.emitToProject(projectId, 'project:filesAdded', {
         projectId,
@@ -172,7 +169,6 @@ export class FilesService {
     return payload;
   }
 
-  /** Paginated list by project (cursor = last seen _id; newest first). */
   async listByProject(
     projectId: string,
     actingUserId: string,
@@ -227,7 +223,6 @@ export class FilesService {
     return { ok: true };
   }
 
-  /** Optional moderation API */
   async updateStatus(fileId: string, status: FileStatus, reason?: string) {
     if (!Types.ObjectId.isValid(fileId)) {
       throw new NotFoundException('File not found');

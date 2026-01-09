@@ -45,9 +45,13 @@ export class ProfileController {
     const userId = req.user.userId || req.user.sub || req.user.id;
     const user = await this.service.updateProfilePicture(userId, file.filename);
 
+    // FIX: Cast user to any first to avoid TS2590
+    const userDoc: any = user;
+    const userObject = userDoc.toObject?.() || userDoc;
+    
     return {
       user: {
-        ...(user.toObject?.() || user),
+        ...userObject,
         profilePicture: `uploads/${file.filename}`,
       },
     };

@@ -19,7 +19,6 @@ import {
 } from '../projects/guards/project-permission.guard';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 
-// Support both param names (:projectId or :id)
 @Controller(['projects/:projectId/tasks', 'projects/:id/tasks'])
 @UseGuards(JwtAuthGuard, ProjectPermissionGuard)
 export class TasksController {
@@ -32,7 +31,6 @@ export class TasksController {
     return params.projectId ?? params.id;
   }
 
-  /** List tasks for a project (viewer/member/owner) */
   @Get()
   @CanViewProject()
   async list(
@@ -45,7 +43,6 @@ export class TasksController {
     return this.tasks.list(projectId, n, cursor || null);
   }
 
-  /** Create task (member/owner) */
   @Post()
   @CanEditProject()
   async create(@Req() req: any, @Param() params: any, @Body() dto: CreateTaskDto) {
@@ -56,15 +53,18 @@ export class TasksController {
     const userId = req?.user?.sub || req?.user?.id || req?.user?._id;
     const created = await this.tasks.create(projectId, userId, dto);
 
+    // FIX: Cast to any first to avoid TS2590
+    const createdDoc: any = created;
+    const taskObject = createdDoc?.toObject?.() ?? createdDoc;
+
     this.realtime.emitToProject(projectId, 'tasks:created', {
       projectId,
-      task: { ...(created?.toObject?.() ?? created) },
+      task: { ...taskObject },
     });
 
     return created;
   }
 
-  /** Patch task (member/owner) */
   @Patch(':taskId')
   @CanEditProject()
   async patch(

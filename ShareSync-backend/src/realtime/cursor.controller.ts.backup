@@ -1,6 +1,9 @@
 /**
  * cursor.controller.ts
  * REST API endpoints for cursor history and analytics
+ *
+ * Provides HTTP fallback and historical data access when WebSockets
+ * are unavailable or for analytical purposes
  */
 
 import {
@@ -45,6 +48,10 @@ export class CursorController {
     private readonly cursorModel: Model<CursorDocument>,
   ) {}
 
+  // ============================================
+  // GET CURSOR HISTORY
+  // ============================================
+
   @Get('history')
   @ApiOperation({ summary: 'Get cursor history' })
   @ApiResponse({
@@ -65,6 +72,7 @@ export class CursorController {
   ): Promise<CursorDocument[]> {
     const filter: any = {};
 
+    // Build filter
     if (query.projectId) {
       filter.projectId = new Types.ObjectId(query.projectId);
     }
@@ -77,6 +85,7 @@ export class CursorController {
       filter.sessionId = query.sessionId;
     }
 
+    // Time range
     if (query.startTime || query.endTime) {
       filter.timestamp = {};
       if (query.startTime) {
@@ -87,16 +96,22 @@ export class CursorController {
       }
     }
 
-    // FIX: Cast through 'any' to avoid TS2590
-    const cursors = (await this.cursorModel
+    // IMPORTANT:
+    // Do NOT use `.lean()` here because the return type is CursorDocument[]
+    // and `.lean()` returns plain objects (FlattenMaps), which triggers TS2322.
+    const cursors = await this.cursorModel
       .find(filter)
       .sort({ timestamp: -1 })
       .limit(query.limit || 100)
       .skip(query.skip || 0)
-      .exec()) as any as CursorDocument[];
+      .exec();
 
     return cursors;
   }
+
+  // ============================================
+  // GET USER CURSOR HISTORY
+  // ============================================
 
   @Get('history/user/:userId')
   @ApiOperation({ summary: 'Get cursor history for specific user' })
@@ -120,12 +135,17 @@ export class CursorController {
       if (endTime) filter.timestamp.$lte = new Date(endTime);
     }
 
-    return (await this.cursorModel
+    // IMPORTANT: no `.lean()` (CursorDocument[] return type)
+    return this.cursorModel
       .find(filter)
       .sort({ timestamp: 1 })
       .limit(limit || 1000)
-      .exec()) as any as CursorDocument[];
+      .exec();
   }
+
+  // ============================================
+  // GET SESSION PLAYBACK
+  // ============================================
 
   @Get('session/:sessionId')
   @ApiOperation({ summary: 'Get cursor movements for session playback' })
@@ -136,11 +156,16 @@ export class CursorController {
   async getSession(
     @Param('sessionId') sessionId: string,
   ): Promise<CursorDocument[]> {
-    return (await this.cursorModel
+    // IMPORTANT: no `.lean()`
+    return this.cursorModel
       .find({ sessionId })
       .sort({ timestamp: 1 })
-      .exec()) as any as CursorDocument[];
+      .exec();
   }
+
+  // ============================================
+  // GET RECENT CURSORS IN PROJECT
+  // ============================================
 
   @Get('project/:projectId/recent')
   @ApiOperation({ summary: 'Get recent cursors in project' })
@@ -152,14 +177,19 @@ export class CursorController {
     @Param('projectId') projectId: string,
     @Query('limit') limit?: number,
   ): Promise<CursorDocument[]> {
-    return (await this.cursorModel
+    // IMPORTANT: no `.lean()`
+    return this.cursorModel
       .find({
         projectId: new Types.ObjectId(projectId),
       })
       .sort({ timestamp: -1 })
       .limit(limit || 100)
-      .exec()) as any as CursorDocument[];
+      .exec();
   }
+
+  // ============================================
+  // GET ACTIVE USERS IN PROJECT
+  // ============================================
 
   @Get('project/:projectId/active')
   @ApiOperation({ summary: 'Get active users in project' })
@@ -171,7 +201,7 @@ export class CursorController {
     @Param('projectId') projectId: string,
     @Query('threshold') threshold?: number,
   ): Promise<any[]> {
-    const thresholdMs = (threshold || 30) * 1000;
+    const thresholdMs = (threshold || 30) * 1000; // Default 30 seconds
     const since = new Date(Date.now() - thresholdMs);
 
     return this.cursorModel.aggregate([
@@ -196,6 +226,10 @@ export class CursorController {
     ]);
   }
 
+  // ============================================
+  // GET CURSOR STATISTICS
+  // ============================================
+
   @Get('stats')
   @ApiOperation({ summary: 'Get cursor statistics' })
   @ApiResponse({
@@ -207,7 +241,7 @@ export class CursorController {
     @Query('projectId') projectId?: string,
     @Query('timeWindow') timeWindow?: number,
   ): Promise<CursorStatsDto> {
-    const windowMs = (timeWindow || 3600) * 1000;
+    const windowMs = (timeWindow || 3600) * 1000; // Default 1 hour
     const since = new Date(Date.now() - windowMs);
 
     const filter: any = { timestamp: { $gte: since } };
@@ -215,8 +249,10 @@ export class CursorController {
       filter.projectId = new Types.ObjectId(projectId);
     }
 
+    // Total movements
     const totalMovements = await this.cursorModel.countDocuments(filter);
 
+    // Active users
     const activeUsersResult = await this.cursorModel.aggregate([
       { $match: filter },
       { $group: { _id: '$userId' } },
@@ -224,6 +260,7 @@ export class CursorController {
     ]);
     const activeUsers = activeUsersResult[0]?.count || 0;
 
+    // Activity breakdown
     const activityResult = await this.cursorModel.aggregate([
       { $match: filter },
       {
@@ -239,6 +276,7 @@ export class CursorController {
       return acc;
     }, {} as Record<string, number>);
 
+    // Average movements per user
     const averageMovementsPerUser =
       activeUsers > 0 ? totalMovements / activeUsers : 0;
 
@@ -249,6 +287,10 @@ export class CursorController {
       averageMovementsPerUser,
     };
   }
+
+  // ============================================
+  // POST CURSOR UPDATE (HTTP FALLBACK)
+  // ============================================
 
   @Post()
   @ApiOperation({ summary: 'Update cursor position (HTTP fallback)' })
@@ -262,6 +304,7 @@ export class CursorController {
     @CurrentUser() user: any,
   ): Promise<CursorResponseDto> {
     try {
+      // Validate user owns this cursor update
       if (cursorUpdate.userId !== user.id) {
         throw new HttpException(
           'Cannot update cursor for another user',
@@ -269,6 +312,7 @@ export class CursorController {
         );
       }
 
+      // Create cursor record
       const cursor = new this.cursorModel({
         ...cursorUpdate,
         userId: new Types.ObjectId(cursorUpdate.userId),
@@ -291,6 +335,10 @@ export class CursorController {
     }
   }
 
+  // ============================================
+  // POST BATCH CURSOR UPDATES
+  // ============================================
+
   @Post('batch')
   @ApiOperation({ summary: 'Batch cursor updates (HTTP fallback)' })
   @ApiResponse({
@@ -302,6 +350,7 @@ export class CursorController {
     @CurrentUser() user: any,
   ): Promise<CursorResponseDto> {
     try {
+      // Validate all cursors belong to user
       const invalidCursor = batch.cursors.find((c) => c.userId !== user.id);
       if (invalidCursor) {
         throw new HttpException(
@@ -310,6 +359,7 @@ export class CursorController {
         );
       }
 
+      // Insert all cursors
       const cursors = batch.cursors.map((c) => ({
         ...c,
         userId: new Types.ObjectId(c.userId),
@@ -332,6 +382,11 @@ export class CursorController {
     }
   }
 
+  // ============================================
+  // DELETE OLD CURSOR DATA
+  // ============================================
+
+  // Required @CurrentUser first, optional @Query second (TS strict)
   @Delete('cleanup')
   @ApiOperation({ summary: 'Cleanup old cursor data (admin only)' })
   @ApiResponse({
@@ -342,6 +397,7 @@ export class CursorController {
     @CurrentUser() user: any,
     @Query('daysOld') daysOld?: number,
   ): Promise<CursorResponseDto> {
+    // Check if user is admin (implement your own logic)
     if (!user.isAdmin) {
       throw new HttpException('Admin access required', HttpStatus.FORBIDDEN);
     }
@@ -360,6 +416,10 @@ export class CursorController {
     };
   }
 
+  // ============================================
+  // GET CURSOR HEATMAP DATA
+  // ============================================
+
   @Get('heatmap')
   @ApiOperation({ summary: 'Get cursor heatmap data' })
   @ApiResponse({
@@ -373,18 +433,23 @@ export class CursorController {
   ): Promise<any> {
     const windowMs = (timeWindow || 3600) * 1000;
     const since = new Date(Date.now() - windowMs);
-    const grid = gridSize || 10;
+    const grid = gridSize || 10; // 10x10 grid
 
-    const cursors = (await this.cursorModel
+    // NOTE:
+    // We intentionally do NOT use `.lean()` here either, to avoid mixing lean objects with document types.
+    // The returned shape is used immediately for x/y extraction.
+    const cursors = await this.cursorModel
       .find({
         projectId: new Types.ObjectId(projectId),
         timestamp: { $gte: since },
       })
       .select('x y')
-      .exec()) as any[];
+      .exec();
 
+    // Create heatmap grid
     const heatmap = Array.from({ length: grid }, () => Array(grid).fill(0));
 
+    // Count cursors in each grid cell
     cursors.forEach((cursor: any) => {
       const x = Number(cursor?.x ?? 0);
       const y = Number(cursor?.y ?? 0);

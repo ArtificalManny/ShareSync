@@ -27,21 +27,17 @@ export class NotificationsService {
     actionData?: any;
     triggeredBy?: string;
   }): Promise<Notification> {
-    // Get user preferences
     const user = await this.userModel.findById(data.userId);
     if (!user) throw new Error('User not found');
 
     const prefs = (user as any).notificationSettings || {};
 
-    // Check quiet hours
     const isQuietHours = this.isQuietHours(prefs.quietHours);
 
-    // Determine channels to send
     const shouldSendInApp = this.shouldSendInApp(data.type, prefs.inApp);
     const shouldSendEmail = this.shouldSendEmail(data.type, prefs.email, isQuietHours);
     const shouldSendSms = this.shouldSendSms(data.urgent, prefs.sms, isQuietHours);
 
-    // Create notification record
     const notification = new this.notificationModel({
       userId: new Types.ObjectId(data.userId),
       projectId: data.projectId ? new Types.ObjectId(data.projectId) : undefined,
@@ -60,7 +56,6 @@ export class NotificationsService {
 
     await notification.save();
 
-    // Send through channels
     if (shouldSendEmail) {
       await this.emailService.sendNotification(user as any, notification);
     }
@@ -71,8 +66,6 @@ export class NotificationsService {
         notification
       );
     }
-
-    // In-app is just the DB record (real-time via WebSocket handled separately)
 
     return notification;
   }
@@ -95,7 +88,7 @@ export class NotificationsService {
   private shouldSendInApp(type: string, setting: string): boolean {
     if (setting === 'off') return false;
     if (setting === 'mentions') return type === 'mention';
-    return true; // 'all'
+    return true;
   }
 
   private shouldSendEmail(
@@ -104,9 +97,9 @@ export class NotificationsService {
     isQuietHours: boolean
   ): boolean {
     if (setting === 'off') return false;
-    if (setting === 'digest') return false; // Handled by cron job
+    if (setting === 'digest') return false;
     if (isQuietHours) return false;
-    return true; // 'instant'
+    return true;
   }
 
   private shouldSendSms(
@@ -133,15 +126,22 @@ export class NotificationsService {
       query.read = false;
     }
 
-    const [notifications, unreadCount] = await Promise.all([
-      this.notificationModel
-        .find(query)
-        .populate('triggeredBy', 'firstName lastName avatar')
-        .sort({ createdAt: -1 })
-        .limit(options.limit || 10)
-        .exec(),
-      this.notificationModel.countDocuments({ userId: new Types.ObjectId(userId), read: false })
-    ]);
+    // FIX: Split Promise.all to avoid TS2590
+    const notificationsPromise = this.notificationModel
+      .find(query)
+      .populate('triggeredBy', 'firstName lastName avatar')
+      .sort({ createdAt: -1 })
+      .limit(options.limit || 10)
+      .exec();
+
+    const unreadCountPromise = this.notificationModel.countDocuments({ 
+      userId: new Types.ObjectId(userId), 
+      read: false 
+    });
+
+    // Execute in parallel with explicit typing
+    const notifications = (await notificationsPromise) as any as Notification[];
+    const unreadCount = await unreadCountPromise;
 
     return { notifications, unreadCount };
   }
