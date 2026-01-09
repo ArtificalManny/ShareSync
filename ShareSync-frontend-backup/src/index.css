@@ -2,7 +2,11 @@
    src/index.css - UPDATED: Grid layout disabled + DEAD SPACE FIXED
 ───────────────────────────────────────────────────────────────────────────── */
 
-/* 1) Theme tokens first (CSS variables) */
+/* ═══════════════════════════════════════════════════════════════════════════
+   1) ALL @import STATEMENTS FOR CSS VARIABLES FIRST
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Theme tokens first (CSS variables) */
 @import './styles/tokens.css';
 @import './styles/layout-system.css';
 
@@ -18,16 +22,17 @@
 /* Chips primitive (non-Frankenstein guardrail) */
 @import './styles/chip.css';
 
-/* ⬇️ NEW: Admin console tables (optional polish) */
+/* Admin console tables */
 @import './styles/admin.css';
 
 /* Typography + themed background */
 @import './styles/theme.css';
 
-/* ⬇️ NEW: Type & spacing tokens (global, before Tailwind layers) */
+/* Type & spacing tokens */
 @import './styles/type.css';
 @import './styles/spacing.css';
 
+/* Feature-specific styles */
 @import './styles/focus.neon.css';
 @import './styles/kpi-ticker.css';
 @import './styles/today-capsule.css';
@@ -35,17 +40,33 @@
 @import './styles/social-mini.css';
 @import './styles/public-pages.css';
 
-/* 2) Tailwind layers */
+/* Mobile styles */
+@import './styles/mobile.css';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2) TAILWIND BASE & COMPONENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @tailwind base;
 @tailwind components;
 
-/* 3) Component utilities (uses @apply inside @layer components) */
+/* ═══════════════════════════════════════════════════════════════════════════
+   3) COMPONENT UTILITIES (uses @apply, so AFTER @tailwind components)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @import './styles/components.css';
 @import './styles/modern-utilities.css';
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   4) TAILWIND UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @tailwind utilities;
 
-/* 4) App-wide base tokens → actual colors + base typography */
+/* ═══════════════════════════════════════════════════════════════════════════
+   5) @layer BLOCKS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @layer base {
   html, body, #root {
     @apply bg-bg text-text;
@@ -62,33 +83,10 @@
   }
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   DISABLED OLD GRID LAYOUT - Using new layout-system.css
-───────────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   6) CUSTOM UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* 
-COMMENTED OUT - Old grid layout conflicts with new system
-
-:root {
-  --primary-color: #5b6cff;
-  --secondary-color: #a88bfe;
-  --accent-color: #00d9f5;
-  --gradient-newcomer: linear-gradient(135deg, #b1b5ff, #e0e0ff);
-  --gradient-active: linear-gradient(135deg, #5eead4, #2dd4bf);
-  --gradient-elite: linear-gradient(135deg, #facc15, #f59e0b);
-  --glass-bg: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --glow-shadow: 0 0 8px rgba(91, 108, 255, 0.4);
-}
-
-html.dark {
-  --glass-bg: rgba(17, 24, 39, 0.3);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glow-shadow: 0 0 8px rgba(168, 139, 254, 0.5);
-}
-*/
-
-/* Keep utility classes but not grid layout */
 .profile-picture-ring {
   display: inline-block;
   padding: 3px;
@@ -173,7 +171,7 @@ html.dark {
 .badge-flash { animation: flash-badge 1.5s ease-in-out; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ⭐ DEAD SPACE FIX - MUST BE LAST TO OVERRIDE TAILWIND
+   7) DEAD SPACE FIX - MUST BE LAST TO OVERRIDE TAILWIND
    ═══════════════════════════════════════════════════════════════════════════ */
 
 html,
@@ -193,4 +191,16 @@ main,
   min-height: 100vh !important;
   height: auto !important;
   padding-bottom: 2rem !important;
+}
+
+html, body {
+  height: auto !important;
+  min-height: 100vh !important;
+  max-height: none !important;
+}
+
+html.layout-stage,
+body.has-sidebar {
+  height: auto !important;
+  min-height: 100vh !important;
 }

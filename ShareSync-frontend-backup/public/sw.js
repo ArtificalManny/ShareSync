@@ -61,10 +61,30 @@ self.addEventListener('fetch', (event) => {
   // ✅ DEV: Always go to network (no caching of /src/* or Vite dev assets)
   if (IS_LOCALHOST) {
     event.respondWith(
-      fetch(event.request).catch(() => {
+      fetch(event.request).catch((error) => {
+        console.error('[SW] Fetch failed:', event.request.url, error);
+        
+        // For navigation requests (page loads), try offline.html
         if (event.request.mode === 'navigate') {
-          return caches.match('/offline.html');
+          return caches.match('/offline.html').then((response) => {
+            if (response) return response;
+            // If offline.html also fails, return a basic error page
+            return new Response(
+              '<html><body><h1>Offline</h1><p>Cannot reach server</p></body></html>',
+              { headers: { 'Content-Type': 'text/html' } }
+            );
+          });
         }
+        
+        // For non-navigation requests (API, assets), return proper error response
+        return new Response(
+          JSON.stringify({ error: 'Network request failed' }),
+          { 
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'application/json' } 
+          }
+        );
       })
     );
     return;
@@ -82,10 +102,29 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
         return response;
       });
-    }).catch(() => {
+    }).catch((error) => {
+      console.error('[SW] Fetch failed:', event.request.url, error);
+      
+      // For navigation requests, try offline.html
       if (event.request.mode === 'navigate') {
-        return caches.match('/offline.html');
+        return caches.match('/offline.html').then((response) => {
+          if (response) return response;
+          return new Response(
+            '<html><body><h1>Offline</h1><p>Cannot reach server</p></body></html>',
+            { headers: { 'Content-Type': 'text/html' } }
+          );
+        });
       }
+      
+      // For non-navigation requests, return error response
+      return new Response(
+        JSON.stringify({ error: 'Network request failed' }),
+        { 
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
     })
   );
 });

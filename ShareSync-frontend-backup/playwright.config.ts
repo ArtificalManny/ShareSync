@@ -12,12 +12,19 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    
+    // Disable service workers for testing
+    serviceWorkers: 'block',
   },
 
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { 
+        ...devices['Desktop Chrome'],
+        // Clear storage before each test
+        storageState: undefined,
+      },
     },
   ],
 
