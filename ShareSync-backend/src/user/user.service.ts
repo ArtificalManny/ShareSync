@@ -1,10 +1,16 @@
-// src/user/user.service.ts
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
 import { User, UserDocument } from './schemas/user.schema';
 import { ProjectService } from '../projects/project.service';
+import { ActivitiesService } from '../activities/activities.service';
+import { buildActivitySummary } from '../utils/activitySummary';
 
 @Injectable()
 export class UserService {
@@ -14,18 +20,20 @@ export class UserService {
 
     @Inject(forwardRef(() => ProjectService))
     private readonly projects: ProjectService,
+
+    private readonly activities: ActivitiesService,
   ) {}
 
-  /** -- Lookups -- */
   async findById(id: string): Promise<UserDocument | null> {
-    return this.userModel.findById(id).exec();
+    const result = await this.userModel.findById(id).exec();
+    return result as any;
   }
 
   async findByUsername(username: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ username }).exec();
+    const result = await this.userModel.findOne({ username }).exec();
+    return result as any;
   }
 
-  /** Public profile view (respect publicProfile flag) */
   async findPublicByUsername(username: string): Promise<UserDocument | null> {
     const user = await this.userModel
       .findOne({ username })
@@ -34,10 +42,9 @@ export class UserService {
 
     if (!user) return null;
     if ((user as any).publicProfile === false) return null;
-    return user;
+    return user as any;
   }
 
-  /** -- Create/Update -- */
   async create(createUserDto: {
     email: string;
     username: string;
@@ -46,28 +53,29 @@ export class UserService {
     lastName: string;
   }): Promise<UserDocument> {
     const createdUser = new this.userModel(createUserDto);
-    return createdUser.save();
+    const saved = await createdUser.save();
+    return saved as any;
   }
 
   async findOneByEmail(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email }).exec();
+    const result = await this.userModel.findOne({ email }).exec();
+    return result as any;
   }
 
-  /** Generic update by id (used by controller’s PATCH /users/me) */
   async updateById(id: string, patch: Partial<User>): Promise<UserDocument> {
     const updated = await this.userModel
       .findByIdAndUpdate(id, { $set: patch }, { new: true })
       .exec();
     if (!updated) throw new NotFoundException('User not found');
-    return updated;
+    return updated as any;
   }
 
-  /** Existing update helper (kept for compatibility) */
   async update(id: string, updateUserDto: any): Promise<UserDocument> {
     const user = await this.userModel.findById(id).exec();
     if (!user) throw new NotFoundException('User not found');
     Object.assign(user, updateUserDto);
-    return user.save();
+    const saved = await user.save();
+    return saved as any;
   }
 
   async updateProfile(
@@ -95,7 +103,6 @@ export class UserService {
     return this.update(id, patch);
   }
 
-  /** -- Projects aggregation helper -- */
   async getProjectsByCategory(userId: string): Promise<any> {
     const projects = await this.projects.findAll(userId);
     return {
@@ -105,14 +112,14 @@ export class UserService {
     };
   }
 
-  /** -- Auth helpers -- */
   async updatePassword(
     email: string,
     newPasswordHash: string,
   ): Promise<UserDocument | null> {
-    return this.userModel
+    const result = await this.userModel
       .findOneAndUpdate({ email }, { password: newPasswordHash }, { new: true })
       .exec();
+    return result as any;
   }
 
   async trackLoginActivity(email: string): Promise<UserDocument> {
@@ -136,26 +143,47 @@ export class UserService {
     }
 
     (user as any).lastLogin = now;
-    return user.save();
+    const saved = await user.save();
+    return saved as any;
   }
 
-  async getTopStreaks(limit = 10) {
-    return this.userModel
+  async getTopStreaks(limit = 10): Promise<any[]> {
+    const result = await this.userModel
       .find({}, { firstName: 1, streakDays: 1, profilePicture: 1 })
       .sort({ streakDays: -1 })
       .limit(limit)
       .exec();
+    return result as any;
   }
 
-  // Simple stub so existing calls don't blow up
   async getActivitySummary(userId: string): Promise<any> {
-    return {
-      baseXp: 0,
-      totalXp: 0,
-      todayXp: 0,
-      streakDays: 0,
-      lastActiveAt: null,
-      events: [],
-    };
+    const user = await this.userModel.findById(userId).lean();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const baseXp =
+      (user as any).xp ??
+      (user as any).points ??
+      0;
+
+    const { items } = await this.activities.list({
+      scope: 'user',
+      userId,
+      range: '30d',
+      cursor: null,
+      limit: 500,
+    });
+
+    const summary = buildActivitySummary(
+      items.map((a: any) => ({
+        timestamp: a.createdAt || a.ts,
+        type: a.type || a.eventType || 'UNKNOWN',
+        xpDelta: a.xpDelta ?? a.meta?.xpDelta ?? 0,
+      })),
+      baseXp,
+    );
+
+    return summary;
   }
 }

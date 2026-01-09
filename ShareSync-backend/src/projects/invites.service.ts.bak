@@ -59,7 +59,7 @@ import {
       const project = await this.projectModel.findById(projectId);
       if (!project) throw new NotFoundException('Project not found');
   
-      this.assertOwnerOrThrow(project as any, actingUserId);
+      this.assertOwnerOrThrow(project, actingUserId);
   
       // Reject if that email is already a member on this project
       const alreadyMember = (project.members || []).some(
@@ -131,7 +131,7 @@ import {
       const project = await this.projectModel.findOne({ _id: projectId });
       if (!project) throw new NotFoundException('Project not found');
   
-      this.assertOwnerOrThrow(project as any, actingUserId);
+      this.assertOwnerOrThrow(project, actingUserId);
   
       const inv = (project.invites || []).find((i) => i.token === token);
       if (!inv) throw new NotFoundException('Invite not found');

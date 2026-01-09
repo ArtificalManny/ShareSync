@@ -9,17 +9,15 @@ export class ActivitiesService {
     @InjectModel(Activity.name) private activityModel: Model<ActivityDocument>,
   ) {}
 
-  // ⭐ UPDATED: record() method (supports both 'type' and 'action')
   async record(data: {
     projectId?: string;
     userId: string;
-    type?: string;      // for user.controller compatibility
-    action?: string;    // for activity feed compatibility
-    payload?: any;      // for user.controller compatibility
+    type?: string;
+    action?: string;
+    payload?: any;
     details?: Record<string, any>;
     metadata?: any;
   }): Promise<Activity> {
-    // Support both 'type' and 'action' fields
     const actionValue = data.action || data.type || 'unknown';
     const detailsValue = data.details || data.payload || {};
     
@@ -32,25 +30,22 @@ export class ActivitiesService {
     });
   }
 
-  // ⭐ UPDATED: list() method (returns { items } and supports scope/range/cursor)
   async list(options: {
     userId?: string;
     projectId?: string;
-    scope?: string;     // 'user' or 'project'
-    range?: string;     // '7d', '30d', etc.
+    scope?: string;
+    range?: string;
     cursor?: string | null;
     limit?: number;
     offset?: number;
   } = {}): Promise<{ items: Activity[]; nextCursor?: string | null }> {
     const query: any = {};
     
-    // Handle scope
     if (options.scope === 'user' && options.userId) {
       query.userId = new Types.ObjectId(options.userId);
     } else if (options.scope === 'project' && options.projectId) {
       query.projectId = new Types.ObjectId(options.projectId);
     } else {
-      // Fallback: use userId or projectId directly
       if (options.userId) {
         query.userId = new Types.ObjectId(options.userId);
       }
@@ -59,7 +54,6 @@ export class ActivitiesService {
       }
     }
 
-    // Handle range (e.g., '7d', '30d')
     if (options.range) {
       const days = parseInt(options.range.replace('d', ''), 10);
       if (!isNaN(days)) {
@@ -69,7 +63,6 @@ export class ActivitiesService {
       }
     }
 
-    // Handle cursor pagination
     if (options.cursor) {
       query._id = { $lt: new Types.ObjectId(options.cursor) };
     }
@@ -84,7 +77,6 @@ export class ActivitiesService {
       .skip(options.offset || 0)
       .exec();
 
-    // Generate next cursor if there are more results
     const nextCursor = items.length === limit ? String(items[items.length - 1]._id) : null;
 
     return { items, nextCursor };
@@ -111,7 +103,6 @@ export class ActivitiesService {
       metadata: data.metadata || {}
     };
 
-    // projectId is optional
     if (data.projectId) {
       activityData.projectId = new Types.ObjectId(data.projectId);
     }
@@ -138,16 +129,16 @@ export class ActivitiesService {
       query.action = { $regex: options.type, $options: 'i' };
     }
 
-    const [activities, total] = await Promise.all([
-      this.activityModel
-        .find(query)
-        .populate('userId', 'name email avatar firstName lastName')
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .skip(offset)
-        .exec(),
-      this.activityModel.countDocuments(query)
-    ]);
+    // ✅ FIX: Split into separate awaits to avoid type inference issues
+    const activities = await this.activityModel
+      .find(query)
+      .populate('userId', 'name email avatar firstName lastName')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(offset)
+      .exec();
+
+    const total = await this.activityModel.countDocuments(query);
 
     return {
       activities,

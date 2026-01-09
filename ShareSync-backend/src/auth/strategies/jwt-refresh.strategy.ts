@@ -1,23 +1,36 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config';
+import { AuthService } from '../auth.service';
 
-/**
- * Minimal refresh strategy placeholder.
- * If you don't use refresh tokens yet, this keeps imports compiling.
- * Later: add separate secret + validate refresh token in DB/redis.
- */
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
-  constructor() {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {
+    const secret =
+      configService.get<string>('JWT_REFRESH_SECRET') ||
+      process.env.JWT_REFRESH_SECRET ||
+      configService.get<string>('JWT_SECRET') ||
+      process.env.JWT_SECRET ||
+      'dev_refresh_secret_change_me_now';
+
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromBodyField('refresh_token'),
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'dev_secret_change_me',
+      secretOrKey: secret,
     });
   }
 
   async validate(payload: any) {
-    return payload;
+    const id = String(payload?.sub || payload?.userId || payload?.id || '');
+    const user = await this.authService.validateUserById(id);
+    if (!user) throw new UnauthorizedException();
+    return { ...user, userId: String((user as any)?._id || id) };
   }
 }

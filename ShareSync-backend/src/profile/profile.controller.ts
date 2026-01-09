@@ -1,4 +1,3 @@
-// src/profile/profile.controller.ts
 import {
   Controller,
   Post,
@@ -37,18 +36,19 @@ export class ProfileController {
       limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
     }),
   )
-  async uploadProfilePicture(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+  async uploadProfilePicture(
+    @UploadedFile() file: Express.Multer.File, 
+    @Req() req: any
+  ): Promise<{ user: any }> {
     console.log('[UPLOAD] req.user:', req.user);
 
-    // ✅ Safely use user ID from JWT payload (typically 'sub')
     const userId = req.user.userId || req.user.sub || req.user.id;
-
     const user = await this.service.updateProfilePicture(userId, file.filename);
 
     return {
       user: {
-        ...user.toObject?.() || user, // ✅ fallback in case toObject isn't defined
-        profilePicture: `uploads/${file.filename}`, // ✅ matches static asset route
+        ...(user.toObject?.() || user),
+        profilePicture: `uploads/${file.filename}`,
       },
     };
   }
