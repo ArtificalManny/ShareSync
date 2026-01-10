@@ -23,6 +23,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { FilesModule } from './files/files.module';
 import { HabitsModule } from './habits/habits.module';
+import { MessageModule } from './message/message.module';
 
 import { AppController } from './app.controller';
 
@@ -58,6 +59,7 @@ import { AppController } from './app.controller';
     NotificationsModule,
     FilesModule,
     HabitsModule,
+    MessageModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
