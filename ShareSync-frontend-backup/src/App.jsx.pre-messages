@@ -68,7 +68,6 @@ const Settings = lazy(() => import("./pages/Settings"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProjectHome = lazy(() => import("./pages/ProjectHome"));
 const DMPage = lazy(() => import("./pages/DMPage.jsx"));
-const Messages = lazy(() => import("./pages/Messages.jsx"));
 const PublicProjectStatus = lazy(() => import("./pages/PublicProjectStatus"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const AcceptInvite = lazy(() => import("./components/AcceptInvite.jsx"));
