@@ -53,9 +53,31 @@ export class AuthController {
       verified: true,
     });
 
+    // ✅ Generate JWT token like login does
+    const payload = {
+      sub: String(user._id),
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      username: user.username,
+    };
+
+    const access_token = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+      expiresIn: '7d',
+    });
+
+    // ✅ Return same format as login
     return {
-      message: 'User created successfully',
-      userId: user._id,
+      access_token,
+      user: {
+        _id: user._id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        username: user.username || '',
+        roles: [],
+      },
     };
   }
 
