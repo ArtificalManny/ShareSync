@@ -19,9 +19,7 @@ export function AuthProvider({ children }) {
 
       try {
         console.log('[AuthContext] Token found, verifying...');
-        
         const response = await api.post('/auth/verify', { token });
-        
         console.log('[AuthContext] Verify response:', response.data);
         
         if (response.data && response.data.user) {
@@ -47,46 +45,25 @@ export function AuthProvider({ children }) {
 
   const login = async ({ email, password }) => {
     try {
-      console.log('[AuthContext] 🔵 Attempting login for:', { email, password });
-      
+      console.log('[AuthContext] 🔵 Attempting login for:', email);
       const response = await api.post('/auth/login', { email, password });
-      
-      console.log('[AuthContext] 🔵 Full login response:', response.data);
+      console.log('[AuthContext] 🔵 Login response:', response.data);
       
       const token = response.data.access_token || response.data.token;
       const userData = response.data.user;
       
-      console.log('[AuthContext] 🔵 Extracted token:', token ? 'YES ✅' : 'NO ❌');
-      console.log('[AuthContext] 🔵 Extracted user:', userData ? 'YES ✅' : 'NO ❌');
-      
-      if (!token) {
-        console.error('[AuthContext] ❌ NO TOKEN IN RESPONSE!', response.data);
-        throw new Error('No token received from server');
+      if (!token || !userData) {
+        throw new Error('Invalid response from server');
       }
-      
-      if (!userData) {
-        console.error('[AuthContext] ❌ NO USER DATA IN RESPONSE!', response.data);
-        throw new Error('No user data received from server');
-      }
-      
-      console.log('[AuthContext] 🟢 Saving to localStorage...');
-      console.log('[AuthContext] 🟢 Token length:', token.length);
-      console.log('[AuthContext] 🟢 User email:', userData.email);
       
       localStorage.setItem('ss.jwt', token);
       localStorage.setItem('ss.user', JSON.stringify(userData));
-      
-      const savedToken = localStorage.getItem('ss.jwt');
-      console.log('[AuthContext] 🟢 Verified saved token:', savedToken ? 'YES ✅' : 'NO ❌');
-      
       setUser(userData);
       
       console.log('[AuthContext] 🎉 Login successful!');
-      
       return { success: true };
     } catch (error) {
       console.error('[AuthContext] ❌ Login error:', error);
-      console.error('[AuthContext] ❌ Error response:', error.response?.data);
       return { 
         success: false, 
         error: error.response?.data?.error || error.response?.data?.message || error.message || 'Login failed' 
@@ -94,11 +71,9 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // ✅ NEW: Register function
   const register = async ({ email, username, firstName, lastName, password }) => {
     try {
       console.log('[AuthContext] 🔵 Attempting registration for:', email);
-      
       const response = await api.post('/auth/register', {
         email,
         username,
@@ -135,6 +110,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('ss.jwt');
     localStorage.removeItem('ss.user');
     setUser(null);
+    // Use window.location for full page reload to /login
     window.location.href = '/login';
   };
 
@@ -142,7 +118,7 @@ export function AuthProvider({ children }) {
     user,
     loading,
     login,
-    register,  // ✅ NEW: Export register
+    register,
     logout,
   };
 

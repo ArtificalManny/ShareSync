@@ -1,31 +1,679 @@
 # Page snapshot
 
 ```yaml
-- generic [ref=e1]:
+- generic [active] [ref=e1]:
   - link "Skip to main content":
     - /url: "#main"
   - generic [ref=e2]:
     - generic [ref=e3]:
-      - generic [ref=e6]:
-        - banner [ref=e8]:
-          - generic [ref=e9]:
-            - link "ShareSync" [ref=e10] [cursor=pointer]:
-              - /url: /
-            - link "Home" [ref=e11] [cursor=pointer]:
-              - /url: /
-            - link "Login" [ref=e12] [cursor=pointer]:
-              - /url: /login
-            - link "Register" [ref=e13] [cursor=pointer]:
-              - /url: /register
-          - button "Dark Mode" [ref=e14] [cursor=pointer]
-        - generic [ref=e16]:
-          - heading "Register" [level=2] [ref=e17]
-          - textbox "Email" [ref=e19]: test1768059720577@example.com
-          - textbox "Username" [ref=e21]: testuser1768059720577
-          - textbox "First Name" [ref=e23]: Test
-          - textbox "Last Name" [ref=e25]: User
-          - textbox "Password" [ref=e27]: TestPassword123!
-          - button "Register" [active] [ref=e28] [cursor=pointer]
+      - complementary "Primary" [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - generic [ref=e7]: ◆
+            - generic [ref=e8]: ShareSync
+          - button "Collapse sidebar" [ref=e9] [cursor=pointer]:
+            - img [ref=e10]
+        - generic [ref=e13]:
+          - img [ref=e16]
+          - img [ref=e19]:
+            - generic [ref=e24]: 75%
+          - generic [ref=e25]:
+            - img [ref=e26]
+            - generic [ref=e28]: 7d
+        - generic [ref=e31]:
+          - generic [ref=e32]: Ships today
+          - generic [ref=e33]: 2 / 5
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic [ref=e38]: Active Projects
+            - button "+ New" [ref=e39] [cursor=pointer]
+          - generic [ref=e41] [cursor=pointer]:
+            - generic [ref=e42]: 🚀
+            - generic [ref=e43]: ShareSync v2
+            - generic [ref=e46]: "2"
+          - generic [ref=e50] [cursor=pointer]:
+            - generic [ref=e51]: 🧬
+            - generic [ref=e52]: Biology Project
+          - generic [ref=e56] [cursor=pointer]:
+            - generic [ref=e57]: 💼
+            - generic [ref=e58]: Portfolio Site
+            - generic [ref=e61]: "1"
+        - button "Start Focus Session" [ref=e66] [cursor=pointer]:
+          - img [ref=e67]
+          - text: Start Focus Session
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - img [ref=e72]
+            - generic [ref=e75]: Live Momentum
+          - generic [ref=e76]:
+            - generic [ref=e77]:
+              - generic [ref=e78]: 🎉
+              - generic [ref=e79]: Alex hit a 100-day streak!
+            - generic [ref=e80]:
+              - generic [ref=e81]: 🚀
+              - generic [ref=e82]: Jordan just shipped v3...
+            - generic [ref=e83]:
+              - generic [ref=e84]: 🔥
+              - generic [ref=e85]: Sarah completed 15 tasks today
+        - navigation "Primary" [ref=e86]:
+          - link "Home" [ref=e87] [cursor=pointer]:
+            - /url: /home
+            - img [ref=e89]
+            - generic [ref=e92]: Home
+          - link "Projects 3" [ref=e93] [cursor=pointer]:
+            - /url: /projects
+            - img [ref=e95]
+            - generic [ref=e97]: Projects
+            - generic [ref=e98]: "3"
+          - link "Discover" [ref=e99] [cursor=pointer]:
+            - /url: /discover
+            - img [ref=e101]
+            - generic [ref=e107]: Discover
+          - link "Profile" [ref=e108] [cursor=pointer]:
+            - /url: /profile
+            - img [ref=e110]
+            - generic [ref=e113]: Profile
+          - link "Settings" [ref=e114] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e116]
+            - generic [ref=e119]: Settings
+        - generic [ref=e121]:
+          - generic [ref=e122]:
+            - img [ref=e123]
+            - generic [ref=e125]: Your Legacy
+          - generic [ref=e126]: 1,247
+          - generic [ref=e127]: outcomes shipped
+        - generic [ref=e128]:
+          - generic "You" [ref=e129]:
+            - generic [ref=e130]: "Y"
+          - generic [ref=e131]:
+            - generic "You" [ref=e132]
+            - generic [ref=e133]: Online
+      - banner [ref=e135]:
+        - generic [ref=e136]:
+          - button "Toggle sidebar" [ref=e138] [cursor=pointer]:
+            - img [ref=e139]
+          - search "Site search" [ref=e142]:
+            - textbox "Search..." [ref=e143]
+          - button "New" [ref=e144] [cursor=pointer]:
+            - img [ref=e145]
+            - generic [ref=e146]: New
+          - button "☀️ Start your day" [ref=e147] [cursor=pointer]:
+            - generic [ref=e148]: ☀️
+            - generic [ref=e149]: Start your day
+            - img [ref=e150]
+          - generic [ref=e153]: Focus Mode
+          - generic [ref=e154]:
+            - button "Switch accent" [ref=e155] [cursor=pointer]:
+              - img [ref=e156]
+            - button [ref=e163] [cursor=pointer]:
+              - img [ref=e164]
+            - button "Open messenger" [ref=e167] [cursor=pointer]:
+              - img [ref=e168]
+            - button "Switch to dark mode" [ref=e170] [cursor=pointer]:
+              - img [ref=e171]
+            - button "Test Test" [ref=e174] [cursor=pointer]:
+              - generic [ref=e176]:
+                - img "Test" [ref=e177]
+                - img [ref=e179]
+              - generic [ref=e182]: Test
+            - button "Log out" [ref=e183] [cursor=pointer]:
+              - img [ref=e184]
+      - generic [ref=e189]:
+        - generic [ref=e190]:
+          - heading "Home" [level=1] [ref=e191]
+          - paragraph [ref=e192]: Your AI-powered mission control
+        - generic [ref=e193]:
+          - generic [ref=e194]:
+            - generic [ref=e195]:
+              - img [ref=e197]
+              - generic [ref=e199]:
+                - heading "Your World" [level=2] [ref=e200]
+                - paragraph [ref=e201]: Mission control for all your work
+            - generic [ref=e202]:
+              - generic [ref=e205]: Live
+              - generic [ref=e206]:
+                - img [ref=e207]
+                - generic [ref=e210]: HIGH MOMENTUM
+          - generic [ref=e211]:
+            - button "3 Active Projects" [ref=e212] [cursor=pointer]:
+              - generic [ref=e213]:
+                - img [ref=e214]
+                - img [ref=e219]
+              - generic [ref=e221]: "3"
+              - generic [ref=e222]: Active Projects
+            - button "5 Ships Today" [ref=e223] [cursor=pointer]:
+              - generic [ref=e224]:
+                - img [ref=e225]
+                - img [ref=e230]
+              - generic [ref=e232]: "5"
+              - generic [ref=e233]: Ships Today
+            - button "2 On Streaks" [ref=e234] [cursor=pointer]:
+              - generic [ref=e235]:
+                - img [ref=e236]
+                - img [ref=e238]
+              - generic [ref=e240]: "2"
+              - generic [ref=e241]: On Streaks
+            - button "1 At Risk" [ref=e242] [cursor=pointer]:
+              - generic [ref=e243]:
+                - img [ref=e244]
+                - img [ref=e246]
+              - generic [ref=e248]: "1"
+              - generic [ref=e249]: At Risk
+            - button "$2,450 This Month" [ref=e250] [cursor=pointer]:
+              - generic [ref=e251]:
+                - img [ref=e252]
+                - img [ref=e254]
+              - generic [ref=e256]: $2,450
+              - generic [ref=e257]: This Month
+          - generic [ref=e258]:
+            - generic [ref=e261]: All systems operational
+            - generic [ref=e262]:
+              - img [ref=e263]
+              - generic [ref=e268]: Team connected
+        - generic [ref=e269]:
+          - generic [ref=e270]:
+            - generic [ref=e271]:
+              - img [ref=e273]
+              - generic [ref=e283]:
+                - heading "Your Plan for Today" [level=3] [ref=e284]
+                - paragraph [ref=e285]: AI-powered recommendations
+            - img [ref=e286]
+          - heading "Good evening, Manny! 🌙" [level=4] [ref=e289]
+          - generic [ref=e290]:
+            - generic [ref=e291]:
+              - img [ref=e292]
+              - generic [ref=e295]: Your Next Focus Window
+            - paragraph [ref=e296]: 9:00 PM - 11:00 PM
+            - paragraph [ref=e297]: You ship 3x more during this time
+            - paragraph [ref=e298]: 3x productivity boost
+          - generic [ref=e299]:
+            - generic [ref=e300]:
+              - generic [ref=e301]:
+                - img [ref=e302]
+                - heading "Recommended Tasks" [level=5] [ref=e304]
+              - generic [ref=e305]:
+                - button "⚡ Build authentication flow Mobile App · 2h" [ref=e306] [cursor=pointer]:
+                  - generic [ref=e307]:
+                    - generic [ref=e308]: ⚡
+                    - generic [ref=e309]:
+                      - paragraph [ref=e310]: Build authentication flow
+                      - generic [ref=e311]:
+                        - generic [ref=e312]: Mobile App
+                        - generic [ref=e313]: ·
+                        - generic [ref=e314]: 2h
+                    - img [ref=e315]
+                - button "🎨 Design dashboard mockups ShareSync · 1h" [ref=e317] [cursor=pointer]:
+                  - generic [ref=e318]:
+                    - generic [ref=e319]: 🎨
+                    - generic [ref=e320]:
+                      - paragraph [ref=e321]: Design dashboard mockups
+                      - generic [ref=e322]:
+                        - generic [ref=e323]: ShareSync
+                        - generic [ref=e324]: ·
+                        - generic [ref=e325]: 1h
+                    - img [ref=e326]
+            - generic [ref=e329]:
+              - img [ref=e330]
+              - paragraph [ref=e332]: All clear! 🎉
+              - paragraph [ref=e333]: No urgent items right now
+        - generic [ref=e334]:
+          - generic [ref=e336]:
+            - img [ref=e337]
+            - generic [ref=e342]:
+              - paragraph [ref=e343]: You're doing 71% of your team's work - this is unsustainable
+              - button "Review team balance →" [ref=e344] [cursor=pointer]
+          - generic [ref=e346]:
+            - img [ref=e347]
+            - generic [ref=e352]:
+              - paragraph [ref=e353]: You complete 2.1× more when co-working - schedule a session this week
+              - button "Schedule co-work →" [ref=e354] [cursor=pointer]
+        - generic [ref=e356]:
+          - generic [ref=e357]:
+            - img [ref=e358]
+            - generic [ref=e364]: Alex hit 100-day streak
+          - generic [ref=e365]:
+            - img [ref=e366]
+            - generic [ref=e372]: Jordan just shipped v3.0
+          - generic [ref=e373]:
+            - img [ref=e374]
+            - generic [ref=e380]: Sam became Level 12
+          - generic [ref=e381]:
+            - img [ref=e382]
+            - generic [ref=e388]: Taylor protected their 50d streak
+          - generic [ref=e389]:
+            - img [ref=e390]
+            - generic [ref=e396]: Alex hit 100-day streak
+          - generic [ref=e397]:
+            - img [ref=e398]
+            - generic [ref=e404]: Jordan just shipped v3.0
+          - generic [ref=e405]:
+            - img [ref=e406]
+            - generic [ref=e412]: Sam became Level 12
+          - generic [ref=e413]:
+            - img [ref=e414]
+            - generic [ref=e420]: Taylor protected their 50d streak
+        - generic [ref=e421]:
+          - generic [ref=e422]:
+            - generic [ref=e424]:
+              - img [ref=e426]
+              - generic [ref=e429]:
+                - generic [ref=e430]:
+                  - img [ref=e431]
+                  - heading "This Week So Far" [level=3] [ref=e433]
+                - generic [ref=e434]:
+                  - paragraph [ref=e435]: You've shipped 7 tasks (↑+2 vs last week)
+                  - paragraph [ref=e436]: Most work happened Tue 2-4pm
+                - generic [ref=e437]:
+                  - img [ref=e438]
+                  - paragraph [ref=e440]: If you ship 2 more tasks this week, you'll beat your usual average
+            - generic [ref=e441]:
+              - generic [ref=e442]:
+                - generic [ref=e443]:
+                  - generic [ref=e444]: "94"
+                  - generic [ref=e445]: Peak Focus
+                  - generic [ref=e446]:
+                    - img [ref=e447]
+                    - generic [ref=e457]: "Peak: 2-4pm"
+                - generic [ref=e458]:
+                  - generic [ref=e459]: Daily Readiness
+                  - generic [ref=e460]: You're in the zone — ship it now.
+              - button "Launch Your Day" [ref=e464] [cursor=pointer]:
+                - img [ref=e465]
+                - text: Launch Your Day
+            - generic [ref=e467]:
+              - generic [ref=e468]:
+                - heading "Momentum Index" [level=3] [ref=e469]
+                - img [ref=e471]
+              - generic [ref=e474]:
+                - generic [ref=e475]:
+                  - img [ref=e476]
+                  - generic [ref=e479]:
+                    - generic [ref=e480]: "75"
+                    - generic [ref=e481]: Strong
+                - generic [ref=e482]:
+                  - paragraph [ref=e483]: Solid progress - you're on track
+                  - generic [ref=e484]:
+                    - generic [ref=e485]:
+                      - generic [ref=e486]:
+                        - img [ref=e487]
+                        - generic [ref=e489]: Ships today
+                      - generic [ref=e490]: 3/5
+                    - generic [ref=e491]:
+                      - generic [ref=e492]:
+                        - img [ref=e493]
+                        - generic [ref=e495]: Streak
+                      - generic [ref=e496]: 7d
+                    - generic [ref=e497]:
+                      - generic [ref=e498]:
+                        - img [ref=e499]
+                        - generic [ref=e502]: Focus time
+                      - generic [ref=e503]: 42 min
+                  - generic [ref=e504]:
+                    - img [ref=e505]
+                    - generic [ref=e507]: Streak protected
+          - generic [ref=e508]:
+            - generic [ref=e509]:
+              - generic [ref=e510]:
+                - generic [ref=e511]:
+                  - img [ref=e513]
+                  - generic [ref=e516]:
+                    - heading "Activity Feed" [level=3] [ref=e517]
+                    - generic [ref=e518]:
+                      - img [ref=e519]
+                      - generic [ref=e522]: Only project members can see this
+                - button [ref=e523] [cursor=pointer]:
+                  - img [ref=e524]
+              - generic [ref=e529]:
+                - generic [ref=e531] [cursor=pointer]:
+                  - img [ref=e533]
+                  - generic [ref=e538]:
+                    - paragraph [ref=e539]:
+                      - generic [ref=e540]: Sarah
+                      - generic [ref=e541]: shipped
+                      - text: Fixed login bug
+                    - generic [ref=e542]:
+                      - generic [ref=e543]: Mobile App
+                      - generic [ref=e544]: ·
+                      - generic [ref=e545]: 2m ago
+                - generic [ref=e547] [cursor=pointer]:
+                  - img [ref=e549]
+                  - generic [ref=e552]:
+                    - paragraph [ref=e553]:
+                      - generic [ref=e554]: hit
+                      - text: 50% complete
+                    - generic [ref=e555]:
+                      - generic [ref=e556]: Mobile App
+                      - generic [ref=e557]: ·
+                      - generic [ref=e558]: 15m ago
+                - generic [ref=e560] [cursor=pointer]:
+                  - img [ref=e562]
+                  - generic [ref=e565]:
+                    - paragraph [ref=e566]:
+                      - generic [ref=e567]: Mike
+                      - generic [ref=e568]: completed
+                      - text: 5 tasks today
+                    - generic [ref=e569]:
+                      - generic [ref=e570]: Web Redesign
+                      - generic [ref=e571]: ·
+                      - generic [ref=e572]: 1h ago
+                - generic [ref=e574] [cursor=pointer]:
+                  - img [ref=e576]
+                  - generic [ref=e578]:
+                    - paragraph [ref=e579]:
+                      - generic [ref=e580]: Alex
+                      - generic [ref=e581]: posted announcement in
+                      - text: Weekly sync moved to Friday
+                    - generic [ref=e582]:
+                      - generic [ref=e583]: Web Redesign
+                      - generic [ref=e584]: ·
+                      - generic [ref=e585]: 2h ago
+                - generic [ref=e587] [cursor=pointer]:
+                  - img [ref=e589]
+                  - generic [ref=e591]:
+                    - paragraph [ref=e592]:
+                      - generic [ref=e593]: You
+                      - generic [ref=e594]: received payment
+                      - text: $1,500 from Client X
+                    - generic [ref=e595]:
+                      - generic [ref=e596]: Freelance
+                      - generic [ref=e597]: ·
+                      - generic [ref=e598]: 3h ago
+                - generic [ref=e600] [cursor=pointer]:
+                  - img [ref=e602]
+                  - generic [ref=e604]:
+                    - paragraph [ref=e605]:
+                      - generic [ref=e606]: You
+                      - generic [ref=e607]: achieved
+                      - text: 7-day streak! Keep going
+                    - generic [ref=e609]: 1d ago
+              - button "Load More Activity" [ref=e610] [cursor=pointer]
+            - generic [ref=e611]:
+              - generic [ref=e612]:
+                - img [ref=e613]
+                - heading "Today's AI Plan" [level=2] [ref=e615]
+              - generic [ref=e616]:
+                - generic [ref=e617]: Next best action
+                - paragraph [ref=e618]: Start a 25-min sprint on your top project.
+              - generic [ref=e619]:
+                - generic [ref=e620]: Quick wins (under 15 min)
+                - generic [ref=e621]:
+                  - generic [ref=e623] [cursor=pointer]:
+                    - generic [ref=e624]: "Review pull request #234"
+                    - generic [ref=e625]:
+                      - img [ref=e626]
+                      - generic [ref=e629]: 8 min
+                  - generic [ref=e631] [cursor=pointer]:
+                    - generic [ref=e632]: Update sprint board
+                    - generic [ref=e633]:
+                      - img [ref=e634]
+                      - generic [ref=e637]: 5 min
+                  - generic [ref=e639] [cursor=pointer]:
+                    - generic [ref=e640]: Reply to Alex's question
+                    - generic [ref=e641]:
+                      - img [ref=e642]
+                      - generic [ref=e645]: 3 min
+              - generic [ref=e646]:
+                - button "Start Now" [ref=e647] [cursor=pointer]
+                - button "Regenerate" [ref=e648] [cursor=pointer]:
+                  - img [ref=e649]
+                  - text: Regenerate
+        - generic [ref=e651]:
+          - generic [ref=e652]:
+            - generic [ref=e653]:
+              - generic [ref=e654]:
+                - img [ref=e656]
+                - generic [ref=e660]:
+                  - heading "Active Projects" [level=3] [ref=e661]
+                  - paragraph [ref=e662]: Your current focus
+              - button "New Project" [ref=e663] [cursor=pointer]:
+                - img [ref=e664]
+                - text: New Project
+            - generic [ref=e665]:
+              - generic [ref=e667] [cursor=pointer]:
+                - generic [ref=e668]: 🚀
+                - generic [ref=e669]:
+                  - generic [ref=e670]:
+                    - heading "ShareSync v2" [level=4] [ref=e671]
+                    - generic [ref=e672]: 🚀 Shipping
+                  - generic [ref=e674]:
+                    - generic [ref=e675]: Progress
+                    - generic [ref=e676]: 68%
+                  - generic [ref=e679]:
+                    - img [ref=e680]
+                    - generic [ref=e682]: "Next: Fix login page CSS"
+                  - generic [ref=e683]:
+                    - generic [ref=e684]:
+                      - img [ref=e685]
+                      - generic [ref=e687]: 7d streak
+                    - generic [ref=e688]:
+                      - img [ref=e689]
+                      - generic [ref=e691]: 3 today
+                - button "Quick Ship" [ref=e692]
+              - generic [ref=e694] [cursor=pointer]:
+                - generic [ref=e695]: ✨
+                - generic [ref=e696]:
+                  - generic [ref=e697]:
+                    - heading "AI Writing Tool" [level=4] [ref=e698]
+                    - generic [ref=e699]: 🚀 Shipping
+                  - generic [ref=e701]:
+                    - generic [ref=e702]: Progress
+                    - generic [ref=e703]: 85%
+                  - generic [ref=e706]:
+                    - img [ref=e707]
+                    - generic [ref=e709]: "Next: Write API docs"
+                  - generic [ref=e710]:
+                    - generic [ref=e711]:
+                      - img [ref=e712]
+                      - generic [ref=e714]: 120d streak
+                    - generic [ref=e715]:
+                      - img [ref=e716]
+                      - generic [ref=e718]: 5 today
+                - button "Quick Ship" [ref=e719]
+              - generic [ref=e721] [cursor=pointer]:
+                - generic [ref=e722]: 📐
+                - generic [ref=e723]:
+                  - generic [ref=e724]:
+                    - heading "Math Homework" [level=4] [ref=e725]
+                    - generic [ref=e726]: 🌱 Exploring
+                  - generic [ref=e728]:
+                    - generic [ref=e729]: Progress
+                    - generic [ref=e730]: 45%
+                  - generic [ref=e733]:
+                    - img
+                    - generic [ref=e735]: No next step - set one to keep momentum
+                  - generic [ref=e737]:
+                    - img [ref=e738]
+                    - generic [ref=e740]: 3d streak
+                - button "Quick Ship" [ref=e741]
+            - button "View All Projects" [ref=e742] [cursor=pointer]:
+              - text: View All Projects
+              - img [ref=e743]
+          - generic [ref=e745]:
+            - generic [ref=e746]:
+              - img [ref=e748]
+              - generic [ref=e750]:
+                - heading "Team Activity" [level=3] [ref=e751]
+                - paragraph [ref=e752]: What everyone shipped today
+            - generic [ref=e753]:
+              - button "👤 You" [ref=e754] [cursor=pointer]:
+                - generic [ref=e758]: 👤
+                - paragraph [ref=e760]: You
+              - button "👩 Sarah" [ref=e761] [cursor=pointer]:
+                - generic [ref=e765]: 👩
+                - paragraph [ref=e767]: Sarah
+              - button "👨 Mike" [ref=e768] [cursor=pointer]:
+                - generic [ref=e772]: 👨
+                - paragraph [ref=e774]: Mike
+              - button "🧑 Alex" [disabled] [ref=e775]:
+                - generic [ref=e779]: 🧑
+                - paragraph [ref=e780]: Alex
+            - generic [ref=e782]:
+              - generic [ref=e783]: Team activity today
+              - generic [ref=e784]:
+                - img [ref=e785]
+                - generic [ref=e790]: 4 updates
+          - generic [ref=e791]:
+            - generic [ref=e792]:
+              - img [ref=e794]
+              - generic [ref=e800]:
+                - heading "Your Achievements" [level=3] [ref=e801]
+                - paragraph [ref=e802]: Recent wins & milestones
+            - generic [ref=e803]:
+              - heading "Recently Earned" [level=4] [ref=e804]:
+                - img [ref=e805]
+                - text: Recently Earned
+              - generic [ref=e809]:
+                - img [ref=e811]
+                - generic [ref=e813]:
+                  - generic [ref=e814]:
+                    - heading "7-Day Streak" [level=5] [ref=e815]
+                    - generic [ref=e816]: Today
+                  - paragraph [ref=e817]: Ship something 7 days in a row
+                  - generic [ref=e818]:
+                    - img [ref=e819]
+                    - generic [ref=e821]: +100 XP
+              - generic [ref=e824]:
+                - img [ref=e826]
+                - generic [ref=e828]:
+                  - generic [ref=e829]:
+                    - heading "Quick Shipper" [level=5] [ref=e830]
+                    - generic [ref=e831]: Yesterday
+                  - paragraph [ref=e832]: Complete 5 tasks in under 25 minutes
+                  - generic [ref=e833]:
+                    - img [ref=e834]
+                    - generic [ref=e836]: +50 XP
+            - generic [ref=e837]:
+              - heading "Next Milestones" [level=4] [ref=e838]:
+                - img [ref=e839]
+                - text: Next Milestones
+              - generic [ref=e843]:
+                - generic [ref=e844]:
+                  - img [ref=e845]
+                  - generic [ref=e847]: Level 5
+                - generic [ref=e849]:
+                  - generic [ref=e850]: 1850 / 2000
+                  - generic [ref=e851]: 93%
+              - generic [ref=e854]:
+                - generic [ref=e855]:
+                  - img [ref=e856]
+                  - generic [ref=e858]: 30-Day Streak
+                - generic [ref=e860]:
+                  - generic [ref=e861]: 7 / 30
+                  - generic [ref=e862]: 23%
+              - generic [ref=e865]:
+                - generic [ref=e866]:
+                  - img [ref=e867]
+                  - generic [ref=e873]: 100 Ships
+                - generic [ref=e875]:
+                  - generic [ref=e876]: 42 / 100
+                  - generic [ref=e877]: 42%
+            - generic [ref=e880]:
+              - heading "Badge Collection" [level=4] [ref=e881]
+              - generic [ref=e882]:
+                - generic "7d Badge" [ref=e883] [cursor=pointer]:
+                  - img [ref=e884]
+                  - generic [ref=e886]: 7d
+                - generic "Fast Badge" [ref=e887] [cursor=pointer]:
+                  - img [ref=e888]
+                  - generic [ref=e890]: Fast
+                - generic "Protected Badge" [ref=e891] [cursor=pointer]:
+                  - img [ref=e892]
+                  - generic [ref=e894]: Protected
+                - generic "Locked" [ref=e895] [cursor=pointer]:
+                  - img [ref=e896]
+                - generic "Locked" [ref=e902] [cursor=pointer]:
+                  - img [ref=e903]
+                - generic "Locked" [ref=e905] [cursor=pointer]:
+                  - img [ref=e906]
+        - generic [ref=e908]:
+          - generic [ref=e909]:
+            - img [ref=e911]
+            - generic [ref=e913]: "0"
+            - generic [ref=e914]: Day Streak
+          - generic [ref=e915]:
+            - img [ref=e917]
+            - generic [ref=e919]: "0"
+            - generic [ref=e920]: XP Earned
+          - generic [ref=e921]:
+            - img [ref=e923]
+            - generic [ref=e929]: "#1"
+            - generic [ref=e930]: Leaderboard
+          - generic [ref=e931]:
+            - img [ref=e933]
+            - generic [ref=e935]: "1"
+            - generic [ref=e936]: Freezes Left
+        - generic [ref=e938]:
+          - generic [ref=e939]:
+            - img [ref=e941]
+            - generic [ref=e943]:
+              - generic [ref=e944]: Team is on fire!
+              - generic [ref=e945]: Collective momentum
+          - generic [ref=e946]:
+            - generic [ref=e947]: 3/5
+            - generic [ref=e948]: active now
+        - generic [ref=e949]:
+          - button "Continue Last" [ref=e950] [cursor=pointer]:
+            - img [ref=e951]
+            - text: Continue Last
+          - button "Start 25:00 Sprint" [ref=e955] [cursor=pointer]:
+            - img [ref=e956]
+            - text: Start 25:00 Sprint
+          - button "Ship in 60s" [ref=e958] [cursor=pointer]:
+            - img [ref=e959]
+            - text: Ship in 60s
+      - button "Open pinned items" [ref=e961] [cursor=pointer]:
+        - img [ref=e962]
+      - generic [ref=e964]:
+        - button "AI" [ref=e965] [cursor=pointer]
+        - generic:
+          - generic:
+            - heading "Predictive Mentor" [level=3]
+            - button "×"
+          - generic:
+            - generic:
+              - button "MicrophoneHold to speak"
+              - paragraph: "Say: “Plan my day”"
+              - button "Generate Plan"
+      - generic [ref=e966]:
+        - heading "Top 10 This Week" [level=3] [ref=e967]: Top 10 This Week
+        - generic [ref=e969]:
+          - generic [ref=e970]:
+            - generic [ref=e971]: 1st
+            - generic "Alex" [ref=e972]:
+              - generic [ref=e973]: A
+            - generic [ref=e974]:
+              - generic [ref=e975]: Alex
+              - generic [ref=e976]: 12d streak • 2450 XP
+          - generic [ref=e977]:
+            - generic [ref=e978]: 2nd
+            - generic "Jordan" [ref=e979]:
+              - generic [ref=e980]: J
+            - generic [ref=e981]:
+              - generic [ref=e982]: Jordan
+              - generic [ref=e983]: 10d streak • 2200 XP
+          - generic [ref=e984]:
+            - generic [ref=e985]: 3rd
+            - generic "You" [ref=e986]:
+              - generic [ref=e987]: "Y"
+            - generic [ref=e988]:
+              - generic [ref=e989]: You
+              - generic [ref=e990]: 7d streak • 1800 XP
+          - generic [ref=e991]:
+            - generic [ref=e992]: "#4"
+            - generic "Sam" [ref=e993]:
+              - generic [ref=e994]: S
+            - generic [ref=e995]:
+              - generic [ref=e996]: Sam
+              - generic [ref=e997]: 6d streak • 1600 XP
+          - generic [ref=e998]:
+            - generic [ref=e999]: "#5"
+            - generic "Taylor" [ref=e1000]:
+              - generic [ref=e1001]: T
+            - generic [ref=e1002]:
+              - generic [ref=e1003]: Taylor
+              - generic [ref=e1004]: 5d streak • 1400 XP
+        - generic [ref=e1005]: "You’re #3 — keep shipping!"
       - region "Notifications"
     - region "Notifications"
 ```

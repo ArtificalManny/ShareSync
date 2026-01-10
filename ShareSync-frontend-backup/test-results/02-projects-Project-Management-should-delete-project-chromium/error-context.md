@@ -270,7 +270,7 @@
             - generic [ref=e441]:
               - generic [ref=e442]:
                 - generic [ref=e443]:
-                  - generic [ref=e444]: "100"
+                  - generic [ref=e444]: "93"
                   - generic [ref=e445]: Peak Focus
                   - generic [ref=e446]:
                     - img [ref=e447]
