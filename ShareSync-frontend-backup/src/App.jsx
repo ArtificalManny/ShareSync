@@ -58,6 +58,7 @@ import {
 import Login from "./pages/Login";
 import CreateAccount from "./pages/CreateAccount";
 import ForgotPassword from "./pages/ForgotPassword";
+import Register from "./components/Register";
 
 // ⭐ ALL other pages - lazy load
 const Landing = lazy(() => import("./pages/Landing"));
@@ -93,8 +94,6 @@ const ProjectSettings = lazy(() => import("./pages/project/ProjectSettings"));
 const Sidebar = lazy(() => import("./components/Sidebar"));
 const LayoutSkin = lazy(() => import("./components/LayoutSkin.jsx"));
 const MiniSprintWidget = lazy(() => import("./components/global/MiniSprintWidget"));
-// ❌ TEMPORARILY DISABLED - Component has dependency issues
-// const QuickNotesDrawer = lazy(() => import("./components/global/QuickNotesDrawer"));
 const PinnedDrawer = lazy(() => import("./components/global/PinnedDrawer.jsx"));
 const FocusDock = lazy(() => import("./components/focus/FocusDock.jsx"));
 const FocusToasts = lazy(() => import("./components/toast/FocusToasts.jsx"));
@@ -239,6 +238,7 @@ function AppRoutes() {
               />
               
               <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+              <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
               <Route path="/create-account" element={<PublicOnlyRoute><CreateAccount /></PublicOnlyRoute>} />
               <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
               <Route path="/landing" element={<Landing />} />
@@ -250,7 +250,6 @@ function AppRoutes() {
               <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
               <Route path="/projects/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
               
-              {/* ⭐ PROJECT SETTINGS ROUTE */}
               <Route path="/projects/:id/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
               
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
@@ -258,7 +257,6 @@ function AppRoutes() {
               <Route path="/settings/app" element={<ProtectedRoute><PWASettings /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               
-              {/* ⭐ WEEK 9 DAY 3-4: PUBLIC PROFILE ROUTE */}
               <Route path="/profile/:username" element={<PublicProfile />} />
               
               <Route path="/me" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -267,10 +265,8 @@ function AppRoutes() {
               <Route path="/projects/:projectId/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
               <Route path="/privacy-manifesto" element={<PrivacyManifesto />} />
 
-              {/* ⭐ WEEK 9 DAY 1-2: COMMUNITY ROUTE */}
               <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
 
-              {/* ⭐ WEEK 9 DAY 5-6: HALL OF FAME ROUTE */}
               <Route path="/hall-of-fame" element={<ProtectedRoute><HallOfFame /></ProtectedRoute>} />
 
               <Route 
@@ -315,15 +311,12 @@ function AppRoutes() {
         <Suspense fallback={null}>
           {MESSENGER_V1 && <MessengerPanel />}
           <MiniSprintWidget />
-          {/* ❌ TEMPORARILY DISABLED - Component has dependency issues */}
-          {/* <QuickNotesDrawer /> */}
           <PinnedDrawer />
           {FOCUS_DOCK_V1 && <FocusDock />}
           {FOCUS_DOCK_V1 && <FocusToasts />}
           <MentorDock />
           <LeaderboardDock />
           <ShipFlash />
-          {/* ⭐ PWA Install Prompt */}
           <InstallPrompt />
         </Suspense>
       )}

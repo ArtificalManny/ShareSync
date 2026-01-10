@@ -1,12 +1,12 @@
-// ShareSync Service Worker - DEV SAFE (network-only on localhost)
+// ShareSync Service Worker - FULLY DEV SAFE
 const CACHE_NAME = 'sharesync-v2';
 
-// Treat localhost dev as "NO CACHE" to avoid stale Vite bundles
+// Treat localhost dev as completely transparent (no SW interference)
 const IS_LOCALHOST =
   self.location.hostname === 'localhost' ||
   self.location.hostname === '127.0.0.1';
 
-// Only cache truly static files (mainly for production)
+// Only cache truly static files (production only)
 const urlsToCache = [
   '/',
   '/index.html',
@@ -18,11 +18,11 @@ self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
 
   event.waitUntil((async () => {
-    // ✅ In dev, purge old caches immediately
+    // ✅ In dev, purge old caches and skip immediately
     if (IS_LOCALHOST) {
       const keys = await caches.keys();
       await Promise.all(keys.map((k) => caches.delete(k)));
-      console.log('[SW] DEV mode: caches cleared');
+      console.log('[SW] DEV mode: caches cleared, SW will be transparent');
       return;
     }
 
@@ -56,37 +56,14 @@ self.addEventListener('activate', (event) => {
 // Fetch
 self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests
-  if (!event.request.url.startsWith(self.location.origin)) return;
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return; // Let browser handle it
+  }
 
-  // ✅ DEV: Always go to network (no caching of /src/* or Vite dev assets)
+  // ✅✅✅ DEV MODE: COMPLETELY TRANSPARENT - DON'T INTERCEPT AT ALL
   if (IS_LOCALHOST) {
-    event.respondWith(
-      fetch(event.request).catch((error) => {
-        console.error('[SW] Fetch failed:', event.request.url, error);
-        
-        // For navigation requests (page loads), try offline.html
-        if (event.request.mode === 'navigate') {
-          return caches.match('/offline.html').then((response) => {
-            if (response) return response;
-            // If offline.html also fails, return a basic error page
-            return new Response(
-              '<html><body><h1>Offline</h1><p>Cannot reach server</p></body></html>',
-              { headers: { 'Content-Type': 'text/html' } }
-            );
-          });
-        }
-        
-        // For non-navigation requests (API, assets), return proper error response
-        return new Response(
-          JSON.stringify({ error: 'Network request failed' }),
-          { 
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: { 'Content-Type': 'application/json' } 
-          }
-        );
-      })
-    );
+    // Don't call event.respondWith() - let the browser handle everything naturally
+    // This makes the SW completely invisible in development
     return;
   }
 
@@ -129,4 +106,4 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-console.log('[SW] Service worker loaded');
+console.log('[SW] Service worker loaded (transparent in localhost)');

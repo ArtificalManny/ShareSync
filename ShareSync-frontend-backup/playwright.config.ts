@@ -9,11 +9,9 @@ export default defineConfig({
   reporter: 'html',
   
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:54693',  // ← FIXED: Match your actual port
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    
-    // Disable service workers for testing
     serviceWorkers: 'block',
   },
 
@@ -22,16 +20,14 @@ export default defineConfig({
       name: 'chromium',
       use: { 
         ...devices['Desktop Chrome'],
-        // Clear storage before each test
-        storageState: undefined,
       },
     },
   ],
 
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    url: 'http://localhost:54693',  // ← FIXED: Match your actual port
+    reuseExistingServer: true,
     timeout: 120000,
   },
 });

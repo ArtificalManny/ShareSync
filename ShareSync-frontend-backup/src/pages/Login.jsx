@@ -21,7 +21,6 @@ export default function Login() {
     }
     setSubmitting(true);
     try {
-      // ✅ FIXED: Pass as object to match AuthContext signature
       const result = await login({ email, password });
       
       if (result.success) {
@@ -78,6 +77,7 @@ export default function Login() {
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="email"
+                name="email"
                 autoComplete="email"
                 placeholder="you@example.com"
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-10 pr-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all"
@@ -96,6 +96,7 @@ export default function Login() {
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="password"
+                name="password"
                 autoComplete="current-password"
                 placeholder="••••••••"
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-10 pr-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all"
@@ -150,23 +151,23 @@ export default function Login() {
           {/* Create Account Link */}
           <Link
             to="/create-account"
-            className="w-full rounded-xl border-2 border-purple-600 dark:border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 py-3 font-semibold transition-all flex items-center justify-center gap-2 group"
+            className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 py-3 font-medium transition-all group"
           >
             <UserPlus className="w-5 h-5" />
             Create an account
           </Link>
         </form>
 
-        {/* Footer */}
-        <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-6">
+        {/* Terms */}
+        <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
           By continuing, you agree to ShareSync's{" "}
-          <a href="#" className="text-purple-600 dark:text-purple-400 hover:underline">
+          <Link to="#" className="underline hover:text-slate-700 dark:hover:text-slate-200">
             Terms of Service
-          </a>{" "}
+          </Link>{" "}
           and{" "}
-          <a href="#" className="text-purple-600 dark:text-purple-400 hover:underline">
+          <Link to="#" className="underline hover:text-slate-700 dark:hover:text-slate-200">
             Privacy Policy
-          </a>
+          </Link>
         </p>
       </div>
     </main>

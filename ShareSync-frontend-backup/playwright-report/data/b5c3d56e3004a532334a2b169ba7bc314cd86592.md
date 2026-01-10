@@ -1,0 +1,48 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content":
+    - /url: "#main"
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - main [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - heading "ShareSync" [level=1] [ref=e9]
+            - paragraph [ref=e10]: Ship outcomes that matter
+          - generic [ref=e11]:
+            - heading "Welcome back" [level=2] [ref=e12]
+            - generic [ref=e13]: Unauthorized
+            - generic [ref=e14]:
+              - generic [ref=e15]: Email
+              - generic [ref=e16]:
+                - img [ref=e17]
+                - textbox "you@example.com" [ref=e20]: wrong@example.com
+            - generic [ref=e21]:
+              - generic [ref=e22]: Password
+              - generic [ref=e23]:
+                - img [ref=e24]
+                - textbox "••••••••" [ref=e27]: WrongPassword123!
+            - link "Forgot password?" [ref=e29] [cursor=pointer]:
+              - /url: /forgot-password
+              - img [ref=e30]
+              - text: Forgot password?
+            - button "Log In" [ref=e33] [cursor=pointer]:
+              - text: Log In
+              - img [ref=e34]
+            - generic [ref=e40]: New to ShareSync?
+            - link "Create an account" [ref=e41] [cursor=pointer]:
+              - /url: /create-account
+              - img [ref=e42]
+              - text: Create an account
+          - paragraph [ref=e45]:
+            - text: By continuing, you agree to ShareSync's
+            - link "Terms of Service" [ref=e46] [cursor=pointer]:
+              - /url: /login
+            - text: and
+            - link "Privacy Policy" [ref=e47] [cursor=pointer]:
+              - /url: /login
+      - region "Notifications"
+    - region "Notifications"
+```

@@ -10,32 +10,20 @@ import Leaderboard from './pages/Leaderboard';
 import ProjectPage from './pages/Project';
 import ProjectCreate from './pages/ProjectCreate';
 import ProjectEdit from './pages/ProjectEdit';
-import Register from './pages/Register';
+import Register from './components/Register';
 import Recover from './pages/Recover';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import Upload from './pages/Upload';
 import axios from 'axios';
 
-interface Project {
-  _id: string;
-  name: string;
-  description: string;
-}
-
-interface User {
-  _id: string;
-  username: string;
-  email: string;
-}
-
-const AppRoutes: React.FC = () => {
-  const [user, setUser] = useState<User | null>(() => {
+const AppRoutes = () => {
+  const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem('user');
     return storedUser ? JSON.parse(storedUser) : null;
   });
 
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState([]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -190,12 +178,8 @@ const AppRoutes: React.FC = () => {
   );
 };
 
-interface LogoutProps {
-  setUser: (user: { _id: string; username: string; email: string } | null) => void;
-}
-
-const Logout: React.FC<LogoutProps> = ({ setUser }) => {
-  const navigate = useNavigate(); // Ensure useNavigate is imported
+const Logout = ({ setUser }) => {
+  const navigate = useNavigate();
 
   return (
     <div>

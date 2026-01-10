@@ -7,7 +7,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ CHECK TOKEN ON APP STARTUP
   useEffect(() => {
     async function checkAuth() {
       const token = localStorage.getItem('ss.jwt');
@@ -46,7 +45,6 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, []);
 
-  // ✅ FIXED: Accept object parameter
   const login = async ({ email, password }) => {
     try {
       console.log('[AuthContext] 🔵 Attempting login for:', { email, password });
@@ -55,8 +53,6 @@ export function AuthProvider({ children }) {
       
       console.log('[AuthContext] 🔵 Full login response:', response.data);
       
-      // ✅ CRITICAL FIX: Backend returns either "token" or "access_token"
-      // Try both to be safe
       const token = response.data.access_token || response.data.token;
       const userData = response.data.user;
       
@@ -77,15 +73,12 @@ export function AuthProvider({ children }) {
       console.log('[AuthContext] 🟢 Token length:', token.length);
       console.log('[AuthContext] 🟢 User email:', userData.email);
       
-      // ✅ Save to localStorage
       localStorage.setItem('ss.jwt', token);
       localStorage.setItem('ss.user', JSON.stringify(userData));
       
-      // ✅ Verify it was saved
       const savedToken = localStorage.getItem('ss.jwt');
-      console.log('[AuthContext] �� Verified saved token:', savedToken ? 'YES ✅' : 'NO ❌');
+      console.log('[AuthContext] 🟢 Verified saved token:', savedToken ? 'YES ✅' : 'NO ❌');
       
-      // ✅ Update state
       setUser(userData);
       
       console.log('[AuthContext] 🎉 Login successful!');
@@ -97,6 +90,42 @@ export function AuthProvider({ children }) {
       return { 
         success: false, 
         error: error.response?.data?.error || error.response?.data?.message || error.message || 'Login failed' 
+      };
+    }
+  };
+
+  // ✅ NEW: Register function
+  const register = async ({ email, username, firstName, lastName, password }) => {
+    try {
+      console.log('[AuthContext] 🔵 Attempting registration for:', email);
+      
+      const response = await api.post('/auth/register', {
+        email,
+        username,
+        firstName,
+        lastName,
+        password
+      });
+      
+      console.log('[AuthContext] 🔵 Registration response:', response.data);
+      
+      const token = response.data.access_token || response.data.token;
+      const userData = response.data.user;
+      
+      if (token && userData) {
+        localStorage.setItem('ss.jwt', token);
+        localStorage.setItem('ss.user', JSON.stringify(userData));
+        setUser(userData);
+        console.log('[AuthContext] 🎉 Registration successful!');
+        return { success: true };
+      }
+      
+      return { success: false, error: 'Registration failed' };
+    } catch (error) {
+      console.error('[AuthContext] ❌ Registration error:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.error || error.response?.data?.message || error.message || 'Registration failed' 
       };
     }
   };
@@ -113,6 +142,7 @@ export function AuthProvider({ children }) {
     user,
     loading,
     login,
+    register,  // ✅ NEW: Export register
     logout,
   };
 

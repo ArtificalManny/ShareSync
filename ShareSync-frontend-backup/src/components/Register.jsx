@@ -1,19 +1,21 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext.jsx';
+import AuthContext from '../context/AuthContext.jsx';
 
 const Register = () => {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
   const { register, error, theme, toggleTheme } = useContext(AuthContext) || {};
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await register({ email, username, password });
-    if (success) {
-      navigate('/login');
+    const result = await register({ email, username, firstName, lastName, password });
+    if (result && result.success) {
+      navigate('/home');
     }
   };
 
@@ -179,9 +181,11 @@ const Register = () => {
           }}>
             Register
           </h2>
+          
           <div style={{ marginBottom: '20px' }}>
             <input
               type="email"
+              name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
@@ -207,9 +211,11 @@ const Register = () => {
               required
             />
           </div>
+          
           <div style={{ marginBottom: '20px' }}>
             <input
               type="text"
+              name="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Username"
@@ -235,9 +241,71 @@ const Register = () => {
               required
             />
           </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <input
+              type="text"
+              name="firstName"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="First Name"
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '10px',
+                border: '1px solid rgba(0, 240, 255, 0.3)',
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: '#ffffff',
+                fontSize: '16px',
+                outline: 'none',
+                transition: 'border-color 0.3s, box-shadow 0.3s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#00f0ff';
+                e.target.style.boxShadow = '0 0 10px rgba(0, 240, 255, 0.5)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(0, 240, 255, 0.3)';
+                e.target.style.boxShadow = 'none';
+              }}
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <input
+              type="text"
+              name="lastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Last Name"
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '10px',
+                border: '1px solid rgba(0, 240, 255, 0.3)',
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: '#ffffff',
+                fontSize: '16px',
+                outline: 'none',
+                transition: 'border-color 0.3s, box-shadow 0.3s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#00f0ff';
+                e.target.style.boxShadow = '0 0 10px rgba(0, 240, 255, 0.5)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(0, 240, 255, 0.3)';
+                e.target.style.boxShadow = 'none';
+              }}
+              required
+            />
+          </div>
+          
           <div style={{ marginBottom: '20px' }}>
             <input
               type="password"
+              name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
@@ -263,6 +331,7 @@ const Register = () => {
               required
             />
           </div>
+          
           <button
             type="submit"
             style={{

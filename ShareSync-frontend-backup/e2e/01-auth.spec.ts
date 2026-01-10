@@ -9,10 +9,10 @@ test.describe('Authentication Flow', () => {
     await signUp(page, user);
     
     // Should redirect to dashboard
-    await expect(page).toHaveURL(/.*dashboard/);
+    await expect(page).toHaveURL(/.*home/);
     
     // Should see user name
-    await expect(page.locator('text=/Welcome|Hello/i')).toBeVisible();
+    await expect(page.locator('text=/Good (morning|afternoon|evening)/i')).toBeVisible();
     
     // Log out
     await page.click('text=/Log.*out|Sign.*out/i');
@@ -24,7 +24,7 @@ test.describe('Authentication Flow', () => {
     await login(page, user.email, user.password);
     
     // Should be back on dashboard
-    await expect(page).toHaveURL(/.*dashboard/);
+    await expect(page).toHaveURL(/.*home/);
   });
 
   test('should reject invalid login credentials', async ({ page }) => {

@@ -1,0 +1,206 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - link "Skip to main content":
+    - /url: "#main"
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e6]:
+        - generic [ref=e12]:
+          - heading "Stop Burning Out. Start Shipping." [level=1] [ref=e13]:
+            - generic [ref=e14]: Stop Burning Out.
+            - generic [ref=e15]: Start Shipping.
+          - paragraph [ref=e16]: The only project tracker that prevents burnout before it happens
+          - generic [ref=e17]:
+            - button "Start Free Forever" [ref=e18] [cursor=pointer]:
+              - text: Start Free Forever
+              - img [ref=e19]
+            - button "Watch Demo" [ref=e21] [cursor=pointer]:
+              - img [ref=e22]
+              - text: Watch Demo
+          - generic [ref=e24]:
+            - generic [ref=e25]:
+              - img [ref=e26]
+              - generic [ref=e29]: 100% Free. Forever.
+            - generic [ref=e31]:
+              - img [ref=e32]
+              - generic [ref=e37]: Built for students, not stockholders
+          - generic [ref=e42]:
+            - img [ref=e44]
+            - paragraph [ref=e46]: Demo video coming soon
+            - paragraph [ref=e47]: See how ShareSync prevents burnout with AI-powered momentum tracking
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - heading "Built Different" [level=2] [ref=e50]
+            - paragraph [ref=e51]: The first project tracker designed to protect your mental health, not just your productivity
+          - generic [ref=e52]:
+            - generic [ref=e53]:
+              - img [ref=e55]
+              - heading "AI Burnout Prevention" [level=3] [ref=e57]
+              - paragraph [ref=e58]: Detect overwork patterns before you crash. Our AI learns your work habits and intervenes when you're pushing too hard.
+            - generic [ref=e59]:
+              - img [ref=e61]
+              - heading "Momentum-Based Workflow" [level=3] [ref=e65]
+              - paragraph [ref=e66]: Transform how you work. Streaks that motivate without guilt-tripping, building sustainable habits through positive reinforcement.
+            - generic [ref=e67]:
+              - img [ref=e69]
+              - heading "Personal AI Coach" [level=3] [ref=e79]
+              - paragraph [ref=e80]: Get real-time coaching based on your unique work patterns. Personalized breakthroughs when you need them most.
+            - generic [ref=e81]:
+              - img [ref=e83]
+              - heading "Behavioral Analytics" [level=3] [ref=e85]
+              - paragraph [ref=e86]: Discover what actually makes you productive. Data-driven insights reveal your peak performance times and patterns.
+            - generic [ref=e87]:
+              - img [ref=e89]
+              - heading "Identity-Forming System" [level=3] [ref=e91]
+              - paragraph [ref=e92]: Transform who you are, not just what you do. Gamification that builds lasting habits and levels up your identity.
+            - generic [ref=e93]:
+              - img [ref=e95]
+              - heading "Privacy-First" [level=3] [ref=e98]
+              - paragraph [ref=e99]: Protect your data. Always. We don't sell, share, or train AI models on your personal information. Ever.
+        - generic [ref=e100]:
+          - generic [ref=e101]:
+            - heading "Why ShareSync?" [level=2] [ref=e102]
+            - paragraph [ref=e103]: The only tool designed to prevent burnout, not just track tasks
+          - table [ref=e105]:
+            - rowgroup [ref=e106]:
+              - row "Feature ShareSync Asana Notion Monday" [ref=e107]:
+                - columnheader "Feature" [ref=e108]
+                - columnheader "ShareSync" [ref=e109]
+                - columnheader "Asana" [ref=e110]
+                - columnheader "Notion" [ref=e111]
+                - columnheader "Monday" [ref=e112]
+            - rowgroup [ref=e113]:
+              - row "Burnout Detection" [ref=e114]:
+                - cell "Burnout Detection" [ref=e115]
+                - cell [ref=e116]:
+                  - img [ref=e117]
+                - cell [ref=e119]:
+                  - img [ref=e120]
+                - cell [ref=e123]:
+                  - img [ref=e124]
+                - cell [ref=e127]:
+                  - img [ref=e128]
+              - row "AI Coach" [ref=e131]:
+                - cell "AI Coach" [ref=e132]
+                - cell [ref=e133]:
+                  - img [ref=e134]
+                - cell [ref=e136]:
+                  - img [ref=e137]
+                - cell [ref=e140]:
+                  - img [ref=e141]
+                - cell [ref=e144]:
+                  - img [ref=e145]
+              - row "Momentum System" [ref=e148]:
+                - cell "Momentum System" [ref=e149]
+                - cell [ref=e150]:
+                  - img [ref=e151]
+                - cell [ref=e153]:
+                  - img [ref=e154]
+                - cell [ref=e157]:
+                  - img [ref=e158]
+                - cell [ref=e161]:
+                  - img [ref=e162]
+              - row "Price FREE Forever $10.99/mo $10/mo $9/mo" [ref=e165]:
+                - cell "Price" [ref=e166]
+                - cell "FREE Forever" [ref=e167]:
+                  - generic [ref=e168]: FREE
+                  - generic [ref=e169]: Forever
+                - cell "$10.99/mo" [ref=e170]
+                - cell "$10/mo" [ref=e171]
+                - cell "$9/mo" [ref=e172]
+        - generic [ref=e173]:
+          - generic [ref=e174]:
+            - heading "Loved by Makers" [level=2] [ref=e175]
+            - paragraph [ref=e176]: Join hundreds who've stopped burning out
+          - generic [ref=e177]:
+            - generic [ref=e178]:
+              - generic [ref=e179]: 👩‍💼
+              - blockquote [ref=e180]: "\"Finally, a tool that cares about my wellbeing\""
+              - generic [ref=e181]:
+                - generic [ref=e182]: Sarah Chen
+                - generic [ref=e183]: Product Manager
+            - button [ref=e184] [cursor=pointer]:
+              - img [ref=e185]
+            - button [ref=e187] [cursor=pointer]:
+              - img [ref=e188]
+            - generic [ref=e190]:
+              - button [ref=e191] [cursor=pointer]
+              - button [ref=e192] [cursor=pointer]
+              - button [ref=e193] [cursor=pointer]
+        - generic [ref=e194]:
+          - heading "Ready to Transform How You Work?" [level=2] [ref=e195]
+          - paragraph [ref=e196]: Join 500+ students and makers who've stopped the burnout cycle
+          - generic [ref=e198]:
+            - generic [ref=e199]:
+              - img [ref=e200]
+              - textbox "Enter your email" [active] [ref=e203]
+            - button "Get Early Access" [ref=e204] [cursor=pointer]
+          - paragraph [ref=e205]: 100% free. No credit card. Unsubscribe anytime.
+        - contentinfo [ref=e206]:
+          - generic [ref=e207]:
+            - generic [ref=e208]:
+              - generic [ref=e209]:
+                - heading "Product" [level=4] [ref=e210]
+                - list [ref=e211]:
+                  - listitem [ref=e212]:
+                    - link "Features" [ref=e213] [cursor=pointer]:
+                      - /url: "#"
+                  - listitem [ref=e214]:
+                    - link "Roadmap" [ref=e215] [cursor=pointer]:
+                      - /url: "#"
+                  - listitem [ref=e216]:
+                    - link "Changelog" [ref=e217] [cursor=pointer]:
+                      - /url: "#"
+              - generic [ref=e218]:
+                - heading "Company" [level=4] [ref=e219]
+                - list [ref=e220]:
+                  - listitem [ref=e221]:
+                    - link "About" [ref=e222] [cursor=pointer]:
+                      - /url: "#"
+                  - listitem [ref=e223]:
+                    - link "Blog" [ref=e224] [cursor=pointer]:
+                      - /url: "#"
+                  - listitem [ref=e225]:
+                    - link "Mission" [ref=e226] [cursor=pointer]:
+                      - /url: "#"
+              - generic [ref=e227]:
+                - heading "Resources" [level=4] [ref=e228]
+                - list [ref=e229]:
+                  - listitem [ref=e230]:
+                    - link "Docs" [ref=e231] [cursor=pointer]:
+                      - /url: "#"
+                  - listitem [ref=e232]:
+                    - link "Help Center" [ref=e233] [cursor=pointer]:
+                      - /url: "#"
+                  - listitem [ref=e234]:
+                    - link "Community" [ref=e235] [cursor=pointer]:
+                      - /url: "#"
+              - generic [ref=e236]:
+                - heading "Legal" [level=4] [ref=e237]
+                - list [ref=e238]:
+                  - listitem [ref=e239]:
+                    - link "Privacy" [ref=e240] [cursor=pointer]:
+                      - /url: "#"
+                  - listitem [ref=e241]:
+                    - link "Terms" [ref=e242] [cursor=pointer]:
+                      - /url: "#"
+                  - listitem [ref=e243]:
+                    - link "Security" [ref=e244] [cursor=pointer]:
+                      - /url: "#"
+            - generic [ref=e245]:
+              - generic [ref=e246]: © 2026 ShareSync. Built for students, not stockholders.
+              - generic [ref=e247]:
+                - link [ref=e248] [cursor=pointer]:
+                  - /url: https://twitter.com
+                  - img [ref=e249]
+                - link [ref=e251] [cursor=pointer]:
+                  - /url: https://github.com
+                  - img [ref=e252]
+                - link [ref=e255] [cursor=pointer]:
+                  - /url: https://linkedin.com
+                  - img [ref=e256]
+      - region "Notifications"
+    - region "Notifications"
+```

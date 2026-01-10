@@ -7,13 +7,16 @@ export async function signUp(page: Page, userData: {
   email: string;
   password: string;
 }) {
-  await page.goto('/signup');
+  await page.goto('/register');  // ← FIXED: was /signup
   await page.fill('input[name="firstName"]', userData.firstName);
   await page.fill('input[name="lastName"]', userData.lastName);
   await page.fill('input[name="username"]', userData.username);
   await page.fill('input[name="email"]', userData.email);
   await page.fill('input[name="password"]', userData.password);
   await page.click('button[type="submit"]');
+  
+  // Wait for successful registration (adjust URL if needed)
+  await page.waitForURL('**/home');
 }
 
 export async function login(page: Page, email: string, password: string) {
@@ -22,8 +25,8 @@ export async function login(page: Page, email: string, password: string) {
   await page.fill('input[name="password"]', password);
   await page.click('button[type="submit"]');
   
-  // Wait for redirect to dashboard
-  await page.waitForURL('**/dashboard');
+  // Wait for redirect to dashboard/home
+  await page.waitForURL('**/home');
 }
 
 export async function createProject(page: Page, projectData: {
