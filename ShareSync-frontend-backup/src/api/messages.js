@@ -1,114 +1,63 @@
-// src/api/messages.js
-import api from './axios';
+import client from './client';
 
 /**
- * Get all messages for a project
- * @param {string} projectId - Project ID
- * @param {object} params - Query parameters (page, limit, type, resolved)
- * @returns {Promise} Messages data
+ * Message API Client
+ * Handles all REST API calls for messaging
  */
-export const getMessages = async (projectId, params = {}) => {
-  const response = await api.get(`/projects/${projectId}/messages`, { params });
+
+// Get all conversations for current user
+export const getConversations = async () => {
+  const response = await client.get('/messages/conversations');
   return response.data;
 };
 
-/**
- * Send a new message
- * @param {string} projectId - Project ID
- * @param {object} messageData - { content, type }
- * @returns {Promise} Created message
- */
-export const sendMessage = async (projectId, messageData) => {
-  const response = await api.post(`/projects/${projectId}/messages`, messageData);
+// Get messages in a specific conversation
+export const getMessages = async (conversationId, limit = 50) => {
+  const response = await client.get(`/messages/conversation/${conversationId}`, {
+    params: { limit },
+  });
   return response.data;
 };
 
-/**
- * Update a message
- * @param {string} projectId - Project ID
- * @param {string} messageId - Message ID
- * @param {object} updates - { content }
- * @returns {Promise} Updated message
- */
-export const updateMessage = async (projectId, messageId, updates) => {
-  const response = await api.put(`/projects/${projectId}/messages/${messageId}`, updates);
+// Get thread messages
+export const getThread = async (threadParentId) => {
+  const response = await client.get(`/messages/thread/${threadParentId}`);
   return response.data;
 };
 
-/**
- * Delete a message
- * @param {string} projectId - Project ID
- * @param {string} messageId - Message ID
- * @returns {Promise}
- */
-export const deleteMessage = async (projectId, messageId) => {
-  const response = await api.delete(`/projects/${projectId}/messages/${messageId}`);
+// Send a new message
+export const sendMessage = async (data) => {
+  const response = await client.post('/messages/send', data);
   return response.data;
 };
 
-/**
- * Add reaction to message
- * @param {string} projectId - Project ID
- * @param {string} messageId - Message ID
- * @param {string} emoji - Emoji to add
- * @returns {Promise} Updated message
- */
-export const addReaction = async (projectId, messageId, emoji) => {
-  const response = await api.post(`/projects/${projectId}/messages/${messageId}/reactions`, { emoji });
+// Mark message as read
+export const markMessageAsRead = async (messageId) => {
+  const response = await client.patch(`/messages/${messageId}/read`);
   return response.data;
 };
 
-/**
- * Remove reaction from message
- * @param {string} projectId - Project ID
- * @param {string} messageId - Message ID
- * @param {string} emoji - Emoji to remove
- * @returns {Promise} Updated message
- */
-export const removeReaction = async (projectId, messageId, emoji) => {
-  const response = await api.delete(`/projects/${projectId}/messages/${messageId}/reactions/${emoji}`);
+// Mark all messages in conversation as read
+export const markConversationAsRead = async (conversationId) => {
+  const response = await client.patch(`/messages/conversation/${conversationId}/read`);
   return response.data;
 };
 
-/**
- * Mark message as resolved
- * @param {string} projectId - Project ID
- * @param {string} messageId - Message ID
- * @returns {Promise} Updated message
- */
-export const resolveMessage = async (projectId, messageId) => {
-  const response = await api.post(`/projects/${projectId}/messages/${messageId}/resolve`);
+// Get unread message count
+export const getUnreadCount = async () => {
+  const response = await client.get('/messages/unread-count');
   return response.data;
 };
 
-/**
- * Mark message as unresolved
- * @param {string} projectId - Project ID
- * @param {string} messageId - Message ID
- * @returns {Promise} Updated message
- */
-export const unresolveMessage = async (projectId, messageId) => {
-  const response = await api.delete(`/projects/${projectId}/messages/${messageId}/resolve`);
+// Delete a message
+export const deleteMessage = async (messageId) => {
+  const response = await client.delete(`/messages/${messageId}`);
   return response.data;
 };
 
-/**
- * Get unread message count
- * @param {string} projectId - Project ID
- * @returns {Promise} { unreadCount: number }
- */
-export const getUnreadCount = async (projectId) => {
-  const response = await api.get(`/projects/${projectId}/messages/unread`);
-  return response.data;
-};
-
-/**
- * Mark message as read
- * @param {string} projectId - Project ID
- * @param {string} messageId - Message ID
- * @returns {Promise}
- */
-export const markAsRead = async (projectId, messageId) => {
-  const response = await api.post(`/projects/${projectId}/messages/${messageId}/read`);
-  return response.data;
+// Create a new conversation (helper function)
+export const createConversation = async (recipientId) => {
+  // Generate a unique conversation ID (timestamp + recipient)
+  const conversationId = `dm_${recipientId}_${Date.now()}`;
+  return conversationId;
 };
