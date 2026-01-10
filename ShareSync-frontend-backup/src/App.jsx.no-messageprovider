@@ -109,7 +109,6 @@ const UserProvider = lazy(() => import("./context/UserContext").then(m => ({ def
 const SprintProvider = lazy(() => import("./context/SprintContext").then(m => ({ default: m.SprintProvider })));
 const ChatProvider = lazy(() => import("./context/ChatContext.jsx").then(m => ({ default: m.ChatProvider })));
 const FocusProvider = lazy(() => import("./context/FocusContext.jsx").then(m => ({ default: m.FocusProvider })));
-const MessageProvider = lazy(() => import("./context/MessageContext.jsx").then(m => ({ default: m.MessageProvider })));
 const CommandPaletteProvider = lazy(() => import("./hooks/useCommandPalette").then(m => ({ default: m.CommandPaletteProvider })));
 
 import { UserContext } from "./context/UserContext";
@@ -184,17 +183,15 @@ function AuthenticatedApp({ children }) {
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <UserProvider>
-        <MessageProvider>
-          <SprintProvider>
-            <CommandPaletteProvider>
-              {FOCUS_DOCK_V1 ? (
-                <FocusProvider>{children}</FocusProvider>
-              ) : (
-                children
-              )}
-            </CommandPaletteProvider>
-          </SprintProvider>
-        </MessageProvider>
+        <SprintProvider>
+          <CommandPaletteProvider>
+            {FOCUS_DOCK_V1 ? (
+              <FocusProvider>{children}</FocusProvider>
+            ) : (
+              children
+            )}
+          </CommandPaletteProvider>
+        </SprintProvider>
       </UserProvider>
     </Suspense>
   );
