@@ -17,6 +17,7 @@ import { toast } from "../components/ui/toast";
 // ⭐ PHASE 3: PROFILE SABERMETRICS COMPONENTS
 import CollaborationStyleCard from "../components/Profile/CollaborationStyleCard";
 import ReliabilityLens from "../components/Profile/ReliabilityLens";
+import WorkPersonality from "../components/analytics/WorkPersonality";
 import RoleClassificationCard from "../components/Profile/RoleClassificationCard";
 
 // XP / Level helpers
@@ -766,6 +767,13 @@ export default function Profile() {
               <ReliabilityLens data={profileAnalytics.reliability} />
               <RoleClassificationCard data={profileAnalytics.roleClassification} />
             </div>
+          </div>
+        )}
+
+        {/* ⭐ WORK PERSONALITY CARD */}
+        {isOwnProfile && user && (
+          <div className="mb-8">
+            <WorkPersonality userId={user._id || user.id} />
           </div>
         )}
         {/* Share Card */}
