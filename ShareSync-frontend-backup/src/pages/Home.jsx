@@ -11,6 +11,12 @@ import client from "../api/client";
 import { getProjectsQuick } from "../api/projects";
 import { toast } from "../components/ui/toast.jsx";
 
+// ⭐ DESIGN SYSTEM COMPONENTS
+import Card from "../components/common/Card";
+import Button from "../components/common/Button";
+import YourWorld from "../components/home/YourWorld";
+import RecommendedTasks from "../components/home/RecommendedTasks";
+
 // ⭐ ECOSYSTEM COMPONENTS - ALL 7
 import {
   EcosystemStatusBar,
@@ -28,108 +34,107 @@ import MomentumIndex from "../components/home/MomentumIndex";
 import CriticalInsights from "../components/home/CriticalInsights";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MODERN COMPONENTS (Kept from original)
+   MODERN COMPONENTS (Integrated with Design System)
 ───────────────────────────────────────────────────────────────────────── */
 
 function PageHeader({ title, subtitle }) {
   return (
     <div className="mb-6">
-      <h1 className="heading-1 mb-2">{title}</h1>
-      <p className="caption-text">{subtitle}</p>
+      <h1 className="text-h1 text-white mb-2">{title}</h1>
+      <p className="text-body text-neutral-400">{subtitle}</p>
     </div>
   );
 }
 
 function SocialProofTicker({ events }) {
   return (
-    <div className="modern-card p-4 overflow-hidden relative">
+    <Card variant="flat" className="p-4 overflow-hidden relative">
       <div className="flex gap-6 animate-[scroll_20s_linear_infinite]">
         {[...events, ...events].map((event, i) => (
           <div key={i} className="flex items-center gap-2 whitespace-nowrap">
             <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
-            <span className="text-sm text-slate-700 dark:text-slate-300">{event}</span>
+            <span className="text-sm text-neutral-300">{event}</span>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
 function ReadinessScoreCard({ score, label, insight, bestHour, onStart }) {
   const getScoreColor = () => {
-    if (score >= 80) return { bg: 'from-emerald-500 to-emerald-400', text: 'text-emerald-600 dark:text-emerald-400' };
-    if (score >= 60) return { bg: 'from-primary-500 to-primary-400', text: 'text-primary-600 dark:text-primary-400' };
-    if (score >= 40) return { bg: 'from-amber-500 to-amber-400', text: 'text-amber-600 dark:text-amber-400' };
-    return { bg: 'from-red-500 to-red-400', text: 'text-red-600 dark:text-red-400' };
+    if (score >= 80) return { bg: 'bg-success-500', text: 'text-success-400', shadow: 'shadow-glow-success' };
+    if (score >= 60) return { bg: 'bg-brand-500', text: 'text-brand-400', shadow: 'shadow-glow-brand' };
+    if (score >= 40) return { bg: 'bg-warning-500', text: 'text-warning-400', shadow: 'shadow-glow-warning' };
+    return { bg: 'bg-danger-500', text: 'text-danger-400', shadow: 'shadow-glow-danger' };
   };
 
   const colors = getScoreColor();
 
   return (
-    <div className="modern-card-elevated p-6 space-y-5">
+    <Card variant="elevated" className="p-6 space-y-5">
       <div className="flex items-start justify-between">
         <div>
-          <div className={`text-6xl font-bold bg-gradient-to-br ${colors.bg} bg-clip-text text-transparent`}>
+          <div className={`text-display font-bold ${colors.text}`}>
             {score}
           </div>
-          <div className="heading-3 mt-2">{label}</div>
+          <div className="text-h3 text-white mt-2">{label}</div>
           {bestHour && (
-            <div className="badge-info mt-3">
+            <div className="inline-flex items-center gap-2 px-2 py-1 bg-info-500/10 border border-info-500/20 rounded mt-3 text-info-400 text-xs font-medium">
               <Brain className="w-3 h-3" />
               <span>Peak: {bestHour}</span>
             </div>
           )}
         </div>
         <div className="text-right">
-          <div className="caption-text mb-1">Daily Readiness</div>
-          <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{insight}</div>
+          <div className="text-label text-neutral-500 mb-1">Daily Readiness</div>
+          <div className="text-body-sm font-medium text-neutral-300">{insight}</div>
         </div>
       </div>
 
       <div className="space-y-2">
-        <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+        <div className="h-2 rounded-full bg-neutral-800 overflow-hidden">
           <div 
-            className={`h-full bg-gradient-to-r ${colors.bg} transition-all duration-1000`}
+            className={`h-full ${colors.bg} ${colors.shadow} transition-all duration-1000`}
             style={{ width: `${score}%` }}
           />
         </div>
       </div>
 
-      <button onClick={onStart} className="btn-primary-modern w-full">
-        <Play className="w-4 h-4" />
+      <Button variant="primary" className="w-full" onClick={onStart} icon={<Play size={16} />}>
         Launch Your Day
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
 }
 
 function AIPlanCard({ nextBestAction, quickWins, onRegenerate, onStart }) {
   return (
-    <div className="modern-card p-6 space-y-5 bg-gradient-to-br from-primary-50/50 to-fuchsia-50/50 dark:from-primary-500/5 dark:to-fuchsia-500/5">
+    <Card variant="elevated" className="p-6 space-y-5 border-brand-500/20 bg-brand-900/5">
       <div className="flex items-center gap-2">
-        <Sparkles className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-        <h2 className="heading-3">Today's AI Plan</h2>
+        <Sparkles className="w-5 h-5 text-brand-400" />
+        <h2 className="text-h4 text-white">Today's AI Plan</h2>
       </div>
 
       <div className="space-y-2">
-        <div className="caption-text">Next best action</div>
-        <p className="body-text font-semibold">{nextBestAction}</p>
+        <div className="text-label text-neutral-500">Next best action</div>
+        <p className="text-body font-semibold text-white">{nextBestAction}</p>
       </div>
 
       {quickWins?.length > 0 && (
         <div className="space-y-3">
-          <div className="caption-text">Quick wins (under 15 min)</div>
+          <div className="text-label text-neutral-500">Quick wins (under 15 min)</div>
           <div className="space-y-2">
             {quickWins.map((win, i) => (
               <div 
                 key={i}
-                className="modern-card p-3 hover:shadow-md transition-all cursor-pointer group"
+                className="p-3 bg-white/5 border border-white/5 rounded-lg hover:border-brand-500/50 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                  <span className="text-sm font-medium text-neutral-300 group-hover:text-brand-400 transition-colors">
                     {win.task}
                   </span>
-                  <div className="flex items-center gap-1 caption-text">
+                  <div className="flex items-center gap-1 text-xs text-neutral-500 font-medium">
                     <Clock className="w-3 h-3" />
                     <span>{win.time}</span>
                   </div>
@@ -141,56 +146,35 @@ function AIPlanCard({ nextBestAction, quickWins, onRegenerate, onStart }) {
       )}
 
       <div className="flex gap-3 pt-2">
-        <button onClick={onStart} className="btn-primary-modern flex-1">
+        <Button variant="primary" className="flex-1" onClick={onStart}>
           Start Now
-        </button>
-        <button onClick={onRegenerate} className="btn-secondary-modern">
-          <Sparkles className="w-4 h-4" />
+        </Button>
+        <Button variant="secondary" onClick={onRegenerate} icon={<Sparkles size={16}/>}>
           Regenerate
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
 function StatsGrid({ stats }) {
   const statItems = [
-    { 
-      label: 'Day Streak', 
-      value: stats?.streak || 0, 
-      icon: Flame,
-      color: 'text-orange-500'
-    },
-    { 
-      label: 'XP Earned', 
-      value: stats?.xp || 0, 
-      icon: Zap,
-      color: 'text-amber-500'
-    },
-    { 
-      label: 'Leaderboard', 
-      value: `#${stats?.rank || 1}`, 
-      icon: Trophy,
-      color: 'text-yellow-500'
-    },
-    { 
-      label: 'Freezes Left', 
-      value: stats?.freezes || 1, 
-      icon: Shield,
-      color: 'text-emerald-500'
-    },
+    { label: 'Day Streak', value: stats?.streak || 0, icon: Flame, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    { label: 'XP Earned', value: stats?.xp || 0, icon: Zap, color: 'text-brand-400', bg: 'bg-brand-500/10' },
+    { label: 'Leaderboard', value: `#${stats?.rank || 1}`, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { label: 'Freezes Left', value: stats?.freezes || 1, icon: Shield, color: 'text-success-400', bg: 'bg-success-500/10' },
   ];
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {statItems.map((stat, idx) => (
-        <div key={idx} className="stat-card-modern">
-          <div className="flex items-center justify-between mb-2">
+        <Card key={idx} variant="flat" className="p-4">
+          <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
             <stat.icon className={`w-5 h-5 ${stat.color}`} />
           </div>
-          <div className="stat-value">{stat.value}</div>
-          <div className="stat-label">{stat.label}</div>
-        </div>
+          <div className="text-h3 text-white leading-none">{stat.value}</div>
+          <div className="text-label text-neutral-500 mt-2">{stat.label}</div>
+        </Card>
       ))}
     </div>
   );
@@ -200,34 +184,32 @@ function TeamMomentumCard({ status, activeCount, totalCount }) {
   const isFire = status === 'fire';
   
   return (
-    <div className={`modern-card p-6 ${isFire ? 'bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-500/10 dark:to-amber-500/10' : ''}`}>
+    <Card variant="elevated" status={isFire ? "warning" : "default"} className="p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {isFire ? (
-            <div className="p-3 rounded-xl bg-orange-100 dark:bg-orange-500/20">
-              <Flame className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-            </div>
-          ) : (
-            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800">
-              <Users className="w-6 h-6 text-slate-600 dark:text-slate-400" />
-            </div>
-          )}
+          <div className={`p-3 rounded-xl ${isFire ? 'bg-warning-500/20' : 'bg-neutral-800'}`}>
+            {isFire ? (
+              <Flame className="w-6 h-6 text-warning-500" />
+            ) : (
+              <Users className="w-6 h-6 text-neutral-400" />
+            )}
+          </div>
           <div>
-            <div className="heading-3">
+            <div className="text-h4 text-white">
               {isFire ? 'Team is on fire!' : 'Team cooling off'}
             </div>
-            <div className="caption-text mt-1">Collective momentum</div>
+            <div className="text-caption text-neutral-500 mt-1">Collective momentum</div>
           </div>
         </div>
         
         <div className="text-right">
-          <div className="text-3xl font-bold text-slate-900 dark:text-white">
+          <div className="text-display text-white">
             {activeCount}/{totalCount}
           </div>
-          <div className="caption-text">active now</div>
+          <div className="text-caption text-neutral-500">active now</div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -349,6 +331,7 @@ export default function Home() {
 
   const startSprint = () => {
     window.dispatchEvent(new CustomEvent("start-tenx-sprint"));
+    toast.success("Focus Mode Active", { description: "Timer started for 25:00" });
   };
 
   const regeneratePlan = () => {
@@ -366,33 +349,36 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-10">
       {/* Header */}
       <PageHeader 
-        title="Home" 
-        subtitle="Your AI-powered mission control" 
+        title="Mission Control" 
+        subtitle="Command your focus and identity" 
       />
       
-      {/* ⭐ ECOSYSTEM STATUS BAR - Mission Control */}
-      <EcosystemStatusBar />
+      {/* Identity & Status */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="lg:col-span-2">
+          <YourWorld />
+        </div>
+        <div className="space-y-6">
+          <EcosystemStatusBar />
+          <BurnoutAlert onDismiss={() => console.log('Burnout alert dismissed')} />
+          <CriticalInsights />
+        </div>
+      </section>
       
-      {/* ⭐ ADAPTIVE AI PLAN - Personalized Recommendations */}
-      <AdaptiveAIPlan />
-      
-      {/* ⭐ BURNOUT ALERT - Health Monitoring (conditional) */}
-      <BurnoutAlert onDismiss={() => console.log('Burnout alert dismissed')} />
-      
-      {/* Critical Insights - The "30-second wow" */}
-      <CriticalInsights />
-      
-      {/* Social proof ticker */}
-      <SocialProofTicker events={socialEvents} />
+      {/* Social Proof & AI Planning */}
+      <div className="space-y-6">
+        <SocialProofTicker events={socialEvents} />
+        <AdaptiveAIPlan />
+      </div>
       
       {/* ⭐ MAIN DASHBOARD GRID - 2 columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left column */}
-        <div className="space-y-6">
-          <WeeklyNarrative />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left column - Action Oriented */}
+        <div className="lg:col-span-2 space-y-8">
+          <RecommendedTasks />
           <ReadinessScoreCard
             score={readinessScore}
             label={readinessLabel}
@@ -400,11 +386,10 @@ export default function Home() {
             bestHour={bestHour}
             onStart={startSprint}
           />
-          <MomentumIndex />
         </div>
         
-        {/* Right column */}
-        <div className="space-y-6">
+        {/* Right column - Feedback Oriented */}
+        <div className="space-y-8">
           <ActivityFeed />
           <AIPlanCard
             nextBestAction={nextBestAction}
@@ -412,45 +397,40 @@ export default function Home() {
             onRegenerate={regeneratePlan}
             onStart={startSprint}
           />
+          <MomentumIndex />
         </div>
       </div>
 
+      <WeeklyNarrative />
+
       {/* ⭐ ECOSYSTEM SHOWCASE GRID - Projects, Stories, Achievements */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Projects Overview */}
         <ProjectsOverview />
-        
-        {/* Team Stories */}
         <TeamStories />
-        
-        {/* Achievements */}
         <Achievements />
       </div>
       
-      {/* Stats grid */}
-      <StatsGrid stats={stats} />
+      {/* Metrics & Social Presence */}
+      <div className="space-y-6">
+        <StatsGrid stats={stats} />
+        <TeamMomentumCard 
+          status="fire" 
+          activeCount={3} 
+          totalCount={5} 
+        />
+      </div>
       
-      {/* Team momentum */}
-      <TeamMomentumCard 
-        status="fire" 
-        activeCount={3} 
-        totalCount={5} 
-      />
-      
-      {/* Quick actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <button onClick={continueProject} className="btn-primary-modern h-14">
-          <Target className="w-5 h-5" />
-          Continue Last
-        </button>
-        <button onClick={startSprint} className="btn-secondary-modern h-14">
-          <Zap className="w-5 h-5" />
+      {/* Quick Global Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-white/5 pt-10">
+        <Button onClick={continueProject} variant="primary" size="lg" className="h-16" icon={<Target size={20} />}>
+          Continue Last Project
+        </Button>
+        <Button onClick={startSprint} variant="secondary" size="lg" className="h-16" icon={<Zap size={20} />}>
           Start 25:00 Sprint
-        </button>
-        <button onClick={ship60Seconds} className="btn-primary-modern h-14 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400">
-          <ChevronRight className="w-5 h-5" />
+        </Button>
+        <Button onClick={ship60Seconds} variant="success" size="lg" className="h-16" icon={<ChevronRight size={20} />}>
           Ship in 60s
-        </button>
+        </Button>
       </div>
     </div>
   );
