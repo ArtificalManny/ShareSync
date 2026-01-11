@@ -8,6 +8,9 @@ export const MessageContext = createContext();
 export function MessageProvider({ children }) {
   const { user } = useContext(UserContext);
   const userId = user?._id || user?.id;
+  
+  console.log('[MessageContext] user:', user);
+  console.log('[MessageContext] userId:', userId);
 
   // WebSocket connection
   const socket = useMessageSocket(userId);
