@@ -20,6 +20,33 @@ import ReliabilityLens from "../components/Profile/ReliabilityLens";
 import WorkPersonality from "../components/analytics/WorkPersonality";
 import RoleClassificationCard from "../components/Profile/RoleClassificationCard";
 
+// =====================================
+// NEW: TREND & MATH UTILITIES
+// =====================================
+
+const calculateReliability = (completed, total) => {
+  if (!total || total === 0) return 0; 
+  return Math.round((completed / total) * 100);
+};
+
+const MiniTrend = ({ data = [40, 70, 45, 90, 65, 80, 95], color = "#8b5cf6" }) => {
+  // Simple logic to map 7 points to an SVG path
+  const points = data.map((val, i) => `${i * 15},${40 - (val / 100) * 35}`).join(" ");
+  
+  return (
+    <svg width="100" height="30" className="opacity-50">
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+    </svg>
+  );
+};
+
 // XP / Level helpers
 function xpForLevel(level) {
   if (level <= 1) return 0;
@@ -56,19 +83,16 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({ title: "Please select an image file", variant: "error" });
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({ title: "Image must be less than 5MB", variant: "error" });
       return;
     }
 
-    // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
       setPreviewUrl(e.target.result);
@@ -82,15 +106,12 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
     setUploading(true);
     try {
-      // Convert base64 to blob
       const response = await fetch(previewUrl);
       const blob = await response.blob();
       
-      // Create FormData
       const formData = new FormData();
       formData.append('profilePicture', blob, 'profile.jpg');
 
-      // Upload to API
       await updateProfile(formData);
       
       toast({ title: "Profile photo updated! 🎉", variant: "success" });
@@ -115,9 +136,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
   return (
     <div className="relative group">
-      {/* Profile Photo */}
       <div className="relative w-40 h-40 mx-auto">
-        {/* Animated ring */}
         <svg className="absolute inset-0 -m-2" viewBox="0 0 200 200">
           <circle
             cx="100"
@@ -138,7 +157,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
           </defs>
         </svg>
 
-        {/* Photo */}
         <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-slate-900 shadow-2xl">
           <img
             src={getProfilePicture()}
@@ -146,7 +164,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
             className="w-full h-full object-cover"
           />
           
-          {/* Overlay on own profile */}
           {isOwnProfile && !isEditing && (
             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <button
@@ -159,13 +176,11 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
           )}
         </div>
 
-        {/* Level badge */}
         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full border-4 border-slate-900 shadow-xl">
           <span className="text-white font-bold text-sm">Lv {progressToNext(user?.xp || 0).level}</span>
         </div>
       </div>
 
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -174,7 +189,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         className="hidden"
       />
 
-      {/* Edit Modal */}
       {isEditing && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full">
@@ -191,7 +205,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
               </button>
             </div>
 
-            {/* Preview */}
             <div className="mb-6">
               <div className="w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-purple-500/30">
                 <img
@@ -202,7 +215,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3">
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -247,13 +259,11 @@ const ProductivityStory = ({ stats }) => {
   
   return (
     <StatsStoryCard title="Your Productivity Story" icon={TrendingUp}>
-      {/* Main stat */}
       <div className="mb-4">
         <div className="text-5xl font-bold text-white mb-2">{avgShipsPerDay.toFixed(1)}</div>
         <div className="text-sm text-slate-300">ships per day (this month)</div>
       </div>
 
-      {/* Week over week */}
       <div className="p-4 bg-slate-800/50 rounded-xl mb-4">
         <div className="flex items-center gap-2 mb-2">
           <TrendingUp className={`w-4 h-4 ${weekOverWeekChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`} />
@@ -264,7 +274,6 @@ const ProductivityStory = ({ stats }) => {
         <div className="text-xs text-slate-400">vs last week</div>
       </div>
 
-      {/* Insights */}
       <div className="space-y-3">
         <div className="flex items-start gap-3">
           <Sparkles className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
@@ -297,7 +306,6 @@ const ProductivityStory = ({ stats }) => {
 const ComparativeStats = ({ userRank, totalUsers, percentile, globalAvg }) => {
   return (
     <StatsStoryCard title="How You Compare" icon={UsersIcon}>
-      {/* Rank */}
       <div className="mb-6">
         <div className="flex items-baseline gap-2 mb-2">
           <span className="text-5xl font-bold text-white">#{userRank}</span>
@@ -308,7 +316,6 @@ const ComparativeStats = ({ userRank, totalUsers, percentile, globalAvg }) => {
         </div>
       </div>
 
-      {/* Visual comparison */}
       <div className="space-y-4">
         <div>
           <div className="flex items-center justify-between text-xs mb-2">
@@ -331,7 +338,6 @@ const ComparativeStats = ({ userRank, totalUsers, percentile, globalAvg }) => {
         </div>
       </div>
 
-      {/* Callout */}
       <div className="mt-6 p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl">
         <p className="text-sm text-white font-medium mb-1">🏆 You ship 2.3x more than average!</p>
         <p className="text-xs text-slate-400">Only 4,892 users out of 247,521 are more productive than you.</p>
@@ -346,7 +352,6 @@ const StreakAnalysis = ({ currentStreak, longestStreak, streakHistory }) => {
   
   return (
     <StatsStoryCard title="Streak Analysis" icon={Flame}>
-      {/* Current streak */}
       <div className="mb-6">
         <div className="flex items-baseline gap-2 mb-2">
           <Flame className="w-8 h-8 text-orange-400" />
@@ -361,7 +366,6 @@ const StreakAnalysis = ({ currentStreak, longestStreak, streakHistory }) => {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="p-3 bg-slate-800/50 rounded-xl">
           <div className="text-2xl font-bold text-white mb-1">{longestStreak}</div>
@@ -373,7 +377,6 @@ const StreakAnalysis = ({ currentStreak, longestStreak, streakHistory }) => {
         </div>
       </div>
 
-      {/* Insights */}
       <div className="space-y-3">
         <div className="flex items-start gap-3">
           <Activity className="w-4 h-4 text-emerald-400 mt-0.5" />
@@ -408,7 +411,6 @@ const ImpactMetrics = ({ totalShips, peopleHelped, projectsContributed, totalXP 
         <div className="text-xs text-slate-500 mt-1">Higher than 89% of users</div>
       </div>
 
-      {/* Metrics grid */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
           <div className="text-3xl font-bold text-white mb-1">{totalShips}</div>
@@ -435,7 +437,6 @@ const ImpactMetrics = ({ totalShips, peopleHelped, projectsContributed, totalXP 
         </div>
       </div>
 
-      {/* Callout */}
       <div className="p-4 bg-gradient-to-r from-purple-900/40 to-fuchsia-900/40 rounded-xl border border-purple-500/30">
         <p className="text-sm text-white font-medium mb-1">💫 You're building a legacy</p>
         <p className="text-xs text-slate-400">
@@ -445,10 +446,6 @@ const ImpactMetrics = ({ totalShips, peopleHelped, projectsContributed, totalXP 
     </StatsStoryCard>
   );
 };
-
-// =====================================
-// PROFILE VISIBILITY SETTINGS
-// =====================================
 
 const PrivacySettings = ({ user, isPublic, onToggle }) => {
   return (
@@ -493,10 +490,6 @@ const PrivacySettings = ({ user, isPublic, onToggle }) => {
   );
 };
 
-// =====================================
-// SHAREABLE PROFILE CARD
-// =====================================
-
 const ShareableCard = ({ user, stats }) => {
   const [generating, setGenerating] = useState(false);
 
@@ -504,7 +497,6 @@ const ShareableCard = ({ user, stats }) => {
     setGenerating(true);
     track('profile_card_generated');
     
-    // Simulate generation
     setTimeout(() => {
       toast({ 
         title: "Card generated! 🎨", 
@@ -588,7 +580,6 @@ export default function Profile() {
         setMe(data || null);
         setIsProfilePublic(data?.publicProfile !== false);
       }
-        // ⭐ PHASE 3: Fetch profile analytics
         try {
           const analytics = await client.get("/users/profile-analytics");
           setProfileAnalytics(analytics.data);
@@ -629,32 +620,27 @@ export default function Profile() {
   const xp = Number(user?.xp || 0);
   const { level, progress, cur, next } = progressToNext(xp);
 
-  // Mock stats (replace with real data from your backend)
   const mockStats = {
-    // Productivity stats
     shipsThisWeek: 12,
     shipsLastWeek: 9,
     avgShipsPerDay: 2.3,
     topDay: 'Tuesday',
     topTime: '2-4pm',
-    
-    // Comparative stats
     userRank: 4892,
     totalUsers: 247521,
     percentile: 2,
     globalAvg: 1.2,
-    
-    // Streak stats
     currentStreak: user?.currentStreak || 7,
     longestStreak: user?.longestStreak || 23,
     streakHistory: [5, 12, 7, 15, 23, 8, 7],
-    
-    // Impact stats
     totalShips: user?.totalShips || 147,
     peopleHelped: user?.helpedCount || 23,
     projectsContributed: 8,
     totalXP: xp,
   };
+
+  // Safe reliability score using the new helper
+  const reliabilityScore = calculateReliability(user?.completedTasks || 0, user?.totalTasks || 0);
 
   if (loading) {
     return (
@@ -682,14 +668,12 @@ export default function Profile() {
         
         {/* Hero Section */}
         <div className="mb-12">
-          {/* Profile Photo */}
           <ProfilePhotoEditor
             user={user}
             isOwnProfile={isOwnProfile}
             onPhotoUpdate={load}
           />
 
-          {/* Name & Bio */}
           <div className="text-center mt-6">
             <h1 className="text-4xl font-bold text-white mb-2">
               {user?.firstName} {user?.lastName}
@@ -702,7 +686,6 @@ export default function Profile() {
             )}
           </div>
 
-          {/* Quick Stats */}
           <div className="flex items-center justify-center gap-8 mt-8">
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-400">{level}</div>
@@ -721,7 +704,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Privacy Settings (own profile only) */}
         {isOwnProfile && (
           <div className="mb-8">
             <PrivacySettings
@@ -764,22 +746,41 @@ export default function Profile() {
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <CollaborationStyleCard data={profileAnalytics.collaborationStyle} />
-              <ReliabilityLens data={profileAnalytics.reliability} />
+              
+              {/* THE ELITE RELIABILITY CARD UPDATE */}
+              <div className="p-4 bg-white/[0.02] border border-white/5 rounded-xl">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Reliability Score</p>
+                    <h3 className="text-3xl font-black text-white italic">
+                      {reliabilityScore}%
+                    </h3>
+                  </div>
+                  {/* Visual Density: Trend Line */}
+                  <MiniTrend data={[60, 65, 80, 75, 90, 85, 95]} color="#10b981" />
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-500 uppercase">
+                    +12% vs last week
+                  </div>
+                  <span className="text-[9px] font-bold text-neutral-600 uppercase">Trending Optimal</span>
+                </div>
+              </div>
+
               <RoleClassificationCard data={profileAnalytics.roleClassification} />
             </div>
           </div>
         )}
 
-        {/* ⭐ WORK PERSONALITY CARD */}
         {isOwnProfile && user && (
           <div className="mb-8">
             <WorkPersonality userId={user._id || user.id} />
           </div>
         )}
-        {/* Share Card */}
+        
         <ShareableCard user={user} stats={mockStats} />
 
-        {/* CSS for animations */}
         <style jsx>{`
           @keyframes spin-slow {
             from { transform: rotate(0deg); }

@@ -1,181 +1,216 @@
-// src/pages/Home.jsx - FULL INTEGRATED ELITE REFACTOR
-import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Brain, Flame, Zap, Trophy, Shield, Play, ChevronRight, Target, Sparkles } from "lucide-react";
-import { useAuth } from "../context/AuthContext.jsx";
-import client from "../api/client";
-import { getProjectsQuick } from "../api/projects";
-import { toast } from "../components/ui/toast.jsx";
-
-import Card, { CardBody } from "../components/common/Card";
-import Button from "../components/common/Button";
-import YourWorld from "../components/home/YourWorld";
-import RecommendedTasks from "../components/home/RecommendedTasks";
-import PageHeader from "../components/layout/PageHeader";
-
-import {
-  EcosystemStatusBar,
-  BurnoutAlert,
-  ActivityFeed,
-  ProjectsOverview,
-  TeamStories,
-  Achievements
-} from "../components/ecosystem";
-
-import MomentumIndex from "../components/home/MomentumIndex";
-import CriticalInsights from "../components/home/CriticalInsights";
+// src/pages/Home.jsx - MISSION CONTROL REFACTOR
+import React, { useState, useEffect } from "react";
+import { 
+  Zap, 
+  Target, 
+  Flame, 
+  Clock, 
+  ArrowRight, 
+  AlertCircle, 
+  ChevronRight,
+  LayoutGrid,
+  Info,
+  X
+} from "lucide-react";
+import SectionHeader from "../components/ui/SectionHeader";
+import TeamBalancePanel from "../components/home/TeamBalancePanel";
+import LivePulse from "../components/home/LivePulse";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   REFINED COMPONENTS
+   INTELLIGENCE LAYER: VELOCITY STAT
+   Objective: High-density info on hover.
 ───────────────────────────────────────────────────────────────────────── */
-
-/**
- * ReadinessScoreCard - Refactored for Horizontal "Console" look
- * Fixes the "Giant Button" issue and improves data density.
- */
-function ReadinessScoreCard({ score, label, insight, bestHour, onStart }) {
-  const getScoreColor = () => {
-    if (score >= 80) return 'text-success-400';
-    if (score >= 60) return 'text-brand-400';
-    if (score >= 40) return 'text-warning-400';
-    return 'text-danger-400';
-  };
+const VelocityStat = ({ label, value, color, detail }) => {
+  const [showDetail, setShowDetail] = useState(false);
 
   return (
-    <div className="p-5 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-white/5 bg-slate-900/20">
-      <div className="flex items-center gap-6">
-        <div className="flex items-baseline gap-1">
-          <span className={`text-5xl font-black tracking-tighter ${getScoreColor()}`}>
-            {score}
-          </span>
-          <span className="text-sm font-bold text-neutral-600">%</span>
-        </div>
-        
-        {/* Visual Divider for Desktop */}
-        <div className="hidden md:block h-10 w-[1px] bg-white/10" />
-        
-        <div className="space-y-0.5">
-          <div className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-            Readiness Index
-          </div>
-          <div className="text-white font-bold text-base leading-tight">
-            {label}
-          </div>
-          <div className="text-[11px] text-neutral-400 font-medium max-w-[220px] line-clamp-1">
-            {insight}
-          </div>
-        </div>
+    <div 
+      className="relative group cursor-help"
+      onMouseEnter={() => setShowDetail(true)}
+      onMouseLeave={() => setShowDetail(false)}
+    >
+      <div className={`text-2xl font-black italic ${color}`}>{value}</div>
+      <div className="text-[9px] font-bold text-neutral-500 uppercase flex items-center gap-1">
+        {label} <Info className="w-2 h-2 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
 
-      <div className="flex items-center gap-4 w-full sm:w-auto">
-        {bestHour && (
-          <div className="hidden lg:flex flex-col items-end mr-2">
-            <div className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest">Peak Window</div>
-            <div className="text-[11px] font-bold text-brand-400">{bestHour}</div>
+      {showDetail && (
+        <div className="absolute bottom-full mb-4 left-0 w-48 p-3 bg-neutral-900 border border-white/10 rounded-lg shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2">
+          <p className="text-[10px] text-neutral-400 leading-relaxed font-medium">{detail}</p>
+          <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+            <div className={`h-full ${color.replace('text', 'bg')}`} style={{ width: '70%' }} />
           </div>
-        )}
-        <Button 
-          variant="primary" 
-          size="sm" 
-          className="w-full sm:w-[160px] h-10 text-[11px] font-black uppercase tracking-widest shadow-glow-brand" 
-          onClick={onStart}
-        >
-          Launch Mission
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
-}
+};
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN HOME PAGE
+   SUB-COMPONENT: SLIM ALERT BANNER
 ───────────────────────────────────────────────────────────────────────── */
-
-export default function Home() {
-  const navigate = useNavigate();
-  const [stats, setStats] = useState({});
-  const [readinessScore, setReadinessScore] = useState(75);
-
-  useEffect(() => {
-    client.get("/users/me/stats").then(res => setStats(res.data || {}));
-    getProjectsQuick().then(projects => {});
-  }, []);
-
-  const startSprint = () => {
-    window.dispatchEvent(new CustomEvent("start-tenx-sprint"));
-    toast.success("Focus Mode Active");
-  };
+const SlimProjectAlert = ({ count = 3 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
-      {/* Header Anchor */}
-      <PageHeader 
-        title="Mission Control" 
-        subtitle="System Status: Optimal" 
-        actions={<Button variant="tertiary" size="sm" icon={<Sparkles size={14}/>} className="text-[10px] font-bold uppercase tracking-widest">AI Plan</Button>}
-      />
+    <div className={`mb-6 transition-all duration-300 overflow-hidden border ${isExpanded ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white/[0.02] border-white/5'} rounded-xl px-4 py-3`}>
+      <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+          <span className="text-[11px] font-black text-white uppercase tracking-wider">
+            {count} Quiet Projects Need Attention
+          </span>
+        </div>
+        <button className="text-neutral-500 hover:text-white transition-colors">
+          <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+        </button>
+      </div>
       
-      {/* SECTION 1: IDENTITY & STATUS */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2">
-          {/* Note: We will handle the "YourWorld" typography fix in its own component next */}
-          <YourWorld />
+      {isExpanded && (
+        <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
+          <p className="text-xs text-neutral-400">These missions haven't seen activity in 48 hours. Reactivate now to maintain momentum.</p>
+          <button className="text-[10px] font-bold text-indigo-400 uppercase flex items-center gap-1 hover:text-indigo-300">
+            View Project Deck <ArrowRight className="w-3 h-3" />
+          </button>
         </div>
-        <div className="space-y-4">
-          <EcosystemStatusBar />
-          <CriticalInsights />
-          <BurnoutAlert />
+      )}
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ACTION PANEL: SLIDE-OUT OVERLAY
+───────────────────────────────────────────────────────────────────────── */
+const ActionPanel = ({ isOpen, onClose, title, children }) => {
+  return (
+    <>
+      {isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] animate-in fade-in" onClick={onClose} />
+      )}
+      <div className={`fixed top-0 right-0 h-full w-full max-w-[400px] bg-[#0A0A0A] border-l border-white/10 z-[70] transition-transform duration-500 ease-out p-8 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex justify-between items-center mb-10">
+          <h3 className="text-sm font-black text-white uppercase tracking-widest">{title}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+            <X className="w-5 h-5 text-neutral-500" />
+          </button>
         </div>
-      </section>
-      
-      {/* SECTION 2: THE "ACTION ENGINE" (Unified Left Column) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {children}
+      </div>
+    </>
+  );
+};
+
+export default function Home() {
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const user = { name: "Manny" };
+
+  return (
+    <div className="min-h-screen bg-transparent p-6 lg:p-10">
+      <header className="mb-10">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-[2px] bg-brand-500" />
+          <span className="text-[10px] font-black text-brand-500 uppercase tracking-[0.3em]">System Live</span>
+        </div>
+        <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase">
+          Mission Control
+        </h1>
+      </header>
+
+      <SlimProjectAlert />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* THE UNIFIED "GLASS" ENGINE WRAPPER */}
-        <div className="lg:col-span-2 rounded-2xl bg-white/[0.02] border border-white/[0.05] overflow-hidden flex flex-col">
-          <div className="p-6 pb-2">
-             <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">
-               Operational Priorities
-             </h3>
-             <RecommendedTasks />
-          </div>
-          
-          {/* Readiness Index is now fused to the bottom of the engine */}
-          <ReadinessScoreCard
-            score={readinessScore}
-            label="Peak Focus"
-            insight="You're in the zone — ship it now."
-            bestHour="2-4 PM"
-            onStart={startSprint}
-          />
+        {/* Primary Column */}
+        <div className="lg:col-span-2 space-y-8">
+          <section>
+            <h2 className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+              <Zap className="w-3 h-3 text-brand-500" /> 
+              Recommended for Today
+            </h2>
+            
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="group bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 p-4 rounded-xl flex items-center justify-between transition-all cursor-pointer">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center border border-white/10 group-hover:border-brand-500/50 transition-colors">
+                      <Target className="w-5 h-5 text-neutral-400 group-hover:text-brand-500" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-white mb-0.5">Integrate Telemetry Engine</h4>
+                      <div className="flex items-center gap-3 text-[10px] font-medium text-neutral-500 uppercase tracking-tight">
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 2h est</span>
+                        <span className="text-brand-500/50">•</span>
+                        <span>ShareSync Core</span>
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-neutral-700 group-hover:text-white transition-colors" />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Performance Summary with Interactive Stats */}
+          <section className="p-6 rounded-2xl bg-gradient-to-br from-brand-500/10 to-transparent border border-brand-500/20">
+            <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] mb-4">Current Velocity</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <VelocityStat label="Ships" value="14" color="text-brand-500" detail="Total validated deployments in the last 7 days." />
+              <VelocityStat label="Streak" value="7D" color="text-orange-500" detail="Active days since last mission failure or skip." />
+              <VelocityStat label="Focus" value="88%" color="text-emerald-500" detail="Deep work percentage vs. distraction-based tasks." />
+              <VelocityStat label="Rank" value="Top 2%" color="text-indigo-400" detail="Global standing among 247k+ active operators." />
+            </div>
+          </section>
         </div>
-        
-        {/* RIGHT FEED (Feedback Loop) */}
-        <div className="space-y-4">
-          <ActivityFeed />
-          <MomentumIndex />
+
+        {/* Sidebar */}
+        <div className="space-y-8">
+          <section>
+             <h2 className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">System Alerts</h2>
+             <div 
+               onClick={() => setIsPanelOpen(true)}
+               className="bg-orange-500/5 border border-orange-500/20 p-4 rounded-xl cursor-pointer hover:border-orange-500/40 hover:bg-orange-500/10 transition-all group"
+             >
+               <div className="flex items-start gap-3">
+                 <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5" />
+                 <div>
+                   <div className="flex items-center justify-between mb-1">
+                     <p className="text-xs font-bold text-white uppercase tracking-tight">High Workload Detected</p>
+                     <ChevronRight className="w-3 h-3 text-neutral-600 group-hover:text-white transition-transform group-hover:translate-x-1" />
+                   </div>
+                   <p className="text-[10px] text-neutral-400 leading-relaxed">
+                     You are doing 71% of the team's ships this week. Risk of burnout is high. Click to rebalance.
+                   </p>
+                 </div>
+               </div>
+             </div>
+          </section>
+
+          <section>
+             <h2 className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">Peak Windows</h2>
+             <div className="space-y-2 mb-8">
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-neutral-400 font-medium italic">Your Prime Time</span>
+                  <span className="text-emerald-500 font-black uppercase tracking-tighter">2:00 PM — 4:00 PM</span>
+                </div>
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500/50" style={{ width: '65%' }} />
+                </div>
+             </div>
+
+             {/* LIVE PULSE INTEGRATION */}
+             <LivePulse />
+          </section>
         </div>
       </div>
 
-      {/* FOOTER ECOSYSTEM (Projects & Social) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t border-white/5">
-        <ProjectsOverview />
-        <TeamStories />
-        <Achievements />
-      </div>
-
-      {/* GLOBAL ACTION DOCK */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Button onClick={() => navigate('/projects')} variant="secondary" className="h-14 font-bold tracking-tight bg-white/5 border-white/5 hover:bg-white/10">
-          Resume Last Mission
-        </Button>
-        <Button onClick={startSprint} variant="primary" className="h-14 font-bold tracking-tight shadow-glow-brand">
-          Start 25:00 Sprint
-        </Button>
-        <Button variant="success" className="h-14 font-bold tracking-tight shadow-glow-success/10">
-          Ship Quick Win
-        </Button>
-      </div>
+      {/* The Hidden Intelligence Layer Slide-out */}
+      <ActionPanel 
+        isOpen={isPanelOpen} 
+        onClose={() => setIsPanelOpen(false)} 
+        title="Diagnostic: Team Balance"
+      >
+        <TeamBalancePanel />
+      </ActionPanel>
     </div>
   );
 }
