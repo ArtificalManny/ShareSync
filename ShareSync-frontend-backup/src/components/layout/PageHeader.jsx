@@ -1,46 +1,37 @@
-// src/components/layout/PageHeader.jsx
+//Users/realmannyrivas/Documents/ShareSync/ShareSync-frontend-backup/src/components/layout/PageHeader.jsx
 import React from "react";
-import Card from "../ui/Card.jsx";
 
 /**
- * PageHeader
- * - Reusable hero/header for top-of-page sections.
- * - Keeps one primary h1 + optional subtitle and right-aligned actions.
- *
- * Props:
- *  - title: string | ReactNode
- *  - subtitle?: string | ReactNode
- *  - icon?: ReactNode          // small emoji/icon to the left of title
- *  - actions?: ReactNode       // buttons on the right
- *  - children?: ReactNode      // optional extra content under the header row
- *  - className?: string
+ * PageHeader - Elite Refinement
+ * Updated with tighter tracking and high-contrast metadata hierarchy.
  */
 export default function PageHeader({
   title,
   subtitle = null,
   icon = null,
   actions = null,
-  children = null,
   className = "",
 }) {
   return (
-    <Card className={`shine accent-bar ${className}`}>
-      <div className="px-4 sm:px-6 md:px-8 py-5 flex items-center justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            {icon ? <span className="text-xl" aria-hidden>{icon}</span> : null}
-            <h1 className="h1 truncate">{title}</h1>
-          </div>
-          {subtitle ? (
-            <div className="mt-1 text-sm text-muted">{subtitle}</div>
-          ) : null}
+    <div className={`flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/5 pb-6 ${className}`}>
+      <div className="min-w-0">
+        <div className="flex items-center gap-3 mb-1">
+          {icon && <span className="text-2xl" aria-hidden>{icon}</span>}
+          <h1 className="text-5xl font-black text-white tracking-tighter leading-none">
+            {title}
+          </h1>
         </div>
-        {actions ? <div className="flex items-center gap-2 shrink-0">{actions}</div> : null}
+        {subtitle && (
+          <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] leading-none">
+            {subtitle}
+          </p>
+        )}
       </div>
-
-      {children ? (
-        <div className="px-4 sm:px-6 md:px-8 pb-5">{children}</div>
-      ) : null}
-    </Card>
+      {actions && (
+        <div className="flex items-center gap-3 shrink-0 mb-1">
+          {actions}
+        </div>
+      )}
+    </div>
   );
 }
