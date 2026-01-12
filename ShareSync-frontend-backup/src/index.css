@@ -1,11 +1,7 @@
-/* ─────────────────────────────────────────────────────────────────────────────
-   src/index.css - FIXED: Removed problematic @apply classes
-───────────────────────────────────────────────────────────────────────────── */
+/* 1) CSS VARIABLE IMPORTS (Design System Foundation) */
+@import './styles/design-system.css';
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   1) CSS VARIABLE IMPORTS
-   ═══════════════════════════════════════════════════════════════════════════ */
-
+/* 2) PRESERVED CUSTOM STYLES */
 @import './styles/tokens.css';
 @import './styles/layout-system.css';
 @import './styles/motion.css';
@@ -26,38 +22,20 @@
 @import './styles/public-pages.css';
 @import './styles/mobile.css';
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   2) TAILWIND DIRECTIVES
-   ═══════════════════════════════════════════════════════════════════════════ */
-
+/* 3) TAILWIND DIRECTIVES */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   3) BASE STYLES
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 @layer base {
   html, body, #root {
     @apply bg-[#0a0a0f] text-gray-100;
-  }
-
-  html, body {
     font-family: var(--font-body);
-    font-size: var(--fs-md);
-    line-height: var(--lh-normal);
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   4) CUSTOM UTILITY CLASSES
-   ═══════════════════════════════════════════════════════════════════════════ */
-
+/* 4) CUSTOM UI CLASSES (Preserved) */
 .profile-picture-ring {
   display: inline-block;
   padding: 3px;
@@ -65,89 +43,15 @@
   background: linear-gradient(135deg, #b1b5ff, #e0e0ff);
 }
 
-.profile-picture-ring img {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: block;
-  background: #fff;
-}
-
-.avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 9999px;
-  object-fit: cover;
-  box-shadow: 0 0 8px rgba(91, 108, 255, 0.4);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
-}
-
 .avatar:hover {
   transform: scale(1.05);
   box-shadow: 0 0 10px 4px #5b6cff;
 }
 
-.welcome-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(16px);
-  border-radius: 16px;
-  padding: 24px;
-  color: white;
-  box-shadow: 0 0 8px rgba(91, 108, 255, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  animation: fadeInUp 0.4s ease;
-}
-
-.welcome-message {
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.2;
-  color: #5b6cff;
-}
-
-.streak-ring-placeholder {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: radial-gradient(circle at center, #5b6cff, #1e1b4b);
-  box-shadow: 0 0 8px rgba(91, 108, 255, 0.4);
-  padding: 5px;
-}
-
-.sidebar-icon:hover {
-  filter: drop-shadow(0 0 6px #00d9f5);
-}
-
-.glow-card {
-  box-shadow: 0 4px 12px rgba(91, 108, 255, 0.3);
-  transition: box-shadow 0.3s ease;
-}
-
-.glow-card:hover {
-  box-shadow: 0 6px 18px rgba(91, 108, 255, 0.5);
-  transform: scale(1.015);
-}
-
-.tier-gradient-newcomer { background: linear-gradient(135deg, #b1b5ff, #e0e0ff); }
-.tier-gradient-active   { background: linear-gradient(135deg, #5eead4, #2dd4bf); }
-.tier-gradient-elite    { background: linear-gradient(135deg, #facc15, #f59e0b); }
-
-@keyframes flash-badge {
-  0%   { transform: scale(1);   box-shadow: 0 0 0px #FFD700; }
-  50%  { transform: scale(1.2); box-shadow: 0 0 10px #FFD700; }
-  100% { transform: scale(1);   box-shadow: 0 0 0px #FFD700; }
-}
-.badge-flash { animation: flash-badge 1.5s ease-in-out; }
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   5) DEAD SPACE FIX
-   ═══════════════════════════════════════════════════════════════════════════ */
-
+/* 5) DEAD SPACE FIX (Critical for Layout Integrity) */
 html, body, #root {
   height: auto !important;
-  min-height: auto !important;
+  min-height: 100vh !important;
 }
 
 body {
@@ -159,16 +63,4 @@ main, .main-content {
   min-height: 100vh !important;
   height: auto !important;
   padding-bottom: 2rem !important;
-}
-
-html, body {
-  height: auto !important;
-  min-height: 100vh !important;
-  max-height: none !important;
-}
-
-html.layout-stage,
-body.has-sidebar {
-  height: auto !important;
-  min-height: 100vh !important;
 }

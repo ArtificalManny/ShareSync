@@ -7,12 +7,13 @@ import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '../../hooks/useMobile';
 import useSocket from '../../hooks/useSocket';
 import ecosystemApi from '../../services/ecosystemApi';
+import Card, { CardHeader, CardBody } from '../common/Card';
+import Button from '../common/Button';
 
 const EcosystemStatusBar = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   
-  // ⭐ State with initial mock data
   const [stats, setStats] = useState({
     activeProjects: 3,
     shipsToday: 5,
@@ -23,11 +24,8 @@ const EcosystemStatusBar = () => {
     loading: true,
   });
 
-  // ⭐ Fetch real data from API
   useEffect(() => {
     fetchEcosystemStatus();
-    
-    // Refresh every 60 seconds
     const interval = setInterval(fetchEcosystemStatus, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -54,26 +52,17 @@ const EcosystemStatusBar = () => {
     }
   };
 
-  // ⭐ Listen for real-time ecosystem updates
   useSocket(null, {
     onEvents: {
       'ecosystem:update': (data) => {
-        console.log('Ecosystem update received:', data);
         if (data.stats) {
           setStats(prev => ({
             ...prev,
-            ...data.stats,
-            activeProjects: data.stats.activeProjects ?? prev.activeProjects,
-            shipsToday: data.stats.shipsToday ?? prev.shipsToday,
-            usersOnStreaks: data.stats.onStreaks ?? prev.usersOnStreaks,
-            projectsAtRisk: data.stats.atRisk ?? prev.projectsAtRisk,
-            revenueThisMonth: data.stats.revenue ?? prev.revenueThisMonth,
-            teamMomentum: data.stats.momentum ?? prev.teamMomentum
+            ...data.stats
           }));
         }
       },
       'team:ship': () => {
-        // Increment ships count
         setStats(prev => ({ ...prev, shipsToday: prev.shipsToday + 1 }));
       }
     }
@@ -88,162 +77,95 @@ const EcosystemStatusBar = () => {
     }
   };
 
-  const getMomentumIcon = (momentum) => {
-    switch(momentum) {
-      case 'high': return <TrendingUp className="w-4 h-4" />;
-      case 'medium': return <Activity className="w-4 h-4" />;
-      case 'low': return <AlertTriangle className="w-4 h-4" />;
-      default: return <Activity className="w-4 h-4" />;
-    }
-  };
-
   if (isMobile) {
-    // Mobile compact version
     return (
-      <div className="bg-gradient-to-r from-purple-600/20 to-fuchsia-600/20 border-b border-purple-500/30 backdrop-blur-xl">
+      <Card className="bg-gradient-to-br from-purple-600/10 to-transparent border-purple-500/20">
         <div className="px-4 py-3">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-              <Activity className="w-4 h-4 text-purple-400" />
-            </div>
-            <h2 className="text-sm font-bold text-white">Your World</h2>
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="w-4 h-4 text-purple-400" />
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider">Ecosystem</h2>
             {!stats.loading && (
-              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse ml-auto" title="Live" />
+              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse ml-auto" />
             )}
           </div>
-          
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            <div className="bg-slate-900/50 rounded-lg p-2">
-              <div className="text-purple-400 font-bold">{stats.activeProjects}</div>
-              <div className="text-slate-400">Projects</div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-white/5 rounded-lg p-2 border border-white/5">
+              <div className="text-lg font-bold text-white">{stats.activeProjects}</div>
+              <div className="text-[10px] text-slate-500 uppercase font-bold">Projects</div>
             </div>
-            <div className="bg-slate-900/50 rounded-lg p-2">
-              <div className="text-emerald-400 font-bold">{stats.shipsToday}</div>
-              <div className="text-slate-400">Ships</div>
+            <div className="bg-white/5 rounded-lg p-2 border border-white/5">
+              <div className="text-lg font-bold text-emerald-400">{stats.shipsToday}</div>
+              <div className="text-[10px] text-slate-500 uppercase font-bold">Ships</div>
             </div>
-            <div className="bg-slate-900/50 rounded-lg p-2">
-              <div className="text-orange-400 font-bold">{stats.usersOnStreaks}</div>
-              <div className="text-slate-400">Streaks</div>
+            <div className="bg-white/5 rounded-lg p-2 border border-white/5">
+              <div className="text-lg font-bold text-orange-400">{stats.usersOnStreaks}</div>
+              <div className="text-[10px] text-slate-500 uppercase font-bold">Streaks</div>
             </div>
           </div>
         </div>
-      </div>
+      </Card>
     );
   }
 
-  // Desktop full version
   return (
-    <div className="bg-gradient-to-r from-purple-600/10 to-fuchsia-600/10 border border-purple-500/20 rounded-2xl p-6 mb-6 backdrop-blur-xl">
-      <div className="flex items-center justify-between mb-4">
+    <Card className="bg-slate-900/40 border-white/5 overflow-hidden">
+      <CardHeader className="flex items-center justify-between border-b border-white/5 bg-white/[0.02]">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl flex items-center justify-center">
-            <Activity className="w-6 h-6 text-white" />
+          <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center border border-purple-500/20">
+            <Activity className="w-5 h-5 text-purple-400" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Your World</h2>
-            <p className="text-sm text-slate-400">Mission control for all your work</p>
+            <h2 className="text-lg font-bold text-white">Ecosystem Status</h2>
+            <p className="text-xs text-slate-500">Live operational intelligence</p>
           </div>
         </div>
 
-        {/* Momentum indicator */}
-        <div className="flex items-center gap-3">
-          {!stats.loading && (
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-              <span>Live</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900/80 rounded-full border border-white/10">
+          <TrendingUp className={`w-3.5 h-3.5 ${getMomentumColor(stats.teamMomentum)}`} />
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${getMomentumColor(stats.teamMomentum)}`}>
+            {stats.teamMomentum} Momentum
+          </span>
+        </div>
+      </CardHeader>
+
+      <CardBody className="grid grid-cols-5 gap-3">
+        {[
+          { label: 'Active Projects', val: stats.activeProjects, icon: Rocket, color: 'text-purple-400', border: 'hover:border-purple-500/30', path: '/projects' },
+          { label: 'Ships Today', val: stats.shipsToday, icon: Rocket, color: 'text-emerald-400', border: 'hover:border-emerald-500/30', path: null },
+          { label: 'On Streaks', val: stats.usersOnStreaks, icon: Flame, color: 'text-orange-400', border: 'hover:border-orange-500/30', path: null },
+          { label: 'At Risk', val: stats.projectsAtRisk, icon: AlertTriangle, color: 'text-red-400', border: 'hover:border-red-500/30', path: '/projects' },
+          { label: 'Monthly Rev', val: `$${stats.revenueThisMonth.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-400', border: 'hover:border-emerald-500/30', path: null }
+        ].map((item, i) => (
+          <button 
+            key={i}
+            onClick={() => item.path && navigate(item.path)}
+            className={`group bg-white/[0.03] border border-white/5 ${item.border} rounded-xl p-4 transition-all text-left flex flex-col justify-between h-28`}
+          >
+            <div className="flex items-center justify-between">
+              <item.icon className={`w-5 h-5 ${item.color}`} />
+              {item.path && <ChevronRight className="w-4 h-4 text-slate-700 group-hover:text-white transition-all" />}
             </div>
-          )}
-          <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-xl border border-slate-700">
-            {getMomentumIcon(stats.teamMomentum)}
-            <span className={`font-semibold ${getMomentumColor(stats.teamMomentum)}`}>
-              {stats.teamMomentum.toUpperCase()} MOMENTUM
-            </span>
-          </div>
-        </div>
+            <div>
+              <div className="text-xl font-bold text-white leading-none mb-1">{item.val}</div>
+              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{item.label}</div>
+            </div>
+          </button>
+        ))}
+      </CardBody>
+      
+      <div className="px-4 py-2 bg-white/[0.01] border-t border-white/5 flex items-center justify-between">
+         <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+              <span>Network Active</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Users className="w-3 h-3" />
+              <span>{stats.shipsToday + 2} nodes live</span>
+            </div>
+         </div>
       </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-5 gap-4">
-        {/* Active Projects */}
-        <button 
-          className="group bg-slate-900/50 hover:bg-slate-900/70 border border-slate-700 hover:border-purple-500/50 rounded-xl p-4 transition-all text-left"
-          onClick={() => navigate('/projects')}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <Rocket className="w-5 h-5 text-purple-400" />
-            <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-purple-400 transition-colors" />
-          </div>
-          <div className="text-2xl font-bold text-white mb-1">{stats.activeProjects}</div>
-          <div className="text-xs text-slate-400">Active Projects</div>
-        </button>
-
-        {/* Ships Today */}
-        <button 
-          className="group bg-slate-900/50 hover:bg-slate-900/70 border border-slate-700 hover:border-emerald-500/50 rounded-xl p-4 transition-all text-left"
-          onClick={() => console.log('Navigate to activity')}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <Rocket className="w-5 h-5 text-emerald-400" />
-            <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-emerald-400 transition-colors" />
-          </div>
-          <div className="text-2xl font-bold text-white mb-1">{stats.shipsToday}</div>
-          <div className="text-xs text-slate-400">Ships Today</div>
-        </button>
-
-        {/* Users on Streaks */}
-        <button 
-          className="group bg-slate-900/50 hover:bg-slate-900/70 border border-slate-700 hover:border-orange-500/50 rounded-xl p-4 transition-all text-left"
-          onClick={() => console.log('Navigate to streaks')}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <Flame className="w-5 h-5 text-orange-400" />
-            <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-orange-400 transition-colors" />
-          </div>
-          <div className="text-2xl font-bold text-white mb-1">{stats.usersOnStreaks}</div>
-          <div className="text-xs text-slate-400">On Streaks</div>
-        </button>
-
-        {/* Projects at Risk */}
-        <button 
-          className="group bg-slate-900/50 hover:bg-slate-900/70 border border-slate-700 hover:border-red-500/50 rounded-xl p-4 transition-all text-left"
-          onClick={() => stats.projectsAtRisk > 0 && navigate('/projects')}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <AlertTriangle className="w-5 h-5 text-red-400" />
-            <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-red-400 transition-colors" />
-          </div>
-          <div className="text-2xl font-bold text-white mb-1">{stats.projectsAtRisk}</div>
-          <div className="text-xs text-slate-400">At Risk</div>
-        </button>
-
-        {/* Revenue This Month */}
-        <button 
-          className="group bg-slate-900/50 hover:bg-slate-900/70 border border-slate-700 hover:border-emerald-500/50 rounded-xl p-4 transition-all text-left"
-          onClick={() => console.log('Navigate to payments')}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <DollarSign className="w-5 h-5 text-emerald-400" />
-            <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-emerald-400 transition-colors" />
-          </div>
-          <div className="text-2xl font-bold text-white mb-1">
-            ${stats.revenueThisMonth.toLocaleString()}
-          </div>
-          <div className="text-xs text-slate-400">This Month</div>
-        </button>
-      </div>
-
-      {/* Quick insights */}
-      <div className="mt-4 flex items-center gap-4 text-sm text-slate-400">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-          <span>All systems operational</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4" />
-          <span>Team connected</span>
-        </div>
-      </div>
-    </div>
+    </Card>
   );
 };
 
