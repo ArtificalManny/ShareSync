@@ -1,15 +1,10 @@
 import React from "react";
-import { ClipboardList, CheckCircle2, PencilLine } from "lucide-react";
+import { ClipboardList, CheckCircle2, PencilLine, Clock } from "lucide-react";
+import Card, { CardBody } from "../../common/Card";
 
 /**
- * TaskItem
- * Renders task-related activity (created/updated/completed).
- *
- * Props:
- *  - event: { type?, title?, meta?, status?, createdAt? }
- *  - when: formatted timestamp string (optional; computed upstream)
- *  - isFresh?: boolean (highlight row when true)
- *  - className?: string (extra classes for root)
+ * TaskItem - Phase 5 A+ Refinement
+ * Renders task-related activity with high-contrast design system logic.
  */
 export default function TaskItem({ event, when, isFresh = false, className = "" }) {
   const u = event || {};
@@ -17,39 +12,75 @@ export default function TaskItem({ event, when, isFresh = false, className = "" 
   const title = u.title || u.meta?.title || u.text || "Task";
   const whenText = when || (u.createdAt ? new Date(u.createdAt).toLocaleString() : "");
 
-  const icon = t.includes("completed")
-    ? <CheckCircle2 className="w-4 h-4" />
-    : t.includes("updated")
-      ? <PencilLine className="w-4 h-4" />
-      : <ClipboardList className="w-4 h-4" />;
+  // Semantic Status Configuration
+  const isCompleted = t.includes("completed");
+  const isUpdated = t.includes("updated");
 
-  const badge =
-    t.includes("completed")
-      ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/70 dark:border-emerald-900/60"
-      : t.includes("updated")
-        ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200/70 dark:border-amber-900/60"
-        : "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200/70 dark:border-indigo-900/60";
+  const statusConfig = isCompleted
+    ? {
+        icon: <CheckCircle2 className="w-4 h-4 text-success-500" />,
+        accent: "border-success-500/30 bg-success-500/5",
+        label: "Shipped",
+        text: "text-success-500"
+      }
+    : isUpdated
+    ? {
+        icon: <PencilLine className="w-4 h-4 text-warning-500" />,
+        accent: "border-warning-500/30 bg-warning-500/5",
+        label: "Updated",
+        text: "text-warning-500"
+      }
+    : {
+        icon: <ClipboardList className="w-4 h-4 text-brand-400" />,
+        accent: "border-brand-500/30 bg-brand-500/5",
+        label: "Drafted",
+        text: "text-brand-400"
+      };
 
-  const label =
-    t.includes("completed")
-      ? `Task completed: ${title}`
-      : t.includes("updated")
-        ? `Task updated: ${title}`
-        : `Task created: ${title}`;
+  const actionText = isCompleted
+    ? "Successfully completed"
+    : isUpdated
+    ? "Refined details for"
+    : "Started new mission:";
 
   return (
-    <article
-      className={`feed-row relative overflow-hidden flex items-center gap-2 rounded-xl border border-slate-200/70 dark:border-slate-700 px-3 py-2 bg-white/70 dark:bg-slate-800/70 ${isFresh ? "row-new" : ""} ${className}`}
+    <Card 
+      variant="flat" 
+      interactive 
+      className={`group border-l-2 ${statusConfig.accent} ${isFresh ? "animate-pulse" : ""} ${className}`}
     >
-      {isFresh && <span className="row-pulse-ring" aria-hidden />}
-      <span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-1 border ${badge}`}>
-        {icon}
-        Task
-      </span>
-      <span className="text-sm text-slate-800 dark:text-slate-100 truncate" title={label}>
-        {label}
-      </span>
-      <span className="ml-auto text-[11px] text-slate-500">{whenText}</span>
-    </article>
+      <CardBody className="py-3 px-4 flex items-center gap-4">
+        {/* Status Icon Orb */}
+        <div className={`flex-shrink-0 p-2 rounded-lg bg-slate-900 border border-white/5 group-hover:scale-110 transition-transform`}>
+          {statusConfig.icon}
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${statusConfig.text}`}>
+              {statusConfig.label}
+            </span>
+            <span className="text-[10px] text-neutral-500 font-medium">•</span>
+            <div className="flex items-center gap-1 text-[10px] text-neutral-500 font-bold">
+              <Clock size={10} />
+              {whenText}
+            </div>
+          </div>
+          
+          <p className="text-sm text-neutral-300 truncate font-medium">
+            <span className="text-neutral-500 font-normal mr-1">{actionText}</span>
+            <span className="text-white group-hover:text-brand-400 transition-colors tracking-tight">
+              {title}
+            </span>
+          </p>
+        </div>
+
+        {/* Subtle Indicator for Fresh Content */}
+        {isFresh && (
+          <div className="w-2 h-2 rounded-full bg-brand-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+        )}
+      </CardBody>
+    </Card>
   );
 }
