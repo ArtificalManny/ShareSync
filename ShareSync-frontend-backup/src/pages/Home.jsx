@@ -1,21 +1,28 @@
 // src/pages/Home.jsx - MISSION CONTROL REFACTOR
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { 
   Zap, 
-  Target, 
-  Flame, 
   Clock, 
   ArrowRight, 
   AlertCircle, 
   ChevronRight,
-  LayoutGrid,
   Info,
   X,
   CheckCircle2
 } from "lucide-react";
-import SectionHeader from "../components/ui/SectionHeader";
 import TeamBalancePanel from "../components/home/TeamBalancePanel";
+import ProjectTelemetryPanel from "../components/home/ProjectTelemetryPanel";
 import LivePulse from "../components/home/LivePulse";
+import MissionCard from "../components/home/MissionCard";
+
+/* ─────────────────────────────────────────────────────────────────────────
+   DATA LAYER: MOCK MISSIONS
+───────────────────────────────────────────────────────────────────────── */
+const MOCK_MISSIONS = [
+  { id: 1, title: "Integrate Telemetry Engine", category: "Core Sync", eta: "2h", health: 92, velocity: 88 },
+  { id: 2, title: "Refactor Auth Protocol", category: "Security", eta: "4h", health: 65, velocity: 74 },
+  { id: 3, title: "Cloud Node Expansion", category: "Infrastructure", eta: "1h", health: 42, velocity: 51 },
+];
 
 /* ─────────────────────────────────────────────────────────────────────────
    INTELLIGENCE LAYER: VELOCITY STAT
@@ -102,8 +109,21 @@ const ActionPanel = ({ isOpen, onClose, title, children }) => {
 
 export default function Home() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [panelContent, setPanelContent] = useState("balance"); // 'balance' | 'telemetry'
+  const [selectedMission, setSelectedMission] = useState(null);
   const [isBalanced, setIsBalanced] = useState(false);
-  const user = { name: "Manny" };
+
+  const openBalancePanel = () => {
+    setSelectedMission(null);
+    setPanelContent("balance");
+    setIsPanelOpen(true);
+  };
+
+  const openTelemetryPanel = (project) => {
+    setSelectedMission(project);
+    setPanelContent("telemetry");
+    setIsPanelOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-transparent p-6 lg:p-10">
@@ -121,32 +141,21 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Primary Column */}
+        {/* Primary Column: Mission Board */}
         <div className="lg:col-span-2 space-y-8">
           <section>
-            <h2 className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+            <h2 className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
               <Zap className="w-3 h-3 text-brand-500" /> 
               Recommended for Today
             </h2>
             
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="group bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 p-4 rounded-xl flex items-center justify-between transition-all cursor-pointer">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center border border-white/10 group-hover:border-brand-500/50 transition-colors">
-                      <Target className="w-5 h-5 text-neutral-400 group-hover:text-brand-500" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-white mb-0.5">Integrate Telemetry Engine</h4>
-                      <div className="flex items-center gap-3 text-[10px] font-medium text-neutral-500 uppercase tracking-tight">
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 2h est</span>
-                        <span className="text-brand-500/50">•</span>
-                        <span>ShareSync Core</span>
-                      </div>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-neutral-700 group-hover:text-white transition-colors" />
-                </div>
+            <div className="space-y-4">
+              {MOCK_MISSIONS.map((mission) => (
+                <MissionCard 
+                  key={mission.id} 
+                  project={mission} 
+                  onClick={openTelemetryPanel} 
+                />
               ))}
             </div>
           </section>
@@ -169,7 +178,7 @@ export default function Home() {
              
              {isBalanced ? (
                <div 
-                 onClick={() => setIsPanelOpen(true)}
+                 onClick={openBalancePanel}
                  className="bg-emerald-500/5 border border-emerald-500/20 p-4 rounded-xl cursor-pointer hover:bg-emerald-500/10 transition-all group animate-in zoom-in-95"
                >
                  <div className="flex items-start gap-3">
@@ -184,7 +193,7 @@ export default function Home() {
                </div>
              ) : (
                <div 
-                 onClick={() => setIsPanelOpen(true)}
+                 onClick={openBalancePanel}
                  className="bg-orange-500/5 border border-orange-500/20 p-4 rounded-xl cursor-pointer hover:border-orange-500/40 hover:bg-orange-500/10 transition-all group"
                >
                  <div className="flex items-start gap-3">
@@ -219,12 +228,17 @@ export default function Home() {
         </div>
       </div>
 
+      {/* The Dynamic Action Panel */}
       <ActionPanel 
         isOpen={isPanelOpen} 
         onClose={() => setIsPanelOpen(false)} 
-        title="Diagnostic: Team Balance"
+        title={panelContent === "balance" ? "Diagnostic: Team Balance" : selectedMission?.title || "Mission Telemetry"}
       >
-        <TeamBalancePanel onBalanceComplete={() => setIsBalanced(true)} />
+        {panelContent === "balance" ? (
+          <TeamBalancePanel onBalanceComplete={() => setIsBalanced(true)} />
+        ) : (
+          <ProjectTelemetryPanel project={selectedMission} />
+        )}
       </ActionPanel>
     </div>
   );
