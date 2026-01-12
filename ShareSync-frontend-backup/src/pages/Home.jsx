@@ -10,7 +10,8 @@ import {
   ChevronRight,
   LayoutGrid,
   Info,
-  X
+  X,
+  CheckCircle2
 } from "lucide-react";
 import SectionHeader from "../components/ui/SectionHeader";
 import TeamBalancePanel from "../components/home/TeamBalancePanel";
@@ -18,7 +19,6 @@ import LivePulse from "../components/home/LivePulse";
 
 /* ─────────────────────────────────────────────────────────────────────────
    INTELLIGENCE LAYER: VELOCITY STAT
-   Objective: High-density info on hover.
 ───────────────────────────────────────────────────────────────────────── */
 const VelocityStat = ({ label, value, color, detail }) => {
   const [showDetail, setShowDetail] = useState(false);
@@ -102,6 +102,7 @@ const ActionPanel = ({ isOpen, onClose, title, children }) => {
 
 export default function Home() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isBalanced, setIsBalanced] = useState(false);
   const user = { name: "Manny" };
 
   return (
@@ -150,7 +151,6 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Performance Summary with Interactive Stats */}
           <section className="p-6 rounded-2xl bg-gradient-to-br from-brand-500/10 to-transparent border border-brand-500/20">
             <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] mb-4">Current Velocity</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -166,23 +166,41 @@ export default function Home() {
         <div className="space-y-8">
           <section>
              <h2 className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-4">System Alerts</h2>
-             <div 
-               onClick={() => setIsPanelOpen(true)}
-               className="bg-orange-500/5 border border-orange-500/20 p-4 rounded-xl cursor-pointer hover:border-orange-500/40 hover:bg-orange-500/10 transition-all group"
-             >
-               <div className="flex items-start gap-3">
-                 <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5" />
-                 <div>
-                   <div className="flex items-center justify-between mb-1">
-                     <p className="text-xs font-bold text-white uppercase tracking-tight">High Workload Detected</p>
-                     <ChevronRight className="w-3 h-3 text-neutral-600 group-hover:text-white transition-transform group-hover:translate-x-1" />
+             
+             {isBalanced ? (
+               <div 
+                 onClick={() => setIsPanelOpen(true)}
+                 className="bg-emerald-500/5 border border-emerald-500/20 p-4 rounded-xl cursor-pointer hover:bg-emerald-500/10 transition-all group animate-in zoom-in-95"
+               >
+                 <div className="flex items-start gap-3">
+                   <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
+                   <div>
+                     <p className="text-xs font-bold text-white uppercase tracking-tight">Load Balanced</p>
+                     <p className="text-[10px] text-neutral-400 leading-relaxed">
+                       Tasks redistributed across active nodes. Performance optimized.
+                     </p>
                    </div>
-                   <p className="text-[10px] text-neutral-400 leading-relaxed">
-                     You are doing 71% of the team's ships this week. Risk of burnout is high. Click to rebalance.
-                   </p>
                  </div>
                </div>
-             </div>
+             ) : (
+               <div 
+                 onClick={() => setIsPanelOpen(true)}
+                 className="bg-orange-500/5 border border-orange-500/20 p-4 rounded-xl cursor-pointer hover:border-orange-500/40 hover:bg-orange-500/10 transition-all group"
+               >
+                 <div className="flex items-start gap-3">
+                   <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5" />
+                   <div>
+                     <div className="flex items-center justify-between mb-1">
+                       <p className="text-xs font-bold text-white uppercase tracking-tight">High Workload Detected</p>
+                       <ChevronRight className="w-3 h-3 text-neutral-600 group-hover:text-white transition-transform group-hover:translate-x-1" />
+                     </div>
+                     <p className="text-[10px] text-neutral-400 leading-relaxed">
+                       You are doing 71% of ships. Click to rebalance.
+                     </p>
+                   </div>
+                 </div>
+               </div>
+             )}
           </section>
 
           <section>
@@ -196,20 +214,17 @@ export default function Home() {
                   <div className="h-full bg-emerald-500/50" style={{ width: '65%' }} />
                 </div>
              </div>
-
-             {/* LIVE PULSE INTEGRATION */}
              <LivePulse />
           </section>
         </div>
       </div>
 
-      {/* The Hidden Intelligence Layer Slide-out */}
       <ActionPanel 
         isOpen={isPanelOpen} 
         onClose={() => setIsPanelOpen(false)} 
         title="Diagnostic: Team Balance"
       >
-        <TeamBalancePanel />
+        <TeamBalancePanel onBalanceComplete={() => setIsBalanced(true)} />
       </ActionPanel>
     </div>
   );
