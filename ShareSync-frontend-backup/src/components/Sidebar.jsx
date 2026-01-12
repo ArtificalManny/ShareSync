@@ -1,17 +1,15 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+// src/components/Sidebar.jsx - MISSION CONTROL NAVIGATION
+import React, { useEffect, useState } from "react";
 import {
-  Home,
-  FolderKanban,
   User as UserIcon,
   Settings,
   ChevronsLeft,
   Trophy,
-  Zap,
   Flame,
-  Play,
   Terminal,
-  Activity
+  Activity,
+  LayoutGrid,
+  ShieldCheck
 } from "lucide-react";
 
 // Standardizing imports to be safe
@@ -25,7 +23,7 @@ import "./Sidebar.neon.css";
 const LS_KEY = "ss.sidebar.collapsed";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   LAYER 1: MOMENTUM PULSE
+   LAYER 1: MOMENTUM PULSE (Health & Streak Visualization)
 ───────────────────────────────────────────────────────────────────────── */
 function MomentumPulse({ todayProgress = 0.75, streak = 7, collapsed = false }) {
   const size = collapsed ? 44 : 64;
@@ -51,9 +49,9 @@ function MomentumPulse({ todayProgress = 0.75, streak = 7, collapsed = false }) 
         </svg>
       </div>
       {!collapsed && (
-        <div className="absolute -bottom-1 px-2 py-0.5 rounded-sm bg-slate-950 border border-white/10 flex items-center gap-1 shadow-lg">
+        <div className="absolute -bottom-1 px-2 py-0.5 rounded-sm bg-slate-950 border border-white/10 flex items-center gap-1 shadow-lg z-20">
           <Flame className="w-2.5 h-2.5 text-orange-500" />
-          <span className="text-[9px] font-black text-white italic">{streak}D STREAK</span>
+          <span className="text-[9px] font-black text-white italic tracking-tighter">{streak}D STREAK</span>
         </div>
       )}
     </div>
@@ -61,7 +59,7 @@ function MomentumPulse({ todayProgress = 0.75, streak = 7, collapsed = false }) 
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   LAYER 2: DAILY SHIP
+   LAYER 2: DAILY SHIP (Task Progression)
 ───────────────────────────────────────────────────────────────────────── */
 function DailyShipCounter({ current = 2, target = 5, collapsed = false }) {
   const progress = Math.min(1, current / target);
@@ -69,7 +67,7 @@ function DailyShipCounter({ current = 2, target = 5, collapsed = false }) {
   return (
     <div className="px-4 py-2 border-y border-white/[0.03] bg-white/[0.01]">
       <div className="flex justify-between items-baseline mb-1.5">
-        <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Ships</span>
+        <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Daily Ships</span>
         <span className="text-[10px] font-black text-white italic">{current}/{target}</span>
       </div>
       <div className="h-1 bg-white/5 rounded-full overflow-hidden flex gap-0.5">
@@ -105,7 +103,7 @@ export default function Sidebar() {
       <div className="sb-head flex items-center justify-between p-4">
         {!collapsed && (
            <div className="flex items-center gap-2">
-             <div className="w-5 h-5 bg-brand-500 rounded flex items-center justify-center text-[10px] text-white font-black">S</div>
+             <div className="w-5 h-5 bg-brand-500 rounded flex items-center justify-center text-[10px] text-white font-black shadow-[0_0_10px_rgba(139,92,246,0.4)]">S</div>
              <span className="text-[11px] font-black text-white uppercase tracking-[0.3em]">ShareSync</span>
            </div>
         )}
@@ -118,9 +116,13 @@ export default function Sidebar() {
       <DailyShipCounter collapsed={collapsed} />
 
       <nav className="sb-nav mt-8 px-3 space-y-1 flex-1">
-        <SidebarItem to="/home" label="Dashboard" icon={Activity} collapsed={collapsed} />
+        {/* Updated Links to match Mission Control & Arena terminology */}
+        <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
         <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
         <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
+        
+        <div className="py-4 opacity-20"><div className="h-[1px] bg-white mx-2" /></div>
+        
         <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
         <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
       </nav>
@@ -132,7 +134,7 @@ export default function Sidebar() {
             <div className="min-w-0">
               <div className="text-[11px] font-black text-white truncate uppercase tracking-wider">{me.name}</div>
               <div className="text-[9px] font-bold text-emerald-500 uppercase flex items-center gap-1">
-                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> Live System
+                <ShieldCheck className="w-2.5 h-2.5" /> Secure Node
               </div>
             </div>
           )}
