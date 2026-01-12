@@ -1,53 +1,47 @@
 import React from 'react';
-import { Rocket, Target, Zap, AlertTriangle, DollarSign, TrendingUp } from 'lucide-react';
-import Card, { CardHeader, CardBody } from '../common/Card';
+import Card, { CardBody } from '../common/Card';
+import { CheckCircle2, Clock } from 'lucide-react';
 
-const StatMini = ({ icon: Icon, label, value, status }) => {
-  const statusColors = {
-    brand: "text-purple-400",
-    success: "text-emerald-400",
-    warning: "text-amber-400",
-    danger: "text-red-400",
-  };
-  
+const YourWorld = ({ tasks = [
+  { id: 1, title: 'Refactor Dashboard CSS', projectName: 'ShareSync v2', completed: false, dueDate: 'Today' },
+  { id: 2, title: 'API Integration', projectName: 'AI Engine', completed: true, dueDate: 'Done' },
+  { id: 3, title: 'User Testing', projectName: 'Mobile App', completed: false, dueDate: 'Tomorrow' }
+] }) => {
   return (
-    <div className="flex flex-col gap-1 p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all hover:scale-[1.02]">
-      <Icon className={`w-4 h-4 ${statusColors[status] || 'text-slate-400'}`} />
-      <div className="text-2xl font-bold text-white mt-1">{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">{label}</div>
+    <div className="space-y-4 py-6">
+      <div className="flex justify-between items-end px-2">
+        <div>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Your World</h2>
+          <p className="text-neutral-400 text-sm">Real-time task overview</p>
+        </div>
+        <button className="text-brand-400 text-sm font-medium hover:underline">View All</button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {tasks.map((task) => (
+          <Card key={task.id} interactive variant="elevated">
+            <CardBody className="flex items-start gap-3">
+              <div className={task.completed ? "text-success-500" : "text-brand-500"}>
+                {task.completed ? <CheckCircle2 size={18} /> : <Clock size={18} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-white truncate">{task.title}</h4>
+                <p className="text-xs text-neutral-500 mt-1">{task.projectName}</p>
+                <div className="mt-3 flex items-center justify-between">
+                   <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold ${
+                     task.completed ? 'bg-success-500/10 text-success-500' : 'bg-brand-500/10 text-brand-500'
+                   }`}>
+                     {task.completed ? 'Done' : 'Active'}
+                   </span>
+                   <span className="text-[10px] text-neutral-600">{task.dueDate}</span>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
 
-export default function YourWorld() {
-  return (
-    <Card variant="elevated" status="brand" glow className="overflow-hidden">
-      <CardHeader className="flex items-center justify-between bg-purple-500/5">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-purple-600 shadow-lg shadow-purple-500/20">
-            <TrendingUp className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white">Your World</h2>
-            <p className="text-xs text-slate-500">Real-time mission status</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">A+ Momentum</span>
-        </div>
-      </CardHeader>
-
-      <CardBody>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <StatMini icon={Rocket} label="Active" value="3" status="brand" />
-          <StatMini icon={Target} label="Ships Today" value="5" status="success" />
-          <StatMini icon={Zap} label="Streaks" value="2" status="warning" />
-          <StatMini icon={AlertTriangle} label="At Risk" value="1" status="danger" />
-          <StatMini icon={DollarSign} label="Revenue" value="$2.4k" status="success" />
-        </div>
-      </CardBody>
-    </Card>
-  );
-}
+export default YourWorld;
