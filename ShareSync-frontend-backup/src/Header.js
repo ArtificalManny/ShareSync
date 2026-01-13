@@ -25,7 +25,7 @@ const Header = () => {
   return (
     <nav style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', backgroundColor: '#1a2b3c', color: 'white' }}>
       <div style={{ display: 'flex', gap: '10px' }}>
-        <Link to="/" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>ShareSync</Link>
+        <Link to="/" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>OpenShare</Link>
         <Link to="/home" style={{ color: 'white', textDecoration: 'none', padding: '5px 10px', border: '1px solid #00d1b2', borderRadius: '5px' }}>Home</Link>
         {!user && (
           <>

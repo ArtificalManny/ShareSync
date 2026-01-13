@@ -140,7 +140,7 @@ export default function CreateAccount() {
           <div className="inline-flex items-center gap-2 mb-2">
             <Sparkles className="w-8 h-8 text-purple-500" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
-              ShareSync
+              OpenShare
             </h1>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-sm">
@@ -423,7 +423,7 @@ export default function CreateAccount() {
 
         {/* Footer */}
         <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-6">
-          By creating an account, you agree to ShareSync's{" "}
+          By creating an account, you agree to OpenShare's{" "}
           <a href="#" className="text-purple-600 dark:text-purple-400 hover:underline">
             Terms of Service
           </a>{" "}

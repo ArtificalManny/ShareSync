@@ -106,11 +106,11 @@ const MomentumCard = ({ user, onClose }) => {
           className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-3xl p-12 shadow-2xl"
           style={{ width: '1200px', height: '630px', transform: 'scale(0.5)', transformOrigin: 'top center' }}
         >
-          {/* ShareSync Branding */}
+          {/* OpenShare Branding */}
           <div className="mb-8">
             <div className="inline-block px-6 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
               <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
-                ShareSync
+                OpenShare
               </span>
             </div>
           </div>

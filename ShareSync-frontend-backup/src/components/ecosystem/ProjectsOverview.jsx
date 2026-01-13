@@ -14,7 +14,7 @@ const ProjectsOverview = () => {
   const [projects] = useState([
     {
       _id: '1',
-      name: 'ShareSync v2',
+      name: 'OpenShare v2',
       emoji: '🚀',
       progress: 68,
       streak: 7,

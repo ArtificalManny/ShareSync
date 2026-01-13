@@ -68,7 +68,7 @@ export default function Landing() {
           <div className="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-lg border-b border-slate-800">
             <div className="flex items-center justify-between px-4 py-4">
               <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
-                ShareSync
+                OpenShare
               </h1>
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -178,7 +178,7 @@ export default function Landing() {
                         </div>
                         <p className="text-slate-400 text-lg">Demo video coming soon</p>
                         <p className="text-slate-500 text-sm max-w-md mx-auto">
-                          See how ShareSync prevents burnout with AI-powered momentum tracking
+                          See how OpenShare prevents burnout with AI-powered momentum tracking
                         </p>
                       </div>
                     </div>
@@ -260,7 +260,7 @@ export default function Landing() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
         <div className="text-center mb-12 sm:mb-16">
           <h2 className={`${isMobile ? 'text-3xl' : 'text-4xl sm:text-5xl'} font-bold text-white mb-4`}>
-            Why ShareSync?
+            Why OpenShare?
           </h2>
           <p className={`${isMobile ? 'text-lg' : 'text-xl'} text-slate-400 max-w-2xl mx-auto px-4`}>
             The only tool designed to prevent burnout, not just track tasks
@@ -272,7 +272,7 @@ export default function Landing() {
             <thead>
               <tr className="border-b border-slate-700">
                 <th className="text-left py-4 px-4 sm:px-6 text-slate-400 font-semibold text-sm">Feature</th>
-                <th className="py-4 px-3 sm:px-6 text-purple-400 font-bold text-sm">ShareSync</th>
+                <th className="py-4 px-3 sm:px-6 text-purple-400 font-bold text-sm">OpenShare</th>
                 <th className="py-4 px-3 sm:px-6 text-slate-400 font-semibold text-sm">Asana</th>
                 <th className="py-4 px-3 sm:px-6 text-slate-400 font-semibold text-sm">Notion</th>
                 <th className="py-4 px-3 sm:px-6 text-slate-400 font-semibold text-sm">Monday</th>
@@ -468,7 +468,7 @@ export default function Landing() {
 
           <div className="flex flex-col md:flex-row items-center justify-between pt-6 sm:pt-8 border-t border-slate-800 gap-4">
             <div className="text-slate-400 text-xs sm:text-sm text-center md:text-left">
-              © 2026 ShareSync. Built for students, not stockholders.
+              © 2026 OpenShare. Built for students, not stockholders.
             </div>
 
             <div className="flex items-center gap-6">

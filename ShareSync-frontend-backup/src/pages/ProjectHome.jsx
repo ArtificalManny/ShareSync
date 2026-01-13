@@ -410,7 +410,7 @@ export default function ProjectHome() {
   // ⭐ PROJECT DISPLAY STATE
   const [projectBanner] = useState('https://images.unsplash.com/photo-1557683316-973673baf926?w=1200&h=400&fit=crop');
   const [projectPicture] = useState('🚀');
-  const [projectName] = useState('ShareSync Development');
+  const [projectName] = useState('OpenShare Development');
   const [isPublicProject] = useState(true); // Set based on project settings from API
   const [isProjectMember] = useState(true); // Set based on user role from API
 

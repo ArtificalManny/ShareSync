@@ -18,7 +18,7 @@ const PublicProfileView = ({ profile }) => {
   const achievements = profile.achievements || [
     { id: 1, icon: '🔥', title: '100-Day Streak', description: 'Shipped for 100 days straight', earnedAt: '2024-01-15' },
     { id: 2, icon: '⚡', title: '10K XP', description: 'Earned 10,000 XP total', earnedAt: '2024-01-10' },
-    { id: 3, icon: '🏆', title: 'Early Adopter', description: 'Joined ShareSync beta', earnedAt: '2023-12-01' },
+    { id: 3, icon: '🏆', title: 'Early Adopter', description: 'Joined OpenShare beta', earnedAt: '2023-12-01' },
     { id: 4, icon: '🚀', title: 'Consistent Shipper', description: 'Shipped 50 tasks', earnedAt: '2024-01-05' },
     { id: 5, icon: '👑', title: 'Team Leader', description: 'Led 3 successful projects', earnedAt: '2023-12-20' }
   ];

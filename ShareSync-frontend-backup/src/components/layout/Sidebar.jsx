@@ -129,7 +129,7 @@ export default function Sidebar() {
   return (
     <aside {...containerAttrs} id="app-sidebar" className={`ss-sidebar neon-sidebar ${collapsed ? "is-collapsed" : ""} ${focusActive ? "focus-mode" : ""}`}>
       <div className="flex items-center justify-between p-4 mb-2">
-        {!collapsed && <div className="flex items-center gap-2"><div className="w-5 h-5 bg-brand-600 rounded flex items-center justify-center font-black text-[10px] text-white">S</div><span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">ShareSync</span></div>}
+        {!collapsed && <div className="flex items-center gap-2"><div className="w-5 h-5 bg-brand-600 rounded flex items-center justify-center font-black text-[10px] text-white">O</div><span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">OpenShare</span></div>}
         <button onClick={toggle} className="p-2 text-neutral-500 hover:text-white"><ChevronsLeft className={`w-4 h-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} /></button>
       </div>
 

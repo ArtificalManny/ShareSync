@@ -73,7 +73,7 @@ export default function ShipCelebration({ project, open = false, onClose }) {
   };
 
   const generateTweet = () => {
-    const text = `🚀 Just shipped ${project?.title || 'my project'} on @ShareSyncHQ!\n\n${project?.description || ''}\n\nStill going. 🔥`;
+    const text = `🚀 Just shipped ${project?.title || 'my project'} on @OpenShareHQ!\n\n${project?.description || ''}\n\nStill going. 🔥`;
     return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   };
 

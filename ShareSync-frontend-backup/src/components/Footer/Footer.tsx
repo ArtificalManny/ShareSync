@@ -16,7 +16,7 @@ const Footer = () => {
 
   return (
     <FooterContainer theme={currentTheme}>
-      <p>&copy; 2025 ShareSync. All rights reserved.</p>
+      <p>&copy; 2025 OpenShare. All rights reserved.</p>
     </FooterContainer>
   );
 };

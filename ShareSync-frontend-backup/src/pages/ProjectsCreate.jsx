@@ -125,7 +125,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       type="text"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g., ShareSync Mobile App"
+                      placeholder="e.g., OpenShare Mobile App"
                       className="w-full rounded-xl border border-purple-500/30 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       aria-required="true"
                       autoFocus

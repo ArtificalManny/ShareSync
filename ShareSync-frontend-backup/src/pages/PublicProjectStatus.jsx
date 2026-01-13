@@ -83,10 +83,10 @@ export default function PublicProjectStatus() {
           <Link
             to="/home"
             className="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 hover:underline"
-            aria-label="Back to ShareSync"
+            aria-label="Back to OpenShare"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to ShareSync
+            Back to OpenShare
           </Link>
         </header>
 
@@ -141,7 +141,7 @@ export default function PublicProjectStatus() {
 
         {/* Footer note */}
         <footer className="mt-6 text-[11px] text-slate-500">
-          Powered by ShareSync — transparent project snapshots without sign-in.
+          Powered by OpenShare — transparent project snapshots without sign-in.
         </footer>
       </div>
     </main>

@@ -72,7 +72,7 @@ const NotificationSettings = () => {
               <h2 className="text-xl font-bold">In-App Notifications</h2>
             </div>
             <p className="text-sm text-slate-400 mb-4">
-              Notifications that appear in ShareSync
+              Notifications that appear in OpenShare
             </p>
             
             <div className="space-y-3">

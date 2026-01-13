@@ -103,8 +103,8 @@ export default function Sidebar() {
       <div className="sb-head flex items-center justify-between p-4">
         {!collapsed && (
            <div className="flex items-center gap-2">
-             <div className="w-5 h-5 bg-brand-500 rounded flex items-center justify-center text-[10px] text-white font-black shadow-[0_0_10px_rgba(139,92,246,0.4)]">S</div>
-             <span className="text-[11px] font-black text-white uppercase tracking-[0.3em]">ShareSync</span>
+             <div className="w-5 h-5 bg-brand-500 rounded flex items-center justify-center text-[10px] text-white font-black shadow-[0_0_10px_rgba(139,92,246,0.4)]">O</div>
+             <span className="text-[11px] font-black text-white uppercase tracking-[0.3em]">OpenShare</span>
            </div>
         )}
         <button onClick={() => setCollapsed(!collapsed)} className="p-2 hover:bg-white/5 rounded-lg text-neutral-500 transition-colors">

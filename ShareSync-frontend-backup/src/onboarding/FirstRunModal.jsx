@@ -174,7 +174,7 @@ export default function FirstRunModal({
         className="onb-modal"
         role="dialog"
         aria-modal="true"
-        aria-label="Welcome to ShareSync"
+        aria-label="Welcome to OpenShare"
       >
         <div className="onb-header">
           <div className="onb-badge">Welcome ✨</div>

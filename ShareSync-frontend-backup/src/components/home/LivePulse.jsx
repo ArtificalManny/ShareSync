@@ -2,7 +2,7 @@ import React from "react";
 import { Activity, Zap } from "lucide-react";
 
 const ACTIVE_USERS = [
-  { id: 2, name: "Sarah", task: "Refactoring Auth.js", project: "ShareSync", color: "bg-purple-500" },
+  { id: 2, name: "Sarah", task: "Refactoring Auth.js", project: "OpenShare", color: "bg-purple-500" },
   { id: 3, name: "Mike", task: "Testing API Nodes", project: "AI Engine", color: "bg-blue-500" }
 ];
 

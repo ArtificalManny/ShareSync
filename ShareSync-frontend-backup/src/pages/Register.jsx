@@ -52,7 +52,7 @@ const Register = () => {
   return (
     <div className="register-container">
       <div className="register-card card p-6 glassmorphic card-3d">
-        <h2 className="text-3xl font-orbitron font-bold text-emerald-green mb-6 text-center">Register for ShareSync</h2>
+        <h2 className="text-3xl font-orbitron font-bold text-emerald-green mb-6 text-center">Register for OpenShare</h2>
         {(error || authError) && (
           <p className="text-crimson-red mb-4 text-center font-inter flex items-center gap-2">
             <AlertCircle className="w-5 h-5" aria-hidden="true" /> {error || authError}

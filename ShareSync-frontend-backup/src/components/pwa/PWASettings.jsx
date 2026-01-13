@@ -59,7 +59,7 @@ const PWASettings = () => {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-white mb-2">App Settings</h2>
-        <p className="text-slate-400 text-sm">Manage your ShareSync app experience</p>
+        <p className="text-slate-400 text-sm">Manage your OpenShare app experience</p>
       </div>
 
       {/* Installation Status */}
@@ -82,8 +82,8 @@ const PWASettings = () => {
             </h3>
             <p className="text-sm text-slate-400">
               {isInstalled 
-                ? 'ShareSync is installed on your device' 
-                : 'Install ShareSync for the best experience'}
+                ? 'OpenShare is installed on your device' 
+                : 'Install OpenShare for the best experience'}
             </p>
           </div>
           {!isInstalled && (

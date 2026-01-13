@@ -18,7 +18,7 @@ const TeamStories = () => {
         {
           type: 'ship',
           content: 'Fixed login bug',
-          project: 'ShareSync v2',
+          project: 'OpenShare v2',
           xp: 50,
           timestamp: '2h ago',
           emoji: '🚀'

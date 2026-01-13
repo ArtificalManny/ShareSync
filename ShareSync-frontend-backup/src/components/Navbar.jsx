@@ -1,4 +1,4 @@
-// src/components/Navbar.jsx - UPDATED WITH NOTIFICATION DROPDOWN
+// src/components/Navbar.jsx - UPDATED WITH OPENSHARE BRANDING
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sun, Moon, LogOut, PanelLeftClose, MessageCircle, Palette, Camera } from 'lucide-react';
@@ -6,6 +6,9 @@ import { formatProfilePicture } from '../utils/imageUtils';
 import { useChat } from "../context/ChatContext.jsx";
 import UnreadBadge from './messenger/UnreadBadge.jsx';
 import { BRAND_V2, ADMIN_CONSOLE_V1, KPI_TICKER_V1 } from '../config/flags.js';
+
+// ⭐ IMPORT BRAND CONSTANT
+import { BRAND_NAME } from '../utils/brand.js';
 
 import "./Navbar.neon.css";
 import useBrandTheme from '../hooks/useBrandTheme.js';
@@ -71,7 +74,7 @@ const QuickPhotoUpload = ({ user, onUploadComplete }) => {
       
       await updateProfile(formData);
       
-      toast({ title: "Profile photo updated! 🎉", variant: "success" });
+      toast({ title: "Profile photo updated! ��", variant: "success" });
       setShowMenu(false);
       
       if (onUploadComplete) onUploadComplete();
@@ -249,8 +252,9 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             <PanelLeftClose className="w-4 h-4" />
           </button>
 
-          <Link to="/home" className="logo hidden sm:inline font-bold text-lg" aria-label="ShareSync home">
-            ShareSync
+          {/* UPDATED: Using BRAND_NAME constant and dynamic aria-label */}
+          <Link to="/home" className="logo hidden sm:inline font-bold text-lg" aria-label={`${BRAND_NAME} home`}>
+            {BRAND_NAME} !!! TEST !!!
           </Link>
         </div>
 

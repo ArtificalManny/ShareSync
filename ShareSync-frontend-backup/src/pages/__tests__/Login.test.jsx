@@ -39,7 +39,7 @@ describe('Login Component', () => {
   it('renders login form', () => {
     renderLogin();
     
-    expect(screen.getByText('ShareSync')).toBeInTheDocument();
+    expect(screen.getByText('OpenShare')).toBeInTheDocument();
     expect(screen.getByText('Welcome back')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('you@example.com')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument();

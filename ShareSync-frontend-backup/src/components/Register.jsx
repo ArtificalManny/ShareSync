@@ -63,7 +63,7 @@ const Register = () => {
             textShadow: '0 0 10px rgba(0, 240, 255, 0.5)',
             marginRight: '20px'
           }}>
-            ShareSync
+            OpenShare
           </Link>
           <Link to="/" style={{
             color: '#a0a0ff',

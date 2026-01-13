@@ -286,7 +286,7 @@ export async function exportToMP4(frames, options = {}) {
    */
   export async function exportWithBranding(frames, options = {}) {
     const {
-      watermark = 'ShareSync',
+      watermark = 'OpenShare',
       watermarkPosition = 'bottom-right',
       logo = null,
       ...exportOptions

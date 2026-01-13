@@ -34,7 +34,7 @@ const AdaptiveAIPlan = () => {
       {
         id: 2,
         title: 'Design dashboard mockups',
-        project: 'ShareSync',
+        project: 'OpenShare',
         estimatedTime: '1h',
         complexity: 'medium',
         icon: '🎨'

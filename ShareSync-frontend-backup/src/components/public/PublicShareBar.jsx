@@ -12,7 +12,7 @@ import { track } from "../../utils/telemetry";
  * - compact?: boolean
  * - onCopied?: () => void
  */
-export default function PublicShareBar({ url, title = "Check this out on ShareSync", compact = false, onCopied }) {
+export default function PublicShareBar({ url, title = "Check this out on OpenShare", compact = false, onCopied }) {
   const [copied, setCopied] = React.useState(false);
   const shareUrl = url || (typeof window !== "undefined" ? window.location.href : "");
 

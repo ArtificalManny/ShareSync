@@ -95,10 +95,10 @@ const InstallPrompt = () => {
             </div>
             <div className="flex-1">
               <h3 className="text-white font-bold text-lg mb-1">
-                Install ShareSync
+                Install OpenShare
               </h3>
               <p className="text-purple-100 text-sm leading-relaxed">
-                Get the full app experience! Install ShareSync on your {isMobile ? 'phone' : 'device'} for faster access and offline support.
+                Get the full app experience! Install OpenShare on your {isMobile ? 'phone' : 'device'} for faster access and offline support.
               </p>
             </div>
           </div>

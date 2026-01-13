@@ -21,7 +21,7 @@ const ProjectSettings = () => {
 
   // Project state
   const [project, setProject] = useState({
-    name: 'ShareSync Development',
+    name: 'OpenShare Development',
     picture: '🚀',
     banner: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200&h=400&fit=crop',
     description: 'Building the future of project management'

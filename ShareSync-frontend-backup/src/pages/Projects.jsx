@@ -144,7 +144,7 @@ const Projects = () => {
 
   const getMockProjects = () => [
     {
-      _id: '1', name: 'ShareSync v2', description: 'Momentum-based project tracker',
+      _id: '1', name: 'OpenShare v2', description: 'Momentum-based project tracker',
       streak: { value: 7 }, metrics: { onTimePercent: { value: 92 }, openTasks: { value: 5 } },
       season: 'shipping', nextMicroStep: 'Fix login page CSS bug'
     },

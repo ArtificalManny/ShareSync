@@ -46,7 +46,7 @@ export default function Login() {
         {/* Logo/Title */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent mb-2">
-            ShareSync
+            OpenShare
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm">
             Ship outcomes that matter
@@ -143,7 +143,7 @@ export default function Login() {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-4 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400">
-                New to ShareSync?
+                New to OpenShare?
               </span>
             </div>
           </div>
@@ -160,7 +160,7 @@ export default function Login() {
 
         {/* Terms */}
         <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-          By continuing, you agree to ShareSync's{" "}
+          By continuing, you agree to OpenShare's{" "}
           <Link to="#" className="underline hover:text-slate-700 dark:hover:text-slate-200">
             Terms of Service
           </Link>{" "}

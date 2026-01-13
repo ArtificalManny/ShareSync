@@ -1,5 +1,11 @@
 // Central helpers/constants for brand theming.
 
+// ⭐ NEW OPENSHARE IDENTITY
+export const BRAND_NAME = "OpenShare";
+export const DOMAIN_NAME = "openshare.ca";
+export const TAGLINE = "The only project tracker that prevents burnout before it happens.";
+
+// EXISTING TECHNICAL CONSTANTS
 export const BRAND_KEY = "ss.brand";               // localStorage key
 export const BRAND_DATA_ATTR = "data-brand";       // attribute we set on a container or <html>
 export const BRAND_CLASSIC = "classic";

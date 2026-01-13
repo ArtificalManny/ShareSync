@@ -7,7 +7,7 @@ import { CheckCircle2, Clock } from 'lucide-react';
  * Fixes text truncation using line-clamp and sharpens typographic hierarchy.
  */
 const YourWorld = ({ tasks = [
-  { id: 1, title: 'Refactor Dashboard CSS', projectName: 'ShareSync v2', completed: false, dueDate: 'Today' },
+  { id: 1, title: 'Refactor Dashboard CSS', projectName: 'OpenShare v2', completed: false, dueDate: 'Today' },
   { id: 2, title: 'API Integration', projectName: 'AI Engine', completed: true, dueDate: 'Done' },
   { id: 3, title: 'User Testing', projectName: 'Mobile App', completed: false, dueDate: 'Tomorrow' }
 ] }) => {

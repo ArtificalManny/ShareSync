@@ -39,7 +39,7 @@ describe('CreateAccount Component', () => {
   it('renders create account form', () => {
     renderCreateAccount();
     
-    expect(screen.getByText('ShareSync')).toBeInTheDocument();
+    expect(screen.getByText('OpenShare')).toBeInTheDocument();
     expect(screen.getByText('Create your account')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
   });

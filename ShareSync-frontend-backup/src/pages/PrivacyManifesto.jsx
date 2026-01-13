@@ -37,7 +37,7 @@ const PrivacyManifesto = () => {
     {
       icon: Eye,
       title: 'Zero-Knowledge Architecture',
-      description: 'We designed ShareSync so we can\'t access your private content even if we wanted to.',
+      description: 'We designed OpenShare so we can\'t access your private content even if we wanted to.',
       status: 'Active',
       color: 'orange'
     },
@@ -142,7 +142,7 @@ const PrivacyManifesto = () => {
             <div>
               <h2 className="text-2xl font-bold text-white mb-3">Our Promise to You</h2>
               <p className="text-slate-300 leading-relaxed mb-3">
-                ShareSync is built on trust. We believe your data belongs to you, not to us or advertisers.
+                OpenShare is built on trust. We believe your data belongs to you, not to us or advertisers.
                 We've designed every system with privacy-first principles.
               </p>
               <p className="text-slate-300 leading-relaxed">
@@ -202,7 +202,7 @@ const PrivacyManifesto = () => {
           <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden">
             <div className="grid grid-cols-3 bg-slate-900/50 border-b border-slate-700/50">
               <div className="p-4 font-bold text-white">Feature</div>
-              <div className="p-4 font-bold text-purple-400 border-l border-slate-700/50">ShareSync</div>
+              <div className="p-4 font-bold text-purple-400 border-l border-slate-700/50">OpenShare</div>
               <div className="p-4 font-bold text-slate-400 border-l border-slate-700/50">Others</div>
             </div>
 
@@ -240,7 +240,7 @@ const PrivacyManifesto = () => {
                 <p className="text-sm text-slate-400 leading-relaxed">
                   We use the Signal Protocol for end-to-end encryption in all 1:1 and group chats. 
                   Messages are encrypted on your device before being sent, and only the recipient can decrypt them.
-                  Not even ShareSync servers can read your messages.
+                  Not even OpenShare servers can read your messages.
                 </p>
               </div>
 
@@ -262,7 +262,7 @@ const PrivacyManifesto = () => {
                   Anonymous Analytics
                 </h3>
                 <p className="text-sm text-slate-400 leading-relaxed">
-                  We collect anonymous aggregate statistics to improve ShareSync (e.g., "100 ships today across all users").
+                  We collect anonymous aggregate statistics to improve OpenShare (e.g., "100 ships today across all users").
                   We never track individual user behavior, use cookies for advertising, or sell data to third parties.
                 </p>
               </div>

@@ -101,7 +101,7 @@ export function ShareCursorClip({ frames, onClose, isOpen }) {
   // ============================================
 
   const shareToTwitter = () => {
-    const text = encodeURIComponent('Check out my cursor recording on ShareSync! 🎨✨');
+    const text = encodeURIComponent('Check out my cursor recording on OpenShare! 🎨✨');
     const url = encodeURIComponent(shareUrl || window.location.href);
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
   };
