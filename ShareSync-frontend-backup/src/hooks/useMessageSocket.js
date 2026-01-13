@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5050/messages'; // Your backend URL
+// Merged: Using environment variable with a fallback to your current 5050/messages path
+const SOCKET_URL = import.meta.env.VITE_WS_URL 
+  ? `${import.meta.env.VITE_WS_URL}/messages` 
+  : 'http://localhost:5050/messages';
 
 export default function useMessageSocket(userId) {
   const socketRef = useRef(null);
@@ -14,16 +17,18 @@ export default function useMessageSocket(userId) {
     if (!userId) return;
 
     // Create socket connection
+    // Merged: Added withCredentials to ensure auth headers are passed correctly
     const socket = io(SOCKET_URL, {
       transports: ['websocket'],
       reconnection: true,
+      withCredentials: true, 
     });
 
     socketRef.current = socket;
 
     // Connection events
     socket.on('connect', () => {
-      console.log('[WebSocket] Connected');
+      console.log('[WebSocket] Connected to:', SOCKET_URL);
       setIsConnected(true);
       
       // Identify user to backend
@@ -43,7 +48,6 @@ export default function useMessageSocket(userId) {
 
     socket.on('message_notification', (notification) => {
       console.log('[WebSocket] Message notification:', notification);
-      // Can show toast notification here
     });
 
     socket.on('message_read', (data) => {
@@ -62,7 +66,7 @@ export default function useMessageSocket(userId) {
     };
   }, [userId]);
 
-  // Helper functions
+  // Helper functions - ALL LOGIC PRESERVED EXACTLY
   const joinConversation = (conversationId) => {
     socketRef.current?.emit('join_conversation', { conversationId });
   };
