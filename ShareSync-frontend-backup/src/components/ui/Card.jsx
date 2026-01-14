@@ -1,47 +1,58 @@
 import React from 'react';
 import { cn } from './cn';
+import { useRenovation } from '../../context/RenovationContext';
 
-// Base card with variants for subtle/solid/ghost and optional hover
+// Base card upgraded for MetaLab 2026 Aesthetic
 export default function Card({
   as: Tag = 'div',
   className,
   children,
-  variant = 'subtle', // 'subtle' | 'solid' | 'ghost'
+  variant = 'bento', // Defaulting to our new elevation style
   hover = true,
-  padding = 'md',     // 'sm' | 'md' | 'lg' | 'none'
-  rounded = '2xl',    // 'lg' | 'xl' | '2xl' | 'full'
+  padding = 'lg',     // MetaLab uses more generous padding
+  rounded = 'full',   // '2xl' is 16px, 'full' is our new 24px-32px range
   border = true,
   onKeyDown,
   ...rest
 }) {
+  const { styles } = useRenovation();
+
   const pad = {
     none: '',
-    sm: 'p-3',
-    md: 'p-4 sm:p-5',
-    lg: 'p-6',
+    sm: 'p-4',
+    md: 'p-6',
+    lg: 'p-10', // Increased for "Spatial Intentionality"
   }[padding];
 
   const radius = {
-    lg: 'rounded-lg',
-    xl: 'rounded-xl',
-    '2xl': 'rounded-2xl',
-    full: 'rounded-3xl',
+    lg: 'rounded-xl',
+    xl: 'rounded-2xl',
+    '2xl': 'rounded-[2rem]',
+    full: 'rounded-[2.5rem]', // The "Bento" look
   }[rounded];
 
+  // Logic: Use existing cn, but swap out slate borders for our new "Inner Glow" logic
   const base = cn(
     radius,
     pad,
-    border && 'border border-slate-200/60 dark:border-slate-700/50',
-    hover && 'transition-shadow duration-200 hover:shadow-pop',
-    'focus:outline-none focus-visible:shadow-focus', //visible focus
-    'min-h-[40px]', //ensure hit area minimum
-    rest.onClick ? 'card-clickabke' : ''
+    // NEW: Using our bento-elevated class from index.css for the "Hardware" look
+    variant === 'bento' && 'bento-elevated',
+    variant === 'glass' && 'glass-panel',
+    
+    // Fallback/Legacy Border Logic (kept for safety)
+    variant !== 'bento' && border && 'border border-white/[0.04]',
+    
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500', 
+    'min-h-[40px] relative overflow-hidden',
+    rest.onClick ? 'cursor-pointer select-none' : ''
   );
 
   const byVariant = {
-    subtle: 'bg-white dark:bg-slate-800',
-    solid:  'bg-slate-900 text-white dark:bg-slate-900',
+    bento: '', // Styles handled by .bento-elevated in index.css
+    subtle: 'bg-[#121316] border-white/[0.03]',
+    solid:  'bg-white text-black',
     ghost:  'bg-transparent',
+    glass:  '', // Styles handled by .glass-panel in index.css
   }[variant];
 
   const interactive = Boolean(rest.onClick);
@@ -53,32 +64,49 @@ export default function Card({
     }
     onKeyDown?.(e);
   };
+
   return (
     <Tag
       className={cn(base, byVariant, className)}
       role={interactive ? (rest.role || 'button') : rest.role}
       tabIndex={interactive ? (rest.tabIndex ?? 0) : rest.tabIndex}
-      aria-pressed={interactive && typeof rest['aria-pressed'] === 'undefined' ? undefined : rest['aria-pressed']}
-     onKeyDown={keyHandler}
+      onKeyDown={keyHandler}
       {...rest}
     >
+      {/* 🌌 Atmospheric Glow Layer (Optional: only visible if card has hover) */}
+      {hover && variant === 'bento' && (
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.02] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      )}
+      {children}
     </Tag>
   );
 }
 
-// Optional slots if you like composed usage later
-export function CardHeader({ className, ...p }) {
-  return <div className={cn('mb-2 flex items-center justify-between', className)} {...p} />;
+// UPGRADED SLOTS: Using the "Swiss" Typography we defined
+export function CardHeader({ className, title, subtitle, icon: Icon, ...p }) {
+  return (
+    <div className={cn('mb-10 flex items-start justify-between', className)} {...p}>
+      <div className="space-y-1">
+        {subtitle && <p className="text-label-caps text-slate-500">{subtitle}</p>}
+        {title && <h3 className="text-2xl font-bold tracking-tighter text-white">{title}</h3>}
+      </div>
+      {Icon && <Icon className="text-slate-600 group-hover:text-violet-500 transition-colors" size={20} />}
+    </div>
+  );
 }
+
 export function CardTitle({ className, ...p }) {
-  return <h3 className={cn('text-lg font-semibold tracking-tight', className)} {...p} />;
+  return <h3 className={cn('text-2xl font-bold tracking-tighter text-white', className)} {...p} />;
 }
+
 export function CardSubtitle({ className, ...p }) {
-  return <p className={cn('text-sm text-slate-500 dark:text-slate-400', className)} {...p} />;
+  return <p className={cn('text-label-caps text-slate-500', className)} {...p} />;
 }
+
 export function CardContent({ className, ...p }) {
-  return <div className={cn('space-y-3', className)} {...p} />;
+  return <div className={cn('relative', className)} {...p} />;
 }
+
 export function CardFooter({ className, ...p }) {
-  return <div className={cn('mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/50', className)} {...p} />;
+  return <div className={cn('mt-8 pt-6 border-t border-white/[0.04]', className)} {...p} />;
 }

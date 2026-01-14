@@ -28,9 +28,24 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* --- METAlab 2026 ELEVATION TOKENS --- */
+    --bg-void: #08090A;
+    --bg-surface: #121316;
+    --bg-elevated: #1A1C20;
+    
+    /* Lighting Physics */
+    --inner-glow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+    --inner-glow-bright: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    
+    /* Branding LED Accents */
+    --accent-primary: #7C3AED; 
+    --accent-success: #10B981;
+  }
+
   html, body, #root {
-    /* MODIFIED: Updated to MetaLab Deep Ink while preserving integrity */
-    @apply bg-[#0B0C0E] text-[#F8F9FA]; 
+    /* MODIFIED: Set to the Absolute Void base for depth */
+    @apply bg-[#08090A] text-[#F8F9FA]; 
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     letter-spacing: -0.011em;
@@ -38,6 +53,8 @@
 }
 
 /* 4) CUSTOM UI CLASSES (Preserved + Enhanced) */
+
+/* Existing Avatar Styles - PRESERVED */
 .profile-picture-ring {
   display: inline-block;
   padding: 3px;
@@ -50,17 +67,38 @@
   box-shadow: 0 0 10px 4px rgba(91, 108, 255, 0.4);
 }
 
-/* --- NEW METALAB UTILITIES --- */
+/* --- ENHANCED METALAB 2026 UTILITIES --- */
+
+/* The Glass Sidebar - PRESERVED & POLISHED */
 .glass-sidebar {
-  @apply bg-white/[0.02] backdrop-blur-xl border-r border-white/[0.08];
+  @apply bg-white/[0.01] backdrop-blur-2xl border-r border-white/[0.04];
+  box-shadow: var(--inner-glow);
 }
 
+/* The Bento Core - UPGRADED TO METAlab DEPTH */
 .bento-elevated {
-  @apply bg-[#1C1E24] rounded-3xl border border-white/[0.06] transition-all duration-300;
+  /* Using specific surface hex for deep ink feel */
+  background-color: var(--bg-surface);
+  @apply rounded-[2rem] border border-white/[0.03] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)];
+  box-shadow: var(--inner-glow);
 }
 
 .bento-elevated:hover {
-  @apply bg-[#252830] border-white/[0.12] -translate-y-1 shadow-2xl;
+  /* High-end hardware "lift" effect */
+  background-color: var(--bg-elevated);
+  @apply border-white/[0.08] -translate-y-1 scale-[1.01];
+  box-shadow: var(--inner-glow-bright), 0 30px 60px -12px rgba(0,0,0,0.6);
+}
+
+/* The Killer Feature: Aurora Glow Container */
+.aurora-blur {
+  @apply absolute pointer-events-none filter blur-[100px] opacity-[0.15] animate-pulse;
+  background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
+}
+
+/* Typography Hierarchy Utilities */
+.text-label-caps {
+  @apply text-[10px] font-black uppercase tracking-[0.3em] text-slate-500;
 }
 
 /* 5) DEAD SPACE FIX (Critical for Layout Integrity) - FULLY PRESERVED */
