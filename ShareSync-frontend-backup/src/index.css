@@ -1,7 +1,7 @@
-/* 1) CSS VARIABLE IMPORTS (Design System Foundation) */
+/* 1) CSS VARIABLE IMPORTS (Design System Foundation) - FULLY PRESERVED */
 @import './styles/design-system.css';
 
-/* 2) PRESERVED CUSTOM STYLES */
+/* 2) PRESERVED CUSTOM STYLES - ALL KEPT */
 @import './styles/tokens.css';
 @import './styles/layout-system.css';
 @import './styles/motion.css';
@@ -29,13 +29,15 @@
 
 @layer base {
   html, body, #root {
-    @apply bg-[#0a0a0f] text-gray-100;
+    /* MODIFIED: Updated to MetaLab Deep Ink while preserving integrity */
+    @apply bg-[#0B0C0E] text-[#F8F9FA]; 
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.011em;
   }
 }
 
-/* 4) CUSTOM UI CLASSES (Preserved) */
+/* 4) CUSTOM UI CLASSES (Preserved + Enhanced) */
 .profile-picture-ring {
   display: inline-block;
   padding: 3px;
@@ -45,10 +47,23 @@
 
 .avatar:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 10px 4px #5b6cff;
+  box-shadow: 0 0 10px 4px rgba(91, 108, 255, 0.4);
 }
 
-/* 5) DEAD SPACE FIX (Critical for Layout Integrity) */
+/* --- NEW METALAB UTILITIES --- */
+.glass-sidebar {
+  @apply bg-white/[0.02] backdrop-blur-xl border-r border-white/[0.08];
+}
+
+.bento-elevated {
+  @apply bg-[#1C1E24] rounded-3xl border border-white/[0.06] transition-all duration-300;
+}
+
+.bento-elevated:hover {
+  @apply bg-[#252830] border-white/[0.12] -translate-y-1 shadow-2xl;
+}
+
+/* 5) DEAD SPACE FIX (Critical for Layout Integrity) - FULLY PRESERVED */
 html, body, #root {
   height: auto !important;
   min-height: 100vh !important;
