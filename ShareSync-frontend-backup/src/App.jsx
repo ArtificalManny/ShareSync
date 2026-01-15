@@ -13,6 +13,8 @@ import Navbar from "./components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider as OldToastProvider } from "./context/ToastContext";
 import ToastProvider, { ToastHost } from "./components/ui/toast.jsx";
+// ⭐ NEW TOAST SYSTEM (MetaLab Design Sprint - Day 5)
+import { ToastProvider as NewToastProvider } from './components/common/Toast';
 import ErrorBoundary from "./ErrorBoundary";
 
 // ⭐ PWA Components
@@ -343,19 +345,21 @@ const App = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <ToastProvider>
-          <OldToastProvider>
-            <Router>
-              <Suspense fallback={<LoadingSpinner />}>
-                <LayoutSkin>
-                  <div className="app-container" {...containerAttrs}>
-                    <AuthCheck />
-                  </div>
-                </LayoutSkin>
-              </Suspense>
-            </Router>
-          </OldToastProvider>
-        </ToastProvider>
+        <NewToastProvider>
+          <ToastProvider>
+            <OldToastProvider>
+              <Router>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <LayoutSkin>
+                    <div className="app-container" {...containerAttrs}>
+                      <AuthCheck />
+                    </div>
+                  </LayoutSkin>
+                </Suspense>
+              </Router>
+            </OldToastProvider>
+          </ToastProvider>
+        </NewToastProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
