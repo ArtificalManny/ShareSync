@@ -1,4 +1,4 @@
-// src/pages/ProjectHome.jsx - METAlab ADAPTATION
+// src/pages/ProjectHome.jsx - MISSION CONTROL (METAlab ADAPTATION)
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
 
+// ⭐ METAlab UI BRIDGE
+import { useRenovation } from "../context/RenovationContext";
+import Card from "../components/ui/Card";
+
 // ⭐ MOBILE & UTILITY IMPORTS
 import { useIsMobile } from "../hooks/useMobile";
 import BottomSheet from "../components/mobile/BottomSheet";
@@ -21,7 +25,7 @@ import MobileAnnouncementCreate from "../components/mobile/MobileAnnouncementCre
 import QuickActionsManager from '../components/quick-actions/QuickActionsManager';
 import KeyboardShortcuts from '../components/quick-actions/KeyboardShortcuts';
 
-// ⭐ FEATURE IMPORTS (LEAVING BACKEND ATTACHED)
+// ⭐ FEATURE IMPORTS (BACKEND INTACT)
 import TeamSprintManager from '../components/sprints/TeamSprintManager';
 import HandoffRequest from '../components/handoff/HandoffRequest';
 import HandoffManager from '../components/handoff/HandoffManager';
@@ -38,12 +42,11 @@ import Announcements from "../components/project/Announcements";
 import ecosystemApi from "../services/ecosystemApi";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   METAlab STYLE: ELEVATED COMPONENTS
+   REFINED COMPONENTS (METAlab EDITION)
 ───────────────────────────────────────────────────────────────────────── */
 
-// 1. REFINED ENERGY TRACKER (Bento Style)
 const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
-  const isMobile = useIsMobile();
+  const { styles } = useRenovation();
   const getMatchedTasks = (energy) => {
     if (energy === 'high') return tasks.filter(t => t.effort === 'high' || !t.effort);
     if (energy === 'medium') return tasks.filter(t => t.effort === 'medium' || !t.effort);
@@ -52,74 +55,78 @@ const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
   const matchedTasks = getMatchedTasks(currentEnergy);
 
   return (
-    <div className="bg-[#16181D] rounded-[2rem] p-8 shadow-sm border border-white/[0.03]">
-      <div className="flex items-center justify-between mb-8">
+    <Card className="p-10" glowColor="rgba(139, 92, 246, 0.15)">
+      <div className="flex items-center justify-between mb-10">
         <div>
-          <h3 className="text-xl font-bold text-white tracking-tight">Energy Sync</h3>
-          <p className="text-slate-500 text-xs mt-1 uppercase tracking-widest font-bold">Biometric Planning</p>
+          <h3 className="text-2xl font-black text-white tracking-tighter">Energy Sync</h3>
+          <p className={styles.label || "text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1"}>Biometric Planning</p>
         </div>
-        <Zap className="w-5 h-5 text-violet-500" />
+        <div className="p-3 rounded-2xl bg-violet-500/10 border border-violet-500/20">
+          <Zap className="w-5 h-5 text-violet-500" />
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-3 gap-4 mb-10">
         {['low', 'medium', 'high'].map((level) => (
           <button
             key={level}
             onClick={() => onEnergyChange(level)}
-            className={`py-4 rounded-2xl flex flex-col items-center gap-2 transition-all duration-300 ${
+            className={`py-6 rounded-2xl flex flex-col items-center gap-3 transition-all duration-300 border ${
               currentEnergy === level 
-              ? 'bg-white text-black shadow-xl shadow-white/5 scale-[1.02]' 
-              : 'bg-white/[0.02] text-slate-500 hover:bg-white/[0.05]'
+              ? 'bg-white text-black border-white shadow-2xl shadow-white/10 scale-[1.05]' 
+              : 'bg-white/[0.02] text-slate-500 border-white/[0.05] hover:bg-white/[0.05]'
             }`}
           >
             {level === 'low' && <BatteryLow size={20} />}
             {level === 'medium' && <BatteryMedium size={20} />}
             {level === 'high' && <Battery size={20} />}
-            <span className="text-[10px] font-black uppercase tracking-tighter">{level}</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">{level}</span>
           </button>
         ))}
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {matchedTasks.slice(0, 2).map((task, i) => (
-          <div key={i} className="flex items-center gap-3 p-4 bg-white/[0.02] rounded-2xl border border-white/[0.02] group hover:border-violet-500/30 transition-colors">
-            <div className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-            <span className="flex-1 text-sm font-medium text-slate-300 truncate">{task.title}</span>
-            <ArrowUpRight size={14} className="text-slate-600 group-hover:text-white transition-colors" />
+          <div key={i} className="flex items-center gap-4 p-5 bg-white/[0.02] rounded-2xl border border-white/[0.03] group hover:border-violet-500/30 transition-all cursor-pointer">
+            <div className="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]" />
+            <span className="flex-1 text-sm font-bold text-slate-300 truncate tracking-tight">{task.title}</span>
+            <ArrowUpRight size={16} className="text-slate-600 group-hover:text-white transition-colors" />
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 };
 
-// 2. PROJECT HEARTBEAT (The Data Visualization)
-const ProjectHeartbeatCard = ({ projectId }) => {
+const ProjectHeartbeatCard = () => {
+  const { styles } = useRenovation();
   return (
-    <div className="bg-[#16181D] rounded-[2rem] p-8 border border-white/[0.03]">
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-xl font-bold text-white tracking-tight">Heartbeat</h3>
-        <Activity className="w-5 h-5 text-rose-500 animate-pulse" />
+    <Card className="p-10" glowColor="rgba(244, 63, 94, 0.1)">
+      <div className="flex items-center justify-between mb-10">
+        <h3 className="text-2xl font-black text-white tracking-tighter">Heartbeat</h3>
+        <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+          <Activity className="w-5 h-5 text-rose-500 animate-pulse" />
+        </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-6">
-        <div className="space-y-1">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ships / Wk</p>
+      <div className="grid grid-cols-2 gap-8">
+        <div className="space-y-2">
+          <p className={styles.label || "text-[10px] font-bold text-slate-500 uppercase tracking-widest"}>Ships / Week</p>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-white tracking-tighter">12</span>
-            <span className="text-xs font-bold text-emerald-500">+4</span>
+            <span className="text-5xl font-black text-white tracking-tighter italic">12</span>
+            <span className="text-xs font-black text-emerald-500">+4</span>
           </div>
         </div>
-        <div className="space-y-1 text-right">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Velocity</p>
-          <span className="text-3xl font-bold text-white tracking-tighter">94%</span>
+        <div className="space-y-2 text-right">
+          <p className={styles.label || "text-[10px] font-bold text-slate-500 uppercase tracking-widest"}>Velocity</p>
+          <span className="text-5xl font-black text-white tracking-tighter italic">94%</span>
         </div>
       </div>
 
-      <div className="mt-8 h-[2px] bg-white/[0.03] relative overflow-hidden rounded-full">
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-500 to-fuchsia-500 w-[70%] rounded-full" />
+      <div className="mt-10 h-[3px] bg-white/5 relative overflow-hidden rounded-full">
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-rose-500 w-[70%] rounded-full shadow-[0_0_12px_rgba(139,92,246,0.3)]" />
       </div>
-    </div>
+    </Card>
   );
 };
 
@@ -131,8 +138,9 @@ export default function ProjectHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { styles } = useRenovation();
   
-  // States & Refs (Kept exactly as requested)
+  // --- PRESERVED BACKEND STATES ---
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showShipModal, setShowShipModal] = useState(false);
@@ -160,9 +168,20 @@ export default function ProjectHome() {
     })();
   }, [id]);
 
+  const handleShip = async () => {
+    try {
+      await shipProject(id, { description: shipDescription });
+      flashShip();
+      setShowShipModal(false);
+      setShipDescription("");
+      toast({ title: "Project Shipped!", variant: "success" });
+    } catch (e) { toast({ title: "Ship Failed", variant: "error" }); }
+  };
+  // --- END PRESERVED LOGIC ---
+
   if (loading) return (
     <div className="min-h-screen bg-[#0B0C0E] flex items-center justify-center">
-      <div className="w-12 h-[2px] bg-white/10 overflow-hidden relative">
+      <div className="w-16 h-[1px] bg-white/5 overflow-hidden relative">
         <div className="absolute inset-0 bg-violet-500 animate-loading-bar" />
       </div>
     </div>
@@ -170,96 +189,99 @@ export default function ProjectHome() {
 
   return (
     <div className="min-h-screen bg-[#0B0C0E] text-white selection:bg-violet-500/30">
-      <div className="max-w-[1400px] mx-auto px-8 py-12">
+      <div className="max-w-[1600px] mx-auto px-8 lg:px-20 py-20">
         
-        {/* ⭐ THE HERO HEADER */}
-        <header className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <span className="px-3 py-1 bg-violet-500/10 text-violet-400 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-violet-500/20">
+        {/* ⭐ THE HERO HEADER: Spatial Hierarchy */}
+        <header className="mb-24 flex flex-col lg:flex-row lg:items-end justify-between gap-12">
+          <div className="space-y-8">
+            <div className="flex items-center gap-4">
+              <span className="px-4 py-1.5 bg-violet-500/10 text-violet-400 text-[10px] font-black uppercase tracking-[0.3em] rounded-full border border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.1)]">
                 Live Project
               </span>
-              <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
-                <Users size={12} />
+              <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 {projectStats.online} Active Now
               </div>
             </div>
             
-            <h1 className="text-6xl md:text-7xl font-bold tracking-tighter leading-[0.9]">
+            <h1 className="text-7xl md:text-8xl font-black tracking-tighter leading-[0.85]">
               {project?.title || "ShareSync"}
             </h1>
             
-            <p className="text-slate-400 text-lg max-w-xl font-medium leading-relaxed">
+            <p className="text-slate-500 text-xl max-w-2xl font-medium leading-relaxed">
               Design and engineering cycles for the 2026 OpenShare core ecosystem. 
-              Currently tackling {tasks.filter(t => !t.completed).length} open objectives.
+              Currently tackling <span className="text-white font-bold italic">{tasks.filter(t => !t.completed).length} open objectives</span>.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button 
                onClick={() => setShowShipModal(true)}
-               className="h-14 px-8 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-[1.02] transition-transform active:scale-95 flex items-center gap-3"
+               className="h-16 px-10 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:scale-[1.05] transition-all duration-300 shadow-2xl shadow-white/10 flex items-center gap-3 active:scale-95"
             >
-              <Rocket size={18} />
+              <Rocket size={20} />
               Ship Update
             </button>
-            <button className="h-14 w-14 bg-[#16181D] border border-white/5 rounded-2xl flex items-center justify-center hover:bg-white/5 transition-colors">
-              <Settings size={20} className="text-slate-400" />
+            <button className="h-16 w-16 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center hover:bg-white/10 hover:border-white/10 transition-all group">
+              <Settings size={22} className="text-slate-500 group-hover:text-white transition-colors" />
             </button>
           </div>
         </header>
 
-        {/* ⭐ BENTO GRID: INSIGHTS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        {/* ⭐ BENTO GRID: Spacing Increased */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-20">
           <ProjectHeartbeatCard />
           <EnergyTracker currentEnergy={currentEnergy} onEnergyChange={setCurrentEnergy} tasks={tasks} />
           
-          {/* TEAM PRESENCE CARD */}
-          <div className="bg-[#16181D] rounded-[2rem] p-8 border border-white/[0.03] flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl font-bold text-white tracking-tight">Team Balance</h3>
-              <PieChart className="w-5 h-5 text-emerald-500" />
+          <Card className="p-10 flex flex-col justify-between" glowColor="rgba(16, 185, 129, 0.1)">
+            <div className="flex items-center justify-between mb-10">
+              <h3 className="text-2xl font-black text-white tracking-tighter">Team Balance</h3>
+              <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                <PieChart className="w-5 h-5 text-emerald-500" />
+              </div>
             </div>
-            <div className="flex -space-x-3 mb-6">
+            <div className="flex -space-x-4 mb-8">
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="w-12 h-12 rounded-full border-4 border-[#16181D] bg-slate-800 overflow-hidden">
-                  <img src={`https://i.pravatar.cc/150?u=${i}`} alt="user" />
+                <div key={i} className="w-14 h-14 rounded-2xl border-[6px] border-[#0F1115] bg-slate-800 overflow-hidden shadow-xl">
+                  <img src={`https://i.pravatar.cc/150?u=${i}`} alt="user" className="w-full h-full object-cover grayscale-[0.3] hover:grayscale-0 transition-all" />
                 </div>
               ))}
-              <div className="w-12 h-12 rounded-full border-4 border-[#16181D] bg-violet-600 flex items-center justify-center text-[10px] font-black">
+              <div className="w-14 h-14 rounded-2xl border-[6px] border-[#0F1115] bg-violet-600 flex items-center justify-center text-[10px] font-black text-white shadow-xl">
                 +12
               </div>
             </div>
             <MembersPanel projectId={id} compact />
-          </div>
+          </Card>
         </div>
 
         {/* ⭐ TASK EXECUTION ZONE */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           
           {/* Left Column: Tasks */}
-          <div className="lg:col-span-8 space-y-12">
+          <div className="lg:col-span-8 space-y-16">
             <section>
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-bold tracking-tight">Active Tasks</h2>
-                <div className="h-[1px] flex-1 bg-white/5 mx-6" />
-                <button className="text-slate-500 hover:text-white transition-colors">
-                  <Plus size={20} />
+              <div className="flex items-center justify-between mb-12 px-2">
+                <h2 className="text-3xl font-black tracking-tighter">Active Objectives</h2>
+                <div className="h-[1px] flex-1 bg-white/5 mx-10" />
+                <button className="p-3 bg-white/[0.03] border border-white/5 rounded-xl text-slate-500 hover:text-white hover:bg-white/10 transition-all">
+                  <Plus size={24} />
                 </button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {tasks.filter(t => !t.completed).map(task => (
-                  <div key={task._id} className="group bg-[#16181D]/50 hover:bg-[#16181D] p-6 rounded-3xl border border-white/[0.02] transition-all flex items-center gap-6">
+                  <div key={task._id} className="group bg-white/[0.02] hover:bg-white/[0.04] p-8 rounded-[2rem] border border-white/[0.03] transition-all duration-300 flex items-center gap-8 hover:translate-x-2">
                     <button 
                       onClick={() => completeTaskAPI(task._id)}
-                      className="w-8 h-8 rounded-full border-2 border-slate-700 group-hover:border-violet-500 flex items-center justify-center transition-colors"
+                      className="w-10 h-10 rounded-2xl border-2 border-slate-800 group-hover:border-violet-500 flex items-center justify-center transition-all bg-[#0B0C0E]"
                     >
-                      <CheckCircle2 size={16} className="text-transparent group-hover:text-slate-700" />
+                      <CheckCircle2 size={18} className="text-transparent group-hover:text-violet-500/50" />
                     </button>
                     <div className="flex-1">
-                      <h4 className="font-bold text-lg text-slate-200">{task.title}</h4>
-                      <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">Assigned to You • 2h ago</p>
+                      <h4 className="font-black text-xl text-white tracking-tight group-hover:text-violet-400 transition-colors">{task.title}</h4>
+                      <p className={styles.label || "text-[9px] font-bold text-slate-600 mt-2 uppercase tracking-[0.2em]"}>
+                        Assigned Node • {task.priority || 'Standard'} Priority
+                      </p>
                     </div>
                     <HandoffButton task={task} />
                   </div>
@@ -269,17 +291,17 @@ export default function ProjectHome() {
           </div>
 
           {/* Right Column: Meta Info */}
-          <div className="lg:col-span-4 space-y-12">
-             <section className="bg-gradient-to-br from-violet-600/10 to-transparent p-8 rounded-[2rem] border border-violet-500/10">
-                <div className="flex items-center gap-3 mb-6">
-                  <Zap className="text-violet-500 fill-violet-500" size={20} />
-                  <h3 className="font-black uppercase tracking-widest text-xs">Current Sprint</h3>
+          <div className="lg:col-span-4 space-y-16">
+             <Card className="p-10" glowColor="rgba(139, 92, 246, 0.2)">
+                <div className="flex items-center gap-3 mb-10">
+                  <Sparkles className="text-violet-500" size={20} />
+                  <h3 className={styles.label || "text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em]"}>Current Sprint</h3>
                 </div>
                 <TeamSprintManager projectId={id} />
-             </section>
+             </Card>
 
              <section>
-                <h3 className="font-black uppercase tracking-widest text-[10px] text-slate-500 mb-6 px-2">Project Activity</h3>
+                <h3 className={styles.label || "text-[10px] font-black text-slate-700 uppercase tracking-[0.4em] mb-10 px-4"}>Project Activity</h3>
                 <Announcements projectId={id} />
              </section>
           </div>
@@ -287,29 +309,29 @@ export default function ProjectHome() {
 
       </div>
 
-      {/* ⭐ SHIP MODAL (Refined) */}
+      {/* ⭐ SHIP MODAL: Glassmorphism Applied */}
       {showShipModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-xl bg-black/60 animate-in fade-in duration-300">
-          <div className="bg-[#16181D] w-full max-w-xl rounded-[2.5rem] border border-white/10 p-10 shadow-2xl overflow-hidden relative">
-            <div className="flex justify-between items-start mb-8">
-              <h2 className="text-3xl font-bold tracking-tighter">Prepare Ship</h2>
-              <button onClick={() => setShowShipModal(false)} className="p-2 text-slate-500 hover:text-white transition-colors">
-                <X />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-2xl bg-black/80 animate-in fade-in zoom-in-95 duration-500">
+          <Card className="w-full max-w-2xl p-12 relative overflow-hidden" glowColor="rgba(139, 92, 246, 0.3)">
+            <div className="flex justify-between items-start mb-10">
+              <h2 className="text-4xl font-black tracking-tighter">Prepare Broadcast</h2>
+              <button onClick={() => setShowShipModal(false)} className="p-3 text-slate-500 hover:text-white hover:bg-white/5 rounded-full transition-all">
+                <X size={24} />
               </button>
             </div>
             <textarea
-              className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-6 text-white text-lg focus:outline-none focus:border-violet-500/40 transition-all resize-none h-48 mb-8"
-              placeholder="What did you build?"
+              className="w-full bg-white/[0.03] border border-white/[0.05] rounded-3xl p-8 text-white text-xl focus:outline-none focus:border-violet-500/30 transition-all resize-none h-60 mb-10 font-medium placeholder:text-slate-700 shadow-inner"
+              placeholder="What did you build today?"
               value={shipDescription}
               onChange={(e) => setShipDescription(e.target.value)}
             />
             <button 
               onClick={handleShip}
-              className="w-full py-6 bg-white text-black rounded-2xl font-black uppercase tracking-[0.2em] hover:scale-[1.01] active:scale-[0.98] transition-all"
+              className="w-full py-8 bg-white text-black rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs hover:scale-[1.02] active:scale-[0.95] transition-all shadow-2xl shadow-white/5"
             >
               Broadcast Ship
             </button>
-          </div>
+          </Card>
         </div>
       )}
 
