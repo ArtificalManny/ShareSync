@@ -27,7 +27,7 @@
     "axios": "^1.7.2",
     "canvas-confetti": "^1.9.3",
     "chart.js": "^4.4.3",
-    "framer-motion": "^12.23.26",
+    "framer-motion": "^12.26.2",
     "html2canvas": "^1.4.1",
     "lottie-web": "^5.13.0",
     "lucide-react": "^0.395.0",

@@ -1,52 +1,47 @@
-// src/pages/ProjectHome.jsx - MISSION CONTROL (METAlab ADAPTATION)
+// src/pages/ProjectHome.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Quiet Confidence"
+// ═══════════════════════════════════════════════════════════════════════════════
+// RULES APPLIED:
+// 1. Surface hierarchy: surface-0/1/2 tokens
+// 2. Text hierarchy: text-primary/secondary/tertiary
+// 3. Calmer typography - no font-black everywhere
+// 4. No pulsing/glowing at rest
+// 5. Cards use consistent surface tokens, no glowColor
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getProject, shipProject } from "../api/projects";
 import useProjectTasks from "../hooks/useProjectTasks";
 import { 
-  Rocket, Plus, Calendar, Clock, Zap, Trophy, Flame, CheckCircle2, Target,
-  ChevronLeft, ChevronRight, X, Upload, Mic, Eye, Users, TrendingUp,
-  Battery, BatteryLow, BatteryMedium, Play, Pause, AlertCircle,
-  Star, Sparkles, Award, MessageCircle, Timer, Coffee, Music,
-  Activity, TrendingDown, BarChart3, PieChart, UserCheck, Settings,
-  ArrowUpRight, Share2, MoreHorizontal
+  Rocket, Plus, Settings, CheckCircle2, X, Users, 
+  Activity, PieChart, Zap, Battery, BatteryLow, BatteryMedium,
+  ArrowUpRight, Sparkles
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
 
-// ⭐ METAlab UI BRIDGE
-import { useRenovation } from "../context/RenovationContext";
-import Card from "../components/ui/Card";
-
-// ⭐ MOBILE & UTILITY IMPORTS
+// Mobile & Utility
 import { useIsMobile } from "../hooks/useMobile";
-import BottomSheet from "../components/mobile/BottomSheet";
-import MobileAnnouncementCreate from "../components/mobile/MobileAnnouncementCreate";
 import QuickActionsManager from '../components/quick-actions/QuickActionsManager';
 import KeyboardShortcuts from '../components/quick-actions/KeyboardShortcuts';
 
-// ⭐ FEATURE IMPORTS (BACKEND INTACT)
+// Feature Components
 import TeamSprintManager from '../components/sprints/TeamSprintManager';
-import HandoffRequest from '../components/handoff/HandoffRequest';
-import HandoffManager from '../components/handoff/HandoffManager';
 import HandoffButton from '../components/handoff/HandoffButton';
 import { MembersPanel } from '../components/members';
-import { SuggestionsPanel } from '../components/suggestions';
-
-// ⭐ PRESENCE & ECOSYSTEM
-import { useCursorContext } from "../context/CursorContext";
-import useCursor, { useCursorFlash } from "../hooks/useCursor";
-import usePresence, { useTeamPresence } from "../hooks/usePresence";
-import CollaborationPanel from "../components/project/CollaborationPanel";
 import Announcements from "../components/project/Announcements";
-import ecosystemApi from "../services/ecosystemApi";
+
+// Presence
+import { useCursorContext } from "../context/CursorContext";
+import { useCursorFlash } from "../hooks/useCursor";
+import usePresence, { useTeamPresence } from "../hooks/usePresence";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   REFINED COMPONENTS (METAlab EDITION)
+   ENERGY TRACKER
 ───────────────────────────────────────────────────────────────────────── */
-
 const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
-  const { styles } = useRenovation();
   const getMatchedTasks = (energy) => {
     if (energy === 'high') return tasks.filter(t => t.effort === 'high' || !t.effort);
     if (energy === 'medium') return tasks.filter(t => t.effort === 'medium' || !t.effort);
@@ -54,93 +49,180 @@ const EnergyTracker = ({ currentEnergy, onEnergyChange, tasks = [] }) => {
   };
   const matchedTasks = getMatchedTasks(currentEnergy);
 
+  const energyLevels = [
+    { key: 'low', icon: BatteryLow, label: 'Low' },
+    { key: 'medium', icon: BatteryMedium, label: 'Medium' },
+    { key: 'high', icon: Battery, label: 'High' },
+  ];
+
   return (
-    <Card className="p-10" glowColor="rgba(139, 92, 246, 0.15)">
-      <div className="flex items-center justify-between mb-10">
+    <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-2xl font-black text-white tracking-tighter">Energy Sync</h3>
-          <p className={styles.label || "text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1"}>Biometric Planning</p>
+          <h3 className="text-lg font-semibold text-text-primary">Energy Sync</h3>
+          <p className="text-xs text-text-tertiary mt-0.5">Biometric Planning</p>
         </div>
-        <div className="p-3 rounded-2xl bg-violet-500/10 border border-violet-500/20">
-          <Zap className="w-5 h-5 text-violet-500" />
+        <div className="p-2.5 rounded-lg bg-brand/10">
+          <Zap className="w-4 h-4 text-brand" />
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-10">
-        {['low', 'medium', 'high'].map((level) => (
+      {/* Energy Selector */}
+      <div className="grid grid-cols-3 gap-2 mb-6">
+        {energyLevels.map(({ key, icon: Icon, label }) => (
           <button
-            key={level}
-            onClick={() => onEnergyChange(level)}
-            className={`py-6 rounded-2xl flex flex-col items-center gap-3 transition-all duration-300 border ${
-              currentEnergy === level 
-              ? 'bg-white text-black border-white shadow-2xl shadow-white/10 scale-[1.05]' 
-              : 'bg-white/[0.02] text-slate-500 border-white/[0.05] hover:bg-white/[0.05]'
-            }`}
+            key={key}
+            onClick={() => onEnergyChange(key)}
+            className={`
+              py-4 rounded-lg flex flex-col items-center gap-2
+              transition-all duration-200 border
+              ${currentEnergy === key 
+                ? 'bg-text-primary text-surface-0 border-text-primary' 
+                : 'bg-surface-2 text-text-tertiary border-transparent hover:bg-surface-3'
+              }
+            `}
           >
-            {level === 'low' && <BatteryLow size={20} />}
-            {level === 'medium' && <BatteryMedium size={20} />}
-            {level === 'high' && <Battery size={20} />}
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">{level}</span>
+            <Icon className="w-5 h-5" />
+            <span className="text-[10px] font-medium uppercase tracking-wider">{label}</span>
           </button>
         ))}
       </div>
 
-      <div className="space-y-4">
+      {/* Matched Tasks */}
+      <div className="space-y-2">
         {matchedTasks.slice(0, 2).map((task, i) => (
-          <div key={i} className="flex items-center gap-4 p-5 bg-white/[0.02] rounded-2xl border border-white/[0.03] group hover:border-violet-500/30 transition-all cursor-pointer">
-            <div className="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]" />
-            <span className="flex-1 text-sm font-bold text-slate-300 truncate tracking-tight">{task.title}</span>
-            <ArrowUpRight size={16} className="text-slate-600 group-hover:text-white transition-colors" />
+          <div 
+            key={i} 
+            className="
+              flex items-center gap-3 p-3 rounded-lg
+              bg-surface-2 border border-white/[0.04]
+              hover:border-brand/30 transition-colors cursor-pointer group
+            "
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-brand" />
+            <span className="flex-1 text-sm text-text-secondary truncate">{task.title}</span>
+            <ArrowUpRight className="w-4 h-4 text-text-tertiary group-hover:text-text-primary transition-colors" />
           </div>
         ))}
       </div>
-    </Card>
-  );
-};
-
-const ProjectHeartbeatCard = () => {
-  const { styles } = useRenovation();
-  return (
-    <Card className="p-10" glowColor="rgba(244, 63, 94, 0.1)">
-      <div className="flex items-center justify-between mb-10">
-        <h3 className="text-2xl font-black text-white tracking-tighter">Heartbeat</h3>
-        <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20">
-          <Activity className="w-5 h-5 text-rose-500 animate-pulse" />
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-8">
-        <div className="space-y-2">
-          <p className={styles.label || "text-[10px] font-bold text-slate-500 uppercase tracking-widest"}>Ships / Week</p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-5xl font-black text-white tracking-tighter italic">12</span>
-            <span className="text-xs font-black text-emerald-500">+4</span>
-          </div>
-        </div>
-        <div className="space-y-2 text-right">
-          <p className={styles.label || "text-[10px] font-bold text-slate-500 uppercase tracking-widest"}>Velocity</p>
-          <span className="text-5xl font-black text-white tracking-tighter italic">94%</span>
-        </div>
-      </div>
-
-      <div className="mt-10 h-[3px] bg-white/5 relative overflow-hidden rounded-full">
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-rose-500 w-[70%] rounded-full shadow-[0_0_12px_rgba(139,92,246,0.3)]" />
-      </div>
-    </Card>
+    </div>
   );
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN PAGE: PROJECT HOME
+   HEARTBEAT CARD
+───────────────────────────────────────────────────────────────────────── */
+const HeartbeatCard = () => (
+  <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+    <div className="flex items-center justify-between mb-6">
+      <h3 className="text-lg font-semibold text-text-primary">Heartbeat</h3>
+      <div className="p-2.5 rounded-lg bg-danger/10">
+        <Activity className="w-4 h-4 text-danger" />
+      </div>
+    </div>
+    
+    <div className="grid grid-cols-2 gap-6">
+      <div>
+        <p className="text-xs text-text-tertiary mb-1">Ships / Week</p>
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-semibold text-text-primary">12</span>
+          <span className="text-xs font-medium text-success">+4</span>
+        </div>
+      </div>
+      <div className="text-right">
+        <p className="text-xs text-text-tertiary mb-1">Velocity</p>
+        <span className="text-3xl font-semibold text-text-primary">94%</span>
+      </div>
+    </div>
+
+    {/* Progress Bar */}
+    <div className="mt-6 h-1.5 bg-surface-3 rounded-full overflow-hidden">
+      <div className="h-full w-[70%] bg-gradient-to-r from-brand via-brand-400 to-danger rounded-full" />
+    </div>
+  </div>
+);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TEAM CARD
+───────────────────────────────────────────────────────────────────────── */
+const TeamCard = ({ projectId }) => (
+  <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06] flex flex-col">
+    <div className="flex items-center justify-between mb-6">
+      <h3 className="text-lg font-semibold text-text-primary">Team Balance</h3>
+      <div className="p-2.5 rounded-lg bg-success/10">
+        <PieChart className="w-4 h-4 text-success" />
+      </div>
+    </div>
+    
+    {/* Avatar Stack */}
+    <div className="flex -space-x-3 mb-6">
+      {[1, 2, 3, 4].map(i => (
+        <div 
+          key={i} 
+          className="w-10 h-10 rounded-full border-2 border-surface-1 bg-surface-2 overflow-hidden"
+        >
+          <img 
+            src={`https://i.pravatar.cc/150?u=${i}`} 
+            alt="user" 
+            className="w-full h-full object-cover" 
+          />
+        </div>
+      ))}
+      <div className="w-10 h-10 rounded-full border-2 border-surface-1 bg-brand flex items-center justify-center text-xs font-medium text-white">
+        +12
+      </div>
+    </div>
+    
+    <MembersPanel projectId={projectId} compact />
+  </div>
+);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TASK ITEM
+───────────────────────────────────────────────────────────────────────── */
+const TaskItem = ({ task, onComplete }) => (
+  <div className="
+    group p-5 rounded-xl
+    bg-surface-1 border border-white/[0.06]
+    hover:bg-surface-2 hover:border-white/[0.1]
+    transition-all duration-200
+    flex items-center gap-4
+  ">
+    <button 
+      onClick={() => onComplete(task._id)}
+      className="
+        w-8 h-8 rounded-lg border border-surface-3
+        flex items-center justify-center
+        hover:border-brand hover:bg-brand/10
+        transition-colors
+      "
+    >
+      <CheckCircle2 className="w-4 h-4 text-transparent group-hover:text-brand/50" />
+    </button>
+    
+    <div className="flex-1 min-w-0">
+      <h4 className="font-medium text-text-primary group-hover:text-brand transition-colors">
+        {task.title}
+      </h4>
+      <p className="text-xs text-text-tertiary mt-0.5">
+        {task.priority || 'Standard'} Priority
+      </p>
+    </div>
+    
+    <HandoffButton task={task} />
+  </div>
+);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN PAGE
 ───────────────────────────────────────────────────────────────────────── */
 export default function ProjectHome() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { styles } = useRenovation();
   
-  // --- PRESERVED BACKEND STATES ---
+  // State
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showShipModal, setShowShipModal] = useState(false);
@@ -151,7 +233,6 @@ export default function ProjectHome() {
   const { joinProject, leaveProject } = useCursorContext();
   const { flashShip } = useCursorFlash();
   const { projectStats } = usePresence({ autoDetectIdle: true });
-  const teamActivity = useTeamPresence();
 
   useEffect(() => {
     if (id) joinProject(id);
@@ -163,8 +244,11 @@ export default function ProjectHome() {
       try {
         const data = await getProject(id);
         setProject(data);
-      } catch (e) { toast({ title: "Load Failed", variant: "error" }); }
-      finally { setLoading(false); }
+      } catch (e) { 
+        toast({ title: "Load Failed", variant: "error" }); 
+      } finally { 
+        setLoading(false); 
+      }
     })();
   }, [id]);
 
@@ -175,167 +259,207 @@ export default function ProjectHome() {
       setShowShipModal(false);
       setShipDescription("");
       toast({ title: "Project Shipped!", variant: "success" });
-    } catch (e) { toast({ title: "Ship Failed", variant: "error" }); }
+    } catch (e) { 
+      toast({ title: "Ship Failed", variant: "error" }); 
+    }
   };
-  // --- END PRESERVED LOGIC ---
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#0B0C0E] flex items-center justify-center">
-      <div className="w-16 h-[1px] bg-white/5 overflow-hidden relative">
-        <div className="absolute inset-0 bg-violet-500 animate-loading-bar" />
+  const openTasks = tasks.filter(t => !t.completed);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-surface-0 flex items-center justify-center">
+        <div className="w-12 h-1 bg-surface-2 rounded-full overflow-hidden">
+          <div className="h-full w-1/2 bg-brand rounded-full animate-pulse" />
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#0B0C0E] text-white selection:bg-violet-500/30">
-      <div className="max-w-[1600px] mx-auto px-8 lg:px-20 py-20">
+    <div className="min-h-screen bg-surface-0 text-text-primary">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12 py-10">
         
-        {/* ⭐ THE HERO HEADER: Spatial Hierarchy */}
-        <header className="mb-24 flex flex-col lg:flex-row lg:items-end justify-between gap-12">
-          <div className="space-y-8">
-            <div className="flex items-center gap-4">
-              <span className="px-4 py-1.5 bg-violet-500/10 text-violet-400 text-[10px] font-black uppercase tracking-[0.3em] rounded-full border border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.1)]">
+        {/* ═══════════════════════════════════════════════════════════════════
+            HEADER
+        ═══════════════════════════════════════════════════════════════════ */}
+        <header className="mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+          <div>
+            {/* Status */}
+            <div className="flex items-center gap-4 mb-4">
+              <span className="px-3 py-1 text-xs font-medium bg-brand/10 text-brand rounded-full">
                 Live Project
               </span>
-              <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="flex items-center gap-2 text-xs text-text-tertiary">
+                <div className="w-1.5 h-1.5 rounded-full bg-success" />
                 {projectStats.online} Active Now
               </div>
             </div>
             
-            <h1 className="text-7xl md:text-8xl font-black tracking-tighter leading-[0.85]">
-              {project?.title || "ShareSync"}
+            {/* Title */}
+            <h1 className="text-4xl lg:text-5xl font-semibold mb-3">
+              {project?.title || "Project"}
             </h1>
             
-            <p className="text-slate-500 text-xl max-w-2xl font-medium leading-relaxed">
+            {/* Description */}
+            <p className="text-text-secondary text-lg max-w-2xl">
               Design and engineering cycles for the 2026 OpenShare core ecosystem. 
-              Currently tackling <span className="text-white font-bold italic">{tasks.filter(t => !t.completed).length} open objectives</span>.
+              Currently tackling <span className="text-text-primary font-medium">{openTasks.length} open objectives</span>.
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Actions */}
+          <div className="flex items-center gap-3">
             <button 
-               onClick={() => setShowShipModal(true)}
-               className="h-16 px-10 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:scale-[1.05] transition-all duration-300 shadow-2xl shadow-white/10 flex items-center gap-3 active:scale-95"
+              onClick={() => setShowShipModal(true)}
+              className="
+                h-12 px-6 rounded-xl
+                bg-brand text-white
+                font-medium text-sm
+                hover:bg-brand-600 hover:shadow-glow-brand
+                transition-all duration-200
+                flex items-center gap-2
+              "
             >
-              <Rocket size={20} />
+              <Rocket className="w-4 h-4" />
               Ship Update
             </button>
-            <button className="h-16 w-16 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center hover:bg-white/10 hover:border-white/10 transition-all group">
-              <Settings size={22} className="text-slate-500 group-hover:text-white transition-colors" />
+            <button className="
+              h-12 w-12 rounded-xl
+              bg-surface-1 border border-white/[0.06]
+              flex items-center justify-center
+              hover:bg-surface-2 hover:border-white/[0.1]
+              transition-colors
+            ">
+              <Settings className="w-5 h-5 text-text-tertiary" />
             </button>
           </div>
         </header>
 
-        {/* ⭐ BENTO GRID: Spacing Increased */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-20">
-          <ProjectHeartbeatCard />
-          <EnergyTracker currentEnergy={currentEnergy} onEnergyChange={setCurrentEnergy} tasks={tasks} />
-          
-          <Card className="p-10 flex flex-col justify-between" glowColor="rgba(16, 185, 129, 0.1)">
-            <div className="flex items-center justify-between mb-10">
-              <h3 className="text-2xl font-black text-white tracking-tighter">Team Balance</h3>
-              <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                <PieChart className="w-5 h-5 text-emerald-500" />
-              </div>
-            </div>
-            <div className="flex -space-x-4 mb-8">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="w-14 h-14 rounded-2xl border-[6px] border-[#0F1115] bg-slate-800 overflow-hidden shadow-xl">
-                  <img src={`https://i.pravatar.cc/150?u=${i}`} alt="user" className="w-full h-full object-cover grayscale-[0.3] hover:grayscale-0 transition-all" />
-                </div>
-              ))}
-              <div className="w-14 h-14 rounded-2xl border-[6px] border-[#0F1115] bg-violet-600 flex items-center justify-center text-[10px] font-black text-white shadow-xl">
-                +12
-              </div>
-            </div>
-            <MembersPanel projectId={id} compact />
-          </Card>
+        {/* ═══════════════════════════════════════════════════════════════════
+            BENTO GRID
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <HeartbeatCard />
+          <EnergyTracker 
+            currentEnergy={currentEnergy} 
+            onEnergyChange={setCurrentEnergy} 
+            tasks={tasks} 
+          />
+          <TeamCard projectId={id} />
         </div>
 
-        {/* ⭐ TASK EXECUTION ZONE */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+        {/* ═══════════════════════════════════════════════════════════════════
+            MAIN CONTENT
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Left Column: Tasks */}
-          <div className="lg:col-span-8 space-y-16">
-            <section>
-              <div className="flex items-center justify-between mb-12 px-2">
-                <h2 className="text-3xl font-black tracking-tighter">Active Objectives</h2>
-                <div className="h-[1px] flex-1 bg-white/5 mx-10" />
-                <button className="p-3 bg-white/[0.03] border border-white/5 rounded-xl text-slate-500 hover:text-white hover:bg-white/10 transition-all">
-                  <Plus size={24} />
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                {tasks.filter(t => !t.completed).map(task => (
-                  <div key={task._id} className="group bg-white/[0.02] hover:bg-white/[0.04] p-8 rounded-[2rem] border border-white/[0.03] transition-all duration-300 flex items-center gap-8 hover:translate-x-2">
-                    <button 
-                      onClick={() => completeTaskAPI(task._id)}
-                      className="w-10 h-10 rounded-2xl border-2 border-slate-800 group-hover:border-violet-500 flex items-center justify-center transition-all bg-[#0B0C0E]"
-                    >
-                      <CheckCircle2 size={18} className="text-transparent group-hover:text-violet-500/50" />
-                    </button>
-                    <div className="flex-1">
-                      <h4 className="font-black text-xl text-white tracking-tight group-hover:text-violet-400 transition-colors">{task.title}</h4>
-                      <p className={styles.label || "text-[9px] font-bold text-slate-600 mt-2 uppercase tracking-[0.2em]"}>
-                        Assigned Node • {task.priority || 'Standard'} Priority
-                      </p>
-                    </div>
-                    <HandoffButton task={task} />
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          {/* Right Column: Meta Info */}
-          <div className="lg:col-span-4 space-y-16">
-             <Card className="p-10" glowColor="rgba(139, 92, 246, 0.2)">
-                <div className="flex items-center gap-3 mb-10">
-                  <Sparkles className="text-violet-500" size={20} />
-                  <h3 className={styles.label || "text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em]"}>Current Sprint</h3>
-                </div>
-                <TeamSprintManager projectId={id} />
-             </Card>
-
-             <section>
-                <h3 className={styles.label || "text-[10px] font-black text-slate-700 uppercase tracking-[0.4em] mb-10 px-4"}>Project Activity</h3>
-                <Announcements projectId={id} />
-             </section>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ⭐ SHIP MODAL: Glassmorphism Applied */}
-      {showShipModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-2xl bg-black/80 animate-in fade-in zoom-in-95 duration-500">
-          <Card className="w-full max-w-2xl p-12 relative overflow-hidden" glowColor="rgba(139, 92, 246, 0.3)">
-            <div className="flex justify-between items-start mb-10">
-              <h2 className="text-4xl font-black tracking-tighter">Prepare Broadcast</h2>
-              <button onClick={() => setShowShipModal(false)} className="p-3 text-slate-500 hover:text-white hover:bg-white/5 rounded-full transition-all">
-                <X size={24} />
+          {/* Tasks Column */}
+          <div className="lg:col-span-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Active Objectives</h2>
+              <button className="
+                p-2.5 rounded-lg
+                bg-surface-1 border border-white/[0.06]
+                text-text-tertiary hover:text-text-primary
+                hover:bg-surface-2
+                transition-colors
+              ">
+                <Plus className="w-5 h-5" />
               </button>
             </div>
+
+            <div className="space-y-3">
+              {openTasks.map(task => (
+                <TaskItem 
+                  key={task._id} 
+                  task={task} 
+                  onComplete={completeTaskAPI} 
+                />
+              ))}
+              
+              {openTasks.length === 0 && (
+                <div className="p-10 text-center rounded-xl bg-surface-1 border border-white/[0.06]">
+                  <p className="text-text-tertiary">No active tasks</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Sprint Card */}
+            <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+              <div className="flex items-center gap-2 mb-6">
+                <Sparkles className="w-4 h-4 text-brand" />
+                <h3 className="text-sm font-medium text-text-secondary">Current Sprint</h3>
+              </div>
+              <TeamSprintManager projectId={id} />
+            </div>
+
+            {/* Activity */}
+            <div>
+              <h3 className="text-sm font-medium text-text-tertiary mb-4 px-1">
+                Project Activity
+              </h3>
+              <Announcements projectId={id} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          SHIP MODAL
+      ═══════════════════════════════════════════════════════════════════ */}
+      {showShipModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+          <div className="
+            w-full max-w-xl p-8 rounded-2xl
+            bg-surface-1 border border-white/[0.08]
+            shadow-2xl
+            animate-in fade-in zoom-in-95 duration-200
+          ">
+            <div className="flex justify-between items-start mb-6">
+              <h2 className="text-2xl font-semibold">Ship Update</h2>
+              <button 
+                onClick={() => setShowShipModal(false)} 
+                className="p-2 rounded-lg hover:bg-surface-2 transition-colors"
+              >
+                <X className="w-5 h-5 text-text-tertiary" />
+              </button>
+            </div>
+            
             <textarea
-              className="w-full bg-white/[0.03] border border-white/[0.05] rounded-3xl p-8 text-white text-xl focus:outline-none focus:border-violet-500/30 transition-all resize-none h-60 mb-10 font-medium placeholder:text-slate-700 shadow-inner"
+              className="
+                w-full p-4 rounded-xl
+                bg-surface-2 border border-white/[0.06]
+                text-text-primary text-base
+                placeholder:text-text-tertiary
+                focus:outline-none focus:border-brand/50
+                resize-none h-40 mb-6
+                transition-colors
+              "
               placeholder="What did you build today?"
               value={shipDescription}
               onChange={(e) => setShipDescription(e.target.value)}
             />
+            
             <button 
               onClick={handleShip}
-              className="w-full py-8 bg-white text-black rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs hover:scale-[1.02] active:scale-[0.95] transition-all shadow-2xl shadow-white/5"
+              className="
+                w-full py-4 rounded-xl
+                bg-brand text-white font-medium
+                hover:bg-brand-600
+                transition-colors
+              "
             >
               Broadcast Ship
             </button>
-          </Card>
+          </div>
         </div>
       )}
 
-      {/* Invisible Logic Mounts */}
+      {/* Invisible Logic */}
       <QuickActionsManager />
       <KeyboardShortcuts />
     </div>

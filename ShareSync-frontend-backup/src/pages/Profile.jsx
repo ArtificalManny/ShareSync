@@ -1,31 +1,34 @@
-// src/pages/Profile.jsx - THE ULTIMATE IDENTITY MIRROR (METAlab EDITION)
-import React, { useEffect, useMemo, useState, useContext, useRef } from "react";
-import { useLocation, useParams, Link } from "react-router-dom";
+// src/pages/Profile.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Quiet Confidence"
+// ═══════════════════════════════════════════════════════════════════════════════
+// RULES APPLIED:
+// 1. Surface hierarchy: surface-0/1/2 tokens
+// 2. Text hierarchy: text-primary/secondary/tertiary
+// 3. Calmer typography - no font-black everywhere
+// 4. No spinning rings or pulsing animations
+// 5. KEEP semantic color differentiation for analytics sections
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React, { useEffect, useMemo, useState, useRef } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import client from "../api/client";
 import { getMe, getPublicUser, updateProfile } from "../api/user";
 import { 
-  Lock, Flame, Star, Zap, Play, Share2, Trophy, Target, Clock, Brain, Heart, 
-  Users as UsersIcon, Camera, Edit2, TrendingUp, Award, Sparkles, CheckCircle,
-  Upload, X, Eye, EyeOff, Download, Calendar, BarChart3, LineChart, Activity,
-  ShieldCheck, LayoutGrid
+  Camera, TrendingUp, Brain, Activity, ShieldCheck, Download
 } from "lucide-react";
-import { UserContext } from "../context/UserContext";
-import { track } from "../utils/telemetry.js";
 import { toast } from "../components/ui/toast";
 
-// NEW: MetaLab UI Components
-import { useRenovation } from "../context/RenovationContext";
-import Card from "../components/ui/Card";
-
-// ⭐ ANALYTICS COMPONENTS (Preserved)
+// Analytics Components
 import CollaborationStyleCard from "../components/Profile/CollaborationStyleCard";
 import WorkPersonality from "../components/analytics/WorkPersonality";
 import RoleClassificationCard from "../components/Profile/RoleClassificationCard";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   UTILS & HELPERS (Preserved)
+   UTILS
 ───────────────────────────────────────────────────────────────────────── */
-const calculateReliability = (completed, total) => (!total || total === 0) ? 0 : Math.round((completed / total) * 100);
+const calculateReliability = (completed, total) => 
+  (!total || total === 0) ? 0 : Math.round((completed / total) * 100);
 
 function xpForLevel(level) {
   if (level <= 1) return 0;
@@ -33,6 +36,7 @@ function xpForLevel(level) {
   for (let i = 1; i < level; i++) sum += Math.round(75 + Math.pow(i, 1.35) * 35);
   return sum;
 }
+
 function levelForXp(xp = 0) {
   let lvl = 1;
   while (xp >= xpForLevel(lvl + 1)) lvl++;
@@ -40,9 +44,8 @@ function levelForXp(xp = 0) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   COMPONENTS: REFINED FOR METAlab
+   PROFILE PHOTO EDITOR
 ───────────────────────────────────────────────────────────────────────── */
-
 const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -53,7 +56,10 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => { setPreviewUrl(e.target.result); setIsEditing(true); };
+    reader.onload = (e) => { 
+      setPreviewUrl(e.target.result); 
+      setIsEditing(true); 
+    };
     reader.readAsDataURL(file);
   };
 
@@ -65,76 +71,133 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       const formData = new FormData();
       formData.append('profilePicture', blob, 'profile.jpg');
       await updateProfile(formData);
-      toast({ title: "Identity Updated", variant: "success" });
+      toast({ title: "Photo updated", variant: "success" });
       setIsEditing(false);
       if (onPhotoUpdate) onPhotoUpdate();
-    } catch (error) { toast({ title: "Update Failed", variant: "error" }); }
-    finally { setUploading(false); }
+    } catch (error) { 
+      toast({ title: "Update failed", variant: "error" }); 
+    } finally { 
+      setUploading(false); 
+    }
   };
 
   return (
-    <div className="relative group flex flex-col items-center">
-      <div className="relative w-56 h-56">
-        {/* Spatial Outer Ring */}
-        <div className="absolute inset-0 rounded-full border border-violet-500/20 animate-[spin_20s_linear_infinite]" />
-        <div className="absolute inset-4 rounded-full border border-dashed border-violet-500/10 animate-[spin_15s_linear_infinite_reverse]" />
+    <div className="relative flex flex-col items-center">
+      {/* Avatar Container */}
+      <div className="relative w-40 h-40 group">
+        {/* Simple ring - no spinning */}
+        <div className="absolute inset-0 rounded-full border border-brand/20" />
         
-        <div className="relative w-full h-full rounded-full p-3">
-          <div className="w-full h-full rounded-full overflow-hidden border-[6px] border-[#0B0C0E] shadow-2xl bg-[#16181D]">
-            <img 
-              src={previewUrl || user?.profilePicture || '/default-profile.png'} 
-              alt="Identity" 
-              className="w-full h-full object-cover grayscale-[0.2] hover:grayscale-0 transition-all duration-500" 
-            />
-            {isOwnProfile && (
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-md">
-                <button onClick={() => fileInputRef.current?.click()} className="p-5 bg-violet-600 rounded-full shadow-2xl hover:scale-110 transition-transform active:scale-95">
-                  <Camera className="w-7 h-7 text-white" />
-                </button>
-              </div>
-            )}
-          </div>
+        {/* Photo */}
+        <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-surface-0 bg-surface-2">
+          <img 
+            src={previewUrl || user?.profilePicture || '/default-profile.png'} 
+            alt="Profile" 
+            className="w-full h-full object-cover" 
+          />
+          
+          {/* Hover overlay */}
+          {isOwnProfile && (
+            <div className="
+              absolute inset-0 bg-black/60 
+              opacity-0 group-hover:opacity-100 
+              transition-opacity flex items-center justify-center
+            ">
+              <button 
+                onClick={() => fileInputRef.current?.click()} 
+                className="p-3 bg-brand rounded-full hover:bg-brand-600 transition-colors"
+              >
+                <Camera className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          )}
         </div>
         
-        {/* MetaLab Level Badge */}
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-5 py-2 bg-[#0F1115] rounded-2xl shadow-2xl border border-white/10">
-          <span className="text-white font-black text-[10px] tracking-[0.2em] uppercase italic">
+        {/* Rank Badge */}
+        <div className="
+          absolute -bottom-2 left-1/2 -translate-x-1/2 
+          px-3 py-1.5 bg-surface-1 rounded-lg border border-white/[0.08]
+        ">
+          <span className="text-xs font-medium text-text-primary">
             Rank {levelForXp(user?.xp)}
           </span>
         </div>
       </div>
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
       
+      <input 
+        ref={fileInputRef} 
+        type="file" 
+        accept="image/*" 
+        onChange={handleFileSelect} 
+        className="hidden" 
+      />
+      
+      {/* Edit Modal */}
       {isEditing && (
-        <div className="fixed inset-0 bg-[#0B0C0E]/95 backdrop-blur-xl flex items-center justify-center z-[100] p-6">
-           <Card className="p-10 max-w-sm w-full text-center" glowColor="rgba(139,92,246,0.2)">
-              <h3 className="text-2xl font-black text-white mb-8 tracking-tighter">Sync New Identity?</h3>
-              <div className="w-32 h-32 rounded-full overflow-hidden mx-auto mb-10 border-4 border-violet-500/30">
-                <img src={previewUrl} className="w-full h-full object-cover" />
-              </div>
-              <div className="flex gap-4">
-                <button onClick={() => setIsEditing(false)} className="flex-1 py-4 rounded-2xl bg-white/5 text-slate-500 font-bold hover:text-white transition-colors uppercase text-[10px] tracking-widest">Cancel</button>
-                <button onClick={handleUpload} disabled={uploading} className="flex-1 py-4 rounded-2xl bg-violet-600 text-white font-bold hover:bg-violet-500 transition-all active:scale-95 uppercase text-[10px] tracking-widest">{uploading ? '...' : 'Confirm'}</button>
-              </div>
-           </Card>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
+          <div className="w-full max-w-sm p-6 bg-surface-1 border border-white/[0.08] rounded-2xl">
+            <h3 className="text-xl font-semibold text-text-primary mb-6 text-center">
+              Update Photo?
+            </h3>
+            <div className="w-28 h-28 rounded-full overflow-hidden mx-auto mb-6 border-2 border-brand/30">
+              <img src={previewUrl} className="w-full h-full object-cover" alt="Preview" />
+            </div>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setIsEditing(false)} 
+                className="
+                  flex-1 py-3 rounded-xl
+                  bg-surface-2 text-text-secondary
+                  hover:bg-surface-3 transition-colors
+                "
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleUpload} 
+                disabled={uploading} 
+                className="
+                  flex-1 py-3 rounded-xl
+                  bg-brand text-white
+                  hover:bg-brand-600 transition-colors
+                "
+              >
+                {uploading ? 'Uploading...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
+/* ─────────────────────────────────────────────────────────────────────────
+   STAT CARD
+───────────────────────────────────────────────────────────────────────── */
+const StatCard = ({ value, label, color = "text-text-primary" }) => (
+  <div className="p-5 rounded-xl bg-surface-2 border border-white/[0.04] hover:bg-surface-3 transition-colors">
+    <div className={`text-3xl font-semibold ${color}`}>{value}</div>
+    <div className="text-[10px] text-text-tertiary uppercase tracking-wider mt-1">{label}</div>
+  </div>
+);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN PAGE
+───────────────────────────────────────────────────────────────────────── */
 export default function Profile() {
   const { username: routeUsername } = useParams();
   const location = useLocation();
-  const { styles } = useRenovation();
   
-  // --- PRESERVED LOGIC ---
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState(null);
   const [publicUser, setPublicUser] = useState(null);
   const [profileAnalytics, setProfileAnalytics] = useState(null);
 
-  const isPublicRoute = useMemo(() => Boolean(routeUsername) && location.pathname.startsWith("/u/"), [routeUsername, location.pathname]);
+  const isPublicRoute = useMemo(
+    () => Boolean(routeUsername) && location.pathname.startsWith("/u/"), 
+    [routeUsername, location.pathname]
+  );
 
   const load = async () => {
     setLoading(true);
@@ -148,119 +211,171 @@ export default function Profile() {
         const analytics = await client.get("/users/profile-analytics");
         setProfileAnalytics(analytics.data);
       }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e) { 
+      console.error(e); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   useEffect(() => { load(); }, [isPublicRoute, routeUsername]);
-  // --- END LOGIC ---
 
   const user = isPublicRoute ? publicUser : me;
   const isOwnProfile = !isPublicRoute;
+  const reliability = calculateReliability(user?.completedTasks, user?.totalTasks);
 
-  if (loading) return <div className="min-h-screen bg-[#0B0C0E] flex items-center justify-center text-slate-700 font-black uppercase tracking-[0.4em] animate-pulse text-[10px]">Synchronizing...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-surface-0 flex items-center justify-center">
+        <div className="text-sm text-text-tertiary">Loading...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-transparent p-8 lg:p-20 max-w-[1500px] mx-auto">
+    <div className="min-h-screen p-6 lg:p-12 max-w-[1300px] mx-auto">
       
-      {/* 👤 HERO AREA: Spatial Typography */}
-      <section className="flex flex-col items-center mb-24">
+      {/* ═══════════════════════════════════════════════════════════════════
+          HERO SECTION
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="flex flex-col items-center mb-16">
         <ProfilePhotoEditor user={user} isOwnProfile={isOwnProfile} onPhotoUpdate={load} />
-        <div className="text-center mt-12">
-          <h1 className="text-6xl font-black text-white tracking-tighter mb-4">
-            {user?.firstName} <span className="text-slate-500">{user?.lastName}</span>
+        
+        <div className="text-center mt-8">
+          {/* Name */}
+          <h1 className="text-4xl font-semibold text-text-primary mb-3">
+            {user?.firstName} <span className="text-text-tertiary">{user?.lastName}</span>
           </h1>
-          <div className="flex items-center justify-center gap-4">
-            <span className="text-slate-500 font-bold tracking-[0.3em] uppercase text-[10px]">ID: {user?.username}</span>
-            <div className="w-1 h-1 rounded-full bg-slate-800" />
-            <span className="text-emerald-500 font-bold tracking-[0.2em] uppercase text-[9px] flex items-center gap-1.5 bg-emerald-500/5 px-3 py-1 rounded-full border border-emerald-500/10">
-              <ShieldCheck className="w-3.5 h-3.5" /> Core Verified
+          
+          {/* Username + Verified Badge */}
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-sm text-text-tertiary">
+              ID: {user?.username}
+            </span>
+            <span className="
+              flex items-center gap-1.5 px-2.5 py-1 rounded-full
+              bg-success/10 text-success text-xs font-medium
+            ">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Core Verified
             </span>
           </div>
+          
+          {/* Bio */}
           {user?.bio && (
-            <p className="mt-8 text-slate-500 max-w-xl mx-auto leading-relaxed italic text-sm font-medium">
-              "{user.bio}"
+            <p className="mt-6 text-text-secondary max-w-lg mx-auto leading-relaxed">
+              {user.bio}
             </p>
           )}
         </div>
       </section>
 
-      {/* 🍱 THE IDENTITY BENTO: 10-column spacing applied */}
-      <div className="grid grid-cols-12 gap-10">
+      {/* ═══════════════════════════════════════════════════════════════════
+          STATS GRID
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-12 gap-6">
         
-        {/* Left Column: Vitals */}
-        <div className="col-span-12 lg:col-span-4 space-y-10">
-          <Card className="p-10" glowColor="rgba(139, 92, 246, 0.1)">
-            <div className="flex items-center gap-3 mb-10">
-              <TrendingUp className="w-5 h-5 text-violet-400" />
-              <h3 className={styles.label || "text-[11px] font-bold text-slate-500 uppercase tracking-[0.2em]"}>Impact Metrics</h3>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-6">
-              <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.03] group hover:bg-white/[0.04] transition-all">
-                <div className="text-4xl font-black text-white tracking-tighter">{user?.totalShips || 0}</div>
-                <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-2">Deployments</div>
-              </div>
-              <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.03] group hover:bg-white/[0.04] transition-all">
-                <div className="text-4xl font-black text-violet-500 tracking-tighter">{user?.currentStreak || 0}d</div>
-                <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-2">Momentum</div>
-              </div>
-            </div>
-            
-            <div className="mt-8 p-6 rounded-2xl bg-violet-600/[0.03] border border-violet-600/10">
-               <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
-                 Systems analysis indicates peak performance across <span className="text-white font-black italic">8 key nodes</span> this quarter.
-               </p>
-            </div>
-          </Card>
-
-          <Card className="p-10" glowColor="rgba(16, 185, 129, 0.1)">
-             <div className="flex items-center gap-3 mb-10">
-               <Activity className="w-5 h-5 text-emerald-400" />
-               <h3 className={styles.label || "text-[11px] font-bold text-slate-500 uppercase tracking-[0.2em]"}>Operational Trust</h3>
-             </div>
-             
-             <div className="flex items-end gap-3 mb-6 px-2">
-               <div className="text-6xl font-black text-white italic tracking-tighter">
-                {calculateReliability(user?.completedTasks, user?.totalTasks)}%
-               </div>
-               <div className="text-[10px] text-emerald-500 font-bold mb-3 tracking-widest uppercase">Nominal</div>
-             </div>
-             <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all duration-1000 ease-out" 
-                  style={{ width: `${calculateReliability(user?.completedTasks, user?.totalTasks)}%` }} 
-                />
-             </div>
-          </Card>
-        </div>
-
-        {/* Right Column: Work DNA */}
-        <Card className="col-span-12 lg:col-span-8 p-10">
-          <div className="flex items-center justify-between mb-12">
-            <h2 className={styles.label || "text-[12px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"}>
-              <Brain className="w-5 h-5 text-fuchsia-400" /> Behavioral Analysis
-            </h2>
-          </div>
+        {/* ─────────────────────────────────────────────────────────────────
+            LEFT COLUMN: Impact Metrics + Trust
+        ───────────────────────────────────────────────────────────────── */}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-             {profileAnalytics?.collaborationStyle && <CollaborationStyleCard data={profileAnalytics.collaborationStyle} />}
-             {profileAnalytics?.roleClassification && <RoleClassificationCard data={profileAnalytics.roleClassification} />}
+          {/* Impact Metrics - Brand Purple accent */}
+          <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+            <div className="flex items-center gap-2 mb-6">
+              <TrendingUp className="w-4 h-4 text-brand" />
+              <h3 className="text-sm font-medium text-text-secondary">Impact Metrics</h3>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <StatCard 
+                value={user?.totalShips || 0} 
+                label="Deployments" 
+                color="text-text-primary"
+              />
+              <StatCard 
+                value={`${user?.currentStreak || 0}d`} 
+                label="Momentum" 
+                color="text-brand"
+              />
+            </div>
+            
+            <div className="p-4 rounded-lg bg-brand/5 border border-brand/10">
+              <p className="text-sm text-text-secondary">
+                Systems analysis indicates peak performance across{' '}
+                <span className="text-text-primary font-medium">8 key nodes</span>{' '}
+                this quarter.
+              </p>
+            </div>
           </div>
 
-          <div className="mt-16 border-t border-white/5 pt-16">
-            {user && <WorkPersonality userId={user._id || user.id} />}
+          {/* Operational Trust - Green accent */}
+          <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+            <div className="flex items-center gap-2 mb-6">
+              <Activity className="w-4 h-4 text-success" />
+              <h3 className="text-sm font-medium text-text-secondary">Operational Trust</h3>
+            </div>
+            
+            <div className="flex items-end gap-2 mb-4">
+              <span className="text-4xl font-semibold text-text-primary">
+                {reliability}%
+              </span>
+              <span className="text-xs text-success font-medium mb-1">
+                {reliability >= 70 ? 'Excellent' : reliability >= 40 ? 'Good' : 'Building'}
+              </span>
+            </div>
+            
+            <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-success rounded-full transition-all duration-700" 
+                style={{ width: `${reliability}%` }} 
+              />
+            </div>
           </div>
-        </Card>
-
-        {/* Minimalist Footer Action */}
-        <div className="col-span-12 flex justify-center py-20">
-           <button className="flex items-center gap-4 px-10 py-5 bg-white/[0.02] border border-white/[0.05] rounded-2xl text-slate-500 font-bold hover:bg-white/[0.06] hover:text-white hover:border-white/10 transition-all duration-300 group">
-             <Download className="w-5 h-5 group-hover:-translate-y-1 transition-transform duration-300" />
-             <span className="text-[10px] uppercase tracking-[0.3em]">Export Identity Ledger</span>
-           </button>
         </div>
 
+        {/* ─────────────────────────────────────────────────────────────────
+            RIGHT COLUMN: Behavioral Analysis
+        ───────────────────────────────────────────────────────────────── */}
+        <div className="col-span-12 lg:col-span-8">
+          <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+            <div className="flex items-center gap-2 mb-8">
+              <Brain className="w-4 h-4 text-brand-400" />
+              <h3 className="text-sm font-medium text-text-secondary">Behavioral Analysis</h3>
+            </div>
+            
+            {/* Analytics Cards - These keep their semantic colors */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {profileAnalytics?.collaborationStyle && (
+                <CollaborationStyleCard data={profileAnalytics.collaborationStyle} />
+              )}
+              {profileAnalytics?.roleClassification && (
+                <RoleClassificationCard data={profileAnalytics.roleClassification} />
+              )}
+            </div>
+
+            {/* Work Personality Section */}
+            <div className="mt-10 pt-8 border-t border-white/[0.06]">
+              {user && <WorkPersonality userId={user._id || user.id} />}
+            </div>
+          </div>
+        </div>
+
+        {/* ─────────────────────────────────────────────────────────────────
+            FOOTER ACTION
+        ───────────────────────────────────────────────────────────────── */}
+        <div className="col-span-12 flex justify-center pt-8">
+          <button className="
+            flex items-center gap-3 px-6 py-3 rounded-xl
+            bg-surface-1 border border-white/[0.06]
+            text-text-tertiary hover:text-text-primary
+            hover:bg-surface-2 hover:border-white/[0.1]
+            transition-all duration-200 group
+          ">
+            <Download className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+            <span className="text-sm">Export Profile Data</span>
+          </button>
+        </div>
       </div>
     </div>
   );
