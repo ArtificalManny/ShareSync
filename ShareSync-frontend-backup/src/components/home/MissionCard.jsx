@@ -1,107 +1,172 @@
 // src/components/home/MissionCard.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Quiet Confidence"
+// ═══════════════════════════════════════════════════════════════════════════════
+// RULES APPLIED:
+// 1. Surface hierarchy: surface-1 base, surface-2 on hover
+// 2. ONE accent color (brand) - only on the action button
+// 3. Text hierarchy: primary → secondary → tertiary
+// 4. Glows are EARNED through interaction, not resting state
+// 5. 3-element rule: Title, Status, Action - that's it
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { useState } from "react";
-import { Target, Clock, Zap, ChevronRight, Activity, Loader2, CheckCircle2 } from "lucide-react";
-import { useRenovation } from "../../context/RenovationContext";
+import { Target, Clock, Zap, ChevronRight, Loader2, CheckCircle2 } from "lucide-react";
 
 export default function MissionCard({ project, onClick }) {
-  // --- PRESERVED LOGIC ---
   const [status, setStatus] = useState('idle'); // 'idle' | 'deploying' | 'shipped'
-  const { styles } = useRenovation();
 
   const handleDeploy = (e) => {
     e.stopPropagation();
     setStatus('deploying');
-    
-    // Simulate deployment sequence
-    setTimeout(() => {
-      setStatus('shipped');
-    }, 2000);
+    setTimeout(() => setStatus('shipped'), 2000);
   };
 
-  const getHealthColor = (score) => {
-    if (score > 80) return "text-emerald-400 border-emerald-500/10";
-    if (score > 50) return "text-orange-400 border-orange-500/10";
-    return "text-rose-400 border-rose-500/10";
+  // Simplified health indicator - just the color, no noise
+  const getHealthStyle = (score) => {
+    if (score > 80) return "text-success bg-success/10";
+    if (score > 50) return "text-warning bg-warning/10";
+    return "text-danger bg-danger/10";
   };
-  // --- END LOGIC ---
+
+  const isShipped = status === 'shipped';
+  const isDeploying = status === 'deploying';
 
   return (
     <div 
       onClick={() => onClick(project)}
-      className={`group relative overflow-hidden p-6 rounded-3xl transition-all duration-300 cursor-pointer
-        ${status === 'shipped' ? 'bg-white/[0.01] opacity-50' : 'bg-white/[0.02] hover:bg-white/[0.04]'}
-        border border-white/5 hover:border-white/10 hover:translate-x-1`}
+      className={`
+        group relative p-5 rounded-xl cursor-pointer
+        transition-all duration-200 ease-out
+        
+        /* Surface hierarchy */
+        bg-surface-1 
+        hover:bg-surface-2
+        
+        /* Border - subtle, strengthens on hover */
+        border border-white/[0.06]
+        hover:border-white/[0.12]
+        
+        /* Glow is EARNED - only on hover */
+        hover:shadow-[0_0_0_1px_rgba(139,92,246,0.1)]
+        
+        /* Shipped state - quiet, done */
+        ${isShipped ? 'opacity-60' : ''}
+      `}
     >
-      {/* Subtle background activity icon (MetaLab Depth) */}
-      <div className="absolute -right-2 -bottom-2 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
-        <Activity className="w-24 h-24 text-white" />
-      </div>
-
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
-        <div className="flex items-center gap-6">
-          {/* Status Icon Hardware */}
-          <div className={`w-14 h-14 rounded-2xl bg-[#0B0C0E] border flex items-center justify-center transition-all duration-500
-            ${status === 'shipped' ? 'border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'border-white/5 group-hover:border-violet-500/50'}`}>
-            {status === 'shipped' ? (
-              <CheckCircle2 className="w-7 h-7 text-emerald-500" />
+      {/* ─────────────────────────────────────────────────────────────────────
+          LAYOUT: Clean horizontal flow
+          Zone 1 (left): Identity - icon + title + meta
+          Zone 2 (right): Status + Action
+      ───────────────────────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between gap-6">
+        
+        {/* ═══════════════════════════════════════════════════════════════════
+            ZONE 1: Identity
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="flex items-center gap-4 min-w-0">
+          
+          {/* Icon - quiet until hover, celebrates on ship */}
+          <div className={`
+            w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0
+            transition-all duration-200
+            ${isShipped 
+              ? 'bg-success/10' 
+              : 'bg-surface-2 group-hover:bg-brand/10'
+            }
+          `}>
+            {isShipped ? (
+              <CheckCircle2 className="w-5 h-5 text-success" />
             ) : (
-              <Target className="w-7 h-7 text-slate-600 group-hover:text-violet-400 transition-colors" />
+              <Target className="w-5 h-5 text-text-tertiary group-hover:text-brand transition-colors" />
             )}
           </div>
 
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h4 className="text-base font-black text-white tracking-tighter uppercase">
-                {project.title}
-              </h4>
-              <span className={`text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest border ${getHealthColor(project.health)}`}>
-                {project.health}% Health
-              </span>
-            </div>
+          {/* Title + Meta */}
+          <div className="min-w-0">
+            {/* Title - primary text, truncate if needed */}
+            <h4 className="text-sm font-semibold text-text-primary truncate">
+              {project.title}
+            </h4>
             
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                <Clock className="w-3.5 h-3.5 text-violet-500" /> {project.eta}
+            {/* Meta row - secondary/tertiary text */}
+            <div className="flex items-center gap-2 mt-1">
+              <span className="flex items-center gap-1 text-xs text-text-tertiary">
+                <Clock className="w-3 h-3" />
+                {project.eta}
               </span>
-              <div className="w-1 h-1 rounded-full bg-white/10" />
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <span className="text-text-tertiary/50">·</span>
+              <span className="text-xs text-text-tertiary">
                 {project.category}
               </span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-10">
-          {/* Velocity Metric */}
-          <div className="hidden sm:block text-right">
-            <div className="text-sm font-black text-white italic tracking-tighter">{project.velocity}%</div>
-            <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Velocity</div>
+        {/* ═══════════════════════════════════════════════════════════════════
+            ZONE 2: Status + Action
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="flex items-center gap-4 flex-shrink-0">
+          
+          {/* Health Badge - semantic color, earned not decorative */}
+          <div className={`
+            hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-medium
+            ${getHealthStyle(project.health)}
+          `}>
+            <span>{project.health}%</span>
           </div>
 
-          {/* Action Button - MetaLab "Glow" style */}
+          {/* Velocity - tertiary importance */}
+          <div className="hidden md:block text-right">
+            <div className="text-sm font-semibold text-text-primary">
+              {project.velocity}%
+            </div>
+            <div className="text-[10px] text-text-tertiary uppercase tracking-wider">
+              Velocity
+            </div>
+          </div>
+
+          {/* Action Button - THE brand moment */}
           <button 
             onClick={handleDeploy}
             disabled={status !== 'idle'}
-            className={`relative min-w-[140px] px-6 py-3 rounded-xl transition-all duration-300 font-black text-[10px] uppercase tracking-widest overflow-hidden
-              ${status === 'idle' ? 'bg-violet-600 text-white hover:bg-violet-500 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]' : 
-                status === 'deploying' ? 'bg-slate-800 text-slate-500 cursor-wait' : 
-                'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'}
+            className={`
+              px-4 py-2 rounded-lg text-xs font-semibold
+              transition-all duration-200
+              
+              ${status === 'idle' ? `
+                bg-brand text-white
+                hover:bg-brand-600
+                hover:shadow-glow-brand
+              ` : status === 'deploying' ? `
+                bg-surface-2 text-text-tertiary cursor-wait
+              ` : `
+                bg-success/10 text-success
+              `}
             `}
           >
             {status === 'idle' && (
-              <span className="flex items-center justify-center gap-2">
-                <Zap className="w-3 h-3 fill-current" /> Rapid Deploy
+              <span className="flex items-center gap-1.5">
+                <Zap className="w-3 h-3" />
+                Deploy
               </span>
             )}
-            {status === 'deploying' && (
-              <span className="flex items-center justify-center gap-2">
-                <Loader2 className="w-3 h-3 animate-spin" /> Deploying
+            {isDeploying && (
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Deploying
               </span>
             )}
-            {status === 'shipped' && "Success"}
+            {isShipped && "Shipped"}
           </button>
-          
-          <ChevronRight className="w-5 h-5 text-slate-800 group-hover:text-white transition-all group-hover:translate-x-1" />
+
+          {/* Chevron - appears on hover */}
+          <ChevronRight className="
+            w-4 h-4 text-text-tertiary
+            opacity-0 group-hover:opacity-100
+            -translate-x-1 group-hover:translate-x-0
+            transition-all duration-200
+          " />
         </div>
       </div>
     </div>
