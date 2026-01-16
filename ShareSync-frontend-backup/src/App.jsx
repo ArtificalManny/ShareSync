@@ -1,4 +1,4 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING + WELCOME BACK
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -111,6 +111,9 @@ const MessengerPanel = lazy(() => import("./components/messenger/MessengerPanel.
 const ShipFlash = lazy(() => import("./components/effects/ShipFlash"));
 const PublicRoutes = lazy(() => import("./routes/publicRoutes.jsx"));
 
+// ⭐ DAY 8: Welcome Back Modal
+const WelcomeBack = lazy(() => import("./components/context/WelcomeBack"));
+
 // ⭐ Lazy load context providers
 const UserProvider = lazy(() => import("./context/UserContext").then(m => ({ default: m.default })));
 const SprintProvider = lazy(() => import("./context/SprintContext").then(m => ({ default: m.SprintProvider })));
@@ -208,12 +211,20 @@ function AuthenticatedApp({ children }) {
                 <FocusProvider>
                   {/* ⭐ DAY 7: Context tracking for authenticated users */}
                   <ContextTracker />
+                  {/* ⭐ DAY 8: Welcome Back modal for returning users */}
+                  <Suspense fallback={null}>
+                    <WelcomeBack />
+                  </Suspense>
                   {children}
                 </FocusProvider>
               ) : (
                 <>
                   {/* ⭐ DAY 7: Context tracking for authenticated users */}
                   <ContextTracker />
+                  {/* ⭐ DAY 8: Welcome Back modal for returning users */}
+                  <Suspense fallback={null}>
+                    <WelcomeBack />
+                  </Suspense>
                   {children}
                 </>
               )}

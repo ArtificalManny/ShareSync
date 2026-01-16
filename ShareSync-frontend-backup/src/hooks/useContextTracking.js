@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { apiRequest } from '../utils/api';
 
 /**
  * useContextTracking Hook
@@ -156,7 +156,7 @@ export const useContextTracking = () => {
 
       setIsSaving(true);
       try {
-        await api.post('/user-context/save', context);
+        await apiRequest('/user-context/save', 'POST', context);
         lastSavedRef.current = context;
         setLastContext(context);
         console.debug('[Context] Saved:', context.lastActiveView, context.lastActiveRoute);
@@ -183,7 +183,7 @@ export const useContextTracking = () => {
     
     const context = getCurrentContext();
     try {
-      await api.post('/user-context/save', context);
+      await apiRequest('/user-context/save', 'POST', context);
       lastSavedRef.current = context;
       console.debug('[Context] Force saved');
     } catch (error) {
@@ -202,7 +202,7 @@ export const useContextTracking = () => {
     if (!user) return;
     
     try {
-      await api.post('/user-context/heartbeat');
+      await apiRequest('/user-context/heartbeat', 'POST');
     } catch (error) {
       // Silently fail heartbeats - not critical
       console.debug('[Context] Heartbeat failed');
@@ -221,7 +221,7 @@ export const useContextTracking = () => {
     if (!user) return;
     
     try {
-      await api.post('/user-context/unfinished-action', {
+      await apiRequest('/user-context/unfinished-action', 'POST', {
         action,
         context,
         contextId: options.contextId,
@@ -242,7 +242,7 @@ export const useContextTracking = () => {
     if (!user) return;
     
     try {
-      await api.post('/user-context/action-complete', { action });
+      await apiRequest('/user-context/action-complete', 'POST', { action });
       console.debug('[Context] Completed action:', action);
     } catch (error) {
       console.error('[Context] Complete action failed:', error.message);
@@ -260,13 +260,13 @@ export const useContextTracking = () => {
     if (!user) return;
     
     try {
-      const result = await api.post('/user-context/focus/start', {
+      const result = await apiRequest('/user-context/focus/start', 'POST', {
         taskId: options.taskId,
         projectId: options.projectId,
         plannedDuration: options.plannedMinutes,
       });
       console.debug('[Context] Focus session started');
-      return result.data;
+      return result;
     } catch (error) {
       console.error('[Context] Start focus failed:', error.message);
       throw error;
@@ -280,12 +280,12 @@ export const useContextTracking = () => {
     if (!user) return;
     
     try {
-      const result = await api.post('/user-context/focus/end', {
+      const result = await apiRequest('/user-context/focus/end', 'POST', {
         completed,
         interruptions,
       });
       console.debug('[Context] Focus session ended');
-      return result.data;
+      return result;
     } catch (error) {
       console.error('[Context] End focus failed:', error.message);
       throw error;
@@ -303,8 +303,8 @@ export const useContextTracking = () => {
     if (!user) return null;
     
     try {
-      const response = await api.get('/user-context/summary');
-      return response.data;
+      const data = await apiRequest('/user-context/summary', 'GET');
+      return data;
     } catch (error) {
       console.error('[Context] Get summary failed:', error.message);
       return null;
@@ -318,8 +318,7 @@ export const useContextTracking = () => {
     if (!user) return false;
     
     try {
-      const response = await api.get('/user-context');
-      const context = response.data;
+      const context = await apiRequest('/user-context', 'GET');
       
       if (context?.lastActiveRoute && context.lastActiveRoute !== location.pathname) {
         navigate(context.lastActiveRoute);
@@ -404,23 +403,12 @@ export const useContextTracking = () => {
       }
     };
 
-    const handleBeforeUnload = () => {
-      // Synchronous save attempt before page unload
-      const context = getCurrentContext();
-      navigator.sendBeacon(
-        `${api.defaults.baseURL}/user-context/save`,
-        JSON.stringify(context)
-      );
-    };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [user, forceSave, getCurrentContext]);
+  }, [user, forceSave]);
 
   // Cleanup on unmount
   useEffect(() => {

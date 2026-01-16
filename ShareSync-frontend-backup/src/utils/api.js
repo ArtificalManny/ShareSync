@@ -82,3 +82,4 @@ export const addFile = (projectId, data) => apiRequest(`/projects/${projectId}/f
 export const requestFile = (projectId, data) => apiRequest(`/projects/${projectId}/files/request`, 'POST', data);
 export const shareProject = (projectId, userId) => apiRequest(`/projects/${projectId}/share`, 'POST', { userId });
 export const requestShare = (projectId, userId) => apiRequest(`/projects/${projectId}/share/request`, 'POST', { userId });
+export { apiRequest };
