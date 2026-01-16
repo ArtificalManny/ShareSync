@@ -1,77 +1,126 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import SectionHeader from "../ui/SectionHeader.jsx";
-import EmptyState from "../ui/EmptyState.jsx";
-import Card from "../ui/Card.jsx";
-import { X, Lightbulb, TrendingDown, TrendingUp, AlertTriangle } from "lucide-react";
+// src/components/insights/InsightsDrawer.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Breathing Card System"
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3-ELEMENT RULE APPLIED:
+// Each insight has: 1) Title  2) Description  3) Severity indicator
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React, { useEffect, useState } from "react";
+import Card, { CardBadge } from "../common/Card";
+import { X, Lightbulb, Sparkles } from "lucide-react";
 import { computeInsights, getInsights } from "../../services/insights";
 
+/* ─────────────────────────────────────────────────────────────────────────
+   INSIGHT ROW - 3 Element Rule Applied
+───────────────────────────────────────────────────────────────────────── */
 function InsightRow({ item, onApply }) {
-  const tone =
-    item.severity === "high" ? "text-rose-600" :
-    item.severity === "med"  ? "text-amber-600" :
-    "text-emerald-600";
+  // Severity determines card variant
+  const severityConfig = {
+    high: { variant: 'highlight', badge: 'danger', status: 'danger' },
+    med: { variant: 'elevated', badge: 'warning', status: 'warning' },
+    low: { variant: 'ambient', badge: 'success', status: null },
+  };
+  
+  const config = severityConfig[item.severity] || severityConfig.low;
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-3 hover:bg-surface/60 transition-colors">
+    <Card 
+      variant={config.variant}
+      status={config.status}
+      interactive={!!onApply}
+      animated={!!onApply}
+      padding="sm"
+      className="group"
+    >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <Lightbulb className="w-4 h-4 text-indigo-600" />
-            <div className="text-sm font-semibold">{item.title}</div>
+        <div className="flex-1 min-w-0">
+          {/* Element 1: Title with icon */}
+          <div className="flex items-center gap-2 mb-1">
+            <Lightbulb className="w-4 h-4 text-brand shrink-0" />
+            <span className="text-sm font-medium text-text-primary truncate">
+              {item.title}
+            </span>
           </div>
-          <div className="mt-1 text-sm text-muted">{item.text}</div>
+          
+          {/* Element 2: Description */}
+          <p className="text-xs text-text-secondary line-clamp-2 ml-6">
+            {item.text}
+          </p>
+          
+          {/* Element 3: Delta (if present) */}
           {item.delta != null && (
-            <div className="mt-1 text-xs">
-              <span className="text-muted">Change: </span>
-              <span className={item.delta < 0 ? "text-rose-600" : "text-emerald-600"}>
-                {item.delta > 0 ? "+" : ""}{Math.round(item.delta * 100)}%
-              </span>
-              {item.period ? <span className="text-muted"> · {item.period}</span> : null}
-            </div>
-          )}
-          {item.suggestion && (
-            <div className="mt-2 text-xs rounded-lg border border-dashed border-border px-2 py-1">
-              {item.suggestion}
+            <div className="mt-2 ml-6">
+              <CardBadge variant={item.delta < 0 ? 'danger' : 'success'}>
+                {item.delta > 0 ? '+' : ''}{Math.round(item.delta * 100)}%
+                {item.period && ` · ${item.period}`}
+              </CardBadge>
             </div>
           )}
         </div>
-        <div className="shrink-0">
-          {onApply && (
-            <button
-              type="button"
-              className="rounded-lg border border-border px-2.5 py-1.5 text-xs hover:bg-surface"
-              onClick={() => onApply(item)}
-            >
-              Apply
-            </button>
-          )}
-        </div>
+        
+        {/* Apply button */}
+        {onApply && (
+          <button
+            type="button"
+            onClick={() => onApply(item)}
+            className="
+              shrink-0 px-3 py-1.5 rounded-lg text-xs
+              bg-surface-2 text-text-secondary
+              hover:bg-surface-3 hover:text-text-primary
+              transition-colors
+            "
+          >
+            Apply
+          </button>
+        )}
       </div>
+    </Card>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SKELETON LOADER
+───────────────────────────────────────────────────────────────────────── */
+function InsightSkeleton() {
+  return (
+    <div className="p-4 rounded-xl bg-surface-1 border border-white/[0.06] animate-pulse">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 rounded bg-surface-3" />
+        <div className="h-4 w-32 rounded bg-surface-3" />
+      </div>
+      <div className="h-3 w-full rounded bg-surface-3 ml-6" />
     </div>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN DRAWER
+───────────────────────────────────────────────────────────────────────── */
 export default function InsightsDrawer({
   open,
   onClose,
   projectId,
   insights: insightsProp,
   loading: loadingProp = false,
-  onApply,           // optional handler: (insight) => { … } e.g., open task sheet / draft actions
-  stats,             // optional project stats; if provided, compute client-side without fetch
+  onApply,
+  stats,
 }) {
   const [loading, setLoading] = useState(loadingProp);
   const [insights, setInsights] = useState(insightsProp || []);
   const [error, setError] = useState("");
 
-  // keep external prop in sync
-  useEffect(() => { if (Array.isArray(insightsProp)) setInsights(insightsProp); }, [insightsProp]);
-  useEffect(() => { setLoading(loadingProp); }, [loadingProp]);
+  useEffect(() => { 
+    if (Array.isArray(insightsProp)) setInsights(insightsProp); 
+  }, [insightsProp]);
+  
+  useEffect(() => { 
+    setLoading(loadingProp); 
+  }, [loadingProp]);
 
   useEffect(() => {
     if (!open) return;
 
-    // If stats provided, compute immediately
     if (stats && !insightsProp) {
       try {
         setInsights(computeInsights(stats));
@@ -95,54 +144,72 @@ export default function InsightsDrawer({
 
   return (
     <>
+      {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/30 dark:bg-black/50"
+        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
+      
+      {/* Drawer */}
       <aside
-        className="fixed right-0 top-0 z-50 h-full w-[min(440px,90vw)] bg-surface border-l border-border shadow-xl px-4 py-4 overflow-y-auto"
+        className="
+          fixed right-0 top-0 z-50 h-full w-[min(400px,90vw)]
+          bg-surface-0 border-l border-white/[0.06]
+          shadow-2xl overflow-y-auto
+        "
         role="dialog"
         aria-modal="true"
         aria-label="Insights"
       >
-        <div className="flex items-center justify-between">
-          <SectionHeader icon="Sparkles">Insights</SectionHeader>
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-brand" />
+            <h2 className="text-base font-semibold text-text-primary">Insights</h2>
+          </div>
           <button
-            className="rounded-lg p-2 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            aria-label="Close"
             onClick={onClose}
+            className="p-2 rounded-lg hover:bg-surface-2 transition-colors"
+            aria-label="Close"
           >
-            <X className="w-5 h-5 text-muted" />
+            <X className="w-5 h-5 text-text-tertiary" />
           </button>
         </div>
 
-        <div className="mt-3 space-y-3">
+        {/* Content */}
+        <div className="p-4 space-y-3">
+          {/* Loading State */}
           {loading && (
             <>
-              <div className="h-[72px] rounded-xl border border-border bg-surface animate-pulse" />
-              <div className="h-[72px] rounded-xl border border-border bg-surface animate-pulse" />
-              <div className="h-[72px] rounded-xl border border-border bg-surface animate-pulse" />
+              <InsightSkeleton />
+              <InsightSkeleton />
+              <InsightSkeleton />
             </>
           )}
 
+          {/* Error State */}
           {!!error && !loading && (
-            <Card className="border-rose-200/60">
-              <div className="text-rose-600">Failed to load insights</div>
-              <div className="text-sm text-muted">{error}</div>
+            <Card variant="highlight" status="danger" padding="md">
+              <p className="text-sm font-medium text-danger">Failed to load insights</p>
+              <p className="text-xs text-text-tertiary mt-1">{error}</p>
             </Card>
           )}
 
+          {/* Empty State */}
           {!loading && !error && (!insights || insights.length === 0) && (
-            <EmptyState
-              icon="🧠"
-              title="No signals yet"
-              subtitle="We’ll surface trends once there’s a bit more activity."
-            />
+            <div className="text-center py-12">
+              <div className="text-4xl mb-3">🧠</div>
+              <p className="text-sm font-medium text-text-secondary">No signals yet</p>
+              <p className="text-xs text-text-tertiary mt-1">
+                We'll surface trends once there's more activity.
+              </p>
+            </div>
           )}
 
+          {/* Insights List */}
           {!loading && !error && insights && insights.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {insights.map((ins) => (
                 <InsightRow key={ins.id || ins.title} item={ins} onApply={onApply} />
               ))}

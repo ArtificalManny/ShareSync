@@ -1,22 +1,46 @@
+// src/components/focus/FocusDock.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Breathing Card System"
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3-ELEMENT RULE APPLIED:
+// Dock has: 1) Timer  2) Play/Pause  3) Complete/Cancel
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React from "react";
 import { Play, Pause, X, Check } from "lucide-react";
 import { track } from "../../utils/telemetry";
-import Card from "../ui/Card.jsx";
 
-/**
- * FocusDock
- * Sticky, minimal focus controller.
- *
- * Props (all optional; works with your future FocusContext or direct props):
- * - status: "idle" | "running" | "paused"
- * - remainingSeconds: number (defaults 25:00)
- * - project: { id, name } (optional context)
- * - start(minutes?: number)
- * - pause()
- * - resume()
- * - cancel()
- * - complete()
- */
+/* ─────────────────────────────────────────────────────────────────────────
+   ICON BUTTON
+───────────────────────────────────────────────────────────────────────── */
+function IconBtn({ label, onClick, variant = "default", children }) {
+  const variants = {
+    default: "bg-surface-2 hover:bg-surface-3 text-text-secondary hover:text-text-primary",
+    success: "bg-success/10 hover:bg-success/20 text-success",
+    danger: "bg-surface-2 hover:bg-danger/10 text-text-tertiary hover:text-danger",
+  };
+
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className={`
+        w-8 h-8 rounded-lg flex items-center justify-center
+        transition-colors
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand
+        ${variants[variant]}
+      `}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────────────────────────────────────── */
 export default function FocusDock(props = {}) {
   const {
     status = "idle",
@@ -32,19 +56,21 @@ export default function FocusDock(props = {}) {
   const mm = String(Math.floor(remainingSeconds / 60)).padStart(2, "0");
   const ss = String(Math.floor(remainingSeconds % 60)).padStart(2, "0");
 
+  // Idle state - just show start button
   if (status === "idle") {
     return (
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60]">
         <button
-          className="rounded-full px-5 py-2 text-sm font-medium text-white shadow-[0_0_24px_rgba(88,128,255,.45)]"
-          style={{
-            background:
-              "linear-gradient(90deg,var(--action-primary,#4f46e5),var(--accent-aqua,#22d3ee))",
-          }}
           onClick={() => {
             track("focus_start_clicked", { source: "dock", minutes: 25 });
             start && start(25);
           }}
+          className="
+            px-5 py-2.5 rounded-full
+            bg-brand text-white text-sm font-medium
+            hover:bg-brand-600 hover:shadow-glow-brand
+            transition-all
+          "
         >
           Start 25:00
         </button>
@@ -52,16 +78,29 @@ export default function FocusDock(props = {}) {
     );
   }
 
+  // Active/Paused state - show full dock
   return (
-    <Card className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 flex items-center gap-3 rounded-full glass-strong border border-white/10 shadow-[0_6px_40px_rgba(0,0,0,.35)]">
-      {project?.name ? (
-        <span className="text-xs text-muted hidden sm:inline max-w-[14ch] truncate">
+    <div className="
+      fixed bottom-4 left-1/2 -translate-x-1/2 z-[60]
+      px-4 py-2 rounded-full
+      bg-surface-1/95 backdrop-blur-xl
+      border border-white/[0.08]
+      shadow-2xl
+      flex items-center gap-3
+    ">
+      {/* Project name (optional) */}
+      {project?.name && (
+        <span className="text-xs text-text-tertiary hidden sm:inline max-w-[14ch] truncate">
           {project.name}
         </span>
-      ) : null}
+      )}
 
-      <span className="font-semibold tabular-nums text-lg">{mm}:{ss}</span>
+      {/* Element 1: Timer */}
+      <span className="font-semibold tabular-nums text-lg text-text-primary">
+        {mm}:{ss}
+      </span>
 
+      {/* Element 2: Play/Pause */}
       {status === "running" ? (
         <IconBtn
           label="Pause focus"
@@ -70,7 +109,7 @@ export default function FocusDock(props = {}) {
             pause && pause();
           }}
         >
-          <Pause size={16} />
+          <Pause className="w-4 h-4" />
         </IconBtn>
       ) : (
         <IconBtn
@@ -80,43 +119,33 @@ export default function FocusDock(props = {}) {
             resume && resume();
           }}
         >
-          <Play size={16} />
+          <Play className="w-4 h-4" />
         </IconBtn>
       )}
 
+      {/* Element 3a: Complete */}
       <IconBtn
         label="Complete session"
+        variant="success"
         onClick={() => {
           track("focus_completed");
           complete && complete();
         }}
       >
-        <Check size={16} />
+        <Check className="w-4 h-4" />
       </IconBtn>
 
+      {/* Element 3b: Cancel */}
       <IconBtn
         label="Cancel session"
+        variant="danger"
         onClick={() => {
           track("focus_canceled");
           cancel && cancel();
         }}
       >
-        <X size={16} />
+        <X className="w-4 h-4" />
       </IconBtn>
-    </Card>
-  );
-}
-
-function IconBtn({ label, onClick, children }) {
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      onClick={onClick}
-      className="rounded-md border border-white/10 bg-white/5 hover:bg-white/10 p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-    >
-      {children}
-    </button>
+    </div>
   );
 }

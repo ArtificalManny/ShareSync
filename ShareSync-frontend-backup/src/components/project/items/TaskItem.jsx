@@ -1,86 +1,76 @@
-import React from "react";
-import { ClipboardList, CheckCircle2, PencilLine, Clock } from "lucide-react";
-import Card, { CardBody } from "../../common/Card";
+// src/components/project/items/TaskItem.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Breathing Card System"
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3-ELEMENT RULE APPLIED:
+// Each item has: 1) Title  2) Status badge  3) Time
+// ═══════════════════════════════════════════════════════════════════════════════
 
-/**
- * TaskItem - Phase 5 A+ Refinement
- * Renders task-related activity with high-contrast design system logic.
- */
+import React from "react";
+import { CheckCircle2, PencilLine, ClipboardList } from "lucide-react";
+import Card, { CardBadge } from "../../common/Card";
+
 export default function TaskItem({ event, when, isFresh = false, className = "" }) {
   const u = event || {};
   const t = (u.type || "").toLowerCase();
   const title = u.title || u.meta?.title || u.text || "Task";
   const whenText = when || (u.createdAt ? new Date(u.createdAt).toLocaleString() : "");
 
-  // Semantic Status Configuration
+  // Status configuration
   const isCompleted = t.includes("completed");
   const isUpdated = t.includes("updated");
 
-  const statusConfig = isCompleted
-    ? {
-        icon: <CheckCircle2 className="w-4 h-4 text-success-500" />,
-        accent: "border-success-500/30 bg-success-500/5",
-        label: "Shipped",
-        text: "text-success-500"
-      }
+  const status = isCompleted
+    ? { icon: CheckCircle2, label: "Shipped", variant: "success", cardStatus: "success" }
     : isUpdated
-    ? {
-        icon: <PencilLine className="w-4 h-4 text-warning-500" />,
-        accent: "border-warning-500/30 bg-warning-500/5",
-        label: "Updated",
-        text: "text-warning-500"
-      }
-    : {
-        icon: <ClipboardList className="w-4 h-4 text-brand-400" />,
-        accent: "border-brand-500/30 bg-brand-500/5",
-        label: "Drafted",
-        text: "text-brand-400"
-      };
+    ? { icon: PencilLine, label: "Updated", variant: "warning", cardStatus: null }
+    : { icon: ClipboardList, label: "Drafted", variant: "brand", cardStatus: null };
 
-  const actionText = isCompleted
-    ? "Successfully completed"
-    : isUpdated
-    ? "Refined details for"
-    : "Started new mission:";
+  const Icon = status.icon;
 
   return (
     <Card 
-      variant="flat" 
+      variant={isCompleted ? "ambient" : "elevated"}
+      status={status.cardStatus}
       interactive 
-      className={`group border-l-2 ${statusConfig.accent} ${isFresh ? "animate-pulse" : ""} ${className}`}
+      animated
+      padding="sm"
+      className={`group ${className}`}
     >
-      <CardBody className="py-3 px-4 flex items-center gap-4">
-        {/* Status Icon Orb */}
-        <div className={`flex-shrink-0 p-2 rounded-lg bg-slate-900 border border-white/5 group-hover:scale-110 transition-transform`}>
-          {statusConfig.icon}
+      <div className="flex items-center gap-3">
+        {/* Icon */}
+        <div className={`
+          flex-shrink-0 p-2 rounded-lg
+          ${isCompleted ? 'bg-success/10 text-success' : 
+            isUpdated ? 'bg-warning/10 text-warning' : 
+            'bg-brand/10 text-brand'}
+        `}>
+          <Icon className="w-4 h-4" />
         </div>
 
-        {/* Content Area */}
+        {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${statusConfig.text}`}>
-              {statusConfig.label}
-            </span>
-            <span className="text-[10px] text-neutral-500 font-medium">•</span>
-            <div className="flex items-center gap-1 text-[10px] text-neutral-500 font-bold">
-              <Clock size={10} />
-              {whenText}
-            </div>
-          </div>
+          {/* Element 1: Title */}
+          <p className="text-sm font-medium text-text-primary group-hover:text-brand transition-colors truncate">
+            {title}
+          </p>
           
-          <p className="text-sm text-neutral-300 truncate font-medium">
-            <span className="text-neutral-500 font-normal mr-1">{actionText}</span>
-            <span className="text-white group-hover:text-brand-400 transition-colors tracking-tight">
-              {title}
-            </span>
+          {/* Element 3: Time */}
+          <p className="text-xs text-text-tertiary mt-0.5">
+            {whenText}
           </p>
         </div>
 
-        {/* Subtle Indicator for Fresh Content */}
+        {/* Element 2: Status Badge */}
+        <CardBadge variant={status.variant}>
+          {status.label}
+        </CardBadge>
+
+        {/* Fresh indicator (subtle, no glow) */}
         {isFresh && (
-          <div className="w-2 h-2 rounded-full bg-brand-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+          <div className="w-1.5 h-1.5 rounded-full bg-brand" />
         )}
-      </CardBody>
+      </div>
     </Card>
   );
 }

@@ -1,53 +1,73 @@
+// src/components/home/RecommendedTasks.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Breathing Card System"
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3-ELEMENT RULE APPLIED:
+// Each task has: 1) Title  2) Reason/context  3) Time estimate
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React from 'react';
-import Card, { CardHeader, CardBody } from '../common/Card';
+import Card, { CardBadge } from '../common/Card';
 import Button from '../common/Button';
-import { Zap, Star, AlertCircle } from 'lucide-react';
+import { Zap, Clock } from 'lucide-react';
 
 const RecommendedTasks = ({ recommendations = [
-  { id: 1, title: 'Finalize UI Components', reason: 'High impact on sprint goal', impact: 'High', estimatedTime: '45m', priority: 'high' },
-  { id: 2, title: 'Update Documentation', reason: 'Onboard new members faster', impact: 'Medium', estimatedTime: '20m', priority: 'normal' }
+  { id: 1, title: 'Finalize UI Components', reason: 'High impact on sprint goal', estimatedTime: '45m', priority: 'high' },
+  { id: 2, title: 'Update Documentation', reason: 'Onboard new members faster', estimatedTime: '20m', priority: 'normal' }
 ] }) => {
   return (
-    <Card variant="flat" className="bg-slate-800/40 border-white/5 backdrop-blur-sm mt-8">
-      <CardHeader className="flex items-center justify-between">
+    <Card variant="ambient" padding="none" className="mt-6">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
-          <Zap className="text-warning-500" size={20} />
-          <h3 className="text-lg font-bold text-white">Recommended for You</h3>
+          <Zap className="w-4 h-4 text-warning" />
+          <h3 className="text-sm font-semibold text-text-primary">Recommended for You</h3>
         </div>
-        <span className="text-[10px] font-bold px-2 py-1 bg-warning-500/10 text-warning-500 rounded uppercase tracking-wider">
-          AI Priority
-        </span>
-      </CardHeader>
+        <CardBadge variant="warning">AI Priority</CardBadge>
+      </div>
       
-      <CardBody className="space-y-4">
+      {/* Task List */}
+      <div className="p-3 space-y-2">
         {recommendations.map((item) => (
-          <div 
+          <Card
             key={item.id}
-            className="p-4 rounded-xl bg-slate-900/50 border border-white/5 hover:border-brand-500/30 transition-all group cursor-pointer"
+            variant={item.priority === 'high' ? 'elevated' : 'ambient'}
+            interactive
+            animated
+            padding="sm"
+            className="group"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-white group-hover:text-brand-400 transition-colors">
-                    {item.title}
-                  </h4>
-                  {item.priority === 'high' && <AlertCircle size={14} className="text-danger-500" />}
-                </div>
-                <p className="text-sm text-neutral-400 mt-1">{item.reason}</p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                {/* Element 1: Title */}
+                <h4 className="text-sm font-medium text-text-primary group-hover:text-brand transition-colors truncate">
+                  {item.title}
+                </h4>
+                
+                {/* Element 2: Reason */}
+                <p className="text-xs text-text-tertiary mt-0.5 truncate">
+                  {item.reason}
+                </p>
               </div>
-              <Button variant="tertiary" size="sm" className="shrink-0">Start</Button>
+              
+              {/* Element 3: Time + Action */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-text-tertiary flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {item.estimatedTime}
+                </span>
+                <Button 
+                  variant="tertiary" 
+                  size="sm"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  Start
+                </Button>
+              </div>
             </div>
-            
-            <div className="mt-4 flex items-center gap-4 text-[10px] font-medium text-neutral-500 uppercase tracking-widest">
-              <span className="flex items-center gap-1">
-                <Star size={12} className="text-warning-500" /> {item.impact} Impact
-              </span>
-              <span>•</span>
-              <span>{item.estimatedTime}</span>
-            </div>
-          </div>
+          </Card>
         ))}
-      </CardBody>
+      </div>
     </Card>
   );
 };
