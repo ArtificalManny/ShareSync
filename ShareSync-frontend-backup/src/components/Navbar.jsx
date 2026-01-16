@@ -1,17 +1,26 @@
-// src/components/Navbar.jsx - METAlab STREAMLINED (NO REDUNDANCY)
-import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
+// src/components/Navbar.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Quiet Confidence"
+// ═══════════════════════════════════════════════════════════════════════════════
+// RULES APPLIED:
+// 1. Surface hierarchy: surface-0/1/2 tokens
+// 2. Text hierarchy: text-primary/secondary/tertiary
+// 3. Brand color only for primary action (+ button)
+// 4. No glows at rest - clean and professional
+// 5. Calm typography - no screaming uppercase everywhere
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Sun, Moon, LogOut, MessageCircle, 
-  Palette, Camera, Search, Plus, Bell, Command, Zap,
+  Palette, Camera, Search, Plus, Bell,
   ChevronRight, Layout
 } from 'lucide-react';
 import { formatProfilePicture } from '../utils/imageUtils';
 import { useChat } from "../context/ChatContext.jsx";
 import UnreadBadge from './messenger/UnreadBadge.jsx';
-import { BRAND_V2, ADMIN_CONSOLE_V1, KPI_TICKER_V1 } from '../config/flags.js';
 import useBrandTheme from '../hooks/useBrandTheme.js';
-import { track } from '../utils/telemetry';
 import { updateProfile } from '../api/user';
 import { toast } from './ui/toast';
 
@@ -26,9 +35,9 @@ import QuickCapture from './navbar/QuickCapture.jsx';
 const DEFAULT_PIC = '/default-profile.png';
 
 /* ─────────────────────────────────────────────────────────────────────────
-   REFINED QUICK PHOTO UPLOAD
+   PROFILE DROPDOWN
 ───────────────────────────────────────────────────────────────────────── */
-const QuickPhotoUpload = ({ user, onUploadComplete }) => {
+const ProfileDropdown = ({ user, onUploadComplete }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -36,7 +45,9 @@ const QuickPhotoUpload = ({ user, onUploadComplete }) => {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false);
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
     };
     if (showMenu) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -50,35 +61,77 @@ const QuickPhotoUpload = ({ user, onUploadComplete }) => {
       const formData = new FormData();
       formData.append('profilePicture', file);
       await updateProfile(formData);
-      toast({ title: "Identity Updated", variant: "success" });
+      toast({ title: "Photo updated", variant: "success" });
       setShowMenu(false);
       if (onUploadComplete) onUploadComplete();
-    } catch (error) { toast({ title: "Failed to update", variant: "error" }); }
-    finally { setUploading(false); }
+    } catch (error) { 
+      toast({ title: "Failed to update", variant: "error" }); 
+    } finally { 
+      setUploading(false); 
+    }
   };
 
   return (
     <div className="relative" ref={menuRef}>
-      <button onClick={() => setShowMenu(!showMenu)} className="flex items-center group outline-none">
-        <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 group-hover:border-violet-500/50 transition-colors">
-          <img src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC} className="w-full h-full object-cover" alt="Profile" />
+      <button 
+        onClick={() => setShowMenu(!showMenu)} 
+        className="flex items-center outline-none"
+      >
+        <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-transparent hover:border-brand/50 transition-colors">
+          <img 
+            src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC} 
+            className="w-full h-full object-cover" 
+            alt="Profile" 
+          />
         </div>
       </button>
+      
       {showMenu && (
-        <div className="absolute right-0 top-full mt-4 w-56 bg-[#16171B] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in zoom-in-95">
-          <Link to="/profile" className="flex items-center gap-3 p-4 hover:bg-white/5 border-b border-white/5" onClick={() => setShowMenu(false)}>
+        <div className="
+          absolute right-0 top-full mt-2 w-56 
+          bg-surface-1 border border-white/[0.08] rounded-xl 
+          shadow-xl overflow-hidden z-[100]
+          animate-in fade-in slide-in-from-top-2 duration-200
+        ">
+          {/* Profile Link */}
+          <Link 
+            to="/profile" 
+            className="flex items-center gap-3 p-3 hover:bg-surface-2 border-b border-white/[0.06] transition-colors" 
+            onClick={() => setShowMenu(false)}
+          >
             <div className="w-10 h-10 rounded-full overflow-hidden">
-              <img src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC} className="w-full h-full object-cover" alt="" />
+              <img 
+                src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC} 
+                className="w-full h-full object-cover" 
+                alt="" 
+              />
             </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-xs font-bold text-white truncate">{user?.firstName} {user?.lastName}</p>
-              <p className="text-[10px] text-slate-500 uppercase tracking-tighter">View Identity</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-text-primary truncate">
+                {user?.firstName} {user?.lastName}
+              </p>
+              <p className="text-xs text-text-tertiary">View profile</p>
             </div>
           </Link>
-          <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-3 p-4 hover:bg-white/5 text-left text-xs font-bold text-slate-400">
-            <Camera className="w-4 h-4 text-violet-400" /> {uploading ? 'Uploading...' : 'Change Photo'}
+          
+          {/* Change Photo */}
+          <button 
+            onClick={() => fileInputRef.current?.click()} 
+            className="w-full flex items-center gap-3 p-3 hover:bg-surface-2 text-left transition-colors"
+          >
+            <Camera className="w-4 h-4 text-text-tertiary" />
+            <span className="text-sm text-text-secondary">
+              {uploading ? 'Uploading...' : 'Change photo'}
+            </span>
           </button>
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+          
+          <input 
+            ref={fileInputRef} 
+            type="file" 
+            accept="image/*" 
+            onChange={handleFileSelect} 
+            className="hidden" 
+          />
         </div>
       )}
     </div>
@@ -86,99 +139,168 @@ const QuickPhotoUpload = ({ user, onUploadComplete }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
+   ICON BUTTON - Reusable nav button
+───────────────────────────────────────────────────────────────────────── */
+const IconButton = ({ children, onClick, className = '', badge = null }) => (
+  <button 
+    onClick={onClick} 
+    className={`
+      relative p-2 rounded-lg
+      text-text-tertiary hover:text-text-primary
+      hover:bg-surface-2
+      transition-all duration-200
+      ${className}
+    `}
+  >
+    {children}
+    {badge}
+  </button>
+);
+
+/* ─────────────────────────────────────────────────────────────────────────
    MAIN NAVBAR
 ───────────────────────────────────────────────────────────────────────── */
 export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [navQuery, setNavQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const chat = typeof useChat === 'function' ? useChat() : null;
   const unreadTotal = chat?.unreadTotal || 0;
   const { cycleAccent } = useBrandTheme({ enabled: true });
 
-  // Get current path for breadcrumbs
-  const pathName = location.pathname.split('/')[1] || 'Dashboard';
+  // Get current page name from path
+  const getPageName = () => {
+    const path = location.pathname.split('/')[1];
+    if (!path) return 'Dashboard';
+    return path.charAt(0).toUpperCase() + path.slice(1);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
 
   return (
-    <header className="sticky top-0 z-40 h-16 bg-[#0B0C0E]/80 backdrop-blur-md border-b border-white/[0.04] px-6">
+    <header className="
+      sticky top-0 z-40 h-14
+      bg-surface-0/80 backdrop-blur-md
+      border-b border-white/[0.06]
+      px-4 lg:px-6
+    ">
       <div className="h-full max-w-[1800px] mx-auto flex items-center">
         
-        {/* 1. BREADCRUMBS (Replaces Logo & Toggle) */}
-        <div className="flex items-center gap-3 min-w-fit">
-          <div className="w-8 h-8 rounded-lg bg-white/[0.03] flex items-center justify-center text-slate-500">
-            <Layout size={16} />
+        {/* ═══════════════════════════════════════════════════════════════════
+            LEFT: Breadcrumb + Search
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="flex items-center gap-3">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-surface-1 flex items-center justify-center">
+              <Layout className="w-3.5 h-3.5 text-text-tertiary" />
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 text-text-tertiary" />
+            <span className="text-sm font-medium text-text-primary">
+              {getPageName()}
+            </span>
           </div>
-          <ChevronRight size={14} className="text-slate-700" />
-          <span className="text-xs font-black text-white uppercase tracking-[0.2em]">
-            {pathName}
-          </span>
-          
-          <div className="h-6 w-[1px] bg-white/10 mx-4 hidden lg:block" />
 
-          {/* Expanded Search */}
+          {/* Divider */}
+          <div className="hidden lg:block h-5 w-px bg-white/[0.06] mx-2" />
+
+          {/* Search */}
           <form 
-            onSubmit={(e) => { e.preventDefault(); navigate(`/search?q=${encodeURIComponent(navQuery)}`); }}
-            className="hidden md:flex items-center relative group"
+            onSubmit={handleSearch}
+            className="hidden md:flex items-center relative"
           >
-            <Search className="absolute left-3 w-4 h-4 text-slate-500 group-focus-within:text-violet-400 transition-colors" />
+            <Search className="absolute left-3 w-4 h-4 text-text-tertiary" />
             <input 
-              value={navQuery}
-              onChange={(e) => setNavQuery(e.target.value)}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search everything..." 
-              className="bg-white/[0.03] border border-white/[0.06] rounded-xl pl-10 pr-4 py-1.5 text-xs text-white focus:w-80 w-64 transition-all focus:border-violet-500/40 outline-none"
+              className="
+                bg-surface-1 border border-white/[0.06] rounded-lg
+                pl-9 pr-4 py-2 text-sm text-text-primary
+                placeholder:text-text-tertiary
+                focus:border-brand/50 focus:outline-none
+                w-52 focus:w-72 transition-all duration-200
+              "
             />
           </form>
         </div>
 
-        {/* 2. DYNAMIC CENTER: The Status Bar */}
-        <div className="flex-1 flex items-center justify-center gap-6 px-8 overflow-hidden">
-          <div className="hidden xl:flex items-center gap-6 bg-white/[0.02] border border-white/[0.04] px-4 py-1.5 rounded-full">
+        {/* ═══════════════════════════════════════════════════════════════════
+            CENTER: Status Bar (optional, shows on large screens)
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="hidden xl:flex items-center gap-4 px-4 py-1.5 rounded-full bg-surface-1 border border-white/[0.06]">
             <SeasonBadge />
-            <div className="w-[1px] h-3 bg-white/5" />
+            <div className="w-px h-4 bg-white/[0.06]" />
             <NextMicroStep />
-            <div className="w-[1px] h-3 bg-white/5" />
+            <div className="w-px h-4 bg-white/[0.06]" />
             <TeamPresence />
           </div>
         </div>
 
-        {/* 3. RIGHT PINNED: Global Actions */}
-        <div className="flex items-center gap-3">
-          {/* Action Hub */}
-          <div className="flex items-center gap-1.5 mr-2">
-            <button className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-500 text-white flex items-center justify-center transition-all shadow-lg shadow-violet-600/20 active:scale-95">
-              <Plus size={18} strokeWidth={3} />
-            </button>
-            <QuickCapture />
-            <FocusModeToggle />
-          </div>
+        {/* ═══════════════════════════════════════════════════════════════════
+            RIGHT: Actions
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="flex items-center gap-1">
+          
+          {/* Primary Action: New */}
+          <button 
+            className="
+              w-8 h-8 rounded-lg
+              bg-brand text-white
+              flex items-center justify-center
+              hover:bg-brand-600
+              transition-colors duration-200
+              mr-1
+            "
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+          
+          <QuickCapture />
+          <FocusModeToggle />
 
-          <div className="h-4 w-[1px] bg-white/10 mx-1 hidden sm:block" />
+          {/* Divider */}
+          <div className="h-5 w-px bg-white/[0.06] mx-1 hidden sm:block" />
 
-          <div className="flex items-center gap-1">
-            <button onClick={cycleAccent} className="p-2 text-slate-500 hover:text-white transition-colors">
-              <Palette className="w-4 h-4" />
-            </button>
-            
-            <NotificationDropdown />
-            
-            <button onClick={() => navigate('/messages')} className="p-2 text-slate-500 hover:text-white transition-colors relative">
-              <MessageCircle className="w-4 h-4" />
-              {unreadTotal > 0 && <UnreadBadge count={unreadTotal} />}
-            </button>
+          {/* Secondary Actions */}
+          <IconButton onClick={cycleAccent}>
+            <Palette className="w-4 h-4" />
+          </IconButton>
+          
+          <NotificationDropdown />
+          
+          <IconButton 
+            onClick={() => navigate('/messages')}
+            badge={unreadTotal > 0 && <UnreadBadge count={unreadTotal} />}
+          >
+            <MessageCircle className="w-4 h-4" />
+          </IconButton>
 
-            <button onClick={toggleDarkMode} className="p-2 text-slate-500 hover:text-white transition-colors">
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-          </div>
+          <IconButton onClick={toggleDarkMode}>
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </IconButton>
 
-          <div className="h-8 w-[1px] bg-white/10 mx-2" />
+          {/* Divider */}
+          <div className="h-5 w-px bg-white/[0.06] mx-1" />
 
-          <div className="flex items-center gap-4">
-            <QuickPhotoUpload user={user} onUploadComplete={() => window.location.reload()} />
-            <button onClick={onLogout} className="p-2 text-slate-500 hover:text-red-400 transition-colors">
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+          {/* Profile & Logout */}
+          <ProfileDropdown 
+            user={user} 
+            onUploadComplete={() => window.location.reload()} 
+          />
+          
+          <IconButton 
+            onClick={onLogout}
+            className="hover:text-danger"
+          >
+            <LogOut className="w-4 h-4" />
+          </IconButton>
         </div>
 
       </div>
