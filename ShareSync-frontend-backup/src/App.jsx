@@ -1,4 +1,4 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -16,6 +16,9 @@ import ToastProvider, { ToastHost } from "./components/ui/toast.jsx";
 // ⭐ NEW TOAST SYSTEM (MetaLab Design Sprint - Day 5)
 import { ToastProvider as NewToastProvider } from './components/common/Toast';
 import ErrorBoundary from "./ErrorBoundary";
+
+// ⭐ DAY 7: Context Tracking Hook
+import { useContextTracking } from './hooks/useContextTracking';
 
 // ⭐ PWA Components
 import InstallPrompt from "./components/pwa/InstallPrompt";
@@ -60,7 +63,7 @@ import {
 import Login from "./pages/Login";
 import CreateAccount from "./pages/CreateAccount";
 import ForgotPassword from "./pages/ForgotPassword";
-import Register from "./components/Register";  // ← ✅ NEW LINE ADDED
+import Register from "./components/Register";
 
 // ⭐ ALL other pages - lazy load
 const Landing = lazy(() => import("./pages/Landing"));
@@ -184,6 +187,16 @@ function SidebarOverlay({ show, onClick }) {
   return <div className={`sidebar-overlay ${show ? 'active' : ''}`} onClick={onClick} />;
 }
 
+/**
+ * ⭐ DAY 7: Context Tracking Initializer
+ * Renders nothing, just activates the tracking hook
+ * Must be inside Router + have access to auth
+ */
+function ContextTracker() {
+  useContextTracking();
+  return null;
+}
+
 function AuthenticatedApp({ children }) {
   return (
     <Suspense fallback={<LoadingSpinner />}>
@@ -192,9 +205,17 @@ function AuthenticatedApp({ children }) {
           <SprintProvider>
             <CommandPaletteProvider>
               {FOCUS_DOCK_V1 ? (
-                <FocusProvider>{children}</FocusProvider>
+                <FocusProvider>
+                  {/* ⭐ DAY 7: Context tracking for authenticated users */}
+                  <ContextTracker />
+                  {children}
+                </FocusProvider>
               ) : (
-                children
+                <>
+                  {/* ⭐ DAY 7: Context tracking for authenticated users */}
+                  <ContextTracker />
+                  {children}
+                </>
               )}
             </CommandPaletteProvider>
           </SprintProvider>
@@ -246,7 +267,7 @@ function AppRoutes() {
               />
               
               <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-              <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />  {/* ← ✅ NEW LINE ADDED */}
+              <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
               <Route path="/create-account" element={<PublicOnlyRoute><CreateAccount /></PublicOnlyRoute>} />
               <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
               <Route path="/landing" element={<Landing />} />
