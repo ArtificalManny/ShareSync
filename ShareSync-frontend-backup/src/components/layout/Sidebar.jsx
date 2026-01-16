@@ -1,153 +1,276 @@
-import { toast } from "../ui/toast";
-import React, { useEffect, useState, useCallback } from "react";
+// src/components/layout/Sidebar.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Quiet Confidence" + PHASE 3: Ambient Gamification
+// ═══════════════════════════════════════════════════════════════════════════════
+// GAMIFICATION RULES:
+// 1. Progress ring is QUIET - the number speaks for itself
+// 2. Streak badge is EARNED - only prominent at 7+ days
+// 3. Ship counter segments fill without glowing
+// 4. XP gains are ambient (tiny floats), not celebrations
+// 5. Color is EARNED through achievement, not decoration
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  ChevronsLeft,
-  Zap,
-  Flame,
-  Play,
-  Trophy,
+  User as UserIcon,
   Settings,
+  ChevronsLeft,
+  Trophy,
+  Flame,
   Terminal,
-  Activity
+  LayoutGrid,
+  ShieldCheck
 } from "lucide-react";
+
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
-import HeartbeatRing from "./realtime/HeartbeatRing";
-
-import "./Sidebar.css";
-import "./Sidebar.neon.css";
-
-import { track } from "../../utils/telemetry";
-import useBrandTheme from "../../hooks/useBrandTheme";
 
 const LS_KEY = "ss.sidebar.collapsed";
 
-function MomentumPulse({ todayProgress = 0.75, streak = 7, collapsed = false }) {
-  const size = collapsed ? 44 : 64;
+/* ─────────────────────────────────────────────────────────────────────────
+   PROGRESS RING - Ambient, not attention-seeking
+   - Clean SVG ring, no pulsing backgrounds
+   - Number is the focus, not decoration
+   - Streak badge earns its prominence (7+ days)
+───────────────────────────────────────────────────────────────────────── */
+function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
+  const size = collapsed ? 40 : 56;
+  const strokeWidth = collapsed ? 3 : 4;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress * circumference);
+  
+  // Streak is "earned" at 3+ days, "impressive" at 7+
+  const showStreak = streak >= 3;
+  const isImpressiveStreak = streak >= 7;
+
   return (
-    <div className="relative flex items-center justify-center py-6">
-      <div className="absolute inset-0 flex items-center justify-center">
-        <HeartbeatRing size={size + 24} strokeWidth={2} />
-      </div>
-      <div className="relative z-10 rounded-full shadow-brand-500/20 transition-all duration-700">
-        <svg width={size} height={size} viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="6" />
+    <div className="flex flex-col items-center py-6">
+      {/* Ring */}
+      <div className="relative">
+        <svg 
+          width={size} 
+          height={size} 
+          className="transform -rotate-90"
+        >
+          {/* Background track */}
           <circle
-            cx="50"
-            cy="50"
-            r="46"
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
             fill="none"
-            stroke="#8b5cf6"
-            strokeWidth="6"
-            strokeDasharray={`${todayProgress * 289} 289`}
-            transform="rotate(-90 50 50)"
-            className="transition-all duration-1000 ease-out"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            className="text-surface-2"
           />
-          <text x="50" y="50" textAnchor="middle" dominantBaseline="central" className="fill-white font-black italic" fontSize="28">
-            {Math.round(todayProgress * 100)}
-          </text>
+          {/* Progress arc */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="text-brand transition-all duration-700 ease-out"
+          />
         </svg>
+        
+        {/* Center number - just the number, nothing fancy */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className={`
+            font-semibold text-text-primary
+            ${collapsed ? 'text-xs' : 'text-lg'}
+          `}>
+            {Math.round(progress * 100)}
+          </span>
+        </div>
       </div>
-      {!collapsed && (
-        <div className="absolute -bottom-1 px-2 py-0.5 rounded-sm bg-slate-950 border border-white/10 flex items-center gap-1">
-          <Flame className="w-2.5 h-2.5 text-orange-500" />
-          <span className="text-[9px] font-black text-white italic tracking-tighter">{streak}D STREAK</span>
+
+      {/* Streak badge - EARNED, not default */}
+      {!collapsed && showStreak && (
+        <div className={`
+          mt-3 px-2 py-1 rounded-full text-[10px] font-medium
+          flex items-center gap-1
+          transition-all duration-300
+          ${isImpressiveStreak 
+            ? 'bg-warning/10 text-warning border border-warning/20' 
+            : 'bg-surface-2 text-text-tertiary border border-transparent'
+          }
+        `}>
+          <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-warning' : 'text-text-tertiary'}`} />
+          <span>{streak}d</span>
         </div>
       )}
     </div>
   );
 }
 
-function DailyShipCounter({ current = 2, target = 5, collapsed = false }) {
-  const progress = Math.min(1, current / target);
-  if (collapsed) return <div className="h-1 w-full bg-white/5 mx-2 mt-2"><div className="h-full bg-brand-500" style={{width: `${progress*100}%`}}/></div>;
-  return (
-    <div className="px-4 py-2 border-y border-white/[0.03] bg-white/[0.01]">
-      <div className="flex justify-between items-baseline mb-1.5">
-        <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Deployment</span>
-        <span className="text-[10px] font-black text-white italic">{current}/{target} SHIPS</span>
+/* ─────────────────────────────────────────────────────────────────────────
+   SHIP COUNTER - Clean segmented progress
+   - Filled segments are the reward, no glows needed
+   - Quiet until you're making progress
+───────────────────────────────────────────────────────────────────────── */
+function ShipCounter({ current = 2, target = 5, collapsed = false }) {
+  if (collapsed) {
+    const progress = Math.min(1, current / target);
+    return (
+      <div className="mx-auto mt-4 w-8 h-1 bg-surface-2 rounded-full overflow-hidden">
+        <div 
+          className="h-full bg-brand rounded-full transition-all duration-500" 
+          style={{ width: `${progress * 100}%` }}
+        />
       </div>
-      <div className="h-1 bg-white/5 flex gap-0.5">
+    );
+  }
+
+  return (
+    <div className="mx-3 px-4 py-3 rounded-xl bg-surface-1 border border-white/[0.06]">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">
+          Ships today
+        </span>
+        <span className="text-xs font-semibold text-text-primary">
+          {current}/{target}
+        </span>
+      </div>
+      
+      {/* Segmented progress - no glows, filled is the reward */}
+      <div className="flex gap-1">
         {[...Array(target)].map((_, i) => (
-          <div key={i} className={`h-full flex-1 ${i < current ? 'bg-brand-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]' : 'bg-white/10'}`} />
+          <div 
+            key={i} 
+            className={`
+              h-1.5 flex-1 rounded-full transition-colors duration-300
+              ${i < current ? 'bg-brand' : 'bg-surface-3'}
+            `}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function FocusDock({ isActive, onStart, onStop, timeRemaining, collapsed }) {
-  const min = Math.floor(timeRemaining / 60);
-  const sec = timeRemaining % 60;
-  if (collapsed) return <button onClick={isActive ? onStop : onStart} className={`w-10 h-10 mx-auto rounded-lg flex items-center justify-center transition-all ${isActive ? 'bg-orange-500 animate-pulse' : 'bg-brand-600'}`}><Zap size={18} className="text-white" /></button>;
-  return (
-    <div className={`mx-4 p-1 rounded-xl border transition-all duration-500 ${isActive ? 'bg-orange-500/10 border-orange-500/50' : 'bg-white/[0.02] border-white/5'}`}>
-      {isActive ? (
-        <div className="p-3 space-y-2">
-          <div className="flex justify-between items-center font-mono">
-            <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest animate-pulse">Deep Work</span>
-            <span className="text-xl font-black text-white italic">{String(min).padStart(2,'0')}:{String(sec).padStart(2,'0')}</span>
-          </div>
-          <button onClick={onStop} className="w-full py-2 bg-orange-600 text-white text-[9px] font-black uppercase tracking-widest rounded">Abort</button>
-        </div>
-      ) : (
-        <button onClick={onStart} className="w-full group p-3 flex items-center gap-3 hover:bg-white/[0.03] rounded-lg">
-          <div className="w-8 h-8 rounded bg-brand-600 flex items-center justify-center group-hover:scale-110 transition-transform"><Play size={12} className="text-white fill-current" /></div>
-          <div className="text-left"><div className="text-[10px] font-black text-white uppercase tracking-widest">Start Focus</div><div className="text-[9px] font-bold text-neutral-500">25:00 Sprint</div></div>
-        </button>
-      )}
-    </div>
-  );
-}
-
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN SIDEBAR
+───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar() {
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(LS_KEY) === "1");
-  const { containerAttrs } = useBrandTheme({ enabled: true });
-  const [focusActive, setFocusActive] = useState(false);
-  const [focusTime, setFocusTime] = useState(1500);
-
-  const toggle = useCallback(() => setCollapsed(prev => !prev), []);
+  const location = useLocation();
+  
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(LS_KEY) === "1";
+    } catch { 
+      return false; 
+    }
+  });
 
   useEffect(() => {
     localStorage.setItem(LS_KEY, collapsed ? "1" : "0");
     document.body.classList.toggle("sidebar-collapsed", collapsed);
   }, [collapsed]);
 
-  useEffect(() => {
-    if (!focusActive) return;
-    const interval = setInterval(() => {
-      setFocusTime(t => {
-        if (t <= 0) { setFocusActive(false); toast.success('Mission Complete'); return 1500; }
-        return t - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [focusActive]);
+  // Mock user data - replace with actual user context
+  const me = { name: "Manny", status: "online" };
 
   return (
-    <aside {...containerAttrs} id="app-sidebar" className={`ss-sidebar neon-sidebar ${collapsed ? "is-collapsed" : ""} ${focusActive ? "focus-mode" : ""}`}>
-      <div className="flex items-center justify-between p-4 mb-2">
-        {!collapsed && <div className="flex items-center gap-2"><div className="w-5 h-5 bg-brand-600 rounded flex items-center justify-center font-black text-[10px] text-white">O</div><span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">OpenShare</span></div>}
-        <button onClick={toggle} className="p-2 text-neutral-500 hover:text-white"><ChevronsLeft className={`w-4 h-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} /></button>
+    <aside
+      id="app-sidebar"
+      className={`
+        h-screen flex flex-col
+        bg-surface-0 border-r border-white/[0.06]
+        transition-all duration-300 ease-out
+        ${collapsed ? 'w-[72px]' : 'w-[260px]'}
+      `}
+    >
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex items-center justify-between p-4">
+        {!collapsed && (
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-brand rounded-lg flex items-center justify-center">
+              <span className="text-xs font-bold text-white">S</span>
+            </div>
+            <span className="text-sm font-semibold text-text-primary tracking-wide">
+              ShareSync
+            </span>
+          </div>
+        )}
+        <button 
+          onClick={() => setCollapsed(!collapsed)} 
+          className={`
+            p-2 rounded-lg text-text-tertiary
+            hover:bg-surface-2 hover:text-text-primary
+            transition-all duration-200
+            ${collapsed ? 'mx-auto' : ''}
+          `}
+        >
+          <ChevronsLeft className={`
+            w-4 h-4 transition-transform duration-300
+            ${collapsed ? 'rotate-180' : ''}
+          `} />
+        </button>
       </div>
 
-      <MomentumPulse collapsed={collapsed} />
-      <DailyShipCounter collapsed={collapsed} />
-      <div className="mt-6"><FocusDock isActive={focusActive} onStart={() => setFocusActive(true)} onStop={() => setFocusActive(false)} timeRemaining={focusTime} collapsed={collapsed} /></div>
+      {/* ═══════════════════════════════════════════════════════════════════
+          GAMIFICATION - Ambient, not screaming
+      ═══════════════════════════════════════════════════════════════════ */}
+      <ProgressRing collapsed={collapsed} />
 
-      <nav className="mt-8 px-3 space-y-1">
-        <SidebarItem to="/home" label="Dashboard" icon={Activity} collapsed={collapsed} />
+      {/* ═══════════════════════════════════════════════════════════════════
+          NAVIGATION
+      ═══════════════════════════════════════════════════════════════════ */}
+      <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
+        <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
         <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
         <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
+        
+        {/* Divider */}
+        <div className="py-4">
+          <div className="h-px bg-white/[0.06]" />
+        </div>
+        
+        <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
         <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
+        
+        {/* Ship Counter - after nav */}
+        <div className="pt-4">
+          <ShipCounter collapsed={collapsed} />
+        </div>
       </nav>
 
-      <div className="flex-1" />
-      <div className="p-4 border-t border-white/[0.03] flex items-center gap-3">
-        <Avatar name="Manny" size={32} />
-        {!collapsed && <div className="min-w-0"><div className="text-[10px] font-black text-white truncate uppercase">Manny Rivas</div><div className="text-[9px] font-bold text-emerald-500 uppercase flex items-center gap-1"><div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> Live System</div></div>}
+      {/* ═══════════════════════════════════════════════════════════════════
+          USER CARD
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="p-3">
+        <div 
+          onClick={() => navigate('/profile')}
+          className={`
+            flex items-center gap-3 p-2.5 rounded-xl cursor-pointer
+            bg-surface-1 border border-white/[0.06]
+            hover:bg-surface-2 hover:border-white/[0.1]
+            transition-all duration-200
+            ${collapsed ? 'justify-center' : ''}
+          `}
+        >
+          <Avatar name={me.name} size={32} status={me.status} />
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-text-primary truncate">
+                {me.name}
+              </div>
+              <div className="text-[10px] text-success flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" />
+                <span>Online</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   );
