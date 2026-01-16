@@ -1,20 +1,27 @@
 // src/components/home/MissionCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - "Quiet Confidence"
+// DESIGN SYSTEM v2.0 - PHASE 4: Information Architecture
 // ═══════════════════════════════════════════════════════════════════════════════
-// RULES APPLIED:
-// 1. Surface hierarchy: surface-1 base, surface-2 on hover
-// 2. ONE accent color (brand) - only on the action button
-// 3. Text hierarchy: primary → secondary → tertiary
-// 4. Glows are EARNED through interaction, not resting state
-// 5. 3-element rule: Title, Status, Action - that's it
+// 3-ZONE PATTERN (Asana-style consistent scanning):
+//
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │ ZONE 1: Identity      │ ZONE 2: Status              │ ZONE 3: Action        │
+// │ ──────────────────    │ ──────────────────          │ ──────────────────    │
+// │ Icon + Title          │ Progress bar (woven in)     │ Primary button        │
+// │ Meta (time · category)│ Single metric if needed     │ Chevron on hover      │
+// └─────────────────────────────────────────────────────────────────────────────┘
+//
+// RULES:
+// - Zone 1: WHAT is this? (fixed width ~50%)
+// - Zone 2: HOW is it going? (flexible, progress woven in)
+// - Zone 3: WHAT can I do? (fixed width, right-aligned)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from "react";
-import { Target, Clock, Zap, ChevronRight, Loader2, CheckCircle2 } from "lucide-react";
+import { Clock, Zap, ChevronRight, Loader2, CheckCircle2 } from "lucide-react";
 
 export default function MissionCard({ project, onClick }) {
-  const [status, setStatus] = useState('idle'); // 'idle' | 'deploying' | 'shipped'
+  const [status, setStatus] = useState('idle');
 
   const handleDeploy = (e) => {
     e.stopPropagation();
@@ -22,150 +29,114 @@ export default function MissionCard({ project, onClick }) {
     setTimeout(() => setStatus('shipped'), 2000);
   };
 
-  // Simplified health indicator - just the color, no noise
-  const getHealthStyle = (score) => {
-    if (score > 80) return "text-success bg-success/10";
-    if (score > 50) return "text-warning bg-warning/10";
-    return "text-danger bg-danger/10";
-  };
-
   const isShipped = status === 'shipped';
   const isDeploying = status === 'deploying';
 
+  // Health determines the progress bar color (woven in, not a badge)
+  const getProgressColor = (health) => {
+    if (health > 80) return 'bg-success';
+    if (health > 50) return 'bg-warning';
+    return 'bg-danger';
+  };
+
   return (
     <div 
-      onClick={() => onClick(project)}
+      onClick={() => onClick?.(project)}
       className={`
-        group relative p-5 rounded-xl cursor-pointer
-        transition-all duration-200 ease-out
-        
-        /* Surface hierarchy */
-        bg-surface-1 
-        hover:bg-surface-2
-        
-        /* Border - subtle, strengthens on hover */
-        border border-white/[0.06]
-        hover:border-white/[0.12]
-        
-        /* Glow is EARNED - only on hover */
-        hover:shadow-[0_0_0_1px_rgba(139,92,246,0.1)]
-        
-        /* Shipped state - quiet, done */
+        group relative p-4 rounded-xl cursor-pointer
+        bg-surface-1 border border-white/[0.06]
+        hover:bg-surface-2 hover:border-white/[0.1]
+        transition-all duration-200
         ${isShipped ? 'opacity-60' : ''}
       `}
     >
-      {/* ─────────────────────────────────────────────────────────────────────
-          LAYOUT: Clean horizontal flow
-          Zone 1 (left): Identity - icon + title + meta
-          Zone 2 (right): Status + Action
-      ───────────────────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-6">
+      <div className="flex items-center gap-4">
         
         {/* ═══════════════════════════════════════════════════════════════════
-            ZONE 1: Identity
+            ZONE 1: Identity (What is this?)
+            Fixed width ~50%, contains icon + title + meta
         ═══════════════════════════════════════════════════════════════════ */}
-        <div className="flex items-center gap-4 min-w-0">
-          
-          {/* Icon - quiet until hover, celebrates on ship */}
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {/* Icon - indicates completion state */}
           <div className={`
-            w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0
-            transition-all duration-200
-            ${isShipped 
-              ? 'bg-success/10' 
-              : 'bg-surface-2 group-hover:bg-brand/10'
-            }
+            w-10 h-10 rounded-lg flex items-center justify-center shrink-0
+            transition-colors duration-200
+            ${isShipped ? 'bg-success/10' : 'bg-surface-2 group-hover:bg-brand/10'}
           `}>
             {isShipped ? (
-              <CheckCircle2 className="w-5 h-5 text-success" />
+              <CheckCircle2 className="w-4 h-4 text-success" />
             ) : (
-              <Target className="w-5 h-5 text-text-tertiary group-hover:text-brand transition-colors" />
+              <span className="text-lg">{project.emoji || '◎'}</span>
             )}
           </div>
 
           {/* Title + Meta */}
           <div className="min-w-0">
-            {/* Title - primary text, truncate if needed */}
-            <h4 className="text-sm font-semibold text-text-primary truncate">
+            <h4 className="text-sm font-medium text-text-primary truncate group-hover:text-brand transition-colors">
               {project.title}
             </h4>
-            
-            {/* Meta row - secondary/tertiary text */}
-            <div className="flex items-center gap-2 mt-1">
-              <span className="flex items-center gap-1 text-xs text-text-tertiary">
-                <Clock className="w-3 h-3" />
-                {project.eta}
-              </span>
-              <span className="text-text-tertiary/50">·</span>
-              <span className="text-xs text-text-tertiary">
-                {project.category}
-              </span>
+            <div className="flex items-center gap-1.5 mt-0.5 text-xs text-text-tertiary">
+              <Clock className="w-3 h-3" />
+              <span>{project.eta}</span>
+              <span className="opacity-50">·</span>
+              <span>{project.category}</span>
             </div>
           </div>
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            ZONE 2: Status + Action
+            ZONE 2: Status (How is it going?)
+            Progress woven in as a bar, not badges
         ═══════════════════════════════════════════════════════════════════ */}
-        <div className="flex items-center gap-4 flex-shrink-0">
-          
-          {/* Health Badge - semantic color, earned not decorative */}
-          <div className={`
-            hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-medium
-            ${getHealthStyle(project.health)}
-          `}>
-            <span>{project.health}%</span>
-          </div>
-
-          {/* Velocity - tertiary importance */}
-          <div className="hidden md:block text-right">
-            <div className="text-sm font-semibold text-text-primary">
-              {project.velocity}%
-            </div>
-            <div className="text-[10px] text-text-tertiary uppercase tracking-wider">
-              Velocity
+        <div className="hidden sm:flex items-center gap-3 w-32">
+          {/* Progress bar - THE status indicator */}
+          <div className="flex-1">
+            <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${getProgressColor(project.health)}`}
+                style={{ width: `${project.health}%` }}
+              />
             </div>
           </div>
+          {/* Single number - velocity or health, not both */}
+          <span className="text-xs font-medium text-text-secondary w-8 text-right">
+            {project.velocity}%
+          </span>
+        </div>
 
-          {/* Action Button - THE brand moment */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            ZONE 3: Action (What can I do?)
+            Primary action + hover chevron
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="flex items-center gap-2 shrink-0">
           <button 
             onClick={handleDeploy}
             disabled={status !== 'idle'}
             className={`
-              px-4 py-2 rounded-lg text-xs font-semibold
+              px-3 py-1.5 rounded-lg text-xs font-medium
               transition-all duration-200
-              
-              ${status === 'idle' ? `
-                bg-brand text-white
-                hover:bg-brand-600
-                hover:shadow-glow-brand
-              ` : status === 'deploying' ? `
-                bg-surface-2 text-text-tertiary cursor-wait
-              ` : `
-                bg-success/10 text-success
-              `}
+              ${status === 'idle' 
+                ? 'bg-surface-2 text-text-secondary hover:bg-brand hover:text-white' 
+                : status === 'deploying' 
+                  ? 'bg-surface-2 text-text-tertiary cursor-wait' 
+                  : 'bg-success/10 text-success'
+              }
             `}
           >
             {status === 'idle' && (
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1">
                 <Zap className="w-3 h-3" />
                 Deploy
               </span>
             )}
-            {isDeploying && (
-              <span className="flex items-center gap-1.5">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Deploying
-              </span>
-            )}
-            {isShipped && "Shipped"}
+            {isDeploying && <Loader2 className="w-3 h-3 animate-spin" />}
+            {isShipped && <CheckCircle2 className="w-3 h-3" />}
           </button>
 
-          {/* Chevron - appears on hover */}
           <ChevronRight className="
             w-4 h-4 text-text-tertiary
             opacity-0 group-hover:opacity-100
-            -translate-x-1 group-hover:translate-x-0
-            transition-all duration-200
+            transition-opacity duration-200
           " />
         </div>
       </div>
