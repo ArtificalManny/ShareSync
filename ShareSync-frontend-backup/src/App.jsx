@@ -1,4 +1,4 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING + WELCOME BACK
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING + WELCOME BACK + CONTEXT INDICATOR
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -114,6 +114,9 @@ const PublicRoutes = lazy(() => import("./routes/publicRoutes.jsx"));
 // ⭐ DAY 8: Welcome Back Modal
 const WelcomeBack = lazy(() => import("./components/context/WelcomeBack"));
 
+// ⭐ DAY 9: Context Indicator
+const ContextIndicator = lazy(() => import("./components/context/ContextIndicator"));
+
 // ⭐ Lazy load context providers
 const UserProvider = lazy(() => import("./context/UserContext").then(m => ({ default: m.default })));
 const SprintProvider = lazy(() => import("./context/SprintContext").then(m => ({ default: m.SprintProvider })));
@@ -215,6 +218,10 @@ function AuthenticatedApp({ children }) {
                   <Suspense fallback={null}>
                     <WelcomeBack />
                   </Suspense>
+                  {/* ⭐ DAY 9: Context save indicator */}
+                  <Suspense fallback={null}>
+                    <ContextIndicator />
+                  </Suspense>
                   {children}
                 </FocusProvider>
               ) : (
@@ -224,6 +231,10 @@ function AuthenticatedApp({ children }) {
                   {/* ⭐ DAY 8: Welcome Back modal for returning users */}
                   <Suspense fallback={null}>
                     <WelcomeBack />
+                  </Suspense>
+                  {/* ⭐ DAY 9: Context save indicator */}
+                  <Suspense fallback={null}>
+                    <ContextIndicator />
                   </Suspense>
                   {children}
                 </>

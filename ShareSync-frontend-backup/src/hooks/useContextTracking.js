@@ -155,13 +155,21 @@ export const useContextTracking = () => {
       }
 
       setIsSaving(true);
+      // Dispatch saving event for ContextIndicator
+      window.dispatchEvent(new CustomEvent('context-saving'));
+      
       try {
         await apiRequest('/user-context/save', 'POST', context);
         lastSavedRef.current = context;
         setLastContext(context);
         console.debug('[Context] Saved:', context.lastActiveView, context.lastActiveRoute);
+        
+        // Dispatch saved event for ContextIndicator
+        window.dispatchEvent(new CustomEvent('context-saved'));
       } catch (error) {
         console.error('[Context] Save failed:', error.message);
+        // Dispatch error event for ContextIndicator
+        window.dispatchEvent(new CustomEvent('context-error'));
       } finally {
         setIsSaving(false);
       }
@@ -182,12 +190,16 @@ export const useContextTracking = () => {
     if (!user) return;
     
     const context = getCurrentContext();
+    window.dispatchEvent(new CustomEvent('context-saving'));
+    
     try {
       await apiRequest('/user-context/save', 'POST', context);
       lastSavedRef.current = context;
       console.debug('[Context] Force saved');
+      window.dispatchEvent(new CustomEvent('context-saved'));
     } catch (error) {
       console.error('[Context] Force save failed:', error.message);
+      window.dispatchEvent(new CustomEvent('context-error'));
     }
   }, [user, getCurrentContext]);
 
