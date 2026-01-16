@@ -1,29 +1,43 @@
-import React, { memo, useMemo } from "react";
+// src/components/projects/MyStatsCard.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Breathing Card System"
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3-ELEMENT RULE APPLIED:
+// 1) Title  2) Chart  3) (implicit) day labels
+// ═══════════════════════════════════════════════════════════════════════════════
 
-/**
- * Props (optional):
- *  - stats: { labels: string[]; values: number[] }
- * If not provided, we render a stable placeholder (also memoized).
- */
+import React, { memo, useMemo } from "react";
+import Card from "../common/Card";
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MINI CHART
+───────────────────────────────────────────────────────────────────────── */
 function Chart({ labels, values }) {
-  // Derived props (memoized) to avoid recalcs and re-renders
   const max = useMemo(() => Math.max(1, ...values), [values]);
+  
   return (
     <div
       role="img"
-      aria-label="Weekly activity mini chart"
-      className="grid grid-cols-7 gap-2 items-end h-20"
+      aria-label="Weekly activity chart"
+      className="grid grid-cols-7 gap-1.5 items-end h-16"
     >
       {values.map((v, i) => {
         const h = Math.round((v / max) * 100);
+        const isHighest = v === max && v > 0;
+        
         return (
           <div key={labels[i]} className="flex flex-col items-center">
             <div
-              className="w-6 rounded-md bg-indigo-600/80"
-              style={{ height: `${Math.max(6, h)}%` }}
+              className={`
+                w-full max-w-[24px] rounded-md transition-all
+                ${isHighest ? 'bg-brand' : 'bg-brand/40'}
+              `}
+              style={{ height: `${Math.max(8, h)}%` }}
               aria-hidden="true"
             />
-            <span className="mt-1 text-[10px] text-slate-500">{labels[i]}</span>
+            <span className="mt-1.5 text-[10px] text-text-tertiary">
+              {labels[i]}
+            </span>
           </div>
         );
       })}
@@ -33,8 +47,10 @@ function Chart({ labels, values }) {
 
 const MemoChart = memo(Chart);
 
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────────────────────────────────────── */
 function MyStatsCardBase({ stats }) {
-  // Provide stable defaults (so parent rerenders don’t change identity)
   const data = useMemo(
     () =>
       stats || {
@@ -45,16 +61,21 @@ function MyStatsCardBase({ stats }) {
   );
 
   return (
-    <section
-      className="card p-4 rounded-2xl"
+    <Card 
+      variant="ambient" 
+      padding="md"
+      as="section"
       aria-labelledby="mystats-title"
       role="region"
     >
-      <h3 id="mystats-title" className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+      <h3 
+        id="mystats-title" 
+        className="text-sm font-medium text-text-secondary mb-4"
+      >
         My Stats
       </h3>
       <MemoChart labels={data.labels} values={data.values} />
-    </section>
+    </Card>
   );
 }
 

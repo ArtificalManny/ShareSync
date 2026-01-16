@@ -1,19 +1,24 @@
-import { toast } from "../ui/Toast";
 // src/components/projects/PendingInvitesCard.jsx
-import React, { useEffect, useMemo, useState } from 'react';
-import Button from "../ui/Button.jsx";
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Breathing Card System"
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3-ELEMENT RULE APPLIED:
+// Each invite: 1) Project name  2) Message (optional)  3) Accept/Open actions
+// ═══════════════════════════════════════════════════════════════════════════════
 
+import React, { useEffect, useMemo, useState } from 'react';
+import Card, { CardBadge } from '../common/Card';
+import Button from '../ui/Button.jsx';
+import { toast } from '../ui/toast.jsx';
+import { Mail } from 'lucide-react';
 
 export default function PendingInvitesCard() {
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
-  // Try to read the signed-in user email (adjust if your app stores it elsewhere)
   const email = useMemo(() => {
-    // Prefer a global your app may set (tweak as needed)
     if (window.__SS_USER?.email) return window.__SS_USER.email;
-    // Fallbacks: localStorage keys your app might use
     const stored = localStorage.getItem('ss_user_email') || localStorage.getItem('email');
     return stored || '';
   }, []);
@@ -44,40 +49,64 @@ export default function PendingInvitesCard() {
       const res = await fetch(`/api/invites/accept/${token}`, { credentials: 'include' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setInvites(prev => prev.filter(i => i.token !== token));
+      toast({ title: 'Invite accepted!', variant: 'success' });
     } catch (e) {
-      toast.error('Failed to accept invite', { description: 'Please try again', duration: 3000 });
+      toast({ title: 'Failed to accept invite', variant: 'error' });
     }
   };
 
+  // Loading State
+  if (loading) {
+    return (
+      <Card variant="ambient" padding="md">
+        <div className="flex items-center justify-between mb-3">
+          <div className="h-4 w-28 bg-surface-2 rounded animate-pulse" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-10 bg-surface-2 rounded-lg animate-pulse" />
+          <div className="h-10 bg-surface-2 rounded-lg animate-pulse" />
+        </div>
+      </Card>
+    );
+  }
+
   return (
-    <div className="rounded-2xl bg-white dark:bg-slate-800 p-4 border border-slate-200/60 dark:border-slate-700/60">
-      <div className="flex items-baseline justify-between">
-        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Pending Invites</h3>
-        {!loading && (
-          <span className="text-xs text-slate-500 dark:text-slate-400">{invites.length}</span>
+    <Card variant="ambient" padding="md">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Mail className="w-4 h-4 text-brand" />
+          <h3 className="text-sm font-medium text-text-primary">Pending Invites</h3>
+        </div>
+        {invites.length > 0 && (
+          <CardBadge variant="brand">{invites.length}</CardBadge>
         )}
       </div>
 
-      {loading ? (
-        <div className="mt-3 space-y-2">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-8 rounded-lg animate-pulse bg-slate-100 dark:bg-slate-700" />
-          ))}
-        </div>
-      ) : err ? (
-        <p className="mt-3 text-xs text-rose-600 dark:text-rose-400">{err}</p>
-      ) : invites.length === 0 ? (
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">No pending invites.</p>
-      ) : (
-        <ul className="mt-3 space-y-2">
+      {/* Error */}
+      {err && (
+        <p className="text-xs text-danger mb-2">{err}</p>
+      )}
+
+      {/* Empty State */}
+      {!err && invites.length === 0 && (
+        <p className="text-xs text-text-tertiary">No pending invites.</p>
+      )}
+
+      {/* Invite List */}
+      {invites.length > 0 && (
+        <ul className="space-y-2">
           {invites.map((inv) => (
-            <li key={inv._id} className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-sm text-slate-800 dark:text-slate-100 truncate">
+            <li 
+              key={inv._id} 
+              className="flex items-center justify-between gap-3 p-2 rounded-lg bg-surface-2"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-text-primary truncate">
                   {inv.projectId ? `Project #${inv.projectId}` : 'Project invite'}
-                </div>
+                </p>
                 {inv.message && (
-                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{inv.message}</div>
+                  <p className="text-xs text-text-tertiary truncate">{inv.message}</p>
                 )}
               </div>
               <div className="shrink-0 flex items-center gap-2">
@@ -103,6 +132,6 @@ export default function PendingInvitesCard() {
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   );
 }
