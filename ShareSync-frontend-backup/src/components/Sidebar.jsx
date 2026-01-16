@@ -1,4 +1,15 @@
-// src/components/Sidebar.jsx - MISSION CONTROL NAVIGATION (METAlab EDITION)
+// src/components/Sidebar.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Quiet Confidence"
+// ═══════════════════════════════════════════════════════════════════════════════
+// RULES APPLIED:
+// 1. Surface hierarchy: surface-0 base, surface-1 for cards
+// 2. Progress ring is QUIET - not screaming for attention
+// 3. Streak badge is EARNED - subtle unless impressive (7+ days)
+// 4. Brand color used sparingly - only for progress and active states
+// 5. No competing glows - clean and professional
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { useEffect, useState } from "react";
 import {
   User as UserIcon,
@@ -7,51 +18,89 @@ import {
   Trophy,
   Flame,
   Terminal,
-  Activity,
   LayoutGrid,
   ShieldCheck
 } from "lucide-react";
 
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
-import HeartbeatRing from "./realtime/HeartbeatRing";
-
-import "./Sidebar.css";
-import "./Sidebar.neon.css";
 
 const LS_KEY = "ss.sidebar.collapsed";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   LAYER 1: MOMENTUM PULSE (Health & Streak Visualization)
+   PROGRESS RING
+   - Quiet by default, the number speaks for itself
+   - No pulsing background, no competing animations
+   - Streak badge only prominent when earned (7+ days)
 ───────────────────────────────────────────────────────────────────────── */
-function MomentumPulse({ todayProgress = 0.75, streak = 7, collapsed = false }) {
-  const size = collapsed ? 40 : 64;
-  const ringColor = streak >= 7 ? 'var(--brand-violet)' : '#475569';
+function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
+  const size = collapsed ? 40 : 56;
+  const strokeWidth = collapsed ? 3 : 4;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress * circumference);
+  
+  // Streak is "impressive" at 7+ days - earns the highlight
+  const isImpressiveStreak = streak >= 7;
 
   return (
-    <div className="relative flex items-center justify-center py-8">
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
-        <HeartbeatRing size={size + 32} strokeWidth={1.5} />
-      </div>
-      <div className="relative z-10 transition-transform duration-500 hover:scale-105">
-        <svg width={size} height={size} viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="4" />
+    <div className="flex flex-col items-center py-6">
+      {/* Ring */}
+      <div className="relative">
+        <svg 
+          width={size} 
+          height={size} 
+          className="transform -rotate-90"
+        >
+          {/* Background track */}
           <circle
-            cx="50" cy="50" r="46" fill="none" stroke="#8B5CF6" strokeWidth="6"
-            strokeDasharray={`${todayProgress * 289} 289`}
-            strokeLinecap="round"
-            transform="rotate(-90 50 50)"
-            className="transition-all duration-1000 ease-in-out"
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            className="text-surface-2"
           />
-          <text x="50" y="52" textAnchor="middle" dominantBaseline="central" className="fill-white font-black" fontSize="26" style={{ letterSpacing: '-0.05em' }}>
-            {Math.round(todayProgress * 100)}
-          </text>
+          {/* Progress arc */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="text-brand transition-all duration-700 ease-out"
+          />
         </svg>
+        
+        {/* Center number */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className={`
+            font-semibold text-text-primary
+            ${collapsed ? 'text-xs' : 'text-lg'}
+          `}>
+            {Math.round(progress * 100)}
+          </span>
+        </div>
       </div>
+
+      {/* Streak badge - only show when not collapsed */}
       {!collapsed && (
-        <div className="absolute -bottom-1 px-2.5 py-1 rounded-full bg-[#1C1E24] border border-white/10 flex items-center gap-1.5 shadow-2xl z-20 scale-90">
-          <Flame className="w-3 h-3 text-violet-500" />
-          <span className="text-[10px] font-extrabold text-white tracking-tight">{streak}D STREAK</span>
+        <div className={`
+          mt-3 px-2 py-1 rounded-full text-[10px] font-medium
+          flex items-center gap-1
+          transition-all duration-300
+          ${isImpressiveStreak 
+            ? 'bg-brand/10 text-brand border border-brand/20' 
+            : 'bg-surface-2 text-text-tertiary border border-transparent'
+          }
+        `}>
+          <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-brand' : 'text-text-tertiary'}`} />
+          <span>{streak}D Streak</span>
         </div>
       )}
     </div>
@@ -59,32 +108,60 @@ function MomentumPulse({ todayProgress = 0.75, streak = 7, collapsed = false }) 
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   LAYER 2: DAILY SHIP (Task Progression)
+   SHIP COUNTER
+   - Clean segmented progress bar
+   - No glowing segments - filled segments are enough visual feedback
 ───────────────────────────────────────────────────────────────────────── */
-function DailyShipCounter({ current = 2, target = 5, collapsed = false }) {
-  const progress = Math.min(1, current / target);
-  if (collapsed) return <div className="h-1 w-8 bg-white/5 rounded-full overflow-hidden mx-auto mt-4"><div className="h-full bg-violet-500" style={{width: `${progress*100}%`}}/></div>;
-  return (
-    <div className="px-6 py-4 mx-3 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
-      <div className="flex justify-between items-baseline mb-2.5">
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ships</span>
-        <span className="text-[11px] font-black text-white">{current} / {target}</span>
+function ShipCounter({ current = 2, target = 5, collapsed = false }) {
+  if (collapsed) {
+    const progress = Math.min(1, current / target);
+    return (
+      <div className="mx-auto mt-4 w-8 h-1 bg-surface-2 rounded-full overflow-hidden">
+        <div 
+          className="h-full bg-brand rounded-full transition-all duration-500" 
+          style={{ width: `${progress * 100}%` }}
+        />
       </div>
-      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden flex gap-1">
+    );
+  }
+
+  return (
+    <div className="mx-3 px-4 py-3 rounded-xl bg-surface-1 border border-white/[0.06]">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">
+          Ships
+        </span>
+        <span className="text-xs font-semibold text-text-primary">
+          {current}/{target}
+        </span>
+      </div>
+      
+      {/* Segmented progress */}
+      <div className="flex gap-1">
         {[...Array(target)].map((_, i) => (
-          <div key={i} className={`h-full flex-1 rounded-full transition-all duration-500 ${i < current ? 'bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.4)]' : 'bg-white/10'}`} />
+          <div 
+            key={i} 
+            className={`
+              h-1.5 flex-1 rounded-full transition-colors duration-300
+              ${i < current ? 'bg-brand' : 'bg-surface-3'}
+            `}
+          />
         ))}
       </div>
     </div>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN SIDEBAR
+───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(() => {
     try {
-      const raw = localStorage.getItem(LS_KEY);
-      return raw === "1";
-    } catch { return false; }
+      return localStorage.getItem(LS_KEY) === "1";
+    } catch { 
+      return false; 
+    }
   });
 
   useEffect(() => {
@@ -97,47 +174,91 @@ export default function Sidebar() {
   return (
     <aside
       id="app-sidebar"
-      className={["glass-sidebar", collapsed ? "w-[80px]" : "w-[280px]", "transition-all duration-300 ease-in-out h-screen flex flex-col"].join(" ")}
+      className={`
+        h-screen flex flex-col
+        bg-surface-0 border-r border-white/[0.06]
+        transition-all duration-300 ease-out
+        ${collapsed ? 'w-[72px]' : 'w-[260px]'}
+      `}
     >
-      <div className="sb-head flex items-center justify-between p-6">
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex items-center justify-between p-4">
         {!collapsed && (
-           <div className="flex items-center gap-3 group cursor-default">
-             <div className="w-6 h-6 bg-violet-600 rounded-lg flex items-center justify-center text-[12px] text-white font-black shadow-lg group-hover:scale-110 transition-transform">O</div>
-             <span className="text-[13px] font-black text-white uppercase tracking-[0.25em] metalab-heading">OpenShare</span>
-           </div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-brand rounded-lg flex items-center justify-center">
+              <span className="text-xs font-bold text-white">O</span>
+            </div>
+            <span className="text-sm font-semibold text-text-primary tracking-wide">
+              OPENSHARE
+            </span>
+          </div>
         )}
-        <button onClick={() => setCollapsed(!collapsed)} className="p-2 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-all">
-          <ChevronsLeft className={`w-4 h-4 transition-transform duration-500 ${collapsed ? 'rotate-180' : ''}`} />
+        <button 
+          onClick={() => setCollapsed(!collapsed)} 
+          className={`
+            p-2 rounded-lg text-text-tertiary
+            hover:bg-surface-2 hover:text-text-primary
+            transition-all duration-200
+            ${collapsed ? 'mx-auto' : ''}
+          `}
+        >
+          <ChevronsLeft className={`
+            w-4 h-4 transition-transform duration-300
+            ${collapsed ? 'rotate-180' : ''}
+          `} />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
-        <MomentumPulse collapsed={collapsed} />
+      {/* ═══════════════════════════════════════════════════════════════════
+          CONTENT
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Progress Ring */}
+        <ProgressRing collapsed={collapsed} />
         
-        <nav className="sb-nav mt-4 px-4 space-y-2">
+        {/* Navigation */}
+        <nav className="px-3 space-y-1">
           <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
           <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
           <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
           
-          <div className="py-6 px-4">
-            <div className="h-[1px] bg-white/[0.06] w-full" />
+          {/* Divider */}
+          <div className="py-4">
+            <div className="h-px bg-white/[0.06]" />
           </div>
           
           <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
           <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
         </nav>
         
-        {!collapsed && <DailyShipCounter collapsed={collapsed} />}
+        {/* Ship Counter */}
+        <div className="mt-4">
+          <ShipCounter collapsed={collapsed} />
+        </div>
       </div>
 
-      <div className="p-4 mt-auto">
-        <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.06] transition-all cursor-pointer group">
+      {/* ═══════════════════════════════════════════════════════════════════
+          USER CARD
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="p-3">
+        <div className={`
+          flex items-center gap-3 p-2.5 rounded-xl
+          bg-surface-1 border border-white/[0.06]
+          hover:bg-surface-2 hover:border-white/[0.1]
+          transition-all duration-200 cursor-pointer
+          ${collapsed ? 'justify-center' : ''}
+        `}>
           <Avatar name={me.name} size={32} status={me.status} />
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="text-[12px] font-bold text-white truncate tracking-tight">{me.name}</div>
-              <div className="text-[10px] font-medium text-emerald-400/80 flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" /> Secure Node
+              <div className="text-sm font-medium text-text-primary truncate">
+                {me.name}
+              </div>
+              <div className="text-[10px] text-success flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" />
+                <span>Secure Node</span>
               </div>
             </div>
           )}

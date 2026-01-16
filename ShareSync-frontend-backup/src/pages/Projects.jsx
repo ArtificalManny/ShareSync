@@ -1,10 +1,20 @@
-// src/pages/Projects.jsx - PROJECT DECK (METAlab EDITION)
+// src/pages/Projects.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - "Quiet Confidence"
+// ═══════════════════════════════════════════════════════════════════════════════
+// RULES APPLIED:
+// 1. Surface hierarchy: surface-0 page, surface-1 cards, surface-2 hover
+// 2. ONE accent color (brand) - buttons and active states only
+// 3. Streak badge is EARNED - subtle unless impressive (7+ days)
+// 4. "No step defined" is a gentle nudge, not a red alert
+// 5. No glowing progress bars at rest
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Search, Plus, Flame, TrendingUp, Sparkles, Clock, Users, Zap, 
-  Target, AlertCircle, Shield, PlayCircle, Grid, List, ChevronRight,
-  Filter, LayoutGrid
+  Search, Plus, Flame, Users, Grid, List, LayoutGrid, 
+  ChevronRight, AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ProjectsCreate from './ProjectsCreate';
@@ -12,114 +22,202 @@ import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
 import { SkeletonProjectCard } from '../components/ui/Skeletons';
 import api from '../api/client';
 
-// DESIGN SYSTEM
-import Card, { CardBody, CardFooter } from '../components/common/Card';
-import Button from '../components/common/Button';
-
 /* ─────────────────────────────────────────────────────────────────────────
-   REFINED PROJECT CARD: Bento-Style
+   PROJECT CARD - Grid View
+   Clean, scannable, professional
 ───────────────────────────────────────────────────────────────────────── */
-function EnhancedProjectCard({ project, viewMode, onProjectClick, onStartSprint }) {
+function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
     switch(season) {
       case 'shipping': return '🚀';
       case 'exploring': return '🌱';
-      case 'maintaining': return '��';
+      case 'maintaining': return '🛠';
       default: return '📁';
     }
   };
 
-  const progressValue = project.metrics?.onTimePercent?.value || 0;
-
-  if (viewMode === 'list') {
-    return (
-      <div 
-        onClick={() => onProjectClick(project._id)}
-        className="group flex items-center justify-between p-4 mb-3 rounded-2xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.05] transition-all cursor-pointer"
-      >
-        <div className="flex items-center gap-5">
-          <div className="w-12 h-12 flex items-center justify-center bg-white/[0.03] rounded-xl text-2xl group-hover:scale-110 transition-transform">
-            {getSeasonEmoji(project.season)}
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-white tracking-tight">{project.name}</h3>
-            <p className="text-[11px] text-slate-500 font-medium">{project.description}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-8">
-           <div className="flex flex-col items-end">
-             <div className="flex items-center gap-1.5 text-orange-500 font-black italic text-sm">
-                <Flame size={14} fill="currentColor" />
-                <span>{project.streak?.value || 0}D</span>
-             </div>
-             <span className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Streak</span>
-           </div>
-           <Button variant="tertiary" size="sm" onClick={(e) => { e.stopPropagation(); onStartSprint(project); }}>
-             Launch
-           </Button>
-        </div>
-      </div>
-    );
-  }
+  const velocity = project.metrics?.onTimePercent?.value || 0;
+  const streak = project.streak?.value || 0;
+  const isImpressiveStreak = streak >= 7;
+  const hasNextStep = Boolean(project.nextMicroStep);
 
   return (
     <div 
       onClick={() => onProjectClick(project._id)}
-      className={`bento-elevated p-6 group cursor-pointer transition-all hover:translate-y-[-4px] ${project.isAtRisk ? 'border-red-500/20' : ''}`}
+      className={`
+        group p-5 rounded-xl cursor-pointer
+        bg-surface-1 border border-white/[0.06]
+        hover:bg-surface-2 hover:border-white/[0.1]
+        transition-all duration-200
+        ${project.isAtRisk ? 'border-l-2 border-l-warning' : ''}
+      `}
     >
-      <div className="flex justify-between items-start mb-6">
-        <div className="w-14 h-14 bg-white/[0.03] border border-white/[0.05] rounded-2xl flex items-center justify-center text-3xl group-hover:bg-violet-600/10 transition-colors">
+      {/* Header: Emoji + Streak */}
+      <div className="flex justify-between items-start mb-4">
+        <div className="w-12 h-12 bg-surface-2 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
           {getSeasonEmoji(project.season)}
         </div>
-        <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-tighter flex items-center gap-1.5 ${project.isAtRisk ? 'bg-red-500/10 text-red-500' : 'bg-orange-500/10 text-orange-500'}`}>
-          <Flame size={12} fill="currentColor" />
-          {project.streak?.value || 0} DAY STREAK
-        </div>
+        
+        {/* Streak - only prominent when earned */}
+        {streak > 0 && (
+          <div className={`
+            flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium
+            ${isImpressiveStreak 
+              ? 'bg-brand/10 text-brand' 
+              : 'bg-surface-2 text-text-tertiary'
+            }
+          `}>
+            <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-brand' : 'text-text-tertiary'}`} />
+            <span>{streak}d</span>
+          </div>
+        )}
       </div>
 
-      <h3 className="text-xl font-black text-white tracking-metalab mb-2">{project.name}</h3>
-      <p className="text-[12px] text-slate-500 font-medium leading-relaxed mb-6 line-clamp-2">{project.description}</p>
+      {/* Title + Description */}
+      <h3 className="text-base font-semibold text-text-primary mb-1 group-hover:text-brand transition-colors">
+        {project.name}
+      </h3>
+      <p className="text-sm text-text-secondary line-clamp-2 mb-4">
+        {project.description}
+      </p>
 
-      {project.nextMicroStep ? (
-        <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-4 mb-6">
-          <div className="text-[9px] uppercase tracking-[0.2em] text-violet-400 font-black mb-1.5">Next Ship</div>
-          <div className="text-sm text-slate-200 font-semibold truncate italic">"{project.nextMicroStep}"</div>
+      {/* Next Step - gentle nudge, not alarming */}
+      {hasNextStep ? (
+        <div className="bg-surface-2 rounded-lg p-3 mb-4">
+          <div className="text-[10px] text-text-tertiary uppercase tracking-wider mb-1">
+            Next step
+          </div>
+          <div className="text-sm text-text-primary truncate">
+            {project.nextMicroStep}
+          </div>
         </div>
       ) : (
-        <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-4 mb-6">
-           <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest">No Step Defined</p>
+        <div className="bg-surface-2 rounded-lg p-3 mb-4 border border-dashed border-white/[0.08]">
+          <div className="flex items-center gap-2 text-text-tertiary">
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span className="text-xs">Add a next step</span>
+          </div>
         </div>
       )}
 
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Velocity</span>
-           <span className="text-xs font-black text-white">{progressValue}%</span>
+      {/* Velocity Progress */}
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-[10px] text-text-tertiary uppercase tracking-wider">
+            Velocity
+          </span>
+          <span className="text-xs font-medium text-text-primary">
+            {velocity}%
+          </span>
         </div>
-        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
           <div 
-            className={`h-full transition-all duration-1000 ease-out ${progressValue > 80 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-violet-500 shadow-[0_0_10px_rgba(139,92,246,0.3)]'}`}
-            style={{ width: `${progressValue}%` }}
+            className={`h-full rounded-full transition-all duration-500 ${
+              velocity >= 80 ? 'bg-success' : 'bg-brand'
+            }`}
+            style={{ width: `${velocity}%` }}
           />
         </div>
       </div>
 
-      <div className="mt-8 flex items-center justify-between pt-6 border-t border-white/[0.04]">
-         <div className="flex items-center gap-2">
-            <Users size={14} className="text-slate-600" />
-            <span className="text-[11px] font-bold text-slate-500">{project.metrics?.openTasks?.value || 0} Pending</span>
-         </div>
-         <button 
-           onClick={(e) => { e.stopPropagation(); onStartSprint(project); }}
-           className="px-5 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-black rounded-xl transition-all shadow-lg hover:shadow-violet-600/20"
-         >
-           START SPRINT
-         </button>
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
+        <div className="flex items-center gap-1.5 text-text-tertiary">
+          <Users className="w-3.5 h-3.5" />
+          <span className="text-xs">
+            {project.metrics?.openTasks?.value || 0} tasks
+          </span>
+        </div>
+        
+        <button 
+          onClick={(e) => { e.stopPropagation(); onStartSprint(project); }}
+          className="
+            px-3 py-1.5 rounded-lg text-xs font-medium
+            bg-brand text-white
+            hover:bg-brand-600 hover:shadow-glow-brand
+            transition-all duration-200
+          "
+        >
+          Start Sprint
+        </button>
       </div>
     </div>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   PROJECT ROW - List View
+───────────────────────────────────────────────────────────────────────── */
+function ProjectRow({ project, onProjectClick, onStartSprint }) {
+  const getSeasonEmoji = (season) => {
+    switch(season) {
+      case 'shipping': return '🚀';
+      case 'exploring': return '🌱';
+      case 'maintaining': return '🛠';
+      default: return '��';
+    }
+  };
+
+  const streak = project.streak?.value || 0;
+  const isImpressiveStreak = streak >= 7;
+
+  return (
+    <div 
+      onClick={() => onProjectClick(project._id)}
+      className="
+        group flex items-center justify-between p-4 rounded-xl cursor-pointer
+        bg-surface-1 border border-white/[0.06]
+        hover:bg-surface-2 hover:border-white/[0.1]
+        transition-all duration-200
+      "
+    >
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 bg-surface-2 rounded-lg flex items-center justify-center text-xl">
+          {getSeasonEmoji(project.season)}
+        </div>
+        <div>
+          <h3 className="text-sm font-medium text-text-primary group-hover:text-brand transition-colors">
+            {project.name}
+          </h3>
+          <p className="text-xs text-text-tertiary">
+            {project.description}
+          </p>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-6">
+        {/* Streak */}
+        {streak > 0 && (
+          <div className={`
+            flex items-center gap-1 text-xs
+            ${isImpressiveStreak ? 'text-brand' : 'text-text-tertiary'}
+          `}>
+            <Flame className="w-3.5 h-3.5" />
+            <span className="font-medium">{streak}d</span>
+          </div>
+        )}
+        
+        <button 
+          onClick={(e) => { e.stopPropagation(); onStartSprint(project); }}
+          className="
+            px-3 py-1.5 rounded-lg text-xs font-medium
+            bg-surface-2 text-text-secondary
+            hover:bg-brand hover:text-white
+            transition-all duration-200
+          "
+        >
+          Launch
+        </button>
+        
+        <ChevronRight className="w-4 h-4 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN PAGE
+───────────────────────────────────────────────────────────────────────── */
 const Projects = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -142,7 +240,7 @@ const Projects = () => {
       setProjects(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching projects:', error);
-      setProjects(getMockProjects()); // Fallback to mock on error
+      setProjects(getMockProjects());
     } finally {
       setLoading(false);
     }
@@ -162,87 +260,175 @@ const Projects = () => {
     const projectName = (project.name || project.title || '').toLowerCase();
     const matchesSearch = projectName.includes(searchQuery.toLowerCase());
     if (selectedFilter === 'at-risk') return matchesSearch && project.isAtRisk;
+    if (selectedFilter === 'active') return matchesSearch && !project.isAtRisk;
     return matchesSearch;
   });
 
   return (
-    <div className="min-h-screen bg-transparent p-8 lg:p-12 max-w-[1600px] mx-auto">
+    <div className="min-h-screen p-6 lg:p-10 max-w-[1400px] mx-auto">
       
-      {/* 🚢 HEADER SECTION */}
-      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER
+      ═══════════════════════════════════════════════════════════════════ */}
+      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <div className="flex items-center gap-3 mb-3">
-             <LayoutGrid className="w-4 h-4 text-violet-500" />
-             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.2em]">Deployment Deck</span>
+          <div className="flex items-center gap-2 mb-2">
+            <LayoutGrid className="w-4 h-4 text-brand" />
+            <span className="text-xs text-text-tertiary uppercase tracking-wider">
+              Project Deck
+            </span>
           </div>
-          <h1 className="text-5xl font-black text-white tracking-metalab">Projects</h1>
+          <h1 className="text-4xl font-semibold text-text-primary">
+            Projects
+          </h1>
         </div>
         
-        <div className="flex items-center gap-4">
-           <div className="relative">
-             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-             <input 
-               type="text" 
-               placeholder="Search missions..." 
-               className="bg-white/[0.03] border border-white/[0.06] rounded-2xl pl-12 pr-6 py-3 text-sm text-white focus:border-violet-500/50 outline-none w-64 transition-all focus:w-80"
-               value={searchQuery}
-               onChange={(e) => setSearchQuery(e.target.value)}
-             />
-           </div>
-           <button 
-             onClick={() => setShowCreateModal(true)}
-             className="bg-white text-black font-black text-xs px-6 py-3.5 rounded-2xl hover:bg-slate-200 transition-all flex items-center gap-2"
-           >
-             <Plus size={16} strokeWidth={3} /> NEW PROJECT
-           </button>
+        <div className="flex items-center gap-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+            <input 
+              type="text" 
+              placeholder="Search projects..." 
+              className="
+                bg-surface-1 border border-white/[0.06] rounded-lg
+                pl-10 pr-4 py-2.5 text-sm text-text-primary
+                placeholder:text-text-tertiary
+                focus:border-brand/50 focus:outline-none
+                w-56 transition-all focus:w-72
+              "
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          {/* New Project Button */}
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="
+              flex items-center gap-2 px-4 py-2.5 rounded-lg
+              bg-brand text-white text-sm font-medium
+              hover:bg-brand-600 hover:shadow-glow-brand
+              transition-all duration-200
+            "
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">New Project</span>
+          </button>
         </div>
       </header>
 
       <QuietProjectsBanner />
 
-      {/* 🛠 TOOLBAR */}
-      <div className="flex items-center justify-between mb-8 mt-12 pb-6 border-b border-white/[0.04]">
-        <div className="flex gap-6">
-           {['all', 'active', 'at-risk'].map(filter => (
-             <button 
-               key={filter}
-               onClick={() => setSelectedFilter(filter)}
-               className={`text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedFilter === filter ? 'text-violet-500' : 'text-slate-500 hover:text-white'}`}
-             >
-               {filter}
-             </button>
-           ))}
+      {/* ═══════════════════════════════════════════════════════════════════
+          TOOLBAR
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex items-center justify-between mb-6 mt-8 pb-4 border-b border-white/[0.06]">
+        {/* Filters */}
+        <div className="flex gap-1">
+          {['all', 'active', 'at-risk'].map(filter => (
+            <button 
+              key={filter}
+              onClick={() => setSelectedFilter(filter)}
+              className={`
+                px-3 py-1.5 rounded-lg text-xs font-medium capitalize
+                transition-all duration-200
+                ${selectedFilter === filter 
+                  ? 'bg-surface-2 text-text-primary' 
+                  : 'text-text-tertiary hover:text-text-secondary'
+                }
+              `}
+            >
+              {filter === 'at-risk' ? 'At Risk' : filter}
+            </button>
+          ))}
         </div>
-        <div className="flex items-center gap-2 bg-white/[0.03] p-1.5 rounded-xl border border-white/[0.05]">
-          <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white/10 text-white shadow-xl' : 'text-slate-500'}`}><Grid size={16}/></button>
-          <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white/10 text-white shadow-xl' : 'text-slate-500'}`}><List size={16}/></button>
+        
+        {/* View Toggle */}
+        <div className="flex items-center gap-1 p-1 bg-surface-1 rounded-lg border border-white/[0.06]">
+          <button 
+            onClick={() => setViewMode('grid')} 
+            className={`
+              p-2 rounded-md transition-all
+              ${viewMode === 'grid' 
+                ? 'bg-surface-2 text-text-primary' 
+                : 'text-text-tertiary hover:text-text-secondary'
+              }
+            `}
+          >
+            <Grid className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => setViewMode('list')} 
+            className={`
+              p-2 rounded-md transition-all
+              ${viewMode === 'list' 
+                ? 'bg-surface-2 text-text-primary' 
+                : 'text-text-tertiary hover:text-text-secondary'
+              }
+            `}
+          >
+            <List className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* 🍱 PROJECT GRID */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          PROJECT GRID / LIST
+      ═══════════════════════════════════════════════════════════════════ */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[1,2,3].map(i => <SkeletonProjectCard key={i} />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => <SkeletonProjectCard key={i} />)}
         </div>
-      ) : (
-        <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8' : 'space-y-4'}>
-          {filteredProjects.length > 0 ? (
-            filteredProjects.map(project => (
-              <EnhancedProjectCard 
+      ) : filteredProjects.length > 0 ? (
+        viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map(project => (
+              <ProjectCard 
                 key={project._id}
                 project={project}
-                viewMode={viewMode}
                 onProjectClick={handleProjectClick}
                 onStartSprint={handleStartSprint}
               />
-            ))
-          ) : (
-            <div className="col-span-full py-20 text-center bento-elevated">
-               <div className="text-4xl mb-4">🌑</div>
-               <h3 className="text-white font-bold uppercase tracking-widest text-sm">No Active Missions</h3>
-               <p className="text-slate-500 text-xs mt-2">Try adjusting your search or create a new project.</p>
-            </div>
-          )}
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredProjects.map(project => (
+              <ProjectRow 
+                key={project._id}
+                project={project}
+                onProjectClick={handleProjectClick}
+                onStartSprint={handleStartSprint}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        /* Empty State */
+        <div className="py-20 text-center">
+          <div className="w-16 h-16 bg-surface-1 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">📁</span>
+          </div>
+          <h3 className="text-lg font-medium text-text-primary mb-2">
+            No projects found
+          </h3>
+          <p className="text-sm text-text-secondary mb-6">
+            {searchQuery 
+              ? "Try adjusting your search" 
+              : "Create your first project to get started"
+            }
+          </p>
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="
+              px-4 py-2 rounded-lg text-sm font-medium
+              bg-brand text-white hover:bg-brand-600
+              transition-colors
+            "
+          >
+            Create Project
+          </button>
         </div>
       )}
 
