@@ -1,12 +1,18 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // DESIGN SYSTEM v2.0 - "Quiet Confidence" + PHASE 3: Ambient Gamification
+// + PHASE 6: Flow State Integration
 // ═══════════════════════════════════════════════════════════════════════════════
 // GAMIFICATION RULES:
 // 1. Progress ring is QUIET - the number speaks for itself
 // 2. Streak badge is EARNED - only prominent at 7+ days
 // 3. Ship counter segments fill without glowing
 // 4. Color is EARNED through achievement, not decoration
+//
+// FLOW STATE:
+// - When user is in flow, sidebar auto-collapses to give more focus space
+// - Sidebar dims slightly to reduce distraction
+// - User can still manually expand if needed
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState } from "react";
@@ -24,6 +30,9 @@ import {
 
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
+
+// ⭐ PHASE 6: Flow State Hook
+import { useFlowState } from '../contexts/FlowStateContext';
 
 const LS_KEY = "ss.sidebar.collapsed";
 
@@ -125,15 +134,28 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
 export default function Sidebar() {
   const navigate = useNavigate();
   
-  const [collapsed, setCollapsed] = useState(() => {
+  // ⭐ PHASE 6: Get flow state
+  const { shouldCollapseSidebar, isInFlow } = useFlowState();
+  
+  // User's manual preference for collapsed state
+  const [userCollapsed, setUserCollapsed] = useState(() => {
     try { return localStorage.getItem(LS_KEY) === "1"; } 
     catch { return false; }
   });
 
+  // ⭐ PHASE 6: Combine user preference with flow state
+  // Flow state can collapse, but user can always manually expand
+  const collapsed = shouldCollapseSidebar || userCollapsed;
+
   useEffect(() => {
-    localStorage.setItem(LS_KEY, collapsed ? "1" : "0");
+    localStorage.setItem(LS_KEY, userCollapsed ? "1" : "0");
     document.body.classList.toggle("sidebar-collapsed", collapsed);
-  }, [collapsed]);
+  }, [userCollapsed, collapsed]);
+
+  // ⭐ PHASE 6: Handle manual toggle (overrides flow state temporarily)
+  const handleToggle = () => {
+    setUserCollapsed(!userCollapsed);
+  };
 
   const me = { name: "Manny", status: "online" };
 
@@ -145,6 +167,7 @@ export default function Sidebar() {
         bg-surface-0 border-r border-white/[0.06]
         transition-all duration-300 ease-out
         ${collapsed ? 'w-[72px]' : 'w-[260px]'}
+        ${isInFlow ? 'opacity-90' : 'opacity-100'}
       `}
     >
       {/* Header */}
@@ -158,8 +181,9 @@ export default function Sidebar() {
           </div>
         )}
         <button 
-          onClick={() => setCollapsed(!collapsed)} 
+          onClick={handleToggle} 
           className={`p-2 rounded-lg text-text-tertiary hover:bg-surface-2 hover:text-text-primary transition-all duration-200 ${collapsed ? 'mx-auto' : ''}`}
+          title={isInFlow && !userCollapsed ? 'Collapsed for focus mode' : (collapsed ? 'Expand sidebar' : 'Collapse sidebar')}
         >
           <ChevronsLeft className={`w-4 h-4 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />
         </button>

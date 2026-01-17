@@ -1,4 +1,4 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING + WELCOME BACK + CONTEXT INDICATOR
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING + WELCOME BACK + CONTEXT INDICATOR + FLOW STATE
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -19,6 +19,9 @@ import ErrorBoundary from "./ErrorBoundary";
 
 // ⭐ DAY 7: Context Tracking Hook
 import { useContextTracking } from './hooks/useContextTracking';
+
+// ⭐ PHASE 6: Flow State Provider
+import { FlowStateProvider } from './contexts/FlowStateContext';
 
 // ⭐ PWA Components
 import InstallPrompt from "./components/pwa/InstallPrompt";
@@ -117,6 +120,9 @@ const WelcomeBack = lazy(() => import("./components/context/WelcomeBack"));
 // ⭐ DAY 9: Context Indicator
 const ContextIndicator = lazy(() => import("./components/context/ContextIndicator"));
 
+// ⭐ PHASE 6: Flow State Indicator
+const FlowIndicator = lazy(() => import("./components/flow/FlowIndicator").then(m => ({ default: m.default })));
+
 // ⭐ Lazy load context providers
 const UserProvider = lazy(() => import("./context/UserContext").then(m => ({ default: m.default })));
 const SprintProvider = lazy(() => import("./context/SprintContext").then(m => ({ default: m.SprintProvider })));
@@ -210,35 +216,46 @@ function AuthenticatedApp({ children }) {
         <MessageProvider>
           <SprintProvider>
             <CommandPaletteProvider>
-              {FOCUS_DOCK_V1 ? (
-                <FocusProvider>
-                  {/* ⭐ DAY 7: Context tracking for authenticated users */}
-                  <ContextTracker />
-                  {/* ⭐ DAY 8: Welcome Back modal for returning users */}
-                  <Suspense fallback={null}>
-                    <WelcomeBack />
-                  </Suspense>
-                  {/* ⭐ DAY 9: Context save indicator */}
-                  <Suspense fallback={null}>
-                    <ContextIndicator />
-                  </Suspense>
-                  {children}
-                </FocusProvider>
-              ) : (
-                <>
-                  {/* ⭐ DAY 7: Context tracking for authenticated users */}
-                  <ContextTracker />
-                  {/* ⭐ DAY 8: Welcome Back modal for returning users */}
-                  <Suspense fallback={null}>
-                    <WelcomeBack />
-                  </Suspense>
-                  {/* ⭐ DAY 9: Context save indicator */}
-                  <Suspense fallback={null}>
-                    <ContextIndicator />
-                  </Suspense>
-                  {children}
-                </>
-              )}
+              {/* ⭐ PHASE 6: Flow State Provider wraps authenticated content */}
+              <FlowStateProvider>
+                {FOCUS_DOCK_V1 ? (
+                  <FocusProvider>
+                    {/* ⭐ DAY 7: Context tracking for authenticated users */}
+                    <ContextTracker />
+                    {/* ⭐ DAY 8: Welcome Back modal for returning users */}
+                    <Suspense fallback={null}>
+                      <WelcomeBack />
+                    </Suspense>
+                    {/* ⭐ DAY 9: Context save indicator */}
+                    <Suspense fallback={null}>
+                      <ContextIndicator />
+                    </Suspense>
+                    {/* ⭐ PHASE 6: Flow state indicator */}
+                    <Suspense fallback={null}>
+                      <FlowIndicator position="bottom-left" />
+                    </Suspense>
+                    {children}
+                  </FocusProvider>
+                ) : (
+                  <>
+                    {/* ⭐ DAY 7: Context tracking for authenticated users */}
+                    <ContextTracker />
+                    {/* ⭐ DAY 8: Welcome Back modal for returning users */}
+                    <Suspense fallback={null}>
+                      <WelcomeBack />
+                    </Suspense>
+                    {/* ⭐ DAY 9: Context save indicator */}
+                    <Suspense fallback={null}>
+                      <ContextIndicator />
+                    </Suspense>
+                    {/* ⭐ PHASE 6: Flow state indicator */}
+                    <Suspense fallback={null}>
+                      <FlowIndicator position="bottom-left" />
+                    </Suspense>
+                    {children}
+                  </>
+                )}
+              </FlowStateProvider>
             </CommandPaletteProvider>
           </SprintProvider>
         </MessageProvider>
