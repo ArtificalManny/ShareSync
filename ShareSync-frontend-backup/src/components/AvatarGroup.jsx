@@ -1,17 +1,15 @@
+// src/components/AvatarGroup.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - PHASE 5: Quiet Confidence
+// ═══════════════════════════════════════════════════════════════════════════════
+// Accessible avatar stack with overlap +N overflow
+// FIXED: Hardcoded slate/emerald colors → Design tokens
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { useMemo } from "react";
 import AnimatedRing from "./ui/AnimatedRing";
 import useReducedMotion from "../hooks/useReducedMotion";
 
-/**
- * AvatarGroup
- * - Accessible avatar stack with overlap +N overflow
- *
- * Props:
- *  - users: array of { id, name, avatarUrl, role? }
- *  - max, size, overlap, showOverflow, className
- *  - highlightFirstRecent?: boolean (adds ring to first/owner avatar)
- *  - ownerRecent?: boolean (alias for highlightFirstRecent)
- */
 export default function AvatarGroup({
   users = [],
   max = 4,
@@ -50,12 +48,11 @@ export default function AvatarGroup({
   return (
     <div className={containerCls} role="list" aria-label={ariaLabel || "Participants"}>
       {visible.map((u, i) => {
-        const isOwner = u?.role === "owner" || i === 0; // heuristic: first/avatar with role
+        const isOwner = u?.role === "owner" || i === 0;
         const circle = <AvatarCircle key={u.id || i} user={u} style={style} />;
 
         if (!isOwner || !showOwnerHighlight) return circle;
 
-        // Owner halo — small ring, respects reduced motion (falls back to static mini dot)
         if (!prefersReduced) {
           return (
             <AnimatedRing
@@ -63,18 +60,18 @@ export default function AvatarGroup({
               size={`${size + 6}px`}
               thickness="2px"
               animated
-              className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-slate-900"
+              className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-surface-0"
             >
               {circle}
             </AnimatedRing>
           );
         }
-        // Static tiny dot (top-right) when reduced motion preferred
+        // Static tiny dot when reduced motion preferred
         return (
           <span key={u.id || i} className="relative inline-grid place-items-center">
             {circle}
             <span
-              className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
+              className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-success ring-2 ring-white dark:ring-surface-0"
               aria-hidden
             />
           </span>
@@ -96,7 +93,7 @@ function AvatarCircle({ user, style }) {
 
   return (
     <span
-      className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-slate-900 overflow-hidden transition-transform duration-200"
+      className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-surface-0 overflow-hidden transition-transform duration-200"
       style={{ ...style, background: bg }}
       role="listitem"
       title={name}
@@ -113,7 +110,7 @@ function AvatarCircle({ user, style }) {
 function OverflowCircle({ count, style }) {
   return (
     <span
-      className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-800/50 text-white"
+      className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-surface-0 bg-surface-2 text-text-secondary"
       style={style}
       title={`${count} more`}
     >
@@ -133,7 +130,6 @@ function initialFromName(name) {
   return (first + last || first).toUpperCase();
 }
 
-/** deterministic pastel-ish color from a string */
 function colorFromString(str) {
   const s = String(str || "");
   let hash = 0;
@@ -144,7 +140,6 @@ function colorFromString(str) {
   return `hsl(${hue}deg ${sat}% ${light}%)`;
 }
 
-/** bust avatar caches when user updates picture (AuthContext sets window.__SS_AVATAR_VERSION__) */
 function cacheBusted(url) {
   if (!url) return "";
   try {

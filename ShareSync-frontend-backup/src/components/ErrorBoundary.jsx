@@ -1,5 +1,14 @@
+// src/components/ErrorBoundary.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - PHASE 5: Quiet Confidence
+// ═══════════════════════════════════════════════════════════════════════════════
+// FIXED: Removed chaotic animations (pulse, bounce, holographic)
+// FIXED: Removed hardcoded colors → Design tokens
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
+import { AlertTriangle, Home } from 'lucide-react';
 
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null };
@@ -15,16 +24,39 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-boundary flex items-center justify-center min-h-screen glassmorphic">
-          <div className="text-center card p-6 glassmorphic card-3d animate-slide-down">
-            <h1 className="text-4xl font-orbitron font-bold text-emerald-green mb-4 animate-pulse">Something Went Wrong</h1>
-            <p className="text-saffron-yellow text-lg font-inter mb-4">{this.state.error?.message || 'An unexpected error occurred.'}</p>
-            <Link
-              to="/"
-              className="text-indigo-vivid hover:underline text-base font-orbitron focus:outline-none focus:ring-2 focus:ring-charcoal-gray holographic-effect animate-bounce"
-            >
-              Return to Home
-            </Link>
+        <div className="flex items-center justify-center min-h-screen bg-surface-0 p-6">
+          <div className="text-center max-w-md">
+            {/* Icon */}
+            <div className="w-14 h-14 bg-danger/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-7 h-7 text-danger" />
+            </div>
+            
+            {/* Title */}
+            <h1 className="text-xl font-semibold text-text-primary mb-2">
+              Something Went Wrong
+            </h1>
+            
+            {/* Error message */}
+            <p className="text-sm text-text-secondary mb-6">
+              {this.state.error?.message || 'An unexpected error occurred.'}
+            </p>
+            
+            {/* Actions */}
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-surface-2 hover:bg-surface-3 text-text-primary text-sm font-medium rounded-lg transition-colors"
+              >
+                Reload Page
+              </button>
+              <Link
+                to="/"
+                className="px-4 py-2 bg-brand hover:bg-brand/80 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Home className="w-4 h-4" />
+                Go Home
+              </Link>
+            </div>
           </div>
         </div>
       );

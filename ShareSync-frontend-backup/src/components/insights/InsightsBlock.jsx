@@ -1,16 +1,19 @@
+// src/components/insights/InsightsBlock.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - PHASE 5: Quiet Confidence
+// ═══════════════════════════════════════════════════════════════════════════════
+// FIXED: Hardcoded indigo/slate colors → Design tokens
+// FIXED: Gradient text → Simple semantic colors
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { useEffect, useMemo, useState } from "react";
 import { Lightbulb, TrendingUp, Clock, Flame } from "lucide-react";
-import GradientText from "../ui/GradientText";
 
-/**
- * InsightsBlock
- * Adds gradient accent on icon/title + subtle entry fade (respects reduced-motion).
- */
 export default function InsightsBlock({
   projectId,
-  insights,              // optional pre-fetched array of strings
-  loading: loadingProp,  // optional external loading flag
-  fetchInsights,         // optional: async (projectId) => string[]
+  insights,
+  loading: loadingProp,
+  fetchInsights,
   className = "",
   max = 4,
 }) {
@@ -23,7 +26,7 @@ export default function InsightsBlock({
   }, [insights, local.data, max]);
 
   useEffect(() => {
-    if (insights || loadingProp !== undefined) return; // controlled externally
+    if (insights || loadingProp !== undefined) return;
     if (!projectId) return;
 
     let ignore = false;
@@ -52,62 +55,73 @@ export default function InsightsBlock({
     return () => { ignore = true; };
   }, [projectId, insights, loadingProp, fetchInsights]);
 
+  /* ─────────────────────────────────────────────────────────────────────────
+     LOADING STATE
+  ───────────────────────────────────────────────────────────────────────── */
   if (loading) {
     return (
-      <section className={`card rounded-2xl border border-border bg-surface p-4 ${className}`}>
+      <section className={`rounded-xl border border-white/[0.06] bg-surface-1 p-4 ${className}`}>
         <div className="flex items-center gap-2">
-          <div className="h-5 w-5 rounded bg-indigo-100 animate-pulse" />
-          <h3 className="text-sm font-semibold text-text">Insights</h3>
+          <div className="h-5 w-5 rounded bg-surface-2 animate-pulse" />
+          <h3 className="text-sm font-medium text-text-primary">Insights</h3>
         </div>
         <div className="mt-3 space-y-2">
-          {[0,1,2].map((i) => (
-            <div key={i} className="h-4 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-4 rounded bg-surface-2 animate-pulse" />
           ))}
         </div>
       </section>
     );
   }
 
+  /* ─────────────────────────────────────────────────────────────────────────
+     EMPTY STATE
+  ───────────────────────────────────────────────────────────────────────── */
   if (!data?.length) {
     return (
-      <section className={`card rounded-2xl border border-border bg-surface p-4 ${className} fade-in-soft`}>
+      <section className={`rounded-xl border border-white/[0.06] bg-surface-1 p-4 ${className}`}>
         <div className="flex items-center gap-2">
-          <span className="text-grad-emerald">
-            <Lightbulb className="w-5 h-5" />
-          </span>
-          <h3 className="text-sm font-semibold">
-            <GradientText variant="emerald">Insights</GradientText>
-          </h3>
+          <Lightbulb className="w-4 h-4 text-success" />
+          <h3 className="text-sm font-medium text-text-primary">Insights</h3>
         </div>
-        <p className="mt-2 text-sm text-muted">No insights yet. Keep working and we’ll summarize patterns here.</p>
+        <p className="mt-2 text-sm text-text-tertiary">
+          No insights yet. Keep working and we'll summarize patterns here.
+        </p>
       </section>
     );
   }
 
-  // Tiny helper to decorate some common patterns
+  /* ─────────────────────────────────────────────────────────────────────────
+     HELPER: Pick icon based on content
+  ───────────────────────────────────────────────────────────────────────── */
   const pickIcon = (text) => {
     const t = (text || "").toLowerCase();
-    if (t.includes("throughput") || t.includes("%") || t.includes("grew")) return <TrendingUp className="w-4 h-4" />;
-    if (t.includes("afternoon") || t.includes("morning") || t.includes("peak")) return <Clock className="w-4 h-4" />;
-    if (t.includes("streak")) return <Flame className="w-4 h-4" />;
-    return <Lightbulb className="w-4 h-4" />;
+    if (t.includes("throughput") || t.includes("%") || t.includes("grew")) {
+      return <TrendingUp className="w-3.5 h-3.5 text-success" />;
+    }
+    if (t.includes("afternoon") || t.includes("morning") || t.includes("peak")) {
+      return <Clock className="w-3.5 h-3.5 text-info" />;
+    }
+    if (t.includes("streak")) {
+      return <Flame className="w-3.5 h-3.5 text-warning" />;
+    }
+    return <Lightbulb className="w-3.5 h-3.5 text-brand" />;
   };
 
+  /* ─────────────────────────────────────────────────────────────────────────
+     DATA STATE
+  ───────────────────────────────────────────────────────────────────────── */
   return (
-    <section className={`card rounded-2xl border border-border bg-surface p-4 fade-in-soft ${className}`}>
+    <section className={`rounded-xl border border-white/[0.06] bg-surface-1 p-4 ${className}`}>
       <div className="flex items-center gap-2">
-        <span className="text-grad-emerald">
-          <Lightbulb className="w-5 h-5" />
-        </span>
-        <h3 className="text-sm font-semibold">
-          <GradientText variant="emerald">Insights</GradientText>
-        </h3>
+        <Lightbulb className="w-4 h-4 text-success" />
+        <h3 className="text-sm font-medium text-text-primary">Insights</h3>
       </div>
       <ul className="mt-3 space-y-2">
         {data.map((line, i) => (
           <li key={i} className="flex items-start gap-2">
-            <span className="mt-[3px] text-grad-purple">{pickIcon(line)}</span>
-            <span className="text-sm text-text">{line}</span>
+            <span className="mt-0.5 shrink-0">{pickIcon(line)}</span>
+            <span className="text-sm text-text-secondary">{line}</span>
           </li>
         ))}
       </ul>

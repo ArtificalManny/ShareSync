@@ -1,4 +1,11 @@
-/* global.css - FIXED: No dead space, grid layout removed */
+/* src/styles/global.css */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM v2.0 - PHASE 5: Quiet Confidence
+   ═══════════════════════════════════════════════════════════════════════════════
+   FIXED: Removed resting glows (box-shadow with colored rgba)
+   FIXED: Removed gradients → Solid colors using design tokens
+   FIXED: Hardcoded hex colors → CSS variables
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* Import shared layers */
 @import './tokens.css';
@@ -8,40 +15,23 @@
 @import './charts.css';
 @import './feed.css';
 
-/* ⭐ REMOVED GRID LAYOUT - This was causing dead space
-   The new layout-system.css handles all layout now
-   
-body {
-  height: 100vh;  ← This forced fixed height
-  display: grid;  ← Grid layout conflicts with flex layout
-  grid-template-areas: ...
-  grid-template-rows: auto 1fr auto;  ← Forces height
-  grid-template-columns: 200px 1fr 300px;
-}
-*/
-
 /* ============================================
-   NEW: Minimal body styles for layout-system.css
+   BODY - Minimal styles, layout-system.css handles layout
    ============================================ */
-
 body {
   margin: 0;
-  font-family: 'Roboto', sans-serif;
-  background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
-  color: #ffffff;
-  /* ⭐ NO height or grid - layout-system.css handles this */
+  font-family: var(--font-body, 'Inter', 'Roboto', sans-serif);
+  background-color: var(--surface-0, #0a0a0f);
+  color: var(--text-primary, #f8fafc);
 }
 
 /* ============================================
-   Legacy styles kept for backward compatibility
-   (These don't conflict with the new layout)
+   LEGACY HEADER (backward compatibility)
    ============================================ */
-
 header {
-  /* Kept for any legacy components */
-  background-color: #2a2a3e;
+  background-color: var(--surface-1, #0f1419);
   padding: 1rem;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -61,7 +51,7 @@ header .top-right .bell {
   font-size: 1.5rem;
   margin-right: 1rem;
   cursor: pointer;
-  color: #6A5ACD;
+  color: var(--brand, #8b5cf6);
 }
 
 header .top-right img {
@@ -70,14 +60,17 @@ header .top-right img {
   cursor: pointer;
 }
 
+/* ============================================
+   LEGACY NAV & SIDEBAR
+   ============================================ */
 nav {
-  background-color: #3a3a50;
+  background-color: var(--surface-1, #0f1419);
   padding: 1rem;
-  display: none; /* Hidden by default */
+  display: none;
 }
 
 sidebar {
-  background-color: #3a3a50;
+  background-color: var(--surface-1, #0f1419);
   padding: 1rem;
 }
 
@@ -95,41 +88,40 @@ sidebar .profile-section img {
   margin-bottom: 0.5rem;
 }
 
-sidebar ul { 
-  list-style: none; 
-  padding: 0; 
+sidebar ul {
+  list-style: none;
+  padding: 0;
 }
 
-sidebar ul li { 
-  margin: 0.5rem 0; 
+sidebar ul li {
+  margin: 0.5rem 0;
 }
 
-sidebar ul li a { 
-  color: #6A5ACD; 
-  text-decoration: none; 
+sidebar ul li a {
+  color: var(--brand, #8b5cf6);
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-sidebar ul li a:hover { 
-  text-decoration: underline; 
+sidebar ul li a:hover {
+  color: var(--text-primary, #f8fafc);
 }
 
-/* ⭐ MAIN element - No forced positioning
-   layout-system.css handles this now */
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
 main {
   padding: 2rem;
-  /* display: flex; ← Removed - conflicts with layout-system */
-  /* justify-content: center; ← Removed */
-  /* align-items: center; ← Removed */
 }
 
-/* Full-screen modal styles kept */
+/* Full-screen modal styles */
 main.full-screen {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(42, 42, 62, 0.95);
+  background: rgba(10, 10, 15, 0.95);
   z-index: 1000;
   padding: 0;
   overflow-y: auto;
@@ -139,26 +131,27 @@ main.full-screen form {
   max-width: 500px;
   width: 90%;
   margin: 2rem auto;
-  background: rgba(42, 42, 62, 0.8);
+  background: var(--surface-1, #0f1419);
   padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(106, 90, 205, 0.5);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  /* No glow - quiet confidence */
   min-height: 0;
   overflow-y: auto;
 }
 
 main.full-screen h2 {
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  font-weight: bold;
-  font-size: 2.5rem;
-  color: #6A5ACD;
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  font-weight: 600;
+  font-size: 2rem;
+  color: var(--text-primary, #f8fafc);
   text-align: center;
   margin-bottom: 0.5rem;
 }
 
 main.full-screen .subtitle {
-  font-size: 1.2rem;
-  color: #b0b0ff;
+  font-size: 1rem;
+  color: var(--text-secondary, #94a3b8);
   text-align: center;
   margin: 0 1rem 1rem 1rem;
   white-space: normal;
@@ -167,9 +160,10 @@ main.full-screen .subtitle {
 }
 
 main.full-screen .error-message {
-  color: #ff4040;
+  color: var(--danger, #ef4444);
   text-align: center;
   margin-bottom: 1rem;
+  font-size: 0.875rem;
 }
 
 main.full-screen .name-container,
@@ -179,30 +173,33 @@ main.full-screen .birthday-container {
 }
 
 main.full-screen .name-container input,
-main.full-screen .birthday-container select { 
-  flex: 1; 
+main.full-screen .birthday-container select {
+  flex: 1;
 }
 
 @media (max-width: 600px) {
-  main.full-screen form { 
-    width: 85%; 
-    padding: 1rem; 
+  main.full-screen form {
+    width: 85%;
+    padding: 1rem;
   }
-  
-  main.full-screen h2 { 
-    font-size: 2rem; 
+
+  main.full-screen h2 {
+    font-size: 1.5rem;
   }
-  
-  main.full-screen .subtitle { 
-    font-size: 1rem; 
-    margin: 0 0.5rem 1rem 0.5rem; 
+
+  main.full-screen .subtitle {
+    font-size: 0.875rem;
+    margin: 0 0.5rem 1rem 0.5rem;
   }
 }
 
+/* ============================================
+   FOOTER
+   ============================================ */
 footer {
-  background-color: #2a2a3e;
+  background-color: var(--surface-1, #0f1419);
   padding: 1rem;
   text-align: center;
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
-  color: #b0b0ff;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-tertiary, #64748b);
 }

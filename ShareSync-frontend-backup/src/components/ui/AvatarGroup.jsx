@@ -1,21 +1,16 @@
 // src/components/ui/AvatarGroup.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - PHASE 5: Quiet Confidence
+// ═══════════════════════════════════════════════════════════════════════════════
+// Presence-aware AvatarGroup (stacked avatars with optional +N overflow)
+// FIXED: animate-pulse on online indicator → static dot (quiet confidence)
+// FIXED: Hardcoded slate/emerald colors → Design tokens
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { useMemo } from "react";
 import Avatar from "./Avatar.jsx";
 import "../../styles/presence.css";
 
-/**
- * Presence-aware AvatarGroup (stacked avatars with optional +N overflow)
- *
- * Props:
- *  - members: Array<{ id|userId, name, username?, avatar|avatarUrl|profilePicture, role? }>
- *  - isOnline?: (id: string) => boolean   // from usePresence(roomId)
- *  - max?: number            // default 6
- *  - size?: number           // px, default 28
- *  - overlap?: boolean       // stacked if true, spaced if false
- *  - showOverflow?: boolean  // render +N bubble if overflow
- *  - className?: string
- *  - showPresence?: boolean  // render dot overlay, default true
- */
 export default function AvatarGroup({
   members = [],
   isOnline,
@@ -59,13 +54,13 @@ export default function AvatarGroup({
               name={name}
               src={src}
               size={size}
-              className="ring-2 ring-white dark:ring-slate-900"
+              className="ring-2 ring-white dark:ring-surface-0"
             />
             {showPresence && (
               <span
                 className={[
-                  "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 transition-all duration-300",
-                  online ? "bg-emerald-400 ring-2 ring-emerald-400/50 animate-pulse" : "bg-slate-400",
+                  "absolute bottom-0 right-0 w-2 h-2 rounded-full border-2 border-white dark:border-surface-0 transition-colors duration-300",
+                  online ? "bg-success" : "bg-text-tertiary",
                 ].join(" ")}
                 aria-label={online ? "Online" : "Away"}
                 aria-hidden={!online}
@@ -77,7 +72,7 @@ export default function AvatarGroup({
 
       {showOverflow && overflow > 0 && (
         <div
-          className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-800/50 text-white text-xs"
+          className="inline-grid place-items-center rounded-full ring-2 ring-white dark:ring-surface-0 bg-surface-2 text-text-secondary text-xs"
           style={{ ...style, fontSize: Math.max(10, Math.round(size * 0.42)) }}
           title={`${overflow} more`}
           aria-label={`${overflow} more`}
