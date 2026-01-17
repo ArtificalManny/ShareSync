@@ -26,6 +26,9 @@ import { FlowStateProvider } from './contexts/FlowStateContext';
 // ⭐ PHASE 6: Context Preservation Provider
 import { ContextPreservationProvider } from './contexts/ContextPreservationContext';
 
+// ⭐ PHASE 6: Momentum Visualization Provider
+import { MomentumProvider } from './contexts/MomentumContext';
+
 // ⭐ PWA Components
 import InstallPrompt from "./components/pwa/InstallPrompt";
 
@@ -126,6 +129,9 @@ const ContextIndicator = lazy(() => import("./components/context/ContextIndicato
 // ⭐ PHASE 6: Flow State Indicator
 const FlowIndicator = lazy(() => import("./components/flow/FlowIndicator").then(m => ({ default: m.default })));
 
+// ⭐ PHASE 6: Momentum Aura (subtle background)
+const MomentumAura = lazy(() => import("./components/momentum/MomentumAura").then(m => ({ default: m.default })));
+
 // ⭐ Lazy load context providers
 const UserProvider = lazy(() => import("./context/UserContext").then(m => ({ default: m.default })));
 const SprintProvider = lazy(() => import("./context/SprintContext").then(m => ({ default: m.SprintProvider })));
@@ -223,6 +229,12 @@ function AuthenticatedApp({ children }) {
               <FlowStateProvider>
                 {/* ⭐ PHASE 6: Context Preservation Provider */}
                 <ContextPreservationProvider>
+                  {/* ⭐ PHASE 6: Momentum Visualization Provider */}
+                  <MomentumProvider>
+                    {/* ⭐ PHASE 6: Momentum Aura (subtle background overlay) */}
+                    <Suspense fallback={null}>
+                      <MomentumAura />
+                    </Suspense>
                 {FOCUS_DOCK_V1 ? (
                   <FocusProvider>
                     {/* ⭐ DAY 7: Context tracking for authenticated users */}
@@ -260,6 +272,7 @@ function AuthenticatedApp({ children }) {
                     {children}
                   </>
                 )}
+                  </MomentumProvider>
                 </ContextPreservationProvider>
               </FlowStateProvider>
             </CommandPaletteProvider>
