@@ -23,6 +23,9 @@ import { useContextTracking } from './hooks/useContextTracking';
 // ⭐ PHASE 6: Flow State Provider
 import { FlowStateProvider } from './contexts/FlowStateContext';
 
+// ⭐ PHASE 6: Context Preservation Provider
+import { ContextPreservationProvider } from './contexts/ContextPreservationContext';
+
 // ⭐ PWA Components
 import InstallPrompt from "./components/pwa/InstallPrompt";
 
@@ -218,6 +221,8 @@ function AuthenticatedApp({ children }) {
             <CommandPaletteProvider>
               {/* ⭐ PHASE 6: Flow State Provider wraps authenticated content */}
               <FlowStateProvider>
+                {/* ⭐ PHASE 6: Context Preservation Provider */}
+                <ContextPreservationProvider>
                 {FOCUS_DOCK_V1 ? (
                   <FocusProvider>
                     {/* ⭐ DAY 7: Context tracking for authenticated users */}
@@ -255,6 +260,7 @@ function AuthenticatedApp({ children }) {
                     {children}
                   </>
                 )}
+                </ContextPreservationProvider>
               </FlowStateProvider>
             </CommandPaletteProvider>
           </SprintProvider>
