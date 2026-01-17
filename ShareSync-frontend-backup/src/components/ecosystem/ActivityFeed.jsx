@@ -1,4 +1,11 @@
-import React, { useState, useEffect } from 'react';
+// src/components/ecosystem/ActivityFeed.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - PHASE 5: Quiet Confidence
+// ═══════════════════════════════════════════════════════════════════════════════
+// FIXED: Hardcoded slate/purple colors → Design tokens
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React, { useState } from 'react';
 import { 
   Rocket, CheckCircle, FileText, DollarSign, Users, 
   MessageCircle, TrendingUp, Clock, RefreshCw, Sparkles
@@ -6,10 +13,21 @@ import {
 import { useIsMobile } from '../../hooks/useMobile';
 import TrustBadge from '../trust/TrustBadge';
 
+/* ─────────────────────────────────────────────────────────────────────────
+   COLOR CONFIG - Tailwind-safe explicit classes
+───────────────────────────────────────────────────────────────────────── */
+const activityColors = {
+  purple: 'text-brand bg-brand/10',
+  emerald: 'text-success bg-success/10',
+  blue: 'text-info bg-info/10',
+  fuchsia: 'text-brand bg-brand/10',
+  orange: 'text-warning bg-warning/10',
+};
+
 const ActivityFeed = () => {
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
-  const [activities, setActivities] = useState([
+  const [activities] = useState([
     {
       id: 1,
       type: 'ship',
@@ -80,33 +98,19 @@ const ActivityFeed = () => {
 
   const handleRefresh = async () => {
     setLoading(true);
-    // TODO: Fetch real activity data
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-  };
-
-  const getActivityColor = (color) => {
-    const colors = {
-      purple: 'text-purple-400 bg-purple-500/20',
-      emerald: 'text-emerald-400 bg-emerald-500/20',
-      blue: 'text-blue-400 bg-blue-500/20',
-      fuchsia: 'text-fuchsia-400 bg-fuchsia-500/20',
-      orange: 'text-orange-400 bg-orange-500/20',
-    };
-    return colors[color] || colors.purple;
+    setTimeout(() => setLoading(false), 1000);
   };
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6">
+    <div className="bg-surface-1 border border-white/[0.06] rounded-xl p-4">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl flex items-center justify-center">
-            <Clock className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 bg-brand/10 rounded-lg flex items-center justify-center">
+            <Clock className="w-4 h-4 text-brand" />
           </div>
           <div>
-            <h3 className="font-bold text-white">Activity Feed</h3>
-            {/* ⭐ WEEK 7 DAY 3-4: Trust Badge */}
+            <h3 className="font-medium text-text-primary text-sm">Activity Feed</h3>
             <TrustBadge type="private" size="xs" inline />
           </div>
         </div>
@@ -114,44 +118,44 @@ const ActivityFeed = () => {
         <button
           onClick={handleRefresh}
           disabled={loading}
-          className="p-2 hover:bg-slate-700 rounded-lg transition-all disabled:opacity-50"
+          className="p-2 hover:bg-surface-2 rounded-lg transition-colors disabled:opacity-50"
         >
-          <RefreshCw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 text-text-tertiary ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
       {/* Activity List */}
-      <div className="space-y-3" style={{ maxHeight: isMobile ? '400px' : '600px', overflowY: 'auto' }}>
+      <div className="space-y-2" style={{ maxHeight: isMobile ? '400px' : '600px', overflowY: 'auto' }}>
         {activities.map((activity) => {
           const Icon = activity.icon;
+          const colorClass = activityColors[activity.color] || activityColors.purple;
+          
           return (
             <div
               key={activity.id}
-              className="bg-slate-900/50 border border-slate-700 hover:border-purple-500/50 rounded-xl p-4 transition-all cursor-pointer group"
+              className="group flex items-start gap-3 p-3 rounded-lg bg-surface-0 border border-white/[0.04] hover:bg-surface-2 hover:border-white/[0.08] transition-all cursor-pointer"
             >
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.color)}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${colorClass}`}>
+                <Icon className="w-4 h-4" />
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-text-primary">
+                  {activity.user && (
+                    <span className="font-medium text-brand">{activity.user} </span>
+                  )}
+                  <span className="text-text-tertiary">{activity.action} </span>
+                  <span className="font-medium">{activity.content}</span>
+                </p>
                 
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white mb-1">
-                    {activity.user && (
-                      <span className="font-semibold text-purple-400">{activity.user} </span>
-                    )}
-                    <span className="text-slate-400">{activity.action} </span>
-                    <span className="font-medium">{activity.content}</span>
-                  </p>
-                  
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    {activity.project && (
-                      <>
-                        <span>{activity.project}</span>
-                        <span>·</span>
-                      </>
-                    )}
-                    <span>{activity.timestamp}</span>
-                  </div>
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-text-tertiary">
+                  {activity.project && (
+                    <>
+                      <span>{activity.project}</span>
+                      <span className="opacity-50">·</span>
+                    </>
+                  )}
+                  <span>{activity.timestamp}</span>
                 </div>
               </div>
             </div>
@@ -160,7 +164,7 @@ const ActivityFeed = () => {
       </div>
 
       {/* Load More */}
-      <button className="w-full mt-4 py-3 bg-slate-900/50 hover:bg-slate-900/70 border border-slate-700 hover:border-purple-500/50 rounded-xl font-semibold text-sm text-slate-400 hover:text-purple-400 transition-all">
+      <button className="w-full mt-3 py-2.5 bg-surface-0 hover:bg-surface-2 border border-white/[0.06] hover:border-white/[0.1] rounded-lg text-xs font-medium text-text-tertiary hover:text-text-secondary transition-all">
         Load More Activity
       </button>
     </div>

@@ -1,12 +1,62 @@
+// src/components/ecosystem/Achievements.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - PHASE 5: Quiet Confidence
+// ═══════════════════════════════════════════════════════════════════════════════
+// FIXED: Hardcoded slate/purple colors → Design tokens
+// FIXED: Dynamic gradient classes → Explicit config objects
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { useState } from 'react';
 import { Trophy, Star, Zap, Shield, Flame, Target, Crown, Sparkles } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useMobile';
 
+/* ─────────────────────────────────────────────────────────────────────────
+   COLOR CONFIG - Tailwind-safe explicit classes
+───────────────────────────────────────────────────────────────────────── */
+const colorStyles = {
+  orange: {
+    bg: 'bg-warning/10',
+    icon: 'text-warning',
+    progress: 'bg-warning',
+  },
+  yellow: {
+    bg: 'bg-warning/10',
+    icon: 'text-warning',
+    progress: 'bg-warning',
+  },
+  purple: {
+    bg: 'bg-brand/10',
+    icon: 'text-brand',
+    progress: 'bg-brand',
+  },
+  blue: {
+    bg: 'bg-info/10',
+    icon: 'text-info',
+    progress: 'bg-info',
+  },
+  green: {
+    bg: 'bg-success/10',
+    icon: 'text-success',
+    progress: 'bg-success',
+  },
+  red: {
+    bg: 'bg-danger/10',
+    icon: 'text-danger',
+    progress: 'bg-danger',
+  },
+};
+
+const rarityStyles = {
+  legendary: 'border-warning',
+  epic: 'border-brand',
+  rare: 'border-info',
+  common: 'border-white/[0.1]',
+};
+
 const Achievements = () => {
   const isMobile = useIsMobile();
 
-  // Mock data - will be replaced with real API
-  const [achievements, setAchievements] = useState({
+  const [achievements] = useState({
     recent: [
       {
         id: 1,
@@ -30,122 +80,50 @@ const Achievements = () => {
       }
     ],
     milestones: [
-      {
-        id: 1,
-        name: 'Level 5',
-        current: 1850,
-        target: 2000,
-        icon: Star,
-        color: 'purple'
-      },
-      {
-        id: 2,
-        name: '30-Day Streak',
-        current: 7,
-        target: 30,
-        icon: Flame,
-        color: 'orange'
-      },
-      {
-        id: 3,
-        name: '100 Ships',
-        current: 42,
-        target: 100,
-        icon: Trophy,
-        color: 'yellow'
-      }
+      { id: 1, name: 'Level 5', current: 1850, target: 2000, icon: Star, color: 'purple' },
+      { id: 2, name: '30-Day Streak', current: 7, target: 30, icon: Flame, color: 'orange' },
+      { id: 3, name: '100 Ships', current: 42, target: 100, icon: Trophy, color: 'yellow' }
     ],
     badges: [
-      { icon: Flame, color: 'text-orange-400', label: '7d', unlocked: true },
-      { icon: Zap, color: 'text-yellow-400', label: 'Fast', unlocked: true },
-      { icon: Shield, color: 'text-blue-400', label: 'Protected', unlocked: true },
-      { icon: Trophy, color: 'text-slate-600', label: '100d', unlocked: false },
-      { icon: Crown, color: 'text-slate-600', label: 'Elite', unlocked: false },
-      { icon: Star, color: 'text-slate-600', label: 'Master', unlocked: false },
+      { icon: Flame, color: 'orange', label: '7d', unlocked: true },
+      { icon: Zap, color: 'yellow', label: 'Fast', unlocked: true },
+      { icon: Shield, color: 'blue', label: 'Protected', unlocked: true },
+      { icon: Trophy, color: 'gray', label: '100d', unlocked: false },
+      { icon: Crown, color: 'gray', label: 'Elite', unlocked: false },
+      { icon: Star, color: 'gray', label: 'Master', unlocked: false },
     ]
   });
 
-  const getRarityColor = (rarity) => {
-    switch(rarity) {
-      case 'legendary': return 'from-yellow-500 to-orange-500';
-      case 'epic': return 'from-purple-500 to-pink-500';
-      case 'rare': return 'from-blue-500 to-cyan-500';
-      default: return 'from-slate-500 to-slate-600';
-    }
-  };
+  const getStyles = (color) => colorStyles[color] || colorStyles.purple;
+  const getRarityBorder = (rarity) => rarityStyles[rarity] || rarityStyles.common;
 
-  const getAchievementBgClass = (color) => {
-    const colorMap = {
-      orange: 'bg-orange-500/20',
-      yellow: 'bg-yellow-500/20',
-      purple: 'bg-purple-500/20',
-      blue: 'bg-blue-500/20',
-      green: 'bg-green-500/20',
-      red: 'bg-red-500/20'
-    };
-    return colorMap[color] || 'bg-slate-500/20';
-  };
-
-  const getAchievementIconClass = (color) => {
-    const colorMap = {
-      orange: 'text-orange-400',
-      yellow: 'text-yellow-400',
-      purple: 'text-purple-400',
-      blue: 'text-blue-400',
-      green: 'text-green-400',
-      red: 'text-red-400'
-    };
-    return colorMap[color] || 'text-slate-400';
-  };
-
-  const getMilestoneIconClass = (color) => {
-    const colorMap = {
-      orange: 'text-orange-400',
-      yellow: 'text-yellow-400',
-      purple: 'text-purple-400',
-      blue: 'text-blue-400',
-      green: 'text-green-400',
-      red: 'text-red-400'
-    };
-    return colorMap[color] || 'text-slate-400';
-  };
-
-  const getMilestoneProgressClass = (color) => {
-    const colorMap = {
-      orange: 'from-orange-600 to-orange-400',
-      yellow: 'from-yellow-600 to-yellow-400',
-      purple: 'from-purple-600 to-purple-400',
-      blue: 'from-blue-600 to-blue-400',
-      green: 'from-green-600 to-green-400',
-      red: 'from-red-600 to-red-400'
-    };
-    return colorMap[color] || 'from-slate-600 to-slate-400';
-  };
-
+  /* ─────────────────────────────────────────────────────────────────────────
+     MOBILE VERSION
+  ───────────────────────────────────────────────────────────────────────── */
   if (isMobile) {
-    // Mobile compact view
     return (
-      <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4">
+      <div className="bg-surface-1 border border-white/[0.06] rounded-xl p-4">
         <div className="flex items-center gap-2 mb-4">
-          <Trophy className="w-5 h-5 text-yellow-400" />
-          <h3 className="font-bold text-white">Achievements</h3>
+          <Trophy className="w-4 h-4 text-warning" />
+          <h3 className="font-medium text-text-primary text-sm">Achievements</h3>
         </div>
 
         {/* Recent achievement */}
         {achievements.recent.length > 0 && (() => {
           const achievement = achievements.recent[0];
-          const IconComponent = achievement.icon; // ⭐ FIX: Extract component first
+          const IconComponent = achievement.icon;
+          const styles = getStyles(achievement.color);
           
           return (
-            <div className={`bg-gradient-to-r ${getRarityColor(achievement.rarity)} p-0.5 rounded-xl mb-3`}>
-              <div className="bg-slate-900 rounded-xl p-3">
+            <div className={`border-l-2 ${getRarityBorder(achievement.rarity)} rounded-xl mb-3 bg-surface-0`}>
+              <div className="p-3">
                 <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 ${getAchievementBgClass(achievement.color)} rounded-xl flex items-center justify-center`}>
-                    <IconComponent className={`w-6 h-6 ${getAchievementIconClass(achievement.color)}`} />
+                  <div className={`w-10 h-10 ${styles.bg} rounded-lg flex items-center justify-center`}>
+                    <IconComponent className={`w-5 h-5 ${styles.icon}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white text-sm">{achievement.name}</p>
-                    <p className="text-xs text-slate-400">+{achievement.xp} XP</p>
+                    <p className="font-medium text-text-primary text-sm">{achievement.name}</p>
+                    <p className="text-xs text-text-tertiary">+{achievement.xp} XP</p>
                   </div>
                 </div>
               </div>
@@ -156,15 +134,17 @@ const Achievements = () => {
         {/* Badges */}
         <div className="flex gap-2 justify-center">
           {achievements.badges.slice(0, 6).map((badge, idx) => {
-            const BadgeIcon = badge.icon; // ⭐ FIX: Extract component first
+            const BadgeIcon = badge.icon;
+            const styles = badge.unlocked ? getStyles(badge.color) : null;
+            
             return (
               <div
                 key={idx}
-                className={`w-10 h-10 rounded-lg ${
-                  badge.unlocked ? 'bg-slate-700' : 'bg-slate-800/50'
-                } flex items-center justify-center`}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                  badge.unlocked ? 'bg-surface-2' : 'bg-surface-0 opacity-40'
+                }`}
               >
-                <BadgeIcon className={`w-5 h-5 ${badge.color}`} />
+                <BadgeIcon className={`w-4 h-4 ${badge.unlocked ? styles?.icon : 'text-text-tertiary'}`} />
               </div>
             );
           })}
@@ -173,48 +153,52 @@ const Achievements = () => {
     );
   }
 
-  // Desktop full view
+  /* ─────────────────────────────────────────────────────────────────────────
+     DESKTOP VERSION
+  ───────────────────────────────────────────────────────────────────────── */
   return (
-    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-xl flex items-center justify-center">
-          <Trophy className="w-5 h-5 text-white" />
+    <div className="bg-surface-1 border border-white/[0.06] rounded-xl p-5">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-9 h-9 bg-warning/10 rounded-lg flex items-center justify-center">
+          <Trophy className="w-4 h-4 text-warning" />
         </div>
         <div>
-          <h3 className="font-bold text-white">Your Achievements</h3>
-          <p className="text-xs text-slate-400">Recent wins & milestones</p>
+          <h3 className="font-medium text-text-primary text-sm">Your Achievements</h3>
+          <p className="text-xs text-text-tertiary">Recent wins & milestones</p>
         </div>
       </div>
 
       {/* Recent achievements */}
-      <div className="space-y-3 mb-6">
-        <h4 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-purple-400" />
+      <div className="space-y-2 mb-5">
+        <h4 className="text-xs font-medium text-text-secondary flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-brand" />
           Recently Earned
         </h4>
         {achievements.recent.map(achievement => {
-          const IconComponent = achievement.icon; // ⭐ FIX: Extract component first
+          const IconComponent = achievement.icon;
+          const styles = getStyles(achievement.color);
           
           return (
             <div
               key={achievement.id}
-              className={`bg-gradient-to-r ${getRarityColor(achievement.rarity)} p-0.5 rounded-xl`}
+              className={`border-l-2 ${getRarityBorder(achievement.rarity)} rounded-xl bg-surface-0`}
             >
-              <div className="bg-slate-900 rounded-xl p-4">
+              <div className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className={`w-12 h-12 ${getAchievementBgClass(achievement.color)} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                    <IconComponent className={`w-6 h-6 ${getAchievementIconClass(achievement.color)}`} />
+                  <div className={`w-10 h-10 ${styles.bg} rounded-lg flex items-center justify-center shrink-0`}>
+                    <IconComponent className={`w-5 h-5 ${styles.icon}`} />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <h5 className="font-semibold text-white">{achievement.name}</h5>
-                      <span className="text-xs text-slate-400">{achievement.date}</span>
+                      <h5 className="font-medium text-text-primary text-sm">{achievement.name}</h5>
+                      <span className="text-xs text-text-tertiary">{achievement.date}</span>
                     </div>
-                    <p className="text-sm text-slate-400 mb-2">{achievement.description}</p>
-                    <div className="inline-flex items-center gap-1 px-2 py-1 bg-purple-500/20 rounded-full">
-                      <Zap className="w-3 h-3 text-purple-400" />
-                      <span className="text-xs font-semibold text-purple-300">+{achievement.xp} XP</span>
-                    </div>
+                    <p className="text-xs text-text-secondary mb-2">{achievement.description}</p>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand/10 rounded text-xs font-medium text-brand">
+                      <Zap className="w-3 h-3" />
+                      +{achievement.xp} XP
+                    </span>
                   </div>
                 </div>
               </div>
@@ -224,30 +208,31 @@ const Achievements = () => {
       </div>
 
       {/* Milestones in progress */}
-      <div className="space-y-3 mb-6">
-        <h4 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-          <Target className="w-4 h-4 text-blue-400" />
+      <div className="space-y-2 mb-5">
+        <h4 className="text-xs font-medium text-text-secondary flex items-center gap-2">
+          <Target className="w-3.5 h-3.5 text-info" />
           Next Milestones
         </h4>
         {achievements.milestones.map(milestone => {
-          const IconComponent = milestone.icon; // ⭐ FIX: Extract component first
+          const IconComponent = milestone.icon;
+          const styles = getStyles(milestone.color);
           const progress = (milestone.current / milestone.target) * 100;
           
           return (
-            <div key={milestone.id} className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
-              <div className="flex items-center gap-3 mb-2">
-                <IconComponent className={`w-5 h-5 ${getMilestoneIconClass(milestone.color)}`} />
-                <span className="font-semibold text-white">{milestone.name}</span>
+            <div key={milestone.id} className="bg-surface-0 rounded-xl p-3 border border-white/[0.04]">
+              <div className="flex items-center gap-2.5 mb-2">
+                <IconComponent className={`w-4 h-4 ${styles.icon}`} />
+                <span className="font-medium text-text-primary text-sm">{milestone.name}</span>
               </div>
               
               <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-slate-400">
+                <div className="flex items-center justify-between text-xs text-text-tertiary">
                   <span>{milestone.current} / {milestone.target}</span>
-                  <span className="font-semibold text-white">{Math.round(progress)}%</span>
+                  <span className="font-medium text-text-primary">{Math.round(progress)}%</span>
                 </div>
-                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-surface-2 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full bg-gradient-to-r ${getMilestoneProgressClass(milestone.color)} transition-all duration-500`}
+                    className={`h-full ${styles.progress} rounded-full transition-all duration-500`}
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -259,27 +244,28 @@ const Achievements = () => {
 
       {/* Badge collection */}
       <div>
-        <h4 className="text-sm font-semibold text-slate-300 mb-3">Badge Collection</h4>
-        <div className="grid grid-cols-6 gap-3">
+        <h4 className="text-xs font-medium text-text-secondary mb-2">Badge Collection</h4>
+        <div className="grid grid-cols-6 gap-2">
           {achievements.badges.map((badge, idx) => {
-            const BadgeIcon = badge.icon; // ⭐ FIX: Extract component first
+            const BadgeIcon = badge.icon;
+            const styles = badge.unlocked ? getStyles(badge.color) : null;
             
             return (
               <div
                 key={idx}
                 className={`
-                  aspect-square rounded-xl flex flex-col items-center justify-center gap-1 
-                  transition-all cursor-pointer
+                  aspect-square rounded-lg flex flex-col items-center justify-center gap-0.5 
+                  transition-all
                   ${badge.unlocked 
-                    ? 'bg-slate-700 hover:bg-slate-600 hover:scale-110' 
-                    : 'bg-slate-800/30 opacity-50'
+                    ? 'bg-surface-2 hover:bg-surface-3 cursor-pointer' 
+                    : 'bg-surface-0 opacity-40'
                   }
                 `}
                 title={badge.unlocked ? `${badge.label} Badge` : 'Locked'}
               >
-                <BadgeIcon className={`w-6 h-6 ${badge.color}`} />
+                <BadgeIcon className={`w-5 h-5 ${badge.unlocked ? styles?.icon : 'text-text-tertiary'}`} />
                 {badge.unlocked && (
-                  <span className="text-xs text-slate-400">{badge.label}</span>
+                  <span className="text-[10px] text-text-tertiary">{badge.label}</span>
                 )}
               </div>
             );
