@@ -1,6 +1,6 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 8: Micro-Interactions - Animated Ship Counter
+// PHASE 8.3: XP Ring Micro-Interactions
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useRef } from "react";
@@ -19,13 +19,21 @@ import {
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
 import { useFlowState } from '../contexts/FlowStateContext';
+import useAnimatedNumber from '../hooks/useAnimatedNumber';
 
 const LS_KEY = "ss.sidebar.collapsed";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS RING - With pulse on change
+   PROGRESS RING - With pulse, count-up, and level-up celebration
 ───────────────────────────────────────────────────────────────────────── */
-function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
+function ProgressRing({ 
+  progress = 0.75, 
+  level = 1,
+  streak = 7, 
+  collapsed = false,
+  currentXP,
+  maxXP,
+}) {
   const size = collapsed ? 40 : 56;
   const strokeWidth = collapsed ? 3 : 4;
   const radius = (size - strokeWidth) / 2;
@@ -35,34 +43,97 @@ function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
   const showStreak = streak >= 3;
   const isImpressiveStreak = streak >= 7;
   
+  // Track previous values for animation triggers
   const prevProgressRef = useRef(progress);
+  const prevLevelRef = useRef(level);
+  
   const [isPulsing, setIsPulsing] = useState(false);
+  const [isLevelingUp, setIsLevelingUp] = useState(false);
+  const [pulseIntensity, setPulseIntensity] = useState('normal');
+  
+  // Animated percentage display
+  const { value: displayPercent, isAnimating } = useAnimatedNumber(
+    Math.round(progress * 100),
+    { duration: 500, enabled: !collapsed }
+  );
   
   // Detect progress increase and pulse
   useEffect(() => {
-    if (progress > prevProgressRef.current) {
+    const prevProgress = prevProgressRef.current;
+    const currentProgress = progress;
+    
+    // Check for threshold crossings
+    const THRESHOLDS = [0.25, 0.5, 0.75, 1.0];
+    const crossedThreshold = THRESHOLDS.some(t => 
+      prevProgress < t && currentProgress >= t
+    );
+    
+    if (currentProgress > prevProgress) {
       setIsPulsing(true);
-      const timer = setTimeout(() => setIsPulsing(false), 600);
+      setPulseIntensity(crossedThreshold ? 'strong' : 'normal');
+      
+      const timer = setTimeout(() => {
+        setIsPulsing(false);
+        setPulseIntensity('normal');
+      }, 600);
+      
       return () => clearTimeout(timer);
     }
-    prevProgressRef.current = progress;
+    
+    prevProgressRef.current = currentProgress;
   }, [progress]);
+  
+  // Detect level-up
+  useEffect(() => {
+    if (level > prevLevelRef.current) {
+      setIsLevelingUp(true);
+      const timer = setTimeout(() => setIsLevelingUp(false), 1200);
+      return () => clearTimeout(timer);
+    }
+    prevLevelRef.current = level;
+  }, [level]);
 
   return (
     <div className="flex flex-col items-center py-6">
-      <div className={`relative ${isPulsing ? 'animate-bounce-subtle' : ''}`}>
+      <div className={`
+        relative 
+        ${isPulsing ? 'animate-bounce-subtle' : ''}
+        ${isLevelingUp ? 'scale-110' : 'scale-100'}
+        transition-transform duration-300
+      `}>
         {/* Pulse ring behind */}
         {isPulsing && (
           <div 
-            className="absolute inset-0 rounded-full ring-pulse"
+            className={`
+              absolute inset-0 rounded-full
+              ${pulseIntensity === 'strong' ? 'ring-pulse-strong' : 'ring-pulse'}
+            `}
+            style={{ width: size, height: size }}
+          />
+        )}
+        
+        {/* Level-up flash */}
+        {isLevelingUp && (
+          <div 
+            className="absolute inset-0 rounded-full level-up-flash"
             style={{ 
               width: size, 
               height: size,
+              background: 'radial-gradient(circle, var(--brand-400) 0%, transparent 70%)',
             }}
           />
         )}
         
-        <svg width={size} height={size} className="transform -rotate-90">
+        <svg 
+          width={size} 
+          height={size} 
+          className={`
+            transform -rotate-90
+            ${isPulsing ? 'scale-105' : 'scale-100'}
+            transition-transform duration-200
+          `}
+        >
+          {/* Track */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -72,6 +143,8 @@ function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
             strokeWidth={strokeWidth}
             className="text-surface-2"
           />
+          
+          {/* Progress arc */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -82,22 +155,41 @@ function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
-            className={`text-brand transition-all duration-700 ease-out ${isPulsing ? 'text-brand-400' : ''}`}
+            className={`
+              text-brand transition-all duration-700 ease-out
+              ${isPulsing ? 'text-brand-400' : ''}
+              ${isLevelingUp ? 'text-success' : ''}
+            `}
           />
         </svg>
         
+        {/* Center content */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={`
-            font-semibold text-text-primary tabular-nums
-            ${collapsed ? 'text-xs' : 'text-lg'}
-            ${isPulsing ? 'scale-110' : 'scale-100'}
-            transition-transform duration-200
-          `}>
-            {Math.round(progress * 100)}
-          </span>
+          {isLevelingUp ? (
+            // Level-up display
+            <div className="text-center level-up-number">
+              <div className="text-[8px] text-brand-300 uppercase tracking-wider">
+                Level Up!
+              </div>
+              <span className="text-lg font-bold text-brand">
+                {level}
+              </span>
+            </div>
+          ) : (
+            // Normal display
+            <span className={`
+              font-semibold text-text-primary tabular-nums
+              ${collapsed ? 'text-xs' : 'text-lg'}
+              ${isPulsing || isAnimating ? 'scale-110 text-brand' : 'scale-100'}
+              transition-all duration-200
+            `}>
+              {displayPercent}
+            </span>
+          )}
         </div>
       </div>
 
+      {/* Streak badge */}
       {!collapsed && showStreak && (
         <div className={`
           mt-3 px-2 py-1 rounded-full text-[10px] font-medium
@@ -111,6 +203,48 @@ function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
           <span>{streak}d</span>
         </div>
       )}
+      
+      {/* Inline keyframes */}
+      <style>{`
+        @keyframes ring-pulse-strong {
+          0% {
+            box-shadow: 0 0 0 0 var(--brand-400);
+            opacity: 0.7;
+          }
+          50% {
+            box-shadow: 0 0 16px 4px var(--brand-500);
+            opacity: 0.5;
+          }
+          100% {
+            box-shadow: 0 0 0 16px transparent;
+            opacity: 0;
+          }
+        }
+        
+        .ring-pulse-strong {
+          animation: ring-pulse-strong 0.8s ease-out forwards;
+        }
+        
+        @keyframes level-up-flash {
+          0% { transform: scale(0.8); opacity: 0; }
+          30% { transform: scale(1); opacity: 0.8; }
+          100% { transform: scale(1.5); opacity: 0; }
+        }
+        
+        .level-up-flash {
+          animation: level-up-flash 0.6s ease-out forwards;
+        }
+        
+        @keyframes level-up-number {
+          0% { transform: scale(0.5); opacity: 0; }
+          50% { transform: scale(1.2); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .level-up-number {
+          animation: level-up-number 0.5s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }
@@ -121,38 +255,23 @@ function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
 function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   const prevCurrentRef = useRef(current);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [displayCurrent, setDisplayCurrent] = useState(current);
   const [justFilledIndex, setJustFilledIndex] = useState(-1);
   
-  // Detect increment and animate
+  // Animated counter
+  const { value: displayCurrent } = useAnimatedNumber(current, { duration: 400 });
+  
+  // Detect increment and animate segments
   useEffect(() => {
     if (current > prevCurrentRef.current) {
       setIsAnimating(true);
-      setJustFilledIndex(current - 1); // Index of the segment that just filled
+      setJustFilledIndex(current - 1);
       
-      // Animate the number counting up
-      const startValue = prevCurrentRef.current;
-      const endValue = current;
-      const duration = 400;
-      const startTime = performance.now();
+      const timer = setTimeout(() => {
+        setIsAnimating(false);
+        setJustFilledIndex(-1);
+      }, 500);
       
-      const animate = (currentTime) => {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        const value = Math.round(startValue + (endValue - startValue) * eased);
-        
-        setDisplayCurrent(value);
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          setIsAnimating(false);
-          setTimeout(() => setJustFilledIndex(-1), 300);
-        }
-      };
-      
-      requestAnimationFrame(animate);
+      return () => clearTimeout(timer);
     }
     prevCurrentRef.current = current;
   }, [current]);

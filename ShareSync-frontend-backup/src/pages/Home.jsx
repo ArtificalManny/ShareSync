@@ -1,13 +1,6 @@
 // src/pages/Home.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - "Quiet Confidence"
-// ═══════════════════════════════════════════════════════════════════════════════
-// RULES APPLIED:
-// 1. Surface hierarchy: surface-0/1/2 tokens
-// 2. Text hierarchy: text-primary/secondary/tertiary
-// 3. Calmer typography - no screaming font-black everywhere
-// 4. No pulsing/glowing status indicators at rest
-// 5. Cards use consistent surface tokens
+// PHASE 8.4: Intelligence Panel Breathing
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from "react";
@@ -28,6 +21,7 @@ import TeamBalancePanel from "../components/home/TeamBalancePanel";
 import ProjectTelemetryPanel from "../components/home/ProjectTelemetryPanel";
 import MissionCard from "../components/home/MissionCard";
 import MissionCardSkeleton from "../components/home/MissionCardSkeleton";
+import IntelligencePanel from "../components/home/IntelligencePanel";
 
 const MOCK_MISSIONS = [
   { id: 1, title: "Integrate Telemetry Engine", category: "Core Sync", eta: "2h", health: 92, velocity: 88 },
@@ -36,23 +30,29 @@ const MOCK_MISSIONS = [
 ];
 
 /* ─────────────────────────────────────────────────────────────────────────
-   STAT CARD - Clean metric display
+   STAT CARD - Clean metric display with micro-interactions
 ───────────────────────────────────────────────────────────────────────── */
 const StatCard = ({ label, value, color = "text-brand", description }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div 
-      className="
+      className={`
         relative p-5 rounded-xl
         bg-surface-1 border border-white/[0.06]
         hover:bg-surface-2 hover:border-white/[0.1]
         transition-all duration-200 cursor-default
-      "
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+        ${isHovered ? 'transform -translate-y-0.5' : ''}
+      `}
+      onMouseEnter={() => { setShowTooltip(true); setIsHovered(true); }}
+      onMouseLeave={() => { setShowTooltip(false); setIsHovered(false); }}
     >
-      <div className={`text-2xl font-semibold ${color}`}>
+      <div className={`
+        text-2xl font-semibold transition-all duration-200
+        ${color}
+        ${isHovered ? 'scale-105' : 'scale-100'}
+      `}>
         {value}
       </div>
       <div className="text-xs text-text-tertiary mt-1">
@@ -72,42 +72,6 @@ const StatCard = ({ label, value, color = "text-brand", description }) => {
           </p>
         </div>
       )}
-    </div>
-  );
-};
-
-/* ─────────────────────────────────────────────────────────────────────────
-   INSIGHT CARD - Clickable insight panel
-───────────────────────────────────────────────────────────────────────── */
-const InsightCard = ({ icon: Icon, iconColor, title, description, onClick, variant = "default" }) => {
-  const variants = {
-    default: "bg-surface-2",
-    success: "bg-success/10",
-    warning: "bg-warning/10",
-  };
-
-  return (
-    <div 
-      className="
-        p-5 rounded-xl cursor-pointer group
-        bg-surface-1 border border-white/[0.06]
-        hover:bg-surface-2 hover:border-white/[0.1]
-        transition-all duration-200
-      " 
-      onClick={onClick}
-    >
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-2.5 rounded-lg ${variants[variant]}`}>
-          <Icon className={`w-5 h-5 ${iconColor}`} />
-        </div>
-        <ChevronRight className="w-4 h-4 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
-      </div>
-      <h3 className="text-base font-medium text-text-primary mb-1">
-        {title}
-      </h3>
-      <p className="text-sm text-text-secondary">
-        {description}
-      </p>
     </div>
   );
 };
@@ -153,6 +117,11 @@ export default function Home() {
     };
     loadMissions();
   }, []);
+
+  // Handle ship completion (for demo purposes)
+  const handleShipped = (projectId) => {
+    setMissions(prev => prev.filter(m => m.id !== projectId));
+  };
 
   return (
     <div className="min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto">
@@ -202,7 +171,7 @@ export default function Home() {
             <div className="space-y-3">
               {missionsLoading ? (
                 <MissionCardSkeleton count={3} />
-              ) : (
+              ) : missions.length > 0 ? (
                 missions.map((mission) => (
                   <MissionCard 
                     key={mission.id} 
@@ -211,57 +180,43 @@ export default function Home() {
                       setSelectedMission(mission); 
                       setPanelContent("telemetry"); 
                       setIsPanelOpen(true); 
-                    }} 
+                    }}
+                    onShipped={handleShipped}
                   />
                 ))
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 className="w-6 h-6 text-success" />
+                  </div>
+                  <h3 className="text-lg font-medium text-text-primary mb-2">
+                    All missions shipped!
+                  </h3>
+                  <p className="text-sm text-text-secondary">
+                    You've completed everything for today. Nice work!
+                  </p>
+                </div>
               )}
             </div>
           </div>
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────
-            INTELLIGENCE SECTION (4 columns)
+            INTELLIGENCE SECTION (4 columns) - PHASE 8.4
         ───────────────────────────────────────────────────────────────── */}
         <div className="col-span-12 lg:col-span-4">
-          <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
-            <SectionHeader 
-              icon={Activity} 
-              iconColor="text-success"
-              title="Intelligence" 
-            />
-            
-            <div className="space-y-4">
-              {/* Workload Balance Card */}
-              <InsightCard
-                icon={isBalanced ? CheckCircle2 : AlertCircle}
-                iconColor={isBalanced ? "text-success" : "text-warning"}
-                variant={isBalanced ? "success" : "warning"}
-                title={isBalanced ? "Load Balanced" : "High Workload"}
-                description={isBalanced 
-                  ? "Optimized across all nodes." 
-                  : "You're doing 71% of ships. Rebalance suggested."
-                }
-                onClick={() => { 
-                  setPanelContent("balance"); 
-                  setIsPanelOpen(true); 
-                }}
-              />
-
-              {/* Peak Window */}
-              <div className="p-4 rounded-xl bg-surface-2">
-                <div className="flex justify-between text-xs mb-3">
-                  <span className="text-text-tertiary">Peak Window</span>
-                  <span className="text-success font-medium">2PM — 4PM</span>
-                </div>
-                <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-success rounded-full" 
-                    style={{ width: '65%' }} 
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          <IntelligencePanel 
+            isBalanced={isBalanced}
+            onBalanceClick={() => { 
+              setPanelContent("balance"); 
+              setIsPanelOpen(true); 
+            }}
+            peakWindowStart={14}
+            peakWindowEnd={16}
+            productivity={65}
+            coWorkingMultiplier={2.1}
+            isCoWorking={true}
+          />
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────
