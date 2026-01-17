@@ -1,17 +1,20 @@
 /* src/index.css */
 /* ═══════════════════════════════════════════════════════════════════════════════
-   DESIGN SYSTEM v2.0 - PHASE 5: Quiet Confidence
+   SHARESYNC DESIGN SYSTEM v3.0 - Phase 7: Visual Cohesion
    ═══════════════════════════════════════════════════════════════════════════════
-   FIXED: Removed resting glows and aurora effects
-   FIXED: Removed animate-pulse on decorative elements
-   FIXED: Simplified hover effects (no scale transforms)
-   FIXED: Use raw CSS values in @layer base (not @apply with custom classes)
+   
+   IMPORT ORDER MATTERS:
+   1. Design tokens (CSS variables) - MUST be first
+   2. Other style modules
+   3. Tailwind directives
+   
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* 1) CSS VARIABLE IMPORTS (Design System Foundation) */
-@import './styles/design-system.css';
+/* 1) DESIGN TOKENS - Single source of truth (MUST BE FIRST) */
+@import './styles/design-tokens.css';
 
-/* 2) PRESERVED CUSTOM STYLES */
+/* 2) DESIGN SYSTEM MODULES */
+@import './styles/design-system.css';
 @import './styles/tokens.css';
 @import './styles/layout-system.css';
 @import './styles/motion.css';
@@ -37,96 +40,72 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE LAYER - Minimal overrides only
+   ═══════════════════════════════════════════════════════════════════════════════ */
 @layer base {
-  :root {
-    /* Surface hierarchy - matches tailwind.config.js */
-    --bg-void: #08090A;
-    --bg-surface: #0f1419;
-    --bg-elevated: #1a1f26;
-    
-    /* Inner glow - subtle, not screaming */
-    --inner-glow: inset 0 1px 0 0 rgba(255, 255, 255, 0.02);
-    --inner-glow-bright: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
-    
-    /* Brand colors */
-    --accent-primary: #8b5cf6;
-    --accent-success: #10B981;
-  }
-
   html, body, #root {
-    /* Use raw hex values, not @apply with custom classes */
-    background-color: #0a0a0f;
-    color: #f8fafc;
-    font-family: var(--font-body);
+    background-color: var(--surface-0);
+    color: var(--text-primary);
+    font-family: var(--font-body, "Inter var", "Inter", system-ui, sans-serif);
     -webkit-font-smoothing: antialiased;
     letter-spacing: -0.011em;
   }
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   AVATAR STYLES
-───────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   COMPONENT STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Avatar */
 .profile-picture-ring {
   display: inline-block;
   padding: 2px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-subtle);
   background: transparent;
 }
 
 .avatar:hover {
   transform: scale(1.02);
-  /* No glow - quiet confidence */
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   GLASS SIDEBAR
-───────────────────────────────────────────────────────────────────────── */
+/* Glass Sidebar */
 .glass-sidebar {
-  background-color: #0a0a0f;
-  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  background-color: var(--surface-0);
+  border-right: 1px solid var(--border-subtle);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   BENTO CARDS - Quiet hover, no scale
-───────────────────────────────────────────────────────────────────────── */
+/* Bento Cards - Quiet hover */
 .bento-elevated {
-  background-color: #0f1419;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all 0.2s ease;
+  background-color: var(--surface-1);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-base);
 }
 
 .bento-elevated:hover {
-  background-color: #1a1f26;
-  border-color: rgba(255, 255, 255, 0.1);
-  /* No translate, no scale, no massive shadow - just a subtle bg change */
+  background-color: var(--surface-2);
+  border-color: var(--border-default);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   AURORA GLOW - DISABLED (Quiet Confidence)
-   Keeping class for backward compatibility but making it invisible
-───────────────────────────────────────────────────────────────────────── */
+/* Aurora Glow - DISABLED (Quiet Confidence) */
 .aurora-blur {
   display: none;
-  /* Was: animate-pulse with radial gradient glow
-     Now: Hidden - let the content speak for itself */
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   TYPOGRAPHY
-───────────────────────────────────────────────────────────────────────── */
+/* Typography */
 .text-label-caps {
   font-size: 10px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════════
    LAYOUT INTEGRITY
-───────────────────────────────────────────────────────────────────────── */
+   ═══════════════════════════════════════════════════════════════════════════════ */
 html, body, #root {
   height: auto !important;
   min-height: 100vh !important;

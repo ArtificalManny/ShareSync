@@ -1,15 +1,14 @@
 // src/components/home/MissionCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - PHASE 6: Ship Ceremony Integration
+// DESIGN SYSTEM v3.0 - PHASE 7: Visual Cohesion + Ship Ceremony
 // ═══════════════════════════════════════════════════════════════════════════════
-// 3-ZONE PATTERN + SHIP CEREMONY
+// 
+// PROGRESS BAR FIX:
+// - No longer uses red/green "traffic light" colors
+// - Uses purple intensity based on completion percentage
+// - 100% complete = teal celebration
 //
-// The "Deploy" button is now a ceremonial moment:
-// 1. Click → Button transforms to "Shipping..."
-// 2. Card gets subtle glow
-// 3. Satisfying "thunk" sound plays
-// 4. Card slides off screen
-// 5. Team sees "🚀 Manny shipped X" in their feed
+// 3-ZONE PATTERN + SHIP CEREMONY
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from "react";
@@ -18,20 +17,16 @@ import { ShipButton, ShippableCard } from "../ship";
 import useShipCeremony, { PHASES } from "../../hooks/useShipCeremony";
 
 export default function MissionCard({ project, onClick, onShipped }) {
-  // Ship ceremony hook - orchestrates the entire experience
+  // Ship ceremony hook
   const { ship, phase, isItemShipping, isItemShipped } = useShipCeremony({
     onShip: async (projectId) => {
       // TODO: Replace with your actual API call
-      // await api.shipProject(projectId);
-      
-      // Simulating API call for now
       await new Promise(resolve => setTimeout(resolve, 800));
     },
     onComplete: (projectId) => {
-      // Notify parent to remove from list
       onShipped?.(projectId);
     },
-    broadcastToTeam: true, // Send socket event to team
+    broadcastToTeam: true,
   });
 
   const projectId = project?.id || project?._id;
@@ -39,17 +34,24 @@ export default function MissionCard({ project, onClick, onShipped }) {
   const isThisShipped = isItemShipped(projectId);
   const currentPhase = isThisShipping || isThisShipped ? phase : PHASES.IDLE;
 
-  // Health determines the progress bar color
-  const getProgressColor = (health) => {
-    if (health > 80) return 'bg-success';
-    if (health > 50) return 'bg-warning';
-    return 'bg-danger';
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 7 FIX: Progress color based on completion, NOT health status
+  // Uses purple intensity, not red/green emotional signals
+  // ═══════════════════════════════════════════════════════════════════════════
+  const getProgressFillClass = (percentage) => {
+    if (percentage >= 100) return 'bg-success';      // Teal celebration
+    if (percentage >= 67) return 'bg-brand-400';     // Bright purple
+    if (percentage >= 34) return 'bg-brand';         // Standard purple
+    return 'bg-brand-700';                           // Darker purple
   };
 
   const handleShip = (e) => {
     e.stopPropagation();
     ship(project);
   };
+
+  // Use velocity for progress display (or health if velocity isn't available)
+  const progressValue = project.velocity ?? project.health ?? 0;
 
   return (
     <ShippableCard
@@ -112,19 +114,29 @@ export default function MissionCard({ project, onClick, onShipped }) {
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════
-              ZONE 2: Status (How is it going?)
+              ZONE 2: Status (Progress bar + percentage)
+              PHASE 7: Purple intensity, NOT red/green
           ═══════════════════════════════════════════════════════════════════ */}
           <div className="hidden sm:flex items-center gap-3 w-32">
+            {/* Progress Track */}
             <div className="flex-1">
               <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
                 <div 
-                  className={`h-full rounded-full transition-all duration-500 ${getProgressColor(project.health)}`}
-                  style={{ width: `${project.health}%` }}
+                  className={`
+                    h-full rounded-full 
+                    transition-all duration-500 ease-out
+                    ${getProgressFillClass(progressValue)}
+                  `}
+                  style={{ width: `${Math.min(progressValue, 100)}%` }}
                 />
               </div>
             </div>
-            <span className="text-xs font-medium text-text-secondary w-8 text-right">
-              {project.velocity}%
+            {/* Percentage */}
+            <span className={`
+              text-xs font-medium w-8 text-right
+              ${progressValue >= 100 ? 'text-success' : 'text-text-secondary'}
+            `}>
+              {progressValue}%
             </span>
           </div>
 

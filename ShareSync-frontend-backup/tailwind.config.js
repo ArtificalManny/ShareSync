@@ -1,20 +1,19 @@
 /** @type {import('tailwindcss').Config} */
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * OPENSHARE DESIGN SYSTEM v2.0 - "Quiet Confidence"
+ * SHARESYNC DESIGN SYSTEM v3.0 - Phase 7: Visual Cohesion
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * PHILOSOPHY:
- * - ONE brand color (purple) - used sparingly, always meaningful
- * - Surface hierarchy creates depth without competing gradients
- * - Color is EARNED through interaction or status, not decorative
- * - Asana-level clarity with OpenShare personality
+ * - Purple is IDENTITY (brand, primary actions, progress)
+ * - Teal is SUCCESS (completions, achievements, shipped)
+ * - Amber is ATTENTION (warnings, deadlines, needs action)
+ * - Red is ERROR ONLY (failures, destructive actions)
  * 
  * RULES:
- * 1. Never use more than ONE accent color per component
- * 2. Glows are for hover/focus states ONLY, not resting state
- * 3. Text hierarchy: primary → secondary → tertiary (3 levels max)
- * 4. Surface hierarchy: base → raised → overlay (3 levels max)
+ * 1. Progress bars use PURPLE, not red/green
+ * 2. Glows are for hover/focus states ONLY
+ * 3. Surface hierarchy: 0 → 1 → 2 → 3 (4 levels max)
  * 
  * ═══════════════════════════════════════════════════════════════════════════════
  */
@@ -30,7 +29,6 @@ export default {
        * ─────────────────────────────────────────────────────────────────────────
        * TYPOGRAPHY
        * ─────────────────────────────────────────────────────────────────────────
-       * Inter for UI, JetBrains for code. Clean and professional.
        */
       fontFamily: {
         sans: ["Inter var", "Inter", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
@@ -40,90 +38,144 @@ export default {
 
       /**
        * ─────────────────────────────────────────────────────────────────────────
-       * COLOR SYSTEM
+       * COLOR SYSTEM - References CSS Variables from design-tokens.css
        * ─────────────────────────────────────────────────────────────────────────
-       * 
-       * SURFACE HIERARCHY (dark theme done right):
-       *   surface-0: Page background (deepest)
-       *   surface-1: Cards, panels
-       *   surface-2: Elevated elements, hovers
-       *   surface-3: Interactive elements, borders
-       * 
-       * BRAND: Purple is sacred. Use it to mean "important" or "interactive"
-       * 
-       * SEMANTIC: Only for actual status (success/warning/danger)
        */
       colors: {
-        /* ══════════════════════════════════════════════════════════════════════
-         * SURFACE HIERARCHY - The foundation of our dark theme
-         * ══════════════════════════════════════════════════════════════════════ */
+        /* Surface Hierarchy */
         surface: {
-          0: "#09090B",    /* Page background - deepest black */
-          1: "#18181B",    /* Cards, sidebars - zinc-900 */
-          2: "#27272A",    /* Elevated cards, hover states - zinc-800 */
-          3: "#3F3F46",    /* Interactive elements, borders - zinc-700 */
+          0: "var(--surface-0)",
+          1: "var(--surface-1)",
+          2: "var(--surface-2)",
+          3: "var(--surface-3)",
+          4: "var(--surface-4)",
         },
 
-        /* ══════════════════════════════════════════════════════════════════════
-         * BRAND - ONE color, used meaningfully
-         * ══════════════════════════════════════════════════════════════════════ */
+        /* Brand (Purple) */
         brand: {
-          DEFAULT: "#8B5CF6",  /* Primary brand - violet-500 */
-          50:  "#FAF5FF",
-          100: "#F3E8FF",
-          200: "#E9D5FF",
-          300: "#D8B4FE",
-          400: "#C084FC",
-          500: "#8B5CF6",      /* ← THE brand color */
-          600: "#7C3AED",
-          700: "#6D28D9",
-          800: "#5B21B6",
-          900: "#4C1D95",
-          950: "#2E1065",
+          DEFAULT: "var(--brand-500)",
+          50:  "var(--brand-50)",
+          100: "var(--brand-100)",
+          200: "var(--brand-200)",
+          300: "var(--brand-300)",
+          400: "var(--brand-400)",
+          500: "var(--brand-500)",
+          600: "var(--brand-600)",
+          700: "var(--brand-700)",
+          800: "var(--brand-800)",
+          900: "var(--brand-900)",
+          950: "var(--brand-950)",
         },
 
-        /* ══════════════════════════════════════════════════════════════════════
-         * SEMANTIC - Only for actual status, never decorative
-         * ══════════════════════════════════════════════════════════════════════ */
+        /* Accent (Fuchsia - for gradients) */
+        accent: {
+          400: "var(--accent-400)",
+          500: "var(--accent-500)",
+          600: "var(--accent-600)",
+        },
+
+        /* Success (Teal) - NOT green */
         success: {
-          DEFAULT: "#10B981",  /* emerald-500 */
-          light: "#34D399",    /* For text on dark backgrounds */
-          dark: "#064E3B",     /* For backgrounds */
+          DEFAULT: "var(--success-500)",
+          50:  "var(--success-50)",
+          100: "var(--success-100)",
+          200: "var(--success-200)",
+          300: "var(--success-300)",
+          400: "var(--success-400)",
+          500: "var(--success-500)",
+          600: "var(--success-600)",
+          700: "var(--success-700)",
+          800: "var(--success-800)",
+          900: "var(--success-900)",
+          light: "var(--success-400)",
+          dark: "var(--success-900)",
         },
+
+        /* Warning (Amber) */
         warning: {
-          DEFAULT: "#F59E0B",  /* amber-500 */
-          light: "#FBBF24",
-          dark: "#78350F",
+          DEFAULT: "var(--warning-500)",
+          50:  "var(--warning-50)",
+          100: "var(--warning-100)",
+          200: "var(--warning-200)",
+          300: "var(--warning-300)",
+          400: "var(--warning-400)",
+          500: "var(--warning-500)",
+          600: "var(--warning-600)",
+          700: "var(--warning-700)",
+          800: "var(--warning-800)",
+          900: "var(--warning-900)",
+          light: "var(--warning-400)",
+          dark: "var(--warning-900)",
         },
+
+        /* Error (Red) - ONLY for actual errors */
+        error: {
+          DEFAULT: "var(--error-500)",
+          50:  "var(--error-50)",
+          100: "var(--error-100)",
+          200: "var(--error-200)",
+          300: "var(--error-300)",
+          400: "var(--error-400)",
+          500: "var(--error-500)",
+          600: "var(--error-600)",
+          700: "var(--error-700)",
+          800: "var(--error-800)",
+          900: "var(--error-900)",
+          light: "var(--error-400)",
+          dark: "var(--error-900)",
+        },
+        
+        /* Danger alias (for existing components) */
         danger: {
-          DEFAULT: "#EF4444",  /* red-500 */
-          light: "#F87171",
-          dark: "#7F1D1D",
+          DEFAULT: "var(--error-500)",
+          light: "var(--error-400)",
+          dark: "var(--error-900)",
         },
 
-        /* ══════════════════════════════════════════════════════════════════════
-         * TEXT HIERARCHY - 3 levels only
-         * ══════════════════════════════════════════════════════════════════════ */
+        /* Info (Blue) */
+        info: {
+          DEFAULT: "var(--info-500)",
+          50:  "var(--info-50)",
+          100: "var(--info-100)",
+          200: "var(--info-200)",
+          300: "var(--info-300)",
+          400: "var(--info-400)",
+          500: "var(--info-500)",
+          600: "var(--info-600)",
+          700: "var(--info-700)",
+          800: "var(--info-800)",
+          900: "var(--info-900)",
+        },
+
+        /* Progress (Purple-based) */
+        progress: {
+          track: "var(--progress-track)",
+          fill: "var(--progress-fill)",
+          low: "var(--progress-fill-low)",
+          mid: "var(--progress-fill-mid)",
+          high: "var(--progress-fill-high)",
+          complete: "var(--progress-fill-complete)",
+        },
+
+        /* Text Hierarchy */
         text: {
-          primary: "#FAFAFA",    /* zinc-50 - headings, important text */
-          secondary: "#A1A1AA",  /* zinc-400 - body text, descriptions */
-          tertiary: "#71717A",   /* zinc-500 - hints, timestamps, meta */
-          inverse: "#09090B",    /* For light backgrounds */
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
+          tertiary: "var(--text-tertiary)",
+          muted: "var(--text-muted)",
+          inverse: "var(--text-inverse)",
         },
 
-        /* ══════════════════════════════════════════════════════════════════════
-         * BORDER - Subtle, never harsh
-         * ══════════════════════════════════════════════════════════════════════ */
+        /* Border */
         border: {
-          DEFAULT: "rgba(255, 255, 255, 0.08)",  /* Subtle dividers */
-          strong: "rgba(255, 255, 255, 0.12)",   /* More visible borders */
-          brand: "rgba(139, 92, 246, 0.5)",      /* Brand-colored borders */
+          DEFAULT: "var(--border-default)",
+          subtle: "var(--border-subtle)",
+          strong: "var(--border-strong)",
+          brand: "var(--border-brand)",
+          focus: "var(--border-focus)",
         },
 
-        /* ══════════════════════════════════════════════════════════════════════
-         * LEGACY SUPPORT - Keeping slate for existing components
-         * TODO: Gradually migrate to surface-* system
-         * ══════════════════════════════════════════════════════════════════════ */
+        /* Legacy slate (for existing components - gradually migrate away) */
         slate: {
           50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 
           400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 
@@ -135,7 +187,6 @@ export default {
        * ─────────────────────────────────────────────────────────────────────────
        * TYPOGRAPHY SCALE
        * ─────────────────────────────────────────────────────────────────────────
-       * Tight letter-spacing on larger sizes for that premium feel.
        */
       fontSize: {
         'xs':   ['12px', { lineHeight: '16px', letterSpacing: '0.01em' }],
@@ -152,15 +203,15 @@ export default {
 
       /**
        * ─────────────────────────────────────────────────────────────────────────
-       * SPACING & RADIUS
+       * BORDER RADIUS
        * ─────────────────────────────────────────────────────────────────────────
        */
       borderRadius: {
-        'sm':  '6px',
-        'md':  '8px',
-        'lg':  '12px',
-        'xl':  '16px',
-        '2xl': '20px',
+        'sm':  'var(--radius-sm)',
+        'md':  'var(--radius-md)',
+        'lg':  'var(--radius-lg)',
+        'xl':  'var(--radius-xl)',
+        '2xl': 'var(--radius-2xl)',
         '3xl': '24px',
       },
 
@@ -168,29 +219,23 @@ export default {
        * ─────────────────────────────────────────────────────────────────────────
        * SHADOWS & GLOWS
        * ─────────────────────────────────────────────────────────────────────────
-       * RULE: Glows are for INTERACTION states only, never resting.
        */
       boxShadow: {
-        /* Elevation shadows (for light themes or overlays) */
-        'sm':   '0 1px 2px rgba(0, 0, 0, 0.05)',
-        'md':   '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        'lg':   '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-        'xl':   '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+        'sm':   'var(--shadow-sm)',
+        'md':   'var(--shadow-md)',
+        'lg':   'var(--shadow-lg)',
+        'xl':   'var(--shadow-xl)',
+        'card': 'var(--shadow-card)',
+        'focus': 'var(--ring-focus)',
         
-        /* Card shadow for dark theme */
-        'card': '0 1px 0 rgba(0, 0, 0, 0.2), 0 8px 24px -8px rgba(0, 0, 0, 0.4)',
+        /* Glows - USE ONLY ON HOVER/FOCUS */
+        'glow-brand':   'var(--glow-brand)',
+        'glow-success': 'var(--glow-success)',
+        'glow-warning': 'var(--glow-warning)',
+        'glow-error':   'var(--glow-error)',
+        'glow-danger':  'var(--glow-error)',
         
-        /* Focus ring */
-        'focus': '0 0 0 3px rgba(139, 92, 246, 0.25)',
-        
-        /* Glows - USE SPARINGLY, only on hover/focus */
-        'glow-brand':   '0 0 20px rgba(139, 92, 246, 0.25)',
-        'glow-success': '0 0 16px rgba(16, 185, 129, 0.25)',
-        'glow-warning': '0 0 16px rgba(245, 158, 11, 0.25)',
-        'glow-danger':  '0 0 16px rgba(239, 68, 68, 0.25)',
-        
-        /* Inner glow for selected states */
-        'inner-brand': 'inset 0 0 0 1px rgba(139, 92, 246, 0.5)',
+        'inner-brand': 'inset 0 0 0 1px var(--border-brand)',
       },
 
       /**
@@ -205,6 +250,7 @@ export default {
         'shimmer':     'shimmer 2s linear infinite',
         'pulse-soft':  'pulseSoft 2s ease-in-out infinite',
         'spin-slow':   'spin 3s linear infinite',
+        'progress':    'progressPulse 2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -226,6 +272,10 @@ export default {
         pulseSoft: {
           '0%, 100%': { opacity: '1' },
           '50%':      { opacity: '0.7' },
+        },
+        progressPulse: {
+          '0%, 100%': { opacity: '1' },
+          '50%':      { opacity: '0.85' },
         },
       },
 
