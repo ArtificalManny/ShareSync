@@ -1,32 +1,36 @@
 // src/components/projects/ProjectCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - PHASE 4: Information Architecture
+// PHASE 7: Visual Cohesion - Unified with MissionCard Quality
 // ═══════════════════════════════════════════════════════════════════════════════
-// 3-ZONE PATTERN (Asana-style consistent scanning):
 //
+// CHANGES FROM v2.0:
+// - Progress bars now use purple intensity (not red/yellow/green)
+// - Richer visual hierarchy matching MissionCard
+// - Consistent padding, radius, hover states
+// - Better emoji/icon treatment
+//
+// 3-ZONE PATTERN:
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │ ZONE 1: Identity      │ ZONE 2: Status              │ ZONE 3: Action        │
-// │ ──────────────────    │ ──────────────────          │ ──────────────────    │
-// │ Icon + Title          │ Progress bar (woven in)     │ Status text           │
-// │ Client · Due date     │ Single % metric             │ Chevron on hover      │
+// │ Icon + Title + Meta   │ Progress bar + %            │ Status + Chevron      │
 // └─────────────────────────────────────────────────────────────────────────────┘
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from 'react';
-import { Calendar, ChevronRight, Folder } from 'lucide-react';
+import { Calendar, ChevronRight, Folder, CheckCircle2 } from 'lucide-react';
+
+// Phase 7: Purple intensity progress, not traffic lights
+const getProgressFillClass = (percentage) => {
+  if (percentage >= 100) return 'bg-success';
+  if (percentage >= 67) return 'bg-brand-400';
+  if (percentage >= 34) return 'bg-brand';
+  return 'bg-brand-700';
+};
 
 const ProjectCard = ({ project, onClick }) => {
   const { name, client, progress = 0, dueDate, status, emoji } = project;
-  const isComplete = progress === 100;
+  const isComplete = progress >= 100;
   
-  // Progress bar color based on health (woven in, not a badge)
-  const getProgressColor = () => {
-    if (isComplete) return 'bg-success';
-    if (progress >= 70) return 'bg-brand';
-    if (progress >= 40) return 'bg-warning';
-    return 'bg-danger';
-  };
-
   return (
     <div 
       onClick={() => onClick?.(project)}
@@ -40,25 +44,35 @@ const ProjectCard = ({ project, onClick }) => {
     >
       {/* ═══════════════════════════════════════════════════════════════════
           ZONE 1: Identity (What is this?)
-          Icon + Title + Meta (client · due date)
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {/* Project Icon */}
         <div className={`
-          w-10 h-10 rounded-lg flex items-center justify-center shrink-0
-          transition-colors duration-200
-          ${isComplete ? 'bg-success/10' : 'bg-surface-2 group-hover:bg-brand/10'}
+          w-10 h-10 rounded-xl flex items-center justify-center shrink-0
+          transition-all duration-200
+          ${isComplete 
+            ? 'bg-success/10' 
+            : 'bg-surface-2 group-hover:bg-brand/10'
+          }
         `}>
-          {emoji ? (
+          {isComplete ? (
+            <CheckCircle2 className="w-4 h-4 text-success" />
+          ) : emoji ? (
             <span className="text-lg">{emoji}</span>
           ) : (
-            <Folder className={`w-4 h-4 ${isComplete ? 'text-success' : 'text-text-tertiary group-hover:text-brand'}`} />
+            <Folder className="w-4 h-4 text-text-tertiary group-hover:text-brand transition-colors" />
           )}
         </div>
 
         {/* Title + Meta */}
         <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-medium text-text-primary truncate group-hover:text-brand transition-colors">
+          <h4 className={`
+            text-sm font-medium truncate transition-colors
+            ${isComplete 
+              ? 'text-text-tertiary line-through' 
+              : 'text-text-primary group-hover:text-brand'
+            }
+          `}>
             {name}
           </h4>
           <div className="flex items-center gap-1.5 mt-0.5 text-xs text-text-tertiary">
@@ -79,29 +93,29 @@ const ProjectCard = ({ project, onClick }) => {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 2: Status (How is it going?)
-          Progress bar with single percentage - color indicates health
+          ZONE 2: Status (Progress bar - PHASE 7 purple intensity)
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="hidden sm:flex items-center gap-3 w-36 shrink-0">
         <div className="flex-1">
           <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
             <div 
-              className={`h-full rounded-full transition-all duration-500 ${getProgressColor()}`}
-              style={{ width: `${progress}%` }}
+              className={`h-full rounded-full transition-all duration-500 ${getProgressFillClass(progress)}`}
+              style={{ width: `${Math.min(progress, 100)}%` }}
             />
           </div>
         </div>
-        <span className="text-xs font-medium text-text-secondary w-8 text-right">
+        <span className={`
+          text-xs font-medium w-8 text-right
+          ${isComplete ? 'text-success' : 'text-text-secondary'}
+        `}>
           {progress}%
         </span>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 3: Action (What can I do?)
-          Status indicator + Chevron on hover
+          ZONE 3: Action
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* Status text - minimal, not a badge */}
         <span className={`
           text-xs font-medium
           ${isComplete ? 'text-success' : 'text-text-tertiary'}

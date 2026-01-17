@@ -1,6 +1,6 @@
 // src/components/ui/Card.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// COMPATIBILITY LAYER - Re-exports from common/Card.jsx
+// PHASE 7: Visual Cohesion - Re-exports from common/Card.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export {
@@ -14,6 +14,7 @@ export {
   CardMetric,
   CardBadge,
   CardIconBox,
+  CardProgress,
 } from '../common/Card';
 
 // Legacy aliases for backward compatibility

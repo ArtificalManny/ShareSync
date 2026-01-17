@@ -1,13 +1,11 @@
 // src/pages/Projects.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - "Quiet Confidence"
+// DESIGN SYSTEM v3.0 - Phase 7: Visual Cohesion
 // ═══════════════════════════════════════════════════════════════════════════════
-// RULES APPLIED:
-// 1. Surface hierarchy: surface-0 page, surface-1 cards, surface-2 hover
-// 2. ONE accent color (brand) - buttons and active states only
-// 3. Streak badge is EARNED - subtle unless impressive (7+ days)
-// 4. "No step defined" is a gentle nudge, not a red alert
-// 5. No glowing progress bars at rest
+// UPDATES:
+// - Empty state now uses EmptyProjects/EmptySearch components
+// - Progress bars use purple intensity (not traffic lights)
+// - Consistent with design token system
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
@@ -20,11 +18,21 @@ import { useAuth } from '../context/AuthContext';
 import ProjectsCreate from './ProjectsCreate';
 import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
 import { SkeletonProjectCard } from '../components/ui/Skeletons';
+import { EmptyProjects, EmptySearch } from '../components/ui/EmptyState';
 import api from '../api/client';
 
 /* ─────────────────────────────────────────────────────────────────────────
+   PROGRESS COLOR - Phase 7: Purple intensity, not traffic lights
+───────────────────────────────────────────────────────────────────────── */
+const getProgressFillClass = (percentage) => {
+  if (percentage >= 100) return 'bg-success';      // Teal celebration
+  if (percentage >= 67) return 'bg-brand-400';     // Bright purple
+  if (percentage >= 34) return 'bg-brand';         // Standard purple
+  return 'bg-brand-700';                           // Darker purple
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
    PROJECT CARD - Grid View
-   Clean, scannable, professional
 ───────────────────────────────────────────────────────────────────────── */
 function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
@@ -100,22 +108,20 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
         </div>
       )}
 
-      {/* Velocity Progress */}
+      {/* Velocity Progress - PHASE 7: Purple intensity */}
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-[10px] text-text-tertiary uppercase tracking-wider">
             Velocity
           </span>
-          <span className="text-xs font-medium text-text-primary">
+          <span className={`text-xs font-medium ${velocity >= 100 ? 'text-success' : 'text-text-primary'}`}>
             {velocity}%
           </span>
         </div>
         <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
           <div 
-            className={`h-full rounded-full transition-all duration-500 ${
-              velocity >= 80 ? 'bg-success' : 'bg-brand'
-            }`}
-            style={{ width: `${velocity}%` }}
+            className={`h-full rounded-full transition-all duration-500 ${getProgressFillClass(velocity)}`}
+            style={{ width: `${Math.min(velocity, 100)}%` }}
           />
         </div>
       </div>
@@ -154,7 +160,7 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
       case 'shipping': return '🚀';
       case 'exploring': return '🌱';
       case 'maintaining': return '🛠';
-      default: return '��';
+      default: return '📁';
     }
   };
 
@@ -255,6 +261,7 @@ const Projects = () => {
   const handleProjectCreated = (newProject) => setProjects(prev => [newProject, ...prev]);
   const handleProjectClick = (projectId) => navigate(`/projects/${projectId}`);
   const handleStartSprint = (project) => setSelectedProject(project);
+  const handleClearSearch = () => setSearchQuery('');
 
   const filteredProjects = projects.filter(project => {
     const projectName = (project.name || project.title || '').toLowerCase();
@@ -263,6 +270,36 @@ const Projects = () => {
     if (selectedFilter === 'active') return matchesSearch && !project.isAtRisk;
     return matchesSearch;
   });
+
+  // Determine which empty state to show
+  const renderEmptyState = () => {
+    // If searching and no results
+    if (searchQuery && filteredProjects.length === 0) {
+      return (
+        <EmptySearch 
+          query={searchQuery} 
+          onClearSearch={handleClearSearch}
+        />
+      );
+    }
+    
+    // If no projects at all
+    if (projects.length === 0) {
+      return (
+        <EmptyProjects 
+          onCreateProject={() => setShowCreateModal(true)}
+        />
+      );
+    }
+    
+    // If filter returns no results
+    return (
+      <EmptySearch 
+        query={selectedFilter !== 'all' ? selectedFilter : undefined}
+        onClearSearch={() => setSelectedFilter('all')}
+      />
+    );
+  };
 
   return (
     <div className="min-h-screen p-6 lg:p-10 max-w-[1400px] mx-auto">
@@ -405,31 +442,8 @@ const Projects = () => {
           </div>
         )
       ) : (
-        /* Empty State */
-        <div className="py-20 text-center">
-          <div className="w-16 h-16 bg-surface-1 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">📁</span>
-          </div>
-          <h3 className="text-lg font-medium text-text-primary mb-2">
-            No projects found
-          </h3>
-          <p className="text-sm text-text-secondary mb-6">
-            {searchQuery 
-              ? "Try adjusting your search" 
-              : "Create your first project to get started"
-            }
-          </p>
-          <button 
-            onClick={() => setShowCreateModal(true)}
-            className="
-              px-4 py-2 rounded-lg text-sm font-medium
-              bg-brand text-white hover:bg-brand-600
-              transition-colors
-            "
-          >
-            Create Project
-          </button>
-        </div>
+        /* PHASE 7: New Empty State */
+        renderEmptyState()
       )}
 
       {showCreateModal && (
