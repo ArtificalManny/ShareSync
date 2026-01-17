@@ -1,18 +1,23 @@
 // src/components/ship/ShipButton.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHIP CEREMONY - The Ceremonial Button
+// PHASE 8: Ship Ceremony Enhancement
 // ═══════════════════════════════════════════════════════════════════════════════
-// This isn't just a button. It's the moment of triumph.
+// 
+// ENHANCEMENTS:
+// - Lift effect on hover (button rises slightly)
+// - More dramatic preparing → shipping transition
+// - Rocket tilts during shipping
+// - Satisfying "landed" feel on shipped state
 // 
 // States:
-// - idle: "🚀 Ship" - ready to click
-// - preparing: Button pulses briefly
-// - shipping: "Shipping..." with spinner
-// - shipped: "✓ Shipped!" with success state
-// - error: "Try Again" with error state
+// - idle: "🚀 Ship" - ready to click, lifts on hover
+// - preparing: Button rises, pulses
+// - shipping: "Shipping..." with tilted rocket
+// - shipped: "✓ Shipped!" drops down with success
+// - error: "Try Again" with shake
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Rocket, Loader2, Check, AlertCircle } from 'lucide-react';
 import { PHASES } from '../../hooks/useShipCeremony';
 
@@ -23,6 +28,8 @@ export default function ShipButton({
   className = '',
   disabled = false,
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+  
   const isIdle = phase === PHASES.IDLE;
   const isPreparing = phase === PHASES.PREPARING;
   const isShipping = phase === PHASES.SHIPPING;
@@ -47,16 +54,28 @@ export default function ShipButton({
   // Phase-based styling
   const getPhaseStyles = () => {
     if (isShipped) {
-      return 'bg-success text-white';
+      return 'bg-success text-white shadow-glow-success';
     }
     if (isError) {
-      return 'bg-danger/10 text-danger border-danger/20';
+      return 'bg-error/10 text-error border-error/20 animate-shake';
     }
-    if (isShipping || isPreparing) {
-      return 'bg-brand/20 text-brand border-brand/30';
+    if (isShipping) {
+      return 'bg-brand text-white shadow-glow-brand';
     }
-    // Idle - the main state
-    return 'bg-brand text-white hover:bg-brand/90';
+    if (isPreparing) {
+      return 'bg-brand text-white shadow-glow-brand';
+    }
+    // Idle
+    return 'bg-brand text-white hover:bg-brand-600 hover:shadow-glow-brand';
+  };
+
+  // Transform based on phase and hover
+  const getTransform = () => {
+    if (isShipped) return 'translateY(1px) scale(0.98)'; // Landed
+    if (isShipping) return 'translateY(-4px) scale(1.02)'; // Flying
+    if (isPreparing) return 'translateY(-6px) scale(1.05)'; // Lifting off
+    if (isHovered && isIdle) return 'translateY(-2px)'; // Hover lift
+    return 'translateY(0)';
   };
 
   // Get button content based on phase
@@ -64,7 +83,7 @@ export default function ShipButton({
     if (isShipped) {
       return (
         <>
-          <Check className={iconSizes[size]} />
+          <Check className={`${iconSizes[size]} animate-scale-in`} />
           <span>Shipped!</span>
         </>
       );
@@ -82,7 +101,7 @@ export default function ShipButton({
     if (isShipping) {
       return (
         <>
-          <Loader2 className={`${iconSizes[size]} animate-spin`} />
+          <Rocket className={`${iconSizes[size]} -rotate-45 animate-pulse`} />
           <span>Shipping...</span>
         </>
       );
@@ -91,7 +110,7 @@ export default function ShipButton({
     if (isPreparing) {
       return (
         <>
-          <Rocket className={`${iconSizes[size]} animate-pulse`} />
+          <Rocket className={`${iconSizes[size]} -rotate-12 transition-transform`} />
           <span>Ship</span>
         </>
       );
@@ -100,7 +119,7 @@ export default function ShipButton({
     // Idle
     return (
       <>
-        <Rocket className={iconSizes[size]} />
+        <Rocket className={`${iconSizes[size]} transition-transform ${isHovered ? '-rotate-12' : ''}`} />
         <span>Ship</span>
       </>
     );
@@ -110,15 +129,16 @@ export default function ShipButton({
     <button
       onClick={onClick}
       disabled={isDisabled}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{ transform: getTransform() }}
       className={`
         inline-flex items-center justify-center font-medium rounded-lg
         border border-transparent
-        transition-all duration-200
+        transition-all duration-200 ease-out
         disabled:opacity-50 disabled:cursor-not-allowed
         ${sizeClasses[size]}
         ${getPhaseStyles()}
-        ${isPreparing ? 'scale-105' : ''}
-        ${isShipped ? 'scale-95' : ''}
         ${className}
       `}
     >

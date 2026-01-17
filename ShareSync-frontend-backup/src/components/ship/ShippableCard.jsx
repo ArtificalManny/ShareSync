@@ -1,26 +1,35 @@
 // src/components/ship/ShippableCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHIP CEREMONY - Animated Card Wrapper
+// PHASE 8: Ship Ceremony Enhancement
 // ═══════════════════════════════════════════════════════════════════════════════
-// Wraps any card/task item to add the ship animation:
-// 1. Normal state: Card renders normally
-// 2. Shipping state: Subtle glow appears
-// 3. Shipped state: Card slides off to the right, then height collapses
+// 
+// ENHANCEMENTS:
+// - Card lifts up before sliding off
+// - Particle trail during shipping phase
+// - Smoother height collapse
+// 
+// Animation sequence:
+// 1. PREPARING: Card lifts up (translateY -4px), glow appears
+// 2. SHIPPING: Card continues rising, particles emit from left edge
+// 3. SHIPPED: Card slides right + fades, particles trail behind
+// 4. COLLAPSE: Height smoothly collapses to 0
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useRef, useEffect, useState } from 'react';
 import { PHASES } from '../../hooks/useShipCeremony';
+import ParticleTrail from './ParticleTrail';
 
 export default function ShippableCard({
   children,
   phase = PHASES.IDLE,
-  isThisItem = false, // Is THIS card the one being shipped?
+  isThisItem = false,
   onAnimationComplete,
   className = '',
 }) {
   const cardRef = useRef(null);
   const [height, setHeight] = useState('auto');
   const [isCollapsing, setIsCollapsing] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
 
   // Capture height before animation starts
   useEffect(() => {
@@ -29,16 +38,33 @@ export default function ShippableCard({
     }
   }, [phase, isThisItem]);
 
+  // Trigger particles during shipping
+  useEffect(() => {
+    if (isThisItem && phase === PHASES.SHIPPING) {
+      setShowParticles(true);
+    } else if (phase === PHASES.IDLE) {
+      setShowParticles(false);
+    }
+  }, [phase, isThisItem]);
+
   // Trigger collapse after slide-out
   useEffect(() => {
     if (isThisItem && phase === PHASES.SHIPPED) {
-      // Wait for slide animation, then collapse
-      const timer = setTimeout(() => {
+      // Keep particles visible briefly during slide
+      const particleTimer = setTimeout(() => {
+        setShowParticles(false);
+      }, 300);
+      
+      // Start collapse after slide completes
+      const collapseTimer = setTimeout(() => {
         setIsCollapsing(true);
         setHeight('0px');
-      }, 400); // Match slide duration
+      }, 400);
       
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(particleTimer);
+        clearTimeout(collapseTimer);
+      };
     }
   }, [phase, isThisItem]);
 
@@ -47,7 +73,7 @@ export default function ShippableCard({
     if (isCollapsing && height === '0px') {
       const timer = setTimeout(() => {
         onAnimationComplete?.();
-      }, 300); // Match collapse duration
+      }, 300);
       
       return () => clearTimeout(timer);
     }
@@ -58,11 +84,28 @@ export default function ShippableCard({
     
     switch (phase) {
       case PHASES.PREPARING:
-        return 'ring-2 ring-brand/30 ring-offset-2 ring-offset-surface-0';
+        // Lift up, subtle glow
+        return `
+          -translate-y-1 
+          ring-2 ring-brand/30 ring-offset-2 ring-offset-surface-0
+          shadow-lg
+        `;
       case PHASES.SHIPPING:
-        return 'ring-2 ring-brand/50 ring-offset-2 ring-offset-surface-0 scale-[1.02]';
+        // Higher lift, stronger glow
+        return `
+          -translate-y-2 
+          ring-2 ring-brand/50 ring-offset-2 ring-offset-surface-0 
+          scale-[1.01]
+          shadow-xl shadow-brand/20
+        `;
       case PHASES.SHIPPED:
-        return 'translate-x-[120%] opacity-0 scale-95';
+        // Slide right and fade
+        return `
+          translate-x-[120%] 
+          opacity-0 
+          scale-95
+          -translate-y-1
+        `;
       default:
         return '';
     }
@@ -78,11 +121,21 @@ export default function ShippableCard({
         paddingBottom: isCollapsing ? '0px' : undefined,
       }}
       className={`
+        relative
         transition-all duration-300 ease-out
         ${isCollapsing ? 'overflow-hidden' : ''}
         ${className}
       `}
     >
+      {/* Particle trail - positioned at left edge */}
+      <ParticleTrail 
+        active={showParticles}
+        originX={0}
+        originY="50%"
+        count={15}
+      />
+      
+      {/* The actual card */}
       <div
         className={`
           transition-all duration-400 ease-out

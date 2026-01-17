@@ -1,21 +1,9 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - "Quiet Confidence" + PHASE 3: Ambient Gamification
-// + PHASE 6: Flow State Integration
-// ═══════════════════════════════════════════════════════════════════════════════
-// GAMIFICATION RULES:
-// 1. Progress ring is QUIET - the number speaks for itself
-// 2. Streak badge is EARNED - only prominent at 7+ days
-// 3. Ship counter segments fill without glowing
-// 4. Color is EARNED through achievement, not decoration
-//
-// FLOW STATE:
-// - When user is in flow, sidebar auto-collapses to give more focus space
-// - Sidebar dims slightly to reduce distraction
-// - User can still manually expand if needed
+// PHASE 8: Micro-Interactions - Animated Ship Counter
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   User as UserIcon,
@@ -30,14 +18,12 @@ import {
 
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
-
-// ⭐ PHASE 6: Flow State Hook
 import { useFlowState } from '../contexts/FlowStateContext';
 
 const LS_KEY = "ss.sidebar.collapsed";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS RING - Ambient, not attention-seeking
+   PROGRESS RING - With pulse on change
 ───────────────────────────────────────────────────────────────────────── */
 function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
   const size = collapsed ? 40 : 56;
@@ -48,10 +34,34 @@ function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
   
   const showStreak = streak >= 3;
   const isImpressiveStreak = streak >= 7;
+  
+  const prevProgressRef = useRef(progress);
+  const [isPulsing, setIsPulsing] = useState(false);
+  
+  // Detect progress increase and pulse
+  useEffect(() => {
+    if (progress > prevProgressRef.current) {
+      setIsPulsing(true);
+      const timer = setTimeout(() => setIsPulsing(false), 600);
+      return () => clearTimeout(timer);
+    }
+    prevProgressRef.current = progress;
+  }, [progress]);
 
   return (
     <div className="flex flex-col items-center py-6">
-      <div className="relative">
+      <div className={`relative ${isPulsing ? 'animate-bounce-subtle' : ''}`}>
+        {/* Pulse ring behind */}
+        {isPulsing && (
+          <div 
+            className="absolute inset-0 rounded-full ring-pulse"
+            style={{ 
+              width: size, 
+              height: size,
+            }}
+          />
+        )}
+        
         <svg width={size} height={size} className="transform -rotate-90">
           <circle
             cx={size / 2}
@@ -72,12 +82,17 @@ function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
-            className="text-brand transition-all duration-700 ease-out"
+            className={`text-brand transition-all duration-700 ease-out ${isPulsing ? 'text-brand-400' : ''}`}
           />
         </svg>
         
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={`font-semibold text-text-primary ${collapsed ? 'text-xs' : 'text-lg'}`}>
+          <span className={`
+            font-semibold text-text-primary tabular-nums
+            ${collapsed ? 'text-xs' : 'text-lg'}
+            ${isPulsing ? 'scale-110' : 'scale-100'}
+            transition-transform duration-200
+          `}>
             {Math.round(progress * 100)}
           </span>
         </div>
@@ -101,27 +116,90 @@ function ProgressRing({ progress = 0.75, streak = 7, collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   SHIP COUNTER - Clean segmented progress
+   SHIP COUNTER - With animated tick-up
 ───────────────────────────────────────────────────────────────────────── */
 function ShipCounter({ current = 2, target = 5, collapsed = false }) {
+  const prevCurrentRef = useRef(current);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [displayCurrent, setDisplayCurrent] = useState(current);
+  const [justFilledIndex, setJustFilledIndex] = useState(-1);
+  
+  // Detect increment and animate
+  useEffect(() => {
+    if (current > prevCurrentRef.current) {
+      setIsAnimating(true);
+      setJustFilledIndex(current - 1); // Index of the segment that just filled
+      
+      // Animate the number counting up
+      const startValue = prevCurrentRef.current;
+      const endValue = current;
+      const duration = 400;
+      const startTime = performance.now();
+      
+      const animate = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const value = Math.round(startValue + (endValue - startValue) * eased);
+        
+        setDisplayCurrent(value);
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          setIsAnimating(false);
+          setTimeout(() => setJustFilledIndex(-1), 300);
+        }
+      };
+      
+      requestAnimationFrame(animate);
+    }
+    prevCurrentRef.current = current;
+  }, [current]);
+
   if (collapsed) {
     const progress = Math.min(1, current / target);
     return (
       <div className="mx-auto mt-4 w-8 h-1 bg-surface-2 rounded-full overflow-hidden">
-        <div className="h-full bg-brand rounded-full transition-all duration-500" style={{ width: `${progress * 100}%` }} />
+        <div 
+          className="h-full bg-brand rounded-full transition-all duration-500" 
+          style={{ width: `${progress * 100}%` }} 
+        />
       </div>
     );
   }
 
   return (
-    <div className="mx-3 px-4 py-3 rounded-xl bg-surface-1 border border-white/[0.06]">
+    <div className={`
+      mx-3 px-4 py-3 rounded-xl bg-surface-1 border border-white/[0.06]
+      transition-all duration-200
+      ${isAnimating ? 'ring-2 ring-brand/20' : ''}
+    `}>
       <div className="flex justify-between items-center mb-2">
-        <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">Ships today</span>
-        <span className="text-xs font-semibold text-text-primary">{current}/{target}</span>
+        <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">
+          Ships today
+        </span>
+        <span className={`
+          text-xs font-semibold tabular-nums
+          ${isAnimating ? 'text-brand scale-110' : 'text-text-primary scale-100'}
+          transition-all duration-200
+        `}>
+          {displayCurrent}/{target}
+        </span>
       </div>
       <div className="flex gap-1">
         {[...Array(target)].map((_, i) => (
-          <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${i < current ? 'bg-brand' : 'bg-surface-3'}`} />
+          <div 
+            key={i} 
+            className={`
+              h-1.5 flex-1 rounded-full transition-all duration-300
+              ${i < current ? 'bg-brand' : 'bg-surface-3'}
+              ${i === justFilledIndex ? 'scale-y-150 bg-brand-400' : 'scale-y-100'}
+            `}
+            style={{
+              transitionDelay: i === justFilledIndex ? '0ms' : `${i * 50}ms`,
+            }}
+          />
         ))}
       </div>
     </div>
@@ -133,18 +211,13 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar() {
   const navigate = useNavigate();
-  
-  // ⭐ PHASE 6: Get flow state
   const { shouldCollapseSidebar, isInFlow } = useFlowState();
   
-  // User's manual preference for collapsed state
   const [userCollapsed, setUserCollapsed] = useState(() => {
     try { return localStorage.getItem(LS_KEY) === "1"; } 
     catch { return false; }
   });
 
-  // ⭐ PHASE 6: Combine user preference with flow state
-  // Flow state can collapse, but user can always manually expand
   const collapsed = shouldCollapseSidebar || userCollapsed;
 
   useEffect(() => {
@@ -152,7 +225,6 @@ export default function Sidebar() {
     document.body.classList.toggle("sidebar-collapsed", collapsed);
   }, [userCollapsed, collapsed]);
 
-  // ⭐ PHASE 6: Handle manual toggle (overrides flow state temporarily)
   const handleToggle = () => {
     setUserCollapsed(!userCollapsed);
   };
@@ -182,7 +254,12 @@ export default function Sidebar() {
         )}
         <button 
           onClick={handleToggle} 
-          className={`p-2 rounded-lg text-text-tertiary hover:bg-surface-2 hover:text-text-primary transition-all duration-200 ${collapsed ? 'mx-auto' : ''}`}
+          className={`
+            p-2 rounded-lg text-text-tertiary 
+            hover:bg-surface-2 hover:text-text-primary 
+            transition-all duration-200 
+            ${collapsed ? 'mx-auto' : ''}
+          `}
           title={isInFlow && !userCollapsed ? 'Collapsed for focus mode' : (collapsed ? 'Expand sidebar' : 'Collapse sidebar')}
         >
           <ChevronsLeft className={`w-4 h-4 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />

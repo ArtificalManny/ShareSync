@@ -1,18 +1,20 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 /**
- * ProgressBar - Phase 7 Visual Cohesion
+ * ProgressBar - Phase 8: Micro-Interactions
  * 
- * PHILOSOPHY: Progress is NEUTRAL, not emotional.
- * - Uses purple intensity based on completion, NOT red/green
- * - 100% complete gets teal celebration color
- * - No "danger" state for progress (that's for errors only)
+ * ENHANCEMENTS:
+ * - Threshold crossing animations (25%, 50%, 75%, 100%)
+ * - Pulse effect when milestones are reached
+ * - Shine sweep at 100% completion
+ * - Count-up animation for label (optional)
  * 
  * @param {number} value - Current progress value
  * @param {number} max - Maximum value (default: 100)
  * @param {string} size - Size: 'xs', 'sm', 'md', 'lg'
  * @param {boolean} showLabel - Show percentage label
- * @param {boolean} animate - Enable pulse animation on high progress
+ * @param {boolean} animate - Enable milestone animations
+ * @param {boolean} countUp - Animate the number counting up
  * @param {string} className - Additional CSS classes
  */
 export default function ProgressBar({ 
@@ -20,11 +22,78 @@ export default function ProgressBar({
   max = 100, 
   size = 'md',
   showLabel = false,
-  animate = false,
+  animate = true,
+  countUp = false,
   className = ''
 }) {
   const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
   const isComplete = percentage >= 100;
+  const prevPercentageRef = useRef(percentage);
+  const [isPulsing, setIsPulsing] = useState(false);
+  const [isShining, setIsShining] = useState(false);
+  const [displayValue, setDisplayValue] = useState(countUp ? 0 : percentage);
+  
+  // Thresholds that trigger celebration
+  const THRESHOLDS = [25, 50, 75, 100];
+  
+  // Detect threshold crossings
+  useEffect(() => {
+    if (!animate) return;
+    
+    const prevPct = prevPercentageRef.current;
+    const currentPct = percentage;
+    
+    // Check if we crossed any threshold (going up)
+    const crossedThreshold = THRESHOLDS.some(threshold => 
+      prevPct < threshold && currentPct >= threshold
+    );
+    
+    if (crossedThreshold) {
+      // Trigger pulse animation
+      setIsPulsing(true);
+      const timer = setTimeout(() => setIsPulsing(false), 600);
+      
+      // At 100%, also trigger shine
+      if (currentPct >= 100 && prevPct < 100) {
+        setIsShining(true);
+        setTimeout(() => setIsShining(false), 1200);
+      }
+      
+      return () => clearTimeout(timer);
+    }
+    
+    prevPercentageRef.current = currentPct;
+  }, [percentage, animate]);
+  
+  // Count-up animation for display value
+  useEffect(() => {
+    if (!countUp) {
+      setDisplayValue(percentage);
+      return;
+    }
+    
+    const duration = 500; // ms
+    const startValue = displayValue;
+    const endValue = percentage;
+    const startTime = performance.now();
+    
+    const animateValue = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease-out curve
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = startValue + (endValue - startValue) * eased;
+      
+      setDisplayValue(current);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animateValue);
+      }
+    };
+    
+    requestAnimationFrame(animateValue);
+  }, [percentage, countUp]);
   
   // Size classes
   const sizeClasses = {
@@ -35,35 +104,34 @@ export default function ProgressBar({
   };
   
   // Progress fill color based on completion percentage
-  // Uses purple intensity, NOT semantic red/green
   const getProgressFillClass = () => {
-    if (isComplete) return 'bg-success'; // Teal celebration at 100%
-    if (percentage >= 67) return 'bg-brand-400'; // Brighter purple
-    if (percentage >= 34) return 'bg-brand'; // Standard purple
-    return 'bg-brand-700'; // Darker purple for low progress
+    if (isComplete) return 'bg-success';
+    if (percentage >= 67) return 'bg-brand-400';
+    if (percentage >= 34) return 'bg-brand';
+    return 'bg-brand-700';
   };
-
-  // Optional pulse animation when close to completion
-  const animationClass = animate && percentage >= 80 && !isComplete 
-    ? 'animate-progress' 
-    : '';
 
   return (
     <div className={`space-y-1 ${className}`}>
       {showLabel && (
         <div className="flex items-center justify-between text-xs">
           <span className="text-text-tertiary">Progress</span>
-          <span className={`font-semibold ${isComplete ? 'text-success' : 'text-text-primary'}`}>
-            {Math.round(percentage)}%
+          <span className={`
+            font-semibold tabular-nums
+            ${isComplete ? 'text-success' : 'text-text-primary'}
+            ${isPulsing ? 'animate-bounce-subtle' : ''}
+          `}>
+            {Math.round(displayValue)}%
           </span>
         </div>
       )}
       
       {/* Track */}
       <div className={`
-        rounded-full overflow-hidden
+        relative rounded-full overflow-hidden
         bg-surface-2
         ${sizeClasses[size]}
+        ${isPulsing ? 'progress-pulse' : ''}
       `}>
         {/* Fill */}
         <div 
@@ -71,7 +139,7 @@ export default function ProgressBar({
             h-full rounded-full
             transition-all duration-500 ease-out
             ${getProgressFillClass()}
-            ${animationClass}
+            ${isShining ? 'progress-shine' : ''}
           `}
           style={{ width: `${percentage}%` }}
           role="progressbar"
@@ -79,13 +147,31 @@ export default function ProgressBar({
           aria-valuemin={0}
           aria-valuemax={max}
         />
+        
+        {/* Threshold markers (subtle) */}
+        {animate && size !== 'xs' && (
+          <div className="absolute inset-0 flex pointer-events-none">
+            {[25, 50, 75].map(threshold => (
+              <div 
+                key={threshold}
+                className={`
+                  absolute top-0 bottom-0 w-px
+                  transition-opacity duration-300
+                  ${percentage >= threshold ? 'opacity-0' : 'opacity-20'}
+                  bg-white/20
+                `}
+                style={{ left: `${threshold}%` }}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 /**
- * ProgressRing - Circular progress indicator (for XP, levels, etc.)
+ * ProgressRing - Circular progress indicator with micro-interactions
  */
 export function ProgressRing({
   value,
@@ -93,14 +179,37 @@ export function ProgressRing({
   size = 64,
   strokeWidth = 4,
   showValue = true,
+  animate = true,
   className = ''
 }) {
   const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
   const isComplete = percentage >= 100;
+  const prevPercentageRef = useRef(percentage);
+  const [isPulsing, setIsPulsing] = useState(false);
   
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (percentage / 100) * circumference;
+
+  // Detect threshold crossings
+  useEffect(() => {
+    if (!animate) return;
+    
+    const prevPct = prevPercentageRef.current;
+    const THRESHOLDS = [25, 50, 75, 100];
+    
+    const crossedThreshold = THRESHOLDS.some(threshold => 
+      prevPct < threshold && percentage >= threshold
+    );
+    
+    if (crossedThreshold) {
+      setIsPulsing(true);
+      const timer = setTimeout(() => setIsPulsing(false), 600);
+      return () => clearTimeout(timer);
+    }
+    
+    prevPercentageRef.current = percentage;
+  }, [percentage, animate]);
 
   // Color based on completion
   const getStrokeColor = () => {
@@ -112,10 +221,20 @@ export function ProgressRing({
 
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
+      {/* Pulse ring (behind) */}
+      {isPulsing && (
+        <div 
+          className="absolute inset-0 rounded-full ring-pulse"
+          style={{ 
+            boxShadow: `0 0 0 0 ${getStrokeColor()}`,
+          }}
+        />
+      )}
+      
       <svg
         width={size}
         height={size}
-        className="transform -rotate-90"
+        className={`transform -rotate-90 ${isPulsing ? 'scale-105' : 'scale-100'} transition-transform duration-200`}
       >
         {/* Track */}
         <circle
@@ -143,8 +262,10 @@ export function ProgressRing({
       
       {showValue && (
         <span className={`
-          absolute text-xs font-semibold
+          absolute text-xs font-semibold tabular-nums
           ${isComplete ? 'text-success' : 'text-text-primary'}
+          ${isPulsing ? 'scale-110' : 'scale-100'}
+          transition-transform duration-200
         `}>
           {Math.round(percentage)}
         </span>
@@ -156,15 +277,12 @@ export function ProgressRing({
 /**
  * Usage Examples:
  * 
- * <ProgressBar value={75} />
- * // Purple progress bar at 75%
+ * <ProgressBar value={75} animate />
+ * // Pulses when crossing 75% threshold
  * 
- * <ProgressBar value={100} showLabel />
- * // Teal (complete) progress bar with label
+ * <ProgressBar value={100} showLabel countUp />
+ * // Teal bar with count-up animation and shine effect
  * 
- * <ProgressBar value={25} size="lg" />
- * // Large bar with darker purple (low progress)
- * 
- * <ProgressRing value={75} size={48} />
- * // Circular progress ring
+ * <ProgressRing value={50} size={48} animate />
+ * // Ring that pulses at 50%
  */
