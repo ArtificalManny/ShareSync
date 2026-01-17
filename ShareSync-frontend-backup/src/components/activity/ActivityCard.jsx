@@ -1,16 +1,20 @@
 // src/components/activity/ActivityCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - "Breathing Card System"
+// DESIGN SYSTEM v2.0 - PHASE 4: Information Architecture
 // ═══════════════════════════════════════════════════════════════════════════════
-// 3-ELEMENT RULE APPLIED:
-// 1) User (avatar + name)  2) Action + description  3) Timestamp + earned badges
+// 3-ZONE PATTERN (Asana-style consistent scanning):
+//
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │ ZONE 1: Identity      │ ZONE 2: Status              │ ZONE 3: Action        │
+// │ ──────────────────    │ ──────────────────          │ ──────────────────    │
+// │ Avatar + User + Action│ Description (what happened) │ Time + Earned badges  │
+// └─────────────────────────────────────────────────────────────────────────────┘
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from 'react';
-import Card, { CardBadge } from '../common/Card';
-import { Flame } from 'lucide-react';
+import { Flame, ChevronRight } from 'lucide-react';
 
-export default function ActivityCard({ user, action, description, timestamp, streakDays, xp, tier }) {
+export default function ActivityCard({ user, action, description, timestamp, streakDays, xp, tier, onClick }) {
   const formatTimeAgo = (date) => {
     const diff = Math.floor((Date.now() - new Date(date)) / 1000);
     if (diff < 60) return `${diff}s ago`;
@@ -19,23 +23,35 @@ export default function ActivityCard({ user, action, description, timestamp, str
     return `${Math.floor(diff / 86400)}d ago`;
   };
 
-  // Only show streak badge if impressive (7+ days)
+  // Only show streak if impressive (7+ days)
   const showStreak = streakDays >= 7;
 
   return (
-    <Card variant="ambient" padding="sm" className="group">
-      {/* Header: User + Timestamp */}
-      <div className="flex items-start gap-3">
-        {/* Element 1: User Avatar */}
+    <div 
+      onClick={onClick}
+      className={`
+        group flex items-center gap-4 p-3 rounded-xl
+        bg-surface-1 border border-white/[0.06]
+        hover:bg-surface-2 hover:border-white/[0.1]
+        transition-all duration-200
+        ${onClick ? 'cursor-pointer' : ''}
+      `}
+    >
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 1: Identity (Who did what?)
+          Avatar + User name + Action verb
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        {/* Avatar */}
         <img 
           src={user?.avatar || '/default-avatar.png'} 
           alt={user?.name || 'User'} 
-          className="w-9 h-9 rounded-full bg-surface-2 shrink-0"
+          className="w-9 h-9 rounded-full bg-surface-2 shrink-0 object-cover"
         />
         
-        <div className="flex-1 min-w-0">
-          {/* User + Action */}
-          <div className="flex items-center gap-2 flex-wrap">
+        {/* User + Action + Description */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-medium text-text-primary">
               {user?.name}
             </span>
@@ -44,38 +60,58 @@ export default function ActivityCard({ user, action, description, timestamp, str
             </span>
           </div>
           
-          {/* Element 2: Description */}
+          {/* Description (truncated) */}
           {description && (
-            <p className="text-sm text-text-secondary mt-1 line-clamp-2">
+            <p className="text-xs text-text-secondary mt-0.5 truncate">
               {description}
             </p>
           )}
-          
-          {/* Element 3: Metadata Row */}
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            {/* Timestamp */}
-            <span className="text-xs text-text-tertiary">
-              {formatTimeAgo(timestamp)}
-            </span>
-            
-            {/* Earned badges - only show if meaningful */}
-            {showStreak && (
-              <CardBadge variant="warning">
-                <Flame className="w-3 h-3 mr-1" />
-                {streakDays}d
-              </CardBadge>
-            )}
-            
-            {xp > 0 && (
-              <CardBadge variant="brand">+{xp} XP</CardBadge>
-            )}
-            
-            {tier && (
-              <CardBadge variant="default">{tier}</CardBadge>
-            )}
-          </div>
         </div>
       </div>
-    </Card>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 2: Status (When? + Earned rewards)
+          Timestamp + XP/Streak badges (if earned)
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="hidden sm:flex items-center gap-2 shrink-0">
+        {/* Earned badges - compact, only if meaningful */}
+        {showStreak && (
+          <span className="flex items-center gap-1 text-[10px] font-medium text-warning">
+            <Flame className="w-3 h-3" />
+            {streakDays}d
+          </span>
+        )}
+        
+        {xp > 0 && (
+          <span className="text-[10px] font-medium text-brand">
+            +{xp} XP
+          </span>
+        )}
+        
+        {tier && (
+          <span className="text-[10px] font-medium text-text-tertiary">
+            {tier}
+          </span>
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 3: Action (Time + Navigate)
+          Timestamp + Chevron
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="text-xs text-text-tertiary">
+          {formatTimeAgo(timestamp)}
+        </span>
+
+        {onClick && (
+          <ChevronRight className="
+            w-4 h-4 text-text-tertiary
+            opacity-0 group-hover:opacity-100
+            transition-opacity duration-200
+          " />
+        )}
+      </div>
+    </div>
   );
 }

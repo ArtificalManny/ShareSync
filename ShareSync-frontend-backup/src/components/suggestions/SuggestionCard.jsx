@@ -1,34 +1,42 @@
 // src/components/suggestions/SuggestionCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - "Breathing Card System"
+// DESIGN SYSTEM v2.0 - PHASE 4: Information Architecture
 // ═══════════════════════════════════════════════════════════════════════════════
-// 3-ELEMENT RULE APPLIED:
-// 1) Title + context badge  2) Content  3) Author + votes
+// 3-ZONE PATTERN (Asana-style consistent scanning):
+//
+// This component is a CARD (not a row), so zones stack vertically:
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │ ZONE 1: Identity - Title + Context + Author                                 │
+// ├─────────────────────────────────────────────────────────────────────────────┤
+// │ ZONE 2: Status - Content preview                                            │
+// ├─────────────────────────────────────────────────────────────────────────────┤
+// │ ZONE 3: Action - Vote + Comments + Implement                                │
+// └─────────────────────────────────────────────────────────────────────────────┘
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from 'react';
-import { ThumbsUp, MessageCircle, CheckCircle, Clock } from 'lucide-react';
-import Card, { CardBadge } from '../common/Card';
+import { ThumbsUp, MessageCircle, CheckCircle, Clock, ChevronRight } from 'lucide-react';
 import { toast } from '../ui/toast';
 
 /* ─────────────────────────────────────────────────────────────────────────
-   CONTEXT BADGE CONFIG
+   CONTEXT CONFIG
 ───────────────────────────────────────────────────────────────────────── */
 const contextConfig = {
-  task: { label: 'Task', variant: 'brand' },
-  announcement: { label: 'Announcement', variant: 'warning' },
-  general: { label: 'General', variant: 'success' },
-  feature: { label: 'Feature', variant: 'brand' },
+  task: { label: 'Task', color: 'text-brand', bg: 'bg-brand/10' },
+  announcement: { label: 'Announcement', color: 'text-warning', bg: 'bg-warning/10' },
+  general: { label: 'General', color: 'text-success', bg: 'bg-success/10' },
+  feature: { label: 'Feature', color: 'text-brand', bg: 'bg-brand/10' },
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────────────────────────────────── */
-const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false }) => {
+const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false, onClick }) => {
   const [voted, setVoted] = useState(false);
   const [implementing, setImplementing] = useState(false);
 
-  const handleVote = () => {
+  const handleVote = (e) => {
+    e.stopPropagation();
     if (voted) {
       toast({ title: 'Already voted', variant: 'default' });
       return;
@@ -38,7 +46,8 @@ const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false 
     toast({ title: 'Vote counted!', variant: 'success' });
   };
 
-  const handleImplement = async () => {
+  const handleImplement = async (e) => {
+    e.stopPropagation();
     setImplementing(true);
     try {
       await onImplement?.(suggestion.id);
@@ -51,104 +60,139 @@ const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false 
   };
 
   const context = contextConfig[suggestion.context] || contextConfig.general;
+  const isImplemented = suggestion.implemented;
 
   return (
-    <Card 
-      variant={suggestion.implemented ? 'ambient' : 'elevated'}
-      status={suggestion.implemented ? 'success' : null}
-      padding="md"
+    <div 
+      onClick={onClick}
+      className={`
+        group rounded-xl overflow-hidden
+        bg-surface-1 border border-white/[0.06]
+        hover:bg-surface-2 hover:border-white/[0.1]
+        transition-all duration-200
+        ${onClick ? 'cursor-pointer' : ''}
+        ${isImplemented ? 'opacity-70 border-l-2 border-l-success' : ''}
+      `}
     >
-      {/* Header: Title + Badge */}
-      <div className="mb-3">
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <CardBadge variant={context.variant}>
-            {context.label}
-          </CardBadge>
-          {suggestion.implemented && (
-            <CardBadge variant="success">
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Implemented
-            </CardBadge>
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 1: Identity (What is this suggestion?)
+          Context badge + Title + Author + Time
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="p-4 pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            {/* Context + Implemented badges */}
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${context.bg} ${context.color}`}>
+                {context.label}
+              </span>
+              {isImplemented && (
+                <span className="flex items-center gap-1 text-[10px] font-medium text-success">
+                  <CheckCircle className="w-3 h-3" />
+                  Done
+                </span>
+              )}
+            </div>
+            
+            {/* Title */}
+            <h3 className="text-sm font-medium text-text-primary group-hover:text-brand transition-colors line-clamp-2">
+              {suggestion.title}
+            </h3>
+            
+            {/* Related to (if exists) */}
+            {suggestion.targetName && (
+              <p className="text-xs text-text-tertiary mt-1">
+                → {suggestion.targetName}
+              </p>
+            )}
+          </div>
+
+          {/* Chevron */}
+          {onClick && (
+            <ChevronRight className="
+              w-4 h-4 text-text-tertiary shrink-0 mt-1
+              opacity-0 group-hover:opacity-100
+              transition-opacity duration-200
+            " />
           )}
         </div>
-        
-        {/* Element 1: Title */}
-        <h3 className="text-base font-semibold text-text-primary">
-          {suggestion.title}
-        </h3>
-        
-        {suggestion.targetName && (
-          <p className="text-xs text-text-tertiary mt-1">
-            Related to: <span className="text-brand">{suggestion.targetName}</span>
-          </p>
-        )}
-      </div>
 
-      {/* Element 2: Content */}
-      <p className="text-sm text-text-secondary mb-4 line-clamp-3">
-        {suggestion.content}
-      </p>
-
-      {/* Element 3: Author + Time */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-6 h-6 bg-brand rounded-full flex items-center justify-center text-white text-xs font-medium">
-          {suggestion.author?.avatar || suggestion.author?.name?.[0] || '?'}
+        {/* Author + Time */}
+        <div className="flex items-center gap-2 mt-3">
+          <div className="w-5 h-5 rounded-full bg-surface-3 flex items-center justify-center text-[10px] font-medium text-text-secondary">
+            {suggestion.author?.name?.[0] || '?'}
+          </div>
+          <span className="text-xs text-text-tertiary">{suggestion.author?.name}</span>
+          <span className="text-text-tertiary opacity-50">·</span>
+          <span className="text-xs text-text-tertiary flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {suggestion.timeAgo}
+          </span>
         </div>
-        <span className="text-xs text-text-secondary">{suggestion.author?.name}</span>
-        <span className="text-text-tertiary">·</span>
-        <span className="text-xs text-text-tertiary flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          {suggestion.timeAgo}
-        </span>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
-        <div className="flex items-center gap-3">
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 2: Status (What's the suggestion about?)
+          Content preview
+      ═══════════════════════════════════════════════════════════════════ */}
+      {suggestion.content && (
+        <div className="px-4 pb-3">
+          <p className="text-xs text-text-secondary line-clamp-2">
+            {suggestion.content}
+          </p>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 3: Action (What can I do?)
+          Vote + Comments + Implement button
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="px-4 py-3 border-t border-white/[0.04] flex items-center justify-between">
+        <div className="flex items-center gap-4">
           {/* Vote Button */}
           <button
             onClick={handleVote}
-            disabled={voted || suggestion.implemented}
+            disabled={voted || isImplemented}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium
+              flex items-center gap-1.5 text-xs font-medium
               transition-colors
               ${voted 
-                ? 'bg-brand/10 text-brand cursor-not-allowed'
-                : 'bg-surface-2 text-text-secondary hover:bg-brand/10 hover:text-brand'
+                ? 'text-brand' 
+                : 'text-text-tertiary hover:text-brand'
               }
-              disabled:opacity-50
+              disabled:opacity-50 disabled:cursor-not-allowed
             `}
           >
-            <ThumbsUp className={`w-4 h-4 ${voted ? 'fill-current' : ''}`} />
+            <ThumbsUp className={`w-3.5 h-3.5 ${voted ? 'fill-current' : ''}`} />
             <span>{suggestion.votes + (voted ? 1 : 0)}</span>
           </button>
 
           {/* Comments Count */}
-          <div className="flex items-center gap-1.5 text-text-tertiary text-sm">
-            <MessageCircle className="w-4 h-4" />
-            <span>{suggestion.comments || 0}</span>
-          </div>
+          <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
+            <MessageCircle className="w-3.5 h-3.5" />
+            {suggestion.comments || 0}
+          </span>
         </div>
 
         {/* Implement Button */}
-        {canImplement && !suggestion.implemented && (
+        {canImplement && !isImplemented && (
           <button
             onClick={handleImplement}
             disabled={implementing}
             className="
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium
-              bg-success text-white
-              hover:bg-success/90
+              flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium
+              bg-success/10 text-success
+              hover:bg-success hover:text-white
               disabled:opacity-50
               transition-colors
             "
           >
-            <CheckCircle className="w-4 h-4" />
-            {implementing ? 'Implementing...' : 'Mark Done'}
+            <CheckCircle className="w-3.5 h-3.5" />
+            {implementing ? '...' : 'Done'}
           </button>
         )}
       </div>
-    </Card>
+    </div>
   );
 };
 

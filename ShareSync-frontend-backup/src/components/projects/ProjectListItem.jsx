@@ -1,15 +1,24 @@
 // src/components/projects/ProjectListItem.jsx
-import React, { useEffect, useMemo, useRef } from "react";
-import { Users, Clock, Link2 } from "lucide-react";
-import AvatarGroup from "../ui/AvatarGroup.jsx";
-import StatusPill from "./StatusPill.jsx";
-import AnimatedRing from "../ui/AnimatedRing";
-import useRecentFlag from "../../hooks/useRecentFlag";
-import useReducedMotion from "../../hooks/useReducedMotion";
-import { formatRelativeTime } from "../../utils/formatters";
-import Button from "../ui/Button.jsx";
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - PHASE 4: Information Architecture
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3-ZONE PATTERN (Asana-style consistent scanning):
+//
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │ ZONE 1: Identity      │ ZONE 2: Status              │ ZONE 3: Action        │
+// │ ──────────────────    │ ──────────────────          │ ──────────────────    │
+// │ Icon + Title          │ Status pill + Last updated  │ Members + Chevron     │
+// │ (+ public badge)      │                             │                       │
+// └─────────────────────────────────────────────────────────────────────────────┘
+// ═══════════════════════════════════════════════════════════════════════════════
 
-// lazy import so first paint is fast; we call this on hover/focus
+import React, { useEffect, useMemo, useRef } from "react";
+import { Clock, Link2, ChevronRight, Folder } from "lucide-react";
+import AvatarGroup from "../ui/AvatarGroup.jsx";
+import useRecentFlag from "../../hooks/useRecentFlag";
+import { formatRelativeTime } from "../../utils/formatters";
+
+// Lazy prefetch for performance
 let _prefetchStats = null;
 async function prefetchStats(projectId) {
   try {
@@ -21,55 +30,25 @@ async function prefetchStats(projectId) {
   } catch {}
 }
 
-/** Small SVG renderer for the preset keys used across the app */
-function SVGIcon({ name, className = "w-5 h-5" }) {
-  const common = { className, "aria-hidden": true };
-  switch (name) {
-    case "rocket":
-      return (
-        <svg viewBox="0 0 24 24" {...common}>
-          <path d="M12 2c3 0 6 2 8 4l-6 6-2-2-6 6-2-2 6-6-2-2 6-6z" fill="currentColor" />
-        </svg>
-      );
-    case "bolt":
-      return (
-        <svg viewBox="0 0 24 24" {...common}>
-          <path d="M13 2L3 14h7l-1 8 11-12h-7l0-8z" fill="currentColor" />
-        </svg>
-      );
-    case "target":
-      return (
-        <svg viewBox="0 0 24 24" {...common}>
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" fill="none" />
-          <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" fill="none" />
-          <circle cx="12" cy="12" r="2" fill="currentColor" />
-        </svg>
-      );
-    default:
-      return <div className={className} />;
-  }
-}
-
 export default function ProjectListItem({ project, onClick, recentWindowMs = 10 * 60 * 1000 }) {
   const id = project?._id || project?.id;
   const title = project?.title || project?.name || "Untitled";
   const lastActivityAt = project?.lastActivityAt || project?.updatedAt || project?.createdAt;
   const status = (project?.status || "In Progress").toString();
   const publicEnabled = !!(project?.publicEnabled || project?.publicToken);
-
-  // icon support (emoji or preset svg)
   const icon = project?.icon || null;
+  const emoji = project?.emoji || null;
 
-  const members = Array.isArray(project?.members) && project.members.length
-    ? normalizeMembers(project.members)
-    : fallbackMembers(project);
+  const members = useMemo(() => {
+    if (Array.isArray(project?.members) && project.members.length) {
+      return normalizeMembers(project.members);
+    }
+    return fallbackMembers(project);
+  }, [project]);
 
   const rel = useMemo(() => formatRelativeTime(lastActivityAt), [lastActivityAt]);
-  const { barCls } = useMemo(() => accentForStatus(status), [status]);
-
-  // Recent activity indicator
+  const statusConfig = useMemo(() => getStatusConfig(status), [status]);
   const hasRecent = useRecentFlag(lastActivityAt, recentWindowMs);
-  const prefersReduced = useReducedMotion();
 
   // Debounced prefetch on hover/focus
   const hoverTimer = useRef(null);
@@ -91,107 +70,114 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
       onMouseLeave={handleLeave}
       onFocus={handleEnter}
       onBlur={handleLeave}
-      className="group relative w-full text-left rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 overflow-hidden marching"
+      className={`
+        group relative w-full text-left
+        flex items-center gap-4 p-4 rounded-xl
+        bg-surface-1 border border-white/[0.06]
+        hover:bg-surface-2 hover:border-white/[0.1]
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand
+        transition-all duration-200
+        ${statusConfig.borderClass}
+      `}
       aria-label={`Open project ${title}`}
     >
-      {/* left gradient bar */}
-      <span className={`absolute left-0 top-0 h-full w-1.5 rounded-l-2xl ${barCls} transition-[width] duration-200 group-hover:w-2`} />
-
-      {/* shine sweep (disabled under reduced motion via .shine rules) */}
-      <span className="shine pointer-events-none" aria-hidden="true" />
-
-      {/* Header: icon + title + avatars */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 flex items-center gap-2">
-          {/* Icon (emoji/svg) with recent halo */}
-          <span className="relative shrink-0 h-7 w-7 rounded-lg grid place-content-center bg-slate-50 dark:bg-slate-800 text-xl">
-            {/* Animated ring around icon if recent + not reduced motion */}
-            {hasRecent && !prefersReduced && (
-              <AnimatedRing
-                size="36px"
-                thickness="2px"
-                animated
-                className="absolute -inset-[5px] pointer-events-none rounded-xl"
-              />
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 1: Identity (What project is this?)
+          Icon + Title + Public badge
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        {/* Icon with recent indicator */}
+        <div className="relative shrink-0">
+          <div className={`
+            w-10 h-10 rounded-lg flex items-center justify-center
+            bg-surface-2 group-hover:bg-brand/10
+            transition-colors duration-200
+          `}>
+            {emoji ? (
+              <span className="text-lg">{emoji}</span>
+            ) : icon?.kind === "emoji" ? (
+              <span className="text-lg">{icon.value}</span>
+            ) : (
+              <Folder className="w-4 h-4 text-text-tertiary group-hover:text-brand" />
             )}
-            {/* Static tiny dot when reduced motion */}
-            {hasRecent && prefersReduced && (
-              <span
-                className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
-                aria-hidden
-              />
-            )}
-
-            {icon?.kind === "emoji" && (
-              <span role="img" aria-label="project icon" className="leading-none">
-                {icon.value}
-              </span>
-            )}
-            {icon?.kind === "svg" && (
-              <span className="text-indigo-600">
-                <SVGIcon name={icon.value} className="w-4.5 h-4.5" />
-              </span>
-            )}
-            {!icon && (
-              <span className="text-indigo-600">
-                <SVGIcon name="target" className="w-4.5 h-4.5" />
-              </span>
-            )}
-          </span>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="truncate text-base font-semibold text-slate-900 dark:text-white">
-                {title}
-              </h3>
-              {publicEnabled && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  title="Public link enabled"
-                  className="h-6 px-2 py-0 inline-flex items-center gap-1 text-[11px]"
-                >
-                  <Link2 className="w-3.5 h-3.5" />
-                  Public
-                </Button>
-              )}
-            </div>
           </div>
+          
+          {/* Recent activity dot */}
+          {hasRecent && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-success border-2 border-surface-1" />
+          )}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Users className="w-4 h-4 text-slate-400" aria-hidden="true" />
-          <div className="transition-transform duration-200 group-hover:scale-[1.04]">
-            <AvatarGroup
-              users={members}
-              max={4}
-              size={26}
-              highlightFirstRecent={hasRecent}
-            />
+        {/* Title + Public badge */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-medium text-text-primary truncate group-hover:text-brand transition-colors">
+              {title}
+            </h3>
+            {publicEnabled && (
+              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-3 text-text-tertiary shrink-0">
+                <Link2 className="w-3 h-3" />
+                Public
+              </span>
+            )}
           </div>
+          
+          {/* Description preview (if exists) */}
+          {project?.description && (
+            <p className="text-xs text-text-tertiary mt-0.5 truncate">
+              {project.description}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Subtext: status pill + last update */}
-      <div className="mt-2 flex items-center justify-between">
-        <StatusPill status={status} />
-        <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-          <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 2: Status (How is it going?)
+          Status pill + Last updated time
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="hidden sm:flex items-center gap-3 shrink-0">
+        {/* Status pill - simple text, color-coded */}
+        <span className={`
+          text-xs font-medium px-2 py-0.5 rounded
+          ${statusConfig.pillClass}
+        `}>
+          {status}
+        </span>
+        
+        {/* Last updated */}
+        <span className="flex items-center gap-1 text-xs text-text-tertiary">
+          <Clock className="w-3 h-3" />
           {rel || "—"}
         </span>
       </div>
 
-      {/* Optional description */}
-      {project?.description ? (
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
-          {project.description}
-        </p>
-      ) : null}
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 3: Action (Who's involved? Navigate)
+          Member avatars + Chevron
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex items-center gap-3 shrink-0">
+        {/* Member avatars */}
+        <AvatarGroup
+          users={members}
+          max={3}
+          size={24}
+          highlightFirstRecent={hasRecent}
+        />
+
+        {/* Chevron */}
+        <ChevronRight className="
+          w-4 h-4 text-text-tertiary
+          opacity-0 group-hover:opacity-100
+          transition-opacity duration-200
+        " />
+      </div>
     </button>
   );
 }
 
-/* ---------- helpers ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════════════════════════════ */
 
 function normalizeMembers(list) {
   return list.map((u, i) => ({
@@ -219,16 +205,30 @@ function fallbackMembers(project) {
   return [owner, ...others].filter(Boolean);
 }
 
-function accentForStatus(status) {
+function getStatusConfig(status) {
   const s = (status || "").toLowerCase();
+  
   if (s.includes("complete") || s.includes("done")) {
-    return { barCls: "bg-gradient-to-b from-emerald-500 via-teal-500 to-cyan-500" };
+    return {
+      borderClass: "border-l-2 border-l-success",
+      pillClass: "bg-success/10 text-success",
+    };
   }
   if (s.includes("blocked") || s.includes("risk")) {
-    return { barCls: "bg-gradient-to-b from-amber-500 via-orange-500 to-rose-500" };
+    return {
+      borderClass: "border-l-2 border-l-danger",
+      pillClass: "bg-danger/10 text-danger",
+    };
   }
   if (s.includes("paused")) {
-    return { barCls: "bg-gradient-to-b from-slate-400 via-slate-500 to-slate-600" };
+    return {
+      borderClass: "border-l-2 border-l-text-tertiary",
+      pillClass: "bg-surface-3 text-text-tertiary",
+    };
   }
-  return { barCls: "bg-gradient-to-b from-indigo-500 via-fuchsia-500 to-pink-500" };
+  // Default: In Progress
+  return {
+    borderClass: "",
+    pillClass: "bg-brand/10 text-brand",
+  };
 }
