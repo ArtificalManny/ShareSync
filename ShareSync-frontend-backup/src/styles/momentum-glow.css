@@ -1,0 +1,399 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOMENTUM GLOW SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   THE CONCEPT:
+   Your interface literally gets brighter as you ship more.
+   This creates a subconscious reward loop - productivity = visual warmth.
+   
+   INTENSITY LEVELS:
+   0 = Idle (no glow)
+   1 = Active (subtle warmth)
+   2 = Building (noticeable glow)
+   3 = Flowing (strong presence)
+   4 = Peak (commanding glow)
+   5 = On Fire (maximum intensity)
+   
+   USAGE:
+   - Apply [data-momentum="0-5"] to any element
+   - Or use .momentum-glow-{1-5} classes
+   - Combine with .momentum-pulse for animated states
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE MOMENTUM VARIABLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Glow color bases */
+  --momentum-color: 124 58 237;  /* violet-600 */
+  --momentum-color-bright: 139 92 246;  /* violet-500 */
+  --momentum-color-intense: 167 139 250;  /* violet-400 */
+  
+  /* Glow spread values */
+  --momentum-spread-1: 30px;
+  --momentum-spread-2: 45px;
+  --momentum-spread-3: 60px;
+  --momentum-spread-4: 80px;
+  --momentum-spread-5: 100px;
+  
+  /* Glow opacity values */
+  --momentum-opacity-1: 0.08;
+  --momentum-opacity-2: 0.14;
+  --momentum-opacity-3: 0.22;
+  --momentum-opacity-4: 0.32;
+  --momentum-opacity-5: 0.45;
+  
+  /* Animation timing */
+  --momentum-transition: 800ms cubic-bezier(0.4, 0, 0.2, 1);
+  --momentum-pulse-duration: 2s;
+}
+
+/* Dark mode intensification */
+:root.dark,
+[data-theme="dark"] {
+  --momentum-color: 139 92 246;  /* violet-500 */
+  --momentum-color-bright: 167 139 250;  /* violet-400 */
+  --momentum-color-intense: 196 181 253;  /* violet-300 */
+  
+  /* Stronger presence in dark mode */
+  --momentum-opacity-1: 0.12;
+  --momentum-opacity-2: 0.20;
+  --momentum-opacity-3: 0.30;
+  --momentum-opacity-4: 0.42;
+  --momentum-opacity-5: 0.55;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DATA ATTRIBUTE SELECTORS
+   Apply glow based on momentum level: [data-momentum="0-5"]
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Level 0: No glow (idle) */
+[data-momentum="0"] {
+  --current-glow: none;
+  box-shadow: var(--current-glow);
+}
+
+/* Level 1: Subtle warmth */
+[data-momentum="1"] {
+  --current-glow: 
+    0 0 var(--momentum-spread-1) rgb(var(--momentum-color) / var(--momentum-opacity-1));
+  box-shadow: var(--current-glow);
+  transition: box-shadow var(--momentum-transition);
+}
+
+/* Level 2: Building momentum */
+[data-momentum="2"] {
+  --current-glow: 
+    0 0 var(--momentum-spread-2) rgb(var(--momentum-color) / var(--momentum-opacity-2)),
+    0 0 calc(var(--momentum-spread-2) * 0.5) rgb(var(--momentum-color-bright) / calc(var(--momentum-opacity-2) * 0.5));
+  box-shadow: var(--current-glow);
+  transition: box-shadow var(--momentum-transition);
+}
+
+/* Level 3: In the flow */
+[data-momentum="3"] {
+  --current-glow: 
+    0 0 var(--momentum-spread-3) rgb(var(--momentum-color) / var(--momentum-opacity-3)),
+    0 0 calc(var(--momentum-spread-3) * 0.6) rgb(var(--momentum-color-bright) / calc(var(--momentum-opacity-3) * 0.6)),
+    inset 0 0 20px rgb(var(--momentum-color) / 0.05);
+  box-shadow: var(--current-glow);
+  transition: box-shadow var(--momentum-transition);
+}
+
+/* Level 4: Peak performance */
+[data-momentum="4"] {
+  --current-glow: 
+    0 0 var(--momentum-spread-4) rgb(var(--momentum-color) / var(--momentum-opacity-4)),
+    0 0 calc(var(--momentum-spread-4) * 0.5) rgb(var(--momentum-color-bright) / calc(var(--momentum-opacity-4) * 0.6)),
+    0 0 calc(var(--momentum-spread-4) * 0.25) rgb(var(--momentum-color-intense) / calc(var(--momentum-opacity-4) * 0.3)),
+    inset 0 0 30px rgb(var(--momentum-color) / 0.08);
+  box-shadow: var(--current-glow);
+  transition: box-shadow var(--momentum-transition);
+}
+
+/* Level 5: On fire! Maximum intensity */
+[data-momentum="5"] {
+  --current-glow: 
+    0 0 var(--momentum-spread-5) rgb(var(--momentum-color) / var(--momentum-opacity-5)),
+    0 0 calc(var(--momentum-spread-5) * 0.6) rgb(var(--momentum-color-bright) / calc(var(--momentum-opacity-5) * 0.7)),
+    0 0 calc(var(--momentum-spread-5) * 0.3) rgb(var(--momentum-color-intense) / calc(var(--momentum-opacity-5) * 0.4)),
+    inset 0 0 40px rgb(var(--momentum-color) / 0.12);
+  box-shadow: var(--current-glow);
+  transition: box-shadow var(--momentum-transition);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOMENTUM PULSE ANIMATION
+   Adds subtle breathing effect to indicate active state
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@keyframes momentum-breathe {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes momentum-glow-pulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.08);
+  }
+}
+
+/* Apply pulse to elements with momentum */
+.momentum-pulse {
+  animation: momentum-breathe var(--momentum-pulse-duration) ease-in-out infinite;
+}
+
+.momentum-glow-pulse {
+  animation: momentum-glow-pulse var(--momentum-pulse-duration) ease-in-out infinite;
+}
+
+/* Only animate when user hasn't requested reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .momentum-pulse,
+  .momentum-glow-pulse {
+    animation: none;
+  }
+  
+  [data-momentum] {
+    transition: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOMENTUM AURA BACKGROUNDS
+   Radial gradients that intensify with momentum
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.momentum-aura {
+  position: relative;
+}
+
+.momentum-aura::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    rgb(var(--momentum-color) / var(--aura-intensity, 0)) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity var(--momentum-transition);
+}
+
+/* Aura intensity levels */
+[data-momentum="1"] .momentum-aura::before,
+.momentum-aura[data-momentum="1"]::before {
+  --aura-intensity: 0.05;
+}
+
+[data-momentum="2"] .momentum-aura::before,
+.momentum-aura[data-momentum="2"]::before {
+  --aura-intensity: 0.08;
+}
+
+[data-momentum="3"] .momentum-aura::before,
+.momentum-aura[data-momentum="3"]::before {
+  --aura-intensity: 0.12;
+}
+
+[data-momentum="4"] .momentum-aura::before,
+.momentum-aura[data-momentum="4"]::before {
+  --aura-intensity: 0.18;
+}
+
+[data-momentum="5"] .momentum-aura::before,
+.momentum-aura[data-momentum="5"]::before {
+  --aura-intensity: 0.25;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOMENTUM BORDER GLOW
+   Borders that light up with momentum
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.momentum-border {
+  position: relative;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.momentum-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgb(var(--momentum-color) / var(--border-glow, 0.1)),
+    rgb(var(--momentum-color-bright) / var(--border-glow, 0.1))
+  );
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  transition: opacity var(--momentum-transition);
+}
+
+/* Border glow intensity */
+[data-momentum="1"] .momentum-border::before { --border-glow: 0.15; }
+[data-momentum="2"] .momentum-border::before { --border-glow: 0.25; }
+[data-momentum="3"] .momentum-border::before { --border-glow: 0.40; }
+[data-momentum="4"] .momentum-border::before { --border-glow: 0.60; }
+[data-momentum="5"] .momentum-border::before { --border-glow: 0.80; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOMENTUM INDICATOR BAR
+   Visual progress bar showing current momentum level
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.momentum-indicator {
+  --bar-height: 4px;
+  --bar-radius: 2px;
+  
+  width: 100%;
+  height: var(--bar-height);
+  background: rgb(var(--momentum-color) / 0.15);
+  border-radius: var(--bar-radius);
+  overflow: hidden;
+  position: relative;
+}
+
+.momentum-indicator__fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--momentum-color)),
+    rgb(var(--momentum-color-bright))
+  );
+  border-radius: var(--bar-radius);
+  transition: width var(--momentum-transition);
+}
+
+/* Fill widths based on momentum level */
+[data-momentum="0"] .momentum-indicator__fill { width: 0%; }
+[data-momentum="1"] .momentum-indicator__fill { width: 20%; }
+[data-momentum="2"] .momentum-indicator__fill { width: 40%; }
+[data-momentum="3"] .momentum-indicator__fill { width: 60%; }
+[data-momentum="4"] .momentum-indicator__fill { width: 80%; }
+[data-momentum="5"] .momentum-indicator__fill { width: 100%; }
+
+/* Shimmer effect on high momentum */
+@keyframes momentum-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+[data-momentum="4"] .momentum-indicator__fill::after,
+[data-momentum="5"] .momentum-indicator__fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.3),
+    transparent
+  );
+  animation: momentum-shimmer 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-momentum="4"] .momentum-indicator__fill::after,
+  [data-momentum="5"] .momentum-indicator__fill::after {
+    animation: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOMENTUM-RESPONSIVE TYPOGRAPHY
+   Text that glows with momentum
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.momentum-text {
+  transition: text-shadow var(--momentum-transition), color var(--momentum-transition);
+}
+
+[data-momentum="1"] .momentum-text {
+  text-shadow: 0 0 20px rgb(var(--momentum-color) / 0.2);
+}
+
+[data-momentum="2"] .momentum-text {
+  text-shadow: 0 0 25px rgb(var(--momentum-color) / 0.3);
+}
+
+[data-momentum="3"] .momentum-text {
+  text-shadow: 0 0 30px rgb(var(--momentum-color) / 0.4);
+  color: rgb(var(--momentum-color-bright));
+}
+
+[data-momentum="4"] .momentum-text {
+  text-shadow: 0 0 35px rgb(var(--momentum-color-bright) / 0.5);
+  color: rgb(var(--momentum-color-intense));
+}
+
+[data-momentum="5"] .momentum-text {
+  text-shadow: 
+    0 0 40px rgb(var(--momentum-color-bright) / 0.6),
+    0 0 60px rgb(var(--momentum-color-intense) / 0.3);
+  color: rgb(var(--momentum-color-intense));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOMENTUM STATE CLASSES
+   Semantic classes for momentum states
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Idle state - no activity */
+.momentum-idle {
+  --current-momentum: 0;
+}
+
+/* Warming up - just started */
+.momentum-warming {
+  --current-momentum: 1;
+}
+
+/* Building - getting into it */
+.momentum-building {
+  --current-momentum: 2;
+}
+
+/* Flowing - in the zone */
+.momentum-flowing {
+  --current-momentum: 3;
+}
+
+/* Peak - maximum productivity */
+.momentum-peak {
+  --current-momentum: 4;
+}
+
+/* On fire - exceptional performance */
+.momentum-fire {
+  --current-momentum: 5;
+}
+
+/* Apply momentum based on class */
+.momentum-idle { box-shadow: var(--momentum-glow-0, none); }
+.momentum-warming { box-shadow: var(--momentum-glow-1); }
+.momentum-building { box-shadow: var(--momentum-glow-2); }
+.momentum-flowing { box-shadow: var(--momentum-glow-3); }
+.momentum-peak { box-shadow: var(--momentum-glow-4); }
+.momentum-fire { box-shadow: var(--momentum-glow-5); }

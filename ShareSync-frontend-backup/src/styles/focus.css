@@ -1,6 +1,21 @@
-/* Accessible, on-brand focus ring */
-/* Applies only when navigating by keyboard (:focus-visible) */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC FOCUS SYSTEM v2.0 - Phase 1: Emotional Color System
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   Accessible, on-brand focus rings using Deep Violet signature
+   
+   PRINCIPLES:
+   • Focus rings are for keyboard navigation only (:focus-visible)
+   • Brand color (Deep Violet) for visual consistency
+   • High contrast for accessibility
+   • Subtle but clear indication
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE FOCUS RING
+   Applies to all interactive elements when focused via keyboard
+   ═══════════════════════════════════════════════════════════════════════════════ */
 :where(
   a,
   button,
@@ -8,94 +23,243 @@
   select,
   textarea,
   [role="button"],
+  [role="link"],
+  [role="tab"],
+  [role="menuitem"],
+  [tabindex]:not([tabindex="-1"]),
+  .btn,
   .btn-icon,
   .sb-toggle,
-  .searchbar
+  .searchbar,
+  .card-interactive
 ):focus-visible {
   outline: none;
-  /* 2px contrast base + 4px accent ring */
+  /* 2px contrast base ring + 3px brand color ring */
   box-shadow:
-    0 0 0 2px rgb(var(--bg, 15 23 42)),
-    0 0 0 4px rgb(var(--ring, 99 102 241) / .55) !important;
-  border-color: color-mix(in oklab, rgb(var(--ring, 99 102 241)) 40%, transparent);
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 4px rgb(var(--brand-600-rgb, 124 58 237) / 0.6) !important;
+  border-color: rgb(var(--brand-600-rgb, 124 58 237) / 0.5);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   HIGH CONTRAST MODE
+   Enhanced visibility for users who need it
+   ═══════════════════════════════════════════════════════════════════════════════ */
 @media (prefers-contrast: more) {
   :where(
-    a,button,input,select,textarea,[role="button"],.btn-icon,.sb-toggle,.searchbar
+    a, button, input, select, textarea, 
+    [role="button"], [role="link"], [role="tab"],
+    .btn, .btn-icon, .sb-toggle, .searchbar
   ):focus-visible {
     box-shadow:
       0 0 0 2px #000,
-      0 0 0 5px rgb(var(--ring, 99 102 241));
+      0 0 0 5px var(--brand-500, #8B5CF6) !important;
+    outline: 2px solid var(--brand-500, #8B5CF6);
+    outline-offset: 4px;
   }
 }
 
-/* === Utilities (append to bottom) === */
-
-/* Opt-in focus ring for non-form elements or custom components */
-.focus-ring:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px rgb(var(--bg, 15 23 42)),
-    0 0 0 4px rgb(var(--ring, 99 102 241) / .55) !important;
-}
-
-/* Inset flavor (if you need it on compact pills) */
-.focus-ring-inset:focus-visible {
-  outline: none;
-  box-shadow:
-    inset 0 0 0 2px rgb(var(--bg, 15 23 42)),
-    inset 0 0 0 4px rgb(var(--ring, 99 102 241) / .55) !important;
-}
-
-/* Remove default ring when mouse-clicking but keep for keyboard */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   REMOVE FOCUS RING ON MOUSE CLICK
+   Only show focus indicators for keyboard navigation
+   ═══════════════════════════════════════════════════════════════════════════════ */
 :where(*):focus:not(:focus-visible) {
   outline: none !important;
   box-shadow: none !important;
 }
 
-/* Make any clickable card get a visible ring when focused */
-.card-clickable:focus-visible {
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FOCUS RING UTILITIES
+   Opt-in classes for custom components
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Standard focus ring */
+.focus-ring:focus-visible {
   outline: none;
   box-shadow:
-    0 0 0 2px rgb(var(--bg, 15 23 42)),
-    0 0 0 4px rgb(var(--ring, 99 102 241) / .55) !important;
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 4px rgb(var(--brand-600-rgb, 124 58 237) / 0.6) !important;
 }
 
-/* ===========================================================
-   Skip-to-content link (hidden until focused via keyboard)
-   =========================================================== */
+/* Inset focus ring - for compact elements like pills */
+.focus-ring-inset:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px var(--surface-0, #09090B),
+    inset 0 0 0 4px rgb(var(--brand-600-rgb, 124 58 237) / 0.6) !important;
+}
 
+/* Subtle focus ring - less prominent */
+.focus-ring-subtle:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgb(var(--brand-600-rgb, 124 58 237) / 0.4) !important;
+}
+
+/* Bold focus ring - more prominent */
+.focus-ring-bold:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 5px rgb(var(--brand-600-rgb, 124 58 237) / 0.7),
+    0 0 12px rgb(var(--brand-600-rgb, 124 58 237) / 0.3) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SEMANTIC FOCUS RINGS
+   Different colors for different contexts
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Success focus ring */
+.focus-ring-success:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 4px rgb(var(--success-500-rgb, 16 185 129) / 0.6) !important;
+}
+
+/* Warning focus ring */
+.focus-ring-warning:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 4px rgb(var(--warning-500-rgb, 245 158 11) / 0.6) !important;
+}
+
+/* Error/Danger focus ring */
+.focus-ring-error:focus-visible,
+.focus-ring-danger:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 4px rgb(var(--error-500-rgb, 239 68 68) / 0.6) !important;
+}
+
+/* Live/Cyan focus ring */
+.focus-ring-live:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 4px rgb(var(--cyan-500-rgb, 6 182 212) / 0.6) !important;
+}
+
+/* Energy focus ring */
+.focus-ring-energy:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 4px rgb(var(--energy-500-rgb, 244 63 94) / 0.6) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CARD FOCUS
+   Clickable cards with focus indication
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card-clickable:focus-visible,
+.card-interactive:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 4px rgb(var(--brand-600-rgb, 124 58 237) / 0.6),
+    var(--shadow-lg, 0 10px 15px rgba(0, 0, 0, 0.3)) !important;
+  border-color: rgb(var(--brand-600-rgb, 124 58 237) / 0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SKIP-TO-CONTENT LINK
+   Accessibility helper for keyboard users
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .skip-link {
   position: fixed;
   left: 0.75rem;
   top: 0.75rem;
   z-index: 10000;
 
-  /* visually hidden by default */
-  transform: translateY(-140%);
-  transition: transform 120ms ease;
+  /* Visually hidden by default */
+  transform: translateY(-150%);
+  opacity: 0;
+  transition: 
+    transform var(--motion-fast, 150ms) ease,
+    opacity var(--motion-fast, 150ms) ease;
 
-  /* looks when revealed */
-  background: rgb(var(--surface, 255 255 255));
-  color: rgb(var(--ink-900, 17 24 39));
-  padding: 8px 12px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgb(0 0 0 / 0.20);
+  /* Appearance when revealed */
+  background: var(--surface-1, #111113);
+  color: var(--text-primary, #FAFAFA);
+  padding: 10px 16px;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--border-default);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    var(--glow-brand);
   text-decoration: none;
   font-weight: 600;
+  font-size: 0.875rem;
 }
 
 .skip-link:focus,
 .skip-link:focus-visible {
-  transform: translateY(0); /* reveal */
+  transform: translateY(0);
+  opacity: 1;
   outline: none;
   box-shadow:
-    0 0 0 2px rgb(var(--bg, 15 23 42)),
-    0 0 0 5px rgb(var(--ring, 99 102 241) / .70);
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 4px rgb(var(--brand-600-rgb, 124 58 237) / 0.7),
+    0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
-/* Optional: generic sr-only helper if you want to reuse it elsewhere */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FOCUS WITHIN
+   Parent elements that contain focused children
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.focus-within-ring:focus-within {
+  box-shadow:
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 4px rgb(var(--brand-600-rgb, 124 58 237) / 0.4);
+  border-color: rgb(var(--brand-600-rgb, 124 58 237) / 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   INPUT FOCUS STATES
+   Text inputs, selects, textareas
+   ═══════════════════════════════════════════════════════════════════════════════ */
+input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: rgb(var(--brand-600-rgb, 124 58 237) / 0.6);
+  box-shadow:
+    0 0 0 3px rgb(var(--brand-600-rgb, 124 58 237) / 0.15),
+    inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Checkbox and radio focus */
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--surface-0, #09090B),
+    0 0 0 4px rgb(var(--brand-600-rgb, 124 58 237) / 0.6) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TAB FOCUS
+   Navigation tabs
+   ═══════════════════════════════════════════════════════════════════════════════ */
+[role="tab"]:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 -2px 0 var(--brand-600, #7C3AED),
+    0 0 0 2px rgb(var(--brand-600-rgb, 124 58 237) / 0.2) !important;
+  border-radius: var(--radius-sm, 6px) var(--radius-sm, 6px) 0 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MODAL FOCUS TRAP
+   Ensure focus stays within modal
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.modal-focus-trap:focus {
+  outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCREEN READER ONLY
+   Visually hidden but accessible to screen readers
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .sr-only {
   position: absolute !important;
   width: 1px !important;
@@ -107,24 +271,46 @@
   white-space: nowrap !important;
   border: 0 !important;
 }
-/* Visually hide the skip link until keyboard focus */
-.skip-link{
-    position:absolute;
-    left:-9999px;
-    top:auto;
-    width:1px;
-    height:1px;
-    overflow:hidden;
+
+/* Make focusable sr-only elements visible when focused */
+.sr-only-focusable:focus,
+.sr-only-focusable:focus-visible {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  padding: inherit !important;
+  margin: inherit !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: normal !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   Respect user preferences
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
   }
-  .skip-link:focus{
-    left:1rem;
-    top:1rem;
-    width:auto;
-    height:auto;
-    padding:.5rem .75rem;
-    background:#fff;
-    color:#111;
-    border-radius:.5rem;
-    box-shadow:0 2px 8px rgba(0,0,0,.2);
-    z-index:10000;
-  }  
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LIGHT MODE ADJUSTMENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+[data-theme="light"] :where(
+  a, button, input, select, textarea, 
+  [role="button"], .btn, .card-interactive
+):focus-visible {
+  box-shadow:
+    0 0 0 2px #FFFFFF,
+    0 0 0 4px rgb(var(--brand-600-rgb, 124 58 237) / 0.5) !important;
+}
+
+[data-theme="light"] .skip-link {
+  background: #FFFFFF;
+  color: var(--text-primary, #0F172A);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}

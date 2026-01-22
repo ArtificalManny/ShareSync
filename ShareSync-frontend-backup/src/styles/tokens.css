@@ -1,79 +1,297 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC DESIGN TOKENS v4.0 - Phase 1: Emotional Color System
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   UPDATED: Deep Violet signature palette (#7C3AED → #6D28D9)
+   
+   COLOR PHILOSOPHY:
+   • Deep Violet = Creativity, ambition, transformation (BRAND)
+   • Electric Cyan = Technology, clarity, progress (LIVE)
+   • Mint = Growth, health, achievement (SUCCESS)
+   • Amber = Attention, warmth (WARNING)
+   • Coral = Energy, high-momentum (ENERGY)
+   • Red = Errors only (ERROR)
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 :root {
   /* ================================
-     Base palette (RGB channels)
+     SURFACE HIERARCHY (Dark Theme)
      ================================ */
-  --bg:            248 250 252;
-  --card:          248 250 252;   /* slate-50-ish */
-  --text:          18 24 38;      /* slate-900 */
-    /* Foreground aliases (used by components/UI) */
-    --fg: var(--text);          /* main readable text color (channels) */
-    --nav-fg: var(--text);      /* navbar/icon text (light mode default) */
-    --nav-muted: var(--muted);  /* navbar secondary text (light mode default) */  
-  --muted:         100 116 139;   /* slate-500 */
-  --border:        226 232 240;   /* slate-200 */
-  --ring:          99 102 241;    /* indigo-500 */
+  --surface-0: #09090B;           /* Page background - deepest void */
+  --surface-1: #111113;           /* Cards, panels */
+  --surface-2: #1A1A1D;           /* Elevated cards, hover states */
+  --surface-3: #252529;           /* Interactive elements */
+  --surface-4: #313136;           /* Highest elevation */
 
-  /* Accent & intent (channels) */
-  --accent:              79 70 229;   /* indigo-600 (channels) */
-  --accent-foreground:   255 255 255;
-  /* NEW: companion accent channels for gradients */
-  --accent-2:            34 211 238;  /* cyan-400 (channels) */
-  --accent-3:           232 121 249;  /* fuchsia-400 (channels) */
+  /* RGB channels for alpha operations */
+  --surface-0-rgb: 9 9 11;
+  --surface-1-rgb: 17 17 19;
+  --surface-2-rgb: 26 26 29;
+  --surface-3-rgb: 37 37 41;
 
-  /* NEW: hex accents for neon skins/color-mix (keeps channel vars intact) */
-  --accent-hex:   #4F46E5;  /* indigo-600 */
-  --accent-2-hex: #22D3EE;  /* cyan-400  */
-  --accent-3-hex: #E879F9;  /* fuchsia-400 */
-
-  --info:                 2 132 199;  /* sky-600 */
-  --success:             16 185 129;  /* emerald-500 */
-  --warning:            217 119   6;  /* amber-600 */
-  --danger:             244  63  94;  /* rose-500 */
-
-  /* Quick alpha helpers */
-  --alpha-0: 0;
-  --alpha-1: .04;
-  --alpha-2: .08;
-  --alpha-3: .12;
-  --alpha-4: .16;
-  --alpha-5: .24;
-  --alpha-6: .32;
-  --alpha-7: .44;
-  --alpha-8: .56;
-  --alpha-9: .72;
-
-  /* Derived surfaces */
-  --surface:       rgb(var(--card));
-  --surface-100:   rgb(241 245 249);  /* slate-100 */
-  --surface-200:   rgb(226 232 240);  /* slate-200 */
-  --surface-800:   rgb(30 41 59);     /* slate-800 */
-
-  /* Text helpers */
-  --text-primary:  rgb(var(--fg));
-  --text-muted:    rgb(var(--muted));
-  --text-inverse:  255 255 255;
-
-  /* Global default copy color pulls from --fg */
-body { color: rgb(var(--fg)); }
-
-  /* charts (channels) */
-  --chart-1:  79 70 229;
-  --chart-2:   2 132 199;
-  --chart-3:  16 185 129;
-  --chart-4: 234 179   8;
-  --chart-5: 244  63  94;
-
-  /* project icon sizing (used in cards/headers) */
-  --project-icon-size: 28px;
-  --project-icon-radius: 10px;
+  /* Legacy surface aliases */
+  --bg-void: var(--surface-0);
+  --bg-surface: var(--surface-1);
+  --bg-elevated: var(--surface-2);
+  --bg: var(--surface-0-rgb);
+  --card: var(--surface-1-rgb);
 
   /* ================================
-     Typography tokens
+     TEXT HIERARCHY
      ================================ */
-  --font-display: "Inter Tight", Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-  --font-body: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  --text-primary: #FAFAFA;        /* Primary content */
+  --text-secondary: #A1A1AA;      /* Secondary content */
+  --text-tertiary: #71717A;       /* Hints, metadata */
+  --text-muted: #52525B;          /* Disabled, placeholders */
+  --text-inverse: #09090B;        /* Text on light backgrounds */
 
-  /* sizes (clamped for responsiveness) */
+  /* RGB channels */
+  --text-primary-rgb: 250 250 250;
+  --text-secondary-rgb: 161 161 170;
+  --text-tertiary-rgb: 113 113 122;
+  
+  /* Legacy text aliases */
+  --text: var(--text-primary-rgb);
+  --fg: var(--text-primary-rgb);
+  --muted: var(--text-secondary-rgb);
+  --nav-fg: var(--text-primary-rgb);
+  --nav-muted: var(--text-secondary-rgb);
+
+  /* ================================
+     BRAND: DEEP VIOLET (Primary)
+     #7C3AED → #6D28D9 gradient
+     ================================ */
+  --brand-50:  #F5F3FF;
+  --brand-100: #EDE9FE;
+  --brand-200: #DDD6FE;
+  --brand-300: #C4B5FD;
+  --brand-400: #A78BFA;
+  --brand-500: #8B5CF6;
+  --brand-600: #7C3AED;           /* ← PRIMARY SIGNATURE */
+  --brand-700: #6D28D9;           /* ← PRIMARY DARK */
+  --brand-800: #5B21B6;
+  --brand-900: #4C1D95;
+  --brand-950: #2E1065;
+
+  /* RGB channels for brand */
+  --brand-600-rgb: 124 58 237;
+  --brand-700-rgb: 109 40 217;
+  --brand-500-rgb: 139 92 246;
+
+  /* Legacy accent mappings */
+  --accent: var(--brand-600-rgb);
+  --accent-hex: #7C3AED;
+  --ring: var(--brand-500-rgb);
+
+  /* ================================
+     ACCENT: FUCHSIA (Gradients)
+     ================================ */
+  --accent-400: #E879F9;
+  --accent-500: #D946EF;
+  --accent-600: #C026D3;
+  --accent-400-rgb: 232 121 249;
+  --accent-500-rgb: 217 70 239;
+
+  /* ================================
+     LIVE: ELECTRIC CYAN
+     For real-time & active states
+     ================================ */
+  --cyan-50:  #ECFEFF;
+  --cyan-100: #CFFAFE;
+  --cyan-200: #A5F3FC;
+  --cyan-300: #67E8F9;
+  --cyan-400: #22D3EE;
+  --cyan-500: #06B6D4;            /* ← LIVE PRIMARY */
+  --cyan-600: #0891B2;
+  --cyan-700: #0E7490;
+  --cyan-800: #155E75;
+  --cyan-900: #164E63;
+
+  --cyan-500-rgb: 6 182 212;
+  --cyan-400-rgb: 34 211 238;
+  --accent-2: var(--cyan-400-rgb);
+  --accent-2-hex: #22D3EE;
+
+  /* ================================
+     SUCCESS: MINT (Achievements)
+     Softer than clinical green
+     ================================ */
+  --success-50:  #ECFDF5;
+  --success-100: #D1FAE5;
+  --success-200: #A7F3D0;
+  --success-300: #6EE7B7;
+  --success-400: #34D399;
+  --success-500: #10B981;         /* ← SUCCESS PRIMARY */
+  --success-600: #059669;
+  --success-700: #047857;
+  --success-800: #065F46;
+  --success-900: #064E3B;
+
+  --success-500-rgb: 16 185 129;
+  --success-400-rgb: 52 211 153;
+  --success: var(--success-500-rgb);
+
+  /* ================================
+     WARNING: AMBER (Attention)
+     ================================ */
+  --warning-50:  #FFFBEB;
+  --warning-100: #FEF3C7;
+  --warning-200: #FDE68A;
+  --warning-300: #FCD34D;
+  --warning-400: #FBBF24;
+  --warning-500: #F59E0B;         /* ← WARNING PRIMARY */
+  --warning-600: #D97706;
+  --warning-700: #B45309;
+  --warning-800: #92400E;
+  --warning-900: #78350F;
+
+  --warning-500-rgb: 245 158 11;
+  --warning-400-rgb: 251 191 36;
+  --warning: var(--warning-500-rgb);
+
+  /* ================================
+     ENERGY: CORAL (High Momentum)
+     ================================ */
+  --energy-50:  #FFF1F2;
+  --energy-100: #FFE4E6;
+  --energy-200: #FECDD3;
+  --energy-300: #FDA4AF;
+  --energy-400: #FB7185;
+  --energy-500: #F43F5E;          /* ← ENERGY PRIMARY */
+  --energy-600: #E11D48;
+  --energy-700: #BE123C;
+  --energy-800: #9F1239;
+  --energy-900: #881337;
+
+  --energy-500-rgb: 244 63 94;
+  --energy-400-rgb: 251 113 133;
+  --accent-3: var(--energy-400-rgb);
+  --accent-3-hex: #FB7185;
+
+  /* ================================
+     ERROR: TRUE RED (Errors Only)
+     ================================ */
+  --error-50:  #FEF2F2;
+  --error-100: #FEE2E2;
+  --error-200: #FECACA;
+  --error-300: #FCA5A5;
+  --error-400: #F87171;
+  --error-500: #EF4444;           /* ← ERROR PRIMARY */
+  --error-600: #DC2626;
+  --error-700: #B91C1C;
+  --error-800: #991B1B;
+  --error-900: #7F1D1D;
+
+  --error-500-rgb: 239 68 68;
+  --danger: var(--error-500-rgb);
+
+  /* ================================
+     INFO: BLUE (Informational)
+     ================================ */
+  --info-50:  #EFF6FF;
+  --info-100: #DBEAFE;
+  --info-200: #BFDBFE;
+  --info-300: #93C5FD;
+  --info-400: #60A5FA;
+  --info-500: #3B82F6;            /* ← INFO PRIMARY */
+  --info-600: #2563EB;
+  --info-700: #1D4ED8;
+  --info-800: #1E40AF;
+  --info-900: #1E3A8A;
+
+  --info-500-rgb: 59 130 246;
+  --info: var(--info-500-rgb);
+
+  /* ================================
+     BORDERS
+     ================================ */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-brand: rgba(124, 58, 237, 0.40);
+  --border-focus: rgba(124, 58, 237, 0.60);
+
+  /* Legacy border */
+  --border: 63 63 70;
+
+  /* ================================
+     SHADOWS & GLOWS
+     ================================ */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.25);
+
+  /* Signature glows */
+  --glow-brand: 0 0 20px rgb(var(--brand-600-rgb) / 0.35);
+  --glow-brand-strong: 0 0 30px rgb(var(--brand-600-rgb) / 0.5);
+  --glow-live: 0 0 20px rgb(var(--cyan-500-rgb) / 0.35);
+  --glow-success: 0 0 20px rgb(var(--success-500-rgb) / 0.35);
+  --glow-warning: 0 0 20px rgb(var(--warning-500-rgb) / 0.35);
+  --glow-error: 0 0 20px rgb(var(--error-500-rgb) / 0.35);
+  --glow-energy: 0 0 20px rgb(var(--energy-500-rgb) / 0.35);
+
+  /* Focus ring */
+  --ring-focus: 0 0 0 3px rgb(var(--brand-600-rgb) / 0.4);
+  --shadow-focus: var(--ring-focus);
+
+  /* Legacy shadows */
+  --shadow-1: var(--shadow-sm);
+  --shadow-2: var(--shadow-md);
+  --shadow-3: var(--shadow-lg);
+  --shadow-4: var(--shadow-xl);
+  --shadow-soft: var(--shadow-md);
+  --shadow-elev: var(--shadow-lg);
+  --shadow-glow: var(--glow-brand);
+  --elev-1: var(--shadow-md);
+  --elev-2: var(--shadow-lg);
+
+  /* ================================
+     PROGRESS BARS (Purple-based)
+     ================================ */
+  --progress-track: rgba(124, 58, 237, 0.15);
+  --progress-fill: var(--brand-600);
+  --progress-fill-low: var(--brand-400);
+  --progress-fill-mid: var(--brand-500);
+  --progress-fill-high: var(--brand-600);
+  --progress-fill-complete: var(--success-500);
+
+  /* ================================
+     SIGNATURE GRADIENTS
+     ================================ */
+  --gradient-brand: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-700) 100%);
+  --gradient-signature: linear-gradient(135deg, var(--brand-600) 0%, var(--cyan-500) 100%);
+  --gradient-energy: linear-gradient(135deg, var(--energy-500) 0%, var(--warning-500) 100%);
+  --gradient-success: linear-gradient(135deg, var(--success-500) 0%, var(--cyan-500) 100%);
+  --gradient-flow: linear-gradient(135deg, var(--brand-700) 0%, var(--brand-900) 100%);
+
+  /* Legacy gradient tokens */
+  --grad-signature: var(--gradient-signature);
+  --grad-pandora: var(--gradient-signature);
+  --grad-accent: var(--gradient-brand);
+  --grad-primary: var(--gradient-signature);
+
+  /* Gradient channel tokens */
+  --grad-blue-a: var(--brand-600-rgb);
+  --grad-blue-b: var(--cyan-400-rgb);
+  --grad-purple-a: var(--brand-600-rgb);
+  --grad-purple-b: var(--accent-400-rgb);
+  --grad-emerald-a: var(--success-500-rgb);
+  --grad-emerald-b: 20 184 166;
+  --grad-pandora-a: var(--brand-600-rgb);
+  --grad-pandora-b: var(--cyan-400-rgb);
+
+  /* ================================
+     TYPOGRAPHY TOKENS
+     ================================ */
+  --font-display: "Inter Tight", Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-body: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: var(--font-body);
+
+  /* Font sizes (responsive) */
   --fs-xs:  clamp(0.75rem, 0.72rem + 0.1vw, 0.80rem);
   --fs-sm:  clamp(0.875rem, 0.84rem + 0.2vw, 0.95rem);
   --fs-md:  clamp(1rem, 0.96rem + 0.3vw, 1.08rem);
@@ -82,336 +300,175 @@ body { color: rgb(var(--fg)); }
   --fs-2xl: clamp(1.5rem, 1.34rem + 1.1vw, 1.95rem);
   --fs-3xl: clamp(1.875rem, 1.62rem + 1.6vw, 2.45rem);
 
-  /* line-heights */
+  /* Line heights */
   --lh-tight: 1.15;
   --lh-snug: 1.25;
   --lh-normal: 1.45;
 
-  /* weights */
+  /* Font weights */
   --fw-regular: 400;
-  --fw-medium:  500;
-  --fw-semibold:600;
-  --fw-bold:    700;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
 
   /* ================================
-     Radii & spacing
+     RADII & SPACING
      ================================ */
-  --radius-xs: 6px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 22px;
   --radius-3xl: 28px;
   --radius-pill: 999px;
 
+  /* Legacy radii */
+  --r-sm: var(--radius-sm);
+  --r-md: var(--radius-md);
+  --r-lg: var(--radius-lg);
+  --r-xl: var(--radius-xl);
+
+  /* Spacing */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 20px;
   --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
 
   /* ================================
-     Shadows / elevation (RGB system)
+     MOTION TOKENS
      ================================ */
-  --shadow-1: 0 1px 2px rgb(15 23 42 / .06);
-  --shadow-2: 0 2px 8px rgb(15 23 42 / .08);
-  --shadow-3: 0 8px 24px rgb(15 23 42 / .10);
-  --shadow-4: 0 12px 32px rgb(15 23 42 / .12);
+  --motion-fast: 150ms;
+  --motion-normal: 250ms;
+  --motion-slow: 400ms;
+  --motion-quick: var(--motion-fast);
 
-  --shadow-soft: var(--shadow-2);
-  --shadow-elev: var(--shadow-3);
-  --shadow-glow: 0 6px 24px rgb(var(--accent) / .18);
+  --easing-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --easing-emph: cubic-bezier(0.2, 0.8, 0, 1);
+  --easing-in: cubic-bezier(0.4, 0, 1, 1);
+  --easing-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-standard: var(--easing-standard);
 
-  /* 🔶 Focus ring (AA-friendly) */
-  --shadow-focus: 0 0 0 4px rgba(var(--ring), 0.35);
-
-  /* Surfaces (aliases for components) */
-  --bg-elevated: rgb(255 255 255);
+  --transition-base: var(--motion-normal) var(--easing-standard);
+  --transition-fast: var(--motion-fast) var(--easing-standard);
+  --transition-slow: var(--motion-slow) var(--easing-standard);
 
   /* ================================
-     Motion tokens (layer-wide)
+     NEON BRAND PALETTE (Legacy)
      ================================ */
-  --motion-fast:   150ms;
-  --motion-normal: 240ms;
-  --motion-slow:   480ms;
-  --motion-quick:  var(--motion-fast);
+  --neon-violet: var(--brand-600);
+  --neon-fuchsia: var(--accent-500);
+  --neon-cyan: var(--cyan-500);
+  --neon-blue: var(--info-500);
+  --neon-teal: #14B8A6;
+  --neon-lime: #84CC16;
 
-  --easing-standard: cubic-bezier(.2,.8,.2,1);
-  --easing-emph:     cubic-bezier(.2,.8,0,1);
-  --easing-in:       cubic-bezier(.4,0,1,1);
-  --easing-out:      cubic-bezier(0,0,.2,1);
+  --signal-good: var(--success-500);
+  --signal-warn: var(--warning-500);
+  --signal-bad: var(--error-500);
 
-  /* Animated ring tokens */
-  --ring-size: 44px;        /* default outer ring size */
-  --ring-thickness: 2px;
-  --ring-blur: 8px;
+  --brand-accent: var(--neon-violet);
+  --brand-accent-2: var(--neon-cyan);
+  --brand-accent-3: var(--energy-500);
 
   /* ================================
-     Gradient palette tokens (base)
+     PROTON THEME TOKENS
      ================================ */
-  --grad-blue-a:    79 70 229;   /* indigo-600 */
-  --grad-blue-b:    56 189 248;  /* sky-400 */
+  --proton-purple-hex: var(--brand-600);
+  --proton-blue-hex: var(--cyan-400);
+  --proton-iris-hex: #6C72FF;
+  --proton-purple: var(--brand-600-rgb);
+  --proton-iris: 108 114 255;
+  --proton-blue: var(--cyan-400-rgb);
 
-  --grad-purple-a:  124 58 237;  /* violet-600 */
-  --grad-purple-b:  232 121 249; /* fuchsia-400 */
+  /* ================================
+     ALPHA HELPERS
+     ================================ */
+  --alpha-0: 0;
+  --alpha-1: 0.04;
+  --alpha-2: 0.08;
+  --alpha-3: 0.12;
+  --alpha-4: 0.16;
+  --alpha-5: 0.24;
+  --alpha-6: 0.32;
+  --alpha-7: 0.44;
+  --alpha-8: 0.56;
+  --alpha-9: 0.72;
 
-  --grad-emerald-a: 16 185 129;  /* emerald-500 */
-  --grad-emerald-b: 20 184 166;  /* teal-500 */
+  /* ================================
+     CHART COLORS
+     ================================ */
+  --chart-1: var(--brand-600-rgb);
+  --chart-2: var(--cyan-500-rgb);
+  --chart-3: var(--success-500-rgb);
+  --chart-4: var(--warning-500-rgb);
+  --chart-5: var(--energy-500-rgb);
 
-  /* Brand-style blends */
-  /* Pandora: deep violet → electric cyan */
-  --grad-pandora-a: 124 58 237;   /* violet-600 */
-  --grad-pandora-b:  34 211 238;  /* cyan-400 */
-  --grad-pandora: linear-gradient(135deg,
-    rgb(var(--grad-pandora-a)) 0%,
-    rgb(var(--grad-pandora-b)) 100%
-  );
+  /* ================================
+     PROJECT ICON SIZING
+     ================================ */
+  --project-icon-size: 28px;
+  --project-icon-radius: 10px;
 
-  /* CNBC: cobalt → jade */
-  --grad-cnbc-a:  37  99 235;     /* blue-600 */
-  --grad-cnbc-b:  34 197  94;     /* green-500 */
-  --grad-cnbc: linear-gradient(135deg,
-    rgb(var(--grad-cnbc-a)) 0%,
-    rgb(var(--grad-cnbc-b)) 100%
-  );
+  /* ================================
+     LAYOUT RHYTHM
+     ================================ */
+  --section-gap: 48px;
+  --card-pad: 24px;
+  --toolbar-gap: 8px;
+}
 
-    /* === Proton/MetaLab accent rail (hex + channels) ===================== */
---proton-purple-hex: #7A5AF8; /* Proton-y violet */
---proton-blue-hex:   #22D3EE; /* cyan */
---proton-iris-hex:   #6C72FF; /* MetaLab cobalt-violet */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LIGHT MODE OVERRIDES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root:not(.dark):not([data-theme="dark"]) {
+  /* Only apply light mode if explicitly not dark */
+}
 
-/* Channels for gradients using rgb(var(--...)) */
---proton-purple: 122 90 248;
---proton-iris:   108 114 255;
---proton-blue:    34 211 238;
+[data-theme="light"] {
+  --surface-0: #F8FAFC;
+  --surface-1: #FFFFFF;
+  --surface-2: #F1F5F9;
+  --surface-3: #E2E8F0;
+  --surface-4: #CBD5E1;
 
-/* Nav foregrounds (crisper on dark) */
---nav-fg:    236 244 255;
---nav-muted: 170 186 210;
+  --surface-0-rgb: 248 250 252;
+  --surface-1-rgb: 255 255 255;
+  --surface-2-rgb: 241 245 249;
 
-/* Default UI foregrounds for dark UIs */
---fg: 255 255 255;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #64748B;
+  --text-muted: #94A3B8;
+
+  --text-primary-rgb: 15 23 42;
+  --text: var(--text-primary-rgb);
+  --fg: var(--text-primary-rgb);
   
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: rgba(0, 0, 0, 0.10);
+  --border-strong: rgba(0, 0, 0, 0.16);
 
+  /* Softer shadows in light mode */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.10);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
 
-
-  /* ================================
-     Brand V2 tokens (light)
-     ================================ */
-  /* channels (R G B) */
-  --brand-v2-bg:       244 248 255; /* soft powder blue */
-  --brand-v2-header:    18  40  74; /* deep navy */
-  --brand-v2-sidebar:   22  44  82; /* slate-blue */
-  --brand-v2-text:      10  18  33; /* near-navy text */
-  --brand-v2-border:   208 222 245; /* cool border */
-  --brand-v2-glow:      99 102 241; /* indigo-ish for hover glow */
-
-  /* optional accents tuned to this brand */
-  --brand-v2-accent:    37  99 235; /* blue-600 */
-  --brand-v2-info:       2 132 199; /* sky-600 */
-  --brand-v2-success:   16 185 129; /* emerald-500 */
-  --brand-v2-warning:  217 119   6; /* amber-600 */
-  --brand-v2-danger:   244  63  94; /* rose-500 */
-
-  /* Instagram: orange → pink/purple sweep */
-  --grad-ig-a: 245 133  41;       /* #F58529 */
-  --grad-ig-b: 221  42 123;       /* #DD2A7B */
-  --grad-ig-c: 129  52 175;       /* #8134AF */
-  --grad-ig-d:  81  91 212;       /* #515BD4 */
-  --grad-ig: linear-gradient(135deg,
-    rgb(var(--grad-ig-a)) 0%,
-    rgb(var(--grad-ig-b)) 33%,
-    rgb(var(--grad-ig-c)) 66%,
-    rgb(var(--grad-ig-d)) 100%
-  );
-
-  /* === Signature gradient (single source of truth) === */
-  --grad-signature: var(--grad-pandora);
-
-  /* === Intent mappings (leave as aliases) === */
-  --grad-accent: var(--grad-pandora);
-  --grad-info:   var(--grad-cnbc);
+  /* Softer glows in light mode */
+  --glow-brand: 0 0 20px rgb(var(--brand-600-rgb) / 0.20);
+  --glow-brand-strong: 0 0 30px rgb(var(--brand-600-rgb) / 0.30);
 }
 
-/* =========================================================
-   Files: status badges + pending pulse ring
-   ========================================================= */
-.ss-badge {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  font-size: 10px;
-  line-height: 1;
-  padding: 4px 6px;
-  border-radius: 999px;
-  backdrop-filter: saturate(1.2) blur(4px);
-  border: 1px solid transparent;
-}
-.ss-badge--pending {
-  color: rgb(var(--ring));
-  background: rgb(199 210 254 / 0.6); /* indigo-200/60 */
-  border-color: rgb(var(--ring) / 0.3);
-}
-.ss-badge--approved,
-.ss-badge--allowed {
-  color: rgb(6 95 70);
-  background: rgb(167 243 208 / 0.5);
-  border-color: rgb(16 185 129 / 0.3);
-}
-.ss-badge--blocked {
-  color: rgb(155 28 28);
-  background: rgb(254 205 211 / 0.55);
-  border-color: rgb(244 63 94 / 0.35);
-}
-
-@keyframes ss-pulse-ring {
-  0%   { transform: scale(0.9); opacity: 0.7; }
-  70%  { transform: scale(1.2); opacity: 0.15; }
-  100% { transform: scale(1.2); opacity: 0; }
-}
-.ss-pulse-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  box-shadow: 0 0 0 2px rgb(var(--ring) / 0.35);
-  animation: ss-pulse-ring 1.2s ease-out 1; /* one pulse only */
-  pointer-events: none;
-}
-
-/* =========================================================
-   Project Icon helpers
-   ========================================================= */
-.project-icon {
-  --_size: var(--project-icon-size);
-  width: var(--_size);
-  height: var(--_size);
-  border-radius: var(--project-icon-radius);
-  display: grid;
-  place-items: center;
-  background: rgb(241 245 249); /* slate-100 */
-  color: rgb(var(--accent));
-  overflow: hidden;
-}
-.project-icon--sm { --_size: 24px; }
-.project-icon--md { --_size: 28px; }
-.project-icon--lg { --_size: 40px; }
-.project-icon > .emoji {
-  font-size: calc(var(--_size) - 6px);
-  line-height: 1;
-}
-.project-icon > svg {
-  width: calc(var(--_size) - 10px);
-  height: calc(var(--_size) - 10px);
-}
-
-/* Dark mode (support both dataset & class toggles) */
-[data-theme="dark"],
-:root.dark {
-  --bg:       15 23 42;     /* slate-900 */
-  --card:      2  6 23;     /* slate-950-ish */
-  --fg:       255 255 255;
-  --text:     var(--fg);  /* slate-100 */
-  --muted:    203 213 225;  /* slate-400 */
-  --border:    148 163 184;  /* slate-700 */
-  --ring:     165 180 252;  /* indigo-300 */
-
-  --accent-foreground: 255 255 255;
-
-  /* stronger glow in dark */
-  --shadow-glow: 0 8px 28px rgb(var(--accent) / .28);
-
-  /* Navbar text tokens (used by neon nav/icon buttons) */
-  --nav-fg:   236 244 255; /* ✅ icy-white, legible on dark glass */
-  --nav-muted: 170 186 210; /* cooler secondary for icons/hints */
-  /* Slightly brighter gradient stops */
-  --grad-pandora-a: 139 92 246;    /* violet-500/600 blend */
-  --grad-pandora-b:  56 189 248;   /* sky-400 */
-
-  --grad-cnbc-a:     59 130 246;   /* blue-500 */
-  --grad-cnbc-b:     34 197  94;   /* green-500 */
-
-  --grad-ig-a:      249 115  22;   /* orange-500 */
-  --grad-ig-b:      236  72 153;   /* pink-500 */
-  --grad-ig-c:      139  92 246;   /* violet-500 */
-  --grad-ig-d:       99 102 241;   /* indigo-500 */
-
-  --grad-signature: linear-gradient(135deg,
-  rgb(var(--proton-purple)) 0%,
-  rgb(var(--proton-iris)) 50%,
-  rgb(var(--proton-blue)) 100%
-);
-
-  --bg-elevated: rgb(15 23 42 / .85);
-
-  /* NEW: brighter hex accents for dark */
-  --accent-hex:   #8B5CF6;
-  --accent-2-hex: #38BDF8;
-  --accent-3-hex: #F472B6;
-
-  /* ================================
-     Brand V2 tokens (dark)
-     ================================ */
-  --brand-v2-bg:         6  12  24; /* deep space */
-  --brand-v2-header:     8  20  38; /* darker navy */
-  --brand-v2-sidebar:   12  22  42; /* navy-slate */
-  --brand-v2-text:     224 232 255; /* ice text */
-  --brand-v2-border:    38  56  86; /* cool border */
-  --brand-v2-glow:     129 140 248; /* brighter indigo-ish glow */
-
-  --brand-v2-accent:    59 130 246; /* blue-500 */
-  --brand-v2-info:       2 132 199; /* sky-600 */
-  --brand-v2-success:   16 185 129; /* emerald-500 */
-  --brand-v2-warning:  245 158  11; /* amber-500 */
-  --brand-v2-danger:   244  63  94; /* rose-500 */
-}
-
-/* per-surface accent overrides (channels) */
-[data-accent="emerald"] { --accent:  5 150 105; }
-[data-accent="rose"]    { --accent: 225  29  72; }
-[data-accent="sky"]     { --accent:   2 132 199; }
-[data-accent="amber"]   { --accent: 217 119   6; }
-
-/* NEW: Accent families (set BOTH channels + hex so all layers get color) */
-body:not([data-accent]), body[data-accent="violet"], body[data-accent="pandora"] {
-  --accent:       124 58 237;  --accent-2: 34 211 238; --accent-3: 232 121 249;
-  --accent-hex:   #7C3AED;     --accent-2-hex: #22D3EE; --accent-3-hex: #E879F9;
-}
-body[data-accent="aqua"] {
-  --accent:        20 184 166; --accent-2: 96 165 250; --accent-3: 45 212 191;
-  --accent-hex:   #14B8A6;     --accent-2-hex:#60A5FA;  --accent-3-hex:#2DD4BF;
-}
-body[data-accent="sky"] {
-  --accent:         2 132 199; --accent-2: 96 165 250; --accent-3: 56 189 248;
-  --accent-hex:   #0284C7;     --accent-2-hex:#60A5FA;  --accent-3-hex:#38BDF8;
-}
-body[data-accent="lime"] {
-  --accent:       101 163  13; --accent-2: 34 197  94; --accent-3: 163 230  53;
-  --accent-hex:   #65A30D;     --accent-2-hex:#22C55E;  --accent-3-hex:#A3E635;
-}
-body[data-accent="amber"], body[data-accent="cnbc"] {
-  --accent:       217 119   6; --accent-2: 34 197 94;  --accent-3: 180 245   0;
-  --accent-hex:   #F59E0B;     --accent-2-hex:#22C55E;  --accent-3-hex:#B4F500;
-}
-body[data-accent="rose"] {
-  --accent:       225  29  72; --accent-2: 244 114 182; --accent-3: 251 113 133;
-  --accent-hex:   #E11D48;     --accent-2-hex:#F472B6;  --accent-3-hex:#FB7185;
-}
-body[data-accent="fuchsia"] {
-  --accent:       162  28 175; --accent-2:  99 102 241; --accent-3: 217  70 239;
-  --accent-hex:   #A21CAF;     --accent-2-hex:#6366F1;  --accent-3-hex:#D946EF;
-}
-body[data-accent="cyan"] {
-  --accent:         8 145 178; --accent-2:  6 182 212; --accent-3:  34 211 238;
-  --accent-hex:   #0891B2;     --accent-2-hex:#06B6D4;  --accent-3-hex:#22D3EE;
-}
-body[data-accent="meta"] {
-  --accent:        8 102 255;  --accent-2: 139 92 246; --accent-3:  34 211 238;
-  --accent-hex:   #0866FF;     --accent-2-hex:#8B5CF6;  --accent-3-hex:#22D3EE;
-}
-
-/* Reduced motion: convert durations to zero and kill notable anims */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --motion-fast: 0ms;
@@ -419,306 +476,4 @@ body[data-accent="meta"] {
     --motion-slow: 0ms;
     --motion-quick: 0ms;
   }
-  .ss-pulse-ring { animation: none !important; }
 }
-
-/* =========================================================
-   Brand V2 application (when documentElement has data-brand="v2")
-   ========================================================= */
-[data-brand="v2"] {
-  /* remap key surfaces/text to brand-v2 */
-  --bg:     var(--brand-v2-bg);
-  --card:   250 252 255;               /* slightly brighter card on light */
-  --text:   var(--brand-v2-text);
-  --border: var(--brand-v2-border);
-
-  /* intent colors lean to brand palette */
-  --accent:  var(--brand-v2-accent);
-  --info:    var(--brand-v2-info);
-  --success: var(--brand-v2-success);
-  --warning: var(--brand-v2-warning);
-  --danger:  var(--brand-v2-danger);
-}
-
-/* Dark-mode tweak for card on brand v2 */
-[data-theme="dark"][data-brand="v2"],
-:root.dark[data-brand="v2"] {
-  --card:  10  16  28; /* card a hair above bg */
-}
-
-/* =========================================================
-   Pandora / MetaLab helpers (HSL; non-breaking additions)
-   ========================================================= */
-
-/* Accent hues (HSL), used by new gradient utilities */
-:root {
-  --indigo-500: hsl(244 85% 62%);
-  --indigo-600: hsl(244 85% 56%);
-  --blue-600:   hsl(218 92% 55%);
-  --blue-700:   hsl(218 90% 48%);
-  --cyan-400:   hsl(190 90% 55%);
-  --magenta-500:hsl(300 75% 55%);
-
-  /* Contrast text for gradient buttons/chips */
-  --accent-contrast: #fff;
-
-  /* MetaLab-like elevation/glow (HSL shadows) */
-  --elev-1: 0 4px 12px hsl(220 40% 20% / .06);
-  --elev-2: 0 10px 30px hsl(220 40% 20% / .10);
-  --glow:   0 0 0 1px hsl(244 85% 56% / .15), 0 12px 40px hsl(244 85% 56% / .25);
-
-  /* Comfortable radii aliases (used by new styles) */
-  --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 16px;
-  --r-xl: 20px;
-}
-
-/* Dark-mode variants for the new helpers only (keep RGB tokens intact) */
-:root.dark {
-  --elev-1: 0 4px 14px hsl(220 50% 2% / .55);
-  --elev-2: 0 20px 60px hsl(220 50% 2% / .65);
-  --glow:   0 0 0 1px hsl(244 85% 64% / .20), 0 16px 60px hsl(244 85% 58% / .45);
-}
-
-/* =========================================================
-   ✅ Step 4 — Typography scale helpers
-   ========================================================= */
-:root { --font-sans: ui-sans-serif, system-ui, Inter, Segoe UI, Roboto, Apple Color Emoji, Noto Color Emoji; }
-body { font-family: var(--font-sans); letter-spacing: 0; }
-.h-hero { font-weight: 800; font-size: clamp(24px, 3.5vw, 44px); line-height: 1.06; }
-.h-sub  { font-weight: 600; font-size: clamp(16px, 1.5vw, 20px); color: var(--muted); }
-
-/* =========================================================
-   ✅ Step 5 — Buttons & chips styling
-   ========================================================= */
-.btn--primary {
-  background: linear-gradient(135deg, var(--indigo-600), var(--blue-600));
-  color: var(--accent-contrast);
-  border: none;
-  border-radius: var(--r-md);
-  box-shadow: var(--elev-1);
-  transition: transform .15s var(--easing-standard), box-shadow .2s var(--easing-standard);
-}
-.btn--primary:hover { box-shadow: var(--glow); transform: translateY(-1px); }
-
-.btn--outline {
-  background: transparent;
-  color: var(--indigo-600);
-  border: 1px solid color-mix(in oklch, var(--indigo-600) 35%, white);
-  border-radius: var(--r-md);
-}
-
-.chip {
-  border: 1px solid var(--border);
-  background: hsl(0 0% 100% / .6);
-  backdrop-filter: saturate(120%) blur(6px);
-  border-radius: 999px;
-  transition: transform .12s var(--easing-standard), box-shadow .2s var(--easing-standard), border-color .2s var(--easing-standard);
-}
-.chip.is-selected {
-  border-color: color-mix(in oklch, var(--indigo-600) 40%, var(--border));
-  box-shadow: 0 0 0 2px hsl(244 85% 56% / .15) inset;
-  color: var(--indigo-600);
-}
-:root.dark .chip { background: hsl(220 20% 12% / .6); }
-:root.dark .card { border-color: hsl(222 15% 22%); }
-
-/* === Neon brand palette (Pandora/CNBC/Facebook mashup) ================== */
-:root {
-  /* Core neons */
-  --neon-violet:  #7B61FF; /* Pandora violet */
-  --neon-fuchsia: #FF3FA4;
-  --neon-cyan:    #00E5FF; /* Pandora cyan */
-  --neon-blue:    #00A3FF; /* CNBC blue */
-  --neon-teal:    #00E0B8; /* CNBC teal */
-  --neon-lime:    #B4F500;
-
-  /* Dark-surface friendly “signal” colors */
-  --signal-good:  #06F78A;
-  --signal-warn:  #FFB020;
-  --signal-bad:   #FF5C7A;
-
-  /* Defaults (overridden per accent below) */
-  --brand-accent: var(--neon-violet);
-  --brand-accent-2: var(--neon-cyan);
-  --brand-accent-3: var(--neon-fuchsia);
-
-  /* Glows (OKLCH mix if supported; safe fallback) */
-  --glow-soft:  color-mix(in oklab, var(--brand-accent) 35%, transparent);
-  --glow-mid:   color-mix(in oklab, var(--brand-accent) 55%, transparent);
-  --glow-strong:color-mix(in oklab, var(--brand-accent) 75%, transparent);
-
-  /* Focus ring tuned for neon */
-  --focus-ring: var(--brand-accent);
-
-  /* Button text contrast (kept white for neon) */
-  --btn-contrast: #ffffff;
-}
-
-/* Accent families (legacy selector kept; also see body[data-accent] above) */
-.layout-stage[data-theme="neon"][data-accent="pandora"] {
-  --brand-accent:   var(--neon-violet);
-  --brand-accent-2: var(--neon-cyan);
-  --brand-accent-3: var(--neon-fuchsia);
-}
-.layout-stage[data-theme="neon"][data-accent="cnbc"] {
-  --brand-accent:   var(--neon-blue);
-  --brand-accent-2: var(--neon-teal);
-  --brand-accent-3: var(--neon-lime);
-}
-.layout-stage[data-theme="neon"][data-accent="meta"] {
-  --brand-accent:   #0866FF;       /* FB blue */
-
-  --brand-accent-2: var(--neon-violet);
-  --brand-accent-3: var(--neon-cyan);
-}
-
-/* ====== Layout rhythm & containers =================================== */
-:root {
-  --section-gap: 48px;  /* vertical spacing between major blocks */
-  --card-pad: 24px;     /* interior card padding */
-  --toolbar-gap: 8px;   /* small spacing for icon clusters */
-}
-
-/* Page-level wrappers so spacing is consistent everywhere */
-.ss-page { max-width: 1120px; margin: 0 auto; padding: 24px 20px 64px; }
-.ss-section { margin-block: var(--section-gap); }
-
-/* ====== Accent “moods” by route (set via LayoutSkin) ================== */
-.layout-stage[data-accent="pandora"] {
-  --brand-accent:   var(--neon-violet);
-  --brand-accent-2: var(--neon-cyan);
-  --brand-accent-3: var(--neon-fuchsia);
-}
-.layout-stage[data-accent="cnbc"] {
-  --brand-accent:   var(--neon-blue);
-  --brand-accent-2: var(--neon-teal);
-  --brand-accent-3: var(--neon-lime);
-}
-.layout-stage[data-accent="meta"] {
-  --brand-accent:   #0866FF;          /* FB blue */
-  --brand-accent-2: var(--neon-violet);
-  --brand-accent-3: var(--neon-cyan);
-}
-
-/* ====== Panel/card unification ======================================= */
-.card,
-.panel,
-.panel-neon {  /* keep compatibility with your existing class */
-  --_bgA: color-mix(in oklab, rgb(var(--card, 2 6 23)) 88%, black 12%);
-  background: linear-gradient(180deg, var(--_bgA), rgba(0,0,0,.02));
-  border: 1px solid color-mix(in oklab, rgb(var(--border)) 75%, white 6%);
-  border-radius: var(--r-lg, 16px);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,.05) inset,
-    0 0 0 1px rgba(255,255,255,.02) inset,
-    0 12px 40px rgba(2,6,23,.35);
-  padding: var(--card-pad);
-}
-
-/* subtle inner highlight for panels */
-.card::before,
-.panel::before,
-.panel-neon::before {
-  content:""; position:absolute; inset: 2px; border-radius: inherit; pointer-events:none;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
-}
-
-/* ====== Button system (primary/secondary) ============================= */
-.btn-primary {
-  --_a: var(--brand-accent);
-  --_b: var(--brand-accent-2);
-  background:
-    radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,.18), rgba(255,255,255,0) 55%),
-    linear-gradient(90deg, var(--_a), var(--_b));
-  color: var(--btn-contrast, #fff);
-  border: none;
-  border-radius: var(--r-md, 14px);
-  padding: 10px 16px;
-  font-weight: 600;
-  box-shadow:
-    0 10px 28px color-mix(in oklab, var(--_a) 35%, black 65%),
-    0 0 0 1px rgba(255,255,255,.06) inset;
-  transition: transform .12s var(--easing-standard), box-shadow .2s var(--easing-standard);
-}
-.btn-primary:hover { transform: translateY(-1px); }
-
-.btn-ghost {
-  background: transparent;
-  color: rgb(var(--text));
-  border: 1px solid color-mix(in oklab, rgb(var(--border)) 80%, white 10%);
-  border-radius: var(--r-md, 14px);
-  padding: 8px 14px;
-}
-
-/* ====== KPI chips (small, crisp) ===================================== */
-.kpi-chip {
-  display:inline-flex; align-items:center; gap:6px;
-  padding: 4px 8px; border-radius: 999px;
-  font-size: 12px; line-height: 1;
-  border: 1px solid color-mix(in oklab, rgb(var(--border)) 80%, white 6%);
-  background: color-mix(in oklab, rgb(var(--card)) 88%, black 12%);
-}
-.kpi-chip.is-up   { color: var(--signal-good);  }
-.kpi-chip.is-down { color: var(--signal-bad);   }
-
-/* ====== Utility for tight icon rows (navbar, toolbars) ================ */
-.icon-row { display:inline-flex; gap: var(--toolbar-gap); }
-
-/* === Orbit ring palette (blue) ========================================== */
-:root {
-  --orbit-blue-a: #3b82f6; /* blue-500 */
-  --orbit-blue-b: #06b6d4; /* cyan-500 */
-  --orbit-ring-thickness: 3px;
-  --orbit-glow: 0 0 16px rgba(59,130,246,.45), 0 0 6px rgba(6,182,212,.35) inset;
-}
-
-/* Dark keeps the same hues but stronger glow */
-:root.dark {
-  --orbit-glow: 0 0 18px rgba(59,130,246,.65), 0 0 8px rgba(6,182,212,.45) inset;
-}
-/* =========================================================
-   Proton theme (light + dark)
-   ========================================================= */
-   [data-theme="proton"] {
-    /* Accents and ring */
-    --accent: 124 58 237;          /* violet-600 (channels) */
-    --accent-2: 56 189 248;        /* sky-400 */
-    --accent-3: 232 121 249;       /* fuchsia-400 */
-    --accent-hex:   #7C3AED;
-    --accent-2-hex: #38BDF8;
-    --accent-3-hex: #E879F9;
-    --ring: 129 140 248;           /* indigo-400/500 */
-  
-    /* Signature gradient: violet → sky */
-    --grad-signature: linear-gradient(135deg,
-      rgb(124 58 237) 0%,
-      rgb(56 189 248) 100%
-    );
-  
-    /* Surface & text nudges */
-    --card: 250 252 255;
-    --border: 221 227 238;
-    --muted: 100 116 139;
-    --shadow-glow: 0 8px 28px rgb(124 58 237 / .22);
-  }
-  
-  :root.dark[data-theme="proton"] {
-    --bg: 15 23 42;
-    --card: 10 16 28;
-    --fg: 255 255 255;
-    --text: var(--fg);
-    --muted: 170 186 210;
-    --border: 38 56 86;
-    --ring: 165 180 252;
-  
-    --shadow-glow: 0 10px 36px rgb(124 58 237 / .34);
-  
-    /* brighter signature for dark */
-    --grad-signature: linear-gradient(135deg,
-      rgb(139 92 246) 0%,
-      rgb(56 189 248) 100%
-    );
-  }
-  

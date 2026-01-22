@@ -1,0 +1,374 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC EMOTIONAL COLOR SYSTEM v1.0
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   PHILOSOPHY:
+   This isn't just a color palette - it's an emotional language.
+   Every color has MEANING. Every shade has PURPOSE.
+   
+   THE PSYCHOLOGY:
+   • Deep Violet (#7C3AED → #6D28D9) = Creativity, ambition, transformation
+   • Electric Cyan (#06B6D4) = Technology, clarity, progress, "live" states
+   • Mint (#10B981) = Growth, health, achievement, success
+   • Amber (#F59E0B) = Attention, warmth, warnings
+   • Coral (#F43F5E) = Energy, urgency, high-momentum states
+   
+   SIGNATURE: "Momentum Glow" - Interface brightens with productivity
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ═══════════════════════════════════════════════════════════════════════════
+     PRIMARY: DEEP VIOLET (Brand Identity)
+     The heart of ShareSync - creativity meets ambition
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --violet-50:  #f5f3ff;
+  --violet-100: #ede9fe;
+  --violet-200: #ddd6fe;
+  --violet-300: #c4b5fd;
+  --violet-400: #a78bfa;
+  --violet-500: #8b5cf6;
+  --violet-600: #7c3aed;  /* PRIMARY - The Signature */
+  --violet-700: #6d28d9;  /* PRIMARY DARK */
+  --violet-800: #5b21b6;
+  --violet-900: #4c1d95;
+  --violet-950: #2e1065;
+
+  /* RGB channels for alpha operations */
+  --violet-600-rgb: 124 58 237;
+  --violet-700-rgb: 109 40 217;
+  --violet-500-rgb: 139 92 246;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     ACCENT: ELECTRIC CYAN (Live States & Technology)
+     For real-time indicators, active states, progress
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --cyan-50:  #ecfeff;
+  --cyan-100: #cffafe;
+  --cyan-200: #a5f3fc;
+  --cyan-300: #67e8f9;
+  --cyan-400: #22d3ee;
+  --cyan-500: #06b6d4;  /* ACCENT PRIMARY */
+  --cyan-600: #0891b2;
+  --cyan-700: #0e7490;
+  --cyan-800: #155e75;
+  --cyan-900: #164e63;
+
+  /* RGB channels */
+  --cyan-500-rgb: 6 182 212;
+  --cyan-400-rgb: 34 211 238;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SUCCESS: MINT (Growth & Achievement)
+     Softer than typical green - feels earned, not clinical
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --mint-50:  #ecfdf5;
+  --mint-100: #d1fae5;
+  --mint-200: #a7f3d0;
+  --mint-300: #6ee7b7;
+  --mint-400: #34d399;
+  --mint-500: #10b981;  /* SUCCESS PRIMARY */
+  --mint-600: #059669;
+  --mint-700: #047857;
+  --mint-800: #065f46;
+  --mint-900: #064e3b;
+
+  /* RGB channels */
+  --mint-500-rgb: 16 185 129;
+  --mint-400-rgb: 52 211 153;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     WARNING: AMBER (Attention & Warmth)
+     Inviting, not alarming - "pay attention" not "panic"
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --amber-50:  #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-200: #fde68a;
+  --amber-300: #fcd34d;
+  --amber-400: #fbbf24;
+  --amber-500: #f59e0b;  /* WARNING PRIMARY */
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+  --amber-800: #92400e;
+  --amber-900: #78350f;
+
+  /* RGB channels */
+  --amber-500-rgb: 245 158 11;
+  --amber-400-rgb: 251 191 36;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     ENERGY: CORAL (High-Momentum & Urgency)
+     For streaks, achievements, celebrations
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --coral-50:  #fff1f2;
+  --coral-100: #ffe4e6;
+  --coral-200: #fecdd3;
+  --coral-300: #fda4af;
+  --coral-400: #fb7185;
+  --coral-500: #f43f5e;  /* ENERGY PRIMARY */
+  --coral-600: #e11d48;
+  --coral-700: #be123c;
+  --coral-800: #9f1239;
+  --coral-900: #881337;
+
+  /* RGB channels */
+  --coral-500-rgb: 244 63 94;
+  --coral-400-rgb: 251 113 133;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     ERROR: TRUE RED (Errors Only)
+     Reserved strictly for failures and destructive actions
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --error-50:  #fef2f2;
+  --error-100: #fee2e2;
+  --error-200: #fecaca;
+  --error-300: #fca5a5;
+  --error-400: #f87171;
+  --error-500: #ef4444;  /* ERROR PRIMARY */
+  --error-600: #dc2626;
+  --error-700: #b91c1c;
+  --error-800: #991b1b;
+  --error-900: #7f1d1d;
+
+  /* RGB channels */
+  --error-500-rgb: 239 68 68;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SEMANTIC MAPPINGS
+     Use these in components for consistent meaning
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  /* Brand */
+  --color-brand: var(--violet-600);
+  --color-brand-light: var(--violet-500);
+  --color-brand-dark: var(--violet-700);
+  --color-brand-subtle: var(--violet-100);
+  --color-brand-muted: var(--violet-400);
+
+  /* Live/Active states */
+  --color-live: var(--cyan-500);
+  --color-live-light: var(--cyan-400);
+  --color-live-dark: var(--cyan-600);
+  --color-live-subtle: var(--cyan-100);
+
+  /* Success/Achievement */
+  --color-success: var(--mint-500);
+  --color-success-light: var(--mint-400);
+  --color-success-dark: var(--mint-600);
+  --color-success-subtle: var(--mint-100);
+
+  /* Warning/Attention */
+  --color-warning: var(--amber-500);
+  --color-warning-light: var(--amber-400);
+  --color-warning-dark: var(--amber-600);
+  --color-warning-subtle: var(--amber-100);
+
+  /* Energy/Momentum */
+  --color-energy: var(--coral-500);
+  --color-energy-light: var(--coral-400);
+  --color-energy-dark: var(--coral-600);
+  --color-energy-subtle: var(--coral-100);
+
+  /* Error/Destructive */
+  --color-error: var(--error-500);
+  --color-error-light: var(--error-400);
+  --color-error-dark: var(--error-600);
+  --color-error-subtle: var(--error-100);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SIGNATURE GRADIENTS
+     The visual language of ShareSync
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  /* Primary brand gradient - Deep Violet warmth */
+  --gradient-brand: linear-gradient(135deg, var(--violet-600) 0%, var(--violet-700) 100%);
+  --gradient-brand-vivid: linear-gradient(135deg, var(--violet-500) 0%, var(--violet-600) 100%);
+  
+  /* Signature: Violet to Cyan - creativity meets technology */
+  --gradient-signature: linear-gradient(135deg, var(--violet-600) 0%, var(--cyan-500) 100%);
+  --gradient-signature-soft: linear-gradient(135deg, var(--violet-500) 0%, var(--cyan-400) 100%);
+  
+  /* Energy gradient - for celebrations and high momentum */
+  --gradient-energy: linear-gradient(135deg, var(--coral-500) 0%, var(--amber-500) 100%);
+  --gradient-energy-vivid: linear-gradient(135deg, var(--coral-400) 0%, var(--amber-400) 100%);
+  
+  /* Success gradient - achievement unlocked */
+  --gradient-success: linear-gradient(135deg, var(--mint-500) 0%, var(--cyan-500) 100%);
+  
+  /* Flow state gradient - deep focus */
+  --gradient-flow: linear-gradient(135deg, var(--violet-700) 0%, var(--violet-900) 100%);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     MOMENTUM GLOW SYSTEM
+     The interface brightens with productivity
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  /* Base glow colors */
+  --glow-brand: 0 0 20px rgb(var(--violet-600-rgb) / 0.3);
+  --glow-brand-strong: 0 0 30px rgb(var(--violet-600-rgb) / 0.5);
+  --glow-brand-intense: 0 0 40px rgb(var(--violet-500-rgb) / 0.6);
+  
+  --glow-live: 0 0 20px rgb(var(--cyan-500-rgb) / 0.3);
+  --glow-live-strong: 0 0 30px rgb(var(--cyan-500-rgb) / 0.5);
+  
+  --glow-success: 0 0 20px rgb(var(--mint-500-rgb) / 0.3);
+  --glow-success-strong: 0 0 30px rgb(var(--mint-500-rgb) / 0.5);
+  
+  --glow-energy: 0 0 20px rgb(var(--coral-500-rgb) / 0.3);
+  --glow-energy-strong: 0 0 30px rgb(var(--coral-500-rgb) / 0.5);
+  
+  --glow-warning: 0 0 20px rgb(var(--amber-500-rgb) / 0.3);
+  --glow-error: 0 0 20px rgb(var(--error-500-rgb) / 0.3);
+
+  /* Momentum intensity levels (0-5) */
+  --momentum-glow-0: none;
+  --momentum-glow-1: 0 0 30px rgb(var(--violet-600-rgb) / 0.08);
+  --momentum-glow-2: 0 0 40px rgb(var(--violet-600-rgb) / 0.12);
+  --momentum-glow-3: 0 0 50px rgb(var(--violet-600-rgb) / 0.18);
+  --momentum-glow-4: 0 0 60px rgb(var(--violet-600-rgb) / 0.25);
+  --momentum-glow-5: 0 0 80px rgb(var(--violet-500-rgb) / 0.35);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SURFACE TINTS
+     Subtle background colors for states and feedback
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --tint-brand: rgb(var(--violet-600-rgb) / 0.08);
+  --tint-brand-hover: rgb(var(--violet-600-rgb) / 0.12);
+  --tint-brand-active: rgb(var(--violet-600-rgb) / 0.16);
+  
+  --tint-live: rgb(var(--cyan-500-rgb) / 0.08);
+  --tint-live-hover: rgb(var(--cyan-500-rgb) / 0.12);
+  
+  --tint-success: rgb(var(--mint-500-rgb) / 0.08);
+  --tint-success-hover: rgb(var(--mint-500-rgb) / 0.12);
+  
+  --tint-warning: rgb(var(--amber-500-rgb) / 0.08);
+  --tint-warning-hover: rgb(var(--amber-500-rgb) / 0.12);
+  
+  --tint-energy: rgb(var(--coral-500-rgb) / 0.08);
+  --tint-energy-hover: rgb(var(--coral-500-rgb) / 0.12);
+  
+  --tint-error: rgb(var(--error-500-rgb) / 0.08);
+  --tint-error-hover: rgb(var(--error-500-rgb) / 0.12);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DARK MODE ADJUSTMENTS
+   Brighter, more vibrant in darkness
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root.dark,
+[data-theme="dark"] {
+  /* Slightly brighter primaries for dark backgrounds */
+  --color-brand: var(--violet-500);
+  --color-brand-light: var(--violet-400);
+  --color-brand-dark: var(--violet-600);
+  --color-brand-subtle: rgb(var(--violet-600-rgb) / 0.15);
+  
+  --color-live: var(--cyan-400);
+  --color-live-subtle: rgb(var(--cyan-500-rgb) / 0.15);
+  
+  --color-success: var(--mint-400);
+  --color-success-subtle: rgb(var(--mint-500-rgb) / 0.15);
+  
+  --color-warning: var(--amber-400);
+  --color-warning-subtle: rgb(var(--amber-500-rgb) / 0.15);
+  
+  --color-energy: var(--coral-400);
+  --color-energy-subtle: rgb(var(--coral-500-rgb) / 0.15);
+
+  /* Stronger glows in dark mode */
+  --glow-brand: 0 0 25px rgb(var(--violet-500-rgb) / 0.4);
+  --glow-brand-strong: 0 0 40px rgb(var(--violet-500-rgb) / 0.6);
+  --glow-brand-intense: 0 0 60px rgb(var(--violet-400-rgb) / 0.7);
+  
+  --glow-live: 0 0 25px rgb(var(--cyan-400-rgb) / 0.4);
+  --glow-live-strong: 0 0 40px rgb(var(--cyan-400-rgb) / 0.6);
+  
+  --glow-success: 0 0 25px rgb(var(--mint-400-rgb) / 0.4);
+  --glow-energy: 0 0 25px rgb(var(--coral-400-rgb) / 0.4);
+
+  /* Enhanced momentum glow for dark mode */
+  --momentum-glow-1: 0 0 35px rgb(var(--violet-500-rgb) / 0.12);
+  --momentum-glow-2: 0 0 50px rgb(var(--violet-500-rgb) / 0.18);
+  --momentum-glow-3: 0 0 65px rgb(var(--violet-500-rgb) / 0.25);
+  --momentum-glow-4: 0 0 80px rgb(var(--violet-500-rgb) / 0.35);
+  --momentum-glow-5: 0 0 100px rgb(var(--violet-400-rgb) / 0.45);
+
+  /* Stronger tints in dark mode */
+  --tint-brand: rgb(var(--violet-500-rgb) / 0.12);
+  --tint-brand-hover: rgb(var(--violet-500-rgb) / 0.18);
+  --tint-brand-active: rgb(var(--violet-500-rgb) / 0.24);
+  
+  --tint-live: rgb(var(--cyan-400-rgb) / 0.12);
+  --tint-success: rgb(var(--mint-400-rgb) / 0.12);
+  --tint-warning: rgb(var(--amber-400-rgb) / 0.12);
+  --tint-energy: rgb(var(--coral-400-rgb) / 0.12);
+  --tint-error: rgb(var(--error-400-rgb) / 0.12);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   Quick access to the emotional color system
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Text colors */
+.text-brand { color: var(--color-brand); }
+.text-brand-light { color: var(--color-brand-light); }
+.text-live { color: var(--color-live); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-energy { color: var(--color-energy); }
+.text-error { color: var(--color-error); }
+
+/* Background colors */
+.bg-brand { background-color: var(--color-brand); }
+.bg-brand-subtle { background-color: var(--color-brand-subtle); }
+.bg-live { background-color: var(--color-live); }
+.bg-live-subtle { background-color: var(--color-live-subtle); }
+.bg-success { background-color: var(--color-success); }
+.bg-success-subtle { background-color: var(--color-success-subtle); }
+.bg-warning { background-color: var(--color-warning); }
+.bg-warning-subtle { background-color: var(--color-warning-subtle); }
+.bg-energy { background-color: var(--color-energy); }
+.bg-energy-subtle { background-color: var(--color-energy-subtle); }
+.bg-error { background-color: var(--color-error); }
+.bg-error-subtle { background-color: var(--color-error-subtle); }
+
+/* Gradient backgrounds */
+.bg-gradient-brand { background: var(--gradient-brand); }
+.bg-gradient-signature { background: var(--gradient-signature); }
+.bg-gradient-energy { background: var(--gradient-energy); }
+.bg-gradient-success { background: var(--gradient-success); }
+.bg-gradient-flow { background: var(--gradient-flow); }
+
+/* Border colors */
+.border-brand { border-color: var(--color-brand); }
+.border-live { border-color: var(--color-live); }
+.border-success { border-color: var(--color-success); }
+.border-warning { border-color: var(--color-warning); }
+.border-energy { border-color: var(--color-energy); }
+.border-error { border-color: var(--color-error); }
+
+/* Glow effects */
+.glow-brand { box-shadow: var(--glow-brand); }
+.glow-brand-strong { box-shadow: var(--glow-brand-strong); }
+.glow-live { box-shadow: var(--glow-live); }
+.glow-success { box-shadow: var(--glow-success); }
+.glow-energy { box-shadow: var(--glow-energy); }
+.glow-warning { box-shadow: var(--glow-warning); }
+.glow-error { box-shadow: var(--glow-error); }
+
+/* Momentum glow levels */
+.momentum-glow-1 { box-shadow: var(--momentum-glow-1); }
+.momentum-glow-2 { box-shadow: var(--momentum-glow-2); }
+.momentum-glow-3 { box-shadow: var(--momentum-glow-3); }
+.momentum-glow-4 { box-shadow: var(--momentum-glow-4); }
+.momentum-glow-5 { box-shadow: var(--momentum-glow-5); }
+
+/* Tinted backgrounds */
+.tint-brand { background-color: var(--tint-brand); }
+.tint-live { background-color: var(--tint-live); }
+.tint-success { background-color: var(--tint-success); }
+.tint-warning { background-color: var(--tint-warning); }
+.tint-energy { background-color: var(--tint-energy); }
+.tint-error { background-color: var(--tint-error); }

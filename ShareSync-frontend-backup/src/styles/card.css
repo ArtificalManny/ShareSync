@@ -1,171 +1,473 @@
-/* /src/styles/card.css
-   Card helpers + intent accents + focus ring + accent bar
-   Uses tokens from tokens.css / gradients.css
-*/
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC CARD SYSTEM v2.0 - Phase 1: Emotional Color System
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   BREATHING CARDS: Cards that have presence and respond to interaction
+   
+   Card States:
+   • Idle: Subtle, doesn't compete for attention
+   • Hover: Lifts slightly, border warms up
+   • Focus: Brand glow, clear selection
+   • Active: Strong presence
+   • Momentum: Glow intensifies with user productivity
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* =====================
-   Base card (updated)
-   ===================== */
-   .card {
-    /* Prefer new tokens; fall back to your existing ones */
-    background: var(--surface, var(--bg-elevated, #fff));
-    border: 1px solid var(--border, rgb(var(--border) / .60));
-    border-radius: var(--r-lg, var(--radius-lg)); /* 16px default */
-    box-shadow: var(--elev-1, var(--shadow-elev, 0 8px 24px rgba(15, 23, 42, 0.08)));
-    transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
-  }
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE CARD - The Foundation
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card {
+  position: relative;
   
-  /* Gentle raise on hover (new) */
-  .card:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--elev-2, 0 12px 32px rgb(15 23 42 / .12));
-  }
+  /* Surface & depth */
+  background: linear-gradient(
+    180deg,
+    var(--surface-1) 0%,
+    color-mix(in oklch, var(--surface-1) 95%, var(--surface-0)) 100%
+  );
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   
-  /* Dark mode tweaks (kept subtle) */
-  :root.dark .card,
-  [data-theme="dark"] .card {
-    background: var(--surface, rgb(15 23 42 / .85));
-    border-color: var(--border, rgb(var(--border) / .70));
-  }
+  /* Layered shadows for depth */
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
   
-  /* ---- Intent accents (top inset bar) ----
-     Use alongside .card, e.g. class="card accent-kpi"
-  */
-  .accent-kpi,
-  .accent-risk,
-  .accent-activity {
-    position: relative;
-  }
-  .accent-kpi::before,
-  .accent-risk::before,
-  .accent-activity::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0; /* top bar */
-    height: 4px;
-    border-top-left-radius: var(--r-lg, var(--radius-lg));
-    border-top-right-radius: var(--r-lg, var(--radius-lg));
-    pointer-events: none;
-  }
-  
-  /* KPI/info → CNBC blend */
-  .accent-kpi::before {
-    background-image: var(--grad-cnbc);
-    opacity: 0.9;
-  }
-  
-  /* Risk → warm sweep using IG blend for visual heat */
-  .accent-risk::before {
-    background-image: var(--grad-ig);
-    opacity: 0.9;
-  }
-  
-  /* Neutral activity → subtle slate gradient fallback */
-  .accent-activity::before {
-    background-image: linear-gradient(135deg, rgb(100 116 139 / .8), rgb(71 85 105 / .8));
-    opacity: 0.75;
-  }
-  
-  /* Accent bar (left) companion (also available in gradients.css) */
-  .accent-bar { position: relative; }
-  .accent-bar__left {
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 4px;
-    border-top-left-radius: var(--r-lg, var(--radius-lg));
-    border-bottom-left-radius: var(--r-lg, var(--radius-lg));
-    background-image: var(--grad-signature);
-    opacity: .95;
-    pointer-events: none;
-  }
-  
-  /* Optional hover lift (legacy opt-in) */
-  .card.hoverable {
-    transition:
-      transform var(--motion-quick, 150ms) ease,
-      box-shadow var(--motion-quick, 150ms) ease,
-      border-color var(--motion-quick, 150ms) ease;
-  }
-  .card.hoverable:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, .05);
-  }
-  
-  /* Focus ring utility (keyboard-visible) */
-  .focus-ring:focus-visible,
-  .card :where(.focus-ring):focus-visible {
-    outline: 2px solid rgb(var(--accent));
-    outline-offset: 2px;
-    border-radius: var(--radius-md);
-  }
-  
-  /* Section helpers inside cards */
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-    padding: 16px 16px 0 16px;
-    font-weight: 600;
-    color: rgb(var(--text));
-  }
-  :root.dark .card-header,
-  [data-theme="dark"] .card-header { color: rgb(var(--text)); }
-  
-  .card-body { padding: 16px; }
-  .card-footer { padding: 0 16px 16px 16px; }
-  
-  /* Subtle text helper */
-  .card-subtle {
-    font-size: .8125rem;
-    color: rgb(var(--muted));
-  }
-  
-  /* --- Brand-aware neon hover glow (motion-gated) --- */
-  /* Opt-in by adding `card neon-hover` to the element */
-  @media (prefers-reduced-motion: no-preference) {
-    .card.neon-hover:hover,
-    .card.neon-hover:focus-within {
-      /* Classic / default uses --accent */
-      box-shadow:
-        0 10px 28px rgb(var(--accent) / .18),
-        0 0 0 1px rgb(var(--accent) / .22);
-      border-color: rgb(var(--accent) / .35);
-    }
-  
-    /* When Brand V2 is active, lean into deep blue glow */
-    [data-brand="v2"] .card.neon-hover:hover,
-    [data-brand="v2"] .card.neon-hover:focus-within {
-      box-shadow:
-        0 12px 32px rgb(var(--brand-v2-accent) / .22),
-        0 0 0 1px rgb(var(--brand-v2-accent) / .28);
-      border-color: rgb(var(--brand-v2-accent) / .38);
-    }
-  }
-  .h-hero { font-size: clamp(28px, 6vw, 40px); font-weight: 800; line-height: 1.1; }
-/* ================================
-   MetaLab glass coat for panels/cards
-   ================================ */
-   .card, .panel, .panel-neon {
-    /* contain the ::before inner stroke */
-    position: relative;
-    border-radius: var(--r-lg, var(--radius-lg, 16px));
-  
-    /* glassy surface */
-    --_bg: color-mix(in oklab, rgb(var(--card)) 88%, black 12%);
-    background: linear-gradient(180deg, var(--_bg), rgba(255,255,255,.02));
-    border: 1px solid color-mix(in oklab, rgb(var(--border)) 78%, white 6%);
+  /* Smooth transitions */
+  transition: 
+    transform var(--motion-fast) var(--easing-standard),
+    box-shadow var(--motion-normal) var(--easing-standard),
+    border-color var(--motion-fast) var(--easing-standard);
+}
+
+/* Inner highlight for glassy depth */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   HOVER STATE - Breathing Lift
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-default);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgb(var(--brand-600-rgb) / 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FOCUS STATE - Brand Glow
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card:focus-within,
+.card.is-focused {
+  border-color: var(--border-brand);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.15),
+    var(--ring-focus),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACTIVE STATE - Selected Card
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card.is-active,
+.card[data-active="true"] {
+  border-color: var(--border-brand);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.15),
+    var(--glow-brand),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOMENTUM-RESPONSIVE CARDS
+   Glow intensifies with user productivity
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card[data-momentum="1"] {
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.12),
+    var(--momentum-glow-1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.card[data-momentum="2"] {
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.12),
+    var(--momentum-glow-2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.card[data-momentum="3"] {
+  border-color: rgb(var(--brand-600-rgb) / 0.15);
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 6px 20px rgba(0, 0, 0, 0.14),
+    var(--momentum-glow-3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.card[data-momentum="4"] {
+  border-color: rgb(var(--brand-600-rgb) / 0.25);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 8px 24px rgba(0, 0, 0, 0.16),
+    var(--momentum-glow-4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.card[data-momentum="5"] {
+  border-color: rgb(var(--brand-500-rgb) / 0.35);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 10px 30px rgba(0, 0, 0, 0.18),
+    var(--momentum-glow-5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CARD VARIANTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Elevated card - higher in the hierarchy */
+.card-elevated {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 4px 24px rgba(0, 0, 0, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+}
+
+.card-elevated:hover {
+  border-color: rgb(var(--brand-600-rgb) / 0.3);
+  box-shadow: 
+    0 8px 32px rgb(var(--brand-600-rgb) / 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Glass card - translucent with blur */
+.card-glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Subtle card - minimal presence */
+.card-subtle {
+  background: var(--surface-1);
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+.card-subtle:hover {
+  background: var(--surface-2);
+  border-color: var(--border-subtle);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: none;
+}
+
+/* Interactive card - clickable */
+.card-interactive {
+  cursor: pointer;
+}
+
+.card-interactive:active {
+  transform: translateY(0) scale(0.995);
+  transition: transform 60ms ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   INTENT ACCENT BARS - Top edge indicators
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card.accent-brand,
+.card.accent-momentum {
+  border-top: 3px solid var(--brand-600);
+}
+
+.card.accent-live {
+  border-top: 3px solid var(--cyan-500);
+}
+
+.card.accent-success {
+  border-top: 3px solid var(--success-500);
+}
+
+.card.accent-warning,
+.card.accent-risk {
+  border-top: 3px solid var(--warning-500);
+}
+
+.card.accent-energy {
+  border-top: 3px solid var(--energy-500);
+}
+
+.card.accent-error {
+  border-top: 3px solid var(--error-500);
+}
+
+.card.accent-kpi {
+  border-top: 3px solid rgb(var(--info-500-rgb) / 0.5);
+}
+
+.card.accent-activity {
+  border-top: 3px solid var(--text-tertiary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACCENT BAR - Left side highlight
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card.accent-bar {
+  position: relative;
+  padding-left: calc(var(--card-pad, 16px) + 4px);
+}
+
+.card.accent-bar .accent-bar__left,
+.card .accent-bar__left {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-top-left-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-lg);
+  background: var(--gradient-signature);
+  opacity: 0.9;
+  transition: width var(--motion-fast) ease, opacity var(--motion-fast) ease;
+}
+
+.card.accent-bar:hover .accent-bar__left,
+.card:hover .accent-bar__left {
+  width: 6px;
+  opacity: 1;
+}
+
+/* Accent bar color variants */
+.card.accent-bar--brand .accent-bar__left { background: var(--gradient-brand); }
+.card.accent-bar--live .accent-bar__left { background: linear-gradient(180deg, var(--cyan-400), var(--cyan-600)); }
+.card.accent-bar--energy .accent-bar__left { background: var(--gradient-energy); }
+.card.accent-bar--success .accent-bar__left { background: var(--gradient-success); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CARD SECTIONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: var(--card-pad, 16px) var(--card-pad, 16px) 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.card-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--tint-brand);
+  color: var(--brand-500);
+}
+
+.card-body {
+  padding: var(--card-pad, 16px);
+}
+
+.card-footer {
+  padding: 0 var(--card-pad, 16px) var(--card-pad, 16px);
+}
+
+.card-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 0 var(--card-pad, 16px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CARD HELPERS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card-subtle-text {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.card-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NEON HOVER GLOW (Opt-in)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: no-preference) {
+  .card.neon-hover:hover,
+  .card.neon-hover:focus-within {
     box-shadow:
-      0 1px 0 rgba(255,255,255,.06) inset,
-      0 0 0 1px rgba(255,255,255,.02) inset,
-      0 18px 48px rgba(2,6,23,.36);
+      0 10px 28px rgb(var(--brand-600-rgb) / 0.20),
+      0 0 0 1px rgb(var(--brand-600-rgb) / 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    border-color: rgb(var(--brand-600-rgb) / 0.4);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHINE EFFECT (Opt-in)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card.shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.card.shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.10),
+    transparent
+  );
+  transform: translateX(-150%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes card-shine-sweep {
+    from { transform: translateX(-150%); }
+    to { transform: translateX(350%); }
+  }
+
+  .card.shine:hover::after {
+    animation: card-shine-sweep 800ms var(--easing-standard) 1;
+    opacity: 1;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   METALAB GLASS COAT
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card.glass-coat,
+.panel,
+.panel-neon {
+  position: relative;
+  border-radius: var(--radius-lg);
+  
+  /* Glassy surface with subtle gradient */
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--surface-1) 92%, white 8%) 0%,
+    var(--surface-1) 100%
+  );
+  border: 1px solid color-mix(in oklch, var(--border-default) 80%, white 10%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+    0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+/* Crisp inner hairline */
+.card.glass-coat::before,
+.panel::before,
+.panel-neon::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FOCUS RING UTILITY
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card .focus-ring:focus-visible,
+.card:where(.focus-ring):focus-visible {
+  outline: 2px solid var(--brand-600);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
+/* Clickable card focus */
+.card-clickable:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus), var(--shadow-lg);
+  border-color: var(--border-brand);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DARK MODE REFINEMENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root.dark .card,
+[data-theme="dark"] .card {
+  background: linear-gradient(
+    180deg,
+    var(--surface-1) 0%,
+    color-mix(in oklch, var(--surface-1) 90%, var(--surface-0)) 100%
+  );
+}
+
+:root.dark .card-elevated,
+[data-theme="dark"] .card-elevated {
+  backdrop-filter: blur(16px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
   }
   
-  /* crisp inner hairline */
-  .card::before, .panel::before, .panel-neon::before {
-    content: "";
-    position: absolute;
-    inset: 2px;
-    border-radius: inherit;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
-    pointer-events: none;
-  }  
+  .card:hover {
+    transform: none;
+  }
+  
+  .card.shine::after {
+    display: none;
+  }
+  
+  .card.accent-bar:hover .accent-bar__left {
+    width: 4px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   HERO TYPOGRAPHY (for card headers)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.h-hero {
+  font-size: clamp(28px, 6vw, 40px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
