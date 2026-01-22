@@ -29,6 +29,9 @@ import { ContextPreservationProvider } from './contexts/ContextPreservationConte
 // ⭐ PHASE 6: Momentum Visualization Provider
 import { MomentumProvider } from './contexts/MomentumContext';
 
+// ⭐ PHASE 10.3: Focus Session Provider
+import { FocusSessionProvider } from './contexts/FocusSessionContext';
+
 // ⭐ PWA Components
 import InstallPrompt from "./components/pwa/InstallPrompt";
 
