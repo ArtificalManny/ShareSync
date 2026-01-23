@@ -1,13 +1,15 @@
 // src/components/Navbar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - "Quiet Confidence"
+// SHARESYNC NAVBAR v2.0 - Phase 1: Emotional Color System
 // ═══════════════════════════════════════════════════════════════════════════════
-// RULES APPLIED:
-// 1. Surface hierarchy: surface-0/1/2 tokens
-// 2. Text hierarchy: text-primary/secondary/tertiary
-// 3. Brand color only for primary action (+ button)
-// 4. No glows at rest - clean and professional
-// 5. Calm typography - no screaming uppercase everywhere
+//
+// NOW USING:
+// - Deep Violet (#7C3AED) as primary brand color for actions
+// - Surface hierarchy: surface-0/1/2 tokens
+// - Text hierarchy: text-primary/secondary/tertiary
+// - Brand color ONLY for primary action (+ button)
+// - No glows at rest - clean and professional
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -77,7 +79,7 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
         onClick={() => setShowMenu(!showMenu)} 
         className="flex items-center outline-none"
       >
-        <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-transparent hover:border-brand/50 transition-colors">
+        <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-transparent hover:border-brand-500/50 transition-colors">
           <img 
             src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC} 
             className="w-full h-full object-cover" 
@@ -209,7 +211,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           {/* Divider */}
           <div className="hidden lg:block h-5 w-px bg-white/[0.06] mx-2" />
 
-          {/* Search */}
+          {/* Search - focus ring uses Deep Violet */}
           <form 
             onSubmit={handleSearch}
             className="hidden md:flex items-center relative"
@@ -223,7 +225,8 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
                 bg-surface-1 border border-white/[0.06] rounded-lg
                 pl-9 pr-4 py-2 text-sm text-text-primary
                 placeholder:text-text-tertiary
-                focus:border-brand/50 focus:outline-none
+                focus:border-brand-500/50 focus:outline-none
+                focus:ring-2 focus:ring-brand-500/20
                 w-52 focus:w-72 transition-all duration-200
               "
             />
@@ -248,16 +251,20 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
         ═══════════════════════════════════════════════════════════════════ */}
         <div className="flex items-center gap-1">
           
-          {/* Primary Action: New */}
+          {/* Primary Action: New - Deep Violet brand gradient */}
           <button 
             className="
               w-8 h-8 rounded-lg
-              bg-brand text-white
+              bg-brand-600 text-white
               flex items-center justify-center
-              hover:bg-brand-600
-              transition-colors duration-200
+              hover:bg-brand-500
+              hover:shadow-glow-brand
+              transition-all duration-200
               mr-1
             "
+            style={{
+              background: 'linear-gradient(135deg, var(--brand-600, #7C3AED) 0%, var(--brand-700, #6D28D9) 100%)',
+            }}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -297,7 +304,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           
           <IconButton 
             onClick={onLogout}
-            className="hover:text-danger"
+            className="hover:text-error-500 hover:bg-error-500/10"
           >
             <LogOut className="w-4 h-4" />
           </IconButton>

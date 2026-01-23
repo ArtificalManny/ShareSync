@@ -1,6 +1,14 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 8.3: XP Ring Micro-Interactions
+// SHARESYNC SIDEBAR v2.0 - Phase 1: Emotional Color System
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// NOW USING:
+// - Deep Violet (#7C3AED) as primary brand color
+// - Momentum Glow system for XP ring and progress
+// - Surface hierarchy: surface-0 (deepest), surface-1, surface-2
+// - Text hierarchy: text-primary, text-secondary, text-tertiary
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useRef } from "react";
@@ -19,12 +27,13 @@ import {
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
 import { useFlowState } from '../contexts/FlowStateContext';
+import { useMomentumContext } from '../contexts/MomentumContext';
 import useAnimatedNumber from '../hooks/useAnimatedNumber';
 
 const LS_KEY = "ss.sidebar.collapsed";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS RING - With pulse, count-up, and level-up celebration
+   PROGRESS RING - With Deep Violet brand color and momentum glow
 ───────────────────────────────────────────────────────────────────────── */
 function ProgressRing({ 
   progress = 0.75, 
@@ -34,6 +43,8 @@ function ProgressRing({
   currentXP,
   maxXP,
 }) {
+  const { glowLevel } = useMomentumContext();
+  
   const size = collapsed ? 40 : 56;
   const strokeWidth = collapsed ? 3 : 4;
   const radius = (size - strokeWidth) / 2;
@@ -93,14 +104,26 @@ function ProgressRing({
     prevLevelRef.current = level;
   }, [level]);
 
+  // Dynamic glow based on momentum level
+  const getGlowStyle = () => {
+    if (glowLevel === 0) return {};
+    const intensity = glowLevel * 0.15;
+    return {
+      filter: `drop-shadow(0 0 ${8 + glowLevel * 4}px rgb(124 58 237 / ${intensity}))`,
+    };
+  };
+
   return (
     <div className="flex flex-col items-center py-6">
-      <div className={`
-        relative 
-        ${isPulsing ? 'animate-bounce-subtle' : ''}
-        ${isLevelingUp ? 'scale-110' : 'scale-100'}
-        transition-transform duration-300
-      `}>
+      <div 
+        className={`
+          relative 
+          ${isPulsing ? 'animate-bounce-subtle' : ''}
+          ${isLevelingUp ? 'scale-110' : 'scale-100'}
+          transition-transform duration-300
+        `}
+        data-momentum={glowLevel}
+      >
         {/* Pulse ring behind */}
         {isPulsing && (
           <div 
@@ -119,7 +142,7 @@ function ProgressRing({
             style={{ 
               width: size, 
               height: size,
-              background: 'radial-gradient(circle, var(--brand-400) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, var(--brand-400, #A78BFA) 0%, transparent 70%)',
             }}
           />
         )}
@@ -132,33 +155,32 @@ function ProgressRing({
             ${isPulsing ? 'scale-105' : 'scale-100'}
             transition-transform duration-200
           `}
+          style={getGlowStyle()}
         >
-          {/* Track */}
+          {/* Track - uses surface-2 token */}
           <circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="currentColor"
+            stroke="var(--surface-2, #1A1A1D)"
             strokeWidth={strokeWidth}
-            className="text-surface-2"
           />
           
-          {/* Progress arc */}
+          {/* Progress arc - Deep Violet brand color */}
           <circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="currentColor"
+            stroke={isLevelingUp ? 'var(--success-500, #10B981)' : 'var(--brand-600, #7C3AED)'}
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
             className={`
-              text-brand transition-all duration-700 ease-out
-              ${isPulsing ? 'text-brand-400' : ''}
-              ${isLevelingUp ? 'text-success' : ''}
+              transition-all duration-700 ease-out
+              ${isPulsing ? 'stroke-brand-400' : ''}
             `}
           />
         </svg>
@@ -171,7 +193,7 @@ function ProgressRing({
               <div className="text-[8px] text-brand-300 uppercase tracking-wider">
                 Level Up!
               </div>
-              <span className="text-lg font-bold text-brand">
+              <span className="text-lg font-bold text-brand-500">
                 {level}
               </span>
             </div>
@@ -180,7 +202,7 @@ function ProgressRing({
             <span className={`
               font-semibold text-text-primary tabular-nums
               ${collapsed ? 'text-xs' : 'text-lg'}
-              ${isPulsing || isAnimating ? 'scale-110 text-brand' : 'scale-100'}
+              ${isPulsing || isAnimating ? 'scale-110 text-brand-500' : 'scale-100'}
               transition-all duration-200
             `}>
               {displayPercent}
@@ -195,24 +217,39 @@ function ProgressRing({
           mt-3 px-2 py-1 rounded-full text-[10px] font-medium
           flex items-center gap-1 transition-all duration-300
           ${isImpressiveStreak 
-            ? 'bg-warning/10 text-warning border border-warning/20' 
+            ? 'bg-warning-500/10 text-warning-500 border border-warning-500/20' 
             : 'bg-surface-2 text-text-tertiary border border-transparent'
           }
         `}>
-          <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-warning' : 'text-text-tertiary'}`} />
+          <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-warning-500' : 'text-text-tertiary'}`} />
           <span>{streak}d</span>
         </div>
       )}
       
       {/* Inline keyframes */}
       <style>{`
+        @keyframes ring-pulse {
+          0% {
+            box-shadow: 0 0 0 0 var(--brand-500, #8B5CF6);
+            opacity: 0.6;
+          }
+          100% {
+            box-shadow: 0 0 0 12px transparent;
+            opacity: 0;
+          }
+        }
+        
+        .ring-pulse {
+          animation: ring-pulse 0.6s ease-out forwards;
+        }
+        
         @keyframes ring-pulse-strong {
           0% {
-            box-shadow: 0 0 0 0 var(--brand-400);
+            box-shadow: 0 0 0 0 var(--brand-400, #A78BFA);
             opacity: 0.7;
           }
           50% {
-            box-shadow: 0 0 16px 4px var(--brand-500);
+            box-shadow: 0 0 16px 4px var(--brand-500, #8B5CF6);
             opacity: 0.5;
           }
           100% {
@@ -244,13 +281,22 @@ function ProgressRing({
         .level-up-number {
           animation: level-up-number 0.5s ease-out forwards;
         }
+        
+        @keyframes bounce-subtle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-2px); }
+        }
+        
+        .animate-bounce-subtle {
+          animation: bounce-subtle 0.3s ease-out;
+        }
       `}</style>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   SHIP COUNTER - With animated tick-up
+   SHIP COUNTER - With animated tick-up and Deep Violet progress
 ───────────────────────────────────────────────────────────────────────── */
 function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   const prevCurrentRef = useRef(current);
@@ -281,7 +327,7 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
     return (
       <div className="mx-auto mt-4 w-8 h-1 bg-surface-2 rounded-full overflow-hidden">
         <div 
-          className="h-full bg-brand rounded-full transition-all duration-500" 
+          className="h-full bg-brand-600 rounded-full transition-all duration-500" 
           style={{ width: `${progress * 100}%` }} 
         />
       </div>
@@ -292,7 +338,7 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
     <div className={`
       mx-3 px-4 py-3 rounded-xl bg-surface-1 border border-white/[0.06]
       transition-all duration-200
-      ${isAnimating ? 'ring-2 ring-brand/20' : ''}
+      ${isAnimating ? 'ring-2 ring-brand-500/20' : ''}
     `}>
       <div className="flex justify-between items-center mb-2">
         <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">
@@ -300,7 +346,7 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
         </span>
         <span className={`
           text-xs font-semibold tabular-nums
-          ${isAnimating ? 'text-brand scale-110' : 'text-text-primary scale-100'}
+          ${isAnimating ? 'text-brand-500 scale-110' : 'text-text-primary scale-100'}
           transition-all duration-200
         `}>
           {displayCurrent}/{target}
@@ -312,7 +358,7 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
             key={i} 
             className={`
               h-1.5 flex-1 rounded-full transition-all duration-300
-              ${i < current ? 'bg-brand' : 'bg-surface-3'}
+              ${i < current ? 'bg-brand-600' : 'bg-surface-3'}
               ${i === justFilledIndex ? 'scale-y-150 bg-brand-400' : 'scale-y-100'}
             `}
             style={{
@@ -331,6 +377,7 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
 export default function Sidebar() {
   const navigate = useNavigate();
   const { shouldCollapseSidebar, isInFlow } = useFlowState();
+  const { glowLevel } = useMomentumContext();
   
   const [userCollapsed, setUserCollapsed] = useState(() => {
     try { return localStorage.getItem(LS_KEY) === "1"; } 
@@ -360,12 +407,13 @@ export default function Sidebar() {
         ${collapsed ? 'w-[72px]' : 'w-[260px]'}
         ${isInFlow ? 'opacity-90' : 'opacity-100'}
       `}
+      data-momentum={glowLevel}
     >
-      {/* Header */}
+      {/* Header with Deep Violet brand logo */}
       <div className="flex items-center justify-between p-4">
         {!collapsed && (
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-brand rounded-lg flex items-center justify-center">
+            <div className="w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center shadow-glow-brand">
               <span className="text-xs font-bold text-white">S</span>
             </div>
             <span className="text-sm font-semibold text-text-primary">ShareSync</span>
@@ -404,14 +452,14 @@ export default function Sidebar() {
         </div>
       </nav>
 
-      {/* User Card */}
+      {/* User Card with brand accent on hover */}
       <div className="p-3">
         <div 
           onClick={() => navigate('/profile')}
           className={`
             flex items-center gap-3 p-2.5 rounded-xl cursor-pointer
             bg-surface-1 border border-white/[0.06]
-            hover:bg-surface-2 hover:border-white/[0.1]
+            hover:bg-surface-2 hover:border-brand-500/20
             transition-all duration-200
             ${collapsed ? 'justify-center' : ''}
           `}
@@ -420,7 +468,7 @@ export default function Sidebar() {
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium text-text-primary truncate">{me.name}</div>
-              <div className="text-[10px] text-success flex items-center gap-1">
+              <div className="text-[10px] text-success-500 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3" />
                 <span>Online</span>
               </div>
