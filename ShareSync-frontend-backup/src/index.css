@@ -1,13 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SHARESYNC DESIGN SYSTEM v4.0 - Phase 1: Emotional Color System
+   SHARESYNC DESIGN SYSTEM v4.0 - Phase B: Living Cards
    ═══════════════════════════════════════════════════════════════════════════════
    
    IMPORT ORDER MATTERS:
    1. Design tokens (CSS variables) - MUST be first
    2. Color system (new emotional palette)
    3. Momentum glow system
-   4. Other style modules
-   5. Tailwind directives
+   4. Phase A: Entrance animation + Heartbeat styles
+   5. ⭐ Phase B: Living cards system
+   6. Other style modules
+   7. Tailwind directives
    
    COLOR PHILOSOPHY:
    • Deep Violet (#7C3AED → #6D28D9) = Brand, creativity, transformation
@@ -18,6 +20,7 @@
    • Red = Errors ONLY
    
    SIGNATURE: Momentum Glow - interface brightens with productivity
+   LIVING CARDS: Cards respond to their content state
    
    ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -27,13 +30,24 @@
 @import './styles/tokens.css';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   2) EMOTIONAL COLOR SYSTEM (NEW - Phase 1)
+   2) EMOTIONAL COLOR SYSTEM (Phase 1)
    ═══════════════════════════════════════════════════════════════════════════════ */
 @import './styles/colors.css';
 @import './styles/momentum-glow.css';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   3) DESIGN SYSTEM MODULES
+   3) PHASE A: ENTRANCE ANIMATION + MOMENTUM HEARTBEAT
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@import './styles/entrance.css';
+@import './styles/heartbeat.css';
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   4) PHASE B: LIVING CARDS SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@import './styles/living-cards.css';
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   5) DESIGN SYSTEM MODULES
    ═══════════════════════════════════════════════════════════════════════════════ */
 @import './styles/design-system.css';
 @import './styles/design-tokens.css';
@@ -46,7 +60,7 @@
 @import './styles/focus.css';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   4) COMPONENT STYLES
+   6) COMPONENT STYLES
    ═══════════════════════════════════════════════════════════════════════════════ */
 @import './styles/charts.css';
 @import './styles/feed.css';
@@ -64,7 +78,7 @@
 @import './styles/mobile.css';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   5) TAILWIND DIRECTIVES
+   7) TAILWIND DIRECTIVES
    ═══════════════════════════════════════════════════════════════════════════════ */
 @tailwind base;
 @tailwind components;
@@ -219,6 +233,7 @@ main, .main-content {
 /* ═══════════════════════════════════════════════════════════════════════════════
    MOMENTUM-RESPONSIVE BODY
    Page background subtly responds to user productivity
+   (Now enhanced by heartbeat.css with full level 0-5 support)
    ═══════════════════════════════════════════════════════════════════════════════ */
 body[data-momentum="1"],
 body[data-momentum="2"] {

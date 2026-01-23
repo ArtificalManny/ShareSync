@@ -7,12 +7,16 @@
 // - Animation intensity changes  
 // - Micro-interactions adjust
 // - GLOW INTENSITY (0-5) for the Momentum Glow System
+// - getMomentumScore() for the Heartbeat system
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import useMomentum from '../hooks/useMomentum';
 
 const MomentumContext = createContext(null);
+
+// ⭐ PHASE A: Global score ref for heartbeat access
+let globalMomentumScore = 50;
 
 // CSS custom properties we'll update based on momentum
 const CSS_VARS = {
@@ -24,7 +28,7 @@ const CSS_VARS = {
   '--momentum-animation-scale': '1',  // Multiplier for animation durations
   '--momentum-pulse-enabled': '1',    // 1 = enabled, 0 = disabled
   
-  // Glow intensity (NEW - Phase 1)
+  // Glow intensity (Phase 1)
   '--momentum-glow-level': '0',       // 0-5 glow intensity
 };
 
@@ -71,6 +75,14 @@ function getGlowClassName(level) {
   return classes[level] || 'momentum-idle';
 }
 
+/**
+ * ⭐ PHASE A: Get current momentum score (for heartbeat system)
+ * This function can be called from anywhere, even outside React components
+ */
+export function getMomentumScore() {
+  return globalMomentumScore;
+}
+
 export function MomentumProvider({ children, enabled = true }) {
   // Mock data - in real app, this would come from your API/state
   const [momentumData, setMomentumData] = useState({
@@ -84,6 +96,11 @@ export function MomentumProvider({ children, enabled = true }) {
   });
 
   const momentum = useMomentum(momentumData);
+
+  // ⭐ PHASE A: Update global score ref whenever momentum changes
+  useEffect(() => {
+    globalMomentumScore = momentum.score;
+  }, [momentum.score]);
 
   // Calculate glow intensity from momentum score
   const glowLevel = useMemo(() => calculateGlowLevel(momentum.score), [momentum.score]);
@@ -116,10 +133,10 @@ export function MomentumProvider({ children, enabled = true }) {
     // Pulse enabled
     root.style.setProperty('--momentum-pulse-enabled', momentum.isLowMomentum ? '0' : '1');
 
-    // NEW: Set glow level CSS variable
+    // Set glow level CSS variable
     root.style.setProperty('--momentum-glow-level', String(glowLevel));
 
-    // NEW: Set data-momentum attribute on body for global styling
+    // Set data-momentum attribute on body for global styling
     document.body.setAttribute('data-momentum', String(glowLevel));
 
   }, [enabled, momentum.isLowMomentum, momentum.isHighMomentum, momentum.score, glowLevel]);
@@ -151,6 +168,9 @@ export function MomentumProvider({ children, enabled = true }) {
     className: `${glowClassName} ${additionalClassName}`.trim(),
   }), [glowLevel, glowClassName]);
 
+  // ⭐ PHASE A: Method to get current score (can also be accessed via export)
+  const getScore = useCallback(() => momentum.score, [momentum.score]);
+
   const value = {
     // Momentum data
     ...momentum,
@@ -158,11 +178,14 @@ export function MomentumProvider({ children, enabled = true }) {
     // Raw data
     data: momentumData,
     
-    // NEW: Glow system values
+    // Glow system values
     glowLevel,           // 0-5 numeric level
     glowState,           // 'idle' | 'warming' | 'building' | 'flowing' | 'peak' | 'fire'
     glowClassName,       // CSS class: 'momentum-idle', 'momentum-warming', etc.
     getMomentumProps,    // Helper function for applying momentum to elements
+    
+    // ⭐ PHASE A: Score accessor for heartbeat
+    getScore,
     
     // Actions
     updateMomentumData,
@@ -194,11 +217,13 @@ export function useMomentumContext() {
       animationIntensity: 0.7,
       components: { completions: 50, streak: 50, health: 50, activity: 50 },
       data: {},
-      // NEW: Glow system defaults
+      // Glow system defaults
       glowLevel: 2,
       glowState: 'building',
       glowClassName: 'momentum-building',
       getMomentumProps: (className = '') => ({ 'data-momentum': 2, className: `momentum-building ${className}`.trim() }),
+      // Score accessor
+      getScore: () => 50,
       // Actions
       updateMomentumData: () => {},
       recordTaskCompletion: () => {},
@@ -216,8 +241,8 @@ export function useMomentumGlow() {
 }
 
 export function useMomentumScore() {
-  const { score, vibe, isHighMomentum, isLowMomentum, isNeutral } = useMomentumContext();
-  return { score, vibe, isHighMomentum, isLowMomentum, isNeutral };
+  const { score, vibe, isHighMomentum, isLowMomentum, isNeutral, getScore } = useMomentumContext();
+  return { score, vibe, isHighMomentum, isLowMomentum, isNeutral, getScore };
 }
 
 export default MomentumContext;

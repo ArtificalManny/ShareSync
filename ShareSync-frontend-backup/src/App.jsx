@@ -1,4 +1,7 @@
 // src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING + WELCOME BACK + CONTEXT INDICATOR + FLOW STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE A: Emotional Immediacy + Momentum Heartbeat
+// ═══════════════════════════════════════════════════════════════════════════════
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -32,6 +35,10 @@ import { MomentumProvider } from './contexts/MomentumContext';
 // ⭐ PHASE 10.3: Focus Session Provider
 import { FocusSessionProvider } from './contexts/FocusSessionContext';
 
+// ⭐ PHASE A: Entrance Animation + Momentum Heartbeat
+import AppEntrance from './components/onboarding/AppEntrance';
+import useMomentumHeartbeat from './hooks/useMomentumHeartbeat';
+
 // ⭐ PWA Components
 import InstallPrompt from "./components/pwa/InstallPrompt";
 
@@ -56,6 +63,9 @@ import "./styles/glass.css";
 import "./styles/focus.css";
 import "./styles/cursor-effects.css";
 import "./styles/layout-system.css";
+// ⭐ PHASE A: New CSS imports
+import "./styles/entrance.css";
+import "./styles/heartbeat.css";
 
 import { scrollToAnchorFromHash } from "./utils/anchor";
 import { Menu, X } from "lucide-react";
@@ -107,6 +117,9 @@ const HallOfFame = lazy(() => import("./pages/HallOfFame"));
 
 // ⭐ PROJECT SETTINGS PAGE
 const ProjectSettings = lazy(() => import("./pages/project/ProjectSettings"));
+
+// ⭐ PHASE 9: Onboarding
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 
 // ⭐ Lazy load heavy components
 const Sidebar = lazy(() => import("./components/Sidebar"));
@@ -221,7 +234,40 @@ function ContextTracker() {
   return null;
 }
 
-function AuthenticatedApp({ children }) {
+/**
+ * ⭐ PHASE A: Momentum Heartbeat Provider
+ * Activates the 30-second heartbeat that makes the interface breathe
+ */
+function HeartbeatProvider({ children }) {
+  const { 
+    currentLevel, 
+    levelName, 
+    isTransitioning,
+    isOnFire,
+  } = useMomentumHeartbeat({
+    enabled: true,
+    onLevelChange: ({ previousName, newName, direction }) => {
+      // Log level changes for debugging (remove in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Momentum Heartbeat] ${previousName} → ${newName} (${direction})`);
+      }
+    },
+  });
+
+  // Add debug mode in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      document.body.setAttribute('data-momentum-debug', 'true');
+    }
+    return () => {
+      document.body.removeAttribute('data-momentum-debug');
+    };
+  }, []);
+
+  return children;
+}
+
+function AuthenticatedApp({ children, userData }) {
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <UserProvider>
@@ -234,47 +280,61 @@ function AuthenticatedApp({ children }) {
                 <ContextPreservationProvider>
                   {/* ⭐ PHASE 6: Momentum Visualization Provider */}
                   <MomentumProvider>
-                    {/* ⭐ PHASE 6: Momentum Aura (subtle background overlay) */}
-                    <Suspense fallback={null}>
-                      <MomentumAura />
-                    </Suspense>
-                {FOCUS_DOCK_V1 ? (
-                  <FocusProvider>
-                    {/* ⭐ DAY 7: Context tracking for authenticated users */}
-                    <ContextTracker />
-                    {/* ⭐ DAY 8: Welcome Back modal for returning users */}
-                    <Suspense fallback={null}>
-                      <WelcomeBack />
-                    </Suspense>
-                    {/* ⭐ DAY 9: Context save indicator */}
-                    <Suspense fallback={null}>
-                      <ContextIndicator />
-                    </Suspense>
-                    {/* ⭐ PHASE 6: Flow state indicator */}
-                    <Suspense fallback={null}>
-                      <FlowIndicator position="bottom-left" />
-                    </Suspense>
-                    {children}
-                  </FocusProvider>
-                ) : (
-                  <>
-                    {/* ⭐ DAY 7: Context tracking for authenticated users */}
-                    <ContextTracker />
-                    {/* ⭐ DAY 8: Welcome Back modal for returning users */}
-                    <Suspense fallback={null}>
-                      <WelcomeBack />
-                    </Suspense>
-                    {/* ⭐ DAY 9: Context save indicator */}
-                    <Suspense fallback={null}>
-                      <ContextIndicator />
-                    </Suspense>
-                    {/* ⭐ PHASE 6: Flow state indicator */}
-                    <Suspense fallback={null}>
-                      <FlowIndicator position="bottom-left" />
-                    </Suspense>
-                    {children}
-                  </>
-                )}
+                    {/* ⭐ PHASE 10.3: Focus Session Provider */}
+                    <FocusSessionProvider>
+                      {/* ⭐ PHASE A: App Entrance Animation */}
+                      <AppEntrance
+                        userName={userData?.firstName || 'there'}
+                        streakDays={userData?.streakDays || 0}
+                        enabled={true}
+                        showWelcomeToast={true}
+                      >
+                        {/* ⭐ PHASE A: Momentum Heartbeat */}
+                        <HeartbeatProvider>
+                          {/* ⭐ PHASE 6: Momentum Aura (subtle background overlay) */}
+                          <Suspense fallback={null}>
+                            <MomentumAura />
+                          </Suspense>
+                          {FOCUS_DOCK_V1 ? (
+                            <FocusProvider>
+                              {/* ⭐ DAY 7: Context tracking for authenticated users */}
+                              <ContextTracker />
+                              {/* ⭐ DAY 8: Welcome Back modal for returning users */}
+                              <Suspense fallback={null}>
+                                <WelcomeBack />
+                              </Suspense>
+                              {/* ⭐ DAY 9: Context save indicator */}
+                              <Suspense fallback={null}>
+                                <ContextIndicator />
+                              </Suspense>
+                              {/* ⭐ PHASE 6: Flow state indicator */}
+                              <Suspense fallback={null}>
+                                <FlowIndicator position="bottom-left" />
+                              </Suspense>
+                              {children}
+                            </FocusProvider>
+                          ) : (
+                            <>
+                              {/* ⭐ DAY 7: Context tracking for authenticated users */}
+                              <ContextTracker />
+                              {/* ⭐ DAY 8: Welcome Back modal for returning users */}
+                              <Suspense fallback={null}>
+                                <WelcomeBack />
+                              </Suspense>
+                              {/* ⭐ DAY 9: Context save indicator */}
+                              <Suspense fallback={null}>
+                                <ContextIndicator />
+                              </Suspense>
+                              {/* ⭐ PHASE 6: Flow state indicator */}
+                              <Suspense fallback={null}>
+                                <FlowIndicator position="bottom-left" />
+                              </Suspense>
+                              {children}
+                            </>
+                          )}
+                        </HeartbeatProvider>
+                      </AppEntrance>
+                    </FocusSessionProvider>
                   </MomentumProvider>
                 </ContextPreservationProvider>
               </FlowStateProvider>
@@ -291,7 +351,7 @@ function AppRoutes() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const isAuthPage = ['/login', '/create-account', '/forgot-password', '/landing'].includes(location.pathname);
+ const isAuthPage = ['/login', '/create-account', '/forgot-password', '/landing', '/onboarding'].includes(location.pathname);
   const showAppChrome = authUser && !isAuthPage;
 
   if (loading) {
@@ -331,6 +391,8 @@ function AppRoutes() {
               <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
               <Route path="/create-account" element={<PublicOnlyRoute><CreateAccount /></PublicOnlyRoute>} />
               <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+              {/* ⭐ PHASE 9: Onboarding Flow */}
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/landing" element={<Landing />} />
               <Route path="/invite/accept" element={<AcceptInvite />} />
               {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
@@ -454,9 +516,16 @@ function AuthCheck() {
     return <LoadingSpinner />;
   }
   
+  // ⭐ PHASE A: Prepare user data for entrance animation
+  const userData = user ? {
+    firstName: user.firstName || 'there',
+    streakDays: user.streakDays || 7, // TODO: Get from actual user data
+    shipsToday: user.shipsToday || 2,  // TODO: Get from actual user data
+  } : null;
+  
   if (user) {
     return (
-      <AuthenticatedApp>
+      <AuthenticatedApp userData={userData}>
         <AppRoutes />
       </AuthenticatedApp>
     );

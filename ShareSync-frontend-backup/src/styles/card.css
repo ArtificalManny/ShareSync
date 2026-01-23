@@ -1,8 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SHARESYNC CARD SYSTEM v2.0 - Phase 1: Emotional Color System
+   SHARESYNC CARD SYSTEM v3.0 - Phase B: Living Cards
    ═══════════════════════════════════════════════════════════════════════════════
    
    BREATHING CARDS: Cards that have presence and respond to interaction
+   LIVING CARDS: Cards that respond to their content state
    
    Card States:
    • Idle: Subtle, doesn't compete for attention
@@ -10,6 +11,16 @@
    • Focus: Brand glow, clear selection
    • Active: Strong presence
    • Momentum: Glow intensifies with user productivity
+   
+   Living States (Phase B):
+   • Priority: Amber accent, gentle pulse
+   • Completing: Cyan shimmer, "almost there" energy
+   • Completed: Success burst, celebration
+   • Done: Muted success, settled
+   • Stale: Desaturated, nudge action
+   • Blocked: Red accent, shake on hover
+   • Live: Cyan glow, real-time
+   • Overdue: Red urgency
    
    ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -422,6 +433,106 @@
   outline: none;
   box-shadow: var(--ring-focus), var(--shadow-lg);
   border-color: var(--border-brand);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PHASE B: LIVING CARD STATE INTEGRATION
+   These styles ensure .card class can work with living states
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Card with living state - use left accent bar */
+.card[data-living-state]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  transition: 
+    width var(--motion-fast) var(--easing-standard),
+    background var(--motion-fast) var(--easing-standard);
+}
+
+/* Priority state */
+.card[data-living-state="priority"] {
+  border-color: rgb(var(--warning-500-rgb) / 0.3);
+}
+
+.card[data-living-state="priority"]::before {
+  width: 4px;
+  background: linear-gradient(180deg, var(--warning-400), var(--warning-600));
+}
+
+.card[data-living-state="priority"]:hover {
+  transform: translateY(-6px);
+  border-color: rgb(var(--warning-500-rgb) / 0.5);
+}
+
+/* Completing state */
+.card[data-living-state="completing"] {
+  border-color: rgb(var(--cyan-500-rgb) / 0.25);
+}
+
+.card[data-living-state="completing"]::before {
+  width: 4px;
+  background: linear-gradient(180deg, var(--cyan-400), var(--success-500));
+}
+
+/* Blocked state */
+.card[data-living-state="blocked"] {
+  border-color: rgb(var(--error-500-rgb) / 0.35);
+}
+
+.card[data-living-state="blocked"]::before {
+  width: 4px;
+  background: var(--error-500);
+}
+
+/* Stale state */
+.card[data-living-state="stale"] {
+  opacity: 0.65;
+  filter: saturate(0.7);
+}
+
+.card[data-living-state="stale"]:hover {
+  opacity: 0.9;
+  filter: saturate(0.85);
+}
+
+/* Live state */
+.card[data-living-state="live"] {
+  border-color: rgb(var(--cyan-500-rgb) / 0.4);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 0 20px rgb(var(--cyan-500-rgb) / 0.1);
+}
+
+.card[data-living-state="live"]::before {
+  width: 4px;
+  background: linear-gradient(180deg, var(--cyan-400), var(--cyan-600));
+}
+
+/* Done state */
+.card[data-living-state="done"] {
+  opacity: 0.75;
+  border-color: rgb(var(--success-500-rgb) / 0.2);
+}
+
+.card[data-living-state="done"]::before {
+  width: 3px;
+  background: var(--success-500);
+  opacity: 0.6;
+}
+
+/* Overdue state */
+.card[data-living-state="overdue"] {
+  border-color: rgb(var(--error-500-rgb) / 0.4);
+}
+
+.card[data-living-state="overdue"]::before {
+  width: 4px;
+  background: linear-gradient(180deg, var(--error-400), var(--energy-500));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

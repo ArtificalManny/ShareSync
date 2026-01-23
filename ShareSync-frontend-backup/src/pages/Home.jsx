@@ -1,6 +1,6 @@
 // src/pages/Home.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 8.4: Intelligence Panel Breathing
+// PHASE A: Emotional Immediacy - Entrance Highlight for Recommended Tasks
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from "react";
@@ -23,6 +23,9 @@ import MissionCard from "../components/home/MissionCard";
 import MissionCardSkeleton from "../components/home/MissionCardSkeleton";
 import IntelligencePanel from "../components/home/IntelligencePanel";
 
+// ⭐ PHASE A: Import entrance highlight utilities
+import { EntranceHighlight, useEntranceHighlight } from '../components/onboarding/AppEntrance';
+
 const MOCK_MISSIONS = [
   { id: 1, title: "Integrate Telemetry Engine", category: "Core Sync", eta: "2h", health: 92, velocity: 88 },
   { id: 2, title: "Refactor Auth Protocol", category: "Security", eta: "4h", health: 65, velocity: 74 },
@@ -43,6 +46,7 @@ const StatCard = ({ label, value, color = "text-brand", description }) => {
         bg-surface-1 border border-white/[0.06]
         hover:bg-surface-2 hover:border-white/[0.1]
         transition-all duration-200 cursor-default
+        momentum-responsive-card
         ${isHovered ? 'transform -translate-y-0.5' : ''}
       `}
       onMouseEnter={() => { setShowTooltip(true); setIsHovered(true); }}
@@ -105,6 +109,9 @@ export default function Home() {
   const [isBalanced, setIsBalanced] = useState(false);
   const [missionsLoading, setMissionsLoading] = useState(true);
   const [missions, setMissions] = useState([]);
+  
+  // ⭐ PHASE A: Track if we should show the entrance highlight
+  const [showEntranceHighlight, setShowEntranceHighlight] = useState(false);
 
   useEffect(() => {
     const loadMissions = async () => {
@@ -117,6 +124,13 @@ export default function Home() {
     };
     loadMissions();
   }, []);
+
+  // ⭐ PHASE A: Listen for entrance highlight event
+  useEntranceHighlight?.((detail) => {
+    // Trigger the highlight pulse on recommended tasks
+    setShowEntranceHighlight(true);
+    setTimeout(() => setShowEntranceHighlight(false), 600);
+  });
 
   // Handle ship completion (for demo purposes)
   const handleShipped = (projectId) => {
@@ -159,9 +173,17 @@ export default function Home() {
         
         {/* ─────────────────────────────────────────────────────────────────
             MISSIONS SECTION (8 columns)
+            ⭐ PHASE A: This section gets highlighted during entrance
         ───────────────────────────────────────────────────────────────── */}
         <div className="col-span-12 lg:col-span-8">
-          <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+          <div 
+            className={`
+              p-6 rounded-xl bg-surface-1 border border-white/[0.06]
+              momentum-responsive-card
+              transition-all duration-300
+              ${showEntranceHighlight ? 'ring-2 ring-brand-500/40 animate-pulse-once' : ''}
+            `}
+          >
             <SectionHeader 
               icon={Zap} 
               title="Recommended for Today" 
@@ -172,17 +194,28 @@ export default function Home() {
               {missionsLoading ? (
                 <MissionCardSkeleton count={3} />
               ) : missions.length > 0 ? (
-                missions.map((mission) => (
-                  <MissionCard 
-                    key={mission.id} 
-                    project={mission} 
-                    onClick={() => { 
-                      setSelectedMission(mission); 
-                      setPanelContent("telemetry"); 
-                      setIsPanelOpen(true); 
+                missions.map((mission, index) => (
+                  <div
+                    key={mission.id}
+                    className={`
+                      transition-all duration-300
+                      ${showEntranceHighlight && index === 0 ? 'ring-2 ring-brand-500/30 rounded-xl' : ''}
+                    `}
+                    style={{
+                      // Stagger the highlight effect
+                      animationDelay: showEntranceHighlight ? `${index * 100}ms` : '0ms',
                     }}
-                    onShipped={handleShipped}
-                  />
+                  >
+                    <MissionCard 
+                      project={mission} 
+                      onClick={() => { 
+                        setSelectedMission(mission); 
+                        setPanelContent("telemetry"); 
+                        setIsPanelOpen(true); 
+                      }}
+                      onShipped={handleShipped}
+                    />
+                  </div>
                 ))
               ) : (
                 <div className="text-center py-12">
@@ -202,7 +235,7 @@ export default function Home() {
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────
-            INTELLIGENCE SECTION (4 columns) - PHASE 8.4
+            INTELLIGENCE SECTION (4 columns)
         ───────────────────────────────────────────────────────────────── */}
         <div className="col-span-12 lg:col-span-4">
           <IntelligencePanel 
@@ -223,7 +256,7 @@ export default function Home() {
             VELOCITY METRICS (full width)
         ───────────────────────────────────────────────────────────────── */}
         <div className="col-span-12">
-          <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+          <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06] momentum-responsive-card">
             <SectionHeader 
               icon={TrendingUp} 
               iconColor="text-brand"
@@ -302,6 +335,25 @@ export default function Home() {
           <ProjectTelemetryPanel project={selectedMission} /> 
         )}
       </div>
+      
+      {/* ⭐ PHASE A: Inline animation for entrance highlight */}
+      <style>{`
+        @keyframes pulse-once {
+          0% {
+            box-shadow: 0 0 0 0 rgb(124 58 237 / 0.4);
+          }
+          50% {
+            box-shadow: 0 0 0 8px rgb(124 58 237 / 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgb(124 58 237 / 0);
+          }
+        }
+        
+        .animate-pulse-once {
+          animation: pulse-once 600ms ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }

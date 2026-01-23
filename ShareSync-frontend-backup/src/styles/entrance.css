@@ -1,0 +1,302 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ENTRANCE ANIMATION STYLES
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   Makes the first 5 seconds unforgettable.
+   
+   Timeline:
+   - 0-200ms: Glow phase
+   - 200-1000ms: Ring phase  
+   - 400-1000ms: Welcome phase
+   - 1000-1200ms: Highlight phase
+   - 1200-1500ms: Complete
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BODY STATE DURING ENTRANCE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+body.app-entrance-active {
+  /* Prevent scroll during entrance */
+  overflow: hidden;
+}
+
+/* Glow phase - dim everything slightly */
+body[data-entrance-phase="glow"] {
+  /* Content slightly dimmed to let glow stand out */
+}
+
+body[data-entrance-phase="glow"] #app-sidebar,
+body[data-entrance-phase="glow"] main {
+  opacity: 0.7;
+  transition: opacity 200ms ease;
+}
+
+/* Ring phase - content starts appearing */
+body[data-entrance-phase="ring"] #app-sidebar,
+body[data-entrance-phase="ring"] main {
+  opacity: 0.9;
+  transition: opacity 400ms ease;
+}
+
+/* Welcome/highlight phase - full visibility */
+body[data-entrance-phase="welcome"] #app-sidebar,
+body[data-entrance-phase="welcome"] main,
+body[data-entrance-phase="highlight"] #app-sidebar,
+body[data-entrance-phase="highlight"] main {
+  opacity: 1;
+  transition: opacity 300ms ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   XP RING ENTRANCE ANIMATION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* The ring should scale up slightly during its animation */
+.progress-ring-entrance {
+  transform-origin: center;
+  animation: ring-entrance 800ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes ring-entrance {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Ring glow that appears during animation */
+.progress-ring-glow {
+  animation: ring-glow-pulse 800ms ease-out forwards;
+}
+
+@keyframes ring-glow-pulse {
+  0% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgb(124 58 237 / 0.5));
+  }
+  100% {
+    filter: drop-shadow(0 0 10px rgb(124 58 237 / 0.2));
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   WELCOME MESSAGE ANIMATION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.welcome-message {
+  /* Base styles handled by component, these are enhancements */
+}
+
+/* Subtle background glow on welcome toast */
+.welcome-toast-glow {
+  position: relative;
+}
+
+.welcome-toast-glow::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  background: radial-gradient(
+    ellipse at center,
+    rgb(124 58 237 / 0.15) 0%,
+    transparent 70%
+  );
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  animation: toast-glow 600ms ease-out forwards;
+}
+
+@keyframes toast-glow {
+  0% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   HIGHLIGHT PULSE (for recommended task)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@keyframes pulse-once {
+  0% {
+    box-shadow: 0 0 0 0 rgb(124 58 237 / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgb(124 58 237 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(124 58 237 / 0);
+  }
+}
+
+.animate-pulse-once {
+  animation: pulse-once 600ms ease-out forwards;
+}
+
+/* Highlight ring effect */
+.entrance-highlight-ring {
+  position: relative;
+}
+
+.entrance-highlight-ring::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid transparent;
+  opacity: 0;
+  animation: highlight-ring 400ms ease-out forwards;
+}
+
+@keyframes highlight-ring {
+  0% {
+    border-color: rgb(124 58 237 / 0.6);
+    opacity: 1;
+    transform: scale(0.98);
+  }
+  100% {
+    border-color: rgb(124 58 237 / 0);
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STAGGERED CONTENT ENTRANCE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Cards fade in with stagger during entrance */
+body.app-entrance-active .bento-card,
+body.app-entrance-active .dashboard-card {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: card-entrance 400ms ease-out forwards;
+}
+
+body.app-entrance-active .bento-card:nth-child(1) { animation-delay: 300ms; }
+body.app-entrance-active .bento-card:nth-child(2) { animation-delay: 400ms; }
+body.app-entrance-active .bento-card:nth-child(3) { animation-delay: 500ms; }
+body.app-entrance-active .bento-card:nth-child(4) { animation-delay: 600ms; }
+body.app-entrance-active .bento-card:nth-child(5) { animation-delay: 700ms; }
+
+@keyframes card-entrance {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SIDEBAR ENTRANCE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+body.app-entrance-active #app-sidebar {
+  animation: sidebar-entrance 500ms ease-out forwards;
+}
+
+@keyframes sidebar-entrance {
+  0% {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Nav items stagger */
+body.app-entrance-active .sidebar-item {
+  opacity: 0;
+  animation: nav-item-entrance 300ms ease-out forwards;
+}
+
+body.app-entrance-active .sidebar-item:nth-child(1) { animation-delay: 400ms; }
+body.app-entrance-active .sidebar-item:nth-child(2) { animation-delay: 450ms; }
+body.app-entrance-active .sidebar-item:nth-child(3) { animation-delay: 500ms; }
+body.app-entrance-active .sidebar-item:nth-child(4) { animation-delay: 550ms; }
+body.app-entrance-active .sidebar-item:nth-child(5) { animation-delay: 600ms; }
+
+@keyframes nav-item-entrance {
+  0% {
+    opacity: 0;
+    transform: translateX(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  body.app-entrance-active,
+  body.app-entrance-active * {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .animate-pulse-once,
+  .progress-ring-entrance,
+  .progress-ring-glow {
+    animation: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SKIP ENTRANCE BUTTON (for impatient users)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.entrance-skip-btn {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 100;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  opacity: 0;
+  animation: skip-btn-appear 300ms ease-out 500ms forwards;
+  transition: 
+    color 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+.entrance-skip-btn:hover {
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border-color: var(--border-default);
+}
+
+@keyframes skip-btn-appear {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Hide skip button once entrance is complete */
+body:not(.app-entrance-active) .entrance-skip-btn {
+  display: none;
+}

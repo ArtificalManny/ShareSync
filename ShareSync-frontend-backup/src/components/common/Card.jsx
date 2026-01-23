@@ -1,6 +1,6 @@
 // src/components/common/Card.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 7: Visual Cohesion - Unified Card System
+// PHASE B: Living Cards - Unified Card System
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // BASE CARD TOKENS:
@@ -11,12 +11,19 @@
 // - Padding: p-4 (compact) or p-5 (standard)
 // - Shadow: none at rest, subtle on hover
 //
+// LIVING BEHAVIORS (Phase B):
+// - state prop: 'idle' | 'priority' | 'completing' | 'completed' | 'stale' | 'blocked' | 'live'
+// - Automatic breathing animation on hover
+// - Momentum-responsive glow
+// - State-specific visual treatments
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from 'react';
+import { useLivingCard, getLivingStateClasses } from '../../hooks/useLivingCard';
 
 /**
- * Card - Base card component with consistent styling
+ * Card - Base card component with living behaviors
  */
 export default function Card({ 
   children, 
@@ -26,10 +33,23 @@ export default function Card({
   hover = true,
   selected = false,
   disabled = false,
-  variant = 'default', // 'default' | 'ghost' | 'outline' | 'elevated'
+  variant = 'default', // 'default' | 'ghost' | 'outline' | 'elevated' | 'glass' | 'subtle'
   as: Component = 'div',
+  
+  // Phase B: Living card props
+  state = null, // 'idle' | 'priority' | 'completing' | 'completed' | 'stale' | 'blocked' | 'live' | 'done' | 'overdue'
+  data = null, // Pass task/project data to auto-calculate state
+  living = false, // Enable living card styles
+  breathing = false, // Enable breathing animation
+  momentum = null, // Override momentum level (0-5)
+  
   ...props 
 }) {
+  // Calculate living state from data if provided
+  const calculatedState = useLivingCard(data || {});
+  const currentState = state || (data ? calculatedState.state : null);
+  const livingClassName = currentState ? getLivingStateClasses(currentState) : '';
+
   const paddingClasses = {
     none: '',
     compact: 'p-4',
@@ -41,7 +61,9 @@ export default function Card({
     default: 'bg-surface-1 border border-white/[0.06]',
     ghost: 'bg-transparent border border-transparent',
     outline: 'bg-transparent border border-white/[0.08]',
-    elevated: 'bg-surface-1 border border-white/[0.06] shadow-card',
+    elevated: 'bg-surface-1 border border-white/[0.06] shadow-card card-elevated',
+    glass: 'card-glass',
+    subtle: 'card-subtle',
   };
 
   const hoverClasses = hover && !disabled
@@ -56,18 +78,26 @@ export default function Card({
     ? 'opacity-50 cursor-not-allowed'
     : '';
 
+  // Combine all classes
+  const cardClasses = [
+    'group rounded-xl transition-all duration-200',
+    living || currentState ? 'living-card' : 'card',
+    livingClassName,
+    paddingClasses[padding],
+    variantClasses[variant],
+    hoverClasses,
+    selectedClasses,
+    disabledClasses,
+    breathing ? 'living-card--active' : '',
+    className,
+  ].filter(Boolean).join(' ');
+
   return (
     <Component
       onClick={disabled ? undefined : onClick}
-      className={`
-        group rounded-xl transition-all duration-200
-        ${paddingClasses[padding]}
-        ${variantClasses[variant]}
-        ${hoverClasses}
-        ${selectedClasses}
-        ${disabledClasses}
-        ${className}
-      `}
+      className={cardClasses}
+      data-living-state={currentState}
+      data-momentum={momentum}
       {...props}
     >
       {children}
@@ -116,6 +146,7 @@ export function CardTitle({ children, className = '', as: Component = 'h3' }) {
     <Component className={`
       text-base font-semibold text-text-primary 
       group-hover:text-brand transition-colors
+      task-title
       ${className}
     `}>
       {children}
@@ -151,7 +182,7 @@ export function CardMetric({ value, label, className = '' }) {
  */
 export function CardBadge({ 
   children, 
-  variant = 'default', // 'default' | 'brand' | 'success' | 'warning' | 'error'
+  variant = 'default', // 'default' | 'brand' | 'success' | 'warning' | 'error' | 'live'
   className = '' 
 }) {
   const variantClasses = {
@@ -160,6 +191,7 @@ export function CardBadge({
     success: 'bg-success/10 text-success',
     warning: 'bg-warning/10 text-warning',
     error: 'bg-error/10 text-error',
+    live: 'bg-cyan-500/10 text-cyan-500',
   };
 
   return (
@@ -180,7 +212,7 @@ export function CardBadge({
 export function CardIconBox({ 
   children, 
   size = 'md', // 'sm' | 'md' | 'lg'
-  variant = 'default', // 'default' | 'brand' | 'success'
+  variant = 'default', // 'default' | 'brand' | 'success' | 'warning' | 'error' | 'live'
   className = '' 
 }) {
   const sizeClasses = {
@@ -193,6 +225,9 @@ export function CardIconBox({
     default: 'bg-surface-2 group-hover:bg-brand/10',
     brand: 'bg-brand/10',
     success: 'bg-success/10',
+    warning: 'bg-warning/10',
+    error: 'bg-error/10',
+    live: 'bg-cyan-500/10',
   };
 
   return (
@@ -209,16 +244,18 @@ export function CardIconBox({
 }
 
 /**
- * CardProgress - Progress bar with Phase 7 purple intensity
+ * CardProgress - Progress bar with Phase 7 purple intensity + Phase B shimmer
  */
 export function CardProgress({ 
   value = 0, 
   showLabel = true,
   size = 'sm', // 'xs' | 'sm' | 'md'
+  shimmer = false, // Enable shimmer effect for "completing" state
   className = '' 
 }) {
   const percentage = Math.min(Math.max(value, 0), 100);
   const isComplete = percentage >= 100;
+  const isNearComplete = percentage >= 80;
 
   const sizeClasses = {
     xs: 'h-1',
@@ -227,8 +264,10 @@ export function CardProgress({
   };
 
   // Phase 7: Purple intensity, not traffic lights
+  // Phase B: Cyan for near-complete
   const getProgressFillClass = () => {
     if (isComplete) return 'bg-success';
+    if (isNearComplete) return 'bg-cyan-500';
     if (percentage >= 67) return 'bg-brand-400';
     if (percentage >= 34) return 'bg-brand';
     return 'bg-brand-700';
@@ -237,21 +276,62 @@ export function CardProgress({
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       <div className="flex-1">
-        <div className={`bg-surface-3 rounded-full overflow-hidden ${sizeClasses[size]}`}>
+        <div className={`
+          card-progress bg-surface-3 rounded-full overflow-hidden relative
+          ${sizeClasses[size]}
+        `}>
           <div 
-            className={`h-full rounded-full transition-all duration-500 ${getProgressFillClass()}`}
+            className={`
+              card-progress-fill h-full rounded-full transition-all duration-500 
+              ${getProgressFillClass()}
+            `}
             style={{ width: `${percentage}%` }}
           />
+          {/* Shimmer effect for completing state */}
+          {shimmer && isNearComplete && !isComplete && (
+            <div className="
+              absolute inset-0 
+              bg-gradient-to-r from-transparent via-white/30 to-transparent
+              animate-[completing-shimmer_2s_ease-in-out_infinite]
+            " />
+          )}
         </div>
       </div>
       {showLabel && (
         <span className={`
           text-xs font-medium w-8 text-right
-          ${isComplete ? 'text-success' : 'text-text-secondary'}
+          ${isComplete ? 'text-success' : isNearComplete ? 'text-cyan-500' : 'text-text-secondary'}
         `}>
           {Math.round(percentage)}%
         </span>
       )}
     </div>
+  );
+}
+
+/**
+ * CardAccentBar - Left side accent indicator
+ */
+export function CardAccentBar({
+  variant = 'brand', // 'brand' | 'live' | 'success' | 'warning' | 'error' | 'energy'
+  className = '',
+}) {
+  const variantClasses = {
+    brand: 'bg-gradient-to-b from-brand-400 to-brand-600',
+    live: 'bg-gradient-to-b from-cyan-400 to-cyan-600',
+    success: 'bg-gradient-to-b from-success-400 to-success-600',
+    warning: 'bg-gradient-to-b from-warning-400 to-warning-600',
+    error: 'bg-gradient-to-b from-error-400 to-error-600',
+    energy: 'bg-gradient-to-b from-energy-400 to-energy-600',
+  };
+
+  return (
+    <div className={`
+      accent-bar__left
+      absolute left-0 top-0 bottom-0 w-1
+      rounded-l-xl
+      ${variantClasses[variant]}
+      ${className}
+    `} />
   );
 }

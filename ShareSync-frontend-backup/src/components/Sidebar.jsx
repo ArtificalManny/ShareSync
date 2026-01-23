@@ -1,17 +1,18 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v2.0 - Phase 1: Emotional Color System
+// SHARESYNC SIDEBAR v2.0 - Phase A: Entrance Animation Integration
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // NOW USING:
 // - Deep Violet (#7C3AED) as primary brand color
 // - Momentum Glow system for XP ring and progress
+// - ENTRANCE ANIMATION: XP ring animates from 0 → current value on app load
 // - Surface hierarchy: surface-0 (deepest), surface-1, surface-2
 // - Text hierarchy: text-primary, text-secondary, text-tertiary
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   User as UserIcon,
@@ -28,15 +29,16 @@ import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
 import { useFlowState } from '../contexts/FlowStateContext';
 import { useMomentumContext } from '../contexts/MomentumContext';
+import { useEntrance } from './onboarding/AppEntrance';
 import useAnimatedNumber from '../hooks/useAnimatedNumber';
 
 const LS_KEY = "ss.sidebar.collapsed";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS RING - With Deep Violet brand color and momentum glow
+   PROGRESS RING - With entrance animation (0 → current) and momentum glow
 ───────────────────────────────────────────────────────────────────────── */
 function ProgressRing({ 
-  progress = 0.75, 
+  progress: actualProgress = 0.75, 
   level = 1,
   streak = 7, 
   collapsed = false,
@@ -45,17 +47,30 @@ function ProgressRing({
 }) {
   const { glowLevel } = useMomentumContext();
   
+  // ⭐ PHASE A: Get entrance animation state
+  const entrance = useEntrance();
+  const { progress: entranceProgress, isAnimatingRing, isComplete } = entrance || {
+    progress: 100,
+    isAnimatingRing: false,
+    isComplete: true,
+  };
+  
+  // During entrance, use animated progress. After, use actual.
+  const displayProgress = isComplete 
+    ? actualProgress 
+    : (entranceProgress / 100) * actualProgress;
+  
   const size = collapsed ? 40 : 56;
   const strokeWidth = collapsed ? 3 : 4;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (progress * circumference);
+  const offset = circumference - (displayProgress * circumference);
   
   const showStreak = streak >= 3;
   const isImpressiveStreak = streak >= 7;
   
   // Track previous values for animation triggers
-  const prevProgressRef = useRef(progress);
+  const prevProgressRef = useRef(actualProgress);
   const prevLevelRef = useRef(level);
   
   const [isPulsing, setIsPulsing] = useState(false);
@@ -63,15 +78,21 @@ function ProgressRing({
   const [pulseIntensity, setPulseIntensity] = useState('normal');
   
   // Animated percentage display
-  const { value: displayPercent, isAnimating } = useAnimatedNumber(
-    Math.round(progress * 100),
-    { duration: 500, enabled: !collapsed }
+  const displayValue = isComplete 
+    ? Math.round(actualProgress * 100)
+    : Math.round(displayProgress * 100);
+  
+  const { value: animatedPercent, isAnimating: isCountAnimating } = useAnimatedNumber(
+    displayValue,
+    { duration: 500, enabled: !collapsed && isComplete }
   );
   
-  // Detect progress increase and pulse
+  // Detect progress increase and pulse (only after entrance completes)
   useEffect(() => {
+    if (!isComplete) return;
+    
     const prevProgress = prevProgressRef.current;
-    const currentProgress = progress;
+    const currentProgress = actualProgress;
     
     // Check for threshold crossings
     const THRESHOLDS = [0.25, 0.5, 0.75, 1.0];
@@ -92,7 +113,7 @@ function ProgressRing({
     }
     
     prevProgressRef.current = currentProgress;
-  }, [progress]);
+  }, [actualProgress, isComplete]);
   
   // Detect level-up
   useEffect(() => {
@@ -104,14 +125,21 @@ function ProgressRing({
     prevLevelRef.current = level;
   }, [level]);
 
-  // Dynamic glow based on momentum level
-  const getGlowStyle = () => {
+  // Dynamic glow based on momentum level AND entrance state
+  const glowStyle = useMemo(() => {
+    // Extra glow during entrance animation
+    if (isAnimatingRing) {
+      return {
+        filter: `drop-shadow(0 0 16px rgb(124 58 237 / 0.5))`,
+      };
+    }
+    
     if (glowLevel === 0) return {};
     const intensity = glowLevel * 0.15;
     return {
       filter: `drop-shadow(0 0 ${8 + glowLevel * 4}px rgb(124 58 237 / ${intensity}))`,
     };
-  };
+  }, [glowLevel, isAnimatingRing]);
 
   return (
     <div className="flex flex-col items-center py-6">
@@ -120,6 +148,7 @@ function ProgressRing({
           relative 
           ${isPulsing ? 'animate-bounce-subtle' : ''}
           ${isLevelingUp ? 'scale-110' : 'scale-100'}
+          ${isAnimatingRing ? 'progress-ring-entrance' : ''}
           transition-transform duration-300
         `}
         data-momentum={glowLevel}
@@ -151,11 +180,12 @@ function ProgressRing({
           width={size} 
           height={size} 
           className={`
+            xp-ring-progress
             transform -rotate-90
             ${isPulsing ? 'scale-105' : 'scale-100'}
             transition-transform duration-200
           `}
-          style={getGlowStyle()}
+          style={glowStyle}
         >
           {/* Track - uses surface-2 token */}
           <circle
@@ -179,9 +209,14 @@ function ProgressRing({
             strokeDashoffset={offset}
             strokeLinecap="round"
             className={`
-              transition-all duration-700 ease-out
               ${isPulsing ? 'stroke-brand-400' : ''}
             `}
+            style={{
+              // Smooth transition for entrance animation vs normal updates
+              transition: isAnimatingRing 
+                ? 'stroke-dashoffset 50ms linear' 
+                : 'stroke-dashoffset 700ms ease-out, stroke 300ms ease',
+            }}
           />
         </svg>
         
@@ -198,14 +233,15 @@ function ProgressRing({
               </span>
             </div>
           ) : (
-            // Normal display
+            // Normal display - animated during entrance
             <span className={`
               font-semibold text-text-primary tabular-nums
               ${collapsed ? 'text-xs' : 'text-lg'}
-              ${isPulsing || isAnimating ? 'scale-110 text-brand-500' : 'scale-100'}
+              ${isPulsing || isCountAnimating ? 'scale-110 text-brand-500' : 'scale-100'}
+              ${isAnimatingRing ? 'text-brand-400' : ''}
               transition-all duration-200
             `}>
-              {displayPercent}
+              {isComplete ? animatedPercent : Math.round(displayProgress * 100)}
             </span>
           )}
         </div>
@@ -289,6 +325,26 @@ function ProgressRing({
         
         .animate-bounce-subtle {
           animation: bounce-subtle 0.3s ease-out;
+        }
+        
+        /* Entrance animation for the ring container */
+        .progress-ring-entrance {
+          animation: ring-entrance 800ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        @keyframes ring-entrance {
+          0% {
+            transform: scale(0.8);
+            opacity: 0;
+          }
+          50% {
+            transform: scale(1.05);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
         }
       `}</style>
     </div>
@@ -401,6 +457,7 @@ export default function Sidebar() {
     <aside
       id="app-sidebar"
       className={`
+        sidebar-item
         h-screen flex flex-col
         bg-surface-0 border-r border-white/[0.06]
         transition-all duration-300 ease-out
@@ -413,7 +470,7 @@ export default function Sidebar() {
       <div className="flex items-center justify-between p-4">
         {!collapsed && (
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center shadow-glow-brand">
+            <div className="sidebar-logo w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center">
               <span className="text-xs font-bold text-white">S</span>
             </div>
             <span className="text-sm font-semibold text-text-primary">ShareSync</span>
@@ -433,7 +490,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Progress Ring */}
+      {/* Progress Ring - Now with entrance animation */}
       <ProgressRing collapsed={collapsed} />
 
       {/* Navigation */}
