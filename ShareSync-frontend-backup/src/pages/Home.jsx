@@ -1,6 +1,6 @@
 // src/pages/Home.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE C: Momentum Engine - Full Interface Response
+// PHASE C: Momentum Engine + PHASE D: Empty States That Inspire
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // NOW USING:
@@ -9,6 +9,7 @@
 // - ⭐ PHASE C: Fire mode special treatment for sections
 // - ⭐ PHASE C: Momentum indicator in header
 // - ⭐ PHASE C: Ship button glows at high momentum
+// - ⭐ PHASE D: AllShipped celebration when missions complete
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -25,6 +26,7 @@ import {
   Activity,
   Flame,
   Rocket,
+  Plus,
 } from "lucide-react";
 
 import { useRenovation } from "../context/RenovationContext";
@@ -39,6 +41,9 @@ import { EntranceHighlight, useEntranceHighlight } from '../components/onboardin
 
 // ⭐ PHASE C: Import momentum context and indicator
 import { useMomentumContext, useMomentumActivity } from '../contexts/MomentumContext';
+
+// ⭐ PHASE D: Import empty state components
+import AllShipped from '../components/empty-states/AllShipped';
 
 const MOCK_MISSIONS = [
   { id: 1, title: "Integrate Telemetry Engine", category: "Core Sync", eta: "2h", health: 92, velocity: 88 },
@@ -102,7 +107,7 @@ const StatCard = ({ label, value, color = "text-brand", description }) => {
    SECTION HEADER
    ⭐ PHASE C: Can include momentum badge
 ───────────────────────────────────────────────────────────────────────── */
-const SectionHeader = ({ icon: Icon, iconColor = "text-brand", title, action, showMomentum = false }) => {
+const SectionHeader = ({ icon: Icon, iconColor = "text-brand", title, action, onAction, showMomentum = false }) => {
   const { isFireMode } = useMomentumContext();
   
   return (
@@ -119,7 +124,10 @@ const SectionHeader = ({ icon: Icon, iconColor = "text-brand", title, action, sh
         )}
       </div>
       {action && (
-        <button className="text-xs text-text-tertiary hover:text-brand transition-colors">
+        <button 
+          onClick={onAction}
+          className="text-xs text-text-tertiary hover:text-brand transition-colors"
+        >
           {action}
         </button>
       )}
@@ -181,11 +189,18 @@ export default function Home() {
   const [missionsLoading, setMissionsLoading] = useState(true);
   const [missions, setMissions] = useState([]);
   
+  // ⭐ PHASE D: Track shipped stats for AllShipped component
+  const [shippedStats, setShippedStats] = useState({
+    tasksCompleted: 0,
+    xpEarned: 0,
+    bonusXP: 0,
+  });
+  
   // ⭐ PHASE A: Track if we should show the entrance highlight
   const [showEntranceHighlight, setShowEntranceHighlight] = useState(false);
   
   // ⭐ PHASE C: Get momentum state
-  const { glowLevel, isFireMode, recordActivity } = useMomentumContext();
+  const { glowLevel, isFireMode, recordActivity, score } = useMomentumContext();
   const { recordTaskCompletion } = useMomentumActivity();
 
   useEffect(() => {
@@ -207,11 +222,27 @@ export default function Home() {
   });
 
   // ⭐ PHASE C: Handle ship completion with momentum boost
+  // ⭐ PHASE D: Track shipped stats for celebration
   const handleShipped = (projectId) => {
+    const shippedMission = missions.find(m => m.id === projectId);
     setMissions(prev => prev.filter(m => m.id !== projectId));
     
     // Record the ship activity for momentum
     recordActivity('PROJECT_SHIP', { projectId });
+    
+    // Update shipped stats for AllShipped celebration
+    setShippedStats(prev => ({
+      tasksCompleted: prev.tasksCompleted + 1,
+      xpEarned: prev.xpEarned + 50, // Base XP per ship
+      bonusXP: glowLevel >= 3 ? prev.bonusXP + 10 : prev.bonusXP, // Momentum bonus
+    }));
+  };
+
+  // ⭐ PHASE D: Handle adding more tasks from AllShipped
+  const handleAddMoreTasks = () => {
+    // Reset to show mock missions again (in real app, would open task creation)
+    setMissions(MOCK_MISSIONS);
+    setShippedStats({ tasksCompleted: 0, xpEarned: 0, bonusXP: 0 });
   };
 
   // ⭐ PHASE C: Dynamic section styles based on momentum
@@ -293,6 +324,7 @@ export default function Home() {
             MISSIONS SECTION (8 columns)
             ⭐ PHASE A: This section gets highlighted during entrance
             ⭐ PHASE C: Responds to momentum level
+            ⭐ PHASE D: Shows AllShipped celebration when empty
         ───────────────────────────────────────────────────────────────── */}
         <div className="col-span-12 lg:col-span-8">
           <div 
@@ -306,7 +338,8 @@ export default function Home() {
             <SectionHeader 
               icon={Zap} 
               title="Recommended for Today" 
-              action="View All"
+              action={missions.length === 0 ? "Add Tasks" : "View All"}
+              onAction={missions.length === 0 ? handleAddMoreTasks : undefined}
               showMomentum
             />
             
@@ -340,23 +373,22 @@ export default function Home() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12">
-                  <div className={`
-                    w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4
-                    ${isFireMode ? 'bg-energy-500/10' : 'bg-success/10'}
-                  `}>
-                    <CheckCircle2 className={`w-6 h-6 ${isFireMode ? 'text-energy-500' : 'text-success'}`} />
-                  </div>
-                  <h3 className="text-lg font-medium text-text-primary mb-2">
-                    All missions shipped!
-                  </h3>
-                  <p className="text-sm text-text-secondary">
-                    {isFireMode 
-                      ? "You're on fire! Keep that momentum going!" 
-                      : "You've completed everything for today. Nice work!"
-                    }
-                  </p>
-                </div>
+                /* ⭐ PHASE D: AllShipped celebration component */
+                <AllShipped
+                  tasksCompleted={shippedStats.tasksCompleted || MOCK_MISSIONS.length}
+                  xpEarned={shippedStats.xpEarned || 150}
+                  bonusXP={shippedStats.bonusXP || (glowLevel >= 3 ? 30 : 0)}
+                  streak={7} // TODO: Get from user context
+                  bestStreak={7}
+                  onAddMore={handleAddMoreTasks}
+                  onViewStats={() => {
+                    setPanelContent("balance");
+                    setIsPanelOpen(true);
+                  }}
+                  showConfetti={shippedStats.tasksCompleted > 0}
+                  confettiIntensity={isFireMode ? 'high' : 'medium'}
+                  variant={shippedStats.tasksCompleted > 0 ? 'celebratory' : 'illustrated'}
+                />
               )}
             </div>
           </div>
@@ -401,7 +433,7 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard 
                 label="Ships" 
-                value="14" 
+                value={14 + shippedStats.tasksCompleted} 
                 color={isFireMode ? "text-energy-500" : "text-brand"} 
                 description="Total validated deployments in the last 7 days."
               />

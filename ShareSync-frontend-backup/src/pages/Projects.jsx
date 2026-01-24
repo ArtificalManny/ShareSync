@@ -1,9 +1,10 @@
 // src/pages/Projects.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v3.0 - Phase 7: Visual Cohesion
+// DESIGN SYSTEM v3.0 - Phase 7: Visual Cohesion + Phase D: Empty States
 // ═══════════════════════════════════════════════════════════════════════════════
 // UPDATES:
-// - Empty state now uses EmptyProjects/EmptySearch components
+// - ⭐ PHASE D: EmptyProjects when no projects exist
+// - ⭐ PHASE D: EmptySearch when search returns no results
 // - Progress bars use purple intensity (not traffic lights)
 // - Consistent with design token system
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -18,7 +19,11 @@ import { useAuth } from '../context/AuthContext';
 import ProjectsCreate from './ProjectsCreate';
 import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
 import { SkeletonProjectCard } from '../components/ui/Skeletons';
-import { EmptyProjects, EmptySearch } from '../components/ui/EmptyState';
+
+// ⭐ PHASE D: Import empty state components
+import EmptyProjects from '../components/empty-states/EmptyProjects';
+import EmptySearch from '../components/empty-states/EmptySearch';
+
 import api from '../api/client';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -37,7 +42,7 @@ const getProgressFillClass = (percentage) => {
 function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
     switch(season) {
-      case 'shipping': return '🚀';
+      case 'shipping': return '��';
       case 'exploring': return '🌱';
       case 'maintaining': return '🛠';
       default: return '📁';
@@ -234,6 +239,7 @@ const Projects = () => {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
   const [selectedProject, setSelectedProject] = useState(null);
+  const [recentSearches, setRecentSearches] = useState(['ShareSync', 'API', 'Dashboard']);
 
   useEffect(() => {
     fetchProjects();
@@ -261,7 +267,28 @@ const Projects = () => {
   const handleProjectCreated = (newProject) => setProjects(prev => [newProject, ...prev]);
   const handleProjectClick = (projectId) => navigate(`/projects/${projectId}`);
   const handleStartSprint = (project) => setSelectedProject(project);
-  const handleClearSearch = () => setSearchQuery('');
+  
+  // ⭐ PHASE D: Search handlers
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query && !recentSearches.includes(query)) {
+      setRecentSearches(prev => [query, ...prev.slice(0, 4)]);
+    }
+  };
+  
+  const handleClearSearch = () => {
+    setSearchQuery('');
+  };
+  
+  const handleClearRecentSearches = () => {
+    setRecentSearches([]);
+  };
+  
+  // ⭐ PHASE D: Create project from search
+  const handleCreateProjectFromSearch = (query) => {
+    setShowCreateModal(true);
+    // The modal would be pre-filled with the query as project name
+  };
 
   const filteredProjects = projects.filter(project => {
     const projectName = (project.name || project.title || '').toLowerCase();
@@ -271,14 +298,23 @@ const Projects = () => {
     return matchesSearch;
   });
 
-  // Determine which empty state to show
+  // ⭐ PHASE D: Render appropriate empty state
   const renderEmptyState = () => {
     // If searching and no results
     if (searchQuery && filteredProjects.length === 0) {
       return (
         <EmptySearch 
-          query={searchQuery} 
-          onClearSearch={handleClearSearch}
+          query={searchQuery}
+          suggestions={['ShareSync', 'Dashboard', 'API Integration'].filter(s => 
+            s.toLowerCase().includes(searchQuery.toLowerCase().charAt(0))
+          )}
+          recentSearches={recentSearches}
+          onSearch={handleSearch}
+          onCreateProject={handleCreateProjectFromSearch}
+          onClearRecent={handleClearRecentSearches}
+          showCreate={true}
+          showRecent={true}
+          variant="illustrated"
         />
       );
     }
@@ -288,17 +324,42 @@ const Projects = () => {
       return (
         <EmptyProjects 
           onCreateProject={() => setShowCreateModal(true)}
+          onSelectTemplate={(template) => {
+            console.log('Selected template:', template);
+            setShowCreateModal(true);
+          }}
+          showTemplates={true}
+          variant="animated"
         />
       );
     }
     
     // If filter returns no results
-    return (
-      <EmptySearch 
-        query={selectedFilter !== 'all' ? selectedFilter : undefined}
-        onClearSearch={() => setSelectedFilter('all')}
-      />
-    );
+    if (filteredProjects.length === 0 && selectedFilter !== 'all') {
+      return (
+        <EmptySearch 
+          query=""
+          onSearch={() => setSelectedFilter('all')}
+          showCreate={false}
+          showRecent={false}
+          variant="minimal"
+        >
+          <div className="text-center mt-4">
+            <p className="text-sm text-text-secondary mb-4">
+              No {selectedFilter === 'at-risk' ? 'at-risk' : 'active'} projects found.
+            </p>
+            <button
+              onClick={() => setSelectedFilter('all')}
+              className="text-sm text-brand-400 hover:text-brand-300 transition-colors"
+            >
+              View all projects
+            </button>
+          </div>
+        </EmptySearch>
+      );
+    }
+    
+    return null;
   };
 
   return (
@@ -335,7 +396,7 @@ const Projects = () => {
                 w-56 transition-all focus:w-72
               "
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
           
@@ -442,7 +503,7 @@ const Projects = () => {
           </div>
         )
       ) : (
-        /* PHASE 7: New Empty State */
+        /* ⭐ PHASE D: Render appropriate empty state */
         renderEmptyState()
       )}
 
