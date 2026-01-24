@@ -2,19 +2,19 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // MOMENTUM VISUALIZATION - Background Aura
 // ═══════════════════════════════════════════════════════════════════════════════
-// A very subtle full-screen gradient overlay that shifts based on momentum.
-// 
+//
+// PHASE C UPGRADE: Full Momentum Engine Integration
+//
 // NOW USING DEEP VIOLET SIGNATURE PALETTE:
 // - High momentum: Deep Violet → Electric Cyan gradient (energetic)
 // - Low momentum: Cool blue tint (calm, slightly muted)
 // - Neutral: Very subtle Deep Violet brand tint
+// - ⭐ PHASE C: Fire mode: Energy red accent with animated particles
 //
 // The glow INTENSIFIES based on the 0-5 momentum level from MomentumContext.
-// This should be BARELY perceptible at low levels - it's felt, not seen.
-// At high levels (4-5), it becomes a subtle but noticeable brand presence.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useMomentumContext } from '../../contexts/MomentumContext';
 
 // Deep Violet brand colors (from Phase 1 Emotional Color System)
@@ -32,15 +32,58 @@ const COLORS = {
     blue400: '96 165 250',     // #60A5FA - Cool blue
     blue300: '147 197 253',    // #93C5FD - Lighter
   },
+  // ⭐ PHASE C: Fire mode colors
+  fire: {
+    energy500: '244 63 94',    // #F43F5E - Energy red
+    energy400: '251 113 133',  // #FB7185 - Lighter
+    warning500: '245 158 11',  // #F59E0B - Amber
+  },
 };
 
 export default function MomentumAura() {
-  const { vibe, score, glowLevel, enabled } = useMomentumContext();
+  const { vibe, score, glowLevel, enabled, isFireMode } = useMomentumContext();
+  
+  // ⭐ PHASE C: Track fire mode transitions
+  const [fireModeActive, setFireModeActive] = useState(false);
+  const [showFireBurst, setShowFireBurst] = useState(false);
+  
+  useEffect(() => {
+    if (isFireMode && !fireModeActive) {
+      // Entering fire mode - show burst effect
+      setFireModeActive(true);
+      setShowFireBurst(true);
+      const timer = setTimeout(() => setShowFireBurst(false), 1500);
+      return () => clearTimeout(timer);
+    } else if (!isFireMode && fireModeActive) {
+      setFireModeActive(false);
+    }
+  }, [isFireMode, fireModeActive]);
 
   // Build the aura configuration based on vibe AND glow level
   const auraConfig = useMemo(() => {
     // Base opacity scales with glow level (0-5)
     const baseOpacity = 0.02 + (glowLevel * 0.015); // 0.02 to 0.095
+    
+    // ⭐ PHASE C: Fire mode special aura
+    if (isFireMode) {
+      return {
+        gradient: `
+          radial-gradient(ellipse 140% 90% at top right, 
+            rgba(${COLORS.brand.violet400}, ${baseOpacity * 2}) 0%, 
+            transparent 50%
+          ),
+          radial-gradient(ellipse 120% 70% at bottom left, 
+            rgba(${COLORS.fire.energy500}, ${baseOpacity * 1.2}) 0%, 
+            transparent 40%
+          ),
+          radial-gradient(ellipse 100% 60% at center, 
+            rgba(${COLORS.live.cyan500}, ${baseOpacity * 0.6}) 0%, 
+            transparent 50%
+          )
+        `,
+        animation: 'momentum-fire-breathe 4s ease-in-out infinite',
+      };
+    }
     
     const configs = {
       high: {
@@ -73,7 +116,7 @@ export default function MomentumAura() {
             transparent 40%
           )
         `,
-        animation: 'none', // No animation for low momentum - stillness
+        animation: 'none',
       },
       neutral: {
         // Very subtle Deep Violet brand tint
@@ -90,23 +133,17 @@ export default function MomentumAura() {
     };
 
     return configs[vibe] || configs.neutral;
-  }, [vibe, glowLevel]);
+  }, [vibe, glowLevel, isFireMode]);
 
   if (!enabled) return null;
 
   return (
     <>
-      {/* Inject keyframes - now using CSS variables for dynamic intensity */}
+      {/* Inject keyframes */}
       <style>{`
         @keyframes momentum-breathe {
-          0%, 100% { 
-            opacity: 1; 
-            transform: scale(1);
-          }
-          50% { 
-            opacity: 0.7; 
-            transform: scale(1.02);
-          }
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.02); }
         }
         @keyframes momentum-subtle {
           0%, 100% { opacity: 1; }
@@ -117,10 +154,46 @@ export default function MomentumAura() {
           50% { filter: brightness(1.1); }
         }
         
-        /* Reduced motion preference */
+        /* ⭐ PHASE C: Fire mode breathing */
+        @keyframes momentum-fire-breathe {
+          0%, 100% { 
+            opacity: 1; 
+            transform: scale(1);
+            filter: brightness(1);
+          }
+          50% { 
+            opacity: 0.85; 
+            transform: scale(1.03);
+            filter: brightness(1.1);
+          }
+        }
+        
+        /* ⭐ PHASE C: Fire mode burst */
+        @keyframes fire-burst {
+          0% {
+            opacity: 1;
+            transform: scale(0.8);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.2);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(1.5);
+          }
+        }
+        
+        .fire-burst {
+          animation: fire-burst 1.5s ease-out forwards;
+        }
+        
         @media (prefers-reduced-motion: reduce) {
           .momentum-aura-overlay {
             animation: none !important;
+          }
+          .fire-burst {
+            display: none;
           }
         }
       `}</style>
@@ -137,7 +210,19 @@ export default function MomentumAura() {
         data-momentum={glowLevel}
         data-momentum-vibe={vibe}
         data-momentum-score={score}
+        data-momentum-fire={isFireMode || undefined}
       />
+      
+      {/* ⭐ PHASE C: Fire mode burst effect on activation */}
+      {showFireBurst && (
+        <div
+          className="fire-burst fixed inset-0 pointer-events-none z-[1]"
+          style={{
+            background: `radial-gradient(circle at center, rgba(${COLORS.fire.energy500}, 0.3) 0%, transparent 50%)`,
+          }}
+          aria-hidden="true"
+        />
+      )}
     </>
   );
 }
@@ -145,9 +230,10 @@ export default function MomentumAura() {
 /**
  * Smaller aura for cards/sections
  * Now uses Deep Violet brand colors and responds to glow level
+ * ⭐ PHASE C: Enhanced with fire mode support
  */
 export function MomentumCardAura({ className = '', intensity = 'auto' }) {
-  const { vibe, glowLevel, enabled } = useMomentumContext();
+  const { vibe, glowLevel, enabled, isFireMode } = useMomentumContext();
 
   if (!enabled) return null;
 
@@ -157,6 +243,29 @@ export function MomentumCardAura({ className = '', intensity = 'auto' }) {
     : intensity === 'subtle' ? 0.03 
     : intensity === 'strong' ? 0.12 
     : 0.05;
+
+  // ⭐ PHASE C: Fire mode special treatment
+  if (isFireMode) {
+    return (
+      <div
+        className={`
+          absolute inset-0 pointer-events-none rounded-xl
+          transition-all duration-1000
+          ${className}
+        `}
+        style={{
+          background: `linear-gradient(to bottom right, 
+            rgba(${COLORS.brand.violet500}, ${opacityLevel * 1.5}), 
+            rgba(${COLORS.fire.energy500}, ${opacityLevel * 0.8}),
+            transparent
+          )`,
+        }}
+        aria-hidden="true"
+        data-momentum={glowLevel}
+        data-momentum-fire="true"
+      />
+    );
+  }
 
   // Color configurations using new Deep Violet palette
   const colorConfig = {
@@ -198,7 +307,7 @@ export function MomentumCardAura({ className = '', intensity = 'auto' }) {
 
 /**
  * Momentum glow ring for specific elements (buttons, cards, etc.)
- * Applies the signature Deep Violet glow based on momentum level
+ * ⭐ PHASE C: Enhanced with fire mode
  */
 export function MomentumGlowRing({ 
   children, 
@@ -207,7 +316,7 @@ export function MomentumGlowRing({
   pulse = false,
   ...props 
 }) {
-  const { glowLevel, glowClassName, enabled } = useMomentumContext();
+  const { glowLevel, glowClassName, enabled, isFireMode } = useMomentumContext();
 
   if (!enabled) {
     return <Component className={className} {...props}>{children}</Component>;
@@ -218,9 +327,11 @@ export function MomentumGlowRing({
       className={`
         ${glowClassName}
         ${pulse && glowLevel >= 2 ? 'momentum-pulse' : ''}
+        ${isFireMode ? 'momentum-fire-glow' : ''}
         ${className}
       `}
       data-momentum={glowLevel}
+      data-momentum-fire={isFireMode || undefined}
       {...props}
     >
       {children}
@@ -230,16 +341,18 @@ export function MomentumGlowRing({
 
 /**
  * HOC to wrap any component with momentum glow
+ * ⭐ PHASE C: Enhanced with fire mode
  */
 export function withMomentumGlow(WrappedComponent) {
   return function MomentumGlowWrapper(props) {
-    const { glowLevel, glowClassName, enabled } = useMomentumContext();
+    const { glowLevel, glowClassName, enabled, isFireMode } = useMomentumContext();
     
     return (
       <WrappedComponent
         {...props}
         data-momentum={enabled ? glowLevel : undefined}
-        className={`${props.className || ''} ${enabled ? glowClassName : ''}`.trim()}
+        data-momentum-fire={enabled && isFireMode ? 'true' : undefined}
+        className={`${props.className || ''} ${enabled ? glowClassName : ''} ${enabled && isFireMode ? 'momentum-fire-glow' : ''}`.trim()}
       />
     );
   };
@@ -247,14 +360,26 @@ export function withMomentumGlow(WrappedComponent) {
 
 /**
  * Hook to get momentum glow styles for inline application
+ * ⭐ PHASE C: Enhanced with fire mode
  */
 export function useMomentumAuraStyles() {
-  const { vibe, glowLevel, enabled } = useMomentumContext();
+  const { vibe, glowLevel, enabled, isFireMode } = useMomentumContext();
 
   return useMemo(() => {
     if (!enabled) return {};
 
     const baseOpacity = 0.02 + (glowLevel * 0.015);
+
+    // ⭐ PHASE C: Fire mode special styles
+    if (isFireMode) {
+      return {
+        boxShadow: `
+          0 0 ${30 + glowLevel * 10}px rgba(${COLORS.brand.violet500}, ${baseOpacity * 2}),
+          0 0 ${20 + glowLevel * 5}px rgba(${COLORS.fire.energy500}, ${baseOpacity * 1.5})
+        `,
+        borderColor: `rgba(${COLORS.fire.energy500}, ${0.15 + glowLevel * 0.05})`,
+      };
+    }
 
     const glowStyles = {
       high: {
@@ -272,5 +397,68 @@ export function useMomentumAuraStyles() {
     };
 
     return glowStyles[vibe] || glowStyles.neutral;
-  }, [vibe, glowLevel, enabled]);
+  }, [vibe, glowLevel, enabled, isFireMode]);
+}
+
+/**
+ * ⭐ PHASE C: Fire mode ambient particles (optional visual effect)
+ */
+export function FireModeParticles({ count = 8 }) {
+  const { isFireMode, enabled } = useMomentumContext();
+  
+  if (!enabled || !isFireMode) return null;
+  
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[2] overflow-hidden" aria-hidden="true">
+      <style>{`
+        @keyframes float-particle {
+          0% {
+            transform: translateY(100vh) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.8;
+          }
+          90% {
+            opacity: 0.8;
+          }
+          100% {
+            transform: translateY(-100px) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        
+        .fire-particle {
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, rgba(${COLORS.fire.energy500}, 0.8), rgba(${COLORS.brand.violet500}, 0.6));
+          filter: blur(1px);
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+          .fire-particle {
+            display: none;
+          }
+        }
+      `}</style>
+      
+      {[...Array(count)].map((_, i) => (
+        <div
+          key={i}
+          className="fire-particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationName: 'float-particle',
+            animationDuration: `${8 + Math.random() * 4}s`,
+            animationDelay: `${Math.random() * 5}s`,
+            animationIterationCount: 'infinite',
+            animationTimingFunction: 'linear',
+            opacity: 0,
+          }}
+        />
+      ))}
+    </div>
+  );
 }

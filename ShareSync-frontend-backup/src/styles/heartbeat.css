@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   MOMENTUM HEARTBEAT STYLES
+   MOMENTUM HEARTBEAT STYLES - Phase C Enhanced
    ═══════════════════════════════════════════════════════════════════════════════
    
    The entire interface "breathes" based on your productivity.
@@ -17,7 +17,7 @@
    2 = Building (noticeable energy)
    3 = Flowing (in the zone)
    4 = Peak (commanding presence)
-   5 = On Fire (rare, earned)
+   5 = On Fire (rare, earned) ⭐ PHASE C: Enhanced with fire mode
    
    ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -34,26 +34,47 @@ body.momentum-transitioning * {
   transition-duration: 2s !important;
 }
 
+/* ⭐ PHASE C: Level change animation classes */
+body.momentum-level-change {
+  transition: background 1s ease-out;
+}
+
+body.momentum-level-up {
+  animation: level-up-bg-flash 1s ease-out;
+}
+
+body.momentum-level-down {
+  animation: level-down-bg-dim 0.5s ease-out;
+}
+
+@keyframes level-up-bg-flash {
+  0% { filter: brightness(1); }
+  30% { filter: brightness(1.05); }
+  100% { filter: brightness(1); }
+}
+
+@keyframes level-down-bg-dim {
+  0% { filter: brightness(1); }
+  30% { filter: brightness(0.98); }
+  100% { filter: brightness(1); }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════════
    LEVEL 0: IDLE - Calm, Waiting, Inviting
    ═══════════════════════════════════════════════════════════════════════════════ */
 body[data-momentum="0"] {
-  /* Neutral background - no glow */
   background: var(--surface-0);
 }
 
 body[data-momentum="0"] .momentum-responsive-card {
-  /* Cards are still, no glow */
   box-shadow: var(--shadow-sm);
   transition: box-shadow 300ms ease;
 }
 
 body[data-momentum="0"] .momentum-responsive-card:hover {
-  /* Gentle invite on hover */
   box-shadow: var(--shadow-md);
 }
 
-/* XP ring is static */
 body[data-momentum="0"] .xp-ring-progress {
   filter: none;
 }
@@ -77,7 +98,6 @@ body[data-momentum="1"] .momentum-responsive-card {
     0 0 20px rgb(var(--brand-600-rgb) / 0.03);
 }
 
-/* XP ring gains subtle glow */
 body[data-momentum="1"] .xp-ring-progress {
   filter: drop-shadow(0 0 4px rgb(var(--brand-600-rgb) / 0.15));
 }
@@ -113,12 +133,10 @@ body[data-momentum="2"] .momentum-responsive-card:hover {
   transform: translateY(-2px);
 }
 
-/* XP ring more prominent */
 body[data-momentum="2"] .xp-ring-progress {
   filter: drop-shadow(0 0 8px rgb(var(--brand-600-rgb) / 0.25));
 }
 
-/* Primary buttons gain subtle pulse */
 body[data-momentum="2"] .btn--primary {
   animation: btn-breathe-subtle 4s ease-in-out infinite;
 }
@@ -160,7 +178,6 @@ body[data-momentum="3"] .momentum-responsive-card:hover {
   transform: translateY(-3px);
 }
 
-/* XP ring is alive */
 body[data-momentum="3"] .xp-ring-progress {
   filter: drop-shadow(0 0 12px rgb(var(--brand-500-rgb) / 0.35));
   animation: ring-breathe 3s ease-in-out infinite;
@@ -171,7 +188,6 @@ body[data-momentum="3"] .xp-ring-progress {
   50% { filter: drop-shadow(0 0 16px rgb(var(--brand-500-rgb) / 0.45)); }
 }
 
-/* Sidebar logo gains glow */
 body[data-momentum="3"] .sidebar-logo {
   box-shadow: 0 0 15px rgb(var(--brand-600-rgb) / 0.3);
 }
@@ -214,7 +230,6 @@ body[data-momentum="4"] .momentum-responsive-card:hover {
   transform: translateY(-4px);
 }
 
-/* XP ring is commanding */
 body[data-momentum="4"] .xp-ring-progress {
   filter: drop-shadow(0 0 16px rgb(var(--brand-500-rgb) / 0.5));
   animation: ring-breathe-strong 2.5s ease-in-out infinite;
@@ -225,7 +240,6 @@ body[data-momentum="4"] .xp-ring-progress {
   50% { filter: drop-shadow(0 0 22px rgb(var(--brand-400-rgb) / 0.6)); }
 }
 
-/* Sidebar has presence */
 body[data-momentum="4"] #app-sidebar {
   border-right-color: rgb(var(--brand-600-rgb) / 0.1);
 }
@@ -234,7 +248,6 @@ body[data-momentum="4"] .sidebar-logo {
   box-shadow: 0 0 20px rgb(var(--brand-500-rgb) / 0.4);
 }
 
-/* Ship buttons are extra inviting */
 body[data-momentum="4"] .ship-btn,
 body[data-momentum="4"] [data-action="ship"] {
   animation: ship-invite 2s ease-in-out infinite;
@@ -253,6 +266,7 @@ body[data-momentum="4"] [data-action="ship"] {
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    LEVEL 5: ON FIRE - Maximum Intensity (Rare, Earned)
+   ⭐ PHASE C: Enhanced fire mode styles
    ═══════════════════════════════════════════════════════════════════════════════ */
 body[data-momentum="5"] {
   background: 
@@ -274,6 +288,27 @@ body[data-momentum="5"] {
     var(--surface-0);
 }
 
+/* ⭐ PHASE C: Fire mode attribute for additional styling */
+body[data-momentum-fire="true"] {
+  background: 
+    radial-gradient(
+      ellipse 160% 90% at 5% -25%,
+      rgb(var(--brand-400-rgb) / 0.15) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 100% 60% at 95% 100%,
+      rgb(var(--energy-500-rgb) / 0.06) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 120% 70% at 50% 80%,
+      rgb(var(--cyan-400-rgb) / 0.04) 0%,
+      transparent 60%
+    ),
+    var(--surface-0);
+}
+
 body[data-momentum="5"] .momentum-responsive-card {
   box-shadow: 
     var(--shadow-2xl),
@@ -290,7 +325,15 @@ body[data-momentum="5"] .momentum-responsive-card:hover {
   transform: translateY(-5px);
 }
 
-/* XP ring is on fire */
+/* ⭐ PHASE C: Fire mode cards have energy accent */
+body[data-momentum-fire="true"] .momentum-responsive-card {
+  border-color: rgb(var(--energy-500-rgb) / 0.15);
+  box-shadow: 
+    var(--shadow-2xl),
+    0 0 50px rgb(var(--brand-500-rgb) / 0.15),
+    0 0 30px rgb(var(--energy-500-rgb) / 0.08);
+}
+
 body[data-momentum="5"] .xp-ring-progress {
   filter: drop-shadow(0 0 20px rgb(var(--brand-400-rgb) / 0.6));
   animation: ring-fire 2s ease-in-out infinite;
@@ -307,13 +350,23 @@ body[data-momentum="5"] .xp-ring-progress {
   }
 }
 
-/* Everything feels premium */
 body[data-momentum="5"] #app-sidebar {
   border-right-color: rgb(var(--brand-500-rgb) / 0.15);
   background: linear-gradient(
     180deg,
     rgb(var(--brand-600-rgb) / 0.03) 0%,
     transparent 50%
+  ), var(--surface-0);
+}
+
+/* ⭐ PHASE C: Fire mode sidebar has energy accent */
+body[data-momentum-fire="true"] #app-sidebar {
+  border-right-color: rgb(var(--energy-500-rgb) / 0.1);
+  background: linear-gradient(
+    180deg,
+    rgb(var(--energy-500-rgb) / 0.02) 0%,
+    rgb(var(--brand-600-rgb) / 0.02) 30%,
+    transparent 60%
   ), var(--surface-0);
 }
 
@@ -337,34 +390,49 @@ body[data-momentum="5"] .sidebar-logo {
   }
 }
 
-/* "You're on fire" badge appears */
-body[data-momentum="5"]::after {
-  content: '🔥';
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  font-size: 24px;
-  z-index: 100;
-  animation: fire-badge-appear 500ms ease-out forwards;
-  pointer-events: none;
+/* ⭐ PHASE C: Fire mode logo with energy accent */
+body[data-momentum-fire="true"] .sidebar-logo {
+  box-shadow: 
+    0 0 25px rgb(var(--brand-500-rgb) / 0.4),
+    0 0 40px rgb(var(--energy-500-rgb) / 0.2);
+  animation: logo-fire-enhanced 2.5s ease-in-out infinite;
 }
 
-@keyframes fire-badge-appear {
-  0% { 
-    opacity: 0;
-    transform: scale(0.5) rotate(-20deg);
+@keyframes logo-fire-enhanced {
+  0%, 100% { 
+    box-shadow: 
+      0 0 25px rgb(var(--brand-500-rgb) / 0.4),
+      0 0 40px rgb(var(--energy-500-rgb) / 0.2);
   }
-  100% { 
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
+  50% { 
+    box-shadow: 
+      0 0 30px rgb(var(--brand-400-rgb) / 0.5),
+      0 0 50px rgb(var(--energy-500-rgb) / 0.3);
   }
+}
+
+/* ⭐ PHASE C: Removed the ::after emoji - now handled by FireModeBadge component */
+/* body[data-momentum="5"]::after removed - using React component instead */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ⭐ PHASE C: FIRE MODE GLOW UTILITY CLASS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.shadow-glow-energy {
+  box-shadow: 
+    0 0 20px rgb(var(--energy-500-rgb) / 0.3),
+    0 0 40px rgb(var(--energy-500-rgb) / 0.15);
+}
+
+.momentum-fire-glow {
+  box-shadow: 
+    0 0 20px rgb(var(--brand-500-rgb) / 0.2),
+    0 0 10px rgb(var(--energy-500-rgb) / 0.15);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    UTILITY CLASSES
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* Apply to any card that should respond to momentum */
 .momentum-responsive-card {
   transition: 
     box-shadow 800ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -372,12 +440,10 @@ body[data-momentum="5"]::after {
     border-color 800ms ease;
 }
 
-/* Apply to XP ring SVG */
 .xp-ring-progress {
   transition: filter 800ms ease;
 }
 
-/* Apply to sidebar logo container */
 .sidebar-logo {
   transition: box-shadow 800ms ease;
 }
@@ -391,13 +457,17 @@ body[data-momentum="5"]::after {
   body[data-momentum="4"] .xp-ring-progress,
   body[data-momentum="4"] .ship-btn,
   body[data-momentum="5"] .xp-ring-progress,
-  body[data-momentum="5"] .sidebar-logo {
+  body[data-momentum="5"] .sidebar-logo,
+  body[data-momentum-fire="true"] .sidebar-logo {
     animation: none !important;
   }
   
   body.momentum-transitioning,
-  body.momentum-transitioning * {
+  body.momentum-transitioning *,
+  body.momentum-level-up,
+  body.momentum-level-down {
     transition-duration: 0.01ms !important;
+    animation: none !important;
   }
 }
 
@@ -405,7 +475,7 @@ body[data-momentum="5"]::after {
    DEBUG MODE (for development)
    ═══════════════════════════════════════════════════════════════════════════════ */
 body[data-momentum-debug="true"]::before {
-  content: 'Momentum: ' attr(data-momentum-name) ' (' attr(data-momentum) ')';
+  content: 'Momentum: ' attr(data-momentum-name) ' (' attr(data-momentum) ') Score: ' attr(data-momentum-score);
   position: fixed;
   bottom: 16px;
   left: 16px;
@@ -417,4 +487,11 @@ body[data-momentum-debug="true"]::before {
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
+}
+
+/* ⭐ PHASE C: Fire mode debug indicator */
+body[data-momentum-debug="true"][data-momentum-fire="true"]::before {
+  content: '🔥 FIRE MODE - Score: ' attr(data-momentum-score);
+  border-color: rgb(var(--energy-500-rgb) / 0.3);
+  color: var(--energy-500);
 }

@@ -1,9 +1,18 @@
 // src/pages/Home.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE A: Emotional Immediacy - Entrance Highlight for Recommended Tasks
+// PHASE C: Momentum Engine - Full Interface Response
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// NOW USING:
+// - momentum-responsive-card class for cards that respond to momentum level
+// - momentum-card class for cards with engine-specific styles
+// - ⭐ PHASE C: Fire mode special treatment for sections
+// - ⭐ PHASE C: Momentum indicator in header
+// - ⭐ PHASE C: Ship button glows at high momentum
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   Zap, 
   Clock, 
@@ -13,7 +22,9 @@ import {
   X,
   CheckCircle2,
   TrendingUp,
-  Activity
+  Activity,
+  Flame,
+  Rocket,
 } from "lucide-react";
 
 import { useRenovation } from "../context/RenovationContext";
@@ -26,6 +37,9 @@ import IntelligencePanel from "../components/home/IntelligencePanel";
 // ⭐ PHASE A: Import entrance highlight utilities
 import { EntranceHighlight, useEntranceHighlight } from '../components/onboarding/AppEntrance';
 
+// ⭐ PHASE C: Import momentum context and indicator
+import { useMomentumContext, useMomentumActivity } from '../contexts/MomentumContext';
+
 const MOCK_MISSIONS = [
   { id: 1, title: "Integrate Telemetry Engine", category: "Core Sync", eta: "2h", health: 92, velocity: 88 },
   { id: 2, title: "Refactor Auth Protocol", category: "Security", eta: "4h", health: 65, velocity: 74 },
@@ -34,10 +48,12 @@ const MOCK_MISSIONS = [
 
 /* ─────────────────────────────────────────────────────────────────────────
    STAT CARD - Clean metric display with micro-interactions
+   ⭐ PHASE C: Now uses momentum-card class for engine response
 ───────────────────────────────────────────────────────────────────────── */
 const StatCard = ({ label, value, color = "text-brand", description }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const { glowLevel, isFireMode } = useMomentumContext();
 
   return (
     <div 
@@ -46,9 +62,11 @@ const StatCard = ({ label, value, color = "text-brand", description }) => {
         bg-surface-1 border border-white/[0.06]
         hover:bg-surface-2 hover:border-white/[0.1]
         transition-all duration-200 cursor-default
-        momentum-responsive-card
+        momentum-responsive-card momentum-card
         ${isHovered ? 'transform -translate-y-0.5' : ''}
+        ${isFireMode ? 'border-energy-500/10' : ''}
       `}
+      data-momentum={glowLevel}
       onMouseEnter={() => { setShowTooltip(true); setIsHovered(true); }}
       onMouseLeave={() => { setShowTooltip(false); setIsHovered(false); }}
     >
@@ -82,22 +100,75 @@ const StatCard = ({ label, value, color = "text-brand", description }) => {
 
 /* ─────────────────────────────────────────────────────────────────────────
    SECTION HEADER
+   ⭐ PHASE C: Can include momentum badge
 ───────────────────────────────────────────────────────────────────────── */
-const SectionHeader = ({ icon: Icon, iconColor = "text-brand", title, action }) => (
-  <div className="flex justify-between items-center mb-6">
-    <div className="flex items-center gap-2">
-      <Icon className={`w-4 h-4 ${iconColor}`} />
-      <h2 className="text-sm font-medium text-text-secondary">
-        {title}
-      </h2>
+const SectionHeader = ({ icon: Icon, iconColor = "text-brand", title, action, showMomentum = false }) => {
+  const { isFireMode } = useMomentumContext();
+  
+  return (
+    <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center gap-2">
+        <Icon className={`w-4 h-4 ${isFireMode ? 'text-energy-500' : iconColor}`} />
+        <h2 className="text-sm font-medium text-text-secondary">
+          {title}
+        </h2>
+        {showMomentum && isFireMode && (
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-energy-500/20 text-energy-500 animate-pulse">
+            🔥
+          </span>
+        )}
+      </div>
+      {action && (
+        <button className="text-xs text-text-tertiary hover:text-brand transition-colors">
+          {action}
+        </button>
+      )}
     </div>
-    {action && (
-      <button className="text-xs text-text-tertiary hover:text-brand transition-colors">
-        {action}
-      </button>
-    )}
-  </div>
-);
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ⭐ PHASE C: MOMENTUM STATUS BANNER - Shows when in high momentum
+───────────────────────────────────────────────────────────────────────── */
+const MomentumStatusBanner = () => {
+  const { glowLevel, glowState, message, isFireMode } = useMomentumContext();
+  
+  // Only show at level 3+
+  if (glowLevel < 3) return null;
+  
+  const config = {
+    3: { bg: 'bg-brand-500/10', border: 'border-brand-500/20', icon: TrendingUp, color: 'text-brand-400' },
+    4: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', icon: Rocket, color: 'text-cyan-400' },
+    5: { bg: 'bg-energy-500/10', border: 'border-energy-500/20', icon: Flame, color: 'text-energy-500' },
+  };
+  
+  const currentConfig = config[glowLevel] || config[3];
+  const Icon = currentConfig.icon;
+  
+  return (
+    <div className={`
+      mb-6 px-4 py-3 rounded-xl
+      ${currentConfig.bg} border ${currentConfig.border}
+      flex items-center justify-between
+      ${isFireMode ? 'animate-pulse' : ''}
+    `}>
+      <div className="flex items-center gap-3">
+        <Icon className={`w-5 h-5 ${currentConfig.color}`} />
+        <div>
+          <div className={`text-sm font-medium ${currentConfig.color}`}>
+            {glowState.charAt(0).toUpperCase() + glowState.slice(1)} Mode
+          </div>
+          <div className="text-xs text-text-tertiary">
+            {message}
+          </div>
+        </div>
+      </div>
+      <div className={`text-2xl font-bold tabular-nums ${currentConfig.color}`}>
+        L{glowLevel}
+      </div>
+    </div>
+  );
+};
 
 /* ─────────────────────────────────────────────────────────────────────────
    MAIN HOME PAGE
@@ -112,6 +183,10 @@ export default function Home() {
   
   // ⭐ PHASE A: Track if we should show the entrance highlight
   const [showEntranceHighlight, setShowEntranceHighlight] = useState(false);
+  
+  // ⭐ PHASE C: Get momentum state
+  const { glowLevel, isFireMode, recordActivity } = useMomentumContext();
+  const { recordTaskCompletion } = useMomentumActivity();
 
   useEffect(() => {
     const loadMissions = async () => {
@@ -127,18 +202,36 @@ export default function Home() {
 
   // ⭐ PHASE A: Listen for entrance highlight event
   useEntranceHighlight?.((detail) => {
-    // Trigger the highlight pulse on recommended tasks
     setShowEntranceHighlight(true);
     setTimeout(() => setShowEntranceHighlight(false), 600);
   });
 
-  // Handle ship completion (for demo purposes)
+  // ⭐ PHASE C: Handle ship completion with momentum boost
   const handleShipped = (projectId) => {
     setMissions(prev => prev.filter(m => m.id !== projectId));
+    
+    // Record the ship activity for momentum
+    recordActivity('PROJECT_SHIP', { projectId });
   };
 
+  // ⭐ PHASE C: Dynamic section styles based on momentum
+  const sectionCardClasses = useMemo(() => {
+    const base = "p-6 rounded-xl bg-surface-1 border border-white/[0.06] momentum-responsive-card momentum-card";
+    
+    if (isFireMode) {
+      return `${base} border-energy-500/10`;
+    }
+    if (glowLevel >= 4) {
+      return `${base} border-brand-500/10`;
+    }
+    return base;
+  }, [glowLevel, isFireMode]);
+
   return (
-    <div className="min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto">
+    <div 
+      className="min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto"
+      data-momentum={glowLevel}
+    >
       
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER
@@ -147,24 +240,49 @@ export default function Home() {
         <div>
           {/* Status indicator - subtle, not pulsing */}
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-success" />
+            <div className={`
+              w-2 h-2 rounded-full
+              ${isFireMode ? 'bg-energy-500 animate-pulse' : 'bg-success'}
+            `} />
             <span className="text-xs text-text-tertiary">
-              Operational Status: Live
+              {isFireMode ? 'Fire Mode Active 🔥' : 'Operational Status: Live'}
             </span>
           </div>
           
           {/* Title - calmer, professional */}
           <h1 className="text-4xl font-semibold text-text-primary">
-            Mission <span className="text-text-tertiary">Control</span>
+            Mission <span className={`
+              ${isFireMode ? 'text-energy-500' : 'text-text-tertiary'}
+              transition-colors duration-500
+            `}>Control</span>
           </h1>
         </div>
         
-        {/* Rank - right aligned */}
-        <div className="hidden md:block text-right">
-          <p className="text-xs text-text-tertiary mb-1">Global Rank</p>
-          <p className="text-xl font-semibold text-text-primary">Top 2%</p>
+        {/* Rank + Momentum Level - right aligned */}
+        <div className="hidden md:flex items-center gap-6">
+          {/* ⭐ PHASE C: Momentum level indicator */}
+          <div className="text-right">
+            <p className="text-xs text-text-tertiary mb-1">Momentum</p>
+            <div className={`
+              text-xl font-semibold
+              ${isFireMode ? 'text-energy-500' : glowLevel >= 3 ? 'text-brand-400' : 'text-text-primary'}
+            `}>
+              Level {glowLevel}
+              {isFireMode && ' 🔥'}
+            </div>
+          </div>
+          
+          <div className="w-px h-10 bg-white/[0.06]" />
+          
+          <div className="text-right">
+            <p className="text-xs text-text-tertiary mb-1">Global Rank</p>
+            <p className="text-xl font-semibold text-text-primary">Top 2%</p>
+          </div>
         </div>
       </header>
+
+      {/* ⭐ PHASE C: Momentum Status Banner (shows at level 3+) */}
+      <MomentumStatusBanner />
 
       {/* ═══════════════════════════════════════════════════════════════════
           MAIN GRID
@@ -174,20 +292,22 @@ export default function Home() {
         {/* ─────────────────────────────────────────────────────────────────
             MISSIONS SECTION (8 columns)
             ⭐ PHASE A: This section gets highlighted during entrance
+            ⭐ PHASE C: Responds to momentum level
         ───────────────────────────────────────────────────────────────── */}
         <div className="col-span-12 lg:col-span-8">
           <div 
             className={`
-              p-6 rounded-xl bg-surface-1 border border-white/[0.06]
-              momentum-responsive-card
+              ${sectionCardClasses}
               transition-all duration-300
               ${showEntranceHighlight ? 'ring-2 ring-brand-500/40 animate-pulse-once' : ''}
             `}
+            data-momentum={glowLevel}
           >
             <SectionHeader 
               icon={Zap} 
               title="Recommended for Today" 
               action="View All"
+              showMomentum
             />
             
             <div className="space-y-3">
@@ -202,7 +322,6 @@ export default function Home() {
                       ${showEntranceHighlight && index === 0 ? 'ring-2 ring-brand-500/30 rounded-xl' : ''}
                     `}
                     style={{
-                      // Stagger the highlight effect
                       animationDelay: showEntranceHighlight ? `${index * 100}ms` : '0ms',
                     }}
                   >
@@ -214,19 +333,28 @@ export default function Home() {
                         setIsPanelOpen(true); 
                       }}
                       onShipped={handleShipped}
+                      // ⭐ PHASE C: Pass momentum level for card styling
+                      momentumLevel={glowLevel}
+                      isFireMode={isFireMode}
                     />
                   </div>
                 ))
               ) : (
                 <div className="text-center py-12">
-                  <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle2 className="w-6 h-6 text-success" />
+                  <div className={`
+                    w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4
+                    ${isFireMode ? 'bg-energy-500/10' : 'bg-success/10'}
+                  `}>
+                    <CheckCircle2 className={`w-6 h-6 ${isFireMode ? 'text-energy-500' : 'text-success'}`} />
                   </div>
                   <h3 className="text-lg font-medium text-text-primary mb-2">
                     All missions shipped!
                   </h3>
                   <p className="text-sm text-text-secondary">
-                    You've completed everything for today. Nice work!
+                    {isFireMode 
+                      ? "You're on fire! Keep that momentum going!" 
+                      : "You've completed everything for today. Nice work!"
+                    }
                   </p>
                 </div>
               )}
@@ -249,14 +377,21 @@ export default function Home() {
             productivity={65}
             coWorkingMultiplier={2.1}
             isCoWorking={true}
+            // ⭐ PHASE C: Pass momentum context
+            momentumLevel={glowLevel}
+            isFireMode={isFireMode}
           />
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────
             VELOCITY METRICS (full width)
+            ⭐ PHASE C: Momentum-responsive cards
         ───────────────────────────────────────────────────────────────── */}
         <div className="col-span-12">
-          <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06] momentum-responsive-card">
+          <div 
+            className={sectionCardClasses}
+            data-momentum={glowLevel}
+          >
             <SectionHeader 
               icon={TrendingUp} 
               iconColor="text-brand"
@@ -267,7 +402,7 @@ export default function Home() {
               <StatCard 
                 label="Ships" 
                 value="14" 
-                color="text-brand" 
+                color={isFireMode ? "text-energy-500" : "text-brand"} 
                 description="Total validated deployments in the last 7 days."
               />
               <StatCard 
@@ -285,7 +420,7 @@ export default function Home() {
               <StatCard 
                 label="Efficiency" 
                 value="+12%" 
-                color="text-brand" 
+                color={isFireMode ? "text-energy-500" : "text-brand"} 
                 description="Performance increase compared to previous cycle."
               />
             </div>
@@ -339,15 +474,9 @@ export default function Home() {
       {/* ⭐ PHASE A: Inline animation for entrance highlight */}
       <style>{`
         @keyframes pulse-once {
-          0% {
-            box-shadow: 0 0 0 0 rgb(124 58 237 / 0.4);
-          }
-          50% {
-            box-shadow: 0 0 0 8px rgb(124 58 237 / 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgb(124 58 237 / 0);
-          }
+          0% { box-shadow: 0 0 0 0 rgb(124 58 237 / 0.4); }
+          50% { box-shadow: 0 0 0 8px rgb(124 58 237 / 0); }
+          100% { box-shadow: 0 0 0 0 rgb(124 58 237 / 0); }
         }
         
         .animate-pulse-once {

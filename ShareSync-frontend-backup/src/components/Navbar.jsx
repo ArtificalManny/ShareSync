@@ -1,23 +1,23 @@
 // src/components/Navbar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC NAVBAR v2.0 - Phase 1: Emotional Color System
+// SHARESYNC NAVBAR v3.0 - Phase C: Momentum Engine Integration
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // NOW USING:
 // - Deep Violet (#7C3AED) as primary brand color for actions
 // - Surface hierarchy: surface-0/1/2 tokens
-// - Text hierarchy: text-primary/secondary/tertiary
-// - Brand color ONLY for primary action (+ button)
-// - No glows at rest - clean and professional
+// - ⭐ PHASE C: Momentum indicator badge in navbar
+// - ⭐ PHASE C: Navbar glows subtly at high momentum levels
+// - ⭐ PHASE C: Fire mode special treatment
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Sun, Moon, LogOut, MessageCircle, 
   Palette, Camera, Search, Plus, Bell,
-  ChevronRight, Layout
+  ChevronRight, Layout, Zap, Flame, TrendingUp
 } from 'lucide-react';
 import { formatProfilePicture } from '../utils/imageUtils';
 import { useChat } from "../context/ChatContext.jsx";
@@ -34,7 +34,76 @@ import TeamPresence from './navbar/TeamPresence.jsx';
 import NotificationDropdown from './NotificationDropdown';
 import QuickCapture from './navbar/QuickCapture.jsx';
 
+// ⭐ PHASE C: Import momentum context
+import { useMomentumContext } from '../contexts/MomentumContext';
+
 const DEFAULT_PIC = '/default-profile.png';
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MOMENTUM BADGE - Compact indicator for navbar
+───────────────────────────────────────────────────────────────────────── */
+const MomentumBadge = () => {
+  const { glowLevel, glowState, isFireMode, message } = useMomentumContext();
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  const config = useMemo(() => {
+    const configs = {
+      0: { icon: null, color: 'text-text-tertiary', bg: 'bg-surface-2', show: false },
+      1: { icon: Zap, color: 'text-brand-400', bg: 'bg-brand-500/10', show: true },
+      2: { icon: Zap, color: 'text-brand-500', bg: 'bg-brand-500/15', show: true },
+      3: { icon: TrendingUp, color: 'text-brand-400', bg: 'bg-brand-500/20', show: true },
+      4: { icon: TrendingUp, color: 'text-cyan-400', bg: 'bg-cyan-500/20', show: true },
+      5: { icon: Flame, color: 'text-energy-500', bg: 'bg-energy-500/20', show: true },
+    };
+    return configs[glowLevel] || configs[0];
+  }, [glowLevel]);
+  
+  // Don't show at level 0
+  if (!config.show) return null;
+  
+  const Icon = config.icon;
+  
+  return (
+    <div 
+      className="relative"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <div className={`
+        flex items-center gap-1.5
+        px-2.5 py-1.5 rounded-lg
+        ${config.bg} border border-white/[0.06]
+        transition-all duration-300
+        ${isFireMode ? 'animate-pulse border-energy-500/30' : ''}
+      `}>
+        {Icon && (
+          <Icon className={`w-3.5 h-3.5 ${config.color}`} />
+        )}
+        <span className={`text-xs font-medium ${config.color}`}>
+          {isFireMode ? '🔥' : `L${glowLevel}`}
+        </span>
+      </div>
+      
+      {/* Tooltip */}
+      {showTooltip && (
+        <div className="
+          absolute top-full mt-2 left-1/2 -translate-x-1/2
+          px-3 py-2 rounded-lg
+          bg-surface-1 border border-white/[0.08]
+          shadow-xl z-50 whitespace-nowrap
+          animate-in fade-in slide-in-from-top-2 duration-200
+        ">
+          <div className={`text-xs font-medium ${config.color}`}>
+            {glowState.charAt(0).toUpperCase() + glowState.slice(1)}
+          </div>
+          <div className="text-[10px] text-text-tertiary mt-0.5">
+            {message}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ─────────────────────────────────────────────────────────────────────────
    PROFILE DROPDOWN
@@ -95,7 +164,6 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
           shadow-xl overflow-hidden z-[100]
           animate-in fade-in slide-in-from-top-2 duration-200
         ">
-          {/* Profile Link */}
           <Link 
             to="/profile" 
             className="flex items-center gap-3 p-3 hover:bg-surface-2 border-b border-white/[0.06] transition-colors" 
@@ -116,7 +184,6 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
             </div>
           </Link>
           
-          {/* Change Photo */}
           <button 
             onClick={() => fileInputRef.current?.click()} 
             className="w-full flex items-center gap-3 p-3 hover:bg-surface-2 text-left transition-colors"
@@ -169,6 +236,9 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   const chat = typeof useChat === 'function' ? useChat() : null;
   const unreadTotal = chat?.unreadTotal || 0;
   const { cycleAccent } = useBrandTheme({ enabled: true });
+  
+  // ⭐ PHASE C: Get momentum state for navbar glow
+  const { glowLevel, isFireMode } = useMomentumContext();
 
   // Get current page name from path
   const getPageName = () => {
@@ -184,13 +254,41 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
     }
   };
 
+  // ⭐ PHASE C: Dynamic navbar styles based on momentum
+  const navbarGlowStyle = useMemo(() => {
+    if (isFireMode) {
+      return {
+        boxShadow: '0 1px 0 rgb(var(--energy-500-rgb) / 0.15), 0 4px 20px rgb(var(--energy-500-rgb) / 0.1)',
+        borderColor: 'rgb(var(--energy-500-rgb) / 0.1)',
+      };
+    }
+    if (glowLevel >= 4) {
+      return {
+        boxShadow: '0 1px 0 rgb(var(--brand-600-rgb) / 0.1), 0 4px 20px rgb(var(--brand-600-rgb) / 0.08)',
+        borderColor: 'rgb(var(--brand-600-rgb) / 0.08)',
+      };
+    }
+    if (glowLevel >= 3) {
+      return {
+        boxShadow: '0 1px 0 rgb(var(--brand-600-rgb) / 0.05)',
+      };
+    }
+    return {};
+  }, [glowLevel, isFireMode]);
+
   return (
-    <header className="
-      sticky top-0 z-40 h-14
-      bg-surface-0/80 backdrop-blur-md
-      border-b border-white/[0.06]
-      px-4 lg:px-6
-    ">
+    <header 
+      className={`
+        navbar
+        sticky top-0 z-40 h-14
+        bg-surface-0/80 backdrop-blur-md
+        border-b border-white/[0.06]
+        px-4 lg:px-6
+        transition-all duration-500
+      `}
+      style={navbarGlowStyle}
+      data-momentum={glowLevel}
+    >
       <div className="h-full max-w-[1800px] mx-auto flex items-center">
         
         {/* ═══════════════════════════════════════════════════════════════════
@@ -251,9 +349,14 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
         ═══════════════════════════════════════════════════════════════════ */}
         <div className="flex items-center gap-1">
           
+          {/* ⭐ PHASE C: Momentum Badge */}
+          <div className="hidden sm:block mr-2">
+            <MomentumBadge />
+          </div>
+          
           {/* Primary Action: New - Deep Violet brand gradient */}
           <button 
-            className="
+            className={`
               w-8 h-8 rounded-lg
               bg-brand-600 text-white
               flex items-center justify-center
@@ -261,9 +364,12 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
               hover:shadow-glow-brand
               transition-all duration-200
               mr-1
-            "
+              ${isFireMode ? 'animate-pulse shadow-glow-energy' : ''}
+            `}
             style={{
-              background: 'linear-gradient(135deg, var(--brand-600, #7C3AED) 0%, var(--brand-700, #6D28D9) 100%)',
+              background: isFireMode 
+                ? 'linear-gradient(135deg, var(--energy-500, #F43F5E) 0%, var(--brand-600, #7C3AED) 100%)'
+                : 'linear-gradient(135deg, var(--brand-600, #7C3AED) 0%, var(--brand-700, #6D28D9) 100%)',
             }}
           >
             <Plus className="w-4 h-4" />
