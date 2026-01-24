@@ -1,0 +1,752 @@
+/* src/styles/social-proof.css
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * PHASE E: Social Proof & FOMO - Styles & Animations
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Comprehensive styles for all social proof components:
+ * - Live pulse effects
+ * - Leaderboard animations
+ * - Achievement celebrations
+ * - Toast notifications
+ * - Avatar stacks
+ * - Urgency indicators
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LIVE PULSE EFFECTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Base live indicator */
+.live-indicator {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.live-indicator::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: rgb(16 185 129); /* success */
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgb(16 185 129 / 0.4);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 6px rgb(16 185 129 / 0);
+  }
+}
+
+/* Live dot - standalone */
+.live-dot {
+  position: relative;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  background-color: rgb(16 185 129);
+}
+
+.live-dot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background-color: inherit;
+  animation: live-dot-ping 1.5s ease-out infinite;
+}
+
+@keyframes live-dot-ping {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Flow state indicator */
+.flow-indicator {
+  background: linear-gradient(135deg, rgb(139 92 246 / 0.2), rgb(6 182 212 / 0.2));
+  border: 1px solid rgb(139 92 246 / 0.3);
+  animation: flow-glow 3s ease-in-out infinite;
+}
+
+@keyframes flow-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgb(139 92 246 / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgb(139 92 246 / 0.4);
+  }
+}
+
+/* Shipping indicator */
+.shipping-indicator {
+  background: linear-gradient(135deg, rgb(6 182 212 / 0.2), rgb(139 92 246 / 0.2));
+  border: 1px solid rgb(6 182 212 / 0.3);
+  animation: shipping-pulse 2s ease-in-out infinite;
+}
+
+@keyframes shipping-pulse {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LEADERBOARD STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Rank badge - top 3 */
+.rank-badge-gold {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  box-shadow: 0 4px 15px rgb(251 191 36 / 0.3);
+}
+
+.rank-badge-silver {
+  background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+  box-shadow: 0 4px 15px rgb(148 163 184 / 0.3);
+}
+
+.rank-badge-bronze {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  box-shadow: 0 4px 15px rgb(217 119 6 / 0.3);
+}
+
+/* Rank change animation */
+.rank-change-up {
+  animation: rank-up 0.5s ease-out;
+}
+
+@keyframes rank-up {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.rank-change-down {
+  animation: rank-down 0.5s ease-out;
+}
+
+@keyframes rank-down {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(5px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Leaderboard row hover */
+.leaderboard-row {
+  transition: all 0.2s ease;
+}
+
+.leaderboard-row:hover {
+  transform: translateX(4px);
+  background-color: rgb(255 255 255 / 0.03);
+}
+
+/* Current user highlight */
+.leaderboard-row-you {
+  background: linear-gradient(90deg, rgb(139 92 246 / 0.1), transparent);
+  border-left: 2px solid rgb(139 92 246);
+}
+
+/* Podium animation */
+.podium-place {
+  animation: podium-rise 0.6s ease-out;
+  animation-fill-mode: backwards;
+}
+
+.podium-place:nth-child(1) { animation-delay: 0.2s; }
+.podium-place:nth-child(2) { animation-delay: 0s; }
+.podium-place:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes podium-rise {
+  0% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACHIEVEMENT & TOAST STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Toast entrance */
+.toast-enter {
+  animation: toast-slide-in 0.3s ease-out;
+}
+
+@keyframes toast-slide-in {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Toast exit */
+.toast-exit {
+  animation: toast-slide-out 0.3s ease-in;
+}
+
+@keyframes toast-slide-out {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Achievement unlock */
+.achievement-unlock {
+  animation: achievement-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes achievement-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Confetti burst */
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: confetti-fall 1s ease-out forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Rarity glow effects */
+.rarity-common {
+  /* No glow */
+}
+
+.rarity-uncommon {
+  box-shadow: 0 0 20px rgb(139 92 246 / 0.2);
+}
+
+.rarity-rare {
+  box-shadow: 0 0 25px rgb(6 182 212 / 0.3);
+  animation: rare-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes rare-shimmer {
+  0%, 100% {
+    box-shadow: 0 0 25px rgb(6 182 212 / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 35px rgb(6 182 212 / 0.5);
+  }
+}
+
+.rarity-legendary {
+  box-shadow: 0 0 30px rgb(245 158 11 / 0.4);
+  animation: legendary-glow 2s ease-in-out infinite;
+}
+
+@keyframes legendary-glow {
+  0%, 100% {
+    box-shadow: 0 0 30px rgb(245 158 11 / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 45px rgb(245 158 11 / 0.6);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   AVATAR STACK STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.avatar-stack {
+  display: flex;
+}
+
+.avatar-stack > * {
+  margin-left: -0.5rem;
+  transition: all 0.2s ease;
+}
+
+.avatar-stack > *:first-child {
+  margin-left: 0;
+}
+
+.avatar-stack:hover > * {
+  margin-left: 0.125rem;
+}
+
+.avatar-stack > *:first-child {
+  margin-left: 0;
+}
+
+/* Avatar status ring */
+.avatar-status-ring {
+  position: relative;
+}
+
+.avatar-status-ring::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  border: 2px solid rgb(15 23 42); /* surface-0 */
+}
+
+.avatar-status-ring.status-online::after {
+  background-color: rgb(16 185 129);
+}
+
+.avatar-status-ring.status-flow::after {
+  background-color: rgb(139 92 246);
+  animation: status-pulse 1.5s ease-in-out infinite;
+}
+
+.avatar-status-ring.status-away::after {
+  background-color: rgb(100 116 139);
+}
+
+@keyframes status-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   URGENCY & SCARCITY STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Urgency pulse */
+.urgency-critical {
+  animation: urgency-flash 1s ease-in-out infinite;
+}
+
+@keyframes urgency-flash {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Spots indicator */
+.spots-indicator {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.spot-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+}
+
+.spot-dot.filled {
+  background: linear-gradient(135deg, rgb(139 92 246), rgb(6 182 212));
+}
+
+.spot-dot.empty {
+  background-color: rgb(30 41 59);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.spot-dot.empty.urgent {
+  animation: spot-pulse 1s ease-in-out infinite;
+  border-color: rgb(244 63 94 / 0.5);
+}
+
+@keyframes spot-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgb(244 63 94 / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgb(244 63 94 / 0);
+  }
+}
+
+/* Countdown timer */
+.countdown-unit {
+  text-align: center;
+  padding: 0.5rem;
+  background-color: rgb(30 41 59);
+  border-radius: 0.5rem;
+  min-width: 3rem;
+}
+
+.countdown-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: rgb(248 250 252);
+}
+
+.countdown-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  color: rgb(100 116 139);
+}
+
+.countdown-separator {
+  color: rgb(100 116 139);
+  font-weight: 300;
+  padding: 0 0.25rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LEAGUE BADGE STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.league-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  transition: transform 0.3s ease;
+}
+
+.league-badge:hover {
+  transform: scale(1.05);
+}
+
+.league-badge-bronze {
+  background: linear-gradient(135deg, #b45309, #92400e);
+  box-shadow: 0 4px 15px rgb(180 83 9 / 0.3);
+}
+
+.league-badge-silver {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+  box-shadow: 0 4px 15px rgb(148 163 184 / 0.3);
+}
+
+.league-badge-gold {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  box-shadow: 0 4px 15px rgb(251 191 36 / 0.3);
+}
+
+.league-badge-platinum {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  box-shadow: 0 4px 15px rgb(6 182 212 / 0.3);
+}
+
+.league-badge-diamond {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  box-shadow: 0 4px 20px rgb(139 92 246 / 0.4);
+  animation: diamond-sparkle 3s ease-in-out infinite;
+}
+
+@keyframes diamond-sparkle {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgb(139 92 246 / 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 30px rgb(139 92 246 / 0.6), 0 0 50px rgb(139 92 246 / 0.3);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACTIVITY FEED STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.activity-feed-item {
+  transition: all 0.2s ease;
+}
+
+.activity-feed-item:hover {
+  background-color: rgb(255 255 255 / 0.03);
+}
+
+.activity-feed-item.is-new {
+  background: linear-gradient(90deg, rgb(139 92 246 / 0.1), transparent);
+  animation: new-activity-highlight 2s ease-out;
+}
+
+@keyframes new-activity-highlight {
+  0% {
+    background: linear-gradient(90deg, rgb(139 92 246 / 0.2), transparent);
+  }
+  100% {
+    background: linear-gradient(90deg, rgb(139 92 246 / 0.1), transparent);
+  }
+}
+
+/* Activity type icons */
+.activity-icon-ship {
+  color: rgb(139 92 246);
+  background-color: rgb(139 92 246 / 0.1);
+}
+
+.activity-icon-streak {
+  color: rgb(245 158 11);
+  background-color: rgb(245 158 11 / 0.1);
+}
+
+.activity-icon-achievement {
+  color: rgb(251 191 36);
+  background-color: rgb(251 191 36 / 0.1);
+}
+
+.activity-icon-level {
+  color: rgb(6 182 212);
+  background-color: rgb(6 182 212 / 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLOW UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.shadow-glow-brand {
+  box-shadow: 0 0 30px rgb(139 92 246 / 0.3);
+}
+
+.shadow-glow-brand-sm {
+  box-shadow: 0 0 15px rgb(139 92 246 / 0.2);
+}
+
+.shadow-glow-cyan {
+  box-shadow: 0 0 30px rgb(6 182 212 / 0.3);
+}
+
+.shadow-glow-cyan-sm {
+  box-shadow: 0 0 15px rgb(6 182 212 / 0.2);
+}
+
+.shadow-glow-success {
+  box-shadow: 0 0 30px rgb(16 185 129 / 0.3);
+}
+
+.shadow-glow-warning {
+  box-shadow: 0 0 30px rgb(245 158 11 / 0.3);
+}
+
+.shadow-glow-energy {
+  box-shadow: 0 0 30px rgb(244 63 94 / 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STREAK COMPARISON STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.streak-bar {
+  height: 0.5rem;
+  background-color: rgb(30 41 59);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.streak-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgb(245 158 11), rgb(251 191 36));
+  transition: width 0.8s ease-out;
+}
+
+.streak-bar-fill.above-average {
+  background: linear-gradient(90deg, rgb(16 185 129), rgb(20 184 166));
+}
+
+.streak-bar-fill.below-average {
+  background: linear-gradient(90deg, rgb(100 116 139), rgb(148 163 184));
+}
+
+/* Mini chart bars */
+.streak-chart-bar {
+  flex: 1;
+  border-radius: 0.25rem 0.25rem 0 0;
+  transition: height 0.4s ease-out;
+}
+
+.streak-chart-bar.today {
+  background: linear-gradient(180deg, rgb(139 92 246), rgb(99 102 241));
+}
+
+.streak-chart-bar.past {
+  background-color: rgb(51 65 85);
+}
+
+.streak-chart-bar.future {
+  background-color: rgb(139 92 246 / 0.3);
+  border: 1px dashed rgb(139 92 246 / 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TEAM PULSE STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.team-pulse-container {
+  position: relative;
+}
+
+.team-pulse-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  border: 2px solid rgb(139 92 246 / 0.3);
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* High activity state */
+.high-activity {
+  animation: high-activity-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes high-activity-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgb(139 92 246 / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 35px rgb(139 92 246 / 0.5), 0 0 50px rgb(6 182 212 / 0.3);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .live-indicator::before,
+  .live-dot::before,
+  .flow-indicator,
+  .shipping-indicator,
+  .rank-change-up,
+  .rank-change-down,
+  .podium-place,
+  .toast-enter,
+  .toast-exit,
+  .achievement-unlock,
+  .confetti-piece,
+  .rarity-rare,
+  .rarity-legendary,
+  .avatar-status-ring.status-flow::after,
+  .urgency-critical,
+  .spot-dot.empty.urgent,
+  .league-badge-diamond,
+  .new-activity-highlight,
+  .team-pulse-ring,
+  .high-activity {
+    animation: none !important;
+  }
+  
+  .leaderboard-row:hover,
+  .avatar-stack:hover > * {
+    transform: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE ADJUSTMENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .toast-enter,
+  .toast-exit {
+    animation-name: toast-slide-in-mobile, toast-slide-out-mobile;
+  }
+  
+  @keyframes toast-slide-in-mobile {
+    0% {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes toast-slide-out-mobile {
+    0% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+  }
+  
+  .countdown-unit {
+    min-width: 2.5rem;
+    padding: 0.375rem;
+  }
+  
+  .countdown-value {
+    font-size: 1rem;
+  }
+}

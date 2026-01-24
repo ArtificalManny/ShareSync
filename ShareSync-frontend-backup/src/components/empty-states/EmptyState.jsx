@@ -18,7 +18,17 @@
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, ArrowRight, Sparkles, Command } from 'lucide-react';
-import { useMomentumContext } from '../../contexts/MomentumContext';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SAFE MOMENTUM CONTEXT - Import with fallback
+// ═══════════════════════════════════════════════════════════════════════════════
+import * as MomentumModule from '../../contexts/MomentumContext';
+
+// Use the hook if it exists, otherwise provide defaults
+const useMomentumContext = MomentumModule.useMomentumContext || (() => ({
+  glowLevel: 2,
+  isFireMode: false,
+}));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOATING PARTICLES (for animated variant)
@@ -155,12 +165,25 @@ export default function EmptyState({
   align = 'center', // 'left' | 'center'
   accentColor = 'brand', // 'brand' | 'cyan' | 'energy' | 'success'
   
+  // Momentum props (can be passed directly to override context)
+  glowLevel: propGlowLevel,
+  isFireMode: propIsFireMode,
+  
   // Extras
   showConfetti = false,
   className = '',
   children,
 }) {
-  const { glowLevel, isFireMode } = useMomentumContext();
+  // Try to get context, use props as override or fallback
+  let contextValues = { glowLevel: 2, isFireMode: false };
+  try {
+    contextValues = useMomentumContext();
+  } catch (e) {
+    // Context not available, use defaults
+  }
+  
+  const glowLevel = propGlowLevel ?? contextValues.glowLevel ?? 2;
+  const isFireMode = propIsFireMode ?? contextValues.isFireMode ?? false;
   
   // Size configurations
   const sizeConfig = {

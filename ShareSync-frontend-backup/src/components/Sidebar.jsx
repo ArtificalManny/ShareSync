@@ -1,6 +1,6 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v3.0 - Phase C: Momentum Engine Integration
+// SHARESYNC SIDEBAR v3.0 - Phase C: Momentum Engine + Phase E: Social Proof
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // NOW USING:
@@ -10,6 +10,9 @@
 // - ⭐ PHASE C: XP ring responds to momentum level (breathing, glow intensity)
 // - ⭐ PHASE C: Fire mode badge when level 5
 // - ⭐ PHASE C: Momentum indicator in sidebar
+// - ⭐ PHASE E: Mini leaderboard widget
+// - ⭐ PHASE E: Online teammates indicator
+// - ⭐ PHASE E: League badge display
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -26,6 +29,9 @@ import {
   ShieldCheck,
   Zap,
   TrendingUp,
+  Users,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import SidebarItem from "./nav/SidebarItem";
@@ -34,6 +40,11 @@ import { useFlowState } from '../contexts/FlowStateContext';
 import { useMomentumContext } from '../contexts/MomentumContext';
 import { useEntrance } from './onboarding/AppEntrance';
 import useAnimatedNumber from '../hooks/useAnimatedNumber';
+
+// ⭐ PHASE E: Import social proof components
+import { MiniLeaderboard } from './social/Leaderboard';
+import OnlineIndicator from './social/OnlineIndicator';
+import { MiniLeagueIndicator } from './social/MomentumLeague';
 
 const LS_KEY = "ss.sidebar.collapsed";
 
@@ -516,12 +527,48 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   ⭐ PHASE E: COLLAPSIBLE SECTION
+───────────────────────────────────────────────────────────────────────── */
+function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, collapsed: sidebarCollapsed = false }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  
+  if (sidebarCollapsed) return null;
+  
+  return (
+    <div className="mx-3">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-surface-1 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          {Icon && <Icon className="w-3.5 h-3.5 text-text-tertiary" />}
+          <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">
+            {title}
+          </span>
+        </div>
+        {isOpen ? (
+          <ChevronUp className="w-3 h-3 text-text-tertiary" />
+        ) : (
+          <ChevronDown className="w-3 h-3 text-text-tertiary" />
+        )}
+      </button>
+      
+      {isOpen && (
+        <div className="mt-2">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    MAIN SIDEBAR
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar() {
   const navigate = useNavigate();
   const { shouldCollapseSidebar, isInFlow } = useFlowState();
-  const { glowLevel, isFireMode } = useMomentumContext();
+  const { glowLevel, isFireMode, leaderboardData, teamActivity } = useMomentumContext();
   
   const [userCollapsed, setUserCollapsed] = useState(() => {
     try { return localStorage.getItem(LS_KEY) === "1"; } 
@@ -589,6 +636,16 @@ export default function Sidebar() {
       <div className="mb-4">
         <MomentumLevelIndicator collapsed={collapsed} />
       </div>
+      
+      {/* ⭐ PHASE E: League Badge (when not collapsed) */}
+      {!collapsed && (
+        <div className="mx-3 mb-4">
+          <MiniLeagueIndicator 
+            currentXP={1250}
+            onClick={() => navigate('/leaderboard')}
+          />
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
@@ -604,6 +661,45 @@ export default function Sidebar() {
         <div className="pt-4">
           <ShipCounter collapsed={collapsed} />
         </div>
+        
+        {/* ⭐ PHASE E: Social Proof Section */}
+        {!collapsed && (
+          <>
+            <div className="pt-4"><div className="h-px bg-white/[0.06]" /></div>
+            
+            {/* Online Teammates */}
+            <CollapsibleSection 
+              title="Team" 
+              icon={Users} 
+              defaultOpen={true}
+              collapsed={collapsed}
+            >
+              <OnlineIndicator 
+                variant="compact"
+                showAvatars={true}
+                showCount={true}
+                maxAvatars={3}
+                expandable={true}
+                defaultExpanded={false}
+              />
+            </CollapsibleSection>
+            
+            {/* Mini Leaderboard */}
+            <div className="mt-4">
+              <CollapsibleSection 
+                title="Leaderboard" 
+                icon={Trophy} 
+                defaultOpen={false}
+                collapsed={collapsed}
+              >
+                <MiniLeaderboard 
+                  maxVisible={5}
+                  onViewAll={() => navigate('/leaderboard')}
+                />
+              </CollapsibleSection>
+            </div>
+          </>
+        )}
       </nav>
 
       {/* User Card with brand accent on hover */}

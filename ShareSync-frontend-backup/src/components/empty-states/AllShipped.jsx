@@ -33,7 +33,18 @@ import {
 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import { TrophyIllustration } from './EmptyStateIllustration';
-import { useMomentumContext } from '../../contexts/MomentumContext';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SAFE MOMENTUM CONTEXT - Import with fallback
+// ═══════════════════════════════════════════════════════════════════════════════
+import * as MomentumModule from '../../contexts/MomentumContext';
+
+// Use the hook if it exists, otherwise provide defaults
+const useMomentumContext = MomentumModule.useMomentumContext || (() => ({
+  glowLevel: 2,
+  isFireMode: false,
+  recordActivity: () => {},
+}));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EPIC CONFETTI EXPLOSION
@@ -118,10 +129,25 @@ const EpicConfetti = ({ trigger = true, intensity = 'high' }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// SAFE MOMENTUM HOOK WRAPPER
+// ═══════════════════════════════════════════════════════════════════════════════
+const useSafeMomentumContext = () => {
+  try {
+    return useMomentumContext();
+  } catch (e) {
+    return {
+      glowLevel: 2,
+      isFireMode: false,
+      recordActivity: () => {},
+    };
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // XP EARNED SUMMARY
 // ═══════════════════════════════════════════════════════════════════════════════
 const XPEarnedSummary = ({ tasksCompleted = 0, xpEarned = 0, bonusXP = 0 }) => {
-  const { glowLevel } = useMomentumContext();
+  const { glowLevel } = useSafeMomentumContext();
   const totalXP = xpEarned + bonusXP;
   
   return (
@@ -330,7 +356,7 @@ export default function AllShipped({
   variant = 'celebratory', // 'minimal' | 'illustrated' | 'celebratory'
   className = '',
 }) {
-  const { glowLevel, isFireMode, recordActivity } = useMomentumContext();
+  const { glowLevel, isFireMode, recordActivity } = useSafeMomentumContext();
   const [confettiTriggered, setConfettiTriggered] = useState(false);
   
   // Trigger confetti on mount
@@ -341,14 +367,18 @@ export default function AllShipped({
     }
   }, [showConfetti, variant]);
   
-  // Record achievement
+  // Record achievement (safely)
   useEffect(() => {
-    if (recordActivity) {
-      recordActivity('ALL_SHIPPED', { 
-        tasksCompleted, 
-        projectName,
-        streak,
-      });
+    if (recordActivity && typeof recordActivity === 'function') {
+      try {
+        recordActivity('ALL_SHIPPED', { 
+          tasksCompleted, 
+          projectName,
+          streak,
+        });
+      } catch (e) {
+        // Silently fail if recordActivity doesn't work
+      }
     }
   }, []);
   
@@ -393,6 +423,8 @@ export default function AllShipped({
           primaryActionIcon={Plus}
           variant="illustrated"
           accentColor={isFireMode ? 'energy' : 'success'}
+          glowLevel={glowLevel}
+          isFireMode={isFireMode}
         >
           {showXP && xpEarned > 0 && (
             <div className="flex justify-center mt-4">
@@ -424,6 +456,8 @@ export default function AllShipped({
         size="large"
         accentColor={isFireMode ? 'energy' : 'success'}
         showConfetti={false}
+        glowLevel={glowLevel}
+        isFireMode={isFireMode}
       >
         {/* Celebration message */}
         <CelebrationMessage streak={streak} />

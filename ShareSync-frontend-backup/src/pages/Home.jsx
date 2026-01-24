@@ -1,6 +1,6 @@
 // src/pages/Home.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE C: Momentum Engine + PHASE D: Empty States That Inspire
+// PHASE C: Momentum Engine + PHASE D: Empty States + PHASE E: Social Proof
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // NOW USING:
@@ -10,6 +10,9 @@
 // - ⭐ PHASE C: Momentum indicator in header
 // - ⭐ PHASE C: Ship button glows at high momentum
 // - ⭐ PHASE D: AllShipped celebration when missions complete
+// - ⭐ PHASE E: TeamPulse banner showing active teammates
+// - ⭐ PHASE E: LiveActivityFeed sidebar showing real-time ships
+// - ⭐ PHASE E: MiniLeaderboard widget
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -29,7 +32,8 @@ import {
   Plus,
 } from "lucide-react";
 
-import { useRenovation } from "../context/RenovationContext";
+// Note: Using correct casing for RenovationContext
+import { useRenovation } from "../context/RenovationCOntext";
 import TeamBalancePanel from "../components/home/TeamBalancePanel";
 import ProjectTelemetryPanel from "../components/home/ProjectTelemetryPanel";
 import MissionCard from "../components/home/MissionCard";
@@ -44,6 +48,12 @@ import { useMomentumContext, useMomentumActivity } from '../contexts/MomentumCon
 
 // ⭐ PHASE D: Import empty state components
 import AllShipped from '../components/empty-states/AllShipped';
+
+// ⭐ PHASE E: Import social proof components
+import TeamPulse from '../components/social/TeamPulse';
+import LiveActivityFeed from '../components/social/LiveActivityFeed';
+import { MiniLeaderboard } from '../components/social/Leaderboard';
+import StreakComparison from '../components/social/StreakComparison';
 
 const MOCK_MISSIONS = [
   { id: 1, title: "Integrate Telemetry Engine", category: "Core Sync", eta: "2h", health: 92, velocity: 88 },
@@ -223,12 +233,13 @@ export default function Home() {
 
   // ⭐ PHASE C: Handle ship completion with momentum boost
   // ⭐ PHASE D: Track shipped stats for celebration
+  // ⭐ PHASE E: Record activity for team feed
   const handleShipped = (projectId) => {
     const shippedMission = missions.find(m => m.id === projectId);
     setMissions(prev => prev.filter(m => m.id !== projectId));
     
     // Record the ship activity for momentum
-    recordActivity('PROJECT_SHIP', { projectId });
+    recordActivity('PROJECT_SHIP', { projectId, projectName: shippedMission?.title });
     
     // Update shipped stats for AllShipped celebration
     setShippedStats(prev => ({
@@ -243,6 +254,12 @@ export default function Home() {
     // Reset to show mock missions again (in real app, would open task creation)
     setMissions(MOCK_MISSIONS);
     setShippedStats({ tasksCompleted: 0, xpEarned: 0, bonusXP: 0 });
+  };
+
+  // ⭐ PHASE E: Handle activity click from feed
+  const handleActivityClick = (activity) => {
+    console.log('Activity clicked:', activity);
+    // Could open a detail panel or navigate to the related item
   };
 
   // ⭐ PHASE C: Dynamic section styles based on momentum
@@ -312,6 +329,15 @@ export default function Home() {
         </div>
       </header>
 
+      {/* ⭐ PHASE E: Team Pulse Banner - Shows active teammates */}
+      <TeamPulse 
+        variant="banner"
+        showAvatars={true}
+        showSummary={true}
+        showTicker={true}
+        className="mb-6"
+      />
+
       {/* ⭐ PHASE C: Momentum Status Banner (shows at level 3+) */}
       <MomentumStatusBanner />
 
@@ -321,12 +347,12 @@ export default function Home() {
       <div className="grid grid-cols-12 gap-6">
         
         {/* ─────────────────────────────────────────────────────────────────
-            MISSIONS SECTION (8 columns)
+            MISSIONS SECTION (8 columns on large, 12 on medium)
             ⭐ PHASE A: This section gets highlighted during entrance
             ⭐ PHASE C: Responds to momentum level
             ⭐ PHASE D: Shows AllShipped celebration when empty
         ───────────────────────────────────────────────────────────────── */}
-        <div className="col-span-12 lg:col-span-8">
+        <div className="col-span-12 xl:col-span-8">
           <div 
             className={`
               ${sectionCardClasses}
@@ -395,9 +421,11 @@ export default function Home() {
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────
-            INTELLIGENCE SECTION (4 columns)
+            RIGHT SIDEBAR (4 columns) - Intelligence + Social Proof
+            ⭐ PHASE E: Now includes LiveActivityFeed and MiniLeaderboard
         ───────────────────────────────────────────────────────────────── */}
-        <div className="col-span-12 lg:col-span-4">
+        <div className="col-span-12 xl:col-span-4 space-y-6">
+          {/* Intelligence Panel */}
           <IntelligencePanel 
             isBalanced={isBalanced}
             onBalanceClick={() => { 
@@ -412,6 +440,23 @@ export default function Home() {
             // ⭐ PHASE C: Pass momentum context
             momentumLevel={glowLevel}
             isFireMode={isFireMode}
+          />
+          
+          {/* ⭐ PHASE E: Live Activity Feed */}
+          <LiveActivityFeed
+            variant="sidebar"
+            maxItems={10}
+            showFilters={false}
+            showSummary={false}
+            onActivityClick={handleActivityClick}
+          />
+          
+          {/* ⭐ PHASE E: Streak Comparison Widget */}
+          <StreakComparison
+            variant="compact"
+            showChart={false}
+            showLeader={true}
+            showRank={true}
           />
         </div>
 
