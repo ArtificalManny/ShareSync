@@ -1,6 +1,6 @@
 // src/pages/Home.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE C: Momentum Engine + PHASE D: Empty States + PHASE E: Social Proof
+// PHASE C: Momentum Engine + PHASE D: Empty States + PHASE E: Social Proof + PHASE F: Sound
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // NOW USING:
@@ -13,10 +13,14 @@
 // - ⭐ PHASE E: TeamPulse banner showing active teammates
 // - ⭐ PHASE E: LiveActivityFeed sidebar showing real-time ships
 // - ⭐ PHASE E: MiniLeaderboard widget
+// - ⭐ PHASE F: Ship sounds with epic detection
+// - ⭐ PHASE F: Task completion sounds
+// - ⭐ PHASE F: XP gain sounds
+// - ⭐ PHASE F: Achievement unlock sounds
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { 
   Zap, 
   Clock, 
@@ -54,6 +58,10 @@ import TeamPulse from '../components/social/TeamPulse';
 import LiveActivityFeed from '../components/social/LiveActivityFeed';
 import { MiniLeaderboard } from '../components/social/Leaderboard';
 import StreakComparison from '../components/social/StreakComparison';
+
+// ⭐ PHASE F: Import sound hooks
+import { useShipSound, useXPSound, useAchievementUnlockSound } from '../sounds/AchievementSounds';
+import { useUISounds } from '../hooks/useSounds';
 
 const MOCK_MISSIONS = [
   { id: 1, title: "Integrate Telemetry Engine", category: "Core Sync", eta: "2h", health: 92, velocity: 88 },
@@ -116,9 +124,16 @@ const StatCard = ({ label, value, color = "text-brand", description }) => {
 /* ─────────────────────────────────────────────────────────────────────────
    SECTION HEADER
    ⭐ PHASE C: Can include momentum badge
+   ⭐ PHASE F: Click sounds on actions
 ───────────────────────────────────────────────────────────────────────── */
 const SectionHeader = ({ icon: Icon, iconColor = "text-brand", title, action, onAction, showMomentum = false }) => {
   const { isFireMode } = useMomentumContext();
+  const { playClick } = useUISounds();
+  
+  const handleAction = useCallback(() => {
+    playClick();
+    if (onAction) onAction();
+  }, [onAction, playClick]);
   
   return (
     <div className="flex justify-between items-center mb-6">
@@ -135,7 +150,7 @@ const SectionHeader = ({ icon: Icon, iconColor = "text-brand", title, action, on
       </div>
       {action && (
         <button 
-          onClick={onAction}
+          onClick={handleAction}
           className="text-xs text-text-tertiary hover:text-brand transition-colors"
         >
           {action}
@@ -213,6 +228,12 @@ export default function Home() {
   const { glowLevel, isFireMode, recordActivity, score } = useMomentumContext();
   const { recordTaskCompletion } = useMomentumActivity();
 
+  // ⭐ PHASE F: Sound hooks
+  const { playShipSound } = useShipSound();
+  const { playXP } = useXPSound();
+  const { playAchievementUnlock } = useAchievementUnlockSound();
+  const { playClick, playSuccess, playError } = useUISounds();
+
   useEffect(() => {
     const loadMissions = async () => {
       setMissionsLoading(true);
@@ -234,33 +255,89 @@ export default function Home() {
   // ⭐ PHASE C: Handle ship completion with momentum boost
   // ⭐ PHASE D: Track shipped stats for celebration
   // ⭐ PHASE E: Record activity for team feed
-  const handleShipped = (projectId) => {
+  // ⭐ PHASE F: Play ship and XP sounds
+  const handleShipped = useCallback((projectId) => {
     const shippedMission = missions.find(m => m.id === projectId);
+    const isLastMission = missions.length === 1;
+    
     setMissions(prev => prev.filter(m => m.id !== projectId));
     
     // Record the ship activity for momentum
     recordActivity('PROJECT_SHIP', { projectId, projectName: shippedMission?.title });
     
+    // Calculate XP
+    const baseXP = 50;
+    const momentumBonus = glowLevel >= 3 ? 10 : 0;
+    const totalXP = baseXP + momentumBonus;
+    
     // Update shipped stats for AllShipped celebration
     setShippedStats(prev => ({
       tasksCompleted: prev.tasksCompleted + 1,
-      xpEarned: prev.xpEarned + 50, // Base XP per ship
-      bonusXP: glowLevel >= 3 ? prev.bonusXP + 10 : prev.bonusXP, // Momentum bonus
+      xpEarned: prev.xpEarned + baseXP,
+      bonusXP: prev.bonusXP + momentumBonus,
     }));
-  };
+    
+    // ⭐ PHASE F: Play ship sound
+    // Determine if this is an epic ship (high momentum, last mission, or long project)
+    const shipData = {
+      taskCount: shippedMission?.tasks || 1,
+      durationDays: 1,
+      isProduction: isLastMission || isFireMode,
+    };
+    playShipSound(shipData);
+    
+    // ⭐ PHASE F: Play XP sound after a short delay
+    setTimeout(() => {
+      playXP(totalXP);
+    }, 400);
+    
+    // ⭐ PHASE F: If this was the last mission, play achievement sound
+    if (isLastMission) {
+      setTimeout(() => {
+        playAchievementUnlock();
+      }, 1000);
+    }
+    
+    // Dispatch event for team feed
+    window.dispatchEvent(new CustomEvent('local-ship', {
+      detail: {
+        project: { name: shippedMission?.title, id: projectId },
+        xp: totalXP,
+        isEpic: isFireMode || isLastMission,
+      }
+    }));
+  }, [missions, recordActivity, glowLevel, isFireMode, playShipSound, playXP, playAchievementUnlock]);
 
   // ⭐ PHASE D: Handle adding more tasks from AllShipped
-  const handleAddMoreTasks = () => {
+  // ⭐ PHASE F: Play click sound
+  const handleAddMoreTasks = useCallback(() => {
+    playClick();
     // Reset to show mock missions again (in real app, would open task creation)
     setMissions(MOCK_MISSIONS);
     setShippedStats({ tasksCompleted: 0, xpEarned: 0, bonusXP: 0 });
-  };
+  }, [playClick]);
 
   // ⭐ PHASE E: Handle activity click from feed
-  const handleActivityClick = (activity) => {
+  // ⭐ PHASE F: Play click sound
+  const handleActivityClick = useCallback((activity) => {
+    playClick();
     console.log('Activity clicked:', activity);
     // Could open a detail panel or navigate to the related item
-  };
+  }, [playClick]);
+
+  // ⭐ PHASE F: Handle panel open with click sound
+  const handleOpenPanel = useCallback((content, mission = null) => {
+    playClick();
+    setSelectedMission(mission);
+    setPanelContent(content);
+    setIsPanelOpen(true);
+  }, [playClick]);
+
+  // ⭐ PHASE F: Handle panel close with click sound
+  const handleClosePanel = useCallback(() => {
+    playClick();
+    setIsPanelOpen(false);
+  }, [playClick]);
 
   // ⭐ PHASE C: Dynamic section styles based on momentum
   const sectionCardClasses = useMemo(() => {
@@ -386,11 +463,7 @@ export default function Home() {
                   >
                     <MissionCard 
                       project={mission} 
-                      onClick={() => { 
-                        setSelectedMission(mission); 
-                        setPanelContent("telemetry"); 
-                        setIsPanelOpen(true); 
-                      }}
+                      onClick={() => handleOpenPanel("telemetry", mission)}
                       onShipped={handleShipped}
                       // ⭐ PHASE C: Pass momentum level for card styling
                       momentumLevel={glowLevel}
@@ -407,10 +480,7 @@ export default function Home() {
                   streak={7} // TODO: Get from user context
                   bestStreak={7}
                   onAddMore={handleAddMoreTasks}
-                  onViewStats={() => {
-                    setPanelContent("balance");
-                    setIsPanelOpen(true);
-                  }}
+                  onViewStats={() => handleOpenPanel("balance")}
                   showConfetti={shippedStats.tasksCompleted > 0}
                   confettiIntensity={isFireMode ? 'high' : 'medium'}
                   variant={shippedStats.tasksCompleted > 0 ? 'celebratory' : 'illustrated'}
@@ -428,10 +498,7 @@ export default function Home() {
           {/* Intelligence Panel */}
           <IntelligencePanel 
             isBalanced={isBalanced}
-            onBalanceClick={() => { 
-              setPanelContent("balance"); 
-              setIsPanelOpen(true); 
-            }}
+            onBalanceClick={() => handleOpenPanel("balance")}
             peakWindowStart={14}
             peakWindowEnd={16}
             productivity={65}
@@ -516,7 +583,7 @@ export default function Home() {
           transition-opacity duration-300
           ${isPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
         `} 
-        onClick={() => setIsPanelOpen(false)} 
+        onClick={handleClosePanel} 
       />
       
       {/* Panel */}
@@ -533,7 +600,7 @@ export default function Home() {
             {panelContent === "balance" ? "Team Balance" : "Mission Telemetry"}
           </h3>
           <button 
-            onClick={() => setIsPanelOpen(false)} 
+            onClick={handleClosePanel} 
             className="p-2 rounded-lg hover:bg-surface-2 transition-colors"
           >
             <X className="w-5 h-5 text-text-tertiary" />

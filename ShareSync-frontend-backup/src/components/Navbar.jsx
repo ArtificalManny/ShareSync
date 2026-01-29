@@ -1,6 +1,6 @@
 // src/components/Navbar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC NAVBAR v3.0 - Phase C: Momentum Engine + Phase E: Social Proof
+// SHARESYNC NAVBAR v3.1 - Phase C: Momentum Engine + Phase E: Social Proof + Phase F: Sound
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // NOW USING:
@@ -12,6 +12,8 @@
 // - ⭐ PHASE E: Ship notifications toast system
 // - ⭐ PHASE E: Achievement unlock toasts
 // - ⭐ PHASE E: Online indicator in status bar
+// - ⭐ PHASE F: Sound toggle in navbar
+// - ⭐ PHASE F: Notification sounds for team activity
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -44,6 +46,10 @@ import { useMomentumContext } from '../contexts/MomentumContext';
 import ShipNotification, { useShipNotifications } from './social/ShipNotification';
 import AchievementToast, { useAchievementToasts } from './social/AchievementToast';
 import { InlineOnlineIndicator } from './social/OnlineIndicator';
+
+// ⭐ PHASE F: Import sound components and hooks
+import { NavbarSoundToggle } from './ui/SoundToggle';
+import { useTeamActivitySound } from '../sounds/NotificationSounds';
 
 const DEFAULT_PIC = '/default-profile.png';
 
@@ -261,12 +267,17 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
     dismissToast: dismissAchievementToast
   } = useAchievementToasts();
 
-  // ⭐ PHASE E: Listen for team ship events
+  // ⭐ PHASE F: Team activity sound
+  const { playTeamActivity } = useTeamActivitySound();
+
+  // ⭐ PHASE E + F: Listen for team ship events with sounds
   useEffect(() => {
     const handleTeamShip = (event) => {
       const { user: shipUser, project, stats, isMilestone } = event.detail || {};
       if (shipUser && project) {
         addShipNotification(shipUser, project, stats, { isMilestone });
+        // ⭐ PHASE F: Play team ship sound
+        playTeamActivity({ type: 'ship', user: shipUser, project });
       }
     };
     
@@ -274,6 +285,8 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
       const { user: achieveUser, achievement } = event.detail || {};
       if (achieveUser && achievement) {
         addAchievementToast(achievement, achieveUser);
+        // ⭐ PHASE F: Play team achievement sound
+        playTeamActivity({ type: 'achievement', user: achieveUser, achievement });
       }
     };
     
@@ -284,23 +297,23 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
       window.removeEventListener('team-ship', handleTeamShip);
       window.removeEventListener('team-achievement', handleTeamAchievement);
     };
-  }, [addShipNotification, addAchievementToast]);
+  }, [addShipNotification, addAchievementToast, playTeamActivity]);
 
   // ⭐ PHASE E: Demo - simulate incoming notifications (remove in production)
   useEffect(() => {
     // Simulate a ship notification after 10 seconds for demo
     const demoTimer = setTimeout(() => {
       if (Math.random() > 0.7) { // 30% chance
-        addShipNotification(
-          { name: 'Sarah Chen' },
-          { name: 'API Integration', emoji: '🚀', description: 'New REST endpoints deployed' },
-          { tasks: 8, xp: 150, streak: 12 }
-        );
+        const demoUser = { name: 'Sarah Chen' };
+        const demoProject = { name: 'API Integration', emoji: '🚀', description: 'New REST endpoints deployed' };
+        addShipNotification(demoUser, demoProject, { tasks: 8, xp: 150, streak: 12 });
+        // ⭐ PHASE F: Play sound for demo notification
+        playTeamActivity({ type: 'ship', user: demoUser, project: demoProject });
       }
     }, 10000);
     
     return () => clearTimeout(demoTimer);
-  }, [addShipNotification]);
+  }, [addShipNotification, playTeamActivity]);
 
   // Get current page name from path
   const getPageName = () => {
@@ -446,6 +459,9 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
 
             {/* Divider */}
             <div className="h-5 w-px bg-white/[0.06] mx-1 hidden sm:block" />
+
+            {/* ⭐ PHASE F: Sound Toggle */}
+            <NavbarSoundToggle />
 
             {/* Secondary Actions */}
             <IconButton onClick={cycleAccent}>

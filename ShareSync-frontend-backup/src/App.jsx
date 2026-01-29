@@ -1,6 +1,7 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING + WELCOME BACK + CONTEXT INDICATOR + FLOW STATE
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING + WELCOME BACK + CONTEXT INDICATOR + FLOW STATE + SOUND SYSTEM
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE A: Emotional Immediacy + Momentum Heartbeat
+// PHASE F: The Sound of Progress
 // ═══════════════════════════════════════════════════════════════════════════════
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
@@ -38,6 +39,9 @@ import { FocusSessionProvider } from './contexts/FocusSessionContext';
 // ⭐ PHASE A: Entrance Animation + Momentum Heartbeat
 import AppEntrance from './components/onboarding/AppEntrance';
 import useMomentumHeartbeat from './hooks/useMomentumHeartbeat';
+
+// ⭐ PHASE F: Sound System
+import { SoundProvider } from './contexts/SoundContext';
 
 // ⭐ PWA Components
 import InstallPrompt from "./components/pwa/InstallPrompt";
@@ -489,21 +493,24 @@ const App = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <NewToastProvider>
-          <ToastProvider>
-            <OldToastProvider>
-              <Router>
-                <Suspense fallback={<LoadingSpinner />}>
-                  <LayoutSkin>
-                    <div className="app-container" {...containerAttrs}>
-                      <AuthCheck />
-                    </div>
-                  </LayoutSkin>
-                </Suspense>
-              </Router>
-            </OldToastProvider>
-          </ToastProvider>
-        </NewToastProvider>
+        {/* ⭐ PHASE F: Sound System - Wraps entire app for global sound access */}
+        <SoundProvider>
+          <NewToastProvider>
+            <ToastProvider>
+              <OldToastProvider>
+                <Router>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <LayoutSkin>
+                      <div className="app-container" {...containerAttrs}>
+                        <AuthCheck />
+                      </div>
+                    </LayoutSkin>
+                  </Suspense>
+                </Router>
+              </OldToastProvider>
+            </ToastProvider>
+          </NewToastProvider>
+        </SoundProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
