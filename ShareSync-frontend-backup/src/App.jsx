@@ -1,7 +1,9 @@
-// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING + WELCOME BACK + CONTEXT INDICATOR + FLOW STATE + SOUND SYSTEM
+// src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING + WELCOME BACK + CONTEXT INDICATOR + FLOW STATE + SOUND SYSTEM + PHASE N: COMMAND & CONTROL + ALIVE AWARE
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE A: Emotional Immediacy + Momentum Heartbeat
 // PHASE F: The Sound of Progress
+// PHASE N: Command & Control System
+// ALIVE AWARE: Adaptive Density + Fatigue Detection + Context Memory
 // ═══════════════════════════════════════════════════════════════════════════════
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
@@ -43,10 +45,20 @@ import useMomentumHeartbeat from './hooks/useMomentumHeartbeat';
 // ⭐ PHASE F: Sound System
 import { SoundProvider } from './contexts/SoundContext';
 
+// ⭐ PHASE N: Keyboard Shortcuts Hook (non-lazy, needed globally)
+import { useKeyboardShortcut } from './hooks/useKeyboardShortcuts';
+
 // ⭐ PWA Components
 import InstallPrompt from "./components/pwa/InstallPrompt";
 
 import PrivacyManifesto from './pages/PrivacyManifesto';
+
+// ⭐ PHASE H: Focus Engine Provider
+import { FocusEngineProvider } from './contexts/FocusEngineContext';
+
+// ⭐ ALIVE AWARE: Adaptive Density System
+import { AdaptiveDensityProvider } from './components/adaptive';
+import { BreakReminder } from './components/adaptive';
 
 // CSS imports
 import "./index.css";
@@ -125,6 +137,7 @@ const ProjectSettings = lazy(() => import("./pages/project/ProjectSettings"));
 // ⭐ PHASE 9: Onboarding
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 
+
 // ⭐ Lazy load heavy components
 const Sidebar = lazy(() => import("./components/Sidebar"));
 const LayoutSkin = lazy(() => import("./components/LayoutSkin.jsx"));
@@ -152,12 +165,20 @@ const FlowIndicator = lazy(() => import("./components/flow/FlowIndicator").then(
 // ⭐ PHASE 6: Momentum Aura (subtle background)
 const MomentumAura = lazy(() => import("./components/momentum/MomentumAura").then(m => ({ default: m.default })));
 
+// ⭐ PHASE N: Command & Control Components (lazy loaded)
+const CommandPaletteWrapper = lazy(() => import("./components/navigation/CommandPalette").then(m => ({ default: m.CommandPaletteProvider })));
+const KeyboardShortcutsModal = lazy(() => import("./components/navigation/KeyboardShortcuts"));
+const NotificationCenter = lazy(() => import("./components/navigation/NotificationCenter"));
+const GlobalPulseBar = lazy(() => import("./components/ui/GlobalPulseBar"));
+const QuickActionsButton = lazy(() => import("./components/navigation/QuickActions"));
+
 // ⭐ Lazy load context providers
 const UserProvider = lazy(() => import("./context/UserContext").then(m => ({ default: m.default })));
 const SprintProvider = lazy(() => import("./context/SprintContext").then(m => ({ default: m.SprintProvider })));
 const ChatProvider = lazy(() => import("./context/ChatContext.jsx").then(m => ({ default: m.ChatProvider })));
 const FocusProvider = lazy(() => import("./context/FocusContext.jsx").then(m => ({ default: m.FocusProvider })));
-const CommandPaletteProvider = lazy(() => import("./hooks/useCommandPalette").then(m => ({ default: m.CommandPaletteProvider })));
+// ⭐ PHASE N: Using new CommandPaletteProvider instead of old one
+// const CommandPaletteProvider = lazy(() => import("./hooks/useCommandPalette").then(m => ({ default: m.CommandPaletteProvider })));
 const MessageProvider = lazy(() => import("./context/MessageContext.jsx").then(m => ({ default: m.MessageProvider })));
 
 import { UserContext } from "./context/UserContext";
@@ -271,78 +292,173 @@ function HeartbeatProvider({ children }) {
   return children;
 }
 
+/**
+ * ⭐ PHASE N: Command & Control Integration
+ * Handles keyboard shortcuts modal and command palette actions
+ */
+function CommandControlLayer({ children, projects = [] }) {
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const { logout } = useAuth();
+
+  // ⭐ PHASE N: Global keyboard shortcut for shortcuts modal
+  useKeyboardShortcut('cmd+/', () => setShortcutsOpen(true), {
+    id: 'show-shortcuts',
+    description: 'Show keyboard shortcuts',
+    category: 'General',
+  });
+
+  // ⭐ PHASE N: Handle command palette actions
+  const handleCommandAction = (action) => {
+    if (!action) return;
+    
+    switch (action.type) {
+      case 'modal':
+        if (action.modal === 'shortcuts') setShortcutsOpen(true);
+        // Add other modal handlers here as needed
+        // if (action.modal === 'ship') openShipModal();
+        // if (action.modal === 'task') openTaskModal();
+        break;
+      case 'callback':
+        if (action.callback === 'logout') logout();
+        // Add other callback handlers here
+        // if (action.callback === 'toggleFireMode') toggleFireMode();
+        // if (action.callback === 'startFocus') startFocusSession();
+        break;
+      default:
+        console.log('[CommandControl] Unknown action:', action);
+    }
+  };
+
+  // ⭐ PHASE N: Handle quick action button clicks
+  const handleQuickAction = (actionId) => {
+    console.log('[QuickActions] Action triggered:', actionId);
+    // Route to appropriate handler
+    switch (actionId) {
+      case 'ship':
+        // Open ship modal
+        break;
+      case 'task':
+        // Open task modal
+        break;
+      case 'objective':
+        // Open objective modal
+        break;
+      case 'note':
+        // Open quick note
+        break;
+      default:
+        break;
+    }
+  };
+
+  return (
+    <Suspense fallback={null}>
+      <CommandPaletteWrapper 
+        projects={projects} 
+        onAction={handleCommandAction}
+      >
+        {children}
+        
+        {/* ⭐ PHASE N: Keyboard Shortcuts Modal */}
+        <KeyboardShortcutsModal 
+          isOpen={shortcutsOpen} 
+          onClose={() => setShortcutsOpen(false)} 
+        />
+        
+        {/* ⭐ PHASE N: Global Pulse Bar (bottom of screen) */}
+        <GlobalPulseBar />
+        
+        {/* ⭐ PHASE N: Quick Actions FAB */}
+        <QuickActionsButton onAction={handleQuickAction} />
+      </CommandPaletteWrapper>
+    </Suspense>
+  );
+}
+
 function AuthenticatedApp({ children, userData }) {
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <UserProvider>
         <MessageProvider>
           <SprintProvider>
-            <CommandPaletteProvider>
+            {/* ⭐ PHASE N: Command & Control wraps everything for global shortcuts */}
+            <CommandControlLayer projects={[]}>
               {/* ⭐ PHASE 6: Flow State Provider wraps authenticated content */}
               <FlowStateProvider>
                 {/* ⭐ PHASE 6: Context Preservation Provider */}
                 <ContextPreservationProvider>
                   {/* ⭐ PHASE 6: Momentum Visualization Provider */}
                   <MomentumProvider>
-                    {/* ⭐ PHASE 10.3: Focus Session Provider */}
-                    <FocusSessionProvider>
-                      {/* ⭐ PHASE A: App Entrance Animation */}
-                      <AppEntrance
-                        userName={userData?.firstName || 'there'}
-                        streakDays={userData?.streakDays || 0}
-                        enabled={true}
-                        showWelcomeToast={true}
-                      >
-                        {/* ⭐ PHASE A: Momentum Heartbeat */}
-                        <HeartbeatProvider>
-                          {/* ⭐ PHASE 6: Momentum Aura (subtle background overlay) */}
-                          <Suspense fallback={null}>
-                            <MomentumAura />
-                          </Suspense>
-                          {FOCUS_DOCK_V1 ? (
-                            <FocusProvider>
-                              {/* ⭐ DAY 7: Context tracking for authenticated users */}
-                              <ContextTracker />
-                              {/* ⭐ DAY 8: Welcome Back modal for returning users */}
+                    {/* ⭐ ALIVE AWARE: Adaptive Density Provider */}
+                    <AdaptiveDensityProvider userName={userData?.firstName || 'there'}>
+                      {/* ⭐ PHASE H: Focus Engine Provider */}
+                      <FocusEngineProvider>
+                        {/* ⭐ PHASE 10.3: Focus Session Provider */}
+                        <FocusSessionProvider>
+                          {/* ⭐ PHASE A: App Entrance Animation */}
+                          <AppEntrance
+                            userName={userData?.firstName || 'there'}
+                            streakDays={userData?.streakDays || 0}
+                            enabled={true}
+                            showWelcomeToast={true}
+                          >
+                            {/* ⭐ PHASE A: Momentum Heartbeat */}
+                            <HeartbeatProvider>
+                              {/* ⭐ PHASE 6: Momentum Aura (subtle background overlay) */}
                               <Suspense fallback={null}>
-                                <WelcomeBack />
+                                <MomentumAura />
                               </Suspense>
-                              {/* ⭐ DAY 9: Context save indicator */}
-                              <Suspense fallback={null}>
-                                <ContextIndicator />
-                              </Suspense>
-                              {/* ⭐ PHASE 6: Flow state indicator */}
-                              <Suspense fallback={null}>
-                                <FlowIndicator position="bottom-left" />
-                              </Suspense>
-                              {children}
-                            </FocusProvider>
-                          ) : (
-                            <>
-                              {/* ⭐ DAY 7: Context tracking for authenticated users */}
-                              <ContextTracker />
-                              {/* ⭐ DAY 8: Welcome Back modal for returning users */}
-                              <Suspense fallback={null}>
-                                <WelcomeBack />
-                              </Suspense>
-                              {/* ⭐ DAY 9: Context save indicator */}
-                              <Suspense fallback={null}>
-                                <ContextIndicator />
-                              </Suspense>
-                              {/* ⭐ PHASE 6: Flow state indicator */}
-                              <Suspense fallback={null}>
-                                <FlowIndicator position="bottom-left" />
-                              </Suspense>
-                              {children}
-                            </>
-                          )}
-                        </HeartbeatProvider>
-                      </AppEntrance>
-                    </FocusSessionProvider>
+                              {FOCUS_DOCK_V1 ? (
+                                <FocusProvider>
+                                  {/* ⭐ DAY 7: Context tracking for authenticated users */}
+                                  <ContextTracker />
+                                  {/* ⭐ DAY 8: Welcome Back modal for returning users */}
+                                  <Suspense fallback={null}>
+                                    <WelcomeBack />
+                                  </Suspense>
+                                  {/* ⭐ DAY 9: Context save indicator */}
+                                  <Suspense fallback={null}>
+                                    <ContextIndicator />
+                                  </Suspense>
+                                  {/* ⭐ PHASE 6: Flow state indicator */}
+                                  <Suspense fallback={null}>
+                                    <FlowIndicator position="bottom-left" />
+                                  </Suspense>
+                                  {children}
+                                </FocusProvider>
+                              ) : (
+                                <>
+                                  {/* ⭐ DAY 7: Context tracking for authenticated users */}
+                                  <ContextTracker />
+                                  {/* ⭐ DAY 8: Welcome Back modal for returning users */}
+                                  <Suspense fallback={null}>
+                                    <WelcomeBack />
+                                  </Suspense>
+                                  {/* ⭐ DAY 9: Context save indicator */}
+                                  <Suspense fallback={null}>
+                                    <ContextIndicator />
+                                  </Suspense>
+                                  {/* ⭐ PHASE 6: Flow state indicator */}
+                                  <Suspense fallback={null}>
+                                    <FlowIndicator position="bottom-left" />
+                                  </Suspense>
+                                  {children}
+                                </>
+                              )}
+                            </HeartbeatProvider>
+                          </AppEntrance>
+                        </FocusSessionProvider>
+                      </FocusEngineProvider>
+                      
+                      {/* ⭐ ALIVE AWARE: Break Reminder (positioned bottom-right) */}
+                      <Suspense fallback={null}>
+                        <BreakReminder position="bottom-right" />
+                      </Suspense>
+                    </AdaptiveDensityProvider>
                   </MomentumProvider>
                 </ContextPreservationProvider>
               </FlowStateProvider>
-            </CommandPaletteProvider>
+            </CommandControlLayer>
           </SprintProvider>
         </MessageProvider>
       </UserProvider>
