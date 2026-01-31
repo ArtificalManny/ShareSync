@@ -1,13 +1,6 @@
 // src/pages/Profile.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - "Quiet Confidence"
-// ═══════════════════════════════════════════════════════════════════════════════
-// RULES APPLIED:
-// 1. Surface hierarchy: surface-0/1/2 tokens
-// 2. Text hierarchy: text-primary/secondary/tertiary
-// 3. Calmer typography - no font-black everywhere
-// 4. No spinning rings or pulsing animations
-// 5. KEEP semantic color differentiation for analytics sections
+// PHASE K: Enhanced Profile with Growth Track Components
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
@@ -15,7 +8,7 @@ import { useLocation, useParams } from "react-router-dom";
 import client from "../api/client";
 import { getMe, getPublicUser, updateProfile } from "../api/user";
 import { 
-  Camera, TrendingUp, Brain, Activity, ShieldCheck, Download
+  Camera, TrendingUp, Brain, Activity, ShieldCheck, Download, Star, Sparkles
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
 
@@ -23,6 +16,15 @@ import { toast } from "../components/ui/toast";
 import CollaborationStyleCard from "../components/Profile/CollaborationStyleCard";
 import WorkPersonality from "../components/analytics/WorkPersonality";
 import RoleClassificationCard from "../components/Profile/RoleClassificationCard";
+
+// Growth Components (Phase K)
+import SkillRadarChart from "../components/growth/SkillRadarChart";
+import EvolutionMoments from "../components/growth/EvolutionMoments";
+import GrowthSuggestions from "../components/growth/GrowthSuggestions";
+import TrendCharts from "../components/growth/TrendCharts";
+
+// Growth Hook
+import { useGrowthTrack } from "../hooks/useGrowthTrack";
 
 /* ─────────────────────────────────────────────────────────────────────────
    UTILS
@@ -83,20 +85,14 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
   return (
     <div className="relative flex flex-col items-center">
-      {/* Avatar Container */}
       <div className="relative w-40 h-40 group">
-        {/* Simple ring - no spinning */}
         <div className="absolute inset-0 rounded-full border border-brand/20" />
-        
-        {/* Photo */}
         <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-surface-0 bg-surface-2">
           <img 
             src={previewUrl || user?.profilePicture || '/default-profile.png'} 
             alt="Profile" 
             className="w-full h-full object-cover" 
           />
-          
-          {/* Hover overlay */}
           {isOwnProfile && (
             <div className="
               absolute inset-0 bg-black/60 
@@ -112,8 +108,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
             </div>
           )}
         </div>
-        
-        {/* Rank Badge */}
         <div className="
           absolute -bottom-2 left-1/2 -translate-x-1/2 
           px-3 py-1.5 bg-surface-1 rounded-lg border border-white/[0.08]
@@ -132,7 +126,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         className="hidden" 
       />
       
-      {/* Edit Modal */}
       {isEditing && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
           <div className="w-full max-w-sm p-6 bg-surface-1 border border-white/[0.08] rounded-2xl">
@@ -145,22 +138,14 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
             <div className="flex gap-3">
               <button 
                 onClick={() => setIsEditing(false)} 
-                className="
-                  flex-1 py-3 rounded-xl
-                  bg-surface-2 text-text-secondary
-                  hover:bg-surface-3 transition-colors
-                "
+                className="flex-1 py-3 rounded-xl bg-surface-2 text-text-secondary hover:bg-surface-3 transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleUpload} 
                 disabled={uploading} 
-                className="
-                  flex-1 py-3 rounded-xl
-                  bg-brand text-white
-                  hover:bg-brand-600 transition-colors
-                "
+                className="flex-1 py-3 rounded-xl bg-brand text-white hover:bg-brand-600 transition-colors"
               >
                 {uploading ? 'Uploading...' : 'Confirm'}
               </button>
@@ -223,6 +208,16 @@ export default function Profile() {
   const user = isPublicRoute ? publicUser : me;
   const isOwnProfile = !isPublicRoute;
   const reliability = calculateReliability(user?.completedTasks, user?.totalTasks);
+  const userId = user?._id || user?.id;
+
+  // Growth Track Data (Phase K)
+  const { 
+    skillProfile, 
+    evolution, 
+    suggestions, 
+    trends, 
+    loading: growthLoading 
+  } = useGrowthTrack(userId);
 
   if (loading) {
     return (
@@ -233,7 +228,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen p-6 lg:p-12 max-w-[1300px] mx-auto">
+    <div className="min-h-screen p-6 lg:p-12 max-w-[1400px] mx-auto">
       
       {/* ═══════════════════════════════════════════════════════════════════
           HERO SECTION
@@ -242,12 +237,10 @@ export default function Profile() {
         <ProfilePhotoEditor user={user} isOwnProfile={isOwnProfile} onPhotoUpdate={load} />
         
         <div className="text-center mt-8">
-          {/* Name */}
           <h1 className="text-4xl font-semibold text-text-primary mb-3">
             {user?.firstName} <span className="text-text-tertiary">{user?.lastName}</span>
           </h1>
           
-          {/* Username + Verified Badge */}
           <div className="flex items-center justify-center gap-3">
             <span className="text-sm text-text-tertiary">
               ID: {user?.username}
@@ -259,9 +252,18 @@ export default function Profile() {
               <ShieldCheck className="w-3.5 h-3.5" />
               Core Verified
             </span>
+            {/* Current Archetype Badge */}
+            {skillProfile?.archetype?.current && (
+              <span className="
+                flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                bg-brand/10 text-brand text-xs font-medium
+              ">
+                <Star className="w-3.5 h-3.5" />
+                {skillProfile.archetype.current}
+              </span>
+            )}
           </div>
           
-          {/* Bio */}
           {user?.bio && (
             <p className="mt-6 text-text-secondary max-w-lg mx-auto leading-relaxed">
               {user.bio}
@@ -271,16 +273,16 @@ export default function Profile() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          STATS GRID
+          MAIN GRID
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-12 gap-6">
         
         {/* ─────────────────────────────────────────────────────────────────
-            LEFT COLUMN: Impact Metrics + Trust
+            LEFT COLUMN: Impact + Trust + Evolution
         ───────────────────────────────────────────────────────────────── */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
           
-          {/* Impact Metrics - Brand Purple accent */}
+          {/* Impact Metrics */}
           <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-6">
               <TrendingUp className="w-4 h-4 text-brand" />
@@ -300,16 +302,20 @@ export default function Profile() {
               />
             </div>
             
-            <div className="p-4 rounded-lg bg-brand/5 border border-brand/10">
-              <p className="text-sm text-text-secondary">
-                Systems analysis indicates peak performance across{' '}
-                <span className="text-text-primary font-medium">8 key nodes</span>{' '}
-                this quarter.
-              </p>
-            </div>
+            {/* Overall Growth Indicator */}
+            {skillProfile?.overallGrowth && (
+              <div className="p-4 rounded-lg bg-success/5 border border-success/10">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-success" />
+                  <span className="text-sm font-medium text-success">
+                    +{skillProfile.overallGrowth}% growth this quarter
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Operational Trust - Green accent */}
+          {/* Operational Trust */}
           <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-6">
               <Activity className="w-4 h-4 text-success" />
@@ -332,20 +338,80 @@ export default function Profile() {
               />
             </div>
           </div>
+
+          {/* Evolution Moments (Phase K) */}
+          {isOwnProfile && (
+            <EvolutionMoments
+              moments={evolution}
+              loading={growthLoading}
+            />
+          )}
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────
-            RIGHT COLUMN: Behavioral Analysis
+            CENTER COLUMN: Skills Radar + Analytics
         ───────────────────────────────────────────────────────────────── */}
-        <div className="col-span-12 lg:col-span-8">
+        <div className="col-span-12 lg:col-span-5 space-y-6">
+          
+          {/* Skills Radar Chart (Phase K) */}
+          {isOwnProfile && skillProfile?.skills && (
+            <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-brand-400" />
+                  <h3 className="text-sm font-medium text-text-secondary">Skill Profile</h3>
+                </div>
+                {skillProfile.strengths?.length > 0 && (
+                  <div className="flex gap-1">
+                    {skillProfile.strengths.map(s => (
+                      <span 
+                        key={s} 
+                        className="px-2 py-0.5 rounded text-[10px] bg-brand/10 text-brand capitalize"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-center">
+                <SkillRadarChart
+                  skills={skillProfile.skills}
+                  size={280}
+                  showLabels={true}
+                  showValues={true}
+                  showTrends={true}
+                />
+              </div>
+
+              {/* Growth Areas */}
+              {skillProfile.growthAreas?.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-white/[0.06]">
+                  <p className="text-xs text-text-tertiary mb-2">Focus areas for growth:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {skillProfile.growthAreas.map(area => (
+                      <span 
+                        key={area} 
+                        className="px-2 py-1 rounded-lg text-xs bg-warning/10 text-warning capitalize"
+                      >
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Behavioral Analysis */}
           <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-8">
               <Brain className="w-4 h-4 text-brand-400" />
               <h3 className="text-sm font-medium text-text-secondary">Behavioral Analysis</h3>
             </div>
             
-            {/* Analytics Cards - These keep their semantic colors */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               {profileAnalytics?.collaborationStyle && (
                 <CollaborationStyleCard data={profileAnalytics.collaborationStyle} />
               )}
@@ -354,12 +420,71 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Work Personality Section */}
             <div className="mt-10 pt-8 border-t border-white/[0.06]">
               {user && <WorkPersonality userId={user._id || user.id} />}
             </div>
           </div>
         </div>
+
+        {/* ─────────────────────────────────────────────────────────────────
+            RIGHT COLUMN: Growth Suggestions + Trends
+        ───────────────────────────────────────────────────────────────── */}
+        <div className="col-span-12 lg:col-span-3 space-y-6">
+          
+          {/* Growth Suggestions (Phase K) */}
+          {isOwnProfile && (
+            <GrowthSuggestions
+              suggestions={suggestions}
+              loading={growthLoading}
+            />
+          )}
+
+          {/* Historical Trends (Phase K) - Compact Version */}
+          {isOwnProfile && trends && (
+            <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+              <div className="flex items-center gap-2 mb-4">
+                <Activity className="w-4 h-4 text-brand" />
+                <h3 className="text-sm font-medium text-text-secondary">Trends</h3>
+                <span className="text-xs text-text-tertiary">12 weeks</span>
+              </div>
+
+              <div className="space-y-4">
+                {['velocity', 'quality', 'collaboration'].map(metric => {
+                  const growth = trends.summary?.[`${metric}Growth`] || 0;
+                  const latest = trends.data?.[trends.data.length - 1]?.[metric] || 0;
+                  const isPositive = growth >= 0;
+
+                  return (
+                    <div key={metric} className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-text-primary capitalize">{metric}</p>
+                        <p className="text-xs text-text-tertiary">{latest}/100</p>
+                      </div>
+                      <span className={`
+                        text-sm font-medium
+                        ${isPositive ? 'text-success' : 'text-error-500'}
+                      `}>
+                        {isPositive ? '+' : ''}{growth}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ─────────────────────────────────────────────────────────────────
+            FULL WIDTH: Detailed Trend Charts
+        ───────────────────────────────────────────────────────────────── */}
+        {isOwnProfile && (
+          <div className="col-span-12">
+            <TrendCharts
+              trends={trends}
+              loading={growthLoading}
+            />
+          </div>
+        )}
 
         {/* ─────────────────────────────────────────────────────────────────
             FOOTER ACTION

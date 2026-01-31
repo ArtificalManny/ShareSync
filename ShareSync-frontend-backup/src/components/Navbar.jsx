@@ -1,20 +1,7 @@
 // src/components/Navbar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC NAVBAR v3.1 - Phase C: Momentum Engine + Phase E: Social Proof + Phase F: Sound
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// NOW USING:
-// - Deep Violet (#7C3AED) as primary brand color for actions
-// - Surface hierarchy: surface-0/1/2 tokens
-// - ⭐ PHASE C: Momentum indicator badge in navbar
-// - ⭐ PHASE C: Navbar glows subtly at high momentum levels
-// - ⭐ PHASE C: Fire mode special treatment
-// - ⭐ PHASE E: Ship notifications toast system
-// - ⭐ PHASE E: Achievement unlock toasts
-// - ⭐ PHASE E: Online indicator in status bar
-// - ⭐ PHASE F: Sound toggle in navbar
-// - ⭐ PHASE F: Notification sounds for team activity
-//
+// SHARESYNC NAVBAR v3.2 - Phase C: Momentum + Phase E: Social Proof + Phase F: Sound
+// + PHASE N: NotificationCenter Integration + Background Color Picker
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
@@ -22,7 +9,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Sun, Moon, LogOut, MessageCircle, 
   Palette, Camera, Search, Plus, Bell,
-  ChevronRight, Layout, Zap, Flame, TrendingUp
+  ChevronRight, Layout, Zap, Flame, TrendingUp,
+  Check
 } from 'lucide-react';
 import { formatProfilePicture } from '../utils/imageUtils';
 import { useChat } from "../context/ChatContext.jsx";
@@ -36,8 +24,10 @@ import NextMicroStep from './navbar/NextMicroStep';
 import FocusModeToggle from './navbar/FocusModeToggle';
 import SeasonBadge from './navbar/SeasonBadge';
 import TeamPresence from './navbar/TeamPresence.jsx';
-import NotificationDropdown from './NotificationDropdown';
 import QuickCapture from './navbar/QuickCapture.jsx';
+
+// ⭐ PHASE N: Import new NotificationCenter
+import NotificationCenter from './navigation/NotificationCenter';
 
 // ⭐ PHASE C: Import momentum context
 import { useMomentumContext } from '../contexts/MomentumContext';
@@ -52,6 +42,128 @@ import { NavbarSoundToggle } from './ui/SoundToggle';
 import { useTeamActivitySound } from '../sounds/NotificationSounds';
 
 const DEFAULT_PIC = '/default-profile.png';
+
+// ⭐ PHASE N: Background color presets
+const BACKGROUND_COLORS = [
+  { id: 'default', name: 'Default', value: null, preview: '#0F0F12' },
+  { id: 'midnight', name: 'Midnight', value: '#0A0A0F', preview: '#0A0A0F' },
+  { id: 'deep-violet', name: 'Deep Violet', value: '#0D0B14', preview: '#0D0B14' },
+  { id: 'ocean', name: 'Ocean', value: '#0A0F14', preview: '#0A0F14' },
+  { id: 'forest', name: 'Forest', value: '#0A140D', preview: '#0A140D' },
+  { id: 'charcoal', name: 'Charcoal', value: '#121212', preview: '#121212' },
+  { id: 'pure-black', name: 'Pure Black', value: '#000000', preview: '#000000' },
+  { id: 'warm-dark', name: 'Warm Dark', value: '#14120F', preview: '#14120F' },
+];
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ⭐ PHASE N: BACKGROUND COLOR PICKER
+───────────────────────────────────────────────────────────────────────── */
+const BackgroundColorPicker = () => {
+  const [showPicker, setShowPicker] = useState(false);
+  const [selectedColor, setSelectedColor] = useState(() => {
+    try {
+      return localStorage.getItem('ss.bg.color') || 'default';
+    } catch {
+      return 'default';
+    }
+  });
+  const pickerRef = useRef(null);
+
+  // Close on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+        setShowPicker(false);
+      }
+    };
+    if (showPicker) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPicker]);
+
+  // Apply color to document
+  useEffect(() => {
+    const color = BACKGROUND_COLORS.find(c => c.id === selectedColor);
+    if (color?.value) {
+      document.documentElement.style.setProperty('--surface-0', color.value);
+      document.body.style.backgroundColor = color.value;
+    } else {
+      document.documentElement.style.removeProperty('--surface-0');
+      document.body.style.backgroundColor = '';
+    }
+    try {
+      localStorage.setItem('ss.bg.color', selectedColor);
+    } catch {}
+  }, [selectedColor]);
+
+  const handleSelectColor = (colorId) => {
+    setSelectedColor(colorId);
+    toast({ title: `Background: ${BACKGROUND_COLORS.find(c => c.id === colorId)?.name}`, variant: "success" });
+    setShowPicker(false);
+  };
+
+  return (
+    <div className="relative" ref={pickerRef}>
+      <button 
+        onClick={() => setShowPicker(!showPicker)}
+        className={`
+          relative p-2 rounded-lg
+          text-text-tertiary hover:text-text-primary
+          hover:bg-surface-2
+          transition-all duration-200
+          ${showPicker ? 'bg-surface-2 text-text-primary' : ''}
+        `}
+        title="Change background color"
+      >
+        <Palette className="w-4 h-4" />
+      </button>
+
+      {showPicker && (
+        <div className="
+          absolute right-0 top-full mt-2 
+          w-56 p-3
+          bg-surface-1 border border-white/[0.08] rounded-xl 
+          shadow-xl z-[100]
+          animate-in fade-in slide-in-from-top-2 duration-200
+        ">
+          <div className="text-xs font-medium text-text-secondary mb-3">
+            Background Color
+          </div>
+          
+          <div className="grid grid-cols-4 gap-2">
+            {BACKGROUND_COLORS.map((color) => (
+              <button
+                key={color.id}
+                onClick={() => handleSelectColor(color.id)}
+                className={`
+                  relative w-10 h-10 rounded-lg
+                  border-2 transition-all duration-200
+                  ${selectedColor === color.id 
+                    ? 'border-brand-500 scale-110' 
+                    : 'border-white/[0.1] hover:border-white/[0.3]'
+                  }
+                `}
+                style={{ backgroundColor: color.preview }}
+                title={color.name}
+              >
+                {selectedColor === color.id && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Check className="w-4 h-4 text-brand-500" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+          
+          <div className="mt-3 pt-3 border-t border-white/[0.06]">
+            <div className="text-[10px] text-text-tertiary">
+              Selected: {BACKGROUND_COLORS.find(c => c.id === selectedColor)?.name}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ─────────────────────────────────────────────────────────────────────────
    MOMENTUM BADGE - Compact indicator for navbar
@@ -72,7 +184,6 @@ const MomentumBadge = () => {
     return configs[glowLevel] || configs[0];
   }, [glowLevel]);
   
-  // Don't show at level 0
   if (!config.show) return null;
   
   const Icon = config.icon;
@@ -90,29 +201,18 @@ const MomentumBadge = () => {
         transition-all duration-300
         ${isFireMode ? 'animate-pulse border-energy-500/30' : ''}
       `}>
-        {Icon && (
-          <Icon className={`w-3.5 h-3.5 ${config.color}`} />
-        )}
+        {Icon && <Icon className={`w-3.5 h-3.5 ${config.color}`} />}
         <span className={`text-xs font-medium ${config.color}`}>
           {isFireMode ? '🔥' : `L${glowLevel}`}
         </span>
       </div>
       
-      {/* Tooltip */}
       {showTooltip && (
-        <div className="
-          absolute top-full mt-2 left-1/2 -translate-x-1/2
-          px-3 py-2 rounded-lg
-          bg-surface-1 border border-white/[0.08]
-          shadow-xl z-50 whitespace-nowrap
-          animate-in fade-in slide-in-from-top-2 duration-200
-        ">
+        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg bg-surface-1 border border-white/[0.08] shadow-xl z-50 whitespace-nowrap animate-in fade-in slide-in-from-top-2 duration-200">
           <div className={`text-xs font-medium ${config.color}`}>
             {glowState.charAt(0).toUpperCase() + glowState.slice(1)}
           </div>
-          <div className="text-[10px] text-text-tertiary mt-0.5">
-            {message}
-          </div>
+          <div className="text-[10px] text-text-tertiary mt-0.5">{message}</div>
         </div>
       )}
     </div>
@@ -158,63 +258,30 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
 
   return (
     <div className="relative" ref={menuRef}>
-      <button 
-        onClick={() => setShowMenu(!showMenu)} 
-        className="flex items-center outline-none"
-      >
+      <button onClick={() => setShowMenu(!showMenu)} className="flex items-center outline-none">
         <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-transparent hover:border-brand-500/50 transition-colors">
-          <img 
-            src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC} 
-            className="w-full h-full object-cover" 
-            alt="Profile" 
-          />
+          <img src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC} className="w-full h-full object-cover" alt="Profile" />
         </div>
       </button>
       
       {showMenu && (
-        <div className="
-          absolute right-0 top-full mt-2 w-56 
-          bg-surface-1 border border-white/[0.08] rounded-xl 
-          shadow-xl overflow-hidden z-[100]
-          animate-in fade-in slide-in-from-top-2 duration-200
-        ">
-          <Link 
-            to="/profile" 
-            className="flex items-center gap-3 p-3 hover:bg-surface-2 border-b border-white/[0.06] transition-colors" 
-            onClick={() => setShowMenu(false)}
-          >
+        <div className="absolute right-0 top-full mt-2 w-56 bg-surface-1 border border-white/[0.08] rounded-xl shadow-xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+          <Link to="/profile" className="flex items-center gap-3 p-3 hover:bg-surface-2 border-b border-white/[0.06] transition-colors" onClick={() => setShowMenu(false)}>
             <div className="w-10 h-10 rounded-full overflow-hidden">
-              <img 
-                src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC} 
-                className="w-full h-full object-cover" 
-                alt="" 
-              />
+              <img src={formatProfilePicture(user?.profilePicture) || DEFAULT_PIC} className="w-full h-full object-cover" alt="" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-text-primary truncate">
-                {user?.firstName} {user?.lastName}
-              </p>
+              <p className="text-sm font-medium text-text-primary truncate">{user?.firstName} {user?.lastName}</p>
               <p className="text-xs text-text-tertiary">View profile</p>
             </div>
           </Link>
           
-          <button 
-            onClick={() => fileInputRef.current?.click()} 
-            className="w-full flex items-center gap-3 p-3 hover:bg-surface-2 text-left transition-colors"
-          >
+          <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-3 p-3 hover:bg-surface-2 text-left transition-colors">
             <Camera className="w-4 h-4 text-text-tertiary" />
-            <span className="text-sm text-text-secondary">
-              {uploading ? 'Uploading...' : 'Change photo'}
-            </span>
+            <span className="text-sm text-text-secondary">{uploading ? 'Uploading...' : 'Change photo'}</span>
           </button>
           
-          <input 
-            ref={fileInputRef} 
-            type="file" 
-            accept="image/*" 
-            onChange={handleFileSelect} 
-            className="hidden" 
-          />
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
         </div>
       )}
     </div>
@@ -222,18 +289,13 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   ICON BUTTON - Reusable nav button
+   ICON BUTTON
 ───────────────────────────────────────────────────────────────────────── */
-const IconButton = ({ children, onClick, className = '', badge = null }) => (
+const IconButton = ({ children, onClick, className = '', badge = null, title = '' }) => (
   <button 
     onClick={onClick} 
-    className={`
-      relative p-2 rounded-lg
-      text-text-tertiary hover:text-text-primary
-      hover:bg-surface-2
-      transition-all duration-200
-      ${className}
-    `}
+    title={title}
+    className={`relative p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-all duration-200 ${className}`}
   >
     {children}
     {badge}
@@ -249,23 +311,13 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   const [searchQuery, setSearchQuery] = useState("");
   const chat = typeof useChat === 'function' ? useChat() : null;
   const unreadTotal = chat?.unreadTotal || 0;
-  const { cycleAccent } = useBrandTheme({ enabled: true });
   
   // ⭐ PHASE C: Get momentum state for navbar glow
   const { glowLevel, isFireMode, teamActivity } = useMomentumContext();
   
   // ⭐ PHASE E: Ship notification and achievement toast managers
-  const { 
-    notifications: shipNotifications, 
-    addNotification: addShipNotification,
-    dismissNotification: dismissShipNotification 
-  } = useShipNotifications();
-  
-  const {
-    toasts: achievementToasts,
-    addToast: addAchievementToast,
-    dismissToast: dismissAchievementToast
-  } = useAchievementToasts();
+  const { notifications: shipNotifications, addNotification: addShipNotification, dismissNotification: dismissShipNotification } = useShipNotifications();
+  const { toasts: achievementToasts, addToast: addAchievementToast, dismissToast: dismissAchievementToast } = useAchievementToasts();
 
   // ⭐ PHASE F: Team activity sound
   const { playTeamActivity } = useTeamActivitySound();
@@ -276,7 +328,6 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
       const { user: shipUser, project, stats, isMilestone } = event.detail || {};
       if (shipUser && project) {
         addShipNotification(shipUser, project, stats, { isMilestone });
-        // ⭐ PHASE F: Play team ship sound
         playTeamActivity({ type: 'ship', user: shipUser, project });
       }
     };
@@ -285,7 +336,6 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
       const { user: achieveUser, achievement } = event.detail || {};
       if (achieveUser && achievement) {
         addAchievementToast(achievement, achieveUser);
-        // ⭐ PHASE F: Play team achievement sound
         playTeamActivity({ type: 'achievement', user: achieveUser, achievement });
       }
     };
@@ -298,22 +348,6 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
       window.removeEventListener('team-achievement', handleTeamAchievement);
     };
   }, [addShipNotification, addAchievementToast, playTeamActivity]);
-
-  // ⭐ PHASE E: Demo - simulate incoming notifications (remove in production)
-  useEffect(() => {
-    // Simulate a ship notification after 10 seconds for demo
-    const demoTimer = setTimeout(() => {
-      if (Math.random() > 0.7) { // 30% chance
-        const demoUser = { name: 'Sarah Chen' };
-        const demoProject = { name: 'API Integration', emoji: '🚀', description: 'New REST endpoints deployed' };
-        addShipNotification(demoUser, demoProject, { tasks: 8, xp: 150, streak: 12 });
-        // ⭐ PHASE F: Play sound for demo notification
-        playTeamActivity({ type: 'ship', user: demoUser, project: demoProject });
-      }
-    }, 10000);
-    
-    return () => clearTimeout(demoTimer);
-  }, [addShipNotification, playTeamActivity]);
 
   // Get current page name from path
   const getPageName = () => {
@@ -344,9 +378,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
       };
     }
     if (glowLevel >= 3) {
-      return {
-        boxShadow: '0 1px 0 rgb(var(--brand-600-rgb) / 0.05)',
-      };
+      return { boxShadow: '0 1px 0 rgb(var(--brand-600-rgb) / 0.05)' };
     }
     return {};
   }, [glowLevel, isFireMode]);
@@ -354,62 +386,36 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   return (
     <>
       <header 
-        className={`
-          navbar
-          sticky top-0 z-40 h-14
-          bg-surface-0/80 backdrop-blur-md
-          border-b border-white/[0.06]
-          px-4 lg:px-6
-          transition-all duration-500
-        `}
+        className={`navbar sticky top-0 z-40 h-14 bg-surface-0/80 backdrop-blur-md border-b border-white/[0.06] px-4 lg:px-6 transition-all duration-500`}
         style={navbarGlowStyle}
         data-momentum={glowLevel}
       >
         <div className="h-full max-w-[1800px] mx-auto flex items-center">
           
-          {/* ═══════════════════════════════════════════════════════════════════
-              LEFT: Breadcrumb + Search
-          ═══════════════════════════════════════════════════════════════════ */}
+          {/* LEFT: Breadcrumb + Search */}
           <div className="flex items-center gap-3">
-            {/* Breadcrumb */}
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-surface-1 flex items-center justify-center">
                 <Layout className="w-3.5 h-3.5 text-text-tertiary" />
               </div>
               <ChevronRight className="w-3.5 h-3.5 text-text-tertiary" />
-              <span className="text-sm font-medium text-text-primary">
-                {getPageName()}
-              </span>
+              <span className="text-sm font-medium text-text-primary">{getPageName()}</span>
             </div>
 
-            {/* Divider */}
             <div className="hidden lg:block h-5 w-px bg-white/[0.06] mx-2" />
 
-            {/* Search - focus ring uses Deep Violet */}
-            <form 
-              onSubmit={handleSearch}
-              className="hidden md:flex items-center relative"
-            >
+            <form onSubmit={handleSearch} className="hidden md:flex items-center relative">
               <Search className="absolute left-3 w-4 h-4 text-text-tertiary" />
               <input 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search everything..." 
-                className="
-                  bg-surface-1 border border-white/[0.06] rounded-lg
-                  pl-9 pr-4 py-2 text-sm text-text-primary
-                  placeholder:text-text-tertiary
-                  focus:border-brand-500/50 focus:outline-none
-                  focus:ring-2 focus:ring-brand-500/20
-                  w-52 focus:w-72 transition-all duration-200
-                "
+                className="bg-surface-1 border border-white/[0.06] rounded-lg pl-9 pr-4 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 w-52 focus:w-72 transition-all duration-200"
               />
             </form>
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════
-              CENTER: Status Bar (optional, shows on large screens)
-          ═══════════════════════════════════════════════════════════════════ */}
+          {/* CENTER: Status Bar */}
           <div className="flex-1 flex items-center justify-center px-4">
             <div className="hidden xl:flex items-center gap-4 px-4 py-1.5 rounded-full bg-surface-1 border border-white/[0.06]">
               <SeasonBadge />
@@ -417,34 +423,22 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
               <NextMicroStep />
               <div className="w-px h-4 bg-white/[0.06]" />
               <TeamPresence />
-              {/* ⭐ PHASE E: Online indicator */}
               <div className="w-px h-4 bg-white/[0.06]" />
               <InlineOnlineIndicator />
             </div>
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════
-              RIGHT: Actions
-          ═══════════════════════════════════════════════════════════════════ */}
+          {/* RIGHT: Actions */}
           <div className="flex items-center gap-1">
             
-            {/* ⭐ PHASE C: Momentum Badge */}
+            {/* Momentum Badge */}
             <div className="hidden sm:block mr-2">
               <MomentumBadge />
             </div>
             
-            {/* Primary Action: New - Deep Violet brand gradient */}
+            {/* Primary Action: New */}
             <button 
-              className={`
-                w-8 h-8 rounded-lg
-                bg-brand-600 text-white
-                flex items-center justify-center
-                hover:bg-brand-500
-                hover:shadow-glow-brand
-                transition-all duration-200
-                mr-1
-                ${isFireMode ? 'animate-pulse shadow-glow-energy' : ''}
-              `}
+              className={`w-8 h-8 rounded-lg bg-brand-600 text-white flex items-center justify-center hover:bg-brand-500 hover:shadow-glow-brand transition-all duration-200 mr-1 ${isFireMode ? 'animate-pulse shadow-glow-energy' : ''}`}
               style={{
                 background: isFireMode 
                   ? 'linear-gradient(135deg, var(--energy-500, #F43F5E) 0%, var(--brand-600, #7C3AED) 100%)'
@@ -457,43 +451,37 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             <QuickCapture />
             <FocusModeToggle />
 
-            {/* Divider */}
             <div className="h-5 w-px bg-white/[0.06] mx-1 hidden sm:block" />
 
-            {/* ⭐ PHASE F: Sound Toggle */}
+            {/* Sound Toggle */}
             <NavbarSoundToggle />
 
-            {/* Secondary Actions */}
-            <IconButton onClick={cycleAccent}>
-              <Palette className="w-4 h-4" />
-            </IconButton>
+            {/* ⭐ PHASE N: Background Color Picker (replaces old Palette button) */}
+            <BackgroundColorPicker />
             
-            <NotificationDropdown />
+            {/* ⭐ PHASE N: New NotificationCenter (replaces old NotificationDropdown) */}
+            <NotificationCenter />
             
+            {/* Messages */}
             <IconButton 
               onClick={() => navigate('/messages')}
               badge={unreadTotal > 0 && <UnreadBadge count={unreadTotal} />}
+              title="Messages"
             >
               <MessageCircle className="w-4 h-4" />
             </IconButton>
 
-            <IconButton onClick={toggleDarkMode}>
+            {/* Dark Mode Toggle */}
+            <IconButton onClick={toggleDarkMode} title={isDarkMode ? 'Light mode' : 'Dark mode'}>
               {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </IconButton>
 
-            {/* Divider */}
             <div className="h-5 w-px bg-white/[0.06] mx-1" />
 
             {/* Profile & Logout */}
-            <ProfileDropdown 
-              user={user} 
-              onUploadComplete={() => window.location.reload()} 
-            />
+            <ProfileDropdown user={user} onUploadComplete={() => window.location.reload()} />
             
-            <IconButton 
-              onClick={onLogout}
-              className="hover:text-error-500 hover:bg-error-500/10"
-            >
+            <IconButton onClick={onLogout} className="hover:text-error-500 hover:bg-error-500/10" title="Sign out">
               <LogOut className="w-4 h-4" />
             </IconButton>
           </div>
@@ -501,7 +489,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
         </div>
       </header>
       
-      {/* ⭐ PHASE E: Ship Notifications Container */}
+      {/* Ship Notifications */}
       <ShipNotification
         notifications={shipNotifications}
         onDismissNotification={dismissShipNotification}
@@ -510,7 +498,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
         autoDismiss={6000}
       />
       
-      {/* ⭐ PHASE E: Achievement Toasts Container */}
+      {/* Achievement Toasts */}
       <AchievementToast
         toasts={achievementToasts}
         onDismissToast={dismissAchievementToast}

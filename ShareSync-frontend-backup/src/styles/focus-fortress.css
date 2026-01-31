@@ -1,0 +1,253 @@
+/* src/styles/focus-fortress.css
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * FOCUS FORTRESS: Deep Work Protection Styles
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * FOCUS MODE BODY CLASSES
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+/* Base focus active state */
+body.focus-active {
+  --focus-overlay: rgba(0, 0, 0, 0.3);
+}
+
+/* Level 1: Mute notifications */
+body.focus-level-1 [data-notifications],
+body.focus-level-1 .notification-badge {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Level 2: Hide sidebar, simplify UI */
+body.focus-level-2 .sidebar,
+body.focus-hide-sidebar .sidebar {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.focus-level-2 .main-content,
+body.focus-hide-sidebar .main-content {
+  margin-left: 0 !important;
+}
+
+body.focus-simplified [data-secondary],
+body.focus-simplified .secondary-info {
+  display: none;
+}
+
+/* Level 3: Single task mode */
+body.focus-level-3 [data-task-list],
+body.focus-single-task [data-task-list] {
+  filter: blur(4px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+body.focus-level-3 [data-current-task],
+body.focus-single-task [data-current-task] {
+  filter: none;
+  opacity: 1;
+  pointer-events: all;
+  transform: scale(1.02);
+  box-shadow: 0 0 60px rgba(124, 58, 237, 0.2);
+}
+
+/* Level 4: Fortress mode */
+body.focus-level-4,
+body.focus-zen {
+  background: var(--color-surface-0) !important;
+}
+
+body.focus-level-4 .navbar,
+body.focus-zen .navbar {
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+body.focus-level-4 .navbar:hover,
+body.focus-zen .navbar:hover {
+  opacity: 1;
+}
+
+body.focus-zen *:not([data-focus-content]):not([data-focus-content] *) {
+  opacity: 0.2;
+}
+
+body.focus-zen [data-focus-content],
+body.focus-zen [data-focus-content] * {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * REDUCED COLORS MODE
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+body.focus-reduced-colors {
+  --color-brand-500: #6366F1;
+  --color-brand-400: #818CF8;
+  --color-success-500: #6366F1;
+  --color-warning-500: #6366F1;
+  --color-error-500: #6366F1;
+}
+
+body.focus-reduced-colors *:not([data-focus-content] *) {
+  filter: saturate(0.3);
+}
+
+body.focus-reduced-colors [data-focus-content],
+body.focus-reduced-colors [data-focus-content] * {
+  filter: saturate(1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * FOCUS OVERLAY
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+.focus-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    transparent 300px,
+    rgba(0, 0, 0, 0.6) 600px
+  );
+  pointer-events: none;
+  z-index: 40;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+body.focus-active .focus-overlay {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * FOCUS TIMER ANIMATIONS
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+@keyframes focus-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(124, 58, 237, 0.5);
+  }
+}
+
+.focus-timer-active {
+  animation: focus-pulse 2s ease-in-out infinite;
+}
+
+@keyframes focus-progress-glow {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(124, 58, 237, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.8));
+  }
+  100% {
+    filter: drop-shadow(0 0 4px rgba(124, 58, 237, 0.5));
+  }
+}
+
+.focus-progress-ring {
+  animation: focus-progress-glow 3s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * INTERRUPTION SHIELD
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+.interruption-shield {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.interruption-shield.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * FOCUS FORTRESS ENTRANCE
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+@keyframes fortress-entrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.fortress-entering {
+  animation: fortress-entrance 0.6s ease-out forwards;
+}
+
+@keyframes fortress-exit {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.1);
+    filter: blur(10px);
+  }
+}
+
+.fortress-exiting {
+  animation: fortress-exit 0.4s ease-in forwards;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * FOCUS COMPLETION CELEBRATION
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+@keyframes focus-complete-burst {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.focus-complete-burst {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(124, 58, 237, 0.5) 0%,
+    transparent 70%
+  );
+  animation: focus-complete-burst 1s ease-out forwards;
+}

@@ -1,0 +1,150 @@
+/* src/styles/tokens/colors-temperature.css */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   EMOTIONAL TEMPERATURE SYSTEM
+   Cold (calm, focused) → Warm (active, engaged) → Hot (urgent, alert)
+═══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─────────────────────────────────────────────────────────────────────────
+     COLD (Calm, Focused, Neutral)
+     Used: Default state, low activity, rest mode
+  ───────────────────────────────────────────────────────────────────────── */
+  --temp-cold-100: 220 14% 96%;
+  --temp-cold-200: 220 14% 90%;
+  --temp-cold-300: 220 14% 80%;
+  --temp-cold-400: 220 14% 60%;
+  --temp-cold-500: 220 14% 45%;
+  --temp-cold-600: 220 14% 30%;
+  --temp-cold-700: 220 14% 20%;
+  --temp-cold-800: 220 14% 12%;
+  --temp-cold-900: 220 14% 8%;
+
+  /* Cold accent (icy blue) */
+  --temp-cold-accent: 200 80% 60%;
+  --temp-cold-accent-muted: 200 40% 30%;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     WARM (Active, Engaged, Productive)
+     Used: Normal activity, momentum building, focus mode
+  ───────────────────────────────────────────────────────────────────────── */
+  --temp-warm-100: 35 100% 96%;
+  --temp-warm-200: 35 100% 90%;
+  --temp-warm-300: 35 95% 75%;
+  --temp-warm-400: 35 90% 60%;
+  --temp-warm-500: 35 85% 50%;
+  --temp-warm-600: 30 80% 45%;
+  --temp-warm-700: 25 75% 35%;
+  --temp-warm-800: 20 70% 25%;
+  --temp-warm-900: 15 65% 15%;
+
+  /* Warm accent (amber/gold) */
+  --temp-warm-accent: 38 95% 55%;
+  --temp-warm-accent-muted: 38 50% 35%;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     HOT (Urgent, Alert, Fire Mode)
+     Used: Fire mode, deadlines, critical blockers
+  ───────────────────────────────────────────────────────────────────────── */
+  --temp-hot-100: 0 100% 97%;
+  --temp-hot-200: 0 90% 92%;
+  --temp-hot-300: 0 85% 80%;
+  --temp-hot-400: 0 80% 65%;
+  --temp-hot-500: 0 75% 55%;
+  --temp-hot-600: 0 70% 45%;
+  --temp-hot-700: 0 65% 35%;
+  --temp-hot-800: 0 60% 25%;
+  --temp-hot-900: 0 55% 15%;
+
+  /* Hot accent (red/orange) */
+  --temp-hot-accent: 15 90% 55%;
+  --temp-hot-accent-muted: 15 50% 35%;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     CELEBRATION (Success, Achievement, Victory)
+     Used: Ships, completions, milestones
+  ───────────────────────────────────────────────────────────────────────── */
+  --celebration-100: 145 80% 96%;
+  --celebration-200: 145 70% 85%;
+  --celebration-300: 145 65% 70%;
+  --celebration-400: 145 60% 55%;
+  --celebration-500: 145 55% 45%;
+  --celebration-glow: 145 80% 50%;
+  --celebration-confetti: 280 85% 65%; /* Purple confetti */
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     SOCIAL (Connection, Collaboration, Team)
+     Used: Mentions, collaboration, team activity
+  ───────────────────────────────────────────────────────────────────────── */
+  --social-100: 200 90% 96%;
+  --social-200: 200 80% 85%;
+  --social-300: 200 70% 70%;
+  --social-400: 200 65% 55%;
+  --social-500: 200 60% 50%;
+  --social-glow: 200 80% 60%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TEMPERATURE STATE CLASSES
+   Apply these to containers to shift the entire color palette
+═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-temperature="cold"] {
+  --surface-0: hsl(var(--temp-cold-900));
+  --surface-1: hsl(var(--temp-cold-800));
+  --surface-2: hsl(var(--temp-cold-700));
+  --surface-3: hsl(var(--temp-cold-600));
+  --accent-glow: hsl(var(--temp-cold-accent));
+}
+
+[data-temperature="warm"] {
+  --surface-0: hsl(222 47% 8%);
+  --surface-1: hsl(222 35% 12% / 0.95);
+  --surface-2: hsl(222 30% 16% / 0.9);
+  --surface-3: hsl(222 25% 22% / 0.85);
+  --accent-glow: hsl(var(--temp-warm-accent));
+  
+  /* Subtle warm tint */
+  --warm-overlay: hsl(35 100% 50% / 0.02);
+}
+
+[data-temperature="hot"] {
+  --surface-0: hsl(0 15% 8%);
+  --surface-1: hsl(0 12% 12% / 0.95);
+  --surface-2: hsl(0 10% 18% / 0.9);
+  --surface-3: hsl(0 8% 24% / 0.85);
+  --accent-glow: hsl(var(--temp-hot-accent));
+  
+  /* Urgent red tint */
+  --hot-overlay: hsl(0 100% 50% / 0.03);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TEMPERATURE TRANSITION ANIMATIONS
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.temperature-transition {
+  transition: 
+    background-color 1s ease-out,
+    border-color 0.8s ease-out,
+    box-shadow 0.6s ease-out;
+}
+
+/* Pulse effect for hot mode */
+[data-temperature="hot"] .temperature-pulse {
+  animation: hot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--temp-hot-accent) / 0.2); }
+  50% { box-shadow: 0 0 20px 5px hsl(var(--temp-hot-accent) / 0.1); }
+}
+
+/* Glow effect for celebrations */
+.celebration-glow {
+  animation: celebration-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes celebration-pulse {
+  0%, 100% { box-shadow: 0 0 10px hsl(var(--celebration-glow) / 0.3); }
+  50% { box-shadow: 0 0 25px hsl(var(--celebration-glow) / 0.5); }
+}

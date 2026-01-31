@@ -1,0 +1,156 @@
+/* src/components/ui/GlobalPulseBar.css */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PHASE N: Global Pulse Bar Styles
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.global-pulse-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 4px;
+  pointer-events: none;
+}
+
+.global-pulse-base {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.02),
+    transparent
+  );
+}
+
+.global-pulse-animation {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.global-pulse-animation.active {
+  opacity: 1;
+}
+
+.global-pulse-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-brand, #7C3AED),
+    transparent
+  );
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.global-pulse-glow.animate {
+  animation: pulse-sweep 2s ease-out;
+}
+
+.global-pulse-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-brand, #7C3AED);
+  opacity: 0;
+}
+
+.global-pulse-ripple.animate {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Toast */
+.global-pulse-toast {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  animation: toast-in 0.3s ease-out;
+  pointer-events: auto;
+}
+
+.global-pulse-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.global-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-brand, #7C3AED);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.global-pulse-text {
+  font-size: 14px;
+  color: rgba(148, 163, 184, 1);
+}
+
+.global-pulse-user {
+  font-weight: 500;
+  color: rgba(248, 250, 252, 1);
+}
+
+.global-pulse-target {
+  color: var(--color-brand, #7C3AED);
+}
+
+/* Animations */
+@keyframes pulse-sweep {
+  0% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

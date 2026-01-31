@@ -1,6 +1,7 @@
 // src/pages/Home.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE C: Momentum Engine + PHASE D: Empty States + PHASE E: Social Proof + PHASE F: Sound
+// PHASE C: Momentum Engine + PHASE D: Empty States + PHASE E: Social Proof 
+// + PHASE F: Sound + PHASE H: Three-Move Focus Engine
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // NOW USING:
@@ -17,6 +18,7 @@
 // - ⭐ PHASE F: Task completion sounds
 // - ⭐ PHASE F: XP gain sounds
 // - ⭐ PHASE F: Achievement unlock sounds
+// - ⭐ PHASE H: YourMovesToday - Cross-project focus moves
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -34,6 +36,7 @@ import {
   Flame,
   Rocket,
   Plus,
+  Target,
 } from "lucide-react";
 
 // Note: Using correct casing for RenovationContext
@@ -62,6 +65,10 @@ import StreakComparison from '../components/social/StreakComparison';
 // ⭐ PHASE F: Import sound hooks
 import { useShipSound, useXPSound, useAchievementUnlockSound } from '../sounds/AchievementSounds';
 import { useUISounds } from '../hooks/useSounds';
+
+// ⭐ PHASE H: Import Focus Engine components
+import YourMovesToday, { FocusBanner } from '../components/focus/YourMovesToday';
+import { useFocusEngine } from '../contexts/FocusEngineContext';
 
 const MOCK_MISSIONS = [
   { id: 1, title: "Integrate Telemetry Engine", category: "Core Sync", eta: "2h", health: 92, velocity: 88 },
@@ -234,6 +241,14 @@ export default function Home() {
   const { playAchievementUnlock } = useAchievementUnlockSound();
   const { playClick, playSuccess, playError } = useUISounds();
 
+  // ⭐ PHASE H: Focus engine (optional - graceful fallback if provider not present)
+  let focusEngine = { hasUrgentMoves: false };
+  try {
+    focusEngine = useFocusEngine();
+  } catch (e) {
+    // Context not available, use defaults
+  }
+
   useEffect(() => {
     const loadMissions = async () => {
       setMissionsLoading(true);
@@ -278,7 +293,6 @@ export default function Home() {
     }));
     
     // ⭐ PHASE F: Play ship sound
-    // Determine if this is an epic ship (high momentum, last mission, or long project)
     const shipData = {
       taskCount: shippedMission?.tasks || 1,
       durationDays: 1,
@@ -298,7 +312,7 @@ export default function Home() {
       }, 1000);
     }
     
-    // Dispatch event for team feed
+    // Dispatch event for team feed and focus engine refresh
     window.dispatchEvent(new CustomEvent('local-ship', {
       detail: {
         project: { name: shippedMission?.title, id: projectId },
@@ -309,23 +323,26 @@ export default function Home() {
   }, [missions, recordActivity, glowLevel, isFireMode, playShipSound, playXP, playAchievementUnlock]);
 
   // ⭐ PHASE D: Handle adding more tasks from AllShipped
-  // ⭐ PHASE F: Play click sound
   const handleAddMoreTasks = useCallback(() => {
     playClick();
-    // Reset to show mock missions again (in real app, would open task creation)
     setMissions(MOCK_MISSIONS);
     setShippedStats({ tasksCompleted: 0, xpEarned: 0, bonusXP: 0 });
   }, [playClick]);
 
   // ⭐ PHASE E: Handle activity click from feed
-  // ⭐ PHASE F: Play click sound
   const handleActivityClick = useCallback((activity) => {
     playClick();
     console.log('Activity clicked:', activity);
-    // Could open a detail panel or navigate to the related item
   }, [playClick]);
 
-  // ⭐ PHASE F: Handle panel open with click sound
+  // ⭐ PHASE H: Handle focus move click
+  const handleFocusMoveClick = useCallback((move) => {
+    playClick();
+    console.log('Focus move clicked:', move);
+    // Could navigate to the project or open a detail panel
+  }, [playClick]);
+
+  // Panel handlers
   const handleOpenPanel = useCallback((content, mission = null) => {
     playClick();
     setSelectedMission(mission);
@@ -333,7 +350,6 @@ export default function Home() {
     setIsPanelOpen(true);
   }, [playClick]);
 
-  // ⭐ PHASE F: Handle panel close with click sound
   const handleClosePanel = useCallback(() => {
     playClick();
     setIsPanelOpen(false);
@@ -363,7 +379,7 @@ export default function Home() {
       ═══════════════════════════════════════════════════════════════════ */}
       <header className="mb-10 flex justify-between items-end">
         <div>
-          {/* Status indicator - subtle, not pulsing */}
+          {/* Status indicator */}
           <div className="flex items-center gap-2 mb-3">
             <div className={`
               w-2 h-2 rounded-full
@@ -372,9 +388,16 @@ export default function Home() {
             <span className="text-xs text-text-tertiary">
               {isFireMode ? 'Fire Mode Active 🔥' : 'Operational Status: Live'}
             </span>
+            
+            {/* ⭐ PHASE H: Urgent moves indicator */}
+            {focusEngine.hasUrgentMoves && (
+              <span className="ml-2 px-2 py-0.5 rounded bg-warning/10 text-warning text-[10px] font-medium">
+                ⚠️ Urgent moves pending
+              </span>
+            )}
           </div>
           
-          {/* Title - calmer, professional */}
+          {/* Title */}
           <h1 className="text-4xl font-semibold text-text-primary">
             Mission <span className={`
               ${isFireMode ? 'text-energy-500' : 'text-text-tertiary'}
@@ -383,9 +406,8 @@ export default function Home() {
           </h1>
         </div>
         
-        {/* Rank + Momentum Level - right aligned */}
+        {/* Rank + Momentum Level */}
         <div className="hidden md:flex items-center gap-6">
-          {/* ⭐ PHASE C: Momentum level indicator */}
           <div className="text-right">
             <p className="text-xs text-text-tertiary mb-1">Momentum</p>
             <div className={`
@@ -406,7 +428,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ⭐ PHASE E: Team Pulse Banner - Shows active teammates */}
+      {/* ⭐ PHASE E: Team Pulse Banner */}
       <TeamPulse 
         variant="banner"
         showAvatars={true}
@@ -415,8 +437,24 @@ export default function Home() {
         className="mb-6"
       />
 
-      {/* ⭐ PHASE C: Momentum Status Banner (shows at level 3+) */}
+      {/* ⭐ PHASE C: Momentum Status Banner */}
       <MomentumStatusBanner />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ⭐ PHASE H: YOUR 3 MOVES TODAY - HERO POSITION
+          This is the primary focus widget for the user
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="mb-8">
+        <YourMovesToday
+          variant="default"
+          maxMoves={3}
+          showHeader={true}
+          showFooter={true}
+          showRefresh={true}
+          onMoveClick={handleFocusMoveClick}
+          onViewAll={() => console.log('View all moves')}
+        />
+      </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
           MAIN GRID
@@ -424,10 +462,7 @@ export default function Home() {
       <div className="grid grid-cols-12 gap-6">
         
         {/* ─────────────────────────────────────────────────────────────────
-            MISSIONS SECTION (8 columns on large, 12 on medium)
-            ⭐ PHASE A: This section gets highlighted during entrance
-            ⭐ PHASE C: Responds to momentum level
-            ⭐ PHASE D: Shows AllShipped celebration when empty
+            MISSIONS SECTION (8 columns)
         ───────────────────────────────────────────────────────────────── */}
         <div className="col-span-12 xl:col-span-8">
           <div 
@@ -465,19 +500,17 @@ export default function Home() {
                       project={mission} 
                       onClick={() => handleOpenPanel("telemetry", mission)}
                       onShipped={handleShipped}
-                      // ⭐ PHASE C: Pass momentum level for card styling
                       momentumLevel={glowLevel}
                       isFireMode={isFireMode}
                     />
                   </div>
                 ))
               ) : (
-                /* ⭐ PHASE D: AllShipped celebration component */
                 <AllShipped
                   tasksCompleted={shippedStats.tasksCompleted || MOCK_MISSIONS.length}
                   xpEarned={shippedStats.xpEarned || 150}
                   bonusXP={shippedStats.bonusXP || (glowLevel >= 3 ? 30 : 0)}
-                  streak={7} // TODO: Get from user context
+                  streak={7}
                   bestStreak={7}
                   onAddMore={handleAddMoreTasks}
                   onViewStats={() => handleOpenPanel("balance")}
@@ -491,8 +524,7 @@ export default function Home() {
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────
-            RIGHT SIDEBAR (4 columns) - Intelligence + Social Proof
-            ⭐ PHASE E: Now includes LiveActivityFeed and MiniLeaderboard
+            RIGHT SIDEBAR (4 columns)
         ───────────────────────────────────────────────────────────────── */}
         <div className="col-span-12 xl:col-span-4 space-y-6">
           {/* Intelligence Panel */}
@@ -504,7 +536,6 @@ export default function Home() {
             productivity={65}
             coWorkingMultiplier={2.1}
             isCoWorking={true}
-            // ⭐ PHASE C: Pass momentum context
             momentumLevel={glowLevel}
             isFireMode={isFireMode}
           />
@@ -529,7 +560,6 @@ export default function Home() {
 
         {/* ─────────────────────────────────────────────────────────────────
             VELOCITY METRICS (full width)
-            ⭐ PHASE C: Momentum-responsive cards
         ───────────────────────────────────────────────────────────────── */}
         <div className="col-span-12">
           <div 
@@ -594,7 +624,6 @@ export default function Home() {
         transition-transform duration-300 ease-out
         ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}
       `}>
-        {/* Panel Header */}
         <div className="flex justify-between items-center mb-8">
           <h3 className="text-sm font-medium text-text-secondary">
             {panelContent === "balance" ? "Team Balance" : "Mission Telemetry"}
@@ -607,7 +636,6 @@ export default function Home() {
           </button>
         </div>
         
-        {/* Panel Content */}
         {panelContent === "balance" ? ( 
           <TeamBalancePanel onBalanceComplete={() => setIsBalanced(true)} /> 
         ) : ( 
@@ -615,7 +643,7 @@ export default function Home() {
         )}
       </div>
       
-      {/* ⭐ PHASE A: Inline animation for entrance highlight */}
+      {/* Entrance highlight animation */}
       <style>{`
         @keyframes pulse-once {
           0% { box-shadow: 0 0 0 0 rgb(124 58 237 / 0.4); }
