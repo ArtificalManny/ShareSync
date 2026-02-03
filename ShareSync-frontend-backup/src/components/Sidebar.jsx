@@ -494,6 +494,11 @@ export default function Sidebar() {
           onLeave={handleTriggerLeave} 
         />
       )}
+
+      {/* ⭐ PHASE N: Reserve the icon-rail space when auto-hide is enabled (Instagram-style) */}
+      {autoHideEnabled && (
+        <div className="w-[72px] h-screen shrink-0" aria-hidden="true" />
+      )}
       
       <aside
         ref={sidebarRef}
@@ -508,7 +513,7 @@ export default function Sidebar() {
           ${collapsed ? 'w-[72px]' : 'w-[260px]'}
           ${isInFlow ? 'opacity-90' : 'opacity-100'}
           ${autoHideEnabled ? 'fixed left-0 top-0 z-50 shadow-2xl' : ''}
-          ${autoHideEnabled && collapsed ? '-translate-x-[calc(100%-16px)] hover:translate-x-0' : 'translate-x-0'}
+          translate-x-0
         `}
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
