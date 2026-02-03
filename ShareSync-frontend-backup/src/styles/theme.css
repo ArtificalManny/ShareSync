@@ -37,6 +37,27 @@
     /* Gradient companions used by components, mapped to tokens */
     --grad-accent: var(--grad-pandora);
     --grad-info: var(--grad-cnbc);
+
+    /* ================================
+       OpenShare Palette (neutral-heavy)
+       ================================ */
+    /* Neutrals (do 80% of the work) */
+    --os-bg-0: #070A0F;                 /* inky black */
+    --os-bg-1: #0B1020;                 /* deep slate */
+    --os-surface-1: #101827;            /* cards */
+    --os-surface-2: #141F33;            /* raised */
+    --os-border: rgba(255,255,255,0.08);
+    --os-text: #EAF0FF;
+    --os-muted: #A7B2CC;
+    --os-muted-2: #7F8AA6;
+
+    /* Accents (use sparingly) */
+    --os-primary: #F43F5E;              /* ember CTA */
+    --os-primary-2: #E11D48;            /* darker ember */
+    --os-brand: #8B5CF6;                /* orchid (less usage) */
+    --os-success: #22C55E;
+    --os-warning: #F59E0B;
+    --os-info: #2DD4BF;
   }
   
   /* Ensure gradient surfaces have readable text */
@@ -97,7 +118,7 @@
   
   /* Purple accents (#6A5ACD) */
   button {
-    background-color: #6A5ACD;
+    background-color: var(--os-primary);
     color: white;
     border: none;
     padding: 0.5rem 1rem;
@@ -106,23 +127,25 @@
   }
   
   button:hover {
-    background-color: #5d4ab1;
+    background-color: var(--os-primary-2);
   }
   
   button:nth-child(2) {
     background-color: transparent;
-    border: 1px solid #6A5ACD;
+    border: 1px solid var(--os-border);
+    color: var(--os-text);
   }
   
   button:nth-child(2):hover {
-    background-color: #6A5ACD;
-    color: white;
+    background-color: color-mix(in oklab, var(--os-primary) 14%, transparent);
+    border-color: color-mix(in oklab, var(--os-primary) 45%, var(--os-border));
+    color: var(--os-text);
   }
   
   input, select {
-    background-color: #2a2a3e;
-    color: #ffffff;
-    border: 1px solid #6A5ACD;
+    background-color: var(--os-bg-1);
+    color: var(--os-text);
+    border: 1px solid var(--os-border);
     padding: 0.5rem;
     margin: 0.5rem 0;
     border-radius: 5px;
@@ -136,14 +159,15 @@
     max-width: 400px;
     margin: 0 auto;
     gap: 1rem;
-    background: rgba(42, 42, 62, 0.8);
+    background: rgba(16, 24, 39, 0.8);
     padding: 2rem;
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(106, 90, 205, 0.5);
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.22);
+    border: 1px solid var(--os-border);
   }
   
   label {
-    color: #ffffff;
+    color: var(--os-text);
     font-size: 0.9rem;
   }
   
