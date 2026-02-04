@@ -55,109 +55,259 @@ const BACKGROUND_COLORS = [
   { id: 'warm-dark', name: 'Warm Dark', value: '#14120F', preview: '#14120F' },
 ];
 
+// ⭐ PHASE N: Persisted background key + global apply helper (MINIMAL)
+const BG_STORAGE_KEY = 'ss.bg.color';
+
+function applyBackgroundColor(colorId, { persist = true } = {}) {
+  if (typeof document === 'undefined') return;
+
+  const id = colorId || 'default';
+  const color = BACKGROUND_COLORS.find(c => c.id === id) || BACKGROUND_COLORS[0];
+
+  // Helpful for future CSS targeting if you want it
+  try {
+    document.documentElement.setAttribute('data-ss-bg', id);
+  } catch {}
+
+  if (color?.value) {
+    document.documentElement.style.setProperty('--surface-0', color.value);
+    if (document.body) document.body.style.backgroundColor = color.value;
+  } else {
+    document.documentElement.style.removeProperty('--surface-0');
+    if (document.body) document.body.style.backgroundColor = '';
+  }
+
+  if (persist) {
+    try { localStorage.setItem(BG_STORAGE_KEY, id); } catch {}
+  }
+}
+
+// ⭐ Apply saved background ONCE at module load so it’s consistent across ALL pages/routes
+(() => {
+  if (typeof window === 'undefined') return;
+  try {
+    const saved = localStorage.getItem(BG_STORAGE_KEY) || 'default';
+    applyBackgroundColor(saved, { persist: false });
+  } catch {}
+})();
+
 /* ─────────────────────────────────────────────────────────────────────────
    ⭐ PHASE N: BACKGROUND COLOR PICKER
 ───────────────────────────────────────────────────────────────────────── */
+// Replace your BackgroundColorPicker with THIS exact component
 const BackgroundColorPicker = () => {
-  const [showPicker, setShowPicker] = useState(false);
-  const [selectedColor, setSelectedColor] = useState(() => {
+  const BG_STORAGE_KEY = "ss.bg.color";
+
+  const BACKGROUND_COLORS = [
+    { id: "midnight", name: "Midnight", value: "#0A0A0F", preview: "#0A0A0F" },
+    { id: "deepViolet", name: "Deep Violet", value: "#0D0B14", preview: "#1A1230" },
+    { id: "ocean", name: "Ocean", value: "#061018", preview: "#0B2B3A" },
+    { id: "forest", name: "Forest", value: "#07120B", preview: "#12301C" },
+    { id: "slate", name: "Slate", value: "#0B0F16", preview: "#1B2433" },
+    { id: "carbon", name: "Carbon", value: "#0B0B0D", preview: "#2A2A30" },
+    { id: "ember", name: "Ember", value: "#120A0A", preview: "#3A1414" },
+    { id: "default", name: "Default", value: null, preview: "#232327" },
+  ];
+
+  const [showPicker, setShowPicker] = React.useState(false);
+  const [selectedColor, setSelectedColor] = React.useState(() => {
     try {
-      return localStorage.getItem('ss.bg.color') || 'default';
+      return localStorage.getItem(BG_STORAGE_KEY) || "midnight";
     } catch {
-      return 'default';
+      return "midnight";
     }
   });
-  const pickerRef = useRef(null);
+
+  const pickerRef = React.useRef(null);
+
+  // ---------- color utils ----------
+  const hexToRgb = (hex) => {
+    if (!hex) return null;
+    const clean = hex.replace("#", "").trim();
+    const full =
+      clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean;
+    if (full.length !== 6) return null;
+
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    if ([r, g, b].some((n) => Number.isNaN(n))) return null;
+    return { r, g, b };
+  };
+
+  const mixRgb = (a, b, t) => {
+    const clamp = (n) => Math.max(0, Math.min(255, Math.round(n)));
+    return {
+      r: clamp(a.r + (b.r - a.r) * t),
+      g: clamp(a.g + (b.g - a.g) * t),
+      b: clamp(a.b + (b.b - a.b) * t),
+    };
+  };
+
+  const rgbToHex = ({ r, g, b }) =>
+    `#${[r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("")}`;
+
+  // Set CSS var + its `-rgb` companion, WITH priority important.
+  const setVarPair = (el, varName, hexOrNull) => {
+    if (!el) return;
+
+    if (!hexOrNull) {
+      el.style.removeProperty(varName);
+      el.style.removeProperty(`${varName}-rgb`);
+      return;
+    }
+
+    const rgb = hexToRgb(hexOrNull);
+    el.style.setProperty(varName, hexOrNull, "important");
+    if (rgb) el.style.setProperty(`${varName}-rgb`, `${rgb.r} ${rgb.g} ${rgb.b}`, "important");
+  };
+
+  const applyTheme = (themeId) => {
+    const root = document.documentElement;
+    const app = document.querySelector(".app-container");
+
+    const found = BACKGROUND_COLORS.find((c) => c.id === themeId);
+    const baseHex = found?.value ?? null;
+    const tintHex = found?.preview ?? baseHex;
+
+    // Default: clear everything
+    if (!baseHex) {
+      [
+        "--surface-0", "--surface-1", "--surface-2", "--surface-3",
+        "--chrome-nav", "--chrome-sidebar", "--chrome-border",
+      ].forEach((v) => {
+        setVarPair(root, v, null);
+        setVarPair(app, v, null);
+      });
+
+      if (document.body) document.body.style.background = "";
+      document.documentElement.removeAttribute("data-ss-bg");
+      return;
+    }
+
+    const base = hexToRgb(baseHex);
+    const tint = hexToRgb(tintHex) || base;
+    if (!base) return;
+
+    const white = { r: 255, g: 255, b: 255 };
+
+    // ✅ Make surfaces more distinct (bigger lifts)
+    const s0 = baseHex;
+    const s1 = rgbToHex(mixRgb(base, white, 0.12));
+    const s2 = rgbToHex(mixRgb(base, white, 0.20));
+    const s3 = rgbToHex(mixRgb(base, white, 0.28));
+
+    // ✅ ProtonMail-style chroming:
+    // Nav slightly tinted, Sidebar more tinted
+    const nav = rgbToHex(mixRgb(base, tint, 0.35));
+    const sidebar = rgbToHex(mixRgb(base, tint, 0.70));
+    const border = rgbToHex(mixRgb(base, white, 0.18));
+
+    // Apply to BOTH documentElement and .app-container
+    [
+      ["--surface-0", s0],
+      ["--surface-1", s1],
+      ["--surface-2", s2],
+      ["--surface-3", s3],
+      ["--chrome-nav", nav],
+      ["--chrome-sidebar", sidebar],
+      ["--chrome-border", border],
+    ].forEach(([k, v]) => {
+      setVarPair(root, k, v);
+      setVarPair(app, k, v);
+    });
+
+    // Page background updates immediately (canvas feel)
+    document.body.style.background =
+      `radial-gradient(1200px 800px at 20% 0%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 55%), ${s0}`;
+
+    document.documentElement.setAttribute("data-ss-bg", themeId);
+  };
 
   // Close on click outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
+  React.useEffect(() => {
+    const onDown = (e) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target)) {
         setShowPicker(false);
       }
     };
-    if (showPicker) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    if (showPicker) document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
   }, [showPicker]);
 
-  // Apply color to document
-  useEffect(() => {
-    const color = BACKGROUND_COLORS.find(c => c.id === selectedColor);
-    if (color?.value) {
-      document.documentElement.style.setProperty('--surface-0', color.value);
-      document.body.style.backgroundColor = color.value;
-    } else {
-      document.documentElement.style.removeProperty('--surface-0');
-      document.body.style.backgroundColor = '';
-    }
+  // Apply theme whenever selection changes
+  React.useEffect(() => {
+    applyTheme(selectedColor);
     try {
-      localStorage.setItem('ss.bg.color', selectedColor);
+      localStorage.setItem(BG_STORAGE_KEY, selectedColor);
     } catch {}
   }, [selectedColor]);
 
-  const handleSelectColor = (colorId) => {
-    setSelectedColor(colorId);
-    toast({ title: `Background: ${BACKGROUND_COLORS.find(c => c.id === colorId)?.name}`, variant: "success" });
+  const handleSelect = (id) => {
+    setSelectedColor(id);
     setShowPicker(false);
   };
 
+  const selectedName = BACKGROUND_COLORS.find((c) => c.id === selectedColor)?.name;
+
   return (
     <div className="relative" ref={pickerRef}>
-      <button 
-        onClick={() => setShowPicker(!showPicker)}
-        className={`
-          relative p-2 rounded-lg
-          text-text-tertiary hover:text-text-primary
-          hover:bg-surface-2
-          transition-all duration-200
-          ${showPicker ? 'bg-surface-2 text-text-primary' : ''}
-        `}
-        title="Change background color"
+      <button
+        className="icon-btn"
+        onClick={() => setShowPicker((s) => !s)}
+        aria-label="Background color"
+        title="Background color"
       >
-        <Palette className="w-4 h-4" />
+        🎨
       </button>
 
       {showPicker && (
-        <div className="
-          absolute right-0 top-full mt-2 
-          w-56 p-3
-          bg-surface-1 border border-white/[0.08] rounded-xl 
-          shadow-xl z-[100]
-          animate-in fade-in slide-in-from-top-2 duration-200
-        ">
+        <div
+          className="
+            absolute right-0 top-full mt-2
+            w-80 p-4
+            bg-surface-1 border border-white/[0.08] rounded-2xl
+            shadow-xl z-[100]
+          "
+        >
           <div className="text-xs font-medium text-text-secondary mb-3">
             Background Color
           </div>
-          
-          <div className="grid grid-cols-4 gap-2">
-            {BACKGROUND_COLORS.map((color) => (
-              <button
-                key={color.id}
-                onClick={() => handleSelectColor(color.id)}
-                className={`
-                  relative w-10 h-10 rounded-lg
-                  border-2 transition-all duration-200
-                  ${selectedColor === color.id 
-                    ? 'border-brand-500 scale-110' 
-                    : 'border-white/[0.1] hover:border-white/[0.3]'
-                  }
-                `}
-                style={{ backgroundColor: color.preview }}
-                title={color.name}
-              >
-                {selectedColor === color.id && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-brand-500" />
-                  </div>
-                )}
-              </button>
+
+          <div className="grid grid-cols-4 gap-3">
+            {BACKGROUND_COLORS.map((c) => (
+              <div key={c.id} className="flex flex-col items-center gap-1">
+                <button
+                  onClick={() => handleSelect(c.id)}
+                  className={`
+                    relative w-12 h-12 rounded-2xl overflow-hidden
+                    border transition-all duration-200
+                    ${selectedColor === c.id
+                      ? "border-brand-500 ring-2 ring-brand-500/25 scale-[1.03]"
+                      : "border-white/[0.12] hover:border-white/[0.35]"
+                    }
+                  `}
+                  style={{
+                    background: `radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 55%), ${c.preview}`,
+                  }}
+                  title={c.name}
+                >
+                  {selectedColor === c.id && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-brand-500 text-lg">✓</span>
+                    </div>
+                  )}
+                </button>
+
+                <div className={`text-[10px] leading-none w-14 text-center truncate ${selectedColor === c.id ? "text-text-secondary" : "text-text-tertiary"}`}>
+                  {c.name}
+                </div>
+              </div>
             ))}
           </div>
-          
+
           <div className="mt-3 pt-3 border-t border-white/[0.06]">
-            <div className="text-[10px] text-text-tertiary">
-              Selected: {BACKGROUND_COLORS.find(c => c.id === selectedColor)?.name}
-            </div>
+            <div className="text-[10px] text-text-tertiary">Selected: {selectedName}</div>
           </div>
         </div>
       )}

@@ -1,0 +1,89 @@
+/* ──────────────────────────────────────────────────────────────────────────────
+   OPENSHARE: Palette Overrides (Loaded LAST on purpose)
+   ✅ Does NOT delete or alter existing styles
+   ✅ Only overrides tokens + a couple of high-impact selectors
+   Goal: Neutrals do 80% of the work, Ember is primary CTA, Orchid is secondary.
+   ────────────────────────────────────────────────────────────────────────────── */
+
+/* Core tokens (covers your v2 system) */
+:root{
+  /* Neutrals */
+  --surface-0: #070A0F;  --surface-0-rgb: 7 10 15;      /* bg-0 */
+  --surface-1: #101827;  --surface-1-rgb: 16 24 39;     /* surface-1 */
+  --surface-2: #141F33;  --surface-2-rgb: 20 31 51;     /* surface-2 */
+  --bg-canvas: var(--surface-0);
+  --bg-surface: var(--surface-1);
+  --bg-elevated: var(--surface-2);
+
+  /* Text */
+  --text-primary:   #EAF0FF; --text-primary-rgb:   234 240 255;
+  --text-secondary: #A7B2CC; --text-secondary-rgb: 167 178 204;
+  --text-tertiary:  #7F8AA6; --text-tertiary-rgb:  127 138 166;
+
+  /* Borders */
+  --border-default: rgb(255 255 255 / 0.08);
+  --border-subtle:  rgb(255 255 255 / 0.06);
+  --border:         rgb(255 255 255 / 0.08);
+
+  /* Accents */
+  --brand-500: #F43F5E; --brand-500-rgb: 244 63 94;     /* ember */
+  --brand-600: #F43F5E; --brand-600-rgb: 244 63 94;     /* ember */
+  --brand-700: #E11D48;
+  --brand-accent: #F43F5E;
+
+  --orchid-500: #8B5CF6; --orchid-500-rgb: 139 92 246;  /* orchid */
+
+  /* Feedback */
+  --success-500: #22C55E; --success-500-rgb: 34 197 94;
+  --warning-500: #F59E0B; --warning-500-rgb: 245 158 11;
+  --info-500:    #2DD4BF; --info-500-rgb:    45 212 191;
+  --error-500:   #EF4444; --error-500-rgb:   239 68 68;
+
+  /* Gradients (the ones your UI already references) */
+  --gradient-brand: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
+  --grad-primary:   linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
+  --grad-accent:    linear-gradient(135deg, rgb(244 63 94 / 0.20) 0%, transparent 70%);
+
+  /* Keep “pandora/orchid lane” available but not dominant */
+  --grad-pandora:   linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+}
+
+/* If your brand system sets an accent (like pandora), force it to ember anyway.
+   This avoids changing any JS like defaultAccent="pandora". */
+[data-accent="pandora"],
+[data-brand-accent="pandora"],
+[data-accent="violet"],
+[data-brand-accent="violet"]{
+  --brand-500: #F43F5E; --brand-500-rgb: 244 63 94;
+  --brand-600: #F43F5E; --brand-600-rgb: 244 63 94;
+  --brand-700: #E11D48;
+  --brand-accent: #F43F5E;
+  --gradient-brand: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
+  --grad-primary:   linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
+}
+
+/* If your “neon” theme scope is active anywhere, override inside it too */
+.layout-stage[data-theme="neon"]{
+  --brand-accent: #F43F5E;
+  --grad-primary: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
+}
+
+/* High-impact visual proof: primary buttons must change color */
+.btn.btn--primary,
+.btn--primary,
+.btn-primary{
+  background: var(--grad-primary) !important;
+  border-color: rgb(244 63 94 / 0.35) !important;
+  color: #fff !important;
+}
+
+/* Optional: make “outline” buttons less purple-y and more neutral */
+.btn.btn--outline,
+.btn--outline{
+  border-color: rgb(255 255 255 / 0.14) !important;
+}
+
+/* Ensure cards lean neutral instead of purple-tinted */
+.card{
+  border-color: rgb(255 255 255 / 0.08) !important;
+}

@@ -268,3 +268,23 @@ button:focus-visible {
   --row-glow: var(--glow-soft);
   box-shadow: 0 18px 56px -10px var(--row-glow);
 }
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   OPENSHARE NEON OVERRIDES (only if data-theme="neon" is active)
+   Note: this file uses rgb(var(--text)) style tokens, so we set RGB triples.
+   ────────────────────────────────────────────────────────────────────────────── */
+.layout-stage[data-theme="neon"]{
+  --bg: 7 10 15;           /* #070A0F */
+  --surface: 16 24 39;     /* #101827 */
+  --text: 234 240 255;     /* #EAF0FF */
+  --muted: 167 178 204;    /* #A7B2CC */
+  --border: 255 255 255;   /* use with rgb(var(--border) / alpha) if needed */
+
+  /* Make “primary” feel ember (kills the purple dominance fast) */
+  --brand-accent: #F43F5E;
+  --grad-primary: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
+
+  /* System colors */
+  --signal-good: #22C55E;
+}
+

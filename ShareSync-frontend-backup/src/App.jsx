@@ -82,6 +82,7 @@ import "./styles/layout-system.css";
 // ⭐ PHASE A: New CSS imports
 import "./styles/entrance.css";
 import "./styles/heartbeat.css";
+import "./styles/palette.override.css";
 
 import { scrollToAnchorFromHash } from "./utils/anchor";
 import { Menu, X } from "lucide-react";

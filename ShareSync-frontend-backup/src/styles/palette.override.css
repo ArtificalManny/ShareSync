@@ -1,0 +1,188 @@
+/* src/styles/palette.override.css
+   INKY NEUTRALS + EMBER CTA (drop-in override)
+   Goal: make changes unmistakable without removing existing CSS.
+*/
+
+/* -------------------------------------------------------------------------- */
+/* 1) Core Palette -> Token Bridge (force wins with !important)                */
+/* -------------------------------------------------------------------------- */
+
+:root,
+html,
+body,
+.layout-stage,
+.app-container,
+.layout-stage[data-theme="neon"] {
+  /* Inky Neutrals */
+  --bg-0: #070A0F !important;   /* page */
+  --bg-1: #0B1020 !important;   /* nav */
+  --surface-1: #101827 !important;
+  --surface-2: #141F33 !important;
+
+  /* Text */
+  --text-primary: #EAF0FF !important;
+  --text-secondary: #A7B2CC !important;
+  --text-tertiary: #7F8AA6 !important;
+
+  /* Borders */
+  --border-default: rgba(255, 255, 255, 0.08) !important;
+  --border-subtle: rgba(255, 255, 255, 0.06) !important;
+
+  /* Brand / CTA */
+  --brand-600: #F43F5E !important;   /* Ember */
+  --brand-700: #E11D48 !important;
+  --brand-500: #FB7185 !important;
+
+  /* Brand RGBs (your theme.css uses rgb(var(--brand-600-rgb))) */
+  --brand-600-rgb: 244 63 94 !important;
+  --brand-700-rgb: 225 29 72 !important;
+  --brand-500-rgb: 251 113 133 !important;
+
+  /* Secondary accent (Orchid) */
+  --secondary: #8B5CF6 !important;
+  --secondary-rgb: 139 92 246 !important;
+
+  /* Status */
+  --success-500: #22C55E !important;
+  --success-500-rgb: 34 197 94 !important;
+
+  --warning-500: #F59E0B !important;
+  --warning-500-rgb: 245 158 11 !important;
+
+  --info-500: #2DD4BF !important;
+  --info-500-rgb: 45 212 191 !important;
+
+  /* If any older system expects these */
+  --surface-0: var(--bg-0) !important;
+  --surface-1: var(--surface-1) !important;
+  --surface-2: var(--surface-2) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 2) Force the big “canvas” to actually be inky                              */
+/* -------------------------------------------------------------------------- */
+
+html,
+body {
+  background: var(--bg-0) !important;
+  color: var(--text-primary) !important;
+}
+
+/* These exist in many of your themes. If they don’t exist, harmless. */
+body::before,
+body::after,
+.layout-stage::before,
+.layout-stage::after {
+  /* reduce “overexposure” */
+  opacity: 0.16 !important;
+  filter: saturate(0.90) contrast(1.05) brightness(0.80) !important;
+}
+
+/* App chrome surfaces you *do* control in App.jsx */
+.navbar {
+  background: color-mix(in oklab, var(--bg-1) 88%, black 12%) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  backdrop-filter: blur(14px);
+}
+
+.sidebar {
+  background: color-mix(in oklab, var(--bg-1) 92%, black 8%) !important;
+  border-right: 1px solid var(--border-subtle) !important;
+}
+
+/* Main content should read darker than cards */
+.main-content,
+.content-wrapper {
+  background: transparent !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 3) Make cards feel “raised” vs the canvas                                  */
+/* -------------------------------------------------------------------------- */
+
+.card,
+.glass,
+.glass-card,
+.panel,
+.surface,
+.tile {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--surface-1) 92%, black 8%),
+    color-mix(in oklab, var(--surface-2) 92%, black 8%)
+  ) !important;
+
+  border: 1px solid var(--border-default) !important;
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.35),
+    0 1px 0 rgba(255,255,255,0.03) inset !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4) Focus + CTA “snap”                                                      */
+/* -------------------------------------------------------------------------- */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: none !important;
+  box-shadow:
+    0 0 0 3px rgba(var(--brand-600-rgb) / 0.22),
+    0 0 0 1px rgba(255,255,255,0.08) inset !important;
+}
+
+.primary,
+.btn-primary,
+.button-primary {
+  background: linear-gradient(135deg, var(--brand-600), var(--brand-700)) !important;
+}
+
+/* Optional: keep secondary distinct */
+.secondary,
+.btn-secondary,
+.button-secondary {
+  background: rgba(var(--secondary-rgb) / 0.16) !important;
+  border: 1px solid rgba(var(--secondary-rgb) / 0.22) !important;
+}
+
+/* ==========================================================================
+   ProtonMail-style Shell Theming
+   Uses: --chrome-nav-rgb, --chrome-sidebar-rgb, --chrome-border-rgb
+   Falls back to surface vars if chrome vars are absent.
+   ========================================================================== */
+
+:root {
+  --_nav-rgb: var(--chrome-nav-rgb, var(--surface-1-rgb));
+  --_sidebar-rgb: var(--chrome-sidebar-rgb, var(--surface-0-rgb));
+  --_border-rgb: var(--chrome-border-rgb, var(--surface-3-rgb));
+}
+
+/* NAVBAR (your <header className="navbar ...">) */
+header.navbar {
+  background: rgb(var(--_nav-rgb) / 0.86) !important;
+  border-bottom-color: rgb(var(--_border-rgb) / 0.22) !important;
+}
+
+/* SIDEBAR wrapper from AppRoutes: <div className="sidebar ..."> */
+.sidebar {
+  background: rgb(var(--_sidebar-rgb) / 0.94) !important;
+  border-right: 1px solid rgb(var(--_border-rgb) / 0.20) !important;
+}
+
+/* If the Sidebar component sets its own bg, keep it transparent so wrapper shows */
+.sidebar > * {
+  background: transparent !important;
+}
+
+/* Optional: make the mobile overlay match the current theme */
+.sidebar-overlay.active {
+  background: rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Optional: the toggle button blends with the new chrome */
+.sidebar-toggle {
+  background: rgb(var(--_nav-rgb) / 0.70) !important;
+  border: 1px solid rgb(var(--_border-rgb) / 0.20) !important;
+}
+
