@@ -1,85 +1,209 @@
+// src/notifications/schemas/notifications.schema.ts
+// NOTE: This appears to be a duplicate of notification.schema.ts.
+// Prefer deleting this file and importing from ./notification.schema instead.
+// Keeping it TS-safe for now.
+
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
+import { ApiProperty } from '@nestjs/swagger';
 
-export type NotificationDocument = Notification & Document;
+export enum NotificationType {
+  TASK_ASSIGNED = 'task_assigned',
+  TASK_COMPLETED = 'task_completed',
+  TASK_UPDATED = 'task_updated',
+  TASK_COMMENT = 'task_comment',
+  TASK_MENTION = 'task_mention',
+  TASK_DUE_SOON = 'task_due_soon',
+  TASK_OVERDUE = 'task_overdue',
 
-@Schema({ timestamps: true })
+  PROJECT_INVITE = 'project_invite',
+  PROJECT_UPDATE = 'project_update',
+  PROJECT_MEMBER_JOINED = 'project_member_joined',
+  PROJECT_MEMBER_LEFT = 'project_member_left',
+
+  MESSAGE_NEW = 'message_new',
+  MESSAGE_MENTION = 'message_mention',
+  MESSAGE_REACTION = 'message_reaction',
+
+  XP_GAINED = 'xp_gained',
+  LEVEL_UP = 'level_up',
+  BADGE_EARNED = 'badge_earned',
+  STREAK_MILESTONE = 'streak_milestone',
+  STREAK_AT_RISK = 'streak_at_risk',
+  LEADERBOARD_CHANGE = 'leaderboard_change',
+
+  SPRINT_STARTED = 'sprint_started',
+  SPRINT_ENDING = 'sprint_ending',
+  SPRINT_COMPLETED = 'sprint_completed',
+
+  SYSTEM_ANNOUNCEMENT = 'system_announcement',
+  SYSTEM_MAINTENANCE = 'system_maintenance',
+}
+
+export enum NotificationPriority {
+  LOW = 'low',
+  NORMAL = 'normal',
+  HIGH = 'high',
+  URGENT = 'urgent',
+}
+
+export enum NotificationChannel {
+  IN_APP = 'in_app',
+  EMAIL = 'email',
+  PUSH = 'push',
+  SMS = 'sms',
+}
+
+@Schema({ _id: false })
+export class NotificationAction {
+  @Prop({ required: true })
+  label: string;
+
+  @Prop({ required: true })
+  url: string;
+
+  @Prop()
+  type?: string;
+}
+
+@Schema({ _id: false })
+export class NotificationData {
+  @Prop({ type: Types.ObjectId, ref: 'Project' })
+  projectId?: Types.ObjectId;
+
+  @Prop()
+  projectName?: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'Task' })
+  taskId?: Types.ObjectId;
+
+  @Prop()
+  taskTitle?: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'Conversation' })
+  conversationId?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Message' })
+  messageId?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Sprint' })
+  sprintId?: Types.ObjectId;
+
+  @Prop()
+  sprintName?: string;
+
+  @Prop()
+  xpAmount?: number;
+
+  @Prop()
+  newLevel?: number;
+
+  @Prop()
+  badgeName?: string;
+
+  @Prop()
+  badgeIcon?: string;
+
+  @Prop()
+  streakCount?: number;
+
+  @Prop({ type: Object })
+  extra?: Record<string, any>;
+}
+
+export type NotificationDocument = HydratedDocument<Notification>;
+
+@Schema({
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    transform: (_doc, ret) => {
+      (ret as any).id = (ret as any)._id;
+      delete (ret as any).__v;
+      return ret;
+    },
+  },
+})
 export class Notification {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
-  userId: MongooseSchema.Types.ObjectId;
+  @ApiProperty({ description: 'User who receives this notification' })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  userId: Types.ObjectId;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Project', required: false })
-  projectId?: MongooseSchema.Types.ObjectId;
+  @ApiProperty({ enum: NotificationType })
+  @Prop({ type: String, enum: NotificationType, required: true, index: true })
+  type: NotificationType;
 
-  @Prop({
-    type: String,
-    required: true,
-    enum: [
-      'announcement_created',
-      'mention',
-      'task_assigned',
-      'file_uploaded',
-      'deadline_reminder',
-      'project_invite',
-      'comment_added',
-    ]
-  })
-  type: string;
-
-  @Prop({ type: String, required: true })
+  @ApiProperty({ description: 'Notification title' })
+  @Prop({ required: true, maxlength: 200 })
   title: string;
 
-  @Prop({ type: String, required: true })
-  message: string;
+  @ApiProperty({ description: 'Notification body/message' })
+  @Prop({ required: true, maxlength: 1000 })
+  body: string;
 
-  @Prop({ type: Boolean, default: false })
-  urgent: boolean;
+  @ApiProperty({ description: 'Notification icon' })
+  @Prop()
+  icon?: string;
 
-  @Prop({ type: Boolean, default: false })
-  read: boolean;
+  @ApiProperty({ description: 'Notification image URL' })
+  @Prop()
+  imageUrl?: string;
 
-  @Prop({ type: Date, required: false })
+  @ApiProperty({ enum: NotificationPriority })
+  @Prop({ type: String, enum: NotificationPriority, default: NotificationPriority.NORMAL })
+  priority: NotificationPriority;
+
+  @ApiProperty({ description: 'Channels this notification was sent through' })
+  @Prop({ type: [String], enum: NotificationChannel, default: [NotificationChannel.IN_APP] })
+  channels: NotificationChannel[];
+
+  @ApiProperty({ description: 'User who triggered this notification' })
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  triggeredBy?: Types.ObjectId;
+
+  @ApiProperty({ description: 'Additional notification data' })
+  @Prop({ type: NotificationData, default: {} })
+  data: NotificationData;
+
+  @ApiProperty({ description: 'Action buttons' })
+  @Prop({ type: [NotificationAction], default: [] })
+  actions: NotificationAction[];
+
+  @ApiProperty({ description: 'Has notification been read' })
+  @Prop({ type: Boolean, default: false, index: true })
+  isRead: boolean;
+
+  @ApiProperty({ description: 'When notification was read' })
+  @Prop({ type: Date })
   readAt?: Date;
 
-  @Prop({
-    type: {
-      url: String,
-      announcementId: MongooseSchema.Types.ObjectId,
-      taskId: MongooseSchema.Types.ObjectId,
-      commentId: MongooseSchema.Types.ObjectId,
-    },
-    required: false,
-  })
-  actionData?: {
-    url?: string;
-    announcementId?: MongooseSchema.Types.ObjectId;
-    taskId?: MongooseSchema.Types.ObjectId;
-    commentId?: MongooseSchema.Types.ObjectId;
-  };
+  @ApiProperty({ description: 'Has notification been clicked/actioned' })
+  @Prop({ type: Boolean, default: false })
+  isClicked: boolean;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
-  triggeredBy?: MongooseSchema.Types.ObjectId;
+  @ApiProperty({ description: 'When notification was clicked' })
+  @Prop({ type: Date })
+  clickedAt?: Date;
 
-  @Prop({
-    type: {
-      inApp: { type: Boolean, default: false },
-      email: { type: Boolean, default: false },
-      sms: { type: Boolean, default: false },
-    },
-    default: { inApp: false, email: false, sms: false }
-  })
-  sentChannels: {
-    inApp: boolean;
-    email: boolean;
-    sms: boolean;
-  };
+  @ApiProperty({ description: 'Has notification been dismissed' })
+  @Prop({ type: Boolean, default: false })
+  isDismissed: boolean;
 
-  createdAt?: Date;
-  updatedAt?: Date;
+  @ApiProperty({ description: 'Group key for collapsing similar notifications' })
+  @Prop({ index: true })
+  groupKey?: string;
+
+  @ApiProperty({ description: 'Count of grouped notifications' })
+  @Prop({ type: Number, default: 1 })
+  groupCount: number;
+
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
 
-// Indexes for fast queries
-NotificationSchema.index({ userId: 1, read: 1, createdAt: -1 });
-NotificationSchema.index({ userId: 1, type: 1 });
+NotificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
+NotificationSchema.index({ userId: 1, type: 1, createdAt: -1 });
+NotificationSchema.index({ userId: 1, groupKey: 1 });
+NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });

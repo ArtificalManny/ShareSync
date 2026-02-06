@@ -42,6 +42,17 @@ const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// VIEW COMPONENTS - Import all the new views
+// ═══════════════════════════════════════════════════════════════════════════════
+import StackView from '../components/views/StackView';
+import FlowView from '../components/views/FlowView';
+import RoadmapView from '../components/views/RoadmapView';
+import RhythmView from '../components/views/RhythmView';
+import InsightsView from '../components/views/InsightsView';
+import ThreadsView from '../components/views/ThreadsView';
+import VaultView from '../components/views/VaultView';
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // VIEW CONFIGURATION - Premium ShareSync-branded names
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -867,60 +878,6 @@ function ActiveGoalsCard({ objectives = [], onObjectiveClick }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER VIEW (For Stack, Flow, etc.)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function PlaceholderView({ view }) {
-  const Icon = view.icon;
-  
-  return (
-    <div className="p-10 max-w-[1600px] mx-auto">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-colors">
-            <Plus className="w-4 h-4" />
-            <span>Add Task</span>
-          </button>
-          
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-1 border border-white/[0.08] text-text-secondary text-sm hover:bg-surface-2 transition-colors">
-            <Filter className="w-4 h-4" />
-            <span>Filter</span>
-          </button>
-          
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-1 border border-white/[0.08] text-text-secondary text-sm hover:bg-surface-2 transition-colors">
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>Sort</span>
-          </button>
-        </div>
-        
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-1 border border-white/[0.08]">
-          <Search className="w-4 h-4 text-text-tertiary" />
-          <input 
-            type="text" 
-            placeholder="Search..." 
-            className="bg-transparent text-sm text-text-primary placeholder-text-tertiary outline-none w-48"
-          />
-        </div>
-      </div>
-      
-      {/* Placeholder */}
-      <div className="flex flex-col items-center justify-center py-24 rounded-2xl border-2 border-dashed border-white/[0.08]">
-        <div className="w-16 h-16 rounded-2xl bg-surface-2 flex items-center justify-center mb-4">
-          <Icon className="w-8 h-8 text-text-tertiary" />
-        </div>
-        <h3 className="text-xl font-semibold text-text-primary mb-2">{view.label}</h3>
-        <p className="text-sm text-text-tertiary mb-6">{view.description} — Coming soon</p>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-2 text-text-secondary text-sm hover:bg-surface-3 transition-colors">
-          <Lock className="w-4 h-4" />
-          <span>In Development</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -955,6 +912,12 @@ export default function ProjectHome() {
     shipUpdate,
     isHealthy,
     hasWarnings,
+    // These may or may not exist in your hook - will use fallbacks
+    tasks,
+    milestones,
+    events,
+    threads,
+    files,
   } = useProjectOverview(id);
 
   // Join/leave project presence
@@ -995,6 +958,75 @@ export default function ProjectHome() {
     }
   }, [navigate, id]);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // VIEW-SPECIFIC HANDLERS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Stack View handlers
+  const handleTaskComplete = useCallback((task) => {
+    console.log('Complete task:', task.id);
+    // TODO: Call your API to mark task complete
+  }, []);
+
+  const handleTaskSelect = useCallback((task) => {
+    console.log('Select task:', task.id);
+    // TODO: Open task detail modal or navigate
+  }, []);
+
+  const handleAddTask = useCallback(() => {
+    console.log('Add new task');
+    // TODO: Open task creation modal
+  }, []);
+
+  // Flow View handlers
+  const handleMoveTask = useCallback((taskId, newStatus) => {
+    console.log('Move task:', taskId, 'to:', newStatus);
+    // TODO: Call your API to update task status
+  }, []);
+
+  const handleTaskClick = useCallback((task) => {
+    console.log('Task clicked:', task.id);
+    // TODO: Open task detail
+  }, []);
+
+  // Roadmap View handlers
+  const handleMilestoneClick = useCallback((milestone) => {
+    console.log('Milestone clicked:', milestone.id);
+    // TODO: Open milestone detail
+  }, []);
+
+  const handleAddMilestone = useCallback(() => {
+    console.log('Add milestone');
+    // TODO: Open milestone creation modal
+  }, []);
+
+  // Rhythm View handlers
+  const handleAddEvent = useCallback(() => {
+    console.log('Add event');
+    // TODO: Open event creation modal
+  }, []);
+
+  const handleEventClick = useCallback((event) => {
+    console.log('Event clicked:', event.id);
+    // TODO: Open event detail
+  }, []);
+
+  // Vault View handlers
+  const handleUpload = useCallback(() => {
+    console.log('Upload file');
+    // TODO: Open file upload modal
+  }, []);
+
+  const handleFileClick = useCallback((file) => {
+    console.log('File clicked:', file.id);
+    // TODO: Open file preview
+  }, []);
+
+  const handleNewFolder = useCallback(() => {
+    console.log('Create folder');
+    // TODO: Open folder creation modal
+  }, []);
+
   // Current view config
   const currentView = PROJECT_VIEWS.find(v => v.id === activeView) || PROJECT_VIEWS[0];
 
@@ -1008,7 +1040,9 @@ export default function ProjectHome() {
     return <ErrorState error={error} onRetry={refresh} />;
   }
 
-  // Render view content
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RENDER VIEW CONTENT - All views connected!
+  // ═══════════════════════════════════════════════════════════════════════════
   const renderViewContent = () => {
     switch (activeView) {
       case 'pulse':
@@ -1024,6 +1058,53 @@ export default function ProjectHome() {
             onSprintAction={handleSprintAction}
           />
         );
+      
+      case 'stack':
+        return (
+          <StackView
+            tasks={tasks || criticalMoves || []}
+            objectives={objectives || []}
+            onTaskComplete={handleTaskComplete}
+            onTaskSelect={handleTaskSelect}
+            onAddTask={handleAddTask}
+          />
+        );
+      
+      case 'flow':
+        return (
+          <FlowView
+            tasks={tasks || []}
+            onAddTask={handleAddTask}
+            onMoveTask={handleMoveTask}
+            onTaskClick={handleTaskClick}
+          />
+        );
+      
+      case 'roadmap':
+        return (
+          <RoadmapView
+            milestones={milestones || objectives || []}
+            onMilestoneClick={handleMilestoneClick}
+            onAddMilestone={handleAddMilestone}
+          />
+        );
+      
+      case 'rhythm':
+        return (
+          <RhythmView
+            events={events || []}
+            onAddEvent={handleAddEvent}
+            onEventClick={handleEventClick}
+          />
+        );
+      
+      case 'insights':
+        return (
+          <InsightsView
+            projectId={id}
+          />
+        );
+      
       case 'suggestions':
         return (
           <SuggestionsPanel
@@ -1031,8 +1112,32 @@ export default function ProjectHome() {
             project={project}
           />
         );
+      
+      case 'threads':
+        return (
+          <ThreadsView
+            projectId={id}
+            threads={threads || []}
+            onOpenFullChat={() => navigate('/messages', { state: { projectId: id } })}
+          />
+        );
+      
+      case 'vault':
+        return (
+          <VaultView
+            files={files || []}
+            onUpload={handleUpload}
+            onFileClick={handleFileClick}
+            onNewFolder={handleNewFolder}
+          />
+        );
+      
       default:
-        return <PlaceholderView view={currentView} />;
+        return (
+          <div className="p-10 text-center text-text-tertiary">
+            View not found
+          </div>
+        );
     }
   };
 

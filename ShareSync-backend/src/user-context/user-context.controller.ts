@@ -1,42 +1,45 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
+// src/user-context/user-context.controller.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// USER CONTEXT CONTROLLER: "Welcome Back" Feature API
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
   Patch,
-  Delete,
-  Body, 
-  UseGuards, 
+  Body,
+  UseGuards,
   Req,
   HttpStatus,
   HttpCode,
-  BadRequestException,
-  NotFoundException,
-  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
   ApiBearerAuth,
-  ApiBody,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserContextService } from './user-context.service';
-import { 
-  UpdateContextDto,
+import {
   SaveContextDto,
+  UpdateContextDto,
+  AddUnfinishedActionDto,
   CompleteActionDto,
   StartFocusSessionDto,
   EndFocusSessionDto,
-  AddUnfinishedActionDto,
   UpdateCollaboratorDto,
-  UpdateWorkspaceStateDto,
   ContextSummaryResponseDto,
-} from '../dto/user-context.dto';
-import { Request } from 'express';
-import { Types } from 'mongoose';
+  UserContextResponseDto,
+} from './dto/user-context.dto';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONTROLLER
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @ApiTags('User Context')
 @Controller('user-context')
@@ -47,338 +50,226 @@ export class UserContextController {
 
   constructor(private readonly contextService: UserContextService) {}
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CONTEXT RETRIEVAL
+  // ─────────────────────────────────────────────────────────────────────────────
+
   @Get()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
-    summary: 'Get user context',
-    description: 'Retrieves complete context for authenticated user',
+  @ApiOperation({ summary: 'Get full user context' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User context retrieved',
+    type: UserContextResponseDto,
   })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Context retrieved successfully' })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Context not found' })
-  async getContext(@Req() req: Request) {
-    try {
-      const userId = req.user['userId'];
-      this.logger.log(`Fetching context for user: ${userId}`);
-      
-      const context = await this.contextService.getContext(userId);
-      
-      if (!context) {
-        throw new NotFoundException('User context not found. This may be your first session.');
-      }
-      
-      return context;
-    } catch (error) {
-      this.logger.error(`Error fetching context: ${error.message}`, error.stack);
-      
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      
-      throw new InternalServerErrorException('Failed to retrieve user context');
-    }
+  async getContext(@Req() req: any) {
+    const context = await this.contextService.getContext(req.user.userId);
+    return {
+      success: true,
+      data: context,
+    };
   }
 
   @Get('summary')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get context summary' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Context summary retrieved' })
-  async getContextSummary(@Req() req: Request): Promise<ContextSummaryResponseDto> {
-    try {
-      const userId = req.user['userId'];
-      this.logger.log(`Fetching context summary for user: ${userId}`);
-      
-      return await this.contextService.getContextSummary(userId);
-    } catch (error) {
-      this.logger.error(`Error fetching context summary: ${error.message}`, error.stack);
-      throw new InternalServerErrorException('Failed to retrieve context summary');
-    }
+  @ApiOperation({ summary: 'Get context summary for "Welcome Back" screen' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Context summary for welcome back experience',
+    type: ContextSummaryResponseDto,
+  })
+  async getContextSummary(@Req() req: any) {
+    const summary = await this.contextService.getContextSummary(req.user.userId);
+    return {
+      success: true,
+      data: summary,
+    };
   }
 
-  @Get('exists')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Check if context exists' })
-  async checkContextExists(@Req() req: Request) {
-    try {
-      const userId = req.user['userId'];
-      const context = await this.contextService.getContext(userId);
-      
-      return {
-        exists: !!context,
-        hasUnfinishedWork: (context?.unfinishedActions?.length || 0) > 0,
-      };
-    } catch (error) {
-      this.logger.error(`Error checking context existence: ${error.message}`);
-      return { exists: false, hasUnfinishedWork: false };
-    }
-  }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CONTEXT UPDATES
+  // ─────────────────────────────────────────────────────────────────────────────
 
   @Post('save')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
-  @ApiOperation({ summary: 'Save user context' })
-  @ApiBody({ type: SaveContextDto })
-  async saveContext(@Req() req: Request, @Body() contextData: SaveContextDto) {
-    try {
-      const userId = req.user['userId'];
-      this.logger.debug(`Saving context for user: ${userId}`);
-      
-      if (contextData.lastActiveProjectId && !Types.ObjectId.isValid(contextData.lastActiveProjectId)) {
-        throw new BadRequestException('Invalid project ID format');
-      }
-      if (contextData.lastActiveTaskId && !Types.ObjectId.isValid(contextData.lastActiveTaskId)) {
-        throw new BadRequestException('Invalid task ID format');
-      }
-      
-      return await this.contextService.saveContext(userId, contextData);
-    } catch (error) {
-      this.logger.error(`Error saving context: ${error.message}`, error.stack);
-      
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      
-      throw new InternalServerErrorException('Failed to save user context');
-    }
+  @ApiOperation({ summary: 'Save current context (called on navigation)' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Context saved' })
+  @Throttle({ default: { limit: 60, ttl: 60000 } }) // High frequency allowed
+  async saveContext(@Req() req: any, @Body() dto: SaveContextDto) {
+    const context = await this.contextService.saveContext(req.user.userId, dto);
+    return {
+      success: true,
+      data: context,
+    };
   }
 
-  @Patch()
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
-  @ApiOperation({ summary: 'Partial context update' })
-  @ApiBody({ type: UpdateContextDto })
-  async updateContext(@Req() req: Request, @Body() updateData: UpdateContextDto) {
-    try {
-      const userId = req.user['userId'];
-      return await this.contextService.updateContext(userId, updateData);
-    } catch (error) {
-      this.logger.error(`Error updating context: ${error.message}`);
-      throw new InternalServerErrorException('Failed to update context');
-    }
+  @Put()
+  @ApiOperation({ summary: 'Update user context and preferences' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Context updated' })
+  async updateContext(@Req() req: any, @Body() dto: UpdateContextDto) {
+    const context = await this.contextService.updateContext(req.user.userId, dto);
+    return {
+      success: true,
+      data: context,
+    };
   }
 
-  @Delete()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Delete user context' })
-  async deleteContext(@Req() req: Request) {
-    try {
-      const userId = req.user['userId'];
-      this.logger.log(`Deleting context for user: ${userId}`);
-      
-      await this.contextService.deleteContext(userId);
-      
-      return { message: 'User context deleted successfully' };
-    } catch (error) {
-      this.logger.error(`Error deleting context: ${error.message}`);
-      throw new InternalServerErrorException('Failed to delete context');
-    }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // UNFINISHED ACTIONS (Zeigarnik Effect)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Get('unfinished')
+  @ApiOperation({ summary: 'Get unfinished actions' })
+  async getUnfinishedActions(@Req() req: any) {
+    const actions = await this.contextService.getUnfinishedActions(req.user.userId);
+    return {
+      success: true,
+      data: actions,
+    };
   }
 
-  @Post('unfinished-action')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Add unfinished action' })
-  @ApiBody({ type: AddUnfinishedActionDto })
-  async addUnfinishedAction(@Req() req: Request, @Body() actionData: AddUnfinishedActionDto) {
-    try {
-      const userId = req.user['userId'];
-      return await this.contextService.addUnfinishedAction(userId, actionData);
-    } catch (error) {
-      this.logger.error(`Error adding unfinished action: ${error.message}`);
-      throw new InternalServerErrorException('Failed to add unfinished action');
-    }
+  @Post('unfinished')
+  @ApiOperation({ summary: 'Add an unfinished action' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Action added' })
+  async addUnfinishedAction(
+    @Req() req: any,
+    @Body() dto: AddUnfinishedActionDto,
+  ) {
+    const context = await this.contextService.addUnfinishedAction(
+      req.user.userId,
+      dto,
+    );
+    return {
+      success: true,
+      data: context.unfinishedActions,
+    };
   }
 
   @Post('action-complete')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Complete unfinished action' })
-  @ApiBody({ type: CompleteActionDto })
-  async completeAction(@Req() req: Request, @Body() { action }: CompleteActionDto) {
-    try {
-      const userId = req.user['userId'];
-      this.logger.debug(`Completing action for user ${userId}: ${action}`);
-      
-      return await this.contextService.completeAction(userId, action);
-    } catch (error) {
-      this.logger.error(`Error completing action: ${error.message}`);
-      throw new InternalServerErrorException('Failed to complete action');
-    }
+  @ApiOperation({ summary: 'Mark an unfinished action as complete' })
+  async completeAction(@Req() req: any, @Body() dto: CompleteActionDto) {
+    const result = await this.contextService.completeAction(
+      req.user.userId,
+      dto.action,
+    );
+    return {
+      success: true,
+      data: {
+        completed: result.completed,
+        remainingActions: result.context.unfinishedActions,
+      },
+    };
   }
 
-  @Get('unfinished-actions')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get unfinished actions' })
-  async getUnfinishedActions(@Req() req: Request) {
-    try {
-      const userId = req.user['userId'];
-      const context = await this.contextService.getContext(userId);
-      
-      return {
-        unfinishedActions: context?.unfinishedActions || [],
-        count: context?.unfinishedActions?.length || 0,
-      };
-    } catch (error) {
-      this.logger.error(`Error getting unfinished actions: ${error.message}`);
-      return { unfinishedActions: [], count: 0 };
-    }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FOCUS SESSIONS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Get('focus-sessions')
+  @ApiOperation({ summary: 'Get recent focus sessions' })
+  async getFocusSessions(@Req() req: any) {
+    const sessions = await this.contextService.getFocusSessions(req.user.userId);
+    return {
+      success: true,
+      data: sessions,
+    };
   }
 
   @Post('focus/start')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Start focus session' })
-  @ApiBody({ type: StartFocusSessionDto })
-  async startFocusSession(@Req() req: Request, @Body() sessionData: StartFocusSessionDto) {
-    try {
-      const userId = req.user['userId'];
-      this.logger.log(`Starting focus session for user: ${userId}`);
-      
-      return await this.contextService.startFocusSession(userId, sessionData);
-    } catch (error) {
-      this.logger.error(`Error starting focus session: ${error.message}`);
-      throw new InternalServerErrorException('Failed to start focus session');
-    }
+  @ApiOperation({ summary: 'Start a focus session' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Focus session started' })
+  async startFocusSession(@Req() req: any, @Body() dto: StartFocusSessionDto) {
+    const context = await this.contextService.startFocusSession(req.user.userId);
+    return {
+      success: true,
+      data: {
+        isInFocusMode: context.isInFocusMode,
+        focusModeStartedAt: context.focusModeStartedAt,
+      },
+    };
   }
 
   @Post('focus/end')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'End focus session' })
-  @ApiBody({ type: EndFocusSessionDto })
-  async endFocusSession(@Req() req: Request, @Body() sessionData: EndFocusSessionDto) {
-    try {
-      const userId = req.user['userId'];
-      this.logger.log(`Ending focus session for user: ${userId}`);
-      
-      return await this.contextService.endFocusSession(userId, sessionData);
-    } catch (error) {
-      this.logger.error(`Error ending focus session: ${error.message}`);
-      throw new InternalServerErrorException('Failed to end focus session');
-    }
+  @ApiOperation({ summary: 'End a focus session' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Focus session ended' })
+  async endFocusSession(@Req() req: any, @Body() dto: EndFocusSessionDto) {
+    const context = await this.contextService.endFocusSession(
+      req.user.userId,
+      dto,
+    );
+    return {
+      success: true,
+      data: {
+        isInFocusMode: context.isInFocusMode,
+        totalFocusMinutesToday: context.totalFocusMinutesToday,
+        recentSession: context.recentFocusSessions[context.recentFocusSessions.length - 1],
+      },
+    };
   }
 
-  @Get('focus/history')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get focus session history' })
-  async getFocusHistory(@Req() req: Request) {
-    try {
-      const userId = req.user['userId'];
-      const context = await this.contextService.getContext(userId);
-      
-      return {
-        sessions: context?.focusSessionHistory || [],
-        totalMinutesToday: context?.totalFocusMinutesToday || 0,
-        streak: context?.focusStreak || 0,
-      };
-    } catch (error) {
-      this.logger.error(`Error getting focus history: ${error.message}`);
-      return { sessions: [], totalMinutesToday: 0, streak: 0 };
-    }
-  }
-
-  @Post('collaborator')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
-  @ApiOperation({ summary: 'Update collaborator context' })
-  @ApiBody({ type: UpdateCollaboratorDto })
-  async updateCollaborator(@Req() req: Request, @Body() collaboratorData: UpdateCollaboratorDto) {
-    try {
-      const userId = req.user['userId'];
-      return await this.contextService.updateCollaborator(userId, collaboratorData);
-    } catch (error) {
-      this.logger.error(`Error updating collaborator: ${error.message}`);
-      throw new InternalServerErrorException('Failed to update collaborator context');
-    }
-  }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // COLLABORATORS
+  // ─────────────────────────────────────────────────────────────────────────────
 
   @Get('collaborators')
-  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get recent collaborators' })
-  async getRecentCollaborators(@Req() req: Request) {
-    try {
-      const userId = req.user['userId'];
-      const context = await this.contextService.getContext(userId);
-      
-      return {
-        collaborators: context?.recentCollaborators || [],
-        count: context?.recentCollaborators?.length || 0,
-      };
-    } catch (error) {
-      this.logger.error(`Error getting collaborators: ${error.message}`);
-      return { collaborators: [], count: 0 };
-    }
+  async getRecentCollaborators(@Req() req: any) {
+    const collaborators = await this.contextService.getRecentCollaborators(
+      req.user.userId,
+    );
+    return {
+      success: true,
+      data: collaborators,
+    };
   }
 
-  @Patch('workspace')
+  @Post('collaborators')
+  @ApiOperation({ summary: 'Update collaborator interaction' })
+  async updateCollaborator(
+    @Req() req: any,
+    @Body() dto: UpdateCollaboratorDto,
+  ) {
+    const context = await this.contextService.updateCollaborator(
+      req.user.userId,
+      dto.userId,
+    );
+    return {
+      success: true,
+      data: context.recentCollaborators,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SESSION MANAGEMENT
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post('session/start')
+  @ApiOperation({ summary: 'Start a new session (called on app load)' })
+  async startSession(@Req() req: any) {
+    const context = await this.contextService.startSession(req.user.userId);
+    return {
+      success: true,
+      data: {
+        sessionStartedAt: context.sessionStartedAt,
+      },
+    };
+  }
+
+  @Post('session/end')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
-  @ApiOperation({ summary: 'Update workspace state' })
-  @ApiBody({ type: UpdateWorkspaceStateDto })
-  async updateWorkspaceState(@Req() req: Request, @Body() workspaceData: UpdateWorkspaceStateDto) {
-    try {
-      const userId = req.user['userId'];
-      return await this.contextService.updateWorkspaceState(userId, workspaceData);
-    } catch (error) {
-      this.logger.error(`Error updating workspace: ${error.message}`);
-      throw new InternalServerErrorException('Failed to update workspace state');
-    }
+  @ApiOperation({ summary: 'End session (called on app close)' })
+  async endSession(@Req() req: any) {
+    await this.contextService.endSession(req.user.userId);
+    return {
+      success: true,
+      message: 'Session ended',
+    };
   }
 
   @Post('heartbeat')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 120, ttl: 60000 } })
-  @ApiOperation({ summary: 'Session heartbeat' })
-  async heartbeat(@Req() req: Request) {
-    try {
-      const userId = req.user['userId'];
-      const context = await this.contextService.updateSessionActivity(userId);
-      
-      return { lastActiveAt: context.lastActiveAt };
-    } catch (error) {
-      this.logger.error(`Error recording heartbeat: ${error.message}`);
-      throw new InternalServerErrorException('Failed to record heartbeat');
-    }
-  }
-
-  @Get('analytics')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get session analytics' })
-  async getSessionAnalytics(@Req() req: Request) {
-    try {
-      const userId = req.user['userId'];
-      const context = await this.contextService.getContext(userId);
-      
-      return {
-        sessionDurationMinutes: Math.floor((context?.sessionDuration || 0) / 60),
-        totalFocusMinutesToday: context?.totalFocusMinutesToday || 0,
-        focusStreak: context?.focusStreak || 0,
-        dailySessionsCount: context?.dailySessionsCount || 0,
-        contextSwitchCount: context?.contextSwitchCount || 0,
-        restoreCount: context?.restoreCount || 0,
-      };
-    } catch (error) {
-      this.logger.error(`Error getting analytics: ${error.message}`);
-      return {
-        sessionDurationMinutes: 0,
-        totalFocusMinutesToday: 0,
-        focusStreak: 0,
-        dailySessionsCount: 0,
-        contextSwitchCount: 0,
-        restoreCount: 0,
-      };
-    }
-  }
-
-  @Post('reset-daily')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Reset daily counters' })
-  async resetDailyCounters(@Req() req: Request) {
-    try {
-      const userId = req.user['userId'];
-      this.logger.log(`Resetting daily counters for user: ${userId}`);
-      
-      await this.contextService.resetDailyCounters(userId);
-      
-      return { message: 'Daily counters reset successfully' };
-    } catch (error) {
-      this.logger.error(`Error resetting daily counters: ${error.message}`);
-      throw new InternalServerErrorException('Failed to reset daily counters');
-    }
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Session heartbeat (called every 30s)' })
+  @Throttle({ default: { limit: 120, ttl: 60000 } }) // 2 per second max
+  async heartbeat(@Req() req: any) {
+    await this.contextService.heartbeat(req.user.userId);
   }
 }

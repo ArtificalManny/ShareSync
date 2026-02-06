@@ -100,7 +100,7 @@ export class MomentumService {
       .select('status')
       .lean();
 
-    const completed = tasks.filter(t => t.status === 'completed').length;
+    const completed = tasks.filter((t: any) => t.status === 'completed').length;
     const total = tasks.length || 1;
 
     const velocity = completed / total;

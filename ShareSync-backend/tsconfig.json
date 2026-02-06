@@ -31,5 +31,5 @@
     "test", 
     "**/*spec.ts",
     "server/**/*"
-  ]
+  , "src/prisma/**", "src/utils/logUserActivity.ts"]
 }

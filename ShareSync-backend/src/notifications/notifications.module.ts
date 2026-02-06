@@ -1,21 +1,38 @@
+// src/notifications/notifications.module.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS MODULE
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import {
+  Notification,
+  NotificationSchema,
+} from './schemas/notification.schema';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
-import { EmailService } from './email.service';
-import { SmsService } from './sms.service';
-import { Notification, NotificationSchema } from './schemas/notifications.schema';
-import { User, UserSchema } from '../user/schemas/user.schema';
+import { NotificationsGateway } from './notifications.gateway';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Notification.name, schema: NotificationSchema },
-      { name: User.name, schema: UserSchema },
     ]),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET', 'dev_secret'),
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '7d'),
+        },
+      }),
+    }),
   ],
   controllers: [NotificationsController],
-  providers: [NotificationsService, EmailService, SmsService],
-  exports: [NotificationsService, EmailService, SmsService],
+  providers: [NotificationsService, NotificationsGateway],
+  exports: [NotificationsService, NotificationsGateway],
 })
 export class NotificationsModule {}

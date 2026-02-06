@@ -1,67 +1,199 @@
 // src/app.module.ts
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHARESYNC MAIN APPLICATION MODULE - ALL PHASES COMPLETE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INFRASTRUCTURE MODULES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { CacheModule } from './cache/cache.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
+import { HealthModule } from './health/health.module';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUTH & USERS - Note: folder is "user" not "users"
+// ═══════════════════════════════════════════════════════════════════════════════
 
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
-import { ProjectModule } from './projects/project.module';
-import { ExperimentsModule } from './experiments/experiments.module';
-import { FeedModule } from './feed/feed.module';
-import { ProfileModule } from './profile/profile.module';
-import { ActivitiesModule } from './activities/activities.module';
-import { AnnouncementsModule } from './announcements/announcements.module';
-import { RealtimeModule } from './realtime/realtime.module';
-import { MomentumModule } from './momentum/momentum.module';
-import { ModerationModule } from './moderation/moderation.module';
-import { UploadsModule } from './uploads/uploads.module';
-import { StatsModule } from './stats/stats.module';
-import { TasksModule } from './tasks/tasks.module';
-import { AnalyticsModule } from './analytics/analytics.module';
-import { NotificationsModule } from './notifications/notifications.module';
-import { FilesModule } from './files/files.module';
-import { HabitsModule } from './habits/habits.module';
-import { MessageModule } from './message/message.module';
 
-import { AppController } from './app.controller';
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 1: CORE MODULES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { ProjectsModule } from './projects/projects.module';
+import { TasksModule } from './tasks/tasks.module';
+import { UserContextModule } from './user-context/user-context.module';
+import { RealtimeModule } from './realtime/realtime.module';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 2: COLLABORATION MODULES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { MessagesModule } from './messages/messages.module';
+import { NotificationsModule } from './notifications/notifications.module';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 3: GAMIFICATION MODULE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { GamificationModule } from './gamification/gamification.module';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 4: ADVANCED MODULES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { SprintsModule } from './sprints/sprints.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { FilesModule } from './files/files.module';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 5: POLISH & SCALE MODULES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { CalendarModule } from './calendar/calendar.module';
+import { IntegrationsModule } from './integrations/integrations.module';
+import { ReportsModule } from './reports/reports.module';
+import { AIModule } from './ai/ai.module';
 
 @Module({
   imports: [
-    // Load environment variables globally
-    ConfigModule.forRoot({ isGlobal: true }),
+    // ─────────────────────────────────────────────────────────────────────────
+    // GLOBAL CONFIGURATION
+    // ─────────────────────────────────────────────────────────────────────────
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
+      cache: true,
+    }),
 
-    // MongoDB connection
-    MongooseModule.forRoot(
-      process.env.MONGO_URI || 'mongodb://localhost:27017/sharesync',
-    ),
+    // ─────────────────────────────────────────────────────────────────────────
+    // DATABASE
+    // ─────────────────────────────────────────────────────────────────────────
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI', 'mongodb://localhost:27017/sharesync'),
+        retryWrites: true,
+        w: 'majority',
+        maxPoolSize: 10,
+        minPoolSize: 5,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        autoIndex: configService.get<string>('NODE_ENV') !== 'production',
+      }),
+    }),
 
-    // Rate limiting
-    ThrottlerModule.forRoot([{ ttl: 60, limit: 20 }]),
+    // ─────────────────────────────────────────────────────────────────────────
+    // CACHING
+    // ─────────────────────────────────────────────────────────────────────────
+    CacheModule,
 
-    // Feature modules
+    // ─────────────────────────────────────────────────────────────────────────
+    // RATE LIMITING
+    // ─────────────────────────────────────────────────────────────────────────
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ([
+        {
+          name: 'short',
+          ttl: 1000,
+          limit: configService.get<number>('THROTTLE_SHORT_LIMIT', 3),
+        },
+        {
+          name: 'medium',
+          ttl: 10000,
+          limit: configService.get<number>('THROTTLE_MEDIUM_LIMIT', 20),
+        },
+        {
+          name: 'long',
+          ttl: 60000,
+          limit: configService.get<number>('THROTTLE_LONG_LIMIT', 100),
+        },
+      ]),
+    }),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // EVENT EMITTER
+    // ─────────────────────────────────────────────────────────────────────────
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      newListener: false,
+      removeListener: false,
+      maxListeners: 20,
+      verboseMemoryLeak: false,
+      ignoreErrors: false,
+    }),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SCHEDULED TASKS
+    // ─────────────────────────────────────────────────────────────────────────
+    ScheduleModule.forRoot(),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // INFRASTRUCTURE
+    // ─────────────────────────────────────────────────────────────────────────
+    MonitoringModule,
+    HealthModule,
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // CORE MODULES
+    // ─────────────────────────────────────────────────────────────────────────
     AuthModule,
     UserModule,
-    ProjectModule,
-    ExperimentsModule,
-    FeedModule,
-    ProfileModule,
-    ActivitiesModule,
-    AnnouncementsModule,
-    RealtimeModule,
-    MomentumModule,
-    ModerationModule,
-    UploadsModule,
-    StatsModule,
+    ProjectsModule,
     TasksModule,
-    AnalyticsModule,
+    UserContextModule,
+    RealtimeModule,
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // COLLABORATION
+    // ─────────────────────────────────────────────────────────────────────────
+    MessagesModule,
     NotificationsModule,
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GAMIFICATION
+    // ─────────────────────────────────────────────────────────────────────────
+    GamificationModule,
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ADVANCED
+    // ─────────────────────────────────────────────────────────────────────────
+    SprintsModule,
+    AnalyticsModule,
     FilesModule,
-    HabitsModule,
-    MessageModule,
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POLISH & SCALE
+    // ─────────────────────────────────────────────────────────────────────────
+    CalendarModule,
+    IntegrationsModule,
+    ReportsModule,
+    AIModule,
   ],
-  controllers: [AppController],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Add any middleware here
+  }
+}

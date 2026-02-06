@@ -1,242 +1,641 @@
+// src/files/files.service.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// FILES SERVICE: Vault file management
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import {
   Injectable,
-  ForbiddenException,
   NotFoundException,
+  BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { File, FileDocument, FileType, FileStatus } from './schemas/file.schema';
+import { Folder, FolderDocument } from './schemas/folder.schema';
+import {
+  CreateFileDto,
+  UpdateFileDto,
+  CreateFolderDto,
+  UpdateFolderDto,
+  FileQueryDto,
+  UploadNewVersionDto,
+} from './dto/file.dto';
 
-import { File, FileDocument, FileStatus } from './schemas/file.schema';
-import { Project, ProjectDocument } from '../projects/schemas/project.schema';
-import { RealtimeGateway } from '../realtime/realtime.gateway';
-
-type CreateFileInput = {
-  storageKey: string;
-  url?: string;
-  thumbKey?: string;
-  thumbUrl?: string;
-  name: string;
-  size: number;
-  mime: string;
-  kind?: 'image' | 'video' | 'doc' | 'audio' | 'other';
-  projectId: string;
-  status?: FileStatus;
-  moderation?: { reason?: string; tags?: string[] };
-};
-
-type ListOpts = { cursor?: string | null; limit?: number | null };
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVICE
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @Injectable()
 export class FilesService {
+  private readonly logger = new Logger(FilesService.name);
+
   constructor(
     @InjectModel(File.name)
     private readonly fileModel: Model<FileDocument>,
-
-    @InjectModel(Project.name)
-    private readonly projectModel: Model<ProjectDocument>,
-
-    private readonly realtime: RealtimeGateway,
+    @InjectModel(Folder.name)
+    private readonly folderModel: Model<FolderDocument>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  private async getUserRole(
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FILE CRUD
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async createFile(userId: string, dto: CreateFileDto): Promise<FileDocument> {
+    // Validate folder if provided
+    if (dto.folderId) {
+      const folder = await this.folderModel.findById(dto.folderId);
+      if (!folder) {
+        throw new BadRequestException('Folder not found');
+      }
+    }
+
+    // Detect file type from extension if not provided
+    const extension = dto.originalName.split('.').pop()?.toLowerCase();
+
+    const file = new this.fileModel({
+      ...dto,
+      projectId: new Types.ObjectId(dto.projectId),
+      folderId: dto.folderId ? new Types.ObjectId(dto.folderId) : undefined,
+      linkedTaskId: dto.linkedTaskId ? new Types.ObjectId(dto.linkedTaskId) : undefined,
+      uploadedBy: new Types.ObjectId(userId),
+      extension,
+      status: FileStatus.READY,
+      versions: [
+        {
+          version: 1,
+          url: dto.url,
+          size: dto.size,
+          uploadedBy: new Types.ObjectId(userId),
+          uploadedAt: new Date(),
+        },
+      ],
+    });
+
+    const saved = await file.save();
+
+    // Update folder counts
+    if (dto.folderId) {
+      await this.updateFolderCounts(dto.folderId);
+    }
+
+    this.eventEmitter.emit('file.uploaded', {
+      fileId: saved._id,
+      projectId: dto.projectId,
+      uploadedBy: userId,
+      fileName: saved.name,
+      fileSize: saved.size,
+    });
+
+    this.logger.log(`File uploaded: ${saved.name}`);
+
+    return saved;
+  }
+
+  async findById(fileId: string): Promise<FileDocument> {
+    const file = await this.fileModel
+      .findById(fileId)
+      .populate('uploadedBy', 'firstName lastName avatar')
+      .populate('linkedTaskId', 'title');
+
+    if (!file) {
+      throw new NotFoundException('File not found');
+    }
+
+    return file;
+  }
+
+  async findByProject(
     projectId: string,
+    query: FileQueryDto = {},
+  ): Promise<{ files: FileDocument[]; total: number }> {
+    const filter: any = {
+      projectId: new Types.ObjectId(projectId),
+      status: { $ne: FileStatus.DELETED },
+    };
+
+    if (query.folderId) {
+      filter.folderId = new Types.ObjectId(query.folderId);
+    } else if (query.folderId === null || query.folderId === 'root') {
+      filter.folderId = { $exists: false };
+    }
+
+    if (query.type) {
+      filter.type = query.type;
+    }
+
+    if (query.starredOnly) {
+      filter.isStarred = true;
+    }
+
+    if (!query.includeArchived) {
+      filter.isArchived = false;
+    }
+
+    if (query.search) {
+      filter.$text = { $search: query.search };
+    }
+
+    const sortField = query.sortBy || 'createdAt';
+    const sortOrder = query.sortOrder === 'asc' ? 1 : -1;
+    const limit = query.limit ? parseInt(query.limit, 10) : 50;
+    const offset = query.offset ? parseInt(query.offset, 10) : 0;
+
+    const [files, total] = await Promise.all([
+      this.fileModel
+        .find(filter)
+        .populate('uploadedBy', 'firstName lastName avatar')
+        .sort({ [sortField]: sortOrder })
+        .skip(offset)
+        .limit(limit),
+      this.fileModel.countDocuments(filter),
+    ]);
+
+    return { files, total };
+  }
+
+  async update(fileId: string, dto: UpdateFileDto): Promise<FileDocument> {
+    const file = await this.findById(fileId);
+    const oldFolderId = file.folderId?.toString();
+
+    Object.assign(file, {
+      ...dto,
+      folderId: dto.folderId ? new Types.ObjectId(dto.folderId) : file.folderId,
+      linkedTaskId: dto.linkedTaskId ? new Types.ObjectId(dto.linkedTaskId) : file.linkedTaskId,
+    });
+
+    const saved = await file.save();
+
+    // Update folder counts if moved
+    if (oldFolderId !== dto.folderId) {
+      if (oldFolderId) await this.updateFolderCounts(oldFolderId);
+      if (dto.folderId) await this.updateFolderCounts(dto.folderId);
+    }
+
+    return saved;
+  }
+
+  async moveFile(fileId: string, targetFolderId: string | null): Promise<FileDocument> {
+    const file = await this.findById(fileId);
+    const oldFolderId = file.folderId?.toString();
+
+    if (targetFolderId) {
+      const targetFolder = await this.folderModel.findById(targetFolderId);
+      if (!targetFolder) {
+        throw new BadRequestException('Target folder not found');
+      }
+      file.folderId = new Types.ObjectId(targetFolderId);
+    } else {
+      file.folderId = undefined;
+    }
+
+    const saved = await file.save();
+
+    // Update folder counts
+    if (oldFolderId) await this.updateFolderCounts(oldFolderId);
+    if (targetFolderId) await this.updateFolderCounts(targetFolderId);
+
+    return saved;
+  }
+
+  async delete(fileId: string): Promise<void> {
+    const file = await this.findById(fileId);
+    
+    // Soft delete
+    file.status = FileStatus.DELETED;
+    await file.save();
+
+    // Update folder counts
+    if (file.folderId) {
+      await this.updateFolderCounts(file.folderId.toString());
+    }
+
+    this.logger.log(`File deleted: ${file.name}`);
+  }
+
+  async permanentDelete(fileId: string): Promise<void> {
+    const file = await this.fileModel.findById(fileId);
+    if (!file) return;
+
+    // TODO: Delete from storage provider
+
+    await this.fileModel.findByIdAndDelete(fileId);
+
+    if (file.folderId) {
+      await this.updateFolderCounts(file.folderId.toString());
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // VERSIONING
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async uploadNewVersion(
+    fileId: string,
     userId: string,
-  ): Promise<'owner' | 'member' | 'viewer' | null> {
-    if (!Types.ObjectId.isValid(projectId)) return null;
+    dto: UploadNewVersionDto,
+  ): Promise<FileDocument> {
+    const file = await this.findById(fileId);
 
-    const proj = await this.projectModel
-      .findById(projectId)
-      .select({ userId: 1, members: 1 })
-      .lean();
+    const newVersion = file.currentVersion + 1;
 
-    if (!proj) return null;
+    file.versions.push({
+      version: newVersion,
+      url: dto.url,
+      size: dto.size,
+      uploadedBy: new Types.ObjectId(userId),
+      uploadedAt: new Date(),
+      changelog: dto.changelog,
+    });
 
-    if (String(proj.userId) === String(userId)) return 'owner';
+    file.currentVersion = newVersion;
+    file.url = dto.url;
+    file.size = dto.size;
+    file.storageKey = dto.storageKey;
 
-    const m = (proj.members || []).find(
-      (x: any) => x?.userId && String(x.userId) === String(userId),
+    const saved = await file.save();
+
+    this.eventEmitter.emit('file.version.uploaded', {
+      fileId: saved._id,
+      version: newVersion,
+      uploadedBy: userId,
+    });
+
+    return saved;
+  }
+
+  async getVersions(fileId: string): Promise<FileDocument['versions']> {
+    const file = await this.findById(fileId);
+    return file.versions;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STARRING
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async toggleStar(fileId: string, userId: string): Promise<{ isStarred: boolean }> {
+    const file = await this.findById(fileId);
+    const userObjectId = new Types.ObjectId(userId);
+
+    const isCurrentlyStarred = file.starredBy.some(
+      (id) => id.toString() === userId,
     );
 
-    return (m?.role as any) || null;
-  }
-
-  private async assertCanView(projectId: string, userId: string) {
-    const role = await this.getUserRole(projectId, userId);
-    if (!role) {
-      throw new ForbiddenException('You do not have access to this project.');
+    if (isCurrentlyStarred) {
+      file.starredBy = file.starredBy.filter((id) => id.toString() !== userId);
+      file.isStarred = file.starredBy.length > 0;
+    } else {
+      file.starredBy.push(userObjectId);
+      file.isStarred = true;
     }
+
+    await file.save();
+
+    return { isStarred: !isCurrentlyStarred };
   }
 
-  private async assertCanEdit(projectId: string, userId: string) {
-    const role = await this.getUserRole(projectId, userId);
-    if (!role || (role !== 'owner' && role !== 'member')) {
-      throw new ForbiddenException(
-        'You do not have permission to add/remove files.',
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ARCHIVE
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async archive(fileId: string): Promise<FileDocument> {
+    const file = await this.findById(fileId);
+    file.isArchived = true;
+    return file.save();
+  }
+
+  async unarchive(fileId: string): Promise<FileDocument> {
+    const file = await this.findById(fileId);
+    file.isArchived = false;
+    return file.save();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DOWNLOAD TRACKING
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async incrementDownloadCount(fileId: string): Promise<void> {
+    await this.fileModel.updateOne(
+      { _id: new Types.ObjectId(fileId) },
+      { $inc: { downloadCount: 1 } },
+    );
+  }
+
+  async incrementViewCount(fileId: string): Promise<void> {
+    await this.fileModel.updateOne(
+      { _id: new Types.ObjectId(fileId) },
+      { $inc: { viewCount: 1 } },
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FOLDER CRUD
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async createFolder(userId: string, dto: CreateFolderDto): Promise<FolderDocument> {
+    // Check for duplicate name in same parent
+    const existing = await this.folderModel.findOne({
+      projectId: new Types.ObjectId(dto.projectId),
+      parentId: dto.parentId ? new Types.ObjectId(dto.parentId) : { $exists: false },
+      name: dto.name,
+    });
+
+    if (existing) {
+      throw new BadRequestException('Folder with this name already exists');
+    }
+
+    // Build path
+    let path = '/';
+    if (dto.parentId) {
+      const parent = await this.folderModel.findById(dto.parentId);
+      if (!parent) {
+        throw new BadRequestException('Parent folder not found');
+      }
+      path = `${parent.path}${parent.name}/`;
+    }
+
+    const folder = new this.folderModel({
+      ...dto,
+      projectId: new Types.ObjectId(dto.projectId),
+      parentId: dto.parentId ? new Types.ObjectId(dto.parentId) : undefined,
+      path,
+      createdBy: new Types.ObjectId(userId),
+    });
+
+    const saved = await folder.save();
+
+    // Update parent folder counts
+    if (dto.parentId) {
+      await this.updateFolderCounts(dto.parentId);
+    }
+
+    return saved;
+  }
+
+  async findFolderById(folderId: string): Promise<FolderDocument> {
+    const folder = await this.folderModel
+      .findById(folderId)
+      .populate('createdBy', 'firstName lastName');
+
+    if (!folder) {
+      throw new NotFoundException('Folder not found');
+    }
+
+    return folder;
+  }
+
+  async findFoldersByProject(
+    projectId: string,
+    parentId?: string,
+  ): Promise<FolderDocument[]> {
+    const filter: any = {
+      projectId: new Types.ObjectId(projectId),
+      isArchived: false,
+    };
+
+    if (parentId) {
+      filter.parentId = new Types.ObjectId(parentId);
+    } else {
+      filter.parentId = { $exists: false };
+    }
+
+    return this.folderModel.find(filter).sort({ name: 1 });
+  }
+
+  async updateFolder(folderId: string, dto: UpdateFolderDto): Promise<FolderDocument> {
+    const folder = await this.findFolderById(folderId);
+
+    if (dto.name && dto.name !== folder.name) {
+      // Check for duplicate
+      const existing = await this.folderModel.findOne({
+        projectId: folder.projectId,
+        parentId: folder.parentId,
+        name: dto.name,
+        _id: { $ne: folder._id },
+      });
+
+      if (existing) {
+        throw new BadRequestException('Folder with this name already exists');
+      }
+    }
+
+    Object.assign(folder, dto);
+    return folder.save();
+  }
+
+  async moveFolder(folderId: string, targetParentId: string | null): Promise<FolderDocument> {
+    const folder = await this.findFolderById(folderId);
+    const oldParentId = folder.parentId?.toString();
+
+    // Prevent moving folder into itself or its children
+    if (targetParentId) {
+      const targetFolder = await this.folderModel.findById(targetParentId);
+      if (!targetFolder) {
+        throw new BadRequestException('Target folder not found');
+      }
+      if (targetFolder.path.includes(`${folder.path}${folder.name}/`)) {
+        throw new BadRequestException('Cannot move folder into its own subfolder');
+      }
+      folder.parentId = new Types.ObjectId(targetParentId);
+      folder.path = `${targetFolder.path}${targetFolder.name}/`;
+    } else {
+      folder.parentId = undefined;
+      folder.path = '/';
+    }
+
+    const saved = await folder.save();
+
+    // Update all subfolders' paths
+    await this.updateSubfolderPaths(folder._id.toString(), folder.path + folder.name + '/');
+
+    // Update parent folder counts
+    if (oldParentId) await this.updateFolderCounts(oldParentId);
+    if (targetParentId) await this.updateFolderCounts(targetParentId);
+
+    return saved;
+  }
+
+  async deleteFolder(folderId: string): Promise<void> {
+    const folder = await this.findFolderById(folderId);
+
+    // Check if folder has contents
+    const hasFiles = await this.fileModel.countDocuments({ folderId: folder._id });
+    const hasSubfolders = await this.folderModel.countDocuments({ parentId: folder._id });
+
+    if (hasFiles > 0 || hasSubfolders > 0) {
+      throw new BadRequestException(
+        'Cannot delete folder with contents. Move or delete contents first.',
       );
     }
+
+    await this.folderModel.findByIdAndDelete(folderId);
+
+    if (folder.parentId) {
+      await this.updateFolderCounts(folder.parentId.toString());
+    }
   }
 
-  private toPublic(d: File | (File & { _id?: any })) {
-    const anyd: any =
-      typeof (d as any).toObject === 'function' ? (d as any).toObject() : d;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FOLDER CONTENTS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async getFolderContents(
+    projectId: string,
+    folderId?: string,
+  ): Promise<{
+    folder: FolderDocument | null;
+    subfolders: FolderDocument[];
+    files: FileDocument[];
+    breadcrumbs: { id: string; name: string }[];
+    totalSize: number;
+  }> {
+    let folder: FolderDocument | null = null;
+    let breadcrumbs: { id: string; name: string }[] = [];
+
+    if (folderId) {
+      folder = await this.findFolderById(folderId);
+      breadcrumbs = await this.buildBreadcrumbs(folder);
+    }
+
+    const [subfolders, filesResult] = await Promise.all([
+      this.findFoldersByProject(projectId, folderId),
+      this.findByProject(projectId, { folderId: folderId || 'root' }),
+    ]);
+
+    const totalSize = filesResult.files.reduce((sum, f) => sum + f.size, 0);
 
     return {
-      id: String(anyd._id ?? ''),
-      storageKey: anyd.storageKey,
-      url: anyd.url,
-      thumbKey: anyd.thumbKey,
-      thumbUrl: anyd.thumbUrl,
-      name: anyd.name,
-      size: Number(anyd.size || 0),
-      mime: anyd.mime,
-      kind: anyd.kind,
-      projectId: anyd.projectId,
-      uploaderId: anyd.uploaderId,
-      status: anyd.status as FileStatus,
-      moderation: anyd.moderation || undefined,
-      createdAt: anyd.createdAt,
+      folder,
+      subfolders,
+      files: filesResult.files,
+      breadcrumbs,
+      totalSize,
     };
   }
 
-  async createOne(input: CreateFileInput, actingUserId: string) {
-    await this.assertCanEdit(input.projectId, actingUserId);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    const doc = await this.fileModel.create({
-      storageKey: input.storageKey,
-      url: input.url,
-      thumbKey: input.thumbKey,
-      thumbUrl: input.thumbUrl,
-      name: input.name,
-      size: input.size,
-      mime: input.mime,
-      kind: input.kind || 'other',
-      projectId: input.projectId,
-      uploaderId: actingUserId,
-      status: input.status ?? 'approved',
-      moderation: input.moderation,
-    });
+  private async updateFolderCounts(folderId: string): Promise<void> {
+    const [fileCount, folderCount, sizeAgg] = await Promise.all([
+      this.fileModel.countDocuments({
+        folderId: new Types.ObjectId(folderId),
+        status: { $ne: FileStatus.DELETED },
+      }),
+      this.folderModel.countDocuments({
+        parentId: new Types.ObjectId(folderId),
+        isArchived: false,
+      }),
+      this.fileModel.aggregate([
+        {
+          $match: {
+            folderId: new Types.ObjectId(folderId),
+            status: { $ne: FileStatus.DELETED },
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$size' } } },
+      ]),
+    ]);
 
-    try {
-      this.realtime.emitToProject(input.projectId, 'project:filesAdded', {
-        projectId: input.projectId,
-        files: [this.toPublic(doc)],
-      });
-    } catch {
-      // ignore websocket errors
-    }
-
-    return this.toPublic(doc);
-  }
-
-  async createMany(
-    projectId: string,
-    items: CreateFileInput[],
-    actingUserId: string,
-  ) {
-    await this.assertCanEdit(projectId, actingUserId);
-
-    const docs = await this.fileModel.insertMany(
-      (items || []).map((i) => ({
-        storageKey: i.storageKey,
-        url: i.url,
-        thumbKey: i.thumbKey,
-        thumbUrl: i.thumbUrl,
-        name: i.name,
-        size: i.size,
-        mime: i.mime,
-        kind: i.kind || 'other',
-        projectId,
-        uploaderId: actingUserId,
-        status: i.status ?? 'approved',
-        moderation: i.moderation,
-      })),
-      { ordered: false },
+    await this.folderModel.updateOne(
+      { _id: new Types.ObjectId(folderId) },
+      {
+        fileCount,
+        folderCount,
+        totalSize: sizeAgg[0]?.total || 0,
+      },
     );
-
-    // FIX: Cast docs to any to avoid TS2590
-    const docsArray: any[] = docs as any;
-    const payload = docsArray.map((d) => this.toPublic(d));
-
-    try {
-      this.realtime.emitToProject(projectId, 'project:filesAdded', {
-        projectId,
-        files: payload,
-      });
-    } catch {
-      // ignore websocket errors
-    }
-
-    return payload;
   }
 
-  async listByProject(
-    projectId: string,
-    actingUserId: string,
-    opts: ListOpts = {},
-  ) {
-    await this.assertCanView(projectId, actingUserId);
+  private async updateSubfolderPaths(parentId: string, newParentPath: string): Promise<void> {
+    const subfolders = await this.folderModel.find({ parentId: new Types.ObjectId(parentId) });
 
-    const limit = Math.min(Math.max(Number(opts.limit ?? 20), 1), 100);
-    const q: FilterQuery<FileDocument> = { projectId };
-
-    if (opts.cursor && Types.ObjectId.isValid(String(opts.cursor))) {
-      q._id = { $lt: new Types.ObjectId(String(opts.cursor)) };
+    for (const subfolder of subfolders) {
+      subfolder.path = newParentPath;
+      await subfolder.save();
+      await this.updateSubfolderPaths(subfolder._id.toString(), `${newParentPath}${subfolder.name}/`);
     }
-
-    const docs = await this.fileModel
-      .find(q)
-      .sort({ _id: -1 })
-      .limit(limit + 1)
-      .lean();
-
-    const hasMore = docs.length > limit;
-    const slice = hasMore ? docs.slice(0, limit) : docs;
-    const items = slice.map((d) => this.toPublic(d as any));
-    const nextCursor = hasMore ? String(slice[slice.length - 1]._id) : null;
-
-    return { items, nextCursor };
   }
 
-  async remove(fileId: string, actingUserId: string) {
-    if (!Types.ObjectId.isValid(fileId)) {
-      throw new NotFoundException('File not found');
+  private async buildBreadcrumbs(folder: FolderDocument): Promise<{ id: string; name: string }[]> {
+    const breadcrumbs: { id: string; name: string }[] = [];
+    let current: FolderDocument | null = folder;
+
+    while (current) {
+      breadcrumbs.unshift({ id: current._id.toString(), name: current.name });
+      if (current.parentId) {
+        current = await this.folderModel.findById(current.parentId);
+      } else {
+        current = null;
+      }
     }
 
-    const doc = await this.fileModel.findById(fileId);
-    if (!doc) {
-      throw new NotFoundException('File not found');
-    }
-
-    await this.assertCanEdit(doc.projectId, actingUserId);
-
-    await this.fileModel.deleteOne({ _id: doc._id });
-
-    try {
-      this.realtime.emitToProject(doc.projectId, 'project:filesRemoved', {
-        projectId: doc.projectId,
-        fileIds: [String(doc._id)],
-      });
-    } catch {
-      // ignore websocket errors
-    }
-
-    return { ok: true };
+    return breadcrumbs;
   }
 
-  async updateStatus(fileId: string, status: FileStatus, reason?: string) {
-    if (!Types.ObjectId.isValid(fileId)) {
-      throw new NotFoundException('File not found');
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FILE TYPE DETECTION
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  static detectFileType(mimeType: string, extension?: string): FileType {
+    if (mimeType.startsWith('image/')) return FileType.IMAGE;
+    if (mimeType.startsWith('video/')) return FileType.VIDEO;
+    if (mimeType.startsWith('audio/')) return FileType.AUDIO;
+    if (mimeType === 'application/pdf') return FileType.PDF;
+    
+    if (
+      mimeType.includes('spreadsheet') ||
+      mimeType.includes('excel') ||
+      extension === 'xlsx' ||
+      extension === 'xls' ||
+      extension === 'csv'
+    ) {
+      return FileType.SPREADSHEET;
     }
 
-    const doc = await this.fileModel.findById(fileId);
-    if (!doc) {
-      throw new NotFoundException('File not found');
+    if (
+      mimeType.includes('presentation') ||
+      mimeType.includes('powerpoint') ||
+      extension === 'pptx' ||
+      extension === 'ppt'
+    ) {
+      return FileType.PRESENTATION;
     }
 
-    doc.status = status;
-    doc.moderation = { ...(doc.moderation || {}), reason };
-    await doc.save();
+    if (
+      mimeType.includes('word') ||
+      mimeType.includes('document') ||
+      extension === 'docx' ||
+      extension === 'doc'
+    ) {
+      return FileType.DOCUMENT;
+    }
 
-    return this.toPublic(doc);
+    if (
+      mimeType.startsWith('text/') ||
+      mimeType === 'application/json' ||
+      mimeType === 'application/javascript' ||
+      mimeType === 'application/xml' ||
+      ['js', 'ts', 'jsx', 'tsx', 'py', 'rb', 'java', 'go', 'rs', 'c', 'cpp', 'h'].includes(
+        extension || '',
+      )
+    ) {
+      return FileType.CODE;
+    }
+
+    if (
+      mimeType.includes('zip') ||
+      mimeType.includes('tar') ||
+      mimeType.includes('rar') ||
+      mimeType.includes('7z') ||
+      mimeType.includes('gzip')
+    ) {
+      return FileType.ARCHIVE;
+    }
+
+    return FileType.OTHER;
   }
 }

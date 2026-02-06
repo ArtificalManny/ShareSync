@@ -1,47 +1,106 @@
 // src/main.ts
-import { config as loadEnv } from 'dotenv';
-loadEnv();
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHARESYNC BACKEND - APPLICATION BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════════
 
-import { join } from 'path';
 import { NestFactory } from '@nestjs/core';
-import { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { IoAdapter } from '@nestjs/platform-socket.io';
+import helmet from 'helmet';
+import compression from 'compression';
+
 import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const logger = new Logger('Bootstrap');
 
-  // All routes under /api (e.g. /api/auth/login)
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+  });
+
+  const configService = app.get(ConfigService);
+
   app.setGlobalPrefix('api');
 
-  const isProd = process.env.NODE_ENV === 'production';
+  app.use(
+    helmet({
+      contentSecurityPolicy: process.env.NODE_ENV === 'production',
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
-  // ✅ CORS Configuration - Allow frontend to connect
+  const corsOrigins = configService.get<string>(
+    'CORS_ORIGINS',
+    'http://localhost:3000,http://localhost:5173',
+  );
+
   app.enableCors({
-    origin: isProd 
-      ? ['https://your-domain.com'] 
-      : true, // ✅ In dev: allow all localhost origins
-    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    origin: corsOrigins.split(','),
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
     maxAge: 86400,
   });
+
+  // ✅ FIX: compression default import
+  app.use(compression());
 
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      transformOptions: { enableImplicitConversion: true },
+      validationError: { target: false, value: false },
     }),
   );
 
-  app.useStaticAssets(join(__dirname, '..', 'uploads'));
+  app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalInterceptors(new TransformInterceptor());
 
-  // Prefer APP_PORT (from .env), fallback to PORT (for hosts like Render/Heroku), then 5050
-  const port = Number(process.env.APP_PORT || process.env.PORT || 5050);
+  app.useWebSocketAdapter(new IoAdapter(app));
 
+  if (process.env.NODE_ENV !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('ShareSync API')
+      .setDescription('ShareSync Project Management API Documentation')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .addTag('Auth', 'Authentication endpoints')
+      .addTag('Users', 'User management')
+      .addTag('Projects', 'Project management')
+      .addTag('Tasks', 'Task management')
+      .addTag('User Context', 'User context & session tracking')
+      .addTag('Presence', 'Real-time presence')
+      .addTag('Cursors', 'Real-time cursor tracking')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'method',
+      },
+    });
+
+    logger.log('Swagger documentation available at /api/docs');
+  }
+
+  const port = configService.get<number>('PORT', 5050);
   await app.listen(port);
-  console.log(`🚀 [Nest] API running at http://localhost:${port}`);
+
+  logger.log(`🚀 ShareSync API running on http://localhost:${port}`);
+  logger.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
+  logger.log(`🔗 Health Check: http://localhost:${port}/api/health`);
+  logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('Failed to start application:', error);
+  process.exit(1);
+});

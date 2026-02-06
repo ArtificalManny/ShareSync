@@ -1,84 +1,576 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+// src/tasks/tasks.service.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// TASKS SERVICE: Business Logic with Gamification Integration
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, Types } from 'mongoose';
-import { Task, TaskDocument, TaskStatus } from './schemas/task.schema';
+import { Model, Types } from 'mongoose';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  Task,
+  TaskDocument,
+  TaskStatus,
+  TaskPriority,
+  CeremonyTier,
+} from './schemas/task.schema';
+import { ProjectsService } from '../projects/projects.service';
+import { CreateTaskDto } from './dto/create-task.dto';
+import {
+  UpdateTaskDto,
+  MoveTaskDto,
+  CompleteTaskDto,
+  AddCommentDto,
+  LogTimeDto,
+} from './dto/update-task.dto';
 
-export type CreateTaskDto = {
-  title: string;
-  status?: TaskStatus;
-  description?: string;
-  dueDate?: string | Date | null;
+// ═══════════════════════════════════════════════════════════════════════════════
+// INTERFACES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface TaskQueryOptions {
+  projectId?: string;
   assigneeId?: string;
-  labels?: string[];
-  notes?: string;
-};
+  status?: TaskStatus | TaskStatus[];
+  priority?: TaskPriority | TaskPriority[];
+  sprintId?: string;
+  search?: string;
+  tags?: string[];
+  isBlocking?: boolean;
+  limit?: number;
+  offset?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
 
-export type PatchTaskDto = Partial<CreateTaskDto>;
+export interface KanbanBoard {
+  [key: string]: any[]; // lean tasks, not hydrated TaskDocuments
+}
+
+export interface CompletionResult {
+  task: TaskDocument;
+  xpAwarded: number;
+  bonusXP: number;
+  isLegendary: boolean;
+  ceremonyTier: CeremonyTier;
+  unblocked: TaskDocument[];
+}
+
+// Variable reward probabilities
+const VARIABLE_REWARDS = {
+  BONUS_CHANCE: 0.15,       // 15%
+  LEGENDARY_CHANCE: 0.01,   // 1%
+  MULTIPLIER_CHANCE: 0.08,  // 8%
+};
 
 @Injectable()
 export class TasksService {
-  constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) {}
+  private readonly logger = new Logger(TasksService.name);
 
-  async create(projectId: string, createdBy: string, dto: CreateTaskDto) {
-    const t = new this.taskModel({
-      title: (dto.title || '').trim(),
-      status: dto.status || 'Not Started',
-      description: dto.description ?? '',
-      dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
-      assigneeId: dto.assigneeId,
-      labels: Array.isArray(dto.labels) ? dto.labels : [],
-      notes: dto.notes,
-      projectId,
-      createdBy,
+  constructor(
+    @InjectModel(Task.name)
+    private readonly taskModel: Model<TaskDocument>,
+    private readonly projectsService: ProjectsService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CREATE
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async create(userId: string, dto: CreateTaskDto): Promise<TaskDocument> {
+    await this.projectsService.findByIdWithAccess(dto.projectId, userId);
+
+    if (dto.parentId) {
+      const parent = await this.taskModel.findById(dto.parentId);
+      if (!parent || parent.projectId.toString() !== dto.projectId) {
+        throw new BadRequestException('Invalid parent task');
+      }
+    }
+
+    const xpValue = this.calculateBaseXP(dto.priority || TaskPriority.MEDIUM);
+
+    const task = new this.taskModel({
+      ...dto,
+      projectId: new Types.ObjectId(dto.projectId),
+      reporterId: new Types.ObjectId(userId),
+      assigneeId: dto.assigneeId ? new Types.ObjectId(dto.assigneeId) : undefined,
+      parentId: dto.parentId ? new Types.ObjectId(dto.parentId) : undefined,
+      sprintId: dto.sprintId ? new Types.ObjectId(dto.sprintId) : undefined,
+      milestoneId: dto.milestoneId ? new Types.ObjectId(dto.milestoneId) : undefined,
+      blockedBy: dto.blockedBy?.map((id) => new Types.ObjectId(id)) || [],
+      xpValue,
     });
-    return t.save();
+
+    const saved = await task.save();
+
+    await this.projectsService.incrementTaskCount(dto.projectId);
+
+    if (dto.blockedBy?.length) {
+      await this.updateBlockingRelationships(saved);
+    }
+
+    this.eventEmitter.emit('task.created', {
+      taskId: saved._id,
+      projectId: dto.projectId,
+      userId,
+      assigneeId: dto.assigneeId,
+    });
+
+    this.logger.log(`Task created: ${saved._id}`);
+    return saved;
   }
 
-  async list(projectId: string, limit = 50, cursor?: string | null) {
-    const q: FilterQuery<TaskDocument> = { projectId };
-    const find = this.taskModel
-      .find(q)
-      .sort({ createdAt: -1 })
-      .limit(Math.min(200, Math.max(1, limit)));
+  // ─────────────────────────────────────────────────────────────────────────────
+  // READ
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    if (cursor && Types.ObjectId.isValid(cursor)) {
-      find.where({ _id: { $lt: new Types.ObjectId(cursor) } });
+  async findById(taskId: string): Promise<TaskDocument> {
+    const task = await this.taskModel.findById(taskId);
+    if (!task) {
+      throw new NotFoundException(`Task ${taskId} not found`);
     }
-
-    const items = await find.lean();
-    const nextCursor = items.length ? String((items[items.length - 1] as any)?._id) : null;
-    return { items, nextCursor };
+    return task;
   }
 
-  async patch(projectId: string, taskId: string, patch: PatchTaskDto) {
-    if (!Types.ObjectId.isValid(taskId)) throw new NotFoundException('Task not found');
-    const update: any = {};
+  async findByIdWithAccess(taskId: string, userId: string): Promise<TaskDocument> {
+    const task = await this.findById(taskId);
+    await this.projectsService.findByIdWithAccess(task.projectId.toString(), userId);
+    return task;
+  }
 
-    if (typeof patch.title === 'string') update.title = patch.title.trim();
-    if (typeof patch.status === 'string') update.status = patch.status;
-    if (typeof patch.description === 'string') update.description = patch.description;
+  async find(
+    userId: string,
+    options: TaskQueryOptions = {},
+  ): Promise<{ tasks: any[]; total: number }> {
+    const {
+      projectId,
+      assigneeId,
+      status,
+      priority,
+      sprintId,
+      search,
+      tags,
+      isBlocking,
+      limit = 50,
+      offset = 0,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = options;
 
-    if (patch.dueDate !== undefined) {
-      update.dueDate = patch.dueDate ? new Date(patch.dueDate as any) : undefined;
+    const query: any = {};
+
+    if (projectId) {
+      await this.projectsService.findByIdWithAccess(projectId, userId);
+      query.projectId = new Types.ObjectId(projectId);
     }
 
-    if (typeof patch.assigneeId === 'string' || patch.assigneeId === null) {
-      update.assigneeId = patch.assigneeId || undefined;
+    if (assigneeId) {
+      query.assigneeId = new Types.ObjectId(assigneeId);
     }
 
-    if (Array.isArray(patch.labels)) update.labels = patch.labels;
-    if (typeof patch.notes === 'string' || patch.notes === null) {
-      update.notes = patch.notes || undefined;
+    if (status) {
+      query.status = Array.isArray(status) ? { $in: status } : status;
     }
 
-    update.updatedAt = new Date();
+    if (priority) {
+      query.priority = Array.isArray(priority) ? { $in: priority } : priority;
+    }
 
-    const doc = await this.taskModel.findOneAndUpdate(
-      { _id: taskId, projectId },
-      { $set: update },
-      { new: true },
+    if (sprintId) {
+      query.sprintId = new Types.ObjectId(sprintId);
+    }
+
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    if (tags?.length) {
+      query.tags = { $in: tags };
+    }
+
+    if (typeof isBlocking === 'boolean') {
+      query.isBlocking = isBlocking;
+    }
+
+    const [tasks, total] = await Promise.all([
+      this.taskModel
+        .find(query)
+        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+        .skip(offset)
+        .limit(limit)
+        .lean(),
+      this.taskModel.countDocuments(query),
+    ]);
+
+    // IMPORTANT:
+    // Lean results are plain objects (labels becomes Record<string,string>), not TaskDocuments.
+    return { tasks, total };
+  }
+
+  async getKanbanBoard(
+    projectId: string,
+    userId: string,
+    sprintId?: string,
+  ): Promise<KanbanBoard> {
+    await this.projectsService.findByIdWithAccess(projectId, userId);
+
+    const query: any = { projectId: new Types.ObjectId(projectId) };
+    if (sprintId) query.sprintId = new Types.ObjectId(sprintId);
+
+    const tasks = await this.taskModel.find(query).sort({ order: 1 }).lean();
+
+    const board: KanbanBoard = {
+      [TaskStatus.BACKLOG]: [],
+      [TaskStatus.TODO]: [],
+      [TaskStatus.IN_PROGRESS]: [],
+      [TaskStatus.REVIEW]: [],
+      [TaskStatus.DONE]: [],
+    };
+
+    for (const task of tasks) {
+      if (board[task.status]) board[task.status].push(task);
+    }
+
+    return board;
+  }
+
+  async getPriorityStack(
+    projectId: string,
+    userId: string,
+    assigneeId?: string,
+    limit: number = 10,
+  ): Promise<TaskDocument[]> {
+    await this.projectsService.findByIdWithAccess(projectId, userId);
+
+    const query: any = {
+      projectId: new Types.ObjectId(projectId),
+      status: { $in: [TaskStatus.TODO, TaskStatus.IN_PROGRESS] },
+    };
+
+    if (assigneeId) {
+      query.assigneeId = new Types.ObjectId(assigneeId);
+    }
+
+    // This returns hydrated docs (not lean) because caller likely needs TaskDocuments.
+    return this.taskModel
+      .find(query)
+      .sort({
+        priority: -1,
+        isBlocking: -1,
+        stackOrder: 1,
+        dueDate: 1,
+      })
+      .limit(limit);
+  }
+
+  async getSubtasks(taskId: string, userId: string): Promise<TaskDocument[]> {
+    const task = await this.findByIdWithAccess(taskId, userId);
+    return this.taskModel.find({ parentId: task._id }).sort({ order: 1 });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // UPDATE
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async update(taskId: string, userId: string, dto: UpdateTaskDto): Promise<TaskDocument> {
+    const task = await this.findByIdWithAccess(taskId, userId);
+
+    if (dto.status && dto.status !== task.status) {
+      if (dto.status === TaskStatus.DONE) {
+        throw new BadRequestException('Use the complete endpoint to mark tasks as done');
+      }
+    }
+
+    if (dto.assigneeId !== undefined) {
+      task.assigneeId = dto.assigneeId ? new Types.ObjectId(dto.assigneeId) : undefined;
+      delete (dto as any).assigneeId;
+    }
+
+    if (dto.sprintId !== undefined) {
+      task.sprintId = dto.sprintId ? new Types.ObjectId(dto.sprintId) : undefined;
+      delete (dto as any).sprintId;
+    }
+
+    if (dto.milestoneId !== undefined) {
+      task.milestoneId = dto.milestoneId ? new Types.ObjectId(dto.milestoneId) : undefined;
+      delete (dto as any).milestoneId;
+    }
+
+    if ((dto as any).blockedBy) {
+      task.blockedBy = (dto as any).blockedBy.map((id: string) => new Types.ObjectId(id));
+      await this.updateBlockingRelationships(task);
+      delete (dto as any).blockedBy;
+    }
+
+    Object.assign(task, dto);
+    const updated = await task.save();
+
+    this.eventEmitter.emit('task.updated', {
+      taskId: updated._id,
+      projectId: task.projectId,
+      userId,
+      changes: dto,
+    });
+
+    return updated;
+  }
+
+  async move(taskId: string, userId: string, dto: MoveTaskDto): Promise<TaskDocument> {
+    const task = await this.findByIdWithAccess(taskId, userId);
+    const previousStatus = task.status;
+
+    if (dto.status) {
+      if (dto.status === TaskStatus.DONE) {
+        throw new BadRequestException('Use the complete endpoint to mark tasks as done');
+      }
+      task.status = dto.status;
+    }
+
+    if (typeof dto.order === 'number') {
+      task.order = dto.order;
+    }
+
+    if (dto.sprintId !== undefined) {
+      task.sprintId = dto.sprintId ? new Types.ObjectId(dto.sprintId) : undefined;
+    }
+
+    const updated = await task.save();
+
+    this.eventEmitter.emit('task.moved', {
+      taskId: updated._id,
+      projectId: task.projectId,
+      userId,
+      previousStatus,
+      newStatus: updated.status,
+    });
+
+    return updated;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // COMPLETE (with Gamification)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async complete(taskId: string, userId: string, dto: CompleteTaskDto = {}): Promise<CompletionResult> {
+    const task = await this.findByIdWithAccess(taskId, userId);
+
+    if (task.status === TaskStatus.DONE) {
+      throw new BadRequestException('Task is already completed');
+    }
+
+    const variableRewards = this.calculateVariableRewards(task.xpValue);
+
+    task.status = TaskStatus.DONE;
+    task.completedAt = new Date();
+    task.completedBy = new Types.ObjectId(userId);
+    task.bonusXP = variableRewards.bonusXP;
+    task.isLegendary = variableRewards.isLegendary;
+
+    if ((dto as any).actualHours) {
+      task.actualHours = (dto as any).actualHours;
+    }
+
+    // NOW TS KNOWS THIS METHOD EXISTS (TaskDocument includes TaskMethods)
+    let ceremonyTier = task.determineCeremonyTier();
+    if (variableRewards.isLegendary) {
+      ceremonyTier = CeremonyTier.PROJECT_SHIP;
+    }
+    task.ceremonyTier = ceremonyTier;
+
+    const totalXP = task.xpValue + variableRewards.bonusXP;
+
+    await task.save();
+
+    await this.projectsService.markTaskCompleted(task.projectId.toString());
+
+    const unblocked = await this.unblockDependentTasks(task);
+
+    this.eventEmitter.emit('task.completed', {
+      taskId: task._id,
+      projectId: task.projectId,
+      userId,
+      xpAwarded: totalXP,
+      bonusXP: variableRewards.bonusXP,
+      isLegendary: variableRewards.isLegendary,
+      ceremonyTier,
+      unblocked: unblocked.map((t) => t._id),
+    });
+
+    this.logger.log(`Task completed: ${taskId}, XP: ${totalXP}, Legendary: ${variableRewards.isLegendary}`);
+
+    return {
+      task,
+      xpAwarded: totalXP,
+      bonusXP: variableRewards.bonusXP,
+      isLegendary: variableRewards.isLegendary,
+      ceremonyTier,
+      unblocked,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DELETE
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async delete(taskId: string, userId: string): Promise<void> {
+    const task = await this.findByIdWithAccess(taskId, userId);
+    const wasCompleted = task.status === TaskStatus.DONE;
+
+    await this.taskModel.updateMany({ blockedBy: task._id }, { $pull: { blockedBy: task._id } });
+    await this.taskModel.updateMany({ blocks: task._id }, { $pull: { blocks: task._id } });
+
+    await this.taskModel.deleteMany({ parentId: task._id });
+    await this.taskModel.deleteOne({ _id: task._id });
+
+    await this.projectsService.decrementTaskCount(task.projectId.toString(), wasCompleted);
+
+    this.eventEmitter.emit('task.deleted', {
+      taskId: task._id,
+      projectId: task.projectId,
+      userId,
+    });
+
+    this.logger.log(`Task deleted: ${taskId}`);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // COMMENTS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async addComment(taskId: string, userId: string, dto: AddCommentDto): Promise<TaskDocument> {
+    const task = await this.findByIdWithAccess(taskId, userId);
+
+    task.comments.push({
+      _id: new Types.ObjectId(),
+      userId: new Types.ObjectId(userId),
+      content: (dto as any).content,
+      mentions: (dto as any).mentions?.map((id: string) => new Types.ObjectId(id)) || [],
+      createdAt: new Date(),
+      isEdited: false,
+    } as any);
+
+    const updated = await task.save();
+
+    this.eventEmitter.emit('task.comment.added', {
+      taskId: task._id,
+      projectId: task.projectId,
+      userId,
+      mentions: (dto as any).mentions,
+    });
+
+    return updated;
+  }
+
+  async deleteComment(taskId: string, commentId: string, userId: string): Promise<TaskDocument> {
+    const task = await this.findByIdWithAccess(taskId, userId);
+
+    const commentIndex = task.comments.findIndex((c: any) => c._id.toString() === commentId);
+    if (commentIndex === -1) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    if (task.comments[commentIndex].userId.toString() !== userId) {
+      throw new ForbiddenException('You can only delete your own comments');
+    }
+
+    task.comments.splice(commentIndex, 1);
+    return task.save();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // TIME LOGGING
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async logTime(taskId: string, userId: string, dto: LogTimeDto): Promise<TaskDocument> {
+    const task = await this.findByIdWithAccess(taskId, userId);
+
+    task.timeLogs.push({
+      userId: new Types.ObjectId(userId),
+      minutes: (dto as any).minutes,
+      description: (dto as any).description,
+      loggedAt: new Date(),
+    } as any);
+
+    task.actualHours = task.timeLogs.reduce((total: number, log: any) => total + log.minutes / 60, 0);
+
+    return task.save();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  private calculateBaseXP(priority: TaskPriority): number {
+    const baseXP: Record<string, number> = {
+      [TaskPriority.LOW]: 10,
+      [TaskPriority.MEDIUM]: 25,
+      [TaskPriority.HIGH]: 40,
+      [TaskPriority.CRITICAL]: 75,
+    };
+    return baseXP[priority] || 25;
+  }
+
+  private calculateVariableRewards(baseXP: number): { bonusXP: number; isLegendary: boolean; multiplier: number } {
+    let bonusXP = 0;
+    let isLegendary = false;
+    let multiplier = 1;
+
+    if (Math.random() < VARIABLE_REWARDS.LEGENDARY_CHANCE) {
+      isLegendary = true;
+      bonusXP = 1000;
+      return { bonusXP, isLegendary, multiplier };
+    }
+
+    if (Math.random() < VARIABLE_REWARDS.BONUS_CHANCE) {
+      bonusXP = Math.floor(baseXP * (0.5 + Math.random() * 1.5));
+    }
+
+    if (Math.random() < VARIABLE_REWARDS.MULTIPLIER_CHANCE) {
+      multiplier = 1.5 + Math.random() * 1.5;
+      bonusXP = Math.floor(bonusXP * multiplier);
+    }
+
+    return { bonusXP, isLegendary, multiplier };
+  }
+
+  private async updateBlockingRelationships(task: TaskDocument): Promise<void> {
+    if (task.blockedBy?.length) {
+      await this.taskModel.updateMany(
+        { _id: { $in: task.blockedBy } },
+        { $addToSet: { blocks: task._id }, $set: { isBlocking: true } },
+      );
+
+      for (const blockingId of task.blockedBy) {
+        const count = await this.taskModel.countDocuments({
+          blockedBy: blockingId,
+          status: { $ne: TaskStatus.DONE },
+        });
+
+        await this.taskModel.updateOne({ _id: blockingId }, { $set: { blockingCount: count } });
+      }
+    }
+  }
+
+  private async unblockDependentTasks(completedTask: TaskDocument): Promise<TaskDocument[]> {
+    const unblocked = await this.taskModel.find({ blockedBy: completedTask._id });
+
+    await this.taskModel.updateMany(
+      { blockedBy: completedTask._id },
+      { $pull: { blockedBy: completedTask._id } },
     );
-    if (!doc) throw new NotFoundException('Task not found');
-    return doc.toObject();
+
+    await this.taskModel.updateOne(
+      { _id: completedTask._id },
+      { $set: { isBlocking: false, blockingCount: 0 } },
+    );
+
+    return unblocked;
   }
 }

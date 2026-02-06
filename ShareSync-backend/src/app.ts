@@ -1,48 +1,92 @@
-// /Users/artificalmanny/Portfolio/ShareSync/ShareSync-backend/src/app.ts
-import express from 'express';
-import cors from 'cors';
+// src/app.module.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHARESYNC MAIN APPLICATION MODULE - PHASE 3 UPDATE
+// ═══════════════════════════════════════════════════════════════════════════════
 
-// routes
-import inviteRoutes from './routes/invite.routes';
-import streakFeedRoutes from './routes/streakFeed.routes';
-import aiRoutes from './routes/ai.routes';
-import taskRouter from './routes/task.routes';
-import postRouter from './routes/post.routes';
-import activityRoutes from './routes/activity.routes';
-import xpRoutes from './routes/xp.routes'
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 
-// NOTE: projects route is a JS file. Import it like this:
-const projectsRouter = require('./routes/projects.js');
+// Feature Modules
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
+import { ProjectsModule } from './projects/projects.module';
+import { TasksModule } from './tasks/tasks.module';
+import { UserContextModule } from './user-context/user-context.module';
+import { RealtimeModule } from './realtime/realtime.module';
+import { HealthModule } from './health/health.module';
+import { MessagesModule } from './messages/messages.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { GamificationModule } from './gamification/gamification.module';
 
-const app = express();
+// Middleware
+import { LoggerMiddleware } from './common/middleware/logger.middleware';
 
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true }));
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
+    }),
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI', 'mongodb://localhost:27017/sharesync'),
+        retryWrites: true,
+        w: 'majority',
+        maxPoolSize: 10,
+        minPoolSize: 5,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+      }),
+    }),
 
-// mount routes
-app.use('/api/invites', inviteRoutes);
-app.use('/api/streak-feed', streakFeedRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/tasks', taskRouter);
-app.use('/api/posts', postRouter);
-app.use('/api/activity', activityRoutes);
+    ThrottlerModule.forRoot([
+      { name: 'short', ttl: 1000, limit: 3 },
+      { name: 'medium', ttl: 10000, limit: 20 },
+      { name: 'long', ttl: 60000, limit: 100 },
+    ]),
 
-// 🔗 mount projects (fixes 404 on /api/projects)
-app.use('/api/projects', projectsRouter);
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      newListener: false,
+      removeListener: false,
+      maxListeners: 20,
+      verboseMemoryLeak: false,
+      ignoreErrors: false,
+    }),
 
-app.use((_req, res) => {
-  res.status(404).json({ error: 'Not found' });
-});
+    ScheduleModule.forRoot(),
 
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('[app] error', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
+    // Feature Modules
+    HealthModule,
+    AuthModule,
+    UserModule, // ✅ fixed (was UsersModule)
+    ProjectsModule,
+    TasksModule,
+    UserContextModule,
+    RealtimeModule,
+    MessagesModule,
+    NotificationsModule,
+    GamificationModule,
+  ],
 
-app.use('/api/xp', xpRoutes)
-
-
-export default app;
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
+})
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}
