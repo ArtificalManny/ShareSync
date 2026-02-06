@@ -18,8 +18,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "typecheck": "tsc --noEmit",
-    "db:seed": "ts-node -r tsconfig-paths/register src/scripts/seed.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",
@@ -72,7 +71,6 @@
     "@types/passport-local": "^1.0.38",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "dotenv": "^17.2.4",
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
