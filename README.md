@@ -1,348 +1,234 @@
-ShareSync — Backend & Frontend
+# Day 2: Gamification Wiring - Implementation Guide
 
-Branch: feature/fix-updates-endpoint
-Status: Core flows stable; invites/files/tasks/roles live; moderation + realtime enabled.
+## Overview
 
-Contents
+This guide will wire up the gamification system so that:
+1. When a task is completed → Event is emitted
+2. GamificationService receives the event → Calculates and awards XP
+3. Stats API shows updated XP
 
-Quick Start (≤10 min)
+**Time estimate:** 2-3 hours
 
-Environment
+---
 
-Auth model
+## Pre-requisites
 
-Roles & permissions
+✅ Backend running on port 5050  
+✅ Health check passing  
+✅ Database seeded with demo user  
 
-API Reference
+---
 
-Projects
+## Step 1: Install Event Emitter (if not already)
 
-Invites
+```bash
+cd ~/Documents/ShareSync/ShareSync-backend
+npm install @nestjs/event-emitter
+```
 
-Files
+---
 
-Tasks
+## Step 2: Add EventEmitterModule to AppModule
 
-Updates
+Open `src/app.module.ts` and ensure these are present:
 
-Activities
+```typescript
+// Add import at top
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
-Users
+@Module({
+  imports: [
+    // ... existing imports ...
+    
+    // ADD THIS (if not already present)
+    EventEmitterModule.forRoot(),
+    
+    // ... rest of imports ...
+  ],
+})
+export class AppModule {}
+```
 
-Realtime events
+---
 
-Moderation & Trust/Safety
+## Step 3: Create Event Types
 
-Error shapes
+Create the folder and file:
 
-Postman collection (optional)
+```bash
+mkdir -p src/common/events
+```
 
-Dev notes
+Create `src/common/events/events.types.ts` with contents from `01-events-types.ts`
 
-Quick Start (≤10 min)
-1) Backend
-# from /ShareSync-backend
-cp .env.example .env   # edit values (Mongo, JWT, API_BASE, etc.)
-npm i
+Also create `src/common/events/index.ts`:
+
+```typescript
+export * from './events.types';
+```
+
+---
+
+## Step 4: Update Gamification Service
+
+Open `src/gamification/gamification.service.ts` and add the code from `02-gamification-service-methods.ts`:
+
+### 4a. Add imports at top:
+```typescript
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { EVENTS, TaskCompletedEvent, XPAwardedEvent } from '../common/events/events.types';
+```
+
+### 4b. Add to constructor:
+```typescript
+constructor(
+  @InjectModel(UserStats.name) private userStatsModel: Model<UserStatsDocument>,
+  private eventEmitter: EventEmitter2,  // ADD THIS
+) {}
+```
+
+### 4c. Add the methods:
+- `handleTaskCompleted()` with `@OnEvent(EVENTS.TASK_COMPLETED)` decorator
+- `calculateTaskXP()`
+- `awardXP()`
+- `calculateLevel()`
+- `getXPForLevel()`
+- `updateStreak()`
+- `getUserStats()`
+
+---
+
+## Step 5: Update Tasks Service
+
+Open `src/tasks/tasks.service.ts` and add event emission:
+
+### 5a. Add imports:
+```typescript
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EVENTS, TaskCompletedEvent } from '../common/events/events.types';
+```
+
+### 5b. Add to constructor:
+```typescript
+constructor(
+  @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
+  private eventEmitter: EventEmitter2,  // ADD THIS
+) {}
+```
+
+### 5c. Update completeTask method:
+See `03-tasks-service-update.ts` for the full method implementation.
+
+---
+
+## Step 6: Ensure Controller Endpoint Exists
+
+In `src/tasks/tasks.controller.ts`, ensure this endpoint exists:
+
+```typescript
+@Patch(':id/complete')
+@UseGuards(JwtAuthGuard)
+@ApiOperation({ summary: 'Complete a task' })
+async completeTask(
+  @Param('id') id: string,
+  @Req() req: any,
+  @Body() body?: { inFocusMode?: boolean },
+) {
+  const task = await this.tasksService.completeTask(
+    id,
+    req.user.userId,
+    { inFocusMode: body?.inFocusMode },
+  );
+  return { success: true, data: task };
+}
+```
+
+---
+
+## Step 7: Restart Backend
+
+```bash
+# Stop current server (Ctrl+C)
 npm run start:dev
+```
 
+Watch for any errors. The server should start cleanly.
 
-Required env (example):
+---
 
-PORT=4000
-MONGO_URI=mongodb://localhost:27017/sharesync
-JWT_SECRET=dev_secret
-API_BASE=http://localhost:4000/api
-CLIENT_ORIGIN=http://localhost:5173
+## Step 8: Test the Flow
 
-2) Frontend
-# from /ShareSync-frontend-backup
-cp .env.example .env   # ensure VITE_API_URL=http://localhost:4000/api
-npm i
-npm run dev
+### Option A: Use the test script
+```bash
+chmod +x 04-test-commands.sh
+./04-test-commands.sh
+```
 
-3) Create a user + token (dev)
+### Option B: Manual testing
 
-Whatever auth flow you have—ensure localStorage has token in FE or pass Authorization: Bearer <jwt> in API calls.
+```bash
+# 1. Login
+curl -X POST http://localhost:5050/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@sharesync.io","password":"demo123"}'
 
-4) Minimal smoke in cURL (Projects → Invite → Files → Tasks)
-# Create a project
-curl -X POST "$API_BASE/projects" \
- -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
- -d '{"title":"Onboarding","description":"Docs and setup"}'
+# Copy the token from response
 
-# List my projects
-curl -H "Authorization: Bearer $JWT" "$API_BASE/projects"
+# 2. Check stats BEFORE
+curl http://localhost:5050/api/gamification/stats \
+  -H "Authorization: Bearer YOUR_TOKEN"
 
-# Invite someone (email + role)
-curl -X POST "$API_BASE/projects/<projectId>/invites" \
- -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
- -d '{"email":"teammate@example.com","role":"member"}'
+# 3. Get a task ID
+curl http://localhost:5050/api/tasks/my \
+  -H "Authorization: Bearer YOUR_TOKEN"
 
-# Accept invite (from accept link)
-curl -X POST "$API_BASE/projects/invites/accept" \
- -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
- -d '{"token":"<inviteTokenFromEmail>"}'
+# 4. Complete the task
+curl -X PATCH http://localhost:5050/api/tasks/TASK_ID/complete \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"inFocusMode": false}'
 
-# Upload a file (links to project)
-curl -X POST "$API_BASE/files" \
- -H "Authorization: Bearer $JWT" -F "file=@/path/to/file.png" \
- -F "projectId=<projectId>"
+# 5. Check stats AFTER
+curl http://localhost:5050/api/gamification/stats \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
 
-# List files
-curl -H "Authorization: Bearer $JWT" "$API_BASE/files?projectId=<projectId>"
+---
 
-# Create a task
-curl -X POST "$API_BASE/tasks" \
- -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
- -d '{"projectId":"<projectId>","title":"Outline API tests"}'
+## Verification Checklist
 
-# Patch a task
-curl -X PATCH "$API_BASE/tasks/<taskId>" \
- -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
- -d '{"status":"In Progress"}'
+After completing a task, you should see:
 
-Environment
+- [ ] Backend logs show: `🎮 Processing gamification for task: [task title]`
+- [ ] Backend logs show: `✅ Awarded XX XP to user [userId]`
+- [ ] Stats API shows `totalXP` increased
+- [ ] Stats API shows `tasksCompleted` increased by 1
+- [ ] Stats API shows `streak.current` >= 1
 
-Backend
+---
 
-Node 18+
+## Troubleshooting
 
-NestJS + Mongoose
+### "Cannot find module '../common/events/events.types'"
+- Ensure the file exists at `src/common/events/events.types.ts`
+- Check the import path is correct
 
-Socket gateway for realtime
+### "eventEmitter.emit is not a function"
+- Ensure `EventEmitter2` is injected in the constructor
+- Ensure `EventEmitterModule.forRoot()` is in AppModule imports
 
-Throttler for rate-limits
+### "Task not found"
+- Run the seed script to create demo tasks
+- Check the task ID is correct
 
-Cron for batched email notifications
+### Stats not updating
+- Check the `@OnEvent` decorator is on the `handleTaskCompleted` method
+- Check backend logs for the gamification messages
+- Ensure the event is being emitted in `tasksService.completeTask()`
 
-Frontend
+---
 
-React + Vite
+## Next Steps (Day 3)
 
-Route-based code-splitting
-
-Token stored in localStorage (dev)
-
-Auth model
-
-Bearer JWT in Authorization header.
-
-JwtAuthGuard protects private routes.
-
-Public pages: /p/:token (public project), /status/:token (status snapshot).
-
-Roles & permissions
-
-Project members: owner | member | viewer
-
-Stored in Project.members[] with { userId?, email?, role, addedAt }, plus legacy userId owner.
-
-Guards:
-
-@CanViewProject → owner/member/viewer
-
-@CanEditProject → owner/member
-
-@CanManageProject → owner
-
-Applied to: projects (read/manage), tasks (create/patch), files (create/delete), invites (create/accept), updates (post), activities (list/create where applicable).
-
-API Reference
-
-Base: http://localhost:4000/api
-
-Projects
-
-POST /projects (auth)
-Body:
-
-{
-  "title": "Onboarding",
-  "description": "Docs and setup",
-  "status": "Not Started",
-  "privacy": "Private",
-  "members": [{"email":"a@b.com","role":"member"}]
-}
-
-
-Response: full project doc with members[].
-
-GET /projects (auth) — projects where user is owner or member.
-GET /projects/quick?limit=6 (auth) — lightweight cards.
-GET /projects/:id (auth + CanViewProject) — member-aware fetch.
-PATCH /projects/:id/members (auth + CanManageProject)
-Body:
-
-{"members":[{"userId":"...","role":"member"},{"email":"c@d.com","role":"viewer"}]}
-
-Invites
-
-POST /projects/:id/invites (auth + CanManageProject)
-Body:
-
-{"email":"teammate@example.com","role":"member"}
-
-
-Response:
-
-{"ok":true,"invite":{"token":"<short>","email":"...","role":"member","expiresAt":"..." }}
-
-
-POST /projects/invites/accept (auth)
-Body:
-
-{"token":"<inviteToken>"}
-
-
-Effect: adds current user to project members; emits project:membersUpdated.
-
-Files
-
-POST /files (auth + CanEditProject) — multipart form
-Fields: file (binary), projectId (string)
-Response:
-
-{"ok":true,"file":{"_id":"...","projectId":"...","url":"...","name":"...","size":123,"mime":"image/png","createdAt":"..."}}
-
-
-Emits project:filesAdded.
-
-GET /files?projectId=:id (auth + CanViewProject)
-DELETE /files/:id (auth + CanEditProject)
-
-Tasks
-
-POST /tasks (auth + CanEditProject)
-Body:
-
-{"projectId":"<id>","title":"Outline API tests","status":"Not Started","dueDate":"2025-09-05"}
-
-
-Emits tasks:created.
-
-GET /tasks?projectId=:id (auth + CanViewProject)
-PATCH /tasks/:id (auth + CanEditProject) — emits tasks:updated.
-
-Updates
-
-POST /projects/:id/updates (auth + CanEditProject)
-Body:
-
-{
-  "text":"Shipped first pass",
-  "mentions":["<userId>"],
-  "files":["<fileId>"]
-}
-
-
-Moderation: text is checked; if allowed → emits activity:new, else pending/blocked.
-
-Activities
-
-POST /activities (auth + CanEditProject)
-Body: { projectId, type, text?, meta? } → emits realtime, mention in-app + queued email.
-
-GET /activities?scope=project&projectId=:id&range=7d&cursor=...&limit=20 (auth + CanViewProject)
-
-GET /activities/export.csv?... (auth) — CSV output.
-
-Users
-
-GET /users/me (auth)
-PATCH /users/me (auth) — e.g., { avatarUrl, avatarVersion, blurhash }
-POST /uploads/avatar (auth) — accepts avatar field; runs image moderation, returns { url, thumbUrl? }.
-
-Realtime events
-
-Emitted over project/user rooms:
-
-activity:new → new activity object
-
-project:statsUpdated → { projectId }
-
-project:membersUpdated → { projectId, members: [...] }
-
-project:filesAdded → { projectId, files: [ ... ] }
-
-tasks:created → { projectId, task }
-
-tasks:updated → { projectId, task }
-
-user:statsUpdated → { userId }
-
-Moderation & Trust/Safety
-
-Uploads
-
-Virus scan + MIME/size policy.
-
-Image checks (explicit/violent/etc. where available).
-
-Decision: ALLOW | REVIEW | BLOCK
-
-Response exposes moderationStatus: 'allowed' | 'pending', FE shows friendly toasts.
-
-Text (updates)
-
-Profanity/abuse checks; BLOCK/REVIEW/ALLOW.
-
-If BLOCK: return { ok:false, moderation:{status:'blocked', reason} }.
-
-If REVIEW: persist but mark pending (not broadcast).
-
-Error shapes
-
-Standard Nest errors:
-
-{"statusCode":400,"message":"Bad Request"}
-
-
-Moderation block:
-
-{"ok":false,"moderation":{"status":"blocked","reason":"Violence"}}
-
-Postman collection (optional)
-
-Create a collection “ShareSync – Local” with an Auth variable {{token}} and Base URL {{api}} (e.g., http://localhost:4000/api).
-
-Pre-request Script (auto-inject bearer):
-
-pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('token') });
-
-
-Useful requests to include:
-
-POST /projects
-
-GET /projects
-
-POST /projects/:id/invites
-
-POST /projects/invites/accept
-
-POST /files (form-data)
-
-GET /files?projectId={{pid}}
-
-DELETE /files/:id
-
-POST /tasks
-
-GET /tasks?projectId={{pid}}
-
-PATCH /tasks/:id
-
-POST /projects/:id/updates
-
-GET /activities?scope=project&projectId={{pid}}
-
-Dev notes
-
-Roles: if you mutate members, ensure the owner stays owner.
-
-User email opt-out: User.emailOptOut = true skips digest emails; in-app still fires.
-
-Avatar cache-bust: we append ?v=timestamp on save; UserContext broadcasts user:updated across tabs.
-
-Frontend tokens: use bg-bg, bg-surface, border-border, text-text, text-muted consistently.
+Once this is working, proceed to:
+- Day 3: WebSocket Layer - Real-time XP updates to frontend
