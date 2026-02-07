@@ -27,9 +27,41 @@ export class AuthController {
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
     console.log('🔵 CONTROLLER RECEIVED:', body);
-    console.log('🔵 Calling service with:', body.email, body.password?.length, 'chars');
-    
-    return this.authService.login(body.email, body.password);
+    console.log(
+      '🔵 Calling service with:',
+      body.email,
+      body.password?.length,
+      'chars',
+    );
+
+    const result: any = await this.authService.login(body.email, body.password);
+
+    // ✅ Normalize ALL possible shapes into what the frontend expects:
+    // { access_token, user }
+    const payload =
+      result?.data && typeof result?.data === 'object' ? result.data : result;
+
+    const access_token =
+      payload?.access_token ||
+      payload?.accessToken ||
+      payload?.token ||
+      payload?.jwt ||
+      payload?.data?.access_token ||
+      payload?.data?.token;
+
+    const user =
+      payload?.user ||
+      payload?.data?.user ||
+      payload?.profile ||
+      payload?.data?.profile;
+
+    if (!access_token || !user) {
+      // This tells you EXACTLY what the backend returned when it failed
+      console.error('❌ LOGIN RESPONSE MISSING TOKEN OR USER:', result);
+      throw new UnauthorizedException('Invalid login response format');
+    }
+
+    return { access_token, user };
   }
 
   @Post('register')
@@ -100,12 +132,12 @@ export class AuthController {
     if (!userId) {
       throw new UnauthorizedException('User not found');
     }
-    
+
     const user = await this.userModel.findById(userId).select('-password');
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    
+
     return user;
   }
 }

@@ -33,20 +33,44 @@ async function bootstrap() {
     }),
   );
 
+  // ✅ CORS: strict in production, flexible for localhost in dev
+  const isProd = process.env.NODE_ENV === 'production';
+
   const corsOrigins = configService.get<string>(
     'CORS_ORIGINS',
-    'http://localhost:3000,http://localhost:5173',
+    'http://localhost:3000,http://localhost:5173,http://localhost:54693',
   );
 
+  const allowedList = corsOrigins
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: corsOrigins.split(','),
+    origin: (origin, callback) => {
+      // Non-browser clients or same-origin requests may have no Origin header
+      if (!origin) return callback(null, true);
+
+      if (!isProd) {
+        // Allow any localhost port in dev (covers Vite random ports like 54693)
+        const isLocalhost =
+          /^http:\/\/localhost:\d+$/.test(origin) ||
+          /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
+
+        if (isLocalhost) return callback(null, true);
+      }
+
+      // Production (or non-localhost): must be explicitly allowlisted
+      if (allowedList.includes(origin)) return callback(null, true);
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
     maxAge: 86400,
   });
 
-  // ✅ FIX: compression default import
   app.use(compression());
 
   app.useGlobalPipes(

@@ -25,10 +25,20 @@ export class TransformInterceptor<T>
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<Response<T>> {
+  ): Observable<any> {
+    const req = context.switchToHttp().getRequest();
+    const url: string = req?.originalUrl || req?.url || '';
+
+    // ✅ Do NOT wrap auth responses so frontend can read:
+    // response.data.access_token + response.data.user
+    // Also avoids breaking login/register/verify shapes.
+    if (url.includes('/api/auth/')) {
+      return next.handle();
+    }
+
     return next.handle().pipe(
       map((data) => {
-        // If data already has success property, return as-is
+        // If data already has success property, return as-is (but ensure timestamp)
         if (data && typeof data === 'object' && 'success' in data) {
           return {
             ...data,
