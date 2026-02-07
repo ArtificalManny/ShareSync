@@ -20,6 +20,7 @@ import {
   TaskPriority,
   CeremonyTier,
 } from './schemas/task.schema';
+import { EVENTS, TaskCompletedEvent } from '../common/events/events.types';
 import { ProjectsService } from '../projects/projects.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import {
@@ -209,8 +210,6 @@ export class TasksService {
       this.taskModel.countDocuments(query),
     ]);
 
-    // IMPORTANT:
-    // Lean results are plain objects (labels becomes Record<string,string>), not TaskDocuments.
     return { tasks, total };
   }
 
@@ -258,7 +257,6 @@ export class TasksService {
       query.assigneeId = new Types.ObjectId(assigneeId);
     }
 
-    // This returns hydrated docs (not lean) because caller likely needs TaskDocuments.
     return this.taskModel
       .find(query)
       .sort({
@@ -273,6 +271,38 @@ export class TasksService {
   async getSubtasks(taskId: string, userId: string): Promise<TaskDocument[]> {
     const task = await this.findByIdWithAccess(taskId, userId);
     return this.taskModel.find({ parentId: task._id }).sort({ order: 1 });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PRIORITIES ENDPOINT SUPPORT
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // ✅ REQUIRED: Used by GET /tasks/priorities
+  async getMyPriorityTasks(userId: string, limit: number = 3): Promise<TaskDocument[]> {
+    this.logger.log(`getMyPriorityTasks called for user: ${userId}`);
+
+    const tasks = await this.taskModel
+      .find({
+        $or: [
+          { assigneeId: new Types.ObjectId(userId) },
+          { assignee: new Types.ObjectId(userId) },
+          { reporterId: new Types.ObjectId(userId) },
+          { reporter: new Types.ObjectId(userId) },
+        ],
+        status: { $in: ['todo', 'in_progress', 'backlog', 'TODO', 'IN_PROGRESS', 'BACKLOG'] },
+        completedAt: null,
+      })
+      .sort({
+        priority: -1,     // critical first
+        isBlocking: -1,   // blocking tasks first
+        dueDate: 1,       // earliest due date first
+        createdAt: -1,
+      })
+      .limit(limit)
+      .exec();
+
+    this.logger.log(`Found ${tasks.length} priority tasks`);
+    return tasks;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -358,7 +388,25 @@ export class TasksService {
   // COMPLETE (with Gamification)
   // ─────────────────────────────────────────────────────────────────────────────
 
-  async complete(taskId: string, userId: string, dto: CompleteTaskDto = {}): Promise<CompletionResult> {
+  async completeTask(
+    taskId: string,
+    userId: string,
+    options?: { inFocusMode?: boolean },
+  ): Promise<TaskDocument> {
+    const result = await this.complete(taskId, userId, {
+      ...(options?.inFocusMode !== undefined
+        ? { inFocusMode: options.inFocusMode }
+        : {}),
+    } as any);
+
+    return result.task;
+  }
+
+  async complete(
+    taskId: string,
+    userId: string,
+    dto: CompleteTaskDto = {},
+  ): Promise<CompletionResult> {
     const task = await this.findByIdWithAccess(taskId, userId);
 
     if (task.status === TaskStatus.DONE) {
@@ -377,7 +425,6 @@ export class TasksService {
       task.actualHours = (dto as any).actualHours;
     }
 
-    // NOW TS KNOWS THIS METHOD EXISTS (TaskDocument includes TaskMethods)
     let ceremonyTier = task.determineCeremonyTier();
     if (variableRewards.isLegendary) {
       ceremonyTier = CeremonyTier.PROJECT_SHIP;
@@ -403,7 +450,35 @@ export class TasksService {
       unblocked: unblocked.map((t) => t._id),
     });
 
-    this.logger.log(`Task completed: ${taskId}, XP: ${totalXP}, Legendary: ${variableRewards.isLegendary}`);
+    const completedAt = task.completedAt || new Date();
+
+    const wasOnTime = task.dueDate
+      ? completedAt <= new Date(task.dueDate)
+      : true;
+
+    const hour = completedAt.getHours();
+    const isEarlyBird = hour < 9;
+
+    const gamificationEvent: TaskCompletedEvent = {
+      taskId: task._id.toString(),
+      projectId: task.projectId.toString(),
+      userId,
+      title: task.title,
+      priority: (task.priority as any) || 'medium',
+      isBlocking: !!task.isBlocking,
+      storyPoints: (task as any).storyPoints || 1,
+      dueDate: task.dueDate,
+      completedAt,
+      wasOnTime,
+      isEarlyBird,
+      inFocusMode: !!(dto as any)?.inFocusMode,
+    };
+
+    this.eventEmitter.emit(EVENTS.TASK_COMPLETED, gamificationEvent);
+
+    this.logger.log(
+      `Task completed: ${taskId}, XP: ${totalXP}, Legendary: ${variableRewards.isLegendary}`,
+    );
 
     return {
       task,
@@ -498,7 +573,10 @@ export class TasksService {
       loggedAt: new Date(),
     } as any);
 
-    task.actualHours = task.timeLogs.reduce((total: number, log: any) => total + log.minutes / 60, 0);
+    task.actualHours = task.timeLogs.reduce(
+      (total: number, log: any) => total + log.minutes / 60,
+      0,
+    );
 
     return task.save();
   }
@@ -517,7 +595,11 @@ export class TasksService {
     return baseXP[priority] || 25;
   }
 
-  private calculateVariableRewards(baseXP: number): { bonusXP: number; isLegendary: boolean; multiplier: number } {
+  private calculateVariableRewards(baseXP: number): {
+    bonusXP: number;
+    isLegendary: boolean;
+    multiplier: number;
+  } {
     let bonusXP = 0;
     let isLegendary = false;
     let multiplier = 1;

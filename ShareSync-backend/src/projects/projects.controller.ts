@@ -18,6 +18,7 @@ import {
   HttpStatus,
   HttpCode,
   Logger,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -32,10 +33,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectsService, ProjectQueryOptions } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import {
-  AddMemberDto,
-  UpdateMemberRoleDto,
-} from './dto/project-member.dto';
+import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
 import { ProjectStatus } from './schemas/project.schema';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -52,6 +50,39 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // DEBUG (TEMPORARY) — MUST BE BEFORE ANY :id ROUTES
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Get('debug')
+  @ApiOperation({ summary: 'DEBUG: Inspect projects in DB vs. user query' })
+  async debugProjects(@Request() req: any) {
+    const userId = req.user?.sub || req.user?.userId;
+
+    const allProjects = await this.projectsService.findAllNoFilter();
+    const userProjects = await this.projectsService.findByUser(userId);
+
+    return {
+      success: true,
+      debug: {
+        currentUserId: userId,
+        allProjectsCount: allProjects.length,
+        allProjects: allProjects.map((p: any) => ({
+          id: p._id,
+          name: p.name,
+          ownerId: p.ownerId?.toString?.() || null,
+          owner: p.owner?.toString?.() || null,
+          members: (p.members || []).map((m: any) => ({
+            userId: m.userId?.toString?.() || null,
+            user: m.user?.toString?.() || null,
+          })),
+        })),
+        userProjectsCount: userProjects.length,
+        userProjects: userProjects.map((p) => p.name),
+      },
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // CREATE
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -61,8 +92,9 @@ export class ProjectsController {
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input' })
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 per minute
   async create(@Req() req: any, @Body() dto: CreateProjectDto) {
+    const userId = req.user?.sub || req.user?.userId;
     this.logger.log(`Creating project: ${dto.name}`);
-    const project = await this.projectsService.create(req.user.userId, dto);
+    const project = await this.projectsService.create(userId, dto);
     return {
       success: true,
       data: project,
@@ -92,6 +124,8 @@ export class ProjectsController {
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
+    const userId = req.user?.sub || req.user?.userId;
+
     const options: ProjectQueryOptions = {
       status,
       search,
@@ -102,10 +136,7 @@ export class ProjectsController {
       sortOrder,
     };
 
-    const result = await this.projectsService.findUserProjects(
-      req.user.userId,
-      options,
-    );
+    const result = await this.projectsService.findUserProjects(userId, options);
 
     return {
       success: true,
@@ -121,7 +152,8 @@ export class ProjectsController {
   @Get('starred')
   @ApiOperation({ summary: 'Get starred projects' })
   async findStarred(@Req() req: any) {
-    const projects = await this.projectsService.findStarred(req.user.userId);
+    const userId = req.user?.sub || req.user?.userId;
+    const projects = await this.projectsService.findStarred(userId);
     return {
       success: true,
       data: projects,
@@ -135,10 +167,8 @@ export class ProjectsController {
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Project not found' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied' })
   async findOne(@Req() req: any, @Param('id') id: string) {
-    const project = await this.projectsService.findByIdWithAccess(
-      id,
-      req.user.userId,
-    );
+    const userId = req.user?.sub || req.user?.userId;
+    const project = await this.projectsService.findByIdWithAccess(id, userId);
     return {
       success: true,
       data: project,
@@ -149,10 +179,8 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Get project Pulse dashboard data' })
   @ApiParam({ name: 'id', description: 'Project ID' })
   async getPulse(@Req() req: any, @Param('id') id: string) {
-    const pulseData = await this.projectsService.getPulseData(
-      id,
-      req.user.userId,
-    );
+    const userId = req.user?.sub || req.user?.userId;
+    const pulseData = await this.projectsService.getPulseData(id, userId);
     return {
       success: true,
       data: pulseData,
@@ -169,16 +197,9 @@ export class ProjectsController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Project updated' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Project not found' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied' })
-  async update(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body() dto: UpdateProjectDto,
-  ) {
-    const project = await this.projectsService.update(
-      id,
-      req.user.userId,
-      dto,
-    );
+  async update(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateProjectDto) {
+    const userId = req.user?.sub || req.user?.userId;
+    const project = await this.projectsService.update(id, userId, dto);
     return {
       success: true,
       data: project,
@@ -189,13 +210,13 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Toggle project starred status' })
   @ApiParam({ name: 'id', description: 'Project ID' })
   async toggleStar(@Req() req: any, @Param('id') id: string) {
-    const project = await this.projectsService.findByIdWithAccess(
-      id,
-      req.user.userId,
-    );
-    const updated = await this.projectsService.update(id, req.user.userId, {
+    const userId = req.user?.sub || req.user?.userId;
+
+    const project = await this.projectsService.findByIdWithAccess(id, userId);
+    const updated = await this.projectsService.update(id, userId, {
       isStarred: !project.isStarred,
     });
+
     return {
       success: true,
       data: { isStarred: updated.isStarred },
@@ -210,7 +231,8 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Archive a project' })
   @ApiParam({ name: 'id', description: 'Project ID' })
   async archive(@Req() req: any, @Param('id') id: string) {
-    const project = await this.projectsService.archive(id, req.user.userId);
+    const userId = req.user?.sub || req.user?.userId;
+    const project = await this.projectsService.archive(id, userId);
     return {
       success: true,
       data: project,
@@ -221,7 +243,8 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Restore an archived project' })
   @ApiParam({ name: 'id', description: 'Project ID' })
   async restore(@Req() req: any, @Param('id') id: string) {
-    const project = await this.projectsService.update(id, req.user.userId, {
+    const userId = req.user?.sub || req.user?.userId;
+    const project = await this.projectsService.update(id, userId, {
       status: ProjectStatus.ACTIVE,
     });
     return {
@@ -237,7 +260,8 @@ export class ProjectsController {
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Project deleted' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Only owner can delete' })
   async delete(@Req() req: any, @Param('id') id: string) {
-    await this.projectsService.delete(id, req.user.userId);
+    const userId = req.user?.sub || req.user?.userId;
+    await this.projectsService.delete(id, userId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -247,16 +271,9 @@ export class ProjectsController {
   @Post(':id/members')
   @ApiOperation({ summary: 'Add a member to project' })
   @ApiParam({ name: 'id', description: 'Project ID' })
-  async addMember(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body() dto: AddMemberDto,
-  ) {
-    const project = await this.projectsService.addMember(
-      id,
-      req.user.userId,
-      dto,
-    );
+  async addMember(@Req() req: any, @Param('id') id: string, @Body() dto: AddMemberDto) {
+    const userId = req.user?.sub || req.user?.userId;
+    const project = await this.projectsService.addMember(id, userId, dto);
     return {
       success: true,
       data: project,
@@ -273,11 +290,8 @@ export class ProjectsController {
     @Param('id') id: string,
     @Param('userId') memberUserId: string,
   ) {
-    const project = await this.projectsService.removeMember(
-      id,
-      req.user.userId,
-      memberUserId,
-    );
+    const userId = req.user?.sub || req.user?.userId;
+    const project = await this.projectsService.removeMember(id, userId, memberUserId);
     return {
       success: true,
       data: project,
@@ -294,12 +308,15 @@ export class ProjectsController {
     @Param('userId') memberUserId: string,
     @Body() dto: UpdateMemberRoleDto,
   ) {
+    const userId = req.user?.sub || req.user?.userId;
+
     const project = await this.projectsService.updateMemberRole(
       id,
-      req.user.userId,
+      userId,
       memberUserId,
       dto,
     );
+
     return {
       success: true,
       data: project,
@@ -311,7 +328,8 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Leave a project' })
   @ApiParam({ name: 'id', description: 'Project ID' })
   async leaveProject(@Req() req: any, @Param('id') id: string) {
-    await this.projectsService.leaveProject(id, req.user.userId);
+    const userId = req.user?.sub || req.user?.userId;
+    await this.projectsService.leaveProject(id, userId);
     return {
       success: true,
       message: 'Successfully left the project',

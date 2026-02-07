@@ -8,7 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
 import { User, UserDocument } from './schemas/user.schema';
-import { ProjectService } from '../projects/project.service';
+import { ProjectsService } from '../projects/projects.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { buildActivitySummary } from '../utils/activitySummary';
 
@@ -18,8 +18,8 @@ export class UserService {
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
 
-    @Inject(forwardRef(() => ProjectService))
-    private readonly projects: ProjectService,
+    @Inject(forwardRef(() => ProjectsService))
+    private readonly projects: ProjectsService,
 
     private readonly activities: ActivitiesService,
   ) {}

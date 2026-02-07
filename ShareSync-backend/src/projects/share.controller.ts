@@ -9,35 +9,38 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ProjectService } from './project.service';  // FIXED
+import { ProjectsService } from './projects.service';
 
 @Controller('public/projects')
 export class ProjectShareController {
-  constructor(private readonly projects: ProjectService) {}  // FIXED
+  constructor(private readonly projects: ProjectsService) {}
 
   @Post(':id/enable')
   @UseGuards(JwtAuthGuard)
-  async enable(@Req() req, @Param('id') id: string) {
-    const userId = req?.user?.sub;
+  async enable(@Req() req: any, @Param('id') id: string) {
+    const userId = req?.user?.sub || req?.user?.userId;
     if (!userId) throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+
     const { publicToken } = await this.projects.enablePublic(id, userId);
     return { token: publicToken };
   }
 
   @Post(':id/disable')
   @UseGuards(JwtAuthGuard)
-  async disable(@Req() req, @Param('id') id: string) {
-    const userId = req?.user?.sub;
+  async disable(@Req() req: any, @Param('id') id: string) {
+    const userId = req?.user?.sub || req?.user?.userId;
     if (!userId) throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+
     await this.projects.disablePublic(id, userId);
     return { ok: true };
   }
 
   @Post(':id/regenerate')
   @UseGuards(JwtAuthGuard)
-  async regenerate(@Req() req, @Param('id') id: string) {
-    const userId = req?.user?.sub;
+  async regenerate(@Req() req: any, @Param('id') id: string) {
+    const userId = req?.user?.sub || req?.user?.userId;
     if (!userId) throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+
     const { publicToken } = await this.projects.regeneratePublicToken(id, userId);
     return { token: publicToken };
   }

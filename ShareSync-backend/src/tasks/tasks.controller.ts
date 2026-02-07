@@ -18,6 +18,7 @@ import {
   HttpStatus,
   HttpCode,
   Logger,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -54,6 +55,28 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // PRIORITIES (MUST BE BEFORE ANY :id ROUTES)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Get('priorities')
+  @ApiOperation({ summary: 'Get my priority tasks (top N)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getPriorityTasks(
+    @Request() req: any,
+    @Query('limit') limit?: string,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    this.logger.log(`Getting priority tasks for user: ${userId}`);
+
+    const tasks = await this.tasksService.getMyPriorityTasks(
+      userId,
+      limit ? parseInt(limit, 10) : 3,
+    );
+
+    return { success: true, data: tasks };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // CREATE
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -62,7 +85,8 @@ export class TasksController {
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Task created' })
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   async create(@Req() req: any, @Body() dto: CreateTaskDto) {
-    const task = await this.tasksService.create(req.user.userId, dto);
+    const userId = req.user?.sub || req.user?.userId;
+    const task = await this.tasksService.create(userId, dto);
     return {
       success: true,
       data: task,
@@ -111,7 +135,9 @@ export class TasksController {
       offset: offset ? parseInt(offset, 10) : undefined,
     };
 
-    const result = await this.tasksService.find(req.user.userId, options);
+    const userId = req.user?.sub || req.user?.userId;
+    const result = await this.tasksService.find(userId, options);
+
     return {
       success: true,
       data: result.tasks,
@@ -132,11 +158,8 @@ export class TasksController {
     @Query('projectId') projectId: string,
     @Query('sprintId') sprintId?: string,
   ) {
-    const board = await this.tasksService.getKanbanBoard(
-      projectId,
-      req.user.userId,
-      sprintId,
-    );
+    const userId = req.user?.sub || req.user?.userId;
+    const board = await this.tasksService.getKanbanBoard(projectId, userId, sprintId);
     return {
       success: true,
       data: board,
@@ -154,9 +177,10 @@ export class TasksController {
     @Query('assigneeId') assigneeId?: string,
     @Query('limit') limit?: string,
   ) {
+    const userId = req.user?.sub || req.user?.userId;
     const stack = await this.tasksService.getPriorityStack(
       projectId,
-      req.user.userId,
+      userId,
       assigneeId,
       limit ? parseInt(limit, 10) : 10,
     );
@@ -170,7 +194,8 @@ export class TasksController {
   @ApiOperation({ summary: 'Get a task by ID' })
   @ApiParam({ name: 'id', description: 'Task ID' })
   async findOne(@Req() req: any, @Param('id') id: string) {
-    const task = await this.tasksService.findByIdWithAccess(id, req.user.userId);
+    const userId = req.user?.sub || req.user?.userId;
+    const task = await this.tasksService.findByIdWithAccess(id, userId);
     return {
       success: true,
       data: task,
@@ -181,7 +206,8 @@ export class TasksController {
   @ApiOperation({ summary: 'Get subtasks of a task' })
   @ApiParam({ name: 'id', description: 'Parent task ID' })
   async getSubtasks(@Req() req: any, @Param('id') id: string) {
-    const subtasks = await this.tasksService.getSubtasks(id, req.user.userId);
+    const userId = req.user?.sub || req.user?.userId;
+    const subtasks = await this.tasksService.getSubtasks(id, userId);
     return {
       success: true,
       data: subtasks,
@@ -200,7 +226,8 @@ export class TasksController {
     @Param('id') id: string,
     @Body() dto: UpdateTaskDto,
   ) {
-    const task = await this.tasksService.update(id, req.user.userId, dto);
+    const userId = req.user?.sub || req.user?.userId;
+    const task = await this.tasksService.update(id, userId, dto);
     return {
       success: true,
       data: task,
@@ -215,7 +242,8 @@ export class TasksController {
     @Param('id') id: string,
     @Body() dto: MoveTaskDto,
   ) {
-    const task = await this.tasksService.move(id, req.user.userId, dto);
+    const userId = req.user?.sub || req.user?.userId;
+    const task = await this.tasksService.move(id, userId, dto);
     return {
       success: true,
       data: task,
@@ -238,7 +266,8 @@ export class TasksController {
     @Param('id') id: string,
     @Body() dto: CompleteTaskDto,
   ) {
-    const result = await this.tasksService.complete(id, req.user.userId, dto);
+    const userId = req.user?.sub || req.user?.userId;
+    const result = await this.tasksService.complete(id, userId, dto);
     return {
       success: true,
       data: {
@@ -263,7 +292,8 @@ export class TasksController {
   @ApiOperation({ summary: 'Delete a task' })
   @ApiParam({ name: 'id', description: 'Task ID' })
   async delete(@Req() req: any, @Param('id') id: string) {
-    await this.tasksService.delete(id, req.user.userId);
+    const userId = req.user?.sub || req.user?.userId;
+    await this.tasksService.delete(id, userId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -278,7 +308,8 @@ export class TasksController {
     @Param('id') id: string,
     @Body() dto: AddCommentDto,
   ) {
-    const task = await this.tasksService.addComment(id, req.user.userId, dto);
+    const userId = req.user?.sub || req.user?.userId;
+    const task = await this.tasksService.addComment(id, userId, dto);
     return {
       success: true,
       data: task,
@@ -295,11 +326,8 @@ export class TasksController {
     @Param('id') id: string,
     @Param('commentId') commentId: string,
   ) {
-    const task = await this.tasksService.deleteComment(
-      id,
-      commentId,
-      req.user.userId,
-    );
+    const userId = req.user?.sub || req.user?.userId;
+    const task = await this.tasksService.deleteComment(id, commentId, userId);
     return {
       success: true,
       data: task,
@@ -318,7 +346,8 @@ export class TasksController {
     @Param('id') id: string,
     @Body() dto: LogTimeDto,
   ) {
-    const task = await this.tasksService.logTime(id, req.user.userId, dto);
+    const userId = req.user?.sub || req.user?.userId;
+    const task = await this.tasksService.logTime(id, userId, dto);
     return {
       success: true,
       data: task,

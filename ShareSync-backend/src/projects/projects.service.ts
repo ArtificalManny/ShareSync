@@ -60,6 +60,117 @@ export class ProjectsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // COMPATIBILITY METHODS (for old ProjectService API)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async findOneForUser(userId: string, projectId: string): Promise<ProjectDocument | null> {
+    try {
+      return await this.findByIdWithAccess(projectId, userId);
+    } catch {
+      return null;
+    }
+  }
+
+  async findAll(userId: string): Promise<ProjectDocument[]> {
+    const result = await this.findUserProjects(userId);
+    return result.projects;
+  }
+
+  async list(userId: string, options: ProjectQueryOptions = {}): Promise<ProjectDocument[]> {
+    const result = await this.findUserProjects(userId, options);
+    return result.projects;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DEBUG SUPPORT
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async findAllNoFilter(): Promise<ProjectDocument[]> {
+    return this.projectModel.find({}).exec();
+  }
+
+  async findByUser(userId: string): Promise<ProjectDocument[]> {
+    const result = await this.findUserProjects(userId);
+    return result.projects;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PUBLIC SHARE (minimal implementation so share.controller.ts compiles)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async enablePublic(projectId: string, userId: string): Promise<{ publicToken: string }> {
+    const project = await this.findByIdWithAccess(projectId, userId);
+
+    // keep strict: owner or admin
+    if (!this.canManageMembers(project, userId) && project.ownerId.toString() !== userId) {
+      throw new ForbiddenException('You do not have permission to enable public sharing');
+    }
+
+    // generate a token (simple unique string)
+    const publicToken = `${new Types.ObjectId().toString()}${new Types.ObjectId().toString()}`;
+
+    (project as any).publicEnabled = true;
+    (project as any).publicToken = publicToken;
+
+    await project.save();
+    return { publicToken };
+  }
+
+  async disablePublic(projectId: string, userId: string): Promise<void> {
+    const project = await this.findByIdWithAccess(projectId, userId);
+
+    if (!this.canManageMembers(project, userId) && project.ownerId.toString() !== userId) {
+      throw new ForbiddenException('You do not have permission to disable public sharing');
+    }
+
+    (project as any).publicEnabled = false;
+    (project as any).publicToken = null;
+
+    await project.save();
+  }
+
+  async regeneratePublicToken(projectId: string, userId: string): Promise<{ publicToken: string }> {
+    const project = await this.findByIdWithAccess(projectId, userId);
+
+    if (!this.canManageMembers(project, userId) && project.ownerId.toString() !== userId) {
+      throw new ForbiddenException('You do not have permission to regenerate public token');
+    }
+
+    const publicToken = `${new Types.ObjectId().toString()}${new Types.ObjectId().toString()}`;
+
+    (project as any).publicEnabled = true;
+    (project as any).publicToken = publicToken;
+
+    await project.save();
+    return { publicToken };
+  }
+
+  async getPublicSnapshotByToken(token: string): Promise<any | null> {
+    const project = await this.projectModel
+      .findOne({ publicToken: token, publicEnabled: true })
+      .lean()
+      .exec();
+
+    if (!project) return null;
+
+    return {
+      id: project._id,
+      name: project.name,
+      description: (project as any).description || null,
+      status: project.status,
+      category: (project as any).category || null,
+      tags: project.tags || [],
+      metrics: project.metrics || {},
+      updatedAt: project.updatedAt,
+      createdAt: project.createdAt,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CORE METHODS
+  // ─────────────────────────────────────────────────────────────────────────────
+
   async create(userId: string, dto: CreateProjectDto): Promise<ProjectDocument> {
     this.logger.log(`Creating project for user ${userId}: ${dto.name}`);
 
@@ -121,21 +232,23 @@ export class ProjectsService {
       sortOrder = 'desc',
     } = options;
 
+    // ✅ Support legacy variants + exclude isArchived if present
     const query: any = {
       $or: [
         { ownerId: new Types.ObjectId(userId) },
+        { owner: new Types.ObjectId(userId) },
         { 'members.userId': new Types.ObjectId(userId) },
+        { 'members.user': new Types.ObjectId(userId) },
       ],
+      isArchived: { $ne: true },
     };
 
     if (status) query.status = status;
     else query.status = { $ne: ProjectStatus.ARCHIVED };
 
     if (search) query.$text = { $search: search };
-
     if (tags && tags.length > 0) query.tags = { $in: tags };
 
-    // ✅ FIX: remove .lean() so we return hydrated documents (ProjectDocument[])
     const [projects, total] = await Promise.all([
       this.projectModel
         .find(query)
@@ -174,9 +287,9 @@ export class ProjectsService {
       else if (dto.status === ProjectStatus.COMPLETED) project.completedAt = new Date();
     }
 
-    if (dto.settings) {
-      project.settings = { ...project.settings, ...dto.settings };
-      delete dto.settings;
+    if ((dto as any).settings) {
+      (project as any).settings = { ...(project as any).settings, ...(dto as any).settings };
+      delete (dto as any).settings;
     }
 
     Object.assign(project, dto);

@@ -8,7 +8,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ProjectService } from '../project.service';
+import { ProjectsService } from '../projects.service';
 
 export type ProjectPermission = 'view' | 'edit' | 'manage';
 const PERM_KEY = 'project:permission';
@@ -36,8 +36,8 @@ function roleAllows(
 export class ProjectPermissionGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    @Inject(forwardRef(() => ProjectService))  // FIXED
-    private readonly projects: ProjectService,  // FIXED
+    @Inject(forwardRef(() => ProjectsService))
+    private readonly projects: ProjectsService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -50,7 +50,7 @@ export class ProjectPermissionGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest();
 
     const userId: string | undefined =
-      req?.user?.sub || req?.user?.id || req?.user?._id;
+      req?.user?.sub || req?.user?.userId || req?.user?.id || req?.user?._id;
 
     const projectId: string | undefined =
       req?.params?.projectId ||
@@ -59,17 +59,34 @@ export class ProjectPermissionGuard implements CanActivate {
       (typeof req?.query?.projectId === 'string' ? req.query.projectId : undefined);
 
     if (!projectId) return true;
-
     if (!userId) throw new ForbiddenException('Not authenticated');
 
+    // ✅ ProjectsService compatibility method (we add this below)
     const project = await this.projects.findOneForUser(userId, projectId);
     if (!project) throw new ForbiddenException('No access to this project');
 
+    // ✅ FIX: owner field is ownerId (or legacy owner), not userId
     let role: 'owner' | 'member' | 'viewer' | null = null;
-    if (String(project.userId) === String(userId)) role = 'owner';
-    else if (Array.isArray(project.members)) {
-      const me = project.members.find((m: any) => String(m.userId) === String(userId));
-      role = (me?.role as any) ?? null;
+
+    const ownerId = (project as any).ownerId?.toString?.() || null;
+    const owner = (project as any).owner?.toString?.() || null;
+
+    if (String(ownerId) === String(userId) || String(owner) === String(userId)) {
+      role = 'owner';
+    } else if (Array.isArray((project as any).members)) {
+      const me = (project as any).members.find(
+        (m: any) => String(m?.userId || m?.user) === String(userId),
+      );
+
+      // Normalize role into owner/member/viewer for this guard
+      const rawRole = (me?.role as any) ?? null;
+
+      if (!rawRole) role = null;
+      else if (rawRole === 'owner' || rawRole === 'OWNER') role = 'owner';
+      else if (rawRole === 'admin' || rawRole === 'ADMIN') role = 'member';
+      else if (rawRole === 'member' || rawRole === 'MEMBER') role = 'member';
+      else if (rawRole === 'viewer' || rawRole === 'VIEWER') role = 'viewer';
+      else role = null;
     }
 
     if (!roleAllows(role, perm)) {

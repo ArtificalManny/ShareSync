@@ -13,17 +13,16 @@ import {
   HallOfFameDocument,
   HallOfFameCategory,
 } from './schemas/hall-of-fame.schema';
-import { XPCalculatorService, TaskCompletionContext } from './services/xp-calculator.service';
+import {
+  XPCalculatorService,
+  TaskCompletionContext,
+} from './services/xp-calculator.service';
 import { StreakService } from './services/streak.service';
 import { BadgeService } from './services/badge.service';
 import { LeaderboardService } from './services/leaderboard.service';
 import { CeremonyService } from './services/ceremony.service';
 import { getLevelProgress, getLevelTitle } from './constants/xp.constants';
-import { TaskCompletionXPDto, UserStatsResponseDto } from './dto/gamification.dto';
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SERVICE
-// ═══════════════════════════════════════════════════════════════════════════════
+import { TaskCompletionXPDto } from './dto/gamification.dto';
 
 @Injectable()
 export class GamificationService {
@@ -46,22 +45,67 @@ export class GamificationService {
   // USER STATS
   // ─────────────────────────────────────────────────────────────────────────────
 
-  async getUserStats(userId: string): Promise<UserStatsResponseDto> {
+  // ✅ FIXED: Return format that matches frontend expectations (nested streak object)
+  async getUserStats(userId: string): Promise<any> {
     const stats = await this.getOrCreateStats(userId);
     const levelProgress = getLevelProgress(stats.totalXP);
 
     return {
+      // Identity
       userId: stats.userId.toString(),
-      totalXP: stats.totalXP,
-      level: stats.level,
-      levelProgress: levelProgress.progress,
-      levelTitle: getLevelTitle(stats.level),
-      currentStreak: stats.streak?.currentStreak || 0,
-      longestStreak: stats.streak?.longestStreak || 0,
-      totalTasksCompleted: stats.tasksCompleted,
-      badgeCount: stats.earnedBadges.length,
+
+      // XP & Level
+      totalXP: stats.totalXP || 0,
+      level: stats.level || 1,
+      levelProgress: levelProgress.progress || 0,
+      levelTitle: getLevelTitle(stats.level || 1),
+
+      // ✅ FIXED: getLevelProgress() does NOT have xpToNext
+      xpToNextLevel: Math.max(
+        0,
+        (levelProgress.xpForNextLevel || 0) - (levelProgress.xpInLevel || 0),
+      ),
+
+      // Time-based XP
       todayXP: stats.todayXP || 0,
       weeklyXP: stats.weeklyXP || 0,
+      monthlyXP: stats.monthlyXP || 0,
+
+      // Streak - NESTED OBJECT (what frontend expects)
+      streak: {
+        currentStreak: stats.streak?.currentStreak || 0,
+        longestStreak: stats.streak?.longestStreak || 0,
+        freezesAvailable: stats.streak?.freezesAvailable || 1,
+        freezesUsed: stats.streak?.freezesUsed || 0,
+        atRisk: stats.streak?.atRisk || false,
+        activeDays: stats.streak?.activeDays || [],
+        lastActivityDate: stats.streak?.lastActivityDate || null,
+      },
+
+      // ALSO include flat fields for backwards compatibility
+      currentStreak: stats.streak?.currentStreak || 0,
+      longestStreak: stats.streak?.longestStreak || 0,
+
+      // Task metrics
+      tasksCompleted: stats.tasksCompleted || 0,
+      totalTasksCompleted: stats.tasksCompleted || 0, // alias
+      tasksCompletedToday: stats.tasksCompletedToday || 0,
+      tasksCompletedThisWeek: stats.tasksCompletedThisWeek || 0,
+      tasksCompletedOnTime: stats.tasksCompletedOnTime || 0,
+      blockingTasksCompleted: stats.blockingTasksCompleted || 0,
+
+      // Badges
+      earnedBadges: stats.earnedBadges || [],
+      badgeCount: stats.earnedBadges?.length || 0,
+
+      // Additional stats
+      projectsCompleted: stats.projectsCompleted || 0,
+      focusTasksCompleted: stats.focusTasksCompleted || 0,
+      totalFocusMinutes: stats.totalFocusMinutes || 0,
+
+      // Achievements
+      shipsCount: stats.shipsCount || 0,
+      legendaryHits: stats.legendaryHits || 0,
     };
   }
 
@@ -91,10 +135,8 @@ export class GamificationService {
   }> {
     const stats = await this.getOrCreateStats(dto.userId);
 
-    // Check if first task of the day
     const isFirstTaskOfDay = stats.tasksCompletedToday === 0;
 
-    // Build context for XP calculation
     const context: TaskCompletionContext = {
       priority: dto.priority,
       isBlocking: dto.isBlocking,
@@ -105,10 +147,8 @@ export class GamificationService {
       isFirstTaskOfDay,
     };
 
-    // Calculate XP
     const xpResult = this.xpCalculator.calculateTaskXP(context);
 
-    // Update stats
     const previousLevel = stats.level;
     const xpResult2 = await stats.addXP(xpResult.totalXP, 'task_complete', {
       sourceId: dto.taskId,
@@ -116,53 +156,32 @@ export class GamificationService {
       isLegendary: xpResult.isLegendary,
       multiplier: xpResult.multiplier,
     });
-    
+
     stats.tasksCompleted += 1;
     stats.tasksCompletedToday += 1;
     stats.tasksCompletedThisWeek += 1;
 
-    if (dto.isBlocking) {
-      stats.blockingTasksCompleted += 1;
-    }
-    if (dto.isOnTime) {
-      stats.tasksCompletedOnTime += 1;
-    }
-    if (dto.isEarly) {
-      stats.earlyTasks += 1;
-    }
-    if (dto.inFocusMode) {
-      stats.focusTasksCompleted += 1;
-    }
-    if (xpResult.isLegendary) {
-      stats.legendaryHits += 1;
-    }
-    if (xpResult.hasBonus) {
-      stats.bonusesEarned += 1;
-    }
-    if (xpResult.hasMultiplier) {
-      stats.multipliersTriggered += 1;
-    }
+    if (dto.isBlocking) stats.blockingTasksCompleted += 1;
+    if (dto.isOnTime) stats.tasksCompletedOnTime += 1;
+    if (dto.isEarly) stats.earlyTasks += 1;
+    if (dto.inFocusMode) stats.focusTasksCompleted += 1;
+    if (xpResult.isLegendary) stats.legendaryHits += 1;
+    if (xpResult.hasBonus) stats.bonusesEarned += 1;
+    if (xpResult.hasMultiplier) stats.multipliersTriggered += 1;
 
-    // Update time-based stats
     const hour = new Date().getHours();
-    if (hour < 9) {
-      stats.earlyTasks += 1;
-    } else if (hour >= 22) {
-      stats.lateTasks += 1;
-    }
+    if (hour < 9) stats.earlyTasks += 1;
+    else if (hour >= 22) stats.lateTasks += 1;
 
     await stats.save();
 
-    // Update streak
     const streakResult = await this.streakService.recordActivity(dto.userId);
 
-    // Check and unlock badges
     const badgesEarned = await this.badgeService.checkAndUnlockBadges(dto.userId, {
       taskId: dto.taskId,
       projectId: dto.projectId,
     });
 
-    // Trigger ceremony
     const ceremonyResult = await this.ceremonyService.triggerTaskComplete(
       dto.userId,
       xpResult.baseXP,
@@ -178,7 +197,6 @@ export class GamificationService {
       },
     );
 
-    // Handle level up
     if (xpResult2.leveledUp) {
       this.eventEmitter.emit('level.up', {
         userId: dto.userId,
@@ -191,7 +209,6 @@ export class GamificationService {
       });
     }
 
-    // Handle legendary hit - add to Hall of Fame
     if (xpResult.isLegendary) {
       await this.leaderboardService.addToHallOfFame(
         dto.userId,
@@ -204,7 +221,6 @@ export class GamificationService {
       );
     }
 
-    // Handle streak milestone - add to Hall of Fame
     if (streakResult.milestoneReached) {
       await this.leaderboardService.addToHallOfFame(
         dto.userId,
@@ -222,7 +238,7 @@ export class GamificationService {
       );
     }
 
-    // Trigger badge ceremonies
+    // ✅ FIXED: ceremony method name
     for (const badge of badgesEarned) {
       await this.ceremonyService.triggerBadgeEarned(
         dto.userId,
@@ -234,6 +250,35 @@ export class GamificationService {
     }
 
     const levelProgress = getLevelProgress(stats.totalXP);
+
+    this.eventEmitter.emit('xp.awarded', {
+      userId: dto.userId,
+      taskId: dto.taskId,
+      projectId: dto.projectId,
+
+      amount: xpResult.totalXP,
+      baseXP: xpResult.baseXP,
+      bonusXP: xpResult.bonusXP,
+      multiplier: xpResult.multiplier,
+      isLegendary: xpResult.isLegendary,
+
+      newTotal: stats.totalXP,
+      level: stats.level,
+      levelProgress: levelProgress.progress,
+
+      leveledUp: xpResult2.leveledUp,
+      newLevel: xpResult2.newLevel,
+
+      streak: {
+        updated: streakResult.streakUpdated,
+        current: streakResult.newStreak,
+        milestone: streakResult.milestoneReached || null,
+      },
+
+      breakdown: xpResult.breakdown,
+      ceremony: ceremonyResult ?? null,
+      timestamp: new Date().toISOString(),
+    });
 
     return {
       xpGained: xpResult.totalXP,
@@ -282,11 +327,11 @@ export class GamificationService {
   }) {
     let isOnTime = false;
     let isEarly = false;
-    
+
     if (payload.dueDate) {
       const dueDate = new Date(payload.dueDate);
       const completedAt = new Date(payload.completedAt);
-      
+
       if (completedAt <= dueDate) {
         isOnTime = true;
         if (dueDate.getTime() - completedAt.getTime() > 24 * 60 * 60 * 1000) {
@@ -305,88 +350,6 @@ export class GamificationService {
       isEarly,
       inFocusMode: payload.inFocusMode,
     });
-  }
-
-  @OnEvent('project.completed')
-  async handleProjectCompleted(payload: {
-    projectId: string;
-    projectName: string;
-    userId: string;
-  }) {
-    const stats = await this.getOrCreateStats(payload.userId);
-    stats.projectsCompleted += 1;
-    await stats.save();
-
-    const xpAmount = this.xpCalculator.calculateProjectShipXP();
-    await stats.addXP(xpAmount, 'project_ship', { sourceId: payload.projectId });
-
-    await this.ceremonyService.triggerProjectShip(
-      payload.userId,
-      payload.projectId,
-      payload.projectName,
-    );
-
-    await this.leaderboardService.addToHallOfFame(
-      payload.userId,
-      HallOfFameCategory.PROJECT_SHIP,
-      '🚀 Project Shipped!',
-      `Successfully completed project: ${payload.projectName}`,
-      '🚀',
-      { projectId: payload.projectId, projectName: payload.projectName },
-      xpAmount,
-    );
-
-    await this.badgeService.checkAndUnlockBadges(payload.userId, {
-      projectId: payload.projectId,
-    });
-  }
-
-  @OnEvent('sprint.completed')
-  async handleSprintCompleted(payload: {
-    sprintId: string;
-    sprintName: string;
-    projectId: string;
-    completedBy: string[];
-    goalAchieved: boolean;
-  }) {
-    if (!payload.goalAchieved) return;
-
-    for (const userId of payload.completedBy) {
-      const stats = await this.getOrCreateStats(userId);
-      stats.sprintsCompleted += 1;
-      
-      const xpAmount = this.xpCalculator.calculateSprintGoalXP();
-      await stats.addXP(xpAmount, 'sprint_goal', { sourceId: payload.sprintId });
-      await stats.save();
-
-      await this.ceremonyService.triggerSprintGoal(
-        userId,
-        payload.projectId,
-        payload.sprintName,
-      );
-    }
-  }
-
-  @OnEvent('message.sent')
-  async handleMessageSent(payload: { senderId: string }) {
-    const stats = await this.getOrCreateStats(payload.senderId);
-    stats.messagesSent += 1;
-    await stats.save();
-
-    await this.badgeService.checkAndUnlockBadges(payload.senderId);
-  }
-
-  @OnEvent('focus.session.ended')
-  async handleFocusSessionEnded(payload: {
-    userId: string;
-    durationMinutes: number;
-  }) {
-    const stats = await this.getOrCreateStats(payload.userId);
-    stats.totalFocusMinutes += payload.durationMinutes;
-    stats.todayFocusMinutes += payload.durationMinutes;
-    await stats.save();
-
-    await this.badgeService.checkAndUnlockBadges(payload.userId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

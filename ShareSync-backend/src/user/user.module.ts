@@ -6,7 +6,7 @@ import { User, UserSchema } from './schemas/user.schema'; // keep your existing 
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
 
-import { ProjectModule } from '../projects/project.module';
+import { ProjectsModule } from '../projects/projects.module';
 import { ActivitiesModule } from '../activities/activities.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 
@@ -15,7 +15,7 @@ import { RealtimeModule } from '../realtime/realtime.module';
     // Registers the User model in this module’s scope
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     // If UserService references ProjectService, keep forwardRef
-    forwardRef(() => ProjectModule),
+    forwardRef(() => ProjectsModule),
     ActivitiesModule,
     RealtimeModule,
   ],
