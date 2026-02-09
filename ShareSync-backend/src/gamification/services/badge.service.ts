@@ -7,7 +7,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { UserStats, UserStatsDocument } from '../schemas/user-stats.schema';
+import { UserStats, UserStatsDocument, EarnedBadge } from '../schemas/user-stats.schema';
 import { Achievement, AchievementDocument } from '../schemas/achievement.schema';
 import {
   BADGE_DEFINITIONS,
@@ -66,9 +66,7 @@ export class BadgeService {
       userId: new Types.ObjectId(userId),
     });
 
-    const earnedMap = new Map(
-      achievements.map((a) => [a.badgeId, a]),
-    );
+    const earnedMap = new Map(achievements.map((a) => [a.badgeId, a]));
 
     const badges = BADGE_DEFINITIONS.filter((b) => {
       if (b.isHidden && !options.includeHidden && !earnedMap.has(b.id)) return false;
@@ -115,14 +113,19 @@ export class BadgeService {
     const stats = await this.getOrCreateStats(userId);
     const unlockedBadges: BadgeUnlockResult[] = [];
 
+    const earnedIds = this.getEarnedBadgeIds(stats);
+
     for (const badge of BADGE_DEFINITIONS) {
       // Skip if already earned
-      if (stats.earnedBadges?.includes(badge.id)) continue;
+      if (earnedIds.has(badge.id)) continue;
 
       // Check if criteria met
       if (this.checkCriteria(badge, stats, context)) {
         const result = await this.unlockBadge(userId, badge, stats, context);
-        if (result) unlockedBadges.push(result);
+        if (result) {
+          unlockedBadges.push(result);
+          earnedIds.add(badge.id); // prevents double-unlock in same loop
+        }
       }
     }
 
@@ -135,7 +138,7 @@ export class BadgeService {
     stats: UserStatsDocument,
     context?: Record<string, any>,
   ): Promise<BadgeUnlockResult | null> {
-    // Double-check not already earned
+    // Double-check not already earned (DB-level)
     const existing = await this.achievementModel.findOne({
       userId: new Types.ObjectId(userId),
       badgeId: badge.id,
@@ -143,7 +146,7 @@ export class BadgeService {
 
     if (existing) return null;
 
-    // Create achievement
+    // Create achievement record (canonical history)
     const achievement = new this.achievementModel({
       userId: new Types.ObjectId(userId),
       badgeId: badge.id,
@@ -159,13 +162,24 @@ export class BadgeService {
 
     await achievement.save();
 
-    // Update user stats (earnedBadges array)
+    // Update user stats earnedBadges (EarnedBadge[])
     if (!stats.earnedBadges) stats.earnedBadges = [];
-    if (!stats.earnedBadges.includes(badge.id)) {
-      stats.earnedBadges.push(badge.id);
-      // @ts-ignore mongoose doc method exists at runtime
+
+    const alreadyInStats = (stats.earnedBadges as EarnedBadge[]).some(
+      (e) => e?.badgeId === badge.id,
+    );
+
+    if (!alreadyInStats) {
+      (stats.earnedBadges as EarnedBadge[]).push({
+        badgeId: badge.id,
+        earnedAt: new Date(),
+        metadata: context ?? {},
+      });
+
+      // ensure mongoose change tracking is aware
       stats.markModified?.('earnedBadges');
     }
+
     await stats.save();
 
     // Emit event
@@ -322,11 +336,26 @@ export class BadgeService {
   // HELPERS
   // ─────────────────────────────────────────────────────────────────────────────
 
+  private getEarnedBadgeIds(stats: UserStatsDocument): Set<string> {
+    const earned = (stats.earnedBadges ?? []) as EarnedBadge[];
+    const ids = earned
+      .map((e) => e?.badgeId)
+      .filter((x): x is string => typeof x === 'string' && x.length > 0);
+    return new Set(ids);
+  }
+
   private async getOrCreateStats(userId: string): Promise<UserStatsDocument> {
     let stats = await this.userStatsModel.findOne({ userId: new Types.ObjectId(userId) });
 
     if (!stats) {
       stats = new this.userStatsModel({ userId: new Types.ObjectId(userId) });
+      await stats.save();
+    }
+
+    // Safety: ensure earnedBadges exists (and is object-array)
+    if (!stats.earnedBadges) {
+      stats.earnedBadges = [];
+      stats.markModified?.('earnedBadges');
       await stats.save();
     }
 

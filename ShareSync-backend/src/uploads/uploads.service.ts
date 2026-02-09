@@ -16,7 +16,7 @@ export class UploadsService {
     // TODO: your actual persistence (S3, local, etc.)
     // For now, assume the file is accessible at /uploads/<filename>
     const id = crypto.randomUUID();
-    const url = `/uploads/${file.filename || id}`;
+    const url = `/uploads/${(file as any).filename || id}`;
     const thumbUrl = file.mimetype?.startsWith('image/') ? url : undefined;
 
     return {
@@ -27,5 +27,18 @@ export class UploadsService {
       size: file.size,
       mime: file.mimetype || 'application/octet-stream',
     };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ✅ PHASE 5.1: AVATAR UPLOAD WRAPPER
+  // Controller expects a string URL. We reuse uploadFile().
+  // ─────────────────────────────────────────────────────────────────────────────
+  async uploadAvatar(file: Express.Multer.File): Promise<string> {
+    if (!file) {
+      throw new Error('No avatar file provided');
+    }
+
+    const stored = await this.uploadFile(file);
+    return stored.url;
   }
 }

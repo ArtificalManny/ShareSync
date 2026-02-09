@@ -90,7 +90,7 @@ export class StreakService {
   }> {
     const stats = await this.getOrCreateStats(userId);
     const previousStreak = stats.streak?.currentStreak || 0;
-    
+
     const result = await stats.updateStreak(true);
 
     // Check for milestone
@@ -98,7 +98,7 @@ export class StreakService {
     const newStreak = result.currentStreak;
     if (newStreak > previousStreak) {
       milestoneReached = this.checkMilestone(previousStreak, newStreak);
-      
+
       if (milestoneReached) {
         this.eventEmitter.emit('streak.milestone', {
           userId,
@@ -145,7 +145,7 @@ export class StreakService {
     const used = await stats.useStreakFreeze();
     if (used) {
       this.logger.log(`User ${userId} used a streak freeze`);
-      
+
       return {
         success: true,
         freezesRemaining: stats.streak.freezesAvailable,
@@ -192,6 +192,7 @@ export class StreakService {
     }
 
     stats.totalXP -= cost;
+
     if (!stats.streak) {
       stats.streak = {
         currentStreak: 0,
@@ -201,8 +202,13 @@ export class StreakService {
         activeDays: [],
         atRisk: false,
         milestones: [],
-      };
+        // ✅ REQUIRED by StreakData type
+        // Use epoch instead of null to avoid type mismatch if schema uses Date (non-nullable)
+        lastActivityDate: new Date(0),
+        streakStartDate: undefined,
+      } as any;
     }
+
     stats.streak.freezesAvailable += 1;
     await stats.save();
 
@@ -296,6 +302,13 @@ export class StreakService {
       stats = new this.userStatsModel({
         userId: new Types.ObjectId(userId),
       });
+      await stats.save();
+    }
+
+    // ✅ Safety: if streak exists but missing lastActivityDate (older docs), patch it
+    if (stats.streak && !stats.streak.lastActivityDate) {
+      stats.streak.lastActivityDate = new Date(0) as any;
+      stats.markModified?.('streak');
       await stats.save();
     }
 

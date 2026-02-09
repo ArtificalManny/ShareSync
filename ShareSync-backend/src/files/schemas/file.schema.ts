@@ -1,6 +1,13 @@
 // src/files/schemas/file.schema.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // FILE SCHEMA: Asset management for the Vault
+// Spec-compatible additions:
+// - type: 'file' | 'folder' (folder support)
+// - folderId references File (self-referential)
+// - version (alias for currentVersion)
+// - versions: FileVersion[]
+// - linkedTaskId
+// Keeps advanced fields already used in the app: status, storageKey, metadata, counters, etc.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
@@ -8,8 +15,13 @@ import { Document, Types } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ENUMS
+// ENUMS (kept for richer classification)
 // ═══════════════════════════════════════════════════════════════════════════════
+
+export enum FileKind {
+  FILE = 'file',
+  FOLDER = 'folder',
+}
 
 export enum FileType {
   DOCUMENT = 'document',
@@ -50,6 +62,7 @@ export class FileVersion {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   uploadedBy: Types.ObjectId;
 
+  // Spec wants required; we default it for convenience
   @Prop({ type: Date, default: Date.now })
   uploadedAt: Date;
 
@@ -66,10 +79,10 @@ export class FileMetadata {
   height?: number;
 
   @Prop()
-  duration?: number; // For audio/video in seconds
+  duration?: number; // audio/video seconds
 
   @Prop()
-  pages?: number; // For documents/PDFs
+  pages?: number; // documents/PDF
 
   @Prop()
   encoding?: string;
@@ -97,67 +110,87 @@ export type FileDocument = File & Document;
 })
 export class File {
   // ─────────────────────────────────────────────────────────────────────────────
-  // BASIC INFO
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @ApiProperty({ description: 'Display name' })
-  @Prop({ required: true, trim: true, maxlength: 255 })
-  name: string;
-
-  @ApiProperty({ description: 'Original filename' })
-  @Prop({ required: true, maxlength: 255 })
-  originalName: string;
-
-  @ApiProperty({ description: 'File description' })
-  @Prop({ maxlength: 1000 })
-  description?: string;
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ORGANIZATION
+  // REQUIRED RELATIONSHIPS
   // ─────────────────────────────────────────────────────────────────────────────
 
   @ApiProperty({ description: 'Project ID' })
   @Prop({ type: Types.ObjectId, ref: 'Project', required: true, index: true })
   projectId: Types.ObjectId;
 
-  @ApiProperty({ description: 'Parent folder ID' })
-  @Prop({ type: Types.ObjectId, ref: 'Folder', index: true })
-  folderId?: Types.ObjectId;
+  /**
+   * Spec: folderId references File (self-referential)
+   * - For root items, folderId is null/undefined
+   */
+  @ApiProperty({ description: 'Parent folder File ID (self reference)' })
+  @Prop({ type: Types.ObjectId, ref: 'File', index: true, default: null })
+  folderId?: Types.ObjectId | null;
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // FILE INFO
+  // NAME + DESCRIPTION
   // ─────────────────────────────────────────────────────────────────────────────
 
+  @ApiProperty({ description: 'Display name' })
+  @Prop({ required: true, trim: true, maxlength: 255 })
+  name: string;
+
+  /**
+   * Keep originalName for real file uploads.
+   * For folders, we can just set originalName=name in service layer.
+   */
+  @ApiProperty({ description: 'Original filename' })
+  @Prop({ trim: true, maxlength: 255, default: '' })
+  originalName: string;
+
+  @ApiProperty({ description: 'File/folder description' })
+  @Prop({ maxlength: 1000, default: '' })
+  description?: string;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SPEC FIELD: type = file|folder
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @ApiProperty({ description: "Spec kind: 'file' | 'folder'", enum: FileKind })
+  @Prop({ type: String, enum: FileKind, default: FileKind.FILE, index: true })
+  type: FileKind;
+
+  /**
+   * Keep richer classification in addition to type.
+   * For folders this can be OTHER or omitted.
+   */
   @ApiProperty({ enum: FileType })
-  @Prop({ type: String, enum: FileType, required: true, index: true })
-  type: FileType;
+  @Prop({ type: String, enum: FileType, default: FileType.OTHER, index: true })
+  fileType: FileType;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MIME + SIZE + URLS
+  // ─────────────────────────────────────────────────────────────────────────────
 
   @ApiProperty({ description: 'MIME type' })
-  @Prop({ required: true })
+  @Prop({ trim: true, default: '' })
   mimeType: string;
 
   @ApiProperty({ description: 'File extension' })
-  @Prop()
+  @Prop({ trim: true })
   extension?: string;
 
   @ApiProperty({ description: 'File size in bytes' })
-  @Prop({ type: Number, required: true })
+  @Prop({ type: Number, default: 0 })
   size: number;
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // STORAGE
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @ApiProperty({ description: 'Storage URL' })
-  @Prop({ required: true })
+  @Prop({ trim: true, default: '' })
   url: string;
 
   @ApiProperty({ description: 'Thumbnail URL' })
-  @Prop()
+  @Prop({ trim: true, default: '' })
   thumbnailUrl?: string;
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STORAGE INTERNALS (keep)
+  // ─────────────────────────────────────────────────────────────────────────────
+
   @ApiProperty({ description: 'Storage key/path' })
-  @Prop({ required: true })
+  @Prop({ trim: true, default: '' })
   storageKey: string;
 
   @ApiProperty({ description: 'Storage provider' })
@@ -165,7 +198,7 @@ export class File {
   storageProvider: string;
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // STATUS
+  // STATUS (keep)
   // ─────────────────────────────────────────────────────────────────────────────
 
   @ApiProperty({ enum: FileStatus })
@@ -173,7 +206,7 @@ export class File {
   status: FileStatus;
 
   @ApiProperty({ description: 'Error message if status is error' })
-  @Prop()
+  @Prop({ trim: true })
   errorMessage?: string;
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -185,10 +218,18 @@ export class File {
   uploadedBy: Types.ObjectId;
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // VERSIONING
+  // VERSIONING (spec-compatible)
   // ─────────────────────────────────────────────────────────────────────────────
 
-  @ApiProperty({ description: 'Current version number' })
+  /**
+   * Spec wants: version
+   * We store "version" and keep "currentVersion" as a compatibility alias.
+   */
+  @ApiProperty({ description: 'Current version number (spec)' })
+  @Prop({ type: Number, default: 1 })
+  version: number;
+
+  @ApiProperty({ description: 'Current version number (legacy)' })
   @Prop({ type: Number, default: 1 })
   currentVersion: number;
 
@@ -197,7 +238,7 @@ export class File {
   versions: FileVersion[];
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // METADATA
+  // METADATA (keep)
   // ─────────────────────────────────────────────────────────────────────────────
 
   @ApiProperty({ description: 'File metadata' })
@@ -256,11 +297,14 @@ export class File {
 export const FileSchema = SchemaFactory.createForClass(File);
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// INDEXES
+// INDEXES (spec + your existing needs)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-FileSchema.index({ projectId: 1, folderId: 1, isArchived: 1 });
+FileSchema.index({ projectId: 1, folderId: 1 });
 FileSchema.index({ projectId: 1, type: 1 });
+FileSchema.index({ uploadedBy: 1 });
+
+FileSchema.index({ projectId: 1, folderId: 1, isArchived: 1 });
 FileSchema.index({ projectId: 1, tags: 1 });
 FileSchema.index({ name: 'text', description: 'text', tags: 'text' });
 
@@ -269,7 +313,7 @@ FileSchema.index({ name: 'text', description: 'text', tags: 'text' });
 // ═══════════════════════════════════════════════════════════════════════════════
 
 FileSchema.virtual('sizeFormatted').get(function () {
-  const bytes = this.size;
+  const bytes = this.size || 0;
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -278,4 +322,35 @@ FileSchema.virtual('sizeFormatted').get(function () {
 
 FileSchema.virtual('hasVersions').get(function () {
   return (this.versions?.length ?? 0) > 1;
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HOOKS: keep version fields in sync
+// ═══════════════════════════════════════════════════════════════════════════════
+
+FileSchema.pre('save', function (next) {
+  const doc = this as any;
+
+  // Keep both fields aligned to avoid confusion across services/controllers
+  if (typeof doc.version === 'number' && typeof doc.currentVersion !== 'number') {
+    doc.currentVersion = doc.version;
+  }
+  if (typeof doc.currentVersion === 'number' && typeof doc.version !== 'number') {
+    doc.version = doc.currentVersion;
+  }
+  // If both exist but differ, trust "version"
+  if (typeof doc.version === 'number' && typeof doc.currentVersion === 'number' && doc.version !== doc.currentVersion) {
+    doc.currentVersion = doc.version;
+  }
+
+  // Folder items should have no url/size/mime by default (safe defaults)
+  if (doc.type === FileKind.FOLDER) {
+    doc.size = doc.size || 0;
+    doc.url = doc.url || '';
+    doc.thumbnailUrl = doc.thumbnailUrl || '';
+    doc.mimeType = doc.mimeType || '';
+    doc.extension = doc.extension || '';
+  }
+
+  next();
 });

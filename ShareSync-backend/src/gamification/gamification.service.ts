@@ -3,7 +3,12 @@
 // GAMIFICATION SERVICE: Main orchestrator for all game mechanics
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -150,6 +155,7 @@ export class GamificationService {
     const xpResult = this.xpCalculator.calculateTaskXP(context);
 
     const previousLevel = stats.level;
+
     const xpResult2 = await stats.addXP(xpResult.totalXP, 'task_complete', {
       sourceId: dto.taskId,
       isBonus: xpResult.hasBonus,
@@ -366,6 +372,137 @@ export class GamificationService {
         lastDailyReset: new Date(),
       },
     );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PHASE 4.2: SPEC-COMPAT METHODS (FULL IMPLEMENTATION)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Award XP with history tracking
+   * - Uses stats.addXP() so leveling + xpHistory stays consistent
+   * - Runs streak update + badge checks to keep state consistent
+   */
+  async awardXP(
+    userId: string,
+    amount: number,
+    source: string,
+    metadata?: any,
+  ): Promise<UserStatsDocument> {
+    const stats = await this.getOrCreateStats(userId);
+    if (!stats) throw new NotFoundException('User stats not found');
+
+    await stats.addXP(amount, source, {
+      sourceId: metadata?.sourceId,
+      description: metadata?.description,
+      multiplier: metadata?.multiplier,
+      isBonus: !!metadata?.isBonus,
+      isLegendary: !!metadata?.isLegendary,
+    });
+
+    // Keep streak in sync (optional, but good default)
+    await this.streakService.recordActivity(userId);
+
+    // Badge pass (your existing system)
+    await this.badgeService.checkAndUnlockBadges(userId, {
+      source,
+      metadata,
+      totalXP: stats.totalXP,
+      tasksCompleted: stats.tasksCompleted,
+    });
+
+    return this.getOrCreateStats(userId);
+  }
+
+  /**
+   * Update streak
+   * - Delegates to streakService.recordActivity()
+   */
+  async updateStreak(userId: string): Promise<void> {
+    await this.streakService.recordActivity(userId);
+  }
+
+  /**
+   * Use streak freeze
+   * - Uses the instance method stats.useStreakFreeze() implemented in schema
+   */
+  async useStreakFreeze(
+    userId: string,
+  ): Promise<{ success: boolean; freezesRemaining: number }> {
+    const stats = await this.getOrCreateStats(userId);
+
+    const freezesAvailable = stats.streak?.freezesAvailable ?? 0;
+    if (freezesAvailable <= 0) {
+      throw new BadRequestException('No streak freezes available');
+    }
+
+    const ok = await stats.useStreakFreeze();
+    if (!ok) throw new BadRequestException('No streak freezes available');
+
+    const refreshed = await this.getOrCreateStats(userId);
+
+    return {
+      success: true,
+      freezesRemaining: refreshed.streak?.freezesAvailable ?? 0,
+    };
+  }
+
+  /**
+   * Spec requested: Check and award badges
+   * - In your system, BadgeService already does this.
+   * - We keep this method for compatibility and future use.
+   */
+  private async checkBadges(
+    userId: string,
+    totalXP: number,
+    tasksCompleted: number,
+  ): Promise<void> {
+    await this.badgeService.checkAndUnlockBadges(userId, {
+      totalXP,
+      tasksCompleted,
+    });
+  }
+
+  /**
+   * Spec requested: Award badge
+   * - Push earnedBadges object (badgeId + earnedAt)
+   * - Award XP via stats.addXP so leveling stays correct
+   * - Emit websocket/event bus notification
+   */
+  private async awardBadge(userId: string, badge: any): Promise<void> {
+    const stats = await this.getOrCreateStats(userId);
+
+    const earned = (stats.earnedBadges as any[]) || [];
+    const alreadyHas = earned.some((b) => b?.badgeId === badge.id || b === badge.id);
+    if (alreadyHas) return;
+
+    await this.userStatsModel.updateOne(
+      { userId: new Types.ObjectId(userId) },
+      {
+        $push: {
+          earnedBadges: {
+            badgeId: badge.id,
+            earnedAt: new Date(),
+          },
+        },
+      },
+    );
+
+    await stats.addXP(badge.xpReward || 0, 'badge_earned', {
+      sourceId: badge.id,
+      description: `Earned badge: ${badge.name}`,
+      isBonus: true,
+    });
+
+    this.eventEmitter.emit('badge:earned', {
+      userId,
+      badge: {
+        id: badge.id,
+        name: badge.name,
+        icon: badge.icon,
+        xpReward: badge.xpReward,
+      },
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

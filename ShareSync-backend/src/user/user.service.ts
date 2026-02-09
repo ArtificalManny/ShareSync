@@ -78,6 +78,47 @@ export class UserService {
     return saved as any;
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ✅ PHASE 5.1: PREFERENCES + AVATAR METHODS (USED BY user.controller.ts)
+  // Minimal + safe: reuse existing update() so we don't create new DB code paths.
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async updatePreferences(userId: string, preferences: any): Promise<UserDocument> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const existing = (user as any)?.preferences ?? {};
+    const merged = { ...existing, ...(preferences ?? {}) };
+
+    return this.update(userId, { preferences: merged });
+  }
+
+  async updatePreferenceSection(
+    userId: string,
+    section: string,
+    values: any,
+  ): Promise<UserDocument> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const existing = (user as any)?.preferences ?? {};
+    const currentSection = existing?.[section] ?? {};
+
+    const merged = {
+      ...existing,
+      [section]: { ...currentSection, ...(values ?? {}) },
+    };
+
+    return this.update(userId, { preferences: merged });
+  }
+
+  async updateAvatar(userId: string, avatarUrl: string): Promise<UserDocument> {
+    return this.update(userId, {
+      profilePicture: avatarUrl,
+      avatarUrl, // harmless if not in schema; safe for future
+    });
+  }
+
   async updateProfile(
     id: string,
     profileData: {

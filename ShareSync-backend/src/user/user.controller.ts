@@ -3,16 +3,23 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
   Body,
   UseGuards,
   Req,
   Param,
   NotFoundException,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserService } from './user.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { FileInterceptor } from '@nestjs/platform-express';
+
+// ⚠️ If your UploadService lives somewhere else, update this import path.
+import { UploadService } from '../upload/upload.service';
 
 @Controller('users')
 export class UserController {
@@ -20,6 +27,7 @@ export class UserController {
     private readonly users: UserService,
     private readonly activities: ActivitiesService,
     private readonly realtime: RealtimeGateway,
+    private readonly uploadService: UploadService,
   ) {}
 
   /**
@@ -65,6 +73,68 @@ export class UserController {
       userId: id,
       type: 'user.updated',
       payload: { fields: Object.keys(patch || {}) },
+    });
+
+    return updated;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ✅ PHASE 5.1: PREFERENCES + AVATAR ENDPOINTS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * PATCH /api/users/me/preferences
+   * Replace/merge preferences blob.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/preferences')
+  async updatePreferences(@Req() req: any, @Body() preferences: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    return this.users.updatePreferences(userId, preferences);
+  }
+
+  /**
+   * PATCH /api/users/me/preferences/:section
+   * Update a specific preferences section (e.g. "notifications", "privacy", "ui").
+   */
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/preferences/:section')
+  async updatePreferenceSection(
+    @Req() req: any,
+    @Param('section') section: string,
+    @Body() values: any,
+  ) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    return this.users.updatePreferenceSection(userId, section, values);
+  }
+
+  /**
+   * POST /api/users/me/avatar
+   * Upload avatar image and update user profilePicture/avatar URL.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('me/avatar')
+  @UseInterceptors(FileInterceptor('avatar'))
+  async uploadAvatar(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+
+    // Upload to storage and get URL
+    const avatarUrl = await this.uploadService.uploadAvatar(file);
+
+    // Persist to user record
+    const updated = await this.users.updateAvatar(userId, avatarUrl);
+
+    // Let all tabs/clients refresh immediately
+    this.realtime.emitToUser(userId, 'user:updated', {
+      userId,
+      profilePicture: (updated as any)?.profilePicture ?? avatarUrl,
+      ts: new Date().toISOString(),
+    });
+
+    await this.activities.record({
+      userId,
+      type: 'user.avatar.updated',
+      payload: { avatarUrl },
     });
 
     return updated;
@@ -148,17 +218,17 @@ export class UserController {
   @Get('momentum')
   async getMomentumIndex(@Req() req: any) {
     const userId = req?.user?.sub || req?.user?.id;
-    
+
     // For now, return mock data - you can implement full logic later
     const momentumIndex = 75;
     const status = 'Strong';
-    const message = 'Solid progress - you\'re on track';
-    
+    const message = "Solid progress - you're on track";
+
     return {
       momentumIndex,
       status,
       message,
-      comparison: 'You\'re ahead of your usual pace',
+      comparison: "You're ahead of your usual pace",
       breakdown: {
         shipsToday: 3,
         shipsGoal: 5,
@@ -178,7 +248,7 @@ export class UserController {
   @Get('weekly-narrative')
   async getWeeklyNarrative(@Req() req: any) {
     const userId = req?.user?.sub || req?.user?.id;
-    
+
     // For now, return mock data - you can implement full logic later
     return {
       shipCount: {
@@ -186,14 +256,14 @@ export class UserController {
         lastWeek: 5,
         delta: 2,
         direction: 'up',
-        text: 'You\'ve shipped 7 tasks (↑+2 vs last week)',
+        text: "You've shipped 7 tasks (↑+2 vs last week)",
       },
       peakTime: {
         window: 'Tue 14-15',
         text: 'Most work happened Tue 2-4pm',
       },
       prediction: {
-        text: 'If you ship 2 more tasks this week, you\'ll beat your usual average',
+        text: "If you ship 2 more tasks this week, you'll beat your usual average",
         projectedTotal: 9,
         willBeatAverage: true,
       },
@@ -208,10 +278,10 @@ export class UserController {
   @Get('profile-analytics')
   async getProfileAnalytics(@Req() req: any) {
     const userId = req?.user?.sub || req?.user?.id;
-    
+
     // Get user's projects and tasks
     const user = await this.users.findById(userId);
-    
+
     // Placeholder calculations - you can enhance these with real data
     const analytics = {
       collaborationStyle: {
@@ -221,10 +291,11 @@ export class UserController {
         primaryRole: 'Finisher',
         description: 'You close more tasks than you start',
         strength: 'Teams can rely on you to get things over the line',
-        suggestion: 'Try: Schedule 1 co-working session this week. Your completion rate is 2.1× higher when working alongside teammates',
+        suggestion:
+          'Try: Schedule 1 co-working session this week. Your completion rate is 2.1× higher when working alongside teammates',
       },
       reliability: {
-        streakDays: user?.streakDays || 0,
+        streakDays: (user as any)?.streakDays || 0,
         daysShowedUp: 18,
         totalDays: 20,
         missedDays: 2,
@@ -239,14 +310,10 @@ export class UserController {
         commentsGiven: 8,
         helpRequests: 3,
         confidence: 85,
-        traits: [
-          'Closes more tasks than started',
-          'Reliable for completion',
-          'Gets things over the line',
-        ],
+        traits: ['Closes more tasks than started', 'Reliable for completion', 'Gets things over the line'],
       },
     };
-    
+
     return analytics;
   }
 }

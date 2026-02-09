@@ -1,6 +1,11 @@
 // src/projects/schemas/project.schema.ts
 // ═══════════════════════════════════════════════════════════════════════════════
-// PROJECT SCHEMA: Core entity for organizing work + Invites
+// PROJECT SCHEMA: Core entity for organizing work + Invites + Goals + Metrics
+// - Adds goals + richer metrics/settings structure (seed/frontend compatible)
+// - Preserves backwards compatibility for:
+//   • existing invites.service.ts imports/types
+//   • icon as emoji string (legacy) while supporting icon object
+//   • ownerId field while adding owner field
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
@@ -31,19 +36,22 @@ export enum MemberRole {
  * ✅ Compatibility exports (so invites.service.ts can import the names it expects)
  */
 export type ProjectRole = MemberRole;
-
 export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SUB-SCHEMAS
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @Schema({ _id: false })
 export class ProjectInvite {
   @Prop({ required: true, trim: true, lowercase: true })
   email: string;
 
+  @Prop({ required: true })
+  token: string;
+
   @Prop({ type: String, enum: MemberRole, required: true })
   role: MemberRole;
-
-  @Prop({ required: true, index: true })
-  token: string;
 
   @Prop({ type: String, enum: ['pending', 'accepted', 'revoked', 'expired'], default: 'pending' })
   status: InviteStatus;
@@ -54,8 +62,8 @@ export class ProjectInvite {
   @Prop({ type: Date, default: Date.now })
   createdAt: Date;
 
-  @Prop({ type: Date })
-  expiresAt?: Date;
+  @Prop({ type: Date, required: true })
+  expiresAt: Date;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
   acceptedByUserId?: Types.ObjectId;
@@ -66,18 +74,36 @@ export class ProjectMember {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
-  @Prop({ type: String, enum: MemberRole, default: MemberRole.MEMBER })
+  // Some parts of the code/seed use `user` instead of `userId`
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  user?: Types.ObjectId;
+
+  @Prop({ required: true, enum: MemberRole, default: MemberRole.MEMBER })
   role: MemberRole;
 
   @Prop({ type: Date, default: Date.now })
   joinedAt: Date;
 
+  // Optional: fine-grained permissions array
+  @Prop({ type: [String], default: [] })
+  permissions: string[];
+
+  // Legacy/optional field still used in some flows
   @Prop({ type: Types.ObjectId, ref: 'User' })
   invitedBy?: Types.ObjectId;
 }
 
 @Schema({ _id: false })
 export class ProjectSettings {
+  @Prop({ default: 'pulse' })
+  defaultView: string;
+
+  @Prop({ default: true })
+  enableGamification: boolean;
+
+  @Prop({ default: true })
+  enableAI: boolean;
+
   @Prop({ type: Boolean, default: true })
   notificationsEnabled: boolean;
 
@@ -102,35 +128,70 @@ export class ProjectSettings {
 
 @Schema({ _id: false })
 export class ProjectMetrics {
-  @Prop({ type: Number, default: 0 })
+  @Prop({ default: 0 })
   momentum: number;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ default: 0 })
   velocity: number;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ default: 0 })
   totalTasks: number;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ default: 0 })
   completedTasks: number;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ default: 0 })
   totalXP: number;
 
-  @Prop({ type: Number, default: 0 })
-  activeSprintId?: Types.ObjectId;
+  @Prop({ type: Date, default: Date.now })
+  lastActivityAt: Date;
 
-  @Prop({ type: Date })
-  lastActivityAt?: Date;
-
-  @Prop({ type: Number, default: 0 })
+  @Prop({ default: 0 })
   weeklyShips: number;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ default: 0 })
   momentumTrend: number;
+
+  // IMPORTANT: ObjectId ref, nullable
+  @Prop({ type: Types.ObjectId, ref: 'Sprint', default: null })
+  activeSprintId: Types.ObjectId | null;
 }
 
-export type ProjectDocument = Project & Document;
+@Schema({ _id: true })
+export class ProjectGoal {
+  @Prop({ required: true })
+  title: string;
+
+  @Prop()
+  description?: string;
+
+  @Prop()
+  targetDate?: Date;
+
+  @Prop({ default: 0, min: 0, max: 100 })
+  progress: number;
+
+  @Prop({ default: 'normal', enum: ['normal', 'at_risk', 'achieved'] })
+  status: 'normal' | 'at_risk' | 'achieved';
+
+  @Prop({ type: [Types.ObjectId], ref: 'Task', default: [] })
+  linkedTasks: Types.ObjectId[];
+}
+
+// Optional: richer icon representation for future UI (while keeping legacy icon string)
+export type ProjectIconObject = { kind: string; value: string };
+
+export type ProjectDocument = Project &
+  Document & {
+    isMember(userId: Types.ObjectId | string): boolean;
+    getMemberRole(userId: Types.ObjectId | string): MemberRole | null;
+    canEdit(userId: Types.ObjectId | string): boolean;
+    canManageMembers(userId: Types.ObjectId | string): boolean;
+  };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN SCHEMA
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @Schema({
   timestamps: true,
@@ -156,28 +217,24 @@ export class Project {
   @Prop({ trim: true, maxlength: 2000, default: '' })
   description: string;
 
-  @ApiProperty({ description: 'Project icon (emoji)', example: '🚀' })
+  // ✅ Preferred emoji field (seed/frontend spec)
+  @ApiProperty({ description: 'Project emoji', example: '🚀' })
+  @Prop({ default: '📁' })
+  emoji: string;
+
+  // ✅ Optional icon object for future use
+  @Prop({ type: Object, default: null })
+  iconObj?: ProjectIconObject | null;
+
+  // ✅ Legacy icon string (many parts of app already use this)
+  // Keep it so existing UI doesn’t break.
+  @ApiProperty({ description: 'Legacy project icon (emoji)', example: '🚀' })
   @Prop({ default: '📁' })
   icon: string;
 
   @ApiProperty({ description: 'Project color (hex)', example: '#7C3AED' })
   @Prop({ default: '#7C3AED' })
   color: string;
-
-  @ApiProperty({ description: 'Project owner user ID' })
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
-  ownerId: Types.ObjectId;
-
-  @ApiProperty({ description: 'Project members with roles' })
-  @Prop({ type: [ProjectMember], default: [] })
-  members: ProjectMember[];
-
-  /**
-   * ✅ Invites (new)
-   */
-  @ApiProperty({ description: 'Pending/accepted invites (email-based)', required: false })
-  @Prop({ type: [ProjectInvite], default: [] })
-  invites: ProjectInvite[];
 
   @ApiProperty({ enum: ProjectStatus, description: 'Project status' })
   @Prop({
@@ -192,6 +249,26 @@ export class Project {
   @Prop({ type: String, enum: ProjectVisibility, default: ProjectVisibility.PRIVATE })
   visibility: ProjectVisibility;
 
+  // Ownership (dual fields for compatibility)
+  @ApiProperty({ description: 'Project owner user ID' })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  ownerId: Types.ObjectId;
+
+  // Some queries/seed use `owner` instead of `ownerId`
+  @Prop({ type: Types.ObjectId, ref: 'User', default: null })
+  owner?: Types.ObjectId | null;
+
+  @ApiProperty({ description: 'Project members with roles' })
+  @Prop({ type: [ProjectMember], default: [] })
+  members: ProjectMember[];
+
+  /**
+   * ✅ Invites (email-based)
+   */
+  @ApiProperty({ description: 'Pending/accepted invites (email-based)', required: false })
+  @Prop({ type: [ProjectInvite], default: [] })
+  invites: ProjectInvite[];
+
   @ApiProperty({ description: 'Project settings' })
   @Prop({ type: ProjectSettings, default: () => ({}) })
   settings: ProjectSettings;
@@ -200,6 +277,12 @@ export class Project {
   @Prop({ type: ProjectMetrics, default: () => ({}) })
   metrics: ProjectMetrics;
 
+  /**
+   * ✅ Goals (structured)
+   */
+  @Prop({ type: [ProjectGoal], default: [] })
+  goals: ProjectGoal[];
+
   @ApiProperty({ description: 'Project tags', example: ['startup', 'saas'] })
   @Prop({ type: [String], default: [] })
   tags: string[];
@@ -207,6 +290,10 @@ export class Project {
   @ApiProperty({ description: 'Is project starred by owner' })
   @Prop({ type: Boolean, default: false })
   isStarred: boolean;
+
+  // ✅ Explicit archive flag used by queries
+  @Prop({ type: Boolean, default: false })
+  isArchived: boolean;
 
   @ApiProperty({ description: 'When project was archived' })
   @Prop({ type: Date })
@@ -221,6 +308,14 @@ export class Project {
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// INDEXES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+ProjectSchema.index({ ownerId: 1 });
+ProjectSchema.index({ owner: 1 });
+ProjectSchema.index({ 'members.userId': 1 });
+ProjectSchema.index({ status: 1 });
 ProjectSchema.index({ ownerId: 1, status: 1 });
 ProjectSchema.index({ 'members.userId': 1, status: 1 });
 ProjectSchema.index({ name: 'text', description: 'text' });
@@ -228,12 +323,16 @@ ProjectSchema.index({ 'metrics.lastActivityAt': -1 });
 ProjectSchema.index({ 'invites.token': 1 }, { sparse: true });
 ProjectSchema.index({ 'invites.email': 1 }, { sparse: true });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// VIRTUALS
+// ═══════════════════════════════════════════════════════════════════════════════
+
 ProjectSchema.virtual('memberCount').get(function () {
-  return this.members.length + 1;
+  return (this.members?.length || 0) + 1;
 });
 
 ProjectSchema.virtual('completionRate').get(function () {
-  if (this.metrics.totalTasks === 0) return 0;
+  if (!this.metrics || this.metrics.totalTasks === 0) return 0;
   return Math.round((this.metrics.completedTasks / this.metrics.totalTasks) * 100);
 });
 
@@ -241,18 +340,24 @@ ProjectSchema.virtual('isActive').get(function () {
   return this.status === ProjectStatus.ACTIVE;
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// METHODS
+// ═══════════════════════════════════════════════════════════════════════════════
+
 ProjectSchema.methods.isMember = function (userId: Types.ObjectId | string): boolean {
   const userIdStr = userId.toString();
-  if (this.ownerId.toString() === userIdStr) return true;
-  return this.members.some((m: ProjectMember) => m.userId.toString() === userIdStr);
+  if (this.ownerId?.toString?.() === userIdStr) return true;
+  if (this.owner?.toString?.() === userIdStr) return true;
+  return (this.members || []).some((m: ProjectMember) => m.userId?.toString?.() === userIdStr);
 };
 
 ProjectSchema.methods.getMemberRole = function (
   userId: Types.ObjectId | string,
 ): MemberRole | null {
   const userIdStr = userId.toString();
-  if (this.ownerId.toString() === userIdStr) return MemberRole.OWNER;
-  const member = this.members.find((m: ProjectMember) => m.userId.toString() === userIdStr);
+  if (this.ownerId?.toString?.() === userIdStr) return MemberRole.OWNER;
+  if (this.owner?.toString?.() === userIdStr) return MemberRole.OWNER;
+  const member = (this.members || []).find((m: ProjectMember) => m.userId?.toString?.() === userIdStr);
   return member ? member.role : null;
 };
 
@@ -266,9 +371,14 @@ ProjectSchema.methods.canManageMembers = function (userId: Types.ObjectId | stri
   return role === MemberRole.OWNER || role === MemberRole.ADMIN;
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// STATICS
+// ═══════════════════════════════════════════════════════════════════════════════
+
 ProjectSchema.statics.findUserProjects = function (userId: Types.ObjectId | string) {
   return this.find({
-    $or: [{ ownerId: userId }, { 'members.userId': userId }],
+    $or: [{ ownerId: userId }, { owner: userId }, { 'members.userId': userId }, { 'members.user': userId }],
+    isArchived: { $ne: true },
     status: { $ne: ProjectStatus.ARCHIVED },
   }).sort({ 'metrics.lastActivityAt': -1 });
 };
@@ -283,9 +393,19 @@ ProjectSchema.statics.findByIdWithAccess = async function (
   return project;
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// HOOKS
+// ═══════════════════════════════════════════════════════════════════════════════
+
 ProjectSchema.pre('save', function (next) {
   if (this.isModified() && this.metrics) {
     this.metrics.lastActivityAt = new Date();
+  }
+  // Keep legacy icon/emoji in sync (safe)
+  if (this.emoji && (!this.icon || this.icon === '📁')) {
+    this.icon = this.emoji;
+  } else if (this.icon && (!this.emoji || this.emoji === '📁')) {
+    this.emoji = this.icon;
   }
   next();
 });

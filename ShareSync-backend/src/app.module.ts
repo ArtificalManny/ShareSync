@@ -56,6 +56,10 @@ import { SprintsModule } from './sprints/sprints.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FilesModule } from './files/files.module';
 
+// ✅ PHASE 6: NEW MODULES
+import { MilestonesModule } from './milestones/milestones.module';
+import { ThreadsModule } from './threads/threads.module';
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 5: POLISH & SCALE MODULES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -83,7 +87,10 @@ import { AIModule } from './ai/ai.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI', 'mongodb://localhost:27017/sharesync'),
+        uri: configService.get<string>(
+          'MONGODB_URI',
+          'mongodb://localhost:27017/sharesync',
+        ),
         retryWrites: true,
         w: 'majority',
         maxPoolSize: 10,
@@ -105,7 +112,7 @@ import { AIModule } from './ai/ai.module';
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ([
+      useFactory: (configService: ConfigService) => [
         {
           name: 'short',
           ttl: 1000,
@@ -121,7 +128,7 @@ import { AIModule } from './ai/ai.module';
           ttl: 60000,
           limit: configService.get<number>('THROTTLE_LONG_LIMIT', 100),
         },
-      ]),
+      ],
     }),
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -175,6 +182,10 @@ import { AIModule } from './ai/ai.module';
     SprintsModule,
     AnalyticsModule,
     FilesModule,
+
+    // ✅ PHASE 6: ADD THESE
+    MilestonesModule,
+    ThreadsModule,
 
     // ─────────────────────────────────────────────────────────────────────────
     // POLISH & SCALE

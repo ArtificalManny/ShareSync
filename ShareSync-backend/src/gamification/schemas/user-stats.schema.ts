@@ -1,6 +1,12 @@
 // src/gamification/schemas/user-stats.schema.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // USER STATS SCHEMA: XP, levels, streaks, achievements tracking
+// - Aligns schema with seed + frontend expectations:
+//   • streak.activeDays: string[]
+//   • streak.lastActivityDate: Date | null (default null)
+//   • earnedBadges: EarnedBadge[] (not string[])
+//   • Adds FocusSession schema
+//   • Keeps backward-compat virtuals + instance methods
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
@@ -46,20 +52,24 @@ export class StreakData {
   @Prop({ type: Number, default: 0 })
   longestStreak: number;
 
-  @Prop({ type: Number, default: 0 })
+  // Frontend/seed expects default 1
+  @Prop({ type: Number, default: 1 })
   freezesAvailable: number;
 
   @Prop({ type: Number, default: 0 })
   freezesUsed: number;
 
-  @Prop({ type: Date })
-  lastActivityDate?: Date;
+  // Frontend/seed expects null default
+  @Prop({ type: Date, default: null })
+  lastActivityDate: Date | null;
 
-  @Prop({ type: Date })
-  streakStartDate?: Date;
+  @Prop({ type: Date, default: null })
+  streakStartDate?: Date | null;
 
-  @Prop({ type: [Date], default: [] })
-  activeDays: Date[];
+  // Frontend/seed expects string[] not Date[]
+  // We store ISO date strings (YYYY-MM-DD) for portability & easier charting
+  @Prop({ type: [String], default: [] })
+  activeDays: string[];
 
   @Prop({ type: Boolean, default: false })
   atRisk: boolean;
@@ -69,7 +79,36 @@ export class StreakData {
 }
 
 @Schema({ _id: false })
+export class EarnedBadge {
+  @Prop({ required: true })
+  badgeId: string;
+
+  @Prop({ type: Date, default: Date.now })
+  earnedAt: Date;
+
+  @Prop({ type: Object })
+  metadata: any;
+}
+
+@Schema({ _id: false })
+export class FocusSession {
+  @Prop({ required: true })
+  startedAt: Date;
+
+  @Prop({ default: null })
+  endedAt?: Date | null;
+
+  @Prop({ default: 0 })
+  duration: number;
+
+  @Prop({ default: 0 })
+  tasksCompleted: number;
+}
+
+@Schema({ _id: false })
 export class DailyStats {
+  // Keep as Date in DB (your existing code uses Date)
+  // If you want string-based dailyStats like the spec, we can migrate later.
   @Prop({ type: Date, required: true })
   date: Date;
 
@@ -87,11 +126,16 @@ export class DailyStats {
 // MAIN SCHEMA
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export type UserStatsDocument = UserStats & Document & {
-  addXP(amount: number, source: string, options?: Partial<XPTransaction>): Promise<{ newTotal: number; leveledUp: boolean; newLevel?: number }>;
-  updateStreak(completed: boolean): Promise<StreakData>;
-  useStreakFreeze(): Promise<boolean>;
-};
+export type UserStatsDocument = UserStats &
+  Document & {
+    addXP(
+      amount: number,
+      source: string,
+      options?: Partial<XPTransaction>,
+    ): Promise<{ newTotal: number; leveledUp: boolean; newLevel?: number }>;
+    updateStreak(completed: boolean): Promise<StreakData>;
+    useStreakFreeze(): Promise<boolean>;
+  };
 
 @Schema({
   timestamps: true,
@@ -106,7 +150,13 @@ export type UserStatsDocument = UserStats & Document & {
 })
 export class UserStats {
   @ApiProperty({ description: 'User ID' })
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, unique: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+    index: true,
+  })
   userId: Types.ObjectId;
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -138,20 +188,31 @@ export class UserStats {
   xpHistory: XPTransaction[];
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // STREAKS
+  // STREAKS (nested)
   // ─────────────────────────────────────────────────────────────────────────────
 
-  @Prop({ type: StreakData, default: () => ({ currentStreak: 0, longestStreak: 0, freezesAvailable: 0, freezesUsed: 0, activeDays: [], atRisk: false, milestones: [] }) })
+  @Prop({
+    type: StreakData,
+    default: () => ({
+      currentStreak: 0,
+      longestStreak: 0,
+      freezesAvailable: 1,
+      freezesUsed: 0,
+      activeDays: [],
+      atRisk: false,
+      milestones: [],
+      lastActivityDate: null,
+      streakStartDate: null,
+    }),
+  })
   streak: StreakData;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // BADGES & ACHIEVEMENTS
   // ─────────────────────────────────────────────────────────────────────────────
-  // NOTE: We store earned badge IDs as strings (badge constants IDs).
-  // Full detail lives in Achievement documents.
 
-  @Prop({ type: [String], default: [] })
-  earnedBadges: string[];
+  @Prop({ type: [EarnedBadge], default: [] })
+  earnedBadges: EarnedBadge[];
 
   @Prop({ type: [String], default: [] })
   showcaseBadges: string[];
@@ -236,6 +297,9 @@ export class UserStats {
   @Prop({ type: Number, default: 0 })
   todayFocusMinutes: number;
 
+  @Prop({ type: [FocusSession], default: [] })
+  focusSessions: FocusSession[];
+
   // ─────────────────────────────────────────────────────────────────────────────
   // DAILY TRACKING
   // ─────────────────────────────────────────────────────────────────────────────
@@ -259,6 +323,7 @@ export const UserStatsSchema = SchemaFactory.createForClass(UserStats);
 // INDEXES
 // ═══════════════════════════════════════════════════════════════════════════════
 
+UserStatsSchema.index({ userId: 1 }, { unique: true });
 UserStatsSchema.index({ level: -1, totalXP: -1 });
 UserStatsSchema.index({ 'streak.currentStreak': -1 });
 UserStatsSchema.index({ weeklyXP: -1 });
@@ -331,11 +396,13 @@ UserStatsSchema.methods.updateStreak = async function (completed: boolean): Prom
     this.streak = {
       currentStreak: 0,
       longestStreak: 0,
-      freezesAvailable: 0,
+      freezesAvailable: 1,
       freezesUsed: 0,
       activeDays: [],
       atRisk: false,
       milestones: [],
+      lastActivityDate: null,
+      streakStartDate: null,
     };
   }
 
@@ -360,12 +427,21 @@ UserStatsSchema.methods.updateStreak = async function (completed: boolean): Prom
     }
 
     this.streak.lastActivityDate = today;
-    this.streak.activeDays.push(today);
+
+    // Store as ISO date string (YYYY-MM-DD)
+    const isoDay = today.toISOString().slice(0, 10);
+    if (!this.streak.activeDays.includes(isoDay)) {
+      this.streak.activeDays.push(isoDay);
+    }
+
     this.streak.atRisk = false;
 
     const milestones = [7, 14, 30, 60, 100, 365];
     for (const milestone of milestones) {
-      if (this.streak.currentStreak === milestone && !this.streak.milestones.includes(milestone)) {
+      if (
+        this.streak.currentStreak === milestone &&
+        !this.streak.milestones.includes(milestone)
+      ) {
         this.streak.milestones.push(milestone);
       }
     }
