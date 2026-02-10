@@ -32,44 +32,53 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   };
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    if (!title.trim()) {
-      toast({ title: "Title required", description: "Please add a title.", variant: "error" });
-      return;
-    }
+  e.preventDefault();
 
-    setSubmitting(true);
-    try {
-      const payload = {
-        title: title.trim(),
-        description: description.trim(),
-        category: category.trim() || undefined,
-        status,
-        privacy,
-        members,
-      };
-
-      const project = await createProject(payload);
-      const id = project?._id || project?.id;
-      if (!id) throw new Error("Backend did not return an _id");
-
-      toast({ title: "Project created", description: `"${project.title}" is live.`, variant: "success" });
-      onProjectCreated?.(project);
-      navigate(`/projects/${id}`);
-      onClose?.();
-    } catch (err) {
-      const msg =
-        err?.normalizedMessage ||
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "Failed to create project";
-      toast({ title: "Create failed", description: msg, variant: "error" });
-    } finally {
-      setSubmitting(false);
-    }
+  if (!title.trim()) {
+    toast({ title: "Title required", description: "Please add a title.", variant: "error" });
+    return;
   }
 
+  setSubmitting(true);
+  try {
+    const payload = {
+      title: title.trim(),
+      description: description.trim(),
+      category: category.trim() || undefined,
+      status,
+      privacy,
+      members,
+    };
+
+    const project = await createProject(payload);
+
+    const id = project?._id || project?.id || project?.projectId;
+    if (!id) throw new Error("Backend did not return an _id");
+
+    toast({
+      title: "Project created",
+      description: `"${project.name || project.title || title.trim()}" is live.`,
+      variant: "success",
+    });
+
+    onProjectCreated?.(project);
+
+    // IMPORTANT: navigate first, then close modal (avoids any UI race)
+    navigate(`/projects/${id}`);
+    onClose?.();
+  } catch (err) {
+    const msg =
+      err?.normalizedMessage ||
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Failed to create project";
+
+    toast({ title: "Create failed", description: msg, variant: "error" });
+  } finally {
+    setSubmitting(false);
+  }
+}
   // Prevent Enter key from submitting unless explicitly on submit button
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.type !== 'submit') {

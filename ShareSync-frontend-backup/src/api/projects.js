@@ -1,160 +1,142 @@
 // src/api/projects.js - ENHANCED WITH TASKS & SHIPS
 import api from './client';
 
+// If backend returns { success: true, data: ... }, unwrap it.
+// If backend returns raw data directly, keep as-is.
+function unwrap(response) {
+  const payload = response?.data;
+  if (payload && typeof payload === 'object' && 'data' in payload) return payload.data;
+  return payload;
+}
+
 // ============================================
 // PROJECTS
 // ============================================
 
-/**
- * Get all projects for current user
- * @returns {Promise} Array of projects
- */
 export const getProjects = async () => {
   const response = await api.get('/projects');
-  return response.data;
+  return unwrap(response);
 };
 
-/**
- * Get quick list of projects (limited data for sidebar/nav)
- * @returns {Promise} Array of { _id, title }
- */
 export const getProjectsQuick = async () => {
   const response = await api.get('/projects/quick');
-  return response.data;
+  return unwrap(response);
 };
 
-/**
- * Get single project by ID
- * @param {string} projectId - Project ID
- * @returns {Promise} Project data
- */
 export const getProject = async (projectId) => {
   const response = await api.get(`/projects/${projectId}`);
-  return response.data;
+  return unwrap(response);
 };
 
-/**
- * Create a new project
- * @param {object} projectData - { title, description, status, privacy }
- * @returns {Promise} Created project
- */
+// ─────────────────────────────────────────────────────────────────────────────
+// CREATE PROJECT (Compatibility Layer)
+// Backend expects CreateProjectDto:
+//   { name, description?, emoji?, icon?, color?, visibility?, tags?, settings?, goals? }
+// Your frontend currently sends:
+//   { title, description, category, status, privacy, members }
+//
+// This mapper keeps frontend unchanged while matching backend DTO strictly.
+// We intentionally do NOT send unknown fields (status/privacy/members) to avoid 400.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function normalizeCreateProjectPayload(projectData = {}) {
+  const title = (projectData.title ?? projectData.name ?? '').trim();
+  const description = (projectData.description ?? '').trim();
+  const category = (projectData.category ?? '').trim();
+
+  const privacy = (projectData.privacy ?? '').toString().trim().toLowerCase();
+  const visibility =
+    privacy === 'public' ? 'public' :
+    privacy === 'private' ? 'private' :
+    undefined;
+
+  const tags = category ? [category] : undefined;
+
+  const emoji = (projectData.emoji ?? '').toString().trim() || undefined;
+  const icon = (projectData.icon ?? '').toString().trim() || undefined;
+
+  const rawColor = (projectData.color ?? '').toString().trim();
+  const color =
+    /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(rawColor) ? rawColor : undefined;
+
+  return {
+    name: title,
+    description: description || undefined,
+    visibility,
+    tags,
+    emoji,
+    icon,
+    color,
+  };
+}
+
 export const createProject = async (projectData) => {
-  const response = await api.post('/projects', projectData);
-  return response.data;
+  const payload = normalizeCreateProjectPayload(projectData);
+
+  if (!payload.name || payload.name.trim().length < 2) {
+    const err = new Error("Project name is required (min 2 chars).");
+    err.normalizedMessage = "Project name is required (min 2 chars).";
+    throw err;
+  }
+
+  const response = await api.post('/projects', payload);
+  return unwrap(response);
 };
 
-/**
- * Update a project
- * @param {string} projectId - Project ID
- * @param {object} updates - Fields to update
- * @returns {Promise} Updated project
- */
 export const updateProject = async (projectId, updates) => {
   const response = await api.put(`/projects/${projectId}`, updates);
-  return response.data;
+  return unwrap(response);
 };
 
-/**
- * Delete a project
- * @param {string} projectId - Project ID
- * @returns {Promise}
- */
 export const deleteProject = async (projectId) => {
   const response = await api.delete(`/projects/${projectId}`);
-  return response.data;
+  return unwrap(response);
 };
 
 // ============================================
 // TASKS
 // ============================================
 
-/**
- * Get all tasks for a project
- * @param {string} projectId - Project ID
- * @returns {Promise} Array of tasks
- */
 export const getTasks = async (projectId) => {
   const response = await api.get(`/projects/${projectId}/tasks`);
-  return response.data;
+  return unwrap(response);
 };
 
-/**
- * Create a new task
- * @param {string} projectId - Project ID
- * @param {object} taskData - { title, description, assignee, dueDate, effort, estimatedTime }
- * @returns {Promise} Created task
- */
 export const createTask = async (projectId, taskData) => {
   const response = await api.post(`/projects/${projectId}/tasks`, taskData);
-  return response.data;
+  return unwrap(response);
 };
 
-/**
- * Update a task
- * @param {string} projectId - Project ID
- * @param {string} taskId - Task ID
- * @param {object} updates - Fields to update
- * @returns {Promise} Updated task
- */
 export const updateTask = async (projectId, taskId, updates) => {
   const response = await api.put(`/projects/${projectId}/tasks/${taskId}`, updates);
-  return response.data;
+  return unwrap(response);
 };
 
-/**
- * Mark task as complete
- * @param {string} projectId - Project ID
- * @param {string} taskId - Task ID
- * @returns {Promise} { task, xpAwarded }
- */
 export const completeTask = async (projectId, taskId) => {
   const response = await api.post(`/projects/${projectId}/tasks/${taskId}/complete`);
-  return response.data;
+  return unwrap(response);
 };
 
-/**
- * Delete a task
- * @param {string} projectId - Project ID
- * @param {string} taskId - Task ID
- * @returns {Promise}
- */
 export const deleteTask = async (projectId, taskId) => {
   const response = await api.delete(`/projects/${projectId}/tasks/${taskId}`);
-  return response.data;
+  return unwrap(response);
 };
 
 // ============================================
 // SHIPS
 // ============================================
 
-/**
- * Get all ships for a project
- * @param {string} projectId - Project ID
- * @returns {Promise} Array of ships
- */
 export const getShips = async (projectId) => {
   const response = await api.get(`/projects/${projectId}/ships`);
-  return response.data;
+  return unwrap(response);
 };
 
-/**
- * Create a ship (log accomplishment)
- * @param {string} projectId - Project ID
- * @param {object} shipData - { description, relatedTask }
- * @returns {Promise} { ship, xpAwarded, streak }
- */
 export const shipProject = async (projectId, shipData) => {
   const response = await api.post(`/projects/${projectId}/ships`, shipData);
-  return response.data;
+  return unwrap(response);
 };
 
-/**
- * Delete a ship
- * @param {string} projectId - Project ID
- * @param {string} shipId - Ship ID
- * @returns {Promise}
- */
 export const deleteShip = async (projectId, shipId) => {
   const response = await api.delete(`/projects/${projectId}/ships/${shipId}`);
-  return response.data;
+  return unwrap(response);
 };
