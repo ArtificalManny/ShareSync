@@ -1,483 +1,292 @@
-// src/components/navigation/NotificationCenter.jsx
-// ═══════════════════════════════════════════════════════════════════════════════
-// PHASE N: Smart Notification Center with Digest Mode
-// ═══════════════════════════════════════════════════════════════════════════════
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Bell, Check } from "lucide-react";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  Bell, X, Check, CheckCheck, Settings, Clock, 
-  Rocket, Users, Target, AlertTriangle, MessageSquare,
-  Zap, Archive, Filter, Volume2, VolumeX
-} from 'lucide-react';
-import { useKeyboardShortcut } from '../../hooks/useKeyboardShortcuts';
+// If you already have tokenUtils, use it. If not, delete these two lines and the auth header logic.
+import { getAccessToken } from "../../utils/tokenUtils";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// NOTIFICATION TYPES
-// ═══════════════════════════════════════════════════════════════════════════════
+// OPTIONAL: If socket.io-client exists in your project already, this will work.
+// If you DON'T have it installed, comment out these lines and the socket section below.
+import { io } from "socket.io-client";
 
-const NOTIFICATION_TYPES = {
-  ship: {
-    icon: Rocket,
-    color: 'text-brand',
-    bg: 'bg-brand/10',
-    label: 'Ship',
-  },
-  mention: {
-    icon: MessageSquare,
-    color: 'text-cyan-400',
-    bg: 'bg-cyan-400/10',
-    label: 'Mention',
-  },
-  assignment: {
-    icon: Target,
-    color: 'text-warning',
-    bg: 'bg-warning/10',
-    label: 'Assigned',
-  },
-  team: {
-    icon: Users,
-    color: 'text-success',
-    bg: 'bg-success/10',
-    label: 'Team',
-  },
-  alert: {
-    icon: AlertTriangle,
-    color: 'text-error-500',
-    bg: 'bg-error-500/10',
-    label: 'Alert',
-  },
-  streak: {
-    icon: Zap,
-    color: 'text-warning',
-    bg: 'bg-warning/10',
-    label: 'Streak',
-  },
-};
+/**
+ * NotificationCenter (Phase N)
+ * Goals:
+ * - EMPTY on initial creation (no mock seed)
+ * - user-specific fetch (if endpoint exists)
+ * - realtime updates via socket (if gateway emits)
+ *
+ * Backend is NOT modified by this file.
+ */
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MOCK NOTIFICATIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+const API_BASE =
+  import.meta?.env?.VITE_API_URL ||
+  import.meta?.env?.VITE_BACKEND_URL ||
+  "http://localhost:3000";
 
-function getMockNotifications() {
-  const now = Date.now();
-  return [
-    {
-      id: 'n1',
-      type: 'ship',
-      title: 'Sarah shipped API v2',
-      body: 'The new API endpoints are live!',
-      timestamp: now - 5 * 60 * 1000,
-      read: false,
-      project: { name: 'ShareSync', color: '#7C3AED' },
-    },
-    {
-      id: 'n2',
-      type: 'mention',
-      title: 'Alex mentioned you',
-      body: '"@Manny can you review the PR?"',
-      timestamp: now - 30 * 60 * 1000,
-      read: false,
-      project: { name: 'ShareSync', color: '#7C3AED' },
-    },
-    {
-      id: 'n3',
-      type: 'assignment',
-      title: 'New task assigned',
-      body: 'Implement focus mode timer',
-      timestamp: now - 2 * 60 * 60 * 1000,
-      read: true,
-      project: { name: 'ShareSync', color: '#7C3AED' },
-    },
-    {
-      id: 'n4',
-      type: 'streak',
-      title: 'Streak at risk!',
-      body: 'Ship 1 task in the next 4 hours to protect your 7-day streak',
-      timestamp: now - 3 * 60 * 60 * 1000,
-      read: false,
-      urgent: true,
-    },
-    {
-      id: 'n5',
-      type: 'team',
-      title: 'New team member',
-      body: 'Jordan joined the ShareSync project',
-      timestamp: now - 24 * 60 * 60 * 1000,
-      read: true,
-      project: { name: 'ShareSync', color: '#7C3AED' },
-    },
-  ];
+function formatTime(ts) {
+  try {
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleString(undefined, { month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// NOTIFICATION ITEM
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function NotificationItem({ notification, onRead, onArchive, onClick }) {
-  const config = NOTIFICATION_TYPES[notification.type] || NOTIFICATION_TYPES.team;
-  const Icon = config.icon;
-
-  const timeAgo = formatTimeAgo(notification.timestamp);
-
-  return (
-    <div 
-      className={`
-        group flex gap-3 p-3 rounded-xl transition-all cursor-pointer
-        ${notification.read 
-          ? 'bg-transparent hover:bg-surface-2/50' 
-          : 'bg-surface-2/50 hover:bg-surface-2'
-        }
-        ${notification.urgent ? 'ring-1 ring-warning/30' : ''}
-      `}
-      onClick={() => onClick?.(notification)}
-    >
-      {/* Icon */}
-      <div className={`
-        w-10 h-10 rounded-lg flex items-center justify-center shrink-0
-        ${config.bg}
-      `}>
-        <Icon className={`w-5 h-5 ${config.color}`} />
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <p className={`
-            text-sm font-medium truncate
-            ${notification.read ? 'text-text-secondary' : 'text-text-primary'}
-          `}>
-            {notification.title}
-          </p>
-          
-          {/* Unread dot */}
-          {!notification.read && (
-            <div className="w-2 h-2 rounded-full bg-brand shrink-0 mt-1.5" />
-          )}
-        </div>
-        
-        {notification.body && (
-          <p className="text-xs text-text-tertiary mt-0.5 line-clamp-2">
-            {notification.body}
-          </p>
-        )}
-
-        {/* Meta */}
-        <div className="flex items-center gap-2 mt-1.5">
-          {notification.project && (
-            <span 
-              className="text-[10px] px-1.5 py-0.5 rounded"
-              style={{ 
-                backgroundColor: `${notification.project.color}20`,
-                color: notification.project.color,
-              }}
-            >
-              {notification.project.name}
-            </span>
-          )}
-          <span className="text-[10px] text-text-tertiary">{timeAgo}</span>
-        </div>
-      </div>
-
-      {/* Actions (on hover) */}
-      <div className="
-        flex items-center gap-1 opacity-0 group-hover:opacity-100
-        transition-opacity shrink-0
-      ">
-        {!notification.read && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onRead?.(notification.id); }}
-            className="p-1.5 rounded-lg hover:bg-surface-3 transition-colors"
-            title="Mark as read"
-          >
-            <Check className="w-3.5 h-3.5 text-text-tertiary" />
-          </button>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onArchive?.(notification.id); }}
-          className="p-1.5 rounded-lg hover:bg-surface-3 transition-colors"
-          title="Archive"
-        >
-          <Archive className="w-3.5 h-3.5 text-text-tertiary" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export default function NotificationCenter() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [filter, setFilter] = useState('all'); // all | unread
-  const [muted, setMuted] = useState(false);
-  const panelRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState("all"); // all | unread
+  const [items, setItems] = useState([]); // ✅ start empty
+  const [loading, setLoading] = useState(false);
 
-  // Load notifications
-  useEffect(() => {
-    setNotifications(getMockNotifications());
-  }, []);
+  const menuRef = useRef(null);
 
-  // Close on click outside
+  // Close on outside click
   useEffect(() => {
-    function handleClick(e) {
-      if (panelRef.current && !panelRef.current.contains(e.target)) {
-        setIsOpen(false);
+    const onDown = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpen(false);
       }
-    }
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClick);
-      return () => document.removeEventListener('mousedown', handleClick);
-    }
-  }, [isOpen]);
+    };
+    if (open) document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
 
-  // Keyboard shortcut
-  useKeyboardShortcut('cmd+shift+n', () => setIsOpen(o => !o), {
-    id: 'toggle-notifications',
-    description: 'Toggle notifications',
-    category: 'General',
-  });
-
-  // Counts
-  const unreadCount = useMemo(() => 
-    notifications.filter(n => !n.read).length, [notifications]
+  // Derived counts
+  const unreadCount = useMemo(
+    () => items.filter((n) => !n.read).length,
+    [items]
   );
 
-  // Filtered
-  const filteredNotifications = useMemo(() => {
-    if (filter === 'unread') return notifications.filter(n => !n.read);
-    return notifications;
-  }, [notifications, filter]);
+  const visible = useMemo(() => {
+    if (tab === "unread") return items.filter((n) => !n.read);
+    return items;
+  }, [items, tab]);
 
-  // Grouped by date
-  const grouped = useMemo(() => {
-    const today = new Date().toDateString();
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    
-    const groups = { today: [], yesterday: [], older: [] };
-    
-    filteredNotifications.forEach(n => {
-      const date = new Date(n.timestamp).toDateString();
-      if (date === today) groups.today.push(n);
-      else if (date === yesterday) groups.yesterday.push(n);
-      else groups.older.push(n);
+  // ✅ Try to fetch notifications for the current user (if your backend already supports it)
+  // This will fail safely (stays empty) if the endpoint isn't ready.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const token = typeof getAccessToken === "function" ? getAccessToken() : null;
+
+        const res = await fetch(`${API_BASE}/api/notifications?limit=25`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: "include",
+        });
+
+        if (!res.ok) throw new Error(`GET /api/notifications failed: ${res.status}`);
+
+        const data = await res.json();
+
+        // Accept either { items: [...] } or [...] to be tolerant
+        const list = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+
+        if (!cancelled) {
+          setItems(
+            list.map((n) => ({
+              id: n.id || n._id || crypto.randomUUID(),
+              title: n.title || n.subject || "Notification",
+              body: n.body || n.message || "",
+              ts: n.ts || n.createdAt || Date.now(),
+              read: Boolean(n.read),
+              meta: n.meta || {},
+            }))
+          );
+        }
+      } catch {
+        // Stay empty. No mock data.
+        if (!cancelled) setItems([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ✅ Realtime: listen for server pushes (if gateway is already emitting)
+  useEffect(() => {
+    // If socket.io-client isn't installed, comment out this whole effect.
+    const token = typeof getAccessToken === "function" ? getAccessToken() : null;
+
+    const socket = io(API_BASE, {
+      transports: ["websocket"],
+      withCredentials: true,
+      auth: token ? { token } : undefined,
     });
-    
-    return groups;
-  }, [filteredNotifications]);
 
-  // Actions
-  const markAsRead = (id) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
-  };
+    const onNew = (payload) => {
+      if (!payload) return;
+
+      const n = {
+        id: payload.id || payload._id || crypto.randomUUID(),
+        title: payload.title || payload.subject || "Notification",
+        body: payload.body || payload.message || "",
+        ts: payload.ts || payload.createdAt || Date.now(),
+        read: Boolean(payload.read),
+        meta: payload.meta || {},
+      };
+
+      setItems((prev) => [n, ...prev]);
+    };
+
+    // Try several common event names to match whatever your backend emits.
+    socket.on("notification:new", onNew);
+    socket.on("notifications:new", onNew);
+    socket.on("notification", onNew);
+
+    return () => {
+      socket.off("notification:new", onNew);
+      socket.off("notifications:new", onNew);
+      socket.off("notification", onNew);
+      socket.disconnect();
+    };
+  }, []);
 
   const markAllRead = () => {
-    setNotifications(prev => 
-      prev.map(n => ({ ...n, read: true }))
-    );
+    // frontend-only mark read (safe). Later you can POST to backend if you want.
+    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  const archiveNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  const toggleRead = (id) => {
+    setItems((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
+    );
   };
 
   return (
-    <div className="relative" ref={panelRef}>
-      {/* Trigger Button */}
+    <div className="relative" ref={menuRef}>
+      {/* Bell button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`
-          relative p-2 rounded-lg transition-colors
-          ${isOpen ? 'bg-surface-2 text-text-primary' : 'hover:bg-surface-2 text-text-tertiary hover:text-text-secondary'}
-        `}
+        onClick={() => setOpen((s) => !s)}
+        className="relative p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-all duration-200"
+        title="Notifications"
+        aria-label="Notifications"
       >
-        <Bell className="w-5 h-5" />
-        
-        {/* Badge */}
+        <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="
-            absolute -top-1 -right-1
-            min-w-[18px] h-[18px] px-1
-            flex items-center justify-center
-            rounded-full bg-brand text-white
-            text-[10px] font-bold
-          ">
-            {unreadCount > 9 ? '9+' : unreadCount}
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-energy-500 text-white text-[10px] leading-[18px] text-center">
+            {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
 
       {/* Panel */}
-      {isOpen && (
-        <div className="
-          absolute top-full right-0 mt-2
-          w-[400px] max-h-[600px]
-          bg-surface-1 border border-white/[0.08] rounded-2xl
-          shadow-2xl shadow-black/50
-          overflow-hidden
-          animate-in fade-in slide-in-from-top-2 duration-200
-          z-50
-        ">
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-[380px] bg-surface-1 border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+          <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-text-primary">Notifications</h3>
+              <div className="text-sm font-semibold text-text-primary">
+                Notifications
+              </div>
               {unreadCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-brand/10 text-brand text-xs font-medium">
+                <div className="text-[10px] px-2 py-0.5 rounded-full bg-energy-500/10 text-energy-500 border border-energy-500/20">
                   {unreadCount} new
-                </span>
+                </div>
               )}
             </div>
 
-            <div className="flex items-center gap-1">
-              {/* Mute toggle */}
-              <button
-                onClick={() => setMuted(!muted)}
-                className={`
-                  p-2 rounded-lg transition-colors
-                  ${muted ? 'bg-warning/10 text-warning' : 'hover:bg-surface-2 text-text-tertiary'}
-                `}
-                title={muted ? 'Unmute notifications' : 'Mute notifications'}
-              >
-                {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-              </button>
-
-              {/* Settings */}
-              <button
-                className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors"
-                title="Notification settings"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              onClick={markAllRead}
+              className="text-xs text-text-tertiary hover:text-text-primary transition-colors flex items-center gap-1"
+              title="Mark all read"
+            >
+              <Check className="w-3.5 h-3.5" />
+              Mark all read
+            </button>
           </div>
 
-          {/* Filter tabs */}
-          <div className="flex items-center gap-1 px-4 py-2 border-b border-white/[0.06]">
+          {/* Tabs */}
+          <div className="px-4 py-2 flex items-center gap-2">
             <button
-              onClick={() => setFilter('all')}
-              className={`
-                px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
-                ${filter === 'all' 
-                  ? 'bg-brand/10 text-brand' 
-                  : 'text-text-tertiary hover:text-text-secondary hover:bg-surface-2'
-                }
-              `}
+              onClick={() => setTab("all")}
+              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                tab === "all"
+                  ? "bg-brand-500/10 text-brand-400 border-brand-500/20"
+                  : "bg-transparent text-text-tertiary border-white/[0.10] hover:border-white/[0.25]"
+              }`}
             >
               All
             </button>
             <button
-              onClick={() => setFilter('unread')}
-              className={`
-                px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
-                ${filter === 'unread' 
-                  ? 'bg-brand/10 text-brand' 
-                  : 'text-text-tertiary hover:text-text-secondary hover:bg-surface-2'
-                }
-              `}
+              onClick={() => setTab("unread")}
+              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                tab === "unread"
+                  ? "bg-brand-500/10 text-brand-400 border-brand-500/20"
+                  : "bg-transparent text-text-tertiary border-white/[0.10] hover:border-white/[0.25]"
+              }`}
             >
               Unread
             </button>
-
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllRead}
-                className="
-                  ml-auto flex items-center gap-1
-                  px-2 py-1.5 rounded-lg
-                  text-xs text-text-tertiary
-                  hover:text-text-secondary hover:bg-surface-2
-                  transition-colors
-                "
-              >
-                <CheckCheck className="w-3.5 h-3.5" />
-                Mark all read
-              </button>
-            )}
           </div>
 
-          {/* Content */}
-          <div className="overflow-y-auto max-h-[450px]">
-            {filteredNotifications.length === 0 ? (
-              <div className="py-12 text-center">
-                <Bell className="w-12 h-12 text-text-tertiary mx-auto mb-3 opacity-50" />
-                <p className="text-text-tertiary">No notifications</p>
-                <p className="text-xs text-text-tertiary mt-1">You're all caught up!</p>
-              </div>
-            ) : (
-              <div className="p-2 space-y-4">
-                {/* Today */}
-                {grouped.today.length > 0 && (
-                  <div>
-                    <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider px-2 mb-1">
-                      Today
-                    </p>
-                    <div className="space-y-1">
-                      {grouped.today.map(n => (
-                        <NotificationItem
-                          key={n.id}
-                          notification={n}
-                          onRead={markAsRead}
-                          onArchive={archiveNotification}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Yesterday */}
-                {grouped.yesterday.length > 0 && (
-                  <div>
-                    <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider px-2 mb-1">
-                      Yesterday
-                    </p>
-                    <div className="space-y-1">
-                      {grouped.yesterday.map(n => (
-                        <NotificationItem
-                          key={n.id}
-                          notification={n}
-                          onRead={markAsRead}
-                          onArchive={archiveNotification}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Older */}
-                {grouped.older.length > 0 && (
-                  <div>
-                    <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider px-2 mb-1">
-                      Earlier
-                    </p>
-                    <div className="space-y-1">
-                      {grouped.older.map(n => (
-                        <NotificationItem
-                          key={n.id}
-                          notification={n}
-                          onRead={markAsRead}
-                          onArchive={archiveNotification}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
+          {/* Body */}
+          <div className="max-h-[420px] overflow-y-auto">
+            {loading && items.length === 0 && (
+              <div className="px-4 py-8 text-center text-sm text-text-tertiary">
+                Loading…
               </div>
             )}
+
+            {!loading && visible.length === 0 && (
+              <div className="px-6 py-10 text-center">
+                <div className="text-sm font-medium text-text-secondary">
+                  No notifications yet
+                </div>
+                <div className="text-xs text-text-tertiary mt-1">
+                  You’ll see updates here as your projects move.
+                </div>
+              </div>
+            )}
+
+            {visible.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => toggleRead(n.id)}
+                className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-surface-2 transition-colors border-t border-white/[0.04] ${
+                  !n.read ? "bg-surface-0/40" : ""
+                }`}
+                title="Click to toggle read"
+              >
+                <div
+                  className={`mt-1 w-2 h-2 rounded-full ${
+                    !n.read ? "bg-energy-500" : "bg-white/10"
+                  }`}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-sm font-medium text-text-primary truncate">
+                      {n.title}
+                    </div>
+                    <div className="text-[10px] text-text-tertiary shrink-0">
+                      {formatTime(n.ts)}
+                    </div>
+                  </div>
+                  {n.body && (
+                    <div className="text-xs text-text-tertiary mt-1 line-clamp-2">
+                      {n.body}
+                    </div>
+                  )}
+                </div>
+              </button>
+            ))}
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-3 border-t border-white/[0.06] bg-surface-2/30">
-            <button className="
-              w-full py-2 rounded-lg
-              text-xs text-text-tertiary
-              hover:text-text-secondary hover:bg-surface-2
-              transition-colors
-            ">
+          <div className="px-4 py-3 border-t border-white/[0.06]">
+            <button className="w-full text-xs text-text-tertiary hover:text-text-primary transition-colors">
               View all notifications
             </button>
           </div>
@@ -485,22 +294,4 @@ export default function NotificationCenter() {
       )}
     </div>
   );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// UTILITIES
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function formatTimeAgo(timestamp) {
-  const now = Date.now();
-  const diff = now - timestamp;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return new Date(timestamp).toLocaleDateString();
 }
