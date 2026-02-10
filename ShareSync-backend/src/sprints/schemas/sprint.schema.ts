@@ -104,6 +104,38 @@ export class SprintRetrospective {
   completedAt?: Date;
 }
 
+/**
+ * ✅ Additive meta: optional helpers for burndown/projection without changing logic.
+ * Safe to populate from service or computed later.
+ */
+@Schema({ _id: false })
+export class SprintBurndownMeta {
+  @Prop({ type: Date })
+  lastCalculatedAt?: Date;
+
+  @Prop({ type: Date })
+  projectedCompletion?: Date;
+
+  @Prop({ type: Number, default: 0 })
+  projectedDaysRemaining?: number;
+}
+
+/**
+ * ✅ Additive meta: optional summary field for retro.
+ * (Use later for AI summary or team-written summary.)
+ */
+@Schema({ _id: false })
+export class SprintRetrospectiveSummary {
+  @Prop()
+  summary?: string;
+
+  @Prop({ type: [String], default: [] })
+  keyWins?: string[];
+
+  @Prop({ type: [String], default: [] })
+  keyRisks?: string[];
+}
+
 export type SprintDocument = Sprint & Document & {
   addTask(taskId: Types.ObjectId): boolean;
   removeTask(taskId: Types.ObjectId): boolean;
@@ -169,8 +201,14 @@ export class Sprint {
   @Prop({ type: [BurndownPoint], default: [] })
   burndown: BurndownPoint[];
 
+  @Prop({ type: SprintBurndownMeta, default: () => ({}) })
+  burndownMeta?: SprintBurndownMeta;
+
   @Prop({ type: SprintRetrospective })
   retrospective?: SprintRetrospective;
+
+  @Prop({ type: SprintRetrospectiveSummary, default: () => ({}) })
+  retrospectiveSummary?: SprintRetrospectiveSummary;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;

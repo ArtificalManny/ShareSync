@@ -59,6 +59,7 @@ import { FilesModule } from './files/files.module';
 // ✅ PHASE 6: NEW MODULES
 import { MilestonesModule } from './milestones/milestones.module';
 import { ThreadsModule } from './threads/threads.module';
+import { ThreadMessagesModule } from './thread-messages/thread-messages.module';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 5: POLISH & SCALE MODULES
@@ -186,7 +187,7 @@ import { AIModule } from './ai/ai.module';
     // ✅ PHASE 6: ADD THESE
     MilestonesModule,
     ThreadsModule,
-
+    ThreadMessagesModule,
     // ─────────────────────────────────────────────────────────────────────────
     // POLISH & SCALE
     // ─────────────────────────────────────────────────────────────────────────

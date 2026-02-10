@@ -12,6 +12,56 @@ import { ProjectsService } from '../projects/projects.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { buildActivitySummary } from '../utils/activitySummary';
 
+function deepMergePreferences(existing: any, incoming: any) {
+  const e = existing ?? {};
+  const i = incoming ?? {};
+
+  return {
+    ...e,
+    ...i,
+
+    notifications: {
+      ...(e.notifications ?? {}),
+      ...(i.notifications ?? {}),
+    },
+
+    focusMode: {
+      ...(e.focusMode ?? {}),
+      ...(i.focusMode ?? {}),
+    },
+
+    privacy: {
+      ...(e.privacy ?? {}),
+      ...(i.privacy ?? {}),
+    },
+
+    calendar: {
+      ...(e.calendar ?? {}),
+      ...(i.calendar ?? {}),
+      workingHours: {
+        ...(e.calendar?.workingHours ?? {}),
+        ...(i.calendar?.workingHours ?? {}),
+      },
+      energyZones: {
+        ...(e.calendar?.energyZones ?? {}),
+        ...(i.calendar?.energyZones ?? {}),
+        highEnergy: {
+          ...(e.calendar?.energyZones?.highEnergy ?? {}),
+          ...(i.calendar?.energyZones?.highEnergy ?? {}),
+        },
+        mediumEnergy: {
+          ...(e.calendar?.energyZones?.mediumEnergy ?? {}),
+          ...(i.calendar?.energyZones?.mediumEnergy ?? {}),
+        },
+        lowEnergy: {
+          ...(e.calendar?.energyZones?.lowEnergy ?? {}),
+          ...(i.calendar?.energyZones?.lowEnergy ?? {}),
+        },
+      },
+    },
+  };
+}
+
 @Injectable()
 export class UserService {
   constructor(
@@ -78,17 +128,13 @@ export class UserService {
     return saved as any;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ✅ PHASE 5.1: PREFERENCES + AVATAR METHODS (USED BY user.controller.ts)
-  // Minimal + safe: reuse existing update() so we don't create new DB code paths.
-  // ─────────────────────────────────────────────────────────────────────────────
-
+  // ✅ Deep-merge preferences safely
   async updatePreferences(userId: string, preferences: any): Promise<UserDocument> {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
     const existing = (user as any)?.preferences ?? {};
-    const merged = { ...existing, ...(preferences ?? {}) };
+    const merged = deepMergePreferences(existing, preferences);
 
     return this.update(userId, { preferences: merged });
   }
@@ -102,12 +148,12 @@ export class UserService {
     if (!user) throw new NotFoundException('User not found');
 
     const existing = (user as any)?.preferences ?? {};
-    const currentSection = existing?.[section] ?? {};
 
-    const merged = {
-      ...existing,
-      [section]: { ...currentSection, ...(values ?? {}) },
-    };
+    // If section is one of the nested ones, merge it safely
+    const merged =
+      section === 'calendar'
+        ? deepMergePreferences(existing, { calendar: values })
+        : deepMergePreferences(existing, { [section]: values });
 
     return this.update(userId, { preferences: merged });
   }
@@ -115,7 +161,7 @@ export class UserService {
   async updateAvatar(userId: string, avatarUrl: string): Promise<UserDocument> {
     return this.update(userId, {
       profilePicture: avatarUrl,
-      avatarUrl, // harmless if not in schema; safe for future
+      avatarUrl,
     });
   }
 

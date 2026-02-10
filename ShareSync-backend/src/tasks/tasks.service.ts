@@ -100,7 +100,15 @@ export class TasksService {
     const task = new this.taskModel({
       ...dto,
       projectId: new Types.ObjectId(dto.projectId),
+
+      // Reporter is the user creating the task (current behavior)
       reporterId: new Types.ObjectId(userId),
+
+      // ✅ IMPORTANT PITFALL FIX:
+      // TaskSchema requires createdBy. If we don’t set it, you’ll eventually hit
+      // validation errors or inconsistent data.
+      createdBy: new Types.ObjectId(userId),
+
       assigneeId: dto.assigneeId ? new Types.ObjectId(dto.assigneeId) : undefined,
       parentId: dto.parentId ? new Types.ObjectId(dto.parentId) : undefined,
       sprintId: dto.sprintId ? new Types.ObjectId(dto.sprintId) : undefined,

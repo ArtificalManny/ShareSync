@@ -1,12 +1,23 @@
+// src/milestones/schemas/milestone.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    transform: (_: any, ret: any) => {
+      ret.id = ret._id?.toString();
+      delete ret.__v;
+      return ret;
+    },
+  },
+})
 export class Milestone {
   @Prop({ type: Types.ObjectId, ref: 'Project', required: true, index: true })
   projectId: Types.ObjectId;
 
-  @Prop({ required: true })
+  @Prop({ required: true, trim: true })
   title: string;
 
   @Prop()
@@ -18,9 +29,10 @@ export class Milestone {
   @Prop()
   completedAt: Date;
 
-  @Prop({ 
-    default: 'planned', 
-    enum: ['planned', 'in_progress', 'completed', 'at_risk'] 
+  @Prop({
+    default: 'planned',
+    enum: ['planned', 'in_progress', 'completed', 'at_risk'],
+    index: true,
   })
   status: string;
 

@@ -1,6 +1,8 @@
 // src/projects/dto/update-project.dto.ts
 // ═══════════════════════════════════════════════════════════════════════════════
-// UPDATE PROJECT DTO
+// UPDATE PROJECT DTO (safe extension)
+// - Adds optional goals patch payload
+// - Keeps existing fields unchanged to avoid breaking current clients
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -57,6 +59,34 @@ export class UpdateProjectSettingsDto {
   taskPriorities?: string[];
 }
 
+export class UpdateProjectGoalDto {
+  @ApiPropertyOptional({ example: 'Ship MVP v1' })
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @ApiPropertyOptional({ example: 'Deliver core flows + polish UI' })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({ example: '2026-03-01T00:00:00.000Z' })
+  @IsOptional()
+  targetDate?: Date;
+
+  @ApiPropertyOptional({ example: 0, minimum: 0, maximum: 100 })
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  progress?: number;
+
+  @ApiPropertyOptional({ enum: ['normal', 'at_risk', 'achieved'], default: 'normal' })
+  @IsString()
+  @IsOptional()
+  status?: 'normal' | 'at_risk' | 'achieved';
+}
+
 export class UpdateProjectDto {
   @ApiPropertyOptional({
     description: 'Project name',
@@ -86,6 +116,14 @@ export class UpdateProjectDto {
   @IsString()
   @IsOptional()
   icon?: string;
+
+  @ApiPropertyOptional({
+    description: 'Project emoji (preferred)',
+    example: '🚀',
+  })
+  @IsString()
+  @IsOptional()
+  emoji?: string;
 
   @ApiPropertyOptional({
     description: 'Project color (hex)',
@@ -128,4 +166,11 @@ export class UpdateProjectDto {
   @Type(() => UpdateProjectSettingsDto)
   @IsOptional()
   settings?: UpdateProjectSettingsDto;
+
+  // ✅ Optional: allow overwriting goals array (simple + safe)
+  @ApiPropertyOptional({ type: [UpdateProjectGoalDto] })
+  @ValidateNested({ each: true })
+  @Type(() => UpdateProjectGoalDto)
+  @IsOptional()
+  goals?: UpdateProjectGoalDto[];
 }

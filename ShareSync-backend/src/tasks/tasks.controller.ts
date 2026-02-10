@@ -40,6 +40,7 @@ import {
   LogTimeDto,
 } from './dto/update-task.dto';
 import { TaskStatus, TaskPriority } from './schemas/task.schema';
+import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONTROLLER
@@ -155,7 +156,7 @@ export class TasksController {
   @ApiQuery({ name: 'sprintId', required: false })
   async getBoard(
     @Req() req: any,
-    @Query('projectId') projectId: string,
+    @Query('projectId', ParseObjectIdPipe) projectId: string,
     @Query('sprintId') sprintId?: string,
   ) {
     const userId = req.user?.sub || req.user?.userId;
@@ -173,7 +174,7 @@ export class TasksController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getStack(
     @Req() req: any,
-    @Query('projectId') projectId: string,
+    @Query('projectId', ParseObjectIdPipe) projectId: string,
     @Query('assigneeId') assigneeId?: string,
     @Query('limit') limit?: string,
   ) {
@@ -193,7 +194,7 @@ export class TasksController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a task by ID' })
   @ApiParam({ name: 'id', description: 'Task ID' })
-  async findOne(@Req() req: any, @Param('id') id: string) {
+  async findOne(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     const task = await this.tasksService.findByIdWithAccess(id, userId);
     return {
@@ -205,7 +206,7 @@ export class TasksController {
   @Get(':id/subtasks')
   @ApiOperation({ summary: 'Get subtasks of a task' })
   @ApiParam({ name: 'id', description: 'Parent task ID' })
-  async getSubtasks(@Req() req: any, @Param('id') id: string) {
+  async getSubtasks(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     const subtasks = await this.tasksService.getSubtasks(id, userId);
     return {
@@ -223,7 +224,7 @@ export class TasksController {
   @ApiParam({ name: 'id', description: 'Task ID' })
   async update(
     @Req() req: any,
-    @Param('id') id: string,
+    @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: UpdateTaskDto,
   ) {
     const userId = req.user?.sub || req.user?.userId;
@@ -239,7 +240,7 @@ export class TasksController {
   @ApiParam({ name: 'id', description: 'Task ID' })
   async move(
     @Req() req: any,
-    @Param('id') id: string,
+    @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: MoveTaskDto,
   ) {
     const userId = req.user?.sub || req.user?.userId;
@@ -263,7 +264,7 @@ export class TasksController {
   })
   async complete(
     @Req() req: any,
-    @Param('id') id: string,
+    @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: CompleteTaskDto,
   ) {
     const userId = req.user?.sub || req.user?.userId;
@@ -291,7 +292,7 @@ export class TasksController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a task' })
   @ApiParam({ name: 'id', description: 'Task ID' })
-  async delete(@Req() req: any, @Param('id') id: string) {
+  async delete(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     await this.tasksService.delete(id, userId);
   }
@@ -305,7 +306,7 @@ export class TasksController {
   @ApiParam({ name: 'id', description: 'Task ID' })
   async addComment(
     @Req() req: any,
-    @Param('id') id: string,
+    @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: AddCommentDto,
   ) {
     const userId = req.user?.sub || req.user?.userId;
@@ -323,8 +324,8 @@ export class TasksController {
   @ApiParam({ name: 'commentId', description: 'Comment ID' })
   async deleteComment(
     @Req() req: any,
-    @Param('id') id: string,
-    @Param('commentId') commentId: string,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Param('commentId', ParseObjectIdPipe) commentId: string,
   ) {
     const userId = req.user?.sub || req.user?.userId;
     const task = await this.tasksService.deleteComment(id, commentId, userId);
@@ -343,7 +344,7 @@ export class TasksController {
   @ApiParam({ name: 'id', description: 'Task ID' })
   async logTime(
     @Req() req: any,
-    @Param('id') id: string,
+    @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: LogTimeDto,
   ) {
     const userId = req.user?.sub || req.user?.userId;

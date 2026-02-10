@@ -22,12 +22,17 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GamificationService } from './gamification.service';
 import { BadgeService } from './services/badge.service';
 import { StreakService } from './services/streak.service';
 import { LeaderboardService } from './services/leaderboard.service';
+
+// ✅ NEW DTOs (safe additions)
+import { AwardXpDto } from './dto/award-xp.dto';
+import { StatsResponseDto } from './dto/stats-response.dto';
 
 @ApiTags('Gamification')
 @Controller('gamification')
@@ -47,7 +52,11 @@ export class GamificationController {
 
   @Get('stats')
   @ApiOperation({ summary: 'Get current user gamification stats' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'User stats retrieved' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User stats retrieved',
+    type: StatsResponseDto,
+  })
   async getMyStats(@Req() req: any) {
     const stats = await this.gamificationService.getUserStats(req.user.userId);
     return { success: true, data: stats };
@@ -56,8 +65,50 @@ export class GamificationController {
   @Get('stats/:userId')
   @ApiOperation({ summary: 'Get user gamification stats by ID' })
   @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User stats retrieved',
+    type: StatsResponseDto,
+  })
   async getUserStats(@Param('userId') userId: string) {
     const stats = await this.gamificationService.getUserStats(userId);
+    return { success: true, data: stats };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // XP (GENERIC AWARD ENDPOINT)
+  // ─────────────────────────────────────────────────────────────────────────────
+  // This is intentionally separate from task completion, and uses your existing
+  // gamificationService.awardXP() method (no refactor required).
+  //
+  // POST /api/gamification/xp/award
+  // Body: { amount, source, sourceId?, description?, multiplier?, isBonus?, isLegendary?, metadata? }
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post('xp/award')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Award XP to the current user (generic non-task awards)' })
+  @ApiBody({ type: AwardXpDto })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'XP awarded successfully',
+  })
+  async awardXp(@Req() req: any, @Body() dto: AwardXpDto) {
+    // Keep metadata flexible but structured
+    const metadata = {
+      sourceId: dto.sourceId,
+      description: dto.description,
+      multiplier: dto.multiplier,
+      isBonus: dto.isBonus,
+      isLegendary: dto.isLegendary,
+      ...(dto.metadata || {}),
+    };
+
+    // Uses your existing method: awardXP(userId, amount, source, metadata?)
+    await this.gamificationService.awardXP(req.user.userId, dto.amount, dto.source, metadata);
+
+    // Return your frontend-friendly shape (same as /stats)
+    const stats = await this.gamificationService.getUserStats(req.user.userId);
     return { success: true, data: stats };
   }
 
@@ -104,7 +155,11 @@ export class GamificationController {
 
   @Get('leaderboard')
   @ApiOperation({ summary: 'Get global leaderboard' })
-  @ApiQuery({ name: 'type', enum: ['all_time', 'weekly', 'monthly', 'streak'], required: false })
+  @ApiQuery({
+    name: 'type',
+    enum: ['all_time', 'weekly', 'monthly', 'streak'],
+    required: false,
+  })
   @ApiQuery({ name: 'limit', type: Number, required: false })
   async getLeaderboard(
     @Req() req: any,
@@ -122,7 +177,11 @@ export class GamificationController {
   @Get('leaderboard/project/:projectId')
   @ApiOperation({ summary: 'Get project leaderboard' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
-  @ApiQuery({ name: 'type', enum: ['all_time', 'weekly', 'monthly', 'streak'], required: false })
+  @ApiQuery({
+    name: 'type',
+    enum: ['all_time', 'weekly', 'monthly', 'streak'],
+    required: false,
+  })
   async getProjectLeaderboard(
     @Param('projectId') projectId: string,
     @Query('type') type?: string,

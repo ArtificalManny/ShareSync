@@ -35,6 +35,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
 import { ProjectStatus } from './schemas/project.schema';
+import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONTROLLER
@@ -166,7 +167,7 @@ export class ProjectsController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Project found' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Project not found' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied' })
-  async findOne(@Req() req: any, @Param('id') id: string) {
+  async findOne(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     const project = await this.projectsService.findByIdWithAccess(id, userId);
     return {
@@ -178,7 +179,7 @@ export class ProjectsController {
   @Get(':id/pulse')
   @ApiOperation({ summary: 'Get project Pulse dashboard data' })
   @ApiParam({ name: 'id', description: 'Project ID' })
-  async getPulse(@Req() req: any, @Param('id') id: string) {
+  async getPulse(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     const pulseData = await this.projectsService.getPulseData(id, userId);
     return {
@@ -197,7 +198,11 @@ export class ProjectsController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Project updated' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Project not found' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied' })
-  async update(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateProjectDto) {
+  async update(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdateProjectDto,
+  ) {
     const userId = req.user?.sub || req.user?.userId;
     const project = await this.projectsService.update(id, userId, dto);
     return {
@@ -209,7 +214,7 @@ export class ProjectsController {
   @Patch(':id/star')
   @ApiOperation({ summary: 'Toggle project starred status' })
   @ApiParam({ name: 'id', description: 'Project ID' })
-  async toggleStar(@Req() req: any, @Param('id') id: string) {
+  async toggleStar(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
 
     const project = await this.projectsService.findByIdWithAccess(id, userId);
@@ -230,7 +235,7 @@ export class ProjectsController {
   @Patch(':id/archive')
   @ApiOperation({ summary: 'Archive a project' })
   @ApiParam({ name: 'id', description: 'Project ID' })
-  async archive(@Req() req: any, @Param('id') id: string) {
+  async archive(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     const project = await this.projectsService.archive(id, userId);
     return {
@@ -242,7 +247,7 @@ export class ProjectsController {
   @Patch(':id/restore')
   @ApiOperation({ summary: 'Restore an archived project' })
   @ApiParam({ name: 'id', description: 'Project ID' })
-  async restore(@Req() req: any, @Param('id') id: string) {
+  async restore(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     const project = await this.projectsService.update(id, userId, {
       status: ProjectStatus.ACTIVE,
@@ -259,7 +264,7 @@ export class ProjectsController {
   @ApiParam({ name: 'id', description: 'Project ID' })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Project deleted' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Only owner can delete' })
-  async delete(@Req() req: any, @Param('id') id: string) {
+  async delete(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     await this.projectsService.delete(id, userId);
   }
@@ -271,7 +276,11 @@ export class ProjectsController {
   @Post(':id/members')
   @ApiOperation({ summary: 'Add a member to project' })
   @ApiParam({ name: 'id', description: 'Project ID' })
-  async addMember(@Req() req: any, @Param('id') id: string, @Body() dto: AddMemberDto) {
+  async addMember(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: AddMemberDto,
+  ) {
     const userId = req.user?.sub || req.user?.userId;
     const project = await this.projectsService.addMember(id, userId, dto);
     return {
@@ -287,8 +296,8 @@ export class ProjectsController {
   @ApiParam({ name: 'userId', description: 'User ID to remove' })
   async removeMember(
     @Req() req: any,
-    @Param('id') id: string,
-    @Param('userId') memberUserId: string,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Param('userId', ParseObjectIdPipe) memberUserId: string,
   ) {
     const userId = req.user?.sub || req.user?.userId;
     const project = await this.projectsService.removeMember(id, userId, memberUserId);
@@ -304,8 +313,8 @@ export class ProjectsController {
   @ApiParam({ name: 'userId', description: 'User ID to update' })
   async updateMemberRole(
     @Req() req: any,
-    @Param('id') id: string,
-    @Param('userId') memberUserId: string,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Param('userId', ParseObjectIdPipe) memberUserId: string,
     @Body() dto: UpdateMemberRoleDto,
   ) {
     const userId = req.user?.sub || req.user?.userId;
@@ -327,7 +336,7 @@ export class ProjectsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Leave a project' })
   @ApiParam({ name: 'id', description: 'Project ID' })
-  async leaveProject(@Req() req: any, @Param('id') id: string) {
+  async leaveProject(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     await this.projectsService.leaveProject(id, userId);
     return {

@@ -1,6 +1,6 @@
 // src/scripts/seed.ts
 // ═══════════════════════════════════════════════════════════════════════════════
-// COMPLETE DATABASE SEED SCRIPT - FIXED VERSION
+// COMPLETE DATABASE SEED SCRIPT - FIXED VERSION (Sprint meta + Task ceremonyTier)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import mongoose from 'mongoose';
@@ -11,18 +11,15 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/shares
 async function seed() {
   console.log('🔌 Connecting to MongoDB...');
   console.log(`   URI: ${MONGODB_URI.replace(/\/\/.*@/, '//***@')}`);
-  
-  // Connect and wait for connection to be ready
+
   await mongoose.connect(MONGODB_URI);
-  
-  // Wait for connection to be fully established
+
   const db = mongoose.connection;
-  
-  // Ensure we have the native db object
+
   while (!db.db) {
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  
+
   const nativeDb = db.db;
   console.log('✅ Connected\n');
 
@@ -32,13 +29,13 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════
   // STEP 1: Clear ALL existing data
   // ═══════════════════════════════════════════════════════════════
-  console.log('��️  Clearing existing data...');
+  console.log('🗑️  Clearing existing data...');
   const collections = [
-    'users', 
-    'userstats', 
-    'projects', 
-    'tasks', 
-    'sprints', 
+    'users',
+    'userstats',
+    'projects',
+    'tasks',
+    'sprints',
     'badges',
     'halloffameentries',
     'ceremonies',
@@ -48,7 +45,7 @@ async function seed() {
     'calendarevents',
     'focussessions',
   ];
-  
+
   for (const col of collections) {
     try {
       const result = await nativeDb.collection(col).deleteMany({});
@@ -101,7 +98,7 @@ async function seed() {
   await nativeDb.collection('userstats').insertOne({
     _id: new Types.ObjectId(),
     userId: userId,
-    
+
     // XP & Level
     totalXP: 0,
     level: 1,
@@ -111,7 +108,7 @@ async function seed() {
     weeklyXP: 0,
     monthlyXP: 0,
     xpHistory: [],
-    
+
     // Streak (nested object)
     streak: {
       currentStreak: 0,
@@ -123,11 +120,11 @@ async function seed() {
       milestones: [],
       lastActivityDate: null,
     },
-    
+
     // Badges
     earnedBadges: [],
     showcaseBadges: [],
-    
+
     // Task Counters
     tasksCompleted: 0,
     tasksCompletedToday: 0,
@@ -137,28 +134,28 @@ async function seed() {
     focusTasksCompleted: 0,
     earlyTasks: 0,
     lateTasks: 0,
-    
+
     // Project Counters
     projectsCompleted: 0,
     sprintsCompleted: 0,
     shipsCount: 0,
     legendaryShipsCount: 0,
-    
+
     // Bonus Counters
     bonusesEarned: 0,
     multipliersTriggered: 0,
     legendaryHits: 0,
-    
+
     // Social
     messagesSent: 0,
     collaborators: [],
-    
+
     // Focus
     totalFocusMinutes: 0,
     todayFocusMinutes: 0,
     focusSessions: [],
     dailyStats: [],
-    
+
     createdAt: now,
     updatedAt: now,
   });
@@ -179,24 +176,26 @@ async function seed() {
     status: 'active',
     visibility: 'private',
     privacy: 'private',
-    
-    // Owner & Members - CRITICAL: must match userId
+
+    // Owner & Members
     ownerId: userId,
     owner: userId,
-    members: [{
-      userId: userId,
-      user: userId,
-      role: 'owner',
-      joinedAt: now,
-      permissions: ['all'],
-    }],
-    
+    members: [
+      {
+        userId: userId,
+        user: userId,
+        role: 'owner',
+        joinedAt: now,
+        permissions: ['all'],
+      },
+    ],
+
     settings: {
       defaultView: 'stack',
       enableGamification: true,
       enableAI: true,
     },
-    
+
     // Metrics
     metrics: {
       momentum: 0,
@@ -211,15 +210,15 @@ async function seed() {
     momentum: 0,
     totalTasks: 5,
     completedTasks: 0,
-    
+
     // Flags
     isStarred: false,
     isArchived: false,
-    
+
     goals: [],
     invites: [],
     tags: [],
-    
+
     createdAt: now,
     updatedAt: now,
   });
@@ -230,55 +229,55 @@ async function seed() {
   // STEP 5: Create Tasks
   // ═══════════════════════════════════════════════════════════════
   console.log('📋 Creating tasks...');
-  
+
   const tasksData = [
-    { 
-      title: 'Fix authentication timeout bug', 
+    {
+      title: 'Fix authentication timeout bug',
       description: 'Users getting logged out after 15 minutes - need to extend JWT expiry',
-      priority: 'critical', 
-      isBlocking: true, 
-      storyPoints: 5, 
-      days: 1, 
+      priority: 'critical',
+      isBlocking: true,
+      storyPoints: 5,
+      days: 1,
       tags: ['bug', 'auth', 'critical'],
       xpValue: 75,
     },
-    { 
-      title: 'Merge momentum engine feature', 
+    {
+      title: 'Merge momentum engine feature',
       description: 'Complete the momentum calculation system and merge to main',
-      priority: 'high', 
-      isBlocking: true, 
-      storyPoints: 8, 
-      days: 2, 
+      priority: 'high',
+      isBlocking: true,
+      storyPoints: 8,
+      days: 2,
       tags: ['feature', 'momentum'],
       xpValue: 50,
     },
-    { 
-      title: 'Update API documentation', 
+    {
+      title: 'Update API documentation',
       description: 'Document all Phase 5 endpoints in Swagger',
-      priority: 'medium', 
-      isBlocking: false, 
-      storyPoints: 3, 
-      days: 5, 
+      priority: 'medium',
+      isBlocking: false,
+      storyPoints: 3,
+      days: 5,
       tags: ['docs', 'api'],
       xpValue: 25,
     },
-    { 
-      title: 'Design new onboarding flow', 
+    {
+      title: 'Design new onboarding flow',
       description: 'Create wireframes for first-time user experience',
-      priority: 'high', 
-      isBlocking: false, 
-      storyPoints: 5, 
-      days: 7, 
+      priority: 'high',
+      isBlocking: false,
+      storyPoints: 5,
+      days: 7,
       tags: ['design', 'ux'],
       xpValue: 40,
     },
-    { 
-      title: 'Performance optimization', 
+    {
+      title: 'Performance optimization',
       description: 'Reduce bundle size and implement code splitting',
-      priority: 'medium', 
-      isBlocking: false, 
-      storyPoints: 5, 
-      days: 10, 
+      priority: 'medium',
+      isBlocking: false,
+      storyPoints: 5,
+      days: 10,
       tags: ['performance', 'optimization'],
       xpValue: 25,
     },
@@ -294,35 +293,35 @@ async function seed() {
     await nativeDb.collection('tasks').insertOne({
       _id: taskId,
       projectId: projectId,
-      
+
       // Basic info
       title: t.title,
       description: t.description,
       status: 'todo',
       priority: t.priority,
-      
-      // Assignment - CRITICAL: must match userId
+
+      // Assignment
       assigneeId: userId,
       assignee: userId,
       reporterId: userId,
       reporter: userId,
       createdBy: userId,
-      
+
       // Scheduling
       dueDate: new Date(Date.now() + t.days * 24 * 60 * 60 * 1000),
-      
+
       // Gamification
       storyPoints: t.storyPoints,
       xpValue: t.xpValue,
       isBlocking: t.isBlocking,
       blockingCount: t.isBlocking ? 1 : 0,
-      
+
       // Metadata
       tags: t.tags,
       labels: {},
       order: i,
       stackOrder: i,
-      
+
       // Arrays
       attachments: [],
       comments: [],
@@ -330,18 +329,20 @@ async function seed() {
       blockedBy: [],
       blocks: [],
       subtasks: [],
-      
-      // Completion (null = not completed)
+
+      // Completion
       completedAt: null,
       completedBy: null,
       bonusXP: 0,
       isLegendary: false,
-      ceremonyTier: null,
-      
+
+      // ✅ IMPORTANT: do NOT seed ceremonyTier as null (schema expects enum string)
+      ceremonyTier: 'standard',
+
       createdAt: now,
       updatedAt: now,
     });
-    
+
     console.log(`   ✅ Task ${i + 1}: ${t.title.substring(0, 40)}...`);
   }
   console.log('');
@@ -361,27 +362,27 @@ async function seed() {
     name: 'Sprint 1: Beta Launch',
     sprintNumber: 1,
     status: 'active',
-    
+
     // Dates
     startDate: sprintStart,
     endDate: sprintEnd,
     actualStartDate: sprintStart,
     actualEndDate: null,
-    
+
     // Goals
     goals: [
       { id: new Types.ObjectId().toString(), description: 'Complete Beta Launch', isAchieved: false, progress: 0 },
       { id: new Types.ObjectId().toString(), description: 'API v2 Complete', isAchieved: false, progress: 0 },
       { id: new Types.ObjectId().toString(), description: 'Documentation Updated', isAchieved: false, progress: 0 },
     ],
-    
+
     // Tasks
     taskIds: taskIds,
-    
+
     // Team
     capacityHours: 40,
     teamMembers: [userId],
-    
+
     // Metrics
     metrics: {
       plannedPoints: totalPoints,
@@ -396,19 +397,36 @@ async function seed() {
       avgTaskCompletionTime: 0,
       blockedTaskCount: 2,
     },
-    
+
     // Burndown
-    burndown: [{
-      date: sprintStart,
-      remainingPoints: totalPoints,
-      remainingTasks: tasksData.length,
-      completedPoints: 0,
-      completedTasks: 0,
-      addedPoints: 0,
-      addedTasks: 0,
-    }],
-    
+    burndown: [
+      {
+        date: sprintStart,
+        remainingPoints: totalPoints,
+        remainingTasks: tasksData.length,
+        completedPoints: 0,
+        completedTasks: 0,
+        addedPoints: 0,
+        addedTasks: 0,
+      },
+    ],
+
+    // ✅ Additive: meta snapshots (safe / optional)
+    burndownMeta: {
+      lastCalculatedAt: now,
+      projectedCompletion: null,
+      projectedDaysRemaining: 0,
+    },
+
     retrospective: null,
+
+    // ✅ Additive: empty retro summary (safe / optional)
+    retrospectiveSummary: {
+      summary: '',
+      keyWins: [],
+      keyRisks: [],
+    },
+
     createdBy: userId,
     createdAt: now,
     updatedAt: now,
@@ -418,7 +436,7 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════
   // STEP 7: Create Badge Definitions
   // ═══════════════════════════════════════════════════════════════
-  console.log('🏆 Creating badges...');
+  console.log('�� Creating badges...');
   const badges = [
     { id: 'first_task', name: 'First Steps', description: 'Complete your first task', icon: '🎯', category: 'milestone', rarity: 'common', xpReward: 50, criteria: { type: 'tasks_completed', count: 1 } },
     { id: 'task_10', name: 'Getting Started', description: 'Complete 10 tasks', icon: '✅', category: 'milestone', rarity: 'common', xpReward: 100, criteria: { type: 'tasks_completed', count: 10 } },
@@ -446,17 +464,19 @@ async function seed() {
   // VERIFICATION
   // ═══════════════════════════════════════════════════════════════
   console.log('🔍 Verifying seed data...');
-  
+
   const userCount = await nativeDb.collection('users').countDocuments();
   const statsCount = await nativeDb.collection('userstats').countDocuments();
   const projectCount = await nativeDb.collection('projects').countDocuments();
   const taskCount = await nativeDb.collection('tasks').countDocuments();
+  const sprintCount = await nativeDb.collection('sprints').countDocuments();
   const badgeCount = await nativeDb.collection('badges').countDocuments();
-  
+
   console.log(`   Users: ${userCount}`);
   console.log(`   UserStats: ${statsCount}`);
   console.log(`   Projects: ${projectCount}`);
   console.log(`   Tasks: ${taskCount}`);
+  console.log(`   Sprints: ${sprintCount}`);
   console.log(`   Badges: ${badgeCount}`);
 
   // ═══════════════════════════════════════════════════════════════

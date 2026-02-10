@@ -1,11 +1,12 @@
-// src/user/schemas/user.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+
+type ThemeMode = 'light' | 'dark' | 'system';
 
 @Schema({ timestamps: true })
 export class User extends Document {
   // ============================================
-  // BASIC INFO (Your existing fields)
+  // BASIC INFO (existing)
   // ============================================
   @Prop({ required: true, unique: true })
   email: string;
@@ -19,6 +20,10 @@ export class User extends Document {
   @Prop()
   lastName: string;
 
+  // NEW (safe): displayName used by frontend
+  @Prop()
+  displayName?: string;
+
   @Prop({ required: true })
   password: string;
 
@@ -28,17 +33,133 @@ export class User extends Document {
   @Prop()
   bannerPicture?: string;
 
+  // Backward compat fields you already had
   @Prop()
   school?: string;
 
   @Prop()
   job?: string;
 
+  // NEW (blueprint-style fields)
+  @Prop()
+  bio?: string;
+
+  @Prop()
+  location?: string;
+
+  @Prop()
+  timezone?: string;
+
+  @Prop()
+  jobTitle?: string;
+
+  @Prop()
+  company?: string;
+
+  @Prop()
+  website?: string;
+
+  @Prop({
+    type: {
+      twitter: { type: String, default: '' },
+      github: { type: String, default: '' },
+      linkedin: { type: String, default: '' },
+    },
+    default: undefined,
+  })
+  socialLinks?: {
+    twitter?: string;
+    github?: string;
+    linkedin?: string;
+  };
+
   @Prop({ default: false })
   publicProfile?: boolean;
 
   // ============================================
-  // GAMIFICATION (Your existing + Enhanced)
+  // PREFERENCES (NEW, but non-breaking)
+  // Keep separate from your existing "settings" object to avoid breaking old UI.
+  // ============================================
+  @Prop({
+    type: {
+      theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
+      accentColor: { type: String, default: '#8B5CF6' },
+
+      notifications: {
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+        inApp: { type: Boolean, default: true },
+        digest: { type: String, enum: ['daily', 'weekly', 'none'], default: 'weekly' },
+      },
+
+      defaultProjectView: {
+        type: String,
+        enum: ['pulse', 'stack', 'flow', 'roadmap', 'rhythm'],
+        default: 'pulse',
+      },
+
+      focusMode: {
+        autoEnable: { type: Boolean, default: false },
+        duration: { type: Number, default: 50 },
+        breakDuration: { type: Number, default: 10 },
+        blockNotifications: { type: Boolean, default: false },
+      },
+
+      calendar: {
+        startOfWeek: { type: Number, enum: [0, 1], default: 1 },
+        workingHours: {
+          start: { type: String, default: '09:00' },
+          end: { type: String, default: '17:00' },
+        },
+        energyZones: {
+          highEnergy: { start: { type: String, default: '08:00' }, end: { type: String, default: '12:00' } },
+          mediumEnergy: { start: { type: String, default: '12:00' }, end: { type: String, default: '15:00' } },
+          lowEnergy: { start: { type: String, default: '15:00' }, end: { type: String, default: '19:00' } },
+        },
+      },
+
+      privacy: {
+        showOnlineStatus: { type: Boolean, default: true },
+        showActivity: { type: Boolean, default: true },
+        publicProfile: { type: Boolean, default: false },
+      },
+    },
+    default: undefined,
+  })
+  preferences?: {
+    theme?: ThemeMode;
+    accentColor?: string;
+    notifications?: {
+      email?: boolean;
+      push?: boolean;
+      inApp?: boolean;
+      digest?: 'daily' | 'weekly' | 'none';
+    };
+    defaultProjectView?: 'pulse' | 'stack' | 'flow' | 'roadmap' | 'rhythm';
+    focusMode?: {
+      autoEnable?: boolean;
+      duration?: number;
+      breakDuration?: number;
+      blockNotifications?: boolean;
+    };
+    calendar?: {
+      startOfWeek?: 0 | 1;
+      workingHours?: { start: string; end: string };
+      energyZones?: {
+        highEnergy?: { start: string; end: string };
+        mediumEnergy?: { start: string; end: string };
+        lowEnergy?: { start: string; end: string };
+      };
+    };
+    privacy?: {
+      showOnlineStatus?: boolean;
+      showActivity?: boolean;
+      publicProfile?: boolean;
+    };
+  };
+
+  // ============================================
+  // GAMIFICATION (existing)
   // ============================================
   @Prop({ default: 0 })
   points: number;
@@ -47,34 +168,34 @@ export class User extends Document {
   xp: number;
 
   @Prop({ default: 1 })
-  level: number; // NEW: Level system
+  level: number;
 
   @Prop({ default: 0 })
-  streakDays: number; // Your existing field (renamed from currentStreak)
+  streakDays: number;
 
   @Prop({ default: 0 })
-  longestStreak: number; // NEW: Track longest streak
+  longestStreak: number;
 
   @Prop()
-  lastShipDate?: Date; // NEW: For streak calculation
+  lastShipDate?: Date;
 
   @Prop({ default: 0 })
-  totalShips: number; // NEW: Total ships count
+  totalShips: number;
 
   @Prop({ default: 0 })
-  totalTasksCompleted: number; // NEW: Total tasks completed
+  totalTasksCompleted: number;
 
   // ============================================
-  // ACHIEVEMENTS (NEW)
+  // ACHIEVEMENTS (existing)
   // ============================================
-  @Prop({ 
-    type: [{ 
-      id: String, 
-      name: String, 
+  @Prop({
+    type: [{
+      id: String,
+      name: String,
       unlockedAt: Date,
-      xpReward: Number 
-    }], 
-    default: [] 
+      xpReward: Number,
+    }],
+    default: [],
   })
   achievements: Array<{
     id: string;
@@ -87,13 +208,13 @@ export class User extends Document {
   badges: string[];
 
   // ============================================
-  // PROJECTS (Your existing field)
+  // PROJECTS (existing)
   // ============================================
   @Prop({ type: [Types.ObjectId], ref: 'Project', default: [] })
   projects: Types.ObjectId[];
 
   // ============================================
-  // NOTIFICATIONS (Your existing + Enhanced)
+  // NOTIFICATIONS / SETTINGS (existing - keep for compat)
   // ============================================
   @Prop({ type: [String], default: [] })
   notificationPreferences: string[];
@@ -101,19 +222,19 @@ export class User extends Document {
   @Prop({ type: Boolean, default: false })
   emailOptOut: boolean;
 
-  @Prop({ 
+  @Prop({
     type: {
       emailNotifications: { type: Boolean, default: true },
       pushNotifications: { type: Boolean, default: true },
       weeklyDigest: { type: Boolean, default: true },
-      soundEffects: { type: Boolean, default: true }
+      soundEffects: { type: Boolean, default: true },
     },
     default: {
       emailNotifications: true,
       pushNotifications: true,
       weeklyDigest: true,
-      soundEffects: true
-    }
+      soundEffects: true,
+    },
   })
   settings: {
     emailNotifications: boolean;
@@ -123,7 +244,7 @@ export class User extends Document {
   };
 
   // ============================================
-  // ENERGY TRACKING (NEW)
+  // ENERGY TRACKING (existing)
   // ============================================
   @Prop({ enum: ['low', 'medium', 'high'], default: 'medium' })
   currentEnergy: string;
@@ -132,7 +253,7 @@ export class User extends Document {
   lastEnergyUpdate?: Date;
 
   // ============================================
-  // AUTH & SECURITY (NEW - for refresh tokens)
+  // AUTH & SECURITY (existing)
   // ============================================
   @Prop()
   refreshToken?: string;
@@ -153,13 +274,13 @@ export class User extends Document {
   passwordResetExpires?: Date;
 
   // ============================================
-  // TRACKING (Your existing field)
+  // TRACKING (existing)
   // ============================================
   @Prop({ default: null })
   lastLogin?: Date;
 
   // ============================================
-  // VIRTUAL: Full Name (Your existing)
+  // VIRTUAL: Full Name (existing)
   // ============================================
   get name(): string {
     return `${this.firstName || ''} ${this.lastName || ''}`.trim() || this.username;
@@ -169,13 +290,12 @@ export class User extends Document {
 export type UserDocument = User & Document;
 export const UserSchema = SchemaFactory.createForClass(User);
 
-// Add virtual for name
 UserSchema.virtual('name').get(function () {
+  // @ts-ignore
   return `${this.firstName || ''} ${this.lastName || ''}`.trim() || this.username;
 });
 
-// Indexes for performance
 UserSchema.index({ email: 1 });
 UserSchema.index({ username: 1 });
-UserSchema.index({ xp: -1 }); // For leaderboards
-UserSchema.index({ streakDays: -1 }); // For streak leaderboards
+UserSchema.index({ xp: -1 });
+UserSchema.index({ streakDays: -1 });

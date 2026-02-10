@@ -44,7 +44,7 @@ export class ThreadsService {
 
   async create(userId: string, dto: CreateThreadDto): Promise<ThreadDocument> {
     const userObjectId = new Types.ObjectId(userId);
-    
+
     const thread = new this.threadModel({
       projectId: new Types.ObjectId(dto.projectId),
       title: dto.title,
@@ -103,20 +103,20 @@ export class ThreadsService {
 
   async update(id: string, userId: string, updates: Partial<Thread>): Promise<ThreadDocument> {
     const thread = await this.findById(id);
-    
+
     // Only allow creator or admin to update
     // For now, we'll just allow the update
     Object.assign(thread, updates);
-    
+
     return thread.save();
   }
 
   async delete(id: string, userId: string): Promise<void> {
     const thread = await this.findById(id);
-    
+
     // Delete all messages in the thread
     await this.messageModel.deleteMany({ threadId: thread._id });
-    
+
     // Delete the thread
     await this.threadModel.deleteOne({ _id: thread._id });
   }
@@ -133,7 +133,7 @@ export class ThreadsService {
       threadId: thread._id,
       userId: userObjectId,
       content: dto.content,
-      mentions: dto.mentions?.map(id => new Types.ObjectId(id)) || [],
+      mentions: dto.mentions?.map((id) => new Types.ObjectId(id)) || [],
       reactions: [],
       attachments: [],
       isEdited: false,
@@ -151,7 +151,7 @@ export class ThreadsService {
           lastReplyBy: userObjectId,
         },
         $addToSet: { participants: userObjectId },
-      }
+      },
     );
 
     return savedMessage;
@@ -175,7 +175,7 @@ export class ThreadsService {
 
   async updateMessage(messageId: string, userId: string, content: string): Promise<ThreadMessageDocument> {
     const message = await this.messageModel.findById(messageId);
-    
+
     if (!message) {
       throw new NotFoundException(`Message with ID ${messageId} not found`);
     }
@@ -193,7 +193,7 @@ export class ThreadsService {
 
   async deleteMessage(messageId: string, userId: string): Promise<void> {
     const message = await this.messageModel.findById(messageId);
-    
+
     if (!message) {
       throw new NotFoundException(`Message with ID ${messageId} not found`);
     }
@@ -206,10 +206,7 @@ export class ThreadsService {
     await this.messageModel.deleteOne({ _id: message._id });
 
     // Update thread reply count
-    await this.threadModel.updateOne(
-      { _id: threadId },
-      { $inc: { replyCount: -1 } }
-    );
+    await this.threadModel.updateOne({ _id: threadId }, { $inc: { replyCount: -1 } });
   }
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -218,19 +215,19 @@ export class ThreadsService {
 
   async addReaction(messageId: string, userId: string, emoji: string): Promise<ThreadMessageDocument> {
     const message = await this.messageModel.findById(messageId);
-    
+
     if (!message) {
       throw new NotFoundException(`Message with ID ${messageId} not found`);
     }
 
     const userObjectId = new Types.ObjectId(userId);
-    
+
     // Check if reaction exists
-    const existingReaction = message.reactions.find(r => r.emoji === emoji);
-    
+    const existingReaction = message.reactions.find((r: any) => r.emoji === emoji);
+
     if (existingReaction) {
       // Add user to existing reaction if not already there
-      if (!existingReaction.users.some(u => u.equals(userObjectId))) {
+      if (!existingReaction.users.some((u: Types.ObjectId) => u.equals(userObjectId))) {
         existingReaction.users.push(userObjectId);
       }
     } else {
@@ -238,7 +235,7 @@ export class ThreadsService {
       message.reactions.push({
         emoji,
         users: [userObjectId],
-      });
+      } as any);
     }
 
     return message.save();
@@ -246,20 +243,20 @@ export class ThreadsService {
 
   async removeReaction(messageId: string, userId: string, emoji: string): Promise<ThreadMessageDocument> {
     const message = await this.messageModel.findById(messageId);
-    
+
     if (!message) {
       throw new NotFoundException(`Message with ID ${messageId} not found`);
     }
 
     const userObjectId = new Types.ObjectId(userId);
-    
-    const reaction = message.reactions.find(r => r.emoji === emoji);
+
+    const reaction = message.reactions.find((r: any) => r.emoji === emoji);
     if (reaction) {
-      reaction.users = reaction.users.filter(u => !u.equals(userObjectId));
-      
+      reaction.users = reaction.users.filter((u: Types.ObjectId) => !u.equals(userObjectId));
+
       // Remove reaction if no users left
       if (reaction.users.length === 0) {
-        message.reactions = message.reactions.filter(r => r.emoji !== emoji);
+        message.reactions = message.reactions.filter((r: any) => r.emoji !== emoji);
       }
     }
 
@@ -284,49 +281,49 @@ export class ThreadsService {
 
   async markAsRead(threadId: string, userId: string): Promise<void> {
     const userObjectId = new Types.ObjectId(userId);
-    
+
     await this.threadModel.updateOne(
-      { 
+      {
         _id: new Types.ObjectId(threadId),
-        'readStatus.userId': { $ne: userObjectId }
+        'readStatus.userId': { $ne: userObjectId },
       },
       {
         $push: {
           readStatus: {
             userId: userObjectId,
             lastReadAt: new Date(),
-          }
-        }
-      }
+          },
+        },
+      },
     );
 
     // Also update existing read status
     await this.threadModel.updateOne(
-      { 
+      {
         _id: new Types.ObjectId(threadId),
-        'readStatus.userId': userObjectId
+        'readStatus.userId': userObjectId,
       },
       {
         $set: {
           'readStatus.$.lastReadAt': new Date(),
-        }
-      }
+        },
+      },
     );
   }
 
   async getUnreadCount(projectId: string, userId: string): Promise<number> {
     const userObjectId = new Types.ObjectId(userId);
-    
+
     const threads = await this.threadModel.find({
       projectId: new Types.ObjectId(projectId),
       participants: userObjectId,
     });
 
     let unreadCount = 0;
-    
+
     for (const thread of threads) {
-      const readStatus = thread.readStatus.find(rs => rs.userId.equals(userObjectId));
-      
+      const readStatus = thread.readStatus.find((rs: any) => rs.userId.equals(userObjectId));
+
       if (!readStatus) {
         // Never read this thread
         unreadCount += thread.replyCount;
@@ -351,19 +348,19 @@ export class ThreadsService {
   async linkTask(threadId: string, taskId: string): Promise<ThreadDocument> {
     const thread = await this.findById(threadId);
     const taskObjectId = new Types.ObjectId(taskId);
-    
-    if (!thread.linkedTasks.some(id => id.equals(taskObjectId))) {
+
+    if (!thread.linkedTasks.some((id: Types.ObjectId) => id.equals(taskObjectId))) {
       thread.linkedTasks.push(taskObjectId);
       await thread.save();
     }
-    
+
     return thread;
   }
 
   async unlinkTask(threadId: string, taskId: string): Promise<ThreadDocument> {
     const thread = await this.findById(threadId);
     thread.linkedTasks = thread.linkedTasks.filter(
-      id => !id.equals(new Types.ObjectId(taskId))
+      (id: Types.ObjectId) => !id.equals(new Types.ObjectId(taskId)),
     );
     return thread.save();
   }
@@ -377,8 +374,8 @@ export class ThreadsService {
     const threads = await this.threadModel
       .find({ projectId: new Types.ObjectId(projectId) })
       .select('_id');
-    
-    const threadIds = threads.map(t => t._id);
+
+    const threadIds = threads.map((t: any) => t._id);
 
     return this.messageModel
       .find({

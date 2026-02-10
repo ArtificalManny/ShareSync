@@ -1,7 +1,7 @@
 /**
  * realtime.module.ts
  * Module for all real-time features (cursors, presence, focus sessions, live updates)
- * 
+ *
  * Includes:
  * - MongoDB schemas (Cursor, Presence, FocusSession)
  * - REST controllers (CursorController, PresenceController, FocusController)
@@ -38,9 +38,9 @@ import { FocusGateway } from './focus.gateway';
 import { RealtimeGateway } from './realtime.gateway';
 
 // ============================================
-// GUARDS
+// GUARDS (local realtime folder)
 // ============================================
-import { WsJwtGuard } from '../auth/ws-jwt.guard';
+import { WsJwtGuard } from './ws-jwt.guard';
 
 @Module({
   imports: [
@@ -51,7 +51,7 @@ import { WsJwtGuard } from '../auth/ws-jwt.guard';
         expiresIn: process.env.JWT_EXPIRES_IN || '7d',
       },
     }),
-    
+
     // MongoDB schemas for data persistence
     MongooseModule.forFeature([
       { name: Cursor.name, schema: CursorSchema },
@@ -59,14 +59,10 @@ import { WsJwtGuard } from '../auth/ws-jwt.guard';
       { name: FocusSession.name, schema: FocusSessionSchema },
     ]),
   ],
-  
+
   // REST API Controllers
-  controllers: [
-    CursorController,
-    PresenceController,
-    FocusController,
-  ],
-  
+  controllers: [CursorController, PresenceController, FocusController],
+
   // WebSocket Gateways & Services
   providers: [
     CursorGateway,
@@ -77,7 +73,7 @@ import { WsJwtGuard } from '../auth/ws-jwt.guard';
     FocusService,
     WsJwtGuard,
   ],
-  
+
   // Export services & gateways for use in other modules
   exports: [
     CursorService,

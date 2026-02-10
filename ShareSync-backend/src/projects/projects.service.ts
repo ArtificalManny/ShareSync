@@ -1,6 +1,8 @@
 // src/projects/projects.service.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECTS SERVICE: Business Logic for Project Management
+// - SAFE PATCH: updateMetrics() now merges instead of overwriting metrics object
+// - SAFE PATCH: create() normalizes emoji/icon + ensures settings/goals defaults
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -102,12 +104,10 @@ export class ProjectsService {
   async enablePublic(projectId: string, userId: string): Promise<{ publicToken: string }> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    // keep strict: owner or admin
     if (!this.canManageMembers(project, userId) && project.ownerId.toString() !== userId) {
       throw new ForbiddenException('You do not have permission to enable public sharing');
     }
 
-    // generate a token (simple unique string)
     const publicToken = `${new Types.ObjectId().toString()}${new Types.ObjectId().toString()}`;
 
     (project as any).publicEnabled = true;
@@ -174,10 +174,22 @@ export class ProjectsService {
   async create(userId: string, dto: CreateProjectDto): Promise<ProjectDocument> {
     this.logger.log(`Creating project for user ${userId}: ${dto.name}`);
 
+    // ✅ Normalize emoji/icon safely:
+    // - preferred: dto.emoji
+    // - fallback: dto.icon
+    // - default: 📁
+    const emoji = (dto.emoji || dto.icon || '📁').trim();
+
     const project = new this.projectModel({
       ...dto,
+      emoji,
+      icon: dto.icon || emoji, // keep legacy icon populated
       ownerId: new Types.ObjectId(userId),
       members: [],
+      goals: dto.goals || [],
+      settings: dto.settings || {},
+
+      // Ensure full metrics object exists for Pulse / sorting
       metrics: {
         momentum: 0,
         velocity: 0,
@@ -187,6 +199,7 @@ export class ProjectsService {
         lastActivityAt: new Date(),
         weeklyShips: 0,
         momentumTrend: 0,
+        activeSprintId: null,
       },
     });
 
@@ -232,7 +245,6 @@ export class ProjectsService {
       sortOrder = 'desc',
     } = options;
 
-    // ✅ Support legacy variants + exclude isArchived if present
     const query: any = {
       $or: [
         { ownerId: new Types.ObjectId(userId) },
@@ -282,14 +294,31 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to edit this project');
     }
 
+    // Status timestamps
     if (dto.status) {
       if (dto.status === ProjectStatus.ARCHIVED) project.archivedAt = new Date();
       else if (dto.status === ProjectStatus.COMPLETED) project.completedAt = new Date();
     }
 
+    // Merge settings safely (don’t overwrite object)
     if ((dto as any).settings) {
       (project as any).settings = { ...(project as any).settings, ...(dto as any).settings };
       delete (dto as any).settings;
+    }
+
+    // Goals overwrite (simple + safe). If you want patch-by-id later, we can add.
+    if ((dto as any).goals) {
+      (project as any).goals = (dto as any).goals;
+      delete (dto as any).goals;
+    }
+
+    // Emoji/icon normalization if provided
+    if ((dto as any).emoji || (dto as any).icon) {
+      const nextEmoji = ((dto as any).emoji || (dto as any).icon || project.emoji || project.icon || '📁').trim();
+      project.emoji = nextEmoji;
+      project.icon = (dto as any).icon || nextEmoji;
+      delete (dto as any).emoji;
+      delete (dto as any).icon;
     }
 
     Object.assign(project, dto);
@@ -304,10 +333,17 @@ export class ProjectsService {
     return updated;
   }
 
+  // ✅ SAFETY FIX: patch nested metrics fields instead of overwriting whole object
   async updateMetrics(projectId: string, metrics: Partial<Project['metrics']>): Promise<void> {
+    const set: Record<string, any> = {};
+    for (const [key, value] of Object.entries(metrics || {})) {
+      set[`metrics.${key}`] = value;
+    }
+    set['metrics.lastActivityAt'] = new Date();
+
     await this.projectModel.updateOne(
       { _id: new Types.ObjectId(projectId) },
-      { $set: { metrics } },
+      { $set: set },
     );
   }
 
@@ -467,16 +503,26 @@ export class ProjectsService {
   async getPulseData(projectId: string, userId: string): Promise<PulseData> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
+    // Ensure metrics object exists even for legacy docs
+    const metrics = (project as any).metrics || {
+      momentum: 0,
+      velocity: 0,
+      weeklyShips: 0,
+      momentumTrend: 0,
+      totalTasks: 0,
+      completedTasks: 0,
+    };
+
     return {
       project,
       metrics: {
-        momentum: project.metrics.momentum,
-        velocity: project.metrics.velocity,
-        weeklyShips: project.metrics.weeklyShips,
-        momentumTrend: project.metrics.momentumTrend,
+        momentum: metrics.momentum || 0,
+        velocity: metrics.velocity || 0,
+        weeklyShips: metrics.weeklyShips || 0,
+        momentumTrend: metrics.momentumTrend || 0,
         completionRate:
-          project.metrics.totalTasks > 0
-            ? Math.round((project.metrics.completedTasks / project.metrics.totalTasks) * 100)
+          (metrics.totalTasks || 0) > 0
+            ? Math.round(((metrics.completedTasks || 0) / (metrics.totalTasks || 0)) * 100)
             : 0,
       },
       criticalMoves: [],

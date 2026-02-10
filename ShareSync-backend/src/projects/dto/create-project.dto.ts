@@ -1,6 +1,8 @@
 // src/projects/dto/create-project.dto.ts
 // ═══════════════════════════════════════════════════════════════════════════════
-// CREATE PROJECT DTO
+// CREATE PROJECT DTO (schema-aligned + backwards compatible)
+// - Accepts emoji (preferred) OR icon (legacy). Service will normalize.
+// - Keeps current fields intact to avoid breaking frontend.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -13,9 +15,94 @@ import {
   MaxLength,
   MinLength,
   Matches,
+  ValidateNested,
   IsBoolean,
+  IsNumber,
+  Min,
+  Max,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ProjectVisibility } from '../schemas/project.schema';
+
+// Keep settings DTO local to avoid import loops with update dto
+export class CreateProjectSettingsDto {
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  defaultView?: string;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  enableGamification?: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  enableAI?: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  notificationsEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  allowMemberInvites?: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  requireTaskApproval?: boolean;
+
+  @ApiPropertyOptional()
+  @IsNumber()
+  @Min(7)
+  @Max(30)
+  @IsOptional()
+  defaultSprintDuration?: number;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  taskStatuses?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  taskPriorities?: string[];
+}
+
+export class CreateProjectGoalDto {
+  @ApiProperty({ example: 'Ship MVP v1' })
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @ApiPropertyOptional({ example: 'Deliver core flows + polish UI' })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({ example: '2026-03-01T00:00:00.000Z' })
+  @IsOptional()
+  targetDate?: Date;
+
+  @ApiPropertyOptional({ example: 0, minimum: 0, maximum: 100 })
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  progress?: number;
+
+  @ApiPropertyOptional({ enum: ['normal', 'at_risk', 'achieved'], default: 'normal' })
+  @IsString()
+  @IsOptional()
+  status?: 'normal' | 'at_risk' | 'achieved';
+}
 
 export class CreateProjectDto {
   @ApiProperty({
@@ -40,8 +127,19 @@ export class CreateProjectDto {
   @MaxLength(2000)
   description?: string;
 
+  // ✅ Preferred field (schema)
   @ApiPropertyOptional({
-    description: 'Project icon (emoji)',
+    description: 'Project emoji (preferred)',
+    example: '🚀',
+    default: '📁',
+  })
+  @IsString()
+  @IsOptional()
+  emoji?: string;
+
+  // ✅ Legacy field (frontend/backward compatibility)
+  @ApiPropertyOptional({
+    description: 'Legacy project icon (emoji string)',
     example: '🚀',
     default: '📁',
   })
@@ -79,4 +177,16 @@ export class CreateProjectDto {
   @IsString({ each: true })
   @IsOptional()
   tags?: string[];
+
+  @ApiPropertyOptional({ type: CreateProjectSettingsDto })
+  @ValidateNested()
+  @Type(() => CreateProjectSettingsDto)
+  @IsOptional()
+  settings?: CreateProjectSettingsDto;
+
+  @ApiPropertyOptional({ type: [CreateProjectGoalDto] })
+  @ValidateNested({ each: true })
+  @Type(() => CreateProjectGoalDto)
+  @IsOptional()
+  goals?: CreateProjectGoalDto[];
 }
