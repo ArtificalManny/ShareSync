@@ -2,23 +2,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE E: Social Proof & FOMO - Team Pulse
 // ═══════════════════════════════════════════════════════════════════════════════
-//
-// Live indicator showing team activity in real-time.
-// Creates FOMO by showing others are actively working.
-//
-// Key Features:
-// - "X people shipping right now" counter
-// - Pulsing animation when activity is high
-// - Avatar stack of active users
-// - Focus mode indicators
-// - Recent ship notifications
-//
-// ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Users, 
+import {
+  Users,
   Zap,
   Flame,
   Rocket,
@@ -55,31 +43,31 @@ const MOCK_ACTIVE_USERS = [
 // STATUS CONFIGURATIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 const STATUS_CONFIG = {
-  shipping: { 
-    icon: Rocket, 
-    color: 'text-brand-400', 
-    bg: 'bg-brand-500', 
+  shipping: {
+    icon: Rocket,
+    color: 'text-brand-400',
+    bg: 'bg-brand-500',
     label: 'Shipping',
     pulse: true,
   },
-  focus: { 
-    icon: Zap, 
-    color: 'text-cyan-400', 
-    bg: 'bg-cyan-500', 
+  focus: {
+    icon: Zap,
+    color: 'text-cyan-400',
+    bg: 'bg-cyan-500',
     label: 'In Focus',
     pulse: true,
   },
-  active: { 
-    icon: Activity, 
-    color: 'text-success', 
-    bg: 'bg-success', 
+  active: {
+    icon: Activity,
+    color: 'text-success',
+    bg: 'bg-success',
     label: 'Active',
     pulse: false,
   },
-  break: { 
-    icon: Coffee, 
-    color: 'text-warning-500', 
-    bg: 'bg-warning-500', 
+  break: {
+    icon: Coffee,
+    color: 'text-warning-500',
+    bg: 'bg-warning-500',
     label: 'On Break',
     pulse: false,
   },
@@ -94,10 +82,10 @@ const AvatarStack = ({ users, max = 4, size = 'md' }) => {
     md: 'w-8 h-8 text-xs',
     lg: 'w-10 h-10 text-sm',
   };
-  
+
   const visibleUsers = users.slice(0, max);
   const remaining = users.length - max;
-  
+
   const getColorFromName = (name) => {
     if (!name) return 'bg-brand-500/30 text-brand-300';
     const colors = [
@@ -109,12 +97,12 @@ const AvatarStack = ({ users, max = 4, size = 'md' }) => {
     ];
     return colors[name.charCodeAt(0) % colors.length];
   };
-  
+
   return (
     <div className="flex -space-x-2">
       {visibleUsers.map((user, i) => {
         const status = STATUS_CONFIG[user.status] || STATUS_CONFIG.active;
-        
+
         return (
           <motion.div
             key={user.id}
@@ -126,31 +114,35 @@ const AvatarStack = ({ users, max = 4, size = 'md' }) => {
           >
             {/* Avatar */}
             {user.avatar ? (
-              <img 
-                src={user.avatar} 
+              <img
+                src={user.avatar}
                 alt={user.name}
                 className={`${sizes[size]} rounded-full border-2 border-surface-0 object-cover`}
               />
             ) : (
-              <div className={`
+              <div
+                className={`
                 ${sizes[size]} rounded-full border-2 border-surface-0
                 ${getColorFromName(user.name)}
                 flex items-center justify-center font-medium
-              `}>
-                {user.name.charAt(0)}
+              `}
+              >
+                {user.name?.charAt(0) || 'U'}
               </div>
             )}
-            
+
             {/* Status indicator */}
-            <div className={`
+            <div
+              className={`
               absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full
               ${status.bg} border-2 border-surface-0
               ${status.pulse ? 'animate-pulse' : ''}
-            `} />
+            `}
+            />
           </motion.div>
         );
       })}
-      
+
       {/* Remaining count */}
       {remaining > 0 && (
         <motion.div
@@ -179,14 +171,16 @@ const PulseIndicator = ({ intensity = 'normal', color = 'brand' }) => {
     warning: 'bg-warning-500',
     energy: 'bg-energy-500',
   };
-  
+
   return (
     <span className="relative flex h-2.5 w-2.5">
-      <span className={`
+      <span
+        className={`
         animate-ping absolute inline-flex h-full w-full rounded-full 
         ${colors[color]} opacity-75
         ${intensity === 'high' ? 'animation-duration-500' : ''}
-      `} />
+      `}
+      />
       <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${colors[color]}`} />
     </span>
   );
@@ -197,12 +191,12 @@ const PulseIndicator = ({ intensity = 'normal', color = 'brand' }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 const ActivitySummary = ({ users }) => {
   const summary = useMemo(() => {
-    const shipping = users.filter(u => u.status === 'shipping').length;
-    const focus = users.filter(u => u.status === 'focus').length;
-    const active = users.filter(u => u.status === 'active').length;
+    const shipping = users.filter((u) => u.status === 'shipping').length;
+    const focus = users.filter((u) => u.status === 'focus').length;
+    const active = users.filter((u) => u.status === 'active').length;
     return { shipping, focus, active, total: users.length };
   }, [users]);
-  
+
   return (
     <div className="flex items-center gap-3 text-xs">
       {summary.shipping > 0 && (
@@ -226,19 +220,19 @@ const ActivitySummary = ({ users }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 const ActivityTicker = ({ activities }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  
+
   useEffect(() => {
     if (activities.length <= 1) return;
-    
+
     const interval = setInterval(() => {
-      setCurrentIndex(prev => (prev + 1) % activities.length);
+      setCurrentIndex((prev) => (prev + 1) % activities.length);
     }, 4000);
-    
+
     return () => clearInterval(interval);
   }, [activities.length]);
-  
+
   if (activities.length === 0) return null;
-  
+
   return (
     <div className="h-5 overflow-hidden">
       <AnimatePresence mode="wait">
@@ -268,36 +262,82 @@ const useSafeMomentumContext = () => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Convert pulseData -> users array (compatible with existing UI)
+// pulseData shape:
+// {
+//   activeCount: number,
+//   shippingNow: number,
+//   inFocus: number,
+//   actors: string[],
+// }
+function usersFromPulseData(pulseData) {
+  const actors = Array.isArray(pulseData?.actors) ? pulseData.actors : [];
+  const shippingNow = Number(pulseData?.shippingNow ?? 0);
+  const inFocus = Number(pulseData?.inFocus ?? 0);
+
+  // Assign statuses in a stable order:
+  // first shippingNow => "shipping"
+  // next inFocus => "focus"
+  // rest => "active"
+  return actors.map((name, idx) => {
+    let status = 'active';
+    if (idx < shippingNow) status = 'shipping';
+    else if (idx < shippingNow + inFocus) status = 'focus';
+
+    return {
+      id: `${name}-${idx}`,
+      name,
+      avatar: null,
+      status,
+      activity:
+        status === 'shipping'
+          ? 'Shipping updates'
+          : status === 'focus'
+          ? 'Focus session active'
+          : 'Active now',
+    };
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function TeamPulse({
   // Data
   users = MOCK_ACTIVE_USERS,
-  
+  pulseData = null, // ✅ NEW: real-time injection
+
   // Options
   variant = 'default', // 'default' | 'compact' | 'minimal' | 'banner'
   showAvatars = true,
   showSummary = true,
   showTicker = true,
   maxAvatars = 4,
-  
+
   // Actions
   onClick,
-  
+
   // Styling
   className = '',
 }) {
-  // Get momentum context safely
   const { glowLevel, isFireMode } = useSafeMomentumContext();
 
+  // If pulseData is provided, generate a compatible users list.
+  const sourceUsers = useMemo(() => {
+    if (pulseData && Array.isArray(pulseData.actors)) {
+      return usersFromPulseData(pulseData);
+    }
+    return users;
+  }, [pulseData, users]);
+
   // Filter active users
-  const activeUsers = users.filter(u => ['shipping', 'focus', 'active'].includes(u.status));
-  const shippingCount = activeUsers.filter(u => u.status === 'shipping').length;
-  
+  const activeUsers = sourceUsers.filter((u) => ['shipping', 'focus', 'active'].includes(u.status));
+  const shippingCount = activeUsers.filter((u) => u.status === 'shipping').length;
+
   // Generate ticker activities
   const tickerActivities = activeUsers
-    .filter(u => u.activity)
-    .map(u => `${u.name}: ${u.activity}`);
+    .filter((u) => u.activity)
+    .map((u) => `${u.name}: ${u.activity}`);
 
   // Determine intensity based on activity level
   const intensity = activeUsers.length >= 5 ? 'high' : 'normal';
@@ -342,7 +382,7 @@ export default function TeamPulse({
           <Users className={`w-5 h-5 ${isFireMode ? 'text-energy-500' : 'text-brand-400'}`} />
           <PulseIndicator intensity={intensity} color={isFireMode ? 'energy' : 'brand'} />
         </div>
-        
+
         <div className="flex-1 min-w-0 text-left">
           <p className="text-sm text-text-primary">
             <span className="font-semibold">{activeUsers.length}</span> people active
@@ -353,7 +393,7 @@ export default function TeamPulse({
             </p>
           )}
         </div>
-        
+
         {showAvatars && activeUsers.length > 0 && (
           <AvatarStack users={activeUsers} max={3} size="sm" />
         )}
@@ -370,8 +410,8 @@ export default function TeamPulse({
         onClick={onClick}
         className={`
           flex items-center justify-between p-4 rounded-xl
-          ${activeUsers.length >= 5 
-            ? 'bg-gradient-to-r from-brand-500/10 to-cyan-500/10 border border-brand-500/20' 
+          ${activeUsers.length >= 5
+            ? 'bg-gradient-to-r from-brand-500/10 to-cyan-500/10 border border-brand-500/20'
             : 'bg-surface-1 border border-white/[0.06]'
           }
           ${isFireMode ? 'border-energy-500/20' : ''}
@@ -388,7 +428,7 @@ export default function TeamPulse({
           `}>
             <PulseIndicator intensity={intensity} color={isFireMode ? 'energy' : 'brand'} />
           </div>
-          
+
           {/* Info */}
           <div>
             <p className="text-sm font-medium text-text-primary flex items-center gap-2">
@@ -402,11 +442,11 @@ export default function TeamPulse({
                 </span>
               )}
             </p>
-            
+
             {showSummary && <ActivitySummary users={activeUsers} />}
           </div>
         </div>
-        
+
         {/* Right side */}
         <div className="flex items-center gap-4">
           {showTicker && (
@@ -414,7 +454,7 @@ export default function TeamPulse({
               <ActivityTicker activities={tickerActivities} />
             </div>
           )}
-          
+
           {showAvatars && activeUsers.length > 0 && (
             <AvatarStack users={activeUsers} max={maxAvatars} />
           )}
@@ -425,7 +465,7 @@ export default function TeamPulse({
 
   // Default variant
   return (
-    <div 
+    <div
       onClick={onClick}
       className={`
         p-4 rounded-xl bg-surface-1 border border-white/[0.06]
@@ -444,12 +484,12 @@ export default function TeamPulse({
             LIVE
           </span>
         </div>
-        
+
         {activeUsers.length >= 5 && (
           <Sparkles className="w-4 h-4 text-warning-500 animate-pulse" />
         )}
       </div>
-      
+
       {/* Main stat */}
       <div className="flex items-center gap-4 mb-4">
         <div className={`
@@ -465,16 +505,15 @@ export default function TeamPulse({
           </p>
         </div>
       </div>
-      
+
       {/* Avatar stack */}
       {showAvatars && activeUsers.length > 0 && (
         <div className="flex items-center justify-between">
           <AvatarStack users={activeUsers} max={maxAvatars} />
-          
           {showSummary && <ActivitySummary users={activeUsers} />}
         </div>
       )}
-      
+
       {/* Activity ticker */}
       {showTicker && tickerActivities.length > 0 && (
         <div className="mt-4 pt-4 border-t border-white/[0.06]">
@@ -488,12 +527,11 @@ export default function TeamPulse({
 // ═══════════════════════════════════════════════════════════════════════════════
 // INLINE PULSE (for headers/navbars)
 // ═══════════════════════════════════════════════════════════════════════════════
-export function InlineTeamPulse({ users = MOCK_ACTIVE_USERS, onClick, className = '' }) {
-  const activeCount = users.filter(u => ['shipping', 'focus', 'active'].includes(u.status)).length;
-  
+export function InlineTeamPulse({ users = MOCK_ACTIVE_USERS, pulseData = null, onClick, className = '' }) {
   return (
     <TeamPulse
       users={users}
+      pulseData={pulseData}
       variant="minimal"
       onClick={onClick}
       className={className}

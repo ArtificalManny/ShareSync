@@ -1,10 +1,25 @@
 // src/pages/ProjectsCreate.jsx
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Dialog } from "@headlessui/react";
-import { X, Plus, Shield, Globe, Sparkles, Target, Users as UsersIcon, Zap } from "lucide-react";
+import {
+  X,
+  Plus,
+  Shield,
+  Globe,
+  Sparkles,
+  Target,
+  Users as UsersIcon,
+  Zap,
+  AlertTriangle,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createProject } from "../api/projects";
 import { toast } from "../components/ui/toast";
+
+function isValidEmail(email) {
+  // Lightweight check (good UX). Backend should still validate.
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim().toLowerCase());
+}
 
 export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const navigate = useNavigate();
@@ -14,14 +29,48 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("In Progress");
   const [privacy, setPrivacy] = useState("Private");
+
   const [memberEmail, setMemberEmail] = useState("");
   const [memberRole, setMemberRole] = useState("Member");
   const [members, setMembers] = useState([]);
+
   const [submitting, setSubmitting] = useState(false);
+
+  // Inline validation
+  const [fieldErrors, setFieldErrors] = useState({
+    title: "",
+    description: "",
+    memberEmail: "",
+    form: "",
+  });
+
+  const canSubmit = useMemo(() => {
+    return !submitting;
+  }, [submitting]);
+
+  const clearFieldError = (key) => {
+    setFieldErrors((prev) => ({ ...prev, [key]: "" }));
+  };
 
   const addMember = () => {
     const email = memberEmail.trim();
+
+    // Clear previous error
+    clearFieldError("memberEmail");
+
     if (!email) return;
+
+    if (!isValidEmail(email)) {
+      setFieldErrors((prev) => ({ ...prev, memberEmail: "Enter a valid email address." }));
+      return;
+    }
+
+    const exists = members.some((m) => String(m.email).toLowerCase() === email.toLowerCase());
+    if (exists) {
+      setFieldErrors((prev) => ({ ...prev, memberEmail: "That member is already added." }));
+      return;
+    }
+
     setMembers((prev) => [...prev, { email, role: memberRole }]);
     setMemberEmail("");
     setMemberRole("Member");
@@ -31,57 +80,100 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
     setMembers((prev) => prev.filter((m) => m.email !== email));
   };
 
+  const validate = () => {
+    const next = { title: "", description: "", memberEmail: "", form: "" };
+
+    if (!title.trim()) next.title = "Project title is required.";
+    if (!description.trim()) next.description = "Description is required.";
+
+    // If user typed an email but didn’t click Add, nudge them (optional)
+    if (memberEmail.trim() && !isValidEmail(memberEmail.trim())) {
+      next.memberEmail = "That email doesn’t look valid (or click Add to include it).";
+    }
+
+    setFieldErrors(next);
+    return !next.title && !next.description && !next.memberEmail;
+  };
+
   async function handleSubmit(e) {
-  e.preventDefault();
+    e.preventDefault();
+    if (submitting) return;
 
-  if (!title.trim()) {
-    toast({ title: "Title required", description: "Please add a title.", variant: "error" });
-    return;
+    // Reset form-level error
+    setFieldErrors((prev) => ({ ...prev, form: "" }));
+
+    if (!validate()) {
+      toast({
+        title: "Fix a couple fields",
+        description: "Check the highlighted inputs and try again.",
+        variant: "error",
+      });
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const trimmedTitle = title.trim();
+      const trimmedDescription = description.trim();
+
+      // ✅ Compatibility payload:
+      // - Many backends use "name", your UI uses project.name
+      // - Some older code uses "title"
+      const payload = {
+        name: trimmedTitle,
+        title: trimmedTitle,
+        description: trimmedDescription,
+
+        category: category.trim() || undefined,
+        status,
+        privacy,
+        isPublic: privacy === "Public",
+
+        // Keep members as you built them
+        members,
+      };
+
+      const project = await createProject(payload);
+
+      const id = project?._id || project?.id || project?.projectId;
+      if (!id) throw new Error("Backend did not return an _id");
+
+      toast({
+        title: "Project created",
+        description: `"${project.name || project.title || trimmedTitle}" is live.`,
+        variant: "success",
+      });
+
+      // Let Projects.jsx update instantly (optimistic prepend)
+      onProjectCreated?.(project);
+
+      // ✅ Navigate first, then close modal (avoids UI race)
+      navigate(`/projects/${id}`);
+      onClose?.();
+    } catch (err) {
+      const msg =
+        err?.normalizedMessage ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to create project";
+
+      setFieldErrors((prev) => ({ ...prev, form: msg }));
+
+      toast({
+        title: "Create failed",
+        description: msg,
+        variant: "error",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  setSubmitting(true);
-  try {
-    const payload = {
-      title: title.trim(),
-      description: description.trim(),
-      category: category.trim() || undefined,
-      status,
-      privacy,
-      members,
-    };
-
-    const project = await createProject(payload);
-
-    const id = project?._id || project?.id || project?.projectId;
-    if (!id) throw new Error("Backend did not return an _id");
-
-    toast({
-      title: "Project created",
-      description: `"${project.name || project.title || title.trim()}" is live.`,
-      variant: "success",
-    });
-
-    onProjectCreated?.(project);
-
-    // IMPORTANT: navigate first, then close modal (avoids any UI race)
-    navigate(`/projects/${id}`);
-    onClose?.();
-  } catch (err) {
-    const msg =
-      err?.normalizedMessage ||
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      err?.message ||
-      "Failed to create project";
-
-    toast({ title: "Create failed", description: msg, variant: "error" });
-  } finally {
-    setSubmitting(false);
-  }
-}
-  // Prevent Enter key from submitting unless explicitly on submit button
+  // Prevent Enter key from submitting unless explicitly on textarea or submit button
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.type !== 'submit') {
+    if (e.key === "Enter" && e.target.tagName !== "TEXTAREA" && e.target.type !== "submit") {
       e.preventDefault();
     }
   };
@@ -89,10 +181,9 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   return (
     <Dialog open={true} onClose={onClose} className="fixed inset-0 z-50">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
-      
+
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl border border-purple-500/30 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-2xl shadow-purple-500/20">
-          
           {/* Header - Fixed */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-purple-500/20 bg-slate-900/50 backdrop-blur-sm rounded-t-2xl">
             <div className="flex items-center gap-3">
@@ -109,6 +200,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               onClick={onClose}
               className="rounded-full p-2 hover:bg-slate-700/50 transition-colors group"
               aria-label="Close create project dialog"
+              disabled={submitting}
             >
               <X className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
             </button>
@@ -117,7 +209,19 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
           {/* Scrollable Content */}
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-6">
-              
+              {/* Form-level error (inline) */}
+              {fieldErrors.form ? (
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-300 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-red-200">Couldn’t create project</p>
+                      <p className="text-xs text-red-200/80 mt-1">{fieldErrors.form}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               {/* Project Basics */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
@@ -133,12 +237,22 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     <input
                       type="text"
                       value={title}
-                      onChange={(e) => setTitle(e.target.value)}
+                      onChange={(e) => {
+                        setTitle(e.target.value);
+                        clearFieldError("title");
+                      }}
                       placeholder="e.g., OpenShare Mobile App"
-                      className="w-full rounded-xl border border-purple-500/30 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className={`w-full rounded-xl border bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500
+                        focus:outline-none focus:ring-2 focus:border-transparent transition-all
+                        ${fieldErrors.title ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
+                      `}
                       aria-required="true"
                       autoFocus
+                      disabled={submitting}
                     />
+                    {fieldErrors.title ? (
+                      <p className="mt-1 text-xs text-red-300">{fieldErrors.title}</p>
+                    ) : null}
                   </div>
 
                   <div>
@@ -149,6 +263,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       onChange={(e) => setCategory(e.target.value)}
                       placeholder="e.g., SaaS, Personal, School"
                       className="w-full rounded-xl border border-purple-500/30 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      disabled={submitting}
                     />
                   </div>
 
@@ -158,6 +273,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
                       className="w-full rounded-xl border border-purple-500/30 bg-slate-800/50 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      disabled={submitting}
                     >
                       <option>Not Started</option>
                       <option>In Progress</option>
@@ -171,14 +287,25 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     </label>
                     <textarea
                       value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      onChange={(e) => {
+                        setDescription(e.target.value);
+                        clearFieldError("description");
+                      }}
                       placeholder="What are you building? What problem does it solve? What's your goal?"
                       rows={4}
-                      className="w-full rounded-xl border border-purple-500/30 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                      className={`w-full rounded-xl border bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500
+                        focus:outline-none focus:ring-2 focus:border-transparent transition-all resize-none
+                        ${fieldErrors.description ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
+                      `}
+                      disabled={submitting}
                     />
-                    <p className="text-xs text-slate-500 mt-1">
-                      💡 Tip: A clear description helps your team understand the vision
-                    </p>
+                    {fieldErrors.description ? (
+                      <p className="mt-1 text-xs text-red-300">{fieldErrors.description}</p>
+                    ) : (
+                      <p className="text-xs text-slate-500 mt-1">
+                        💡 Tip: A clear description helps your team understand the vision
+                      </p>
+                    )}
                   </div>
                 </div>
               </section>
@@ -200,6 +327,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                         : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/50"
                     }`}
                     aria-pressed={privacy === "Private"}
+                    disabled={submitting}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <Shield className="w-5 h-5 text-purple-400" />
@@ -219,6 +347,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                         : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/50"
                     }`}
                     aria-pressed={privacy === "Public"}
+                    disabled={submitting}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <Globe className="w-5 h-5 text-blue-400" />
@@ -240,27 +369,43 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_140px_100px] gap-3">
-                  <input
-                    type="email"
-                    value={memberEmail}
-                    onChange={(e) => setMemberEmail(e.target.value)}
-                    placeholder="teammate@email.com"
-                    className="rounded-xl border border-purple-500/30 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                  />
+                  <div className="md:col-span-1">
+                    <input
+                      type="email"
+                      value={memberEmail}
+                      onChange={(e) => {
+                        setMemberEmail(e.target.value);
+                        clearFieldError("memberEmail");
+                      }}
+                      placeholder="teammate@email.com"
+                      className={`w-full rounded-xl border bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500
+                        focus:outline-none focus:ring-2 focus:border-transparent transition-all
+                        ${fieldErrors.memberEmail ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
+                      `}
+                      disabled={submitting}
+                    />
+                    {fieldErrors.memberEmail ? (
+                      <p className="mt-1 text-xs text-red-300">{fieldErrors.memberEmail}</p>
+                    ) : null}
+                  </div>
+
                   <select
                     value={memberRole}
                     onChange={(e) => setMemberRole(e.target.value)}
                     className="rounded-xl border border-purple-500/30 bg-slate-800/50 px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    disabled={submitting}
                   >
                     <option>Member</option>
                     <option>Manager</option>
                     <option>Viewer</option>
                   </select>
+
                   <button
                     type="button"
                     onClick={addMember}
                     className="inline-flex items-center justify-center gap-2 rounded-xl border border-purple-500/30 bg-purple-600/20 hover:bg-purple-600/30 px-3 py-3 text-sm font-medium text-white transition-all"
                     aria-label="Add member"
+                    disabled={submitting}
                   >
                     <Plus className="w-4 h-4" />
                     Add
@@ -288,6 +433,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                           onClick={() => removeMember(m.email)}
                           className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
                           aria-label={`Remove ${m.email}`}
+                          disabled={submitting}
                         >
                           Remove
                         </button>
@@ -300,7 +446,6 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   💡 Tip: You can invite more members after creating the project
                 </p>
               </section>
-
             </div>
           </form>
 
@@ -319,13 +464,14 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               >
                 Cancel
               </button>
+
+              {/* ✅ IMPORTANT: no onClick here (avoid double-submit) */}
               <button
                 type="submit"
-                onClick={handleSubmit}
                 className={`rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-purple-500/30 transition-all ${
                   submitting ? "opacity-70 cursor-wait" : "hover:scale-105"
                 }`}
-                disabled={submitting}
+                disabled={!canSubmit}
               >
                 {submitting ? (
                   <>
@@ -341,7 +487,6 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               </button>
             </div>
           </div>
-
         </Dialog.Panel>
       </div>
     </Dialog>

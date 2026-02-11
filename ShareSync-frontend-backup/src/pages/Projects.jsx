@@ -11,8 +11,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Search, Plus, Flame, Users, Grid, List, LayoutGrid, 
+import {
+  Search, Plus, Flame, Users, Grid, List, LayoutGrid,
   ChevronRight, AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -24,7 +24,8 @@ import { SkeletonProjectCard } from '../components/ui/Skeletons';
 import EmptyProjects from '../components/empty-states/EmptyProjects';
 import EmptySearch from '../components/empty-states/EmptySearch';
 
-import api from '../api/client';
+// ✅ Use API helpers that already unwrap backend shapes correctly
+import { getProjects } from '../api/projects';
 
 /* ─────────────────────────────────────────────────────────────────────────
    PROGRESS COLOR - Phase 7: Purple intensity, not traffic lights
@@ -41,8 +42,8 @@ const getProgressFillClass = (percentage) => {
 ───────────────────────────────────────────────────────────────────────── */
 function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
-    switch(season) {
-      case 'shipping': return '��';
+    switch (season) {
+      case 'shipping': return '🚀';
       case 'exploring': return '🌱';
       case 'maintaining': return '🛠';
       default: return '📁';
@@ -55,7 +56,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const hasNextStep = Boolean(project.nextMicroStep);
 
   return (
-    <div 
+    <div
       onClick={() => onProjectClick(project._id)}
       className={`
         group p-5 rounded-xl cursor-pointer
@@ -70,13 +71,13 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
         <div className="w-12 h-12 bg-surface-2 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
           {getSeasonEmoji(project.season)}
         </div>
-        
+
         {/* Streak - only prominent when earned */}
         {streak > 0 && (
           <div className={`
             flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium
-            ${isImpressiveStreak 
-              ? 'bg-brand/10 text-brand' 
+            ${isImpressiveStreak
+              ? 'bg-brand/10 text-brand'
               : 'bg-surface-2 text-text-tertiary'
             }
           `}>
@@ -124,7 +125,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
           </span>
         </div>
         <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
-          <div 
+          <div
             className={`h-full rounded-full transition-all duration-500 ${getProgressFillClass(velocity)}`}
             style={{ width: `${Math.min(velocity, 100)}%` }}
           />
@@ -139,8 +140,8 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
             {project.metrics?.openTasks?.value || 0} tasks
           </span>
         </div>
-        
-        <button 
+
+        <button
           onClick={(e) => { e.stopPropagation(); onStartSprint(project); }}
           className="
             px-3 py-1.5 rounded-lg text-xs font-medium
@@ -161,7 +162,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
 ───────────────────────────────────────────────────────────────────────── */
 function ProjectRow({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
-    switch(season) {
+    switch (season) {
       case 'shipping': return '🚀';
       case 'exploring': return '🌱';
       case 'maintaining': return '🛠';
@@ -173,7 +174,7 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
   const isImpressiveStreak = streak >= 7;
 
   return (
-    <div 
+    <div
       onClick={() => onProjectClick(project._id)}
       className="
         group flex items-center justify-between p-4 rounded-xl cursor-pointer
@@ -195,7 +196,7 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
           </p>
         </div>
       </div>
-      
+
       <div className="flex items-center gap-6">
         {/* Streak */}
         {streak > 0 && (
@@ -207,8 +208,8 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
             <span className="font-medium">{streak}d</span>
           </div>
         )}
-        
-        <button 
+
+        <button
           onClick={(e) => { e.stopPropagation(); onStartSprint(project); }}
           className="
             px-3 py-1.5 rounded-lg text-xs font-medium
@@ -219,7 +220,7 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
         >
           Launch
         </button>
-        
+
         <ChevronRight className="w-4 h-4 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     </div>
@@ -243,31 +244,36 @@ const Projects = () => {
 
   useEffect(() => {
     fetchProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilter, searchQuery]);
 
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/projects');
-      setProjects(Array.isArray(response.data) ? response.data : []);
+
+      const data = await getProjects();
+
+      // getProjects() already unwraps. But backend might still return { projects: [] }
+      const list =
+        Array.isArray(data) ? data :
+        Array.isArray(data?.projects) ? data.projects :
+        Array.isArray(data?.items) ? data.items :
+        [];
+
+      setProjects(list);
     } catch (error) {
       console.error('Error fetching projects:', error);
-      setProjects(getMockProjects());
+      // If API fails, don't fake it—keep empty and show EmptyProjects, but you can swap back to mocks if you want.
+      setProjects([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const getMockProjects = () => [
-    { _id: '1', name: 'ShareSync v2', description: 'Momentum-based project tracker', streak: { value: 7 }, metrics: { onTimePercent: { value: 92 }, openTasks: { value: 5 } }, season: 'shipping', nextMicroStep: 'Fix login page CSS bug' },
-    { _id: '2', name: 'AI Writing Tool', description: 'GPT-powered content platform', streak: { value: 120 }, metrics: { onTimePercent: { value: 88 }, openTasks: { value: 8 } }, season: 'shipping', nextMicroStep: 'Write API documentation' },
-    { _id: '3', name: 'Math Homework', description: 'Algebra II problem sets', streak: { value: 3 }, metrics: { onTimePercent: { value: 70 }, openTasks: { value: 12 } }, season: 'exploring', isAtRisk: true }
-  ];
-
   const handleProjectCreated = (newProject) => setProjects(prev => [newProject, ...prev]);
   const handleProjectClick = (projectId) => navigate(`/projects/${projectId}`);
   const handleStartSprint = (project) => setSelectedProject(project);
-  
+
   // ⭐ PHASE D: Search handlers
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -275,15 +281,11 @@ const Projects = () => {
       setRecentSearches(prev => [query, ...prev.slice(0, 4)]);
     }
   };
-  
-  const handleClearSearch = () => {
-    setSearchQuery('');
-  };
-  
+
   const handleClearRecentSearches = () => {
     setRecentSearches([]);
   };
-  
+
   // ⭐ PHASE D: Create project from search
   const handleCreateProjectFromSearch = (query) => {
     setShowCreateModal(true);
@@ -303,9 +305,9 @@ const Projects = () => {
     // If searching and no results
     if (searchQuery && filteredProjects.length === 0) {
       return (
-        <EmptySearch 
+        <EmptySearch
           query={searchQuery}
-          suggestions={['ShareSync', 'Dashboard', 'API Integration'].filter(s => 
+          suggestions={['ShareSync', 'Dashboard', 'API Integration'].filter(s =>
             s.toLowerCase().includes(searchQuery.toLowerCase().charAt(0))
           )}
           recentSearches={recentSearches}
@@ -318,11 +320,11 @@ const Projects = () => {
         />
       );
     }
-    
+
     // If no projects at all
     if (projects.length === 0) {
       return (
-        <EmptyProjects 
+        <EmptyProjects
           onCreateProject={() => setShowCreateModal(true)}
           onSelectTemplate={(template) => {
             console.log('Selected template:', template);
@@ -333,11 +335,11 @@ const Projects = () => {
         />
       );
     }
-    
+
     // If filter returns no results
     if (filteredProjects.length === 0 && selectedFilter !== 'all') {
       return (
-        <EmptySearch 
+        <EmptySearch
           query=""
           onSearch={() => setSelectedFilter('all')}
           showCreate={false}
@@ -358,13 +360,13 @@ const Projects = () => {
         </EmptySearch>
       );
     }
-    
+
     return null;
   };
 
   return (
     <div className="min-h-screen p-6 lg:p-10 max-w-[1400px] mx-auto">
-      
+
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER
       ═══════════════════════════════════════════════════════════════════ */}
@@ -380,14 +382,14 @@ const Projects = () => {
             Projects
           </h1>
         </div>
-        
+
         <div className="flex items-center gap-3">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-            <input 
-              type="text" 
-              placeholder="Search projects..." 
+            <input
+              type="text"
+              placeholder="Search projects..."
               className="
                 bg-surface-1 border border-white/[0.06] rounded-lg
                 pl-10 pr-4 py-2.5 text-sm text-text-primary
@@ -399,9 +401,9 @@ const Projects = () => {
               onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
-          
+
           {/* New Project Button */}
-          <button 
+          <button
             onClick={() => setShowCreateModal(true)}
             className="
               flex items-center gap-2 px-4 py-2.5 rounded-lg
@@ -425,14 +427,14 @@ const Projects = () => {
         {/* Filters */}
         <div className="flex gap-1">
           {['all', 'active', 'at-risk'].map(filter => (
-            <button 
+            <button
               key={filter}
               onClick={() => setSelectedFilter(filter)}
               className={`
                 px-3 py-1.5 rounded-lg text-xs font-medium capitalize
                 transition-all duration-200
-                ${selectedFilter === filter 
-                  ? 'bg-surface-2 text-text-primary' 
+                ${selectedFilter === filter
+                  ? 'bg-surface-2 text-text-primary'
                   : 'text-text-tertiary hover:text-text-secondary'
                 }
               `}
@@ -441,27 +443,27 @@ const Projects = () => {
             </button>
           ))}
         </div>
-        
+
         {/* View Toggle */}
         <div className="flex items-center gap-1 p-1 bg-surface-1 rounded-lg border border-white/[0.06]">
-          <button 
-            onClick={() => setViewMode('grid')} 
+          <button
+            onClick={() => setViewMode('grid')}
             className={`
               p-2 rounded-md transition-all
-              ${viewMode === 'grid' 
-                ? 'bg-surface-2 text-text-primary' 
+              ${viewMode === 'grid'
+                ? 'bg-surface-2 text-text-primary'
                 : 'text-text-tertiary hover:text-text-secondary'
               }
             `}
           >
             <Grid className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => setViewMode('list')} 
+          <button
+            onClick={() => setViewMode('list')}
             className={`
               p-2 rounded-md transition-all
-              ${viewMode === 'list' 
-                ? 'bg-surface-2 text-text-primary' 
+              ${viewMode === 'list'
+                ? 'bg-surface-2 text-text-primary'
                 : 'text-text-tertiary hover:text-text-secondary'
               }
             `}
@@ -482,7 +484,7 @@ const Projects = () => {
         viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map(project => (
-              <ProjectCard 
+              <ProjectCard
                 key={project._id}
                 project={project}
                 onProjectClick={handleProjectClick}
@@ -493,7 +495,7 @@ const Projects = () => {
         ) : (
           <div className="space-y-3">
             {filteredProjects.map(project => (
-              <ProjectRow 
+              <ProjectRow
                 key={project._id}
                 project={project}
                 onProjectClick={handleProjectClick}
@@ -503,12 +505,11 @@ const Projects = () => {
           </div>
         )
       ) : (
-        /* ⭐ PHASE D: Render appropriate empty state */
         renderEmptyState()
       )}
 
       {showCreateModal && (
-        <ProjectsCreate 
+        <ProjectsCreate
           onClose={() => setShowCreateModal(false)}
           onProjectCreated={handleProjectCreated}
         />
