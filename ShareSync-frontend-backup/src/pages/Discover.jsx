@@ -1,61 +1,25 @@
 // src/pages/Discover.jsx - WEEK 6 SOCIAL DISCOVERY
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
+import {
   Flame, TrendingUp, Users, Heart, Clock, Zap, Star,
   UserPlus, MessageCircle, Bell, ChevronRight, Rocket,
   Target, Coffee, Moon, Activity, Award, Sparkles
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useMobile';
 import { toast } from '../components/ui/toast';
+import { getDiscoverySections } from '../api/discovery';
 
 // =====================================
 // JUNGLE VIEW COMPONENTS
 // =====================================
 
 // 1. HOT STREAKS SECTION
-const HotStreaksSection = ({ isMobile }) => {
+const HotStreaksSection = ({ isMobile, items }) => {
   const navigate = useNavigate();
-  
-  // Mock data - will be replaced with real API
-  const [hotStreaks, setHotStreaks] = useState([
-    {
-      id: '1',
-      projectName: 'AI Writing Tool',
-      teamName: 'Indie Hackers',
-      emoji: '✨',
-      streak: 127,
-      members: 3,
-      lastShip: 'Launched premium tier',
-      momentum: 'blazing',
-      avatar: '👥'
-    },
-    {
-      id: '2',
-      projectName: 'Fitness Tracker Pro',
-      teamName: 'Health Squad',
-      emoji: '💪',
-      streak: 45,
-      members: 5,
-      lastShip: 'Added social features',
-      momentum: 'high',
-      avatar: '🏃'
-    },
-    {
-      id: '3',
-      projectName: 'Code Reviewer',
-      teamName: 'Dev Tools',
-      emoji: '🔍',
-      streak: 23,
-      members: 2,
-      lastShip: 'GitHub integration',
-      momentum: 'steady',
-      avatar: '💻'
-    }
-  ]);
 
   const getMomentumColor = (momentum) => {
-    switch(momentum) {
+    switch (momentum) {
       case 'blazing': return 'from-orange-600 to-red-600';
       case 'high': return 'from-purple-600 to-fuchsia-600';
       case 'steady': return 'from-blue-600 to-cyan-600';
@@ -88,7 +52,7 @@ const HotStreaksSection = ({ isMobile }) => {
       </div>
 
       <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'} gap-4`}>
-        {hotStreaks.map((project) => (
+        {items.map((project) => (
           <div
             key={project.id}
             className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 hover:border-purple-500/50 transition-all cursor-pointer group"
@@ -159,45 +123,8 @@ const HotStreaksSection = ({ isMobile }) => {
 };
 
 // 2. QUIET BUT PROMISING SECTION
-const QuietButPromisingSection = ({ isMobile }) => {
+const QuietButPromisingSection = ({ isMobile, items }) => {
   const navigate = useNavigate();
-  
-  // Mock data - projects that stalled but have potential
-  const [quietProjects, setQuietProjects] = useState([
-    {
-      id: '1',
-      projectName: 'Recipe Sharing App',
-      ownerName: 'Sarah Chen',
-      emoji: '🍳',
-      lastActivity: '14 days ago',
-      reason: 'Strong start, needs momentum',
-      completionRate: 65,
-      totalShips: 23,
-      avatar: '👩‍🍳'
-    },
-    {
-      id: '2',
-      projectName: 'Study Timer',
-      ownerName: 'Alex Rivera',
-      emoji: '⏰',
-      lastActivity: '21 days ago',
-      reason: 'Great concept, waiting for push',
-      completionRate: 48,
-      totalShips: 15,
-      avatar: '📚'
-    },
-    {
-      id: '3',
-      projectName: 'Mood Tracker',
-      ownerName: 'Jordan Lee',
-      emoji: '😊',
-      lastActivity: '9 days ago',
-      reason: 'Almost there, needs finishing',
-      completionRate: 82,
-      totalShips: 31,
-      avatar: '🧘'
-    }
-  ]);
 
   const handleOfferHelp = (project) => {
     toast({ title: `Offering help to ${project.ownerName}!`, variant: 'success' });
@@ -224,7 +151,7 @@ const QuietButPromisingSection = ({ isMobile }) => {
       </div>
 
       <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'} gap-4`}>
-        {quietProjects.map((project) => (
+        {items.map((project) => (
           <div
             key={project.id}
             className="bg-slate-800/50 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-5 hover:border-blue-500/50 transition-all"
@@ -251,7 +178,7 @@ const QuietButPromisingSection = ({ isMobile }) => {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-blue-500 to-cyan-500"
                       style={{ width: `${project.completionRate}%` }}
                     />
@@ -306,45 +233,8 @@ const QuietButPromisingSection = ({ isMobile }) => {
 };
 
 // 3. PEOPLE WHO WORK LIKE YOU SECTION
-const PeopleWorkLikeYouSection = ({ isMobile }) => {
+const PeopleWorkLikeYouSection = ({ isMobile, items }) => {
   const navigate = useNavigate();
-  
-  // Mock data - people with similar work patterns
-  const [similarPeople, setSimilarPeople] = useState([
-    {
-      id: '1',
-      name: 'Maya Patel',
-      avatar: '👩‍💻',
-      workStyle: 'Night Owl',
-      similarity: 92,
-      peakTime: '9pm - 11pm',
-      currentProject: 'SaaS Dashboard',
-      streak: 12,
-      reason: 'You both work best late at night'
-    },
-    {
-      id: '2',
-      name: 'Chris Wong',
-      avatar: '👨‍🎨',
-      workStyle: 'Early Bird',
-      similarity: 87,
-      peakTime: '6am - 9am',
-      currentProject: 'Design System',
-      streak: 8,
-      reason: 'Similar task complexity preference'
-    },
-    {
-      id: '3',
-      name: 'Taylor Brooks',
-      avatar: '🧑‍🔬',
-      workStyle: 'Deep Focus',
-      similarity: 85,
-      peakTime: 'Tuesday/Thursday',
-      currentProject: 'ML Model',
-      streak: 45,
-      reason: 'Long uninterrupted work sessions'
-    }
-  ]);
 
   const handleConnect = (person) => {
     toast({ title: `Connection request sent to ${person.name}!`, variant: 'success' });
@@ -359,7 +249,7 @@ const PeopleWorkLikeYouSection = ({ isMobile }) => {
   };
 
   const getWorkStyleIcon = (style) => {
-    switch(style) {
+    switch (style) {
       case 'Night Owl': return <Moon className="w-4 h-4 text-purple-400" />;
       case 'Early Bird': return <Coffee className="w-4 h-4 text-orange-400" />;
       case 'Deep Focus': return <Target className="w-4 h-4 text-blue-400" />;
@@ -380,7 +270,7 @@ const PeopleWorkLikeYouSection = ({ isMobile }) => {
       </div>
 
       <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'} gap-4`}>
-        {similarPeople.map((person) => (
+        {items.map((person) => (
           <div
             key={person.id}
             className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 hover:border-purple-500/50 transition-all"
@@ -454,9 +344,62 @@ export default function Discover() {
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
 
+  // ✅ KEEP THE EXACT SAME LOOK: use your existing mocks as fallback
+  const HOT_STREAKS_FALLBACK = [
+    { id: '1', projectName: 'AI Writing Tool', teamName: 'Indie Hackers', emoji: '✨', streak: 127, members: 3, lastShip: 'Launched premium tier', momentum: 'blazing', avatar: '👥' },
+    { id: '2', projectName: 'Fitness Tracker Pro', teamName: 'Health Squad', emoji: '💪', streak: 45, members: 5, lastShip: 'Added social features', momentum: 'high', avatar: '🏃' },
+    { id: '3', projectName: 'Code Reviewer', teamName: 'Dev Tools', emoji: '🔍', streak: 23, members: 2, lastShip: 'GitHub integration', momentum: 'steady', avatar: '💻' },
+  ];
+
+  const QUIET_FALLBACK = [
+    { id: '1', projectName: 'Recipe Sharing App', ownerName: 'Sarah Chen', emoji: '🍳', lastActivity: '14 days ago', reason: 'Strong start, needs momentum', completionRate: 65, totalShips: 23, avatar: '👩‍🍳' },
+    { id: '2', projectName: 'Study Timer', ownerName: 'Alex Rivera', emoji: '⏰', lastActivity: '21 days ago', reason: 'Great concept, waiting for push', completionRate: 48, totalShips: 15, avatar: '📚' },
+    { id: '3', projectName: 'Mood Tracker', ownerName: 'Jordan Lee', emoji: '😊', lastActivity: '9 days ago', reason: 'Almost there, needs finishing', completionRate: 82, totalShips: 31, avatar: '🧘' },
+  ];
+
+  const PEOPLE_FALLBACK = [
+    { id: '1', name: 'Maya Patel', avatar: '👩‍💻', workStyle: 'Night Owl', similarity: 92, peakTime: '9pm - 11pm', currentProject: 'SaaS Dashboard', streak: 12, reason: 'You both work best late at night' },
+    { id: '2', name: 'Chris Wong', avatar: '👨‍🎨', workStyle: 'Early Bird', similarity: 87, peakTime: '6am - 9am', currentProject: 'Design System', streak: 8, reason: 'Similar task complexity preference' },
+    { id: '3', name: 'Taylor Brooks', avatar: '🧑‍🔬', workStyle: 'Deep Focus', similarity: 85, peakTime: 'Tuesday/Thursday', currentProject: 'ML Model', streak: 45, reason: 'Long uninterrupted work sessions' },
+  ];
+
+  const [hotStreaks, setHotStreaks] = useState(HOT_STREAKS_FALLBACK);
+  const [quietProjects, setQuietProjects] = useState(QUIET_FALLBACK);
+  const [similarPeople, setSimilarPeople] = useState(PEOPLE_FALLBACK);
+
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => setLoading(false), 500);
+    let alive = true;
+
+    async function load() {
+      try {
+        const sections = await getDiscoverySections({});
+
+        // Only replace if we got usable arrays (otherwise keep fallback mocks)
+        const hs = Array.isArray(sections?.hotStreaks) ? sections.hotStreaks : [];
+        const qp = Array.isArray(sections?.quietPromising) ? sections.quietPromising : [];
+        const pl = Array.isArray(sections?.peopleLikeYou) ? sections.peopleLikeYou : [];
+
+        if (!alive) return;
+
+        if (hs.length) setHotStreaks(hs);
+        if (qp.length) setQuietProjects(qp);
+        if (pl.length) setSimilarPeople(pl);
+
+      } catch (e) {
+        // Silent fallback to mocks (UI stays identical)
+      } finally {
+        if (!alive) return;
+        setLoading(false);
+      }
+    }
+
+    // Keep your “loading feel” while fetching real data
+    const t = setTimeout(load, 350);
+
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
   }, []);
 
   if (loading) {
@@ -470,7 +413,7 @@ export default function Discover() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="text-white pb-20">
       <div className={`max-w-7xl mx-auto ${isMobile ? 'px-4' : 'px-6'} py-8`}>
-        
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -486,10 +429,10 @@ export default function Discover() {
           </div>
         </div>
 
-        {/* Jungle View Sections */}
-        <HotStreaksSection isMobile={isMobile} />
-        <QuietButPromisingSection isMobile={isMobile} />
-        <PeopleWorkLikeYouSection isMobile={isMobile} />
+        {/* Jungle View Sections (UI unchanged, just fed by data) */}
+        <HotStreaksSection isMobile={isMobile} items={hotStreaks} />
+        <QuietButPromisingSection isMobile={isMobile} items={quietProjects} />
+        <PeopleWorkLikeYouSection isMobile={isMobile} items={similarPeople} />
 
       </div>
     </div>
