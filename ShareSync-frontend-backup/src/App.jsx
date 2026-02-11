@@ -564,7 +564,7 @@ function AppRoutes() {
                 } 
               />
               
-              {DISCOVERY_V1 && <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />}
+              <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
               {ADMIN_CONSOLE_V1 && <Route path="/admin/console" element={<ProtectedRoute><AdminConsole /></ProtectedRoute>} />}
               {PULSE_ADMIN_V1 && <Route path="/admin/pulse" element={<ProtectedRoute><PulseAdmin /></ProtectedRoute>} />}
 
