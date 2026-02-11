@@ -344,61 +344,55 @@ export default function Discover() {
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
 
-  // ✅ KEEP THE EXACT SAME LOOK: use your existing mocks as fallback
-  const HOT_STREAKS_FALLBACK = [
-    { id: '1', projectName: 'AI Writing Tool', teamName: 'Indie Hackers', emoji: '✨', streak: 127, members: 3, lastShip: 'Launched premium tier', momentum: 'blazing', avatar: '👥' },
-    { id: '2', projectName: 'Fitness Tracker Pro', teamName: 'Health Squad', emoji: '💪', streak: 45, members: 5, lastShip: 'Added social features', momentum: 'high', avatar: '🏃' },
-    { id: '3', projectName: 'Code Reviewer', teamName: 'Dev Tools', emoji: '🔍', streak: 23, members: 2, lastShip: 'GitHub integration', momentum: 'steady', avatar: '💻' },
-  ];
-
-  const QUIET_FALLBACK = [
-    { id: '1', projectName: 'Recipe Sharing App', ownerName: 'Sarah Chen', emoji: '🍳', lastActivity: '14 days ago', reason: 'Strong start, needs momentum', completionRate: 65, totalShips: 23, avatar: '👩‍🍳' },
-    { id: '2', projectName: 'Study Timer', ownerName: 'Alex Rivera', emoji: '⏰', lastActivity: '21 days ago', reason: 'Great concept, waiting for push', completionRate: 48, totalShips: 15, avatar: '📚' },
-    { id: '3', projectName: 'Mood Tracker', ownerName: 'Jordan Lee', emoji: '😊', lastActivity: '9 days ago', reason: 'Almost there, needs finishing', completionRate: 82, totalShips: 31, avatar: '🧘' },
-  ];
-
-  const PEOPLE_FALLBACK = [
-    { id: '1', name: 'Maya Patel', avatar: '👩‍💻', workStyle: 'Night Owl', similarity: 92, peakTime: '9pm - 11pm', currentProject: 'SaaS Dashboard', streak: 12, reason: 'You both work best late at night' },
-    { id: '2', name: 'Chris Wong', avatar: '👨‍🎨', workStyle: 'Early Bird', similarity: 87, peakTime: '6am - 9am', currentProject: 'Design System', streak: 8, reason: 'Similar task complexity preference' },
-    { id: '3', name: 'Taylor Brooks', avatar: '🧑‍🔬', workStyle: 'Deep Focus', similarity: 85, peakTime: 'Tuesday/Thursday', currentProject: 'ML Model', streak: 45, reason: 'Long uninterrupted work sessions' },
-  ];
-
-  const [hotStreaks, setHotStreaks] = useState(HOT_STREAKS_FALLBACK);
-  const [quietProjects, setQuietProjects] = useState(QUIET_FALLBACK);
-  const [similarPeople, setSimilarPeople] = useState(PEOPLE_FALLBACK);
+  // ✅ Start EMPTY (NO mock defaults)
+  const [hotStreaks, setHotStreaks] = useState([]);
+  const [quietProjects, setQuietProjects] = useState([]);
+  const [similarPeople, setSimilarPeople] = useState([]);
 
   useEffect(() => {
     let alive = true;
 
-    async function load() {
+    async function load({ silent = false } = {}) {
       try {
+        if (!silent) setLoading(true);
+
         const sections = await getDiscoverySections({});
 
-        // Only replace if we got usable arrays (otherwise keep fallback mocks)
         const hs = Array.isArray(sections?.hotStreaks) ? sections.hotStreaks : [];
         const qp = Array.isArray(sections?.quietPromising) ? sections.quietPromising : [];
         const pl = Array.isArray(sections?.peopleLikeYou) ? sections.peopleLikeYou : [];
 
         if (!alive) return;
 
-        if (hs.length) setHotStreaks(hs);
-        if (qp.length) setQuietProjects(qp);
-        if (pl.length) setSimilarPeople(pl);
+        // ✅ Always set arrays (even if empty)
+        setHotStreaks(hs);
+        setQuietProjects(qp);
+        setSimilarPeople(pl);
 
       } catch (e) {
-        // Silent fallback to mocks (UI stays identical)
+        // Keep empty on error (do NOT fall back to mocks)
+        if (!alive) return;
+        setHotStreaks([]);
+        setQuietProjects([]);
+        setSimilarPeople([]);
       } finally {
         if (!alive) return;
-        setLoading(false);
+        if (!silent) setLoading(false);
       }
     }
 
     // Keep your “loading feel” while fetching real data
-    const t = setTimeout(load, 350);
+    const t = setTimeout(() => load({ silent: false }), 350);
+
+    // ✅ Poll for “realtime-ish” updates (safe/simple, no backend changes)
+    const poll = setInterval(() => {
+      load({ silent: true });
+    }, 10000);
 
     return () => {
       alive = false;
       clearTimeout(t);
+      clearInterval(poll);
     };
   }, []);
 
@@ -409,6 +403,11 @@ export default function Discover() {
       </div>
     );
   }
+
+  const isEmpty =
+    (!hotStreaks || hotStreaks.length === 0) &&
+    (!quietProjects || quietProjects.length === 0) &&
+    (!similarPeople || similarPeople.length === 0);
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="text-white pb-20">
@@ -429,10 +428,23 @@ export default function Discover() {
           </div>
         </div>
 
-        {/* Jungle View Sections (UI unchanged, just fed by data) */}
-        <HotStreaksSection isMobile={isMobile} items={hotStreaks} />
-        <QuietButPromisingSection isMobile={isMobile} items={quietProjects} />
-        <PeopleWorkLikeYouSection isMobile={isMobile} items={similarPeople} />
+        {/* ✅ Empty state when backend returns nothing */}
+        {isEmpty && (
+          <div className="bg-slate-800/40 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-8">
+            <div className="text-xl font-bold text-white mb-2">No public projects yet</div>
+            <p className="text-slate-300 text-sm">
+              As teams set projects to <span className="text-purple-300 font-semibold">Public + Listed</span>, they’ll appear here automatically.
+            </p>
+            <div className="mt-4 text-xs text-slate-400">
+              (This page refreshes quietly in the background.)
+            </div>
+          </div>
+        )}
+
+        {/* ✅ Render sections only if they have items */}
+        {hotStreaks?.length > 0 && <HotStreaksSection isMobile={isMobile} items={hotStreaks} />}
+        {quietProjects?.length > 0 && <QuietButPromisingSection isMobile={isMobile} items={quietProjects} />}
+        {similarPeople?.length > 0 && <PeopleWorkLikeYouSection isMobile={isMobile} items={similarPeople} />}
 
       </div>
     </div>
