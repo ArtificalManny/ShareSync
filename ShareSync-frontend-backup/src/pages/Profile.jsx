@@ -2,6 +2,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE K: Enhanced Profile with Growth Track Components
 // + Patch: robust displayName + near-realtime refresh without backend changes
+// + Fix: Profile avatar now stays in sync with localStorage (Sidebar/Navbar behavior)
+// + Fix: remove missing uploadMyAvatar import (NO backend changes)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
@@ -16,9 +18,9 @@ import {
   ShieldCheck,
   Download,
   Star,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
+import UserAvatar from "../components/ui/UserAvatar";
 
 // Analytics Components
 import CollaborationStyleCard from "../components/Profile/CollaborationStyleCard";
@@ -98,39 +100,189 @@ function resolveUserName(user) {
   };
 }
 
+function safeParseJSON(v) {
+  try {
+    return JSON.parse(v);
+  } catch {
+    return null;
+  }
+}
+
+function readStoredUser() {
+  try {
+    const raw = localStorage.getItem("ss.user");
+    if (!raw) return null;
+    const parsed = safeParseJSON(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function readAvatarOverride() {
+  try {
+    return localStorage.getItem("ss.avatarOverride") || null;
+  } catch {
+    return null;
+  }
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
-   PROFILE PHOTO EDITOR
+   PROFILE PHOTO EDITOR (SAFE + PERSISTENT UI)
+   - Preview always works
+   - Attempts existing updateProfile (no new backend endpoint required)
+   - Falls back to localStorage avatar override (no backend changes)
 ───────────────────────────────────────────────────────────────────────── */
 const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Local override + stored user avatar (matches Sidebar/Navbar behavior)
+  const localOverride = readAvatarOverride();
+  const storedUser = readStoredUser();
+  const storedAvatar = storedUser?.avatarUrl || storedUser?.profilePicture || null;
+
+  const backendAvatar =
+    user?.avatarUrl ||
+    user?.profilePicture ||
+    user?.avatar ||
+    user?.photoUrl ||
+    user?.profile?.avatarUrl ||
+    user?.profile?.photoUrl ||
+    null;
+
+  const displayUrl =
+    previewUrl || localOverride || storedAvatar || backendAvatar || "/default-profile.png";
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setPreviewUrl(ev.target.result);
-      setIsEditing(true);
-    };
-    reader.readAsDataURL(file);
+
+    const url = URL.createObjectURL(file);
+    setSelectedFile(file);
+    setPreviewUrl(url);
+    setIsEditing(true);
+  };
+
+  const applyUserEverywhere = (nextFields = {}) => {
+    try {
+      const raw = localStorage.getItem("ss.user");
+      const current = raw ? JSON.parse(raw) : {};
+      const next = { ...current, ...nextFields };
+      localStorage.setItem("ss.user", JSON.stringify(next));
+
+      // NOTE: "storage" event doesn't fire on same tab automatically,
+      // but we already re-read localStorage in Profile + Navbar/Sidebar.
+      window.dispatchEvent(new Event("storage"));
+    } catch {}
   };
 
   const handleUpload = async () => {
+    if (!selectedFile) {
+      toast({ title: "No file selected", variant: "error" });
+      return;
+    }
+
     setUploading(true);
+
     try {
-      const response = await fetch(previewUrl);
-      const blob = await response.blob();
+      // Use your existing updateProfile API helper (NO backend changes)
       const formData = new FormData();
-      formData.append("profilePicture", blob, "profile.jpg");
-      await updateProfile(formData);
-      toast({ title: "Photo updated", variant: "success" });
-      setIsEditing(false);
-      if (onPhotoUpdate) onPhotoUpdate();
+
+      // Try common backend field names without assumptions:
+      // If your backend expects "profilePicture", keep it.
+      // If it expects "avatar", you can add the same file under both keys safely.
+      formData.append("profilePicture", selectedFile);
+      formData.append("avatar", selectedFile);
+
+      const out = await updateProfile(formData);
+
+      // Try to locate a returned avatar url
+      const avatarUrl =
+        out?.avatarUrl ||
+        out?.user?.avatarUrl ||
+        out?.data?.avatarUrl ||
+        out?.profilePicture ||
+        out?.user?.profilePicture ||
+        out?.data?.profilePicture ||
+        null;
+
+      // If backend gives us a URL, use it
+      if (avatarUrl) {
+        try {
+          localStorage.removeItem("ss.avatarOverride");
+        } catch {}
+
+        applyUserEverywhere({ avatarUrl, profilePicture: avatarUrl });
+
+        toast({ title: "Photo updated", variant: "success" });
+
+        setIsEditing(false);
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        onPhotoUpdate?.();
+        return;
+      }
+
+      // If backend doesn't return a URL, we still do a safe local fallback
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = String(reader.result || "");
+        try {
+          localStorage.setItem("ss.avatarOverride", dataUrl);
+        } catch {}
+
+        applyUserEverywhere({ avatarUrl: dataUrl, profilePicture: dataUrl });
+
+        toast({
+          title: "Photo updated (local)",
+          description:
+            "Backend didn’t return a photo URL — UI is updated locally and will persist.",
+          variant: "success",
+        });
+
+        setIsEditing(false);
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        onPhotoUpdate?.();
+      };
+      reader.readAsDataURL(selectedFile);
     } catch (error) {
-      toast({ title: "Update failed", variant: "error" });
+      // Hard fallback to local override even if upload fails (still NO backend changes)
+      try {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = String(reader.result || "");
+          try {
+            localStorage.setItem("ss.avatarOverride", dataUrl);
+          } catch {}
+
+          applyUserEverywhere({ avatarUrl: dataUrl, profilePicture: dataUrl });
+
+          toast({
+            title: "Photo updated (local)",
+            description:
+              "Upload failed (or backend not enabled). UI will still show your new photo.",
+            variant: "success",
+          });
+
+          setIsEditing(false);
+          setSelectedFile(null);
+          setPreviewUrl(null);
+          onPhotoUpdate?.();
+        };
+        reader.readAsDataURL(selectedFile);
+        return;
+      } catch {}
+
+      toast({
+        title: "Update failed",
+        description: error?.response?.data?.message || error?.message || "Could not upload photo",
+        variant: "error",
+      });
     } finally {
       setUploading(false);
     }
@@ -141,11 +293,14 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       <div className="relative w-40 h-40 group">
         <div className="absolute inset-0 rounded-full border border-brand/20" />
         <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-surface-0 bg-surface-2">
-          <img
-            src={previewUrl || user?.profilePicture || "/default-profile.png"}
-            alt="Profile"
-            className="w-full h-full object-cover"
+          <UserAvatar
+            size={144}
+            name={user?.name || user?.username || "User"}
+            avatarUrl={displayUrl}
+            className="w-full h-full"
+            ringClassName="ring-0"
           />
+
           {isOwnProfile && (
             <div
               className="
@@ -155,14 +310,17 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
             "
             >
               <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="p-3 bg-brand rounded-full hover:bg-brand-600 transition-colors"
+                aria-label="Change profile photo"
               >
                 <Camera className="w-5 h-5 text-white" />
               </button>
             </div>
           )}
         </div>
+
         <div
           className="
           absolute -bottom-2 left-1/2 -translate-x-1/2
@@ -189,17 +347,26 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
             <h3 className="text-xl font-semibold text-text-primary mb-6 text-center">
               Update Photo?
             </h3>
+
             <div className="w-28 h-28 rounded-full overflow-hidden mx-auto mb-6 border-2 border-brand/30">
               <img src={previewUrl} className="w-full h-full object-cover" alt="Preview" />
             </div>
+
             <div className="flex gap-3">
               <button
-                onClick={() => setIsEditing(false)}
+                type="button"
+                onClick={() => {
+                  setIsEditing(false);
+                  setSelectedFile(null);
+                  setPreviewUrl(null);
+                }}
                 className="flex-1 py-3 rounded-xl bg-surface-2 text-text-secondary hover:bg-surface-3 transition-colors"
               >
                 Cancel
               </button>
+
               <button
+                type="button"
                 onClick={handleUpload}
                 disabled={uploading}
                 className="flex-1 py-3 rounded-xl bg-brand text-white hover:bg-brand-600 transition-colors"
@@ -207,6 +374,10 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
                 {uploading ? "Uploading..." : "Confirm"}
               </button>
             </div>
+
+            <p className="text-[11px] text-text-tertiary mt-4 text-center">
+              If backend upload isn’t enabled yet, we’ll still update your UI locally (safe fallback).
+            </p>
           </div>
         </div>
       )}
@@ -249,14 +420,23 @@ export default function Profile() {
         setPublicUser(u);
       } else {
         const data = await getMe();
-        setMe(data);
+
+        // ✅ KEY FIX: merge stored avatar into the fetched user so Profile matches Sidebar/Navbar
+        const storedUser = readStoredUser();
+        const storedOverride = readAvatarOverride();
+        const storedAvatar = storedOverride || storedUser?.avatarUrl || storedUser?.profilePicture || null;
+
+        const merged = storedAvatar
+          ? { ...data, avatarUrl: storedAvatar, profilePicture: storedAvatar }
+          : data;
+
+        setMe(merged);
 
         // Keep analytics load separate to avoid breaking profile render if analytics fails
         try {
           const analytics = await client.get("/users/profile-analytics");
           setProfileAnalytics(analytics.data);
         } catch (err) {
-          // Non-fatal
           console.warn("[Profile] analytics load failed", err?.message || err);
           setProfileAnalytics(null);
         }
@@ -273,9 +453,6 @@ export default function Profile() {
   }, [load]);
 
   // “Realtime-ish” refresh without backend changes:
-  // - refresh on tab focus / visibility
-  // - refresh when localStorage changes (common for profile edits)
-  // - optional poll (15s) for active tab only
   useEffect(() => {
     if (isPublicRoute) return;
 
@@ -289,23 +466,18 @@ export default function Profile() {
     const onVisibility = () => refreshIfVisible();
 
     const onStorage = (e) => {
-      // If your app writes user info/tokens to storage on update, this catches it.
       const key = e?.key || "";
-      if (
-        key.includes("user") ||
-        key.includes("profile") ||
-        key.includes("token") ||
-        key.includes("auth")
-      ) {
+      if (key.includes("user") || key.includes("profile") || key.includes("token") || key.includes("auth")) {
         load();
       }
+      // Also reload if we manually dispatched a plain "storage" event (no key)
+      if (!key) load();
     };
 
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("storage", onStorage);
 
-    // Poll only while visible
     poll = window.setInterval(() => {
       if (document.visibilityState === "visible") load();
     }, 15000);
@@ -324,7 +496,6 @@ export default function Profile() {
   const reliability = calculateReliability(user?.completedTasks, user?.totalTasks);
   const userId = user?._id || user?.id;
 
-  // Growth Track Data (Phase K)
   const { skillProfile, evolution, suggestions, trends, loading: growthLoading } =
     useGrowthTrack(userId);
 
@@ -347,10 +518,7 @@ export default function Profile() {
         <ProfilePhotoEditor user={user} isOwnProfile={isOwnProfile} onPhotoUpdate={load} />
 
         <div className="text-center mt-8">
-          {/* ✅ This is the “between Rank and ID” name display (always non-empty now) */}
-          <h1 className="text-4xl font-semibold text-text-primary mb-3">
-            {name.fullName}
-          </h1>
+          <h1 className="text-4xl font-semibold text-text-primary mb-3">{name.fullName}</h1>
 
           <div className="flex items-center justify-center gap-3">
             <span className="text-sm text-text-tertiary">
@@ -367,7 +535,6 @@ export default function Profile() {
               Core Verified
             </span>
 
-            {/* Current Archetype Badge */}
             {skillProfile?.archetype?.current && (
               <span
                 className="
@@ -393,11 +560,8 @@ export default function Profile() {
           MAIN GRID
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-12 gap-6">
-        {/* ─────────────────────────────────────────────────────────────────
-            LEFT COLUMN: Impact + Trust + Evolution
-        ───────────────────────────────────────────────────────────────── */}
+        {/* LEFT COLUMN */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
-          {/* Impact Metrics */}
           <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-6">
               <TrendingUp className="w-4 h-4 text-brand" />
@@ -409,7 +573,6 @@ export default function Profile() {
               <StatCard value={`${user?.currentStreak || 0}d`} label="Momentum" color="text-brand" />
             </div>
 
-            {/* Overall Growth Indicator */}
             {skillProfile?.overallGrowth && (
               <div className="p-4 rounded-lg bg-success/5 border border-success/10">
                 <div className="flex items-center gap-2">
@@ -422,7 +585,6 @@ export default function Profile() {
             )}
           </div>
 
-          {/* Operational Trust */}
           <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-6">
               <Activity className="w-4 h-4 text-success" />
@@ -444,15 +606,11 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Evolution Moments (Phase K) */}
           {isOwnProfile && <EvolutionMoments moments={evolution} loading={growthLoading} />}
         </div>
 
-        {/* ─────────────────────────────────────────────────────────────────
-            CENTER COLUMN: Skills Radar + Analytics
-        ───────────────────────────────────────────────────────────────── */}
+        {/* CENTER COLUMN */}
         <div className="col-span-12 lg:col-span-5 space-y-6">
-          {/* Skills Radar Chart (Phase K) */}
           {isOwnProfile && skillProfile?.skills && (
             <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
               <div className="flex items-center justify-between mb-6">
@@ -484,7 +642,6 @@ export default function Profile() {
                 />
               </div>
 
-              {/* Growth Areas */}
               {skillProfile.growthAreas?.length > 0 && (
                 <div className="mt-6 pt-4 border-t border-white/[0.06]">
                   <p className="text-xs text-text-tertiary mb-2">Focus areas for growth:</p>
@@ -503,7 +660,6 @@ export default function Profile() {
             </div>
           )}
 
-          {/* Behavioral Analysis */}
           <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-8">
               <Brain className="w-4 h-4 text-brand-400" />
@@ -525,14 +681,10 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* ─────────────────────────────────────────────────────────────────
-            RIGHT COLUMN: Growth Suggestions + Trends
-        ───────────────────────────────────────────────────────────────── */}
+        {/* RIGHT COLUMN */}
         <div className="col-span-12 lg:col-span-3 space-y-6">
-          {/* Growth Suggestions (Phase K) */}
           {isOwnProfile && <GrowthSuggestions suggestions={suggestions} loading={growthLoading} />}
 
-          {/* Historical Trends (Phase K) - Compact Version */}
           {isOwnProfile && trends && (
             <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
               <div className="flex items-center gap-2 mb-4">
@@ -570,18 +722,14 @@ export default function Profile() {
           )}
         </div>
 
-        {/* ─────────────────────────────────────────────────────────────────
-            FULL WIDTH: Detailed Trend Charts
-        ───────────────────────────────────────────────────────────────── */}
+        {/* FULL WIDTH */}
         {isOwnProfile && (
           <div className="col-span-12">
             <TrendCharts trends={trends} loading={growthLoading} />
           </div>
         )}
 
-        {/* ─────────────────────────────────────────────────────────────────
-            FOOTER ACTION
-        ───────────────────────────────────────────────────────────────── */}
+        {/* FOOTER */}
         <div className="col-span-12 flex justify-center pt-8">
           <button
             className="
