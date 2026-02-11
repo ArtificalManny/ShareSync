@@ -59,7 +59,6 @@ import { FilesModule } from './files/files.module';
 // ✅ PHASE 6: NEW MODULES
 import { MilestonesModule } from './milestones/milestones.module';
 import { ThreadsModule } from './threads/threads.module';
-import { ThreadMessagesModule } from './thread-messages/thread-messages.module';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 5: POLISH & SCALE MODULES
@@ -69,6 +68,7 @@ import { CalendarModule } from './calendar/calendar.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { ReportsModule } from './reports/reports.module';
 import { AIModule } from './ai/ai.module';
+import { DiscoveryModule } from './discovery/discovery.module';
 
 @Module({
   imports: [
@@ -187,7 +187,10 @@ import { AIModule } from './ai/ai.module';
     // ✅ PHASE 6: ADD THESE
     MilestonesModule,
     ThreadsModule,
-    ThreadMessagesModule,
+
+    // ✅ DISCOVERY (Public project feed)
+    DiscoveryModule,
+
     // ─────────────────────────────────────────────────────────────────────────
     // POLISH & SCALE
     // ─────────────────────────────────────────────────────────────────────────

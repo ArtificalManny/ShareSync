@@ -7,7 +7,6 @@ export class DiscoveryController {
 
   @Get()
   async getDiscoveryFeed(@Query() query: any) {
-    // Always return an array for the frontend helper.
     return this.discoveryService.getDiscoveryFeed(query);
   }
 }
