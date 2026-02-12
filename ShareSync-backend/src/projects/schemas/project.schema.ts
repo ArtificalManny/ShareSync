@@ -6,6 +6,13 @@
 //   • existing invites.service.ts imports/types
 //   • icon as emoji string (legacy) while supporting icon object
 //   • ownerId field while adding owner field
+//
+// PHASE 0/2 ADDITIONS (SAFE):
+//   • isListed (Discover/Search)
+//   • spectatorMode (view | suggest)
+//   • moderationStatus (draft | pending | approved | rejected)
+//   • moderationReason
+//   • publicSlug (optional later)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
@@ -30,6 +37,21 @@ export enum MemberRole {
   ADMIN = 'admin',
   MEMBER = 'member',
   VIEWER = 'viewer',
+}
+
+/**
+ * ✅ Phase 0/2: Spectator + Moderation (frontend-safe)
+ */
+export enum ProjectSpectatorMode {
+  VIEW = 'view',
+  SUGGEST = 'suggest',
+}
+
+export enum ProjectModerationStatus {
+  DRAFT = 'draft',
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
 }
 
 /**
@@ -249,6 +271,33 @@ export class Project {
   @Prop({ type: String, enum: ProjectVisibility, default: ProjectVisibility.PRIVATE })
   visibility: ProjectVisibility;
 
+  /**
+   * ✅ Phase 0/2: Public listing + spectator + moderation (SAFE defaults)
+   *
+   * - isListed controls whether it appears in Discover/Search.
+   * - spectatorMode controls whether non-members can suggest or only view.
+   * - moderationStatus is used later when admin approval gating is implemented.
+   *
+   * SAFETY:
+   * - default isListed=false so nothing accidentally becomes discoverable.
+   * - default moderationStatus=approved so you don't "hide" listed items later
+   *   if you enable listing before building moderation UI.
+   */
+  @Prop({ type: Boolean, default: false, index: true })
+  isListed: boolean;
+
+  @Prop({ type: String, enum: ProjectSpectatorMode, default: ProjectSpectatorMode.VIEW })
+  spectatorMode: ProjectSpectatorMode;
+
+  @Prop({ type: String, enum: ProjectModerationStatus, default: ProjectModerationStatus.APPROVED, index: true })
+  moderationStatus: ProjectModerationStatus;
+
+  @Prop({ type: String, default: '', trim: true })
+  moderationReason: string;
+
+  @Prop({ type: String, default: null, index: true, sparse: true })
+  publicSlug?: string | null;
+
   // Ownership (dual fields for compatibility)
   @ApiProperty({ description: 'Project owner user ID' })
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
@@ -322,6 +371,10 @@ ProjectSchema.index({ name: 'text', description: 'text' });
 ProjectSchema.index({ 'metrics.lastActivityAt': -1 });
 ProjectSchema.index({ 'invites.token': 1 }, { sparse: true });
 ProjectSchema.index({ 'invites.email': 1 }, { sparse: true });
+
+// ✅ Phase 0/2 indexes (Discover/Search + moderation queries)
+ProjectSchema.index({ visibility: 1, isListed: 1, moderationStatus: 1 });
+ProjectSchema.index({ isListed: 1, 'metrics.lastActivityAt': -1 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIRTUALS

@@ -77,13 +77,13 @@ export default function ConfirmDialog({
             disabled={busy}
             className={[
               "inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white",
-              danger
-                ? "bg-rose-600 hover:bg-rose-700"
-                : "bg-indigo-600 hover:bg-indigo-700",
+              danger ? "bg-rose-600 hover:bg-rose-700" : "bg-indigo-600 hover:bg-indigo-700",
               busy ? "opacity-60 cursor-wait" : "",
             ].join(" ")}
           >
-            {busy && <span className="w-4 h-4 animate-spin border-2 border-white/80 border-t-transparent rounded-full" />}
+            {busy && (
+              <span className="w-4 h-4 animate-spin border-2 border-white/80 border-t-transparent rounded-full" />
+            )}
             {confirmText}
           </button>
         </div>

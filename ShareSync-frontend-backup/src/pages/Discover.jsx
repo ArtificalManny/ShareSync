@@ -10,6 +10,20 @@ import { useIsMobile } from '../hooks/useMobile';
 import { toast } from '../components/ui/toast';
 import { getDiscoverySections } from '../api/discovery';
 
+// ──────────────────────────────────────────────────────────────
+// Phase 2 Moderation Gate (frontend-safe)
+// - If VITE_MODERATION_GATE_V1 !== "true": allow everything (current behavior)
+// - If enabled: only show items with moderationStatus === "approved"
+//   (missing moderationStatus is treated as approved for backwards compatibility)
+// ──────────────────────────────────────────────────────────────
+const MODERATION_GATE_V1 = String(import.meta?.env?.VITE_MODERATION_GATE_V1 || "false") === "true";
+
+function isModerationApproved(item) {
+  if (!MODERATION_GATE_V1) return true;
+  const s = String(item?.moderationStatus || "approved").toLowerCase();
+  return s === "approved";
+}
+
 // =====================================
 // JUNGLE VIEW COMPONENTS
 // =====================================
@@ -358,9 +372,14 @@ export default function Discover() {
 
         const sections = await getDiscoverySections({});
 
-        const hs = Array.isArray(sections?.hotStreaks) ? sections.hotStreaks : [];
-        const qp = Array.isArray(sections?.quietPromising) ? sections.quietPromising : [];
-        const pl = Array.isArray(sections?.peopleLikeYou) ? sections.peopleLikeYou : [];
+        const hs0 = Array.isArray(sections?.hotStreaks) ? sections.hotStreaks : [];
+        const qp0 = Array.isArray(sections?.quietPromising) ? sections.quietPromising : [];
+        const pl0 = Array.isArray(sections?.peopleLikeYou) ? sections.peopleLikeYou : [];
+
+        // ✅ Phase 2 Moderation filter (safe no-op unless enabled)
+        const hs = hs0.filter(isModerationApproved);
+        const qp = qp0.filter(isModerationApproved);
+        const pl = pl0.filter(isModerationApproved);
 
         if (!alive) return;
 
@@ -424,6 +443,11 @@ export default function Discover() {
                 Discover
               </h1>
               <p className="text-slate-400">Find your tribe in the jungle 🌴</p>
+              {MODERATION_GATE_V1 && (
+                <p className="mt-1 text-xs text-slate-500">
+                  Moderation gate: showing approved listings only.
+                </p>
+              )}
             </div>
           </div>
         </div>
