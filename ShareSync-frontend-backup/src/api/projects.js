@@ -3,9 +3,33 @@ import api from './client';
 
 // If backend returns { success: true, data: ... }, unwrap it.
 // If backend returns raw data directly, keep as-is.
+// Also tolerate common wrapper keys: { project }, { item }, { result }
 function unwrap(response) {
   const payload = response?.data;
-  if (payload && typeof payload === 'object' && 'data' in payload) return payload.data;
+
+  if (!payload) return payload;
+
+  // Common: { success: true, data: ... }
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    const d = payload.data;
+
+    // Common nested keys inside data
+    if (d && typeof d === 'object') {
+      if ('project' in d) return d.project;
+      if ('item' in d) return d.item;
+      if ('result' in d) return d.result;
+    }
+
+    return d;
+  }
+
+  // Common: { success: true, project: {...} }
+  if (payload && typeof payload === 'object') {
+    if ('project' in payload) return payload.project;
+    if ('item' in payload) return payload.item;
+    if ('result' in payload) return payload.result;
+  }
+
   return payload;
 }
 
@@ -112,14 +136,22 @@ function normalizeCreateProjectPayload(projectData = {}) {
 // Normalize create response so callers can always find an id
 function normalizeCreatedProject(p) {
   if (!p || typeof p !== 'object') return p;
-  const id = p._id || p.id || p.projectId;
+
+  // tolerate nested project wrapper accidentally passed in
+  const candidate =
+    (p.project && typeof p.project === 'object') ? p.project :
+    (p.item && typeof p.item === 'object') ? p.item :
+    (p.result && typeof p.result === 'object') ? p.result :
+    p;
+
+  const id = candidate._id || candidate.id || candidate.projectId;
 
   // Ensure both name/title exist for UI compatibility
-  const name = p.name || p.title;
-  const title = p.title || p.name;
+  const name = candidate.name || candidate.title;
+  const title = candidate.title || candidate.name;
 
   return {
-    ...p,
+    ...candidate,
     ...(id ? { _id: id } : {}),
     ...(name ? { name } : {}),
     ...(title ? { title } : {}),
@@ -136,10 +168,9 @@ export const createProject = async (projectData) => {
       throw err;
     }
 
-    // IMPORTANT: This assumes api client's baseURL already targets /api (or not).
-    // If baseURL = .../api then /projects => /api/projects (correct)
-    // If baseURL = ...     then /projects => /projects (also fine)
     const response = await api.post('/projects', payload);
+
+    // unwrap tolerant of {data}, {project}, etc.
     const created = unwrap(response);
 
     return normalizeCreatedProject(created);

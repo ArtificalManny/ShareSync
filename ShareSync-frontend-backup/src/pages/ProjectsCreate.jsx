@@ -1,5 +1,5 @@
 // src/pages/ProjectsCreate.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Dialog } from "@headlessui/react";
 import {
   X,
@@ -11,6 +11,9 @@ import {
   Users as UsersIcon,
   Zap,
   AlertTriangle,
+  ListChecks,
+  Eye,
+  MessageSquare,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createProject } from "../api/projects";
@@ -21,14 +24,45 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim().toLowerCase());
 }
 
+const PHASE0_PREFS_KEY = "ss:createProject:phase0";
+
+function loadPhase0Prefs() {
+  try {
+    const raw = localStorage.getItem(PHASE0_PREFS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function savePhase0Prefs(prefs) {
+  try {
+    localStorage.setItem(PHASE0_PREFS_KEY, JSON.stringify(prefs));
+  } catch {
+    // no-op
+  }
+}
+
 export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const navigate = useNavigate();
+
+  const formId = "create-project-form"; // ✅ used to bind footer button to form
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("In Progress");
   const [privacy, setPrivacy] = useState("Private");
+
+  // ✅ Phase 0 (UI-only) settings
+  // Conceptual fields:
+  // visibility: "private" | "public"
+  // isListed: boolean
+  // spectatorMode: "view" | "suggest"
+  const [isListed, setIsListed] = useState(false);
+  const [spectatorMode, setSpectatorMode] = useState("view"); // "view" | "suggest"
 
   const [memberEmail, setMemberEmail] = useState("");
   const [memberRole, setMemberRole] = useState("Member");
@@ -43,6 +77,18 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
     memberEmail: "",
     form: "",
   });
+
+  // ✅ Load Phase 0 defaults once (UI-only)
+  useEffect(() => {
+    const prefs = loadPhase0Prefs();
+    if (!prefs) return;
+
+    if (typeof prefs.privacy === "string") setPrivacy(prefs.privacy);
+    if (typeof prefs.isListed === "boolean") setIsListed(prefs.isListed);
+    if (prefs.spectatorMode === "view" || prefs.spectatorMode === "suggest") {
+      setSpectatorMode(prefs.spectatorMode);
+    }
+  }, []);
 
   const canSubmit = useMemo(() => {
     return !submitting;
@@ -97,6 +143,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    e.stopPropagation();
     if (submitting) return;
 
     // Reset form-level error
@@ -116,6 +163,15 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
     try {
       const trimmedTitle = title.trim();
       const trimmedDescription = description.trim();
+
+      // ✅ Phase 0: persist UI intent only (NO backend changes)
+      // This is safe and avoids breaking DTO validation in Nest.
+      savePhase0Prefs({
+        privacy,
+        isListed,
+        spectatorMode,
+        updatedAt: new Date().toISOString(),
+      });
 
       // ✅ Compatibility payload:
       // - Many backends use "name", your UI uses project.name
@@ -178,6 +234,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
     }
   };
 
+  const isPublic = privacy === "Public";
+
   return (
     <Dialog open={true} onClose={onClose} className="fixed inset-0 z-50">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
@@ -207,7 +265,12 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
           </div>
 
           {/* Scrollable Content */}
-          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="flex-1 overflow-y-auto px-6 py-6">
+          <form
+            id={formId}
+            onSubmit={handleSubmit}
+            onKeyDown={handleKeyDown}
+            className="flex-1 overflow-y-auto px-6 py-6"
+          >
             <div className="space-y-6">
               {/* Form-level error (inline) */}
               {fieldErrors.form ? (
@@ -358,6 +421,105 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     </p>
                   </button>
                 </div>
+
+                {/* ✅ Phase 0 controls (UI only) */}
+                {isPublic ? (
+                  <div className="mt-4 rounded-2xl border border-purple-500/20 bg-slate-900/40 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ListChecks className="w-4 h-4 text-purple-300" />
+                      <p className="text-sm font-semibold text-white">Public Visibility</p>
+                      <span className="text-xs text-slate-500">(Phase 0: UI-only)</span>
+                    </div>
+
+                    {/* Listed toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setIsListed((v) => !v)}
+                      className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all ${
+                        isListed
+                          ? "border-emerald-500/40 bg-emerald-500/10"
+                          : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
+                      }`}
+                      disabled={submitting}
+                      aria-pressed={isListed}
+                    >
+                      <div className="flex items-center gap-3">
+                        <ListChecks className={`w-4 h-4 ${isListed ? "text-emerald-300" : "text-slate-300"}`} />
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-white">Listed in Discover & Search</p>
+                          <p className="text-xs text-slate-400">
+                            If off: project is public, but only visible by direct link (unlisted)
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className={`h-5 w-9 rounded-full p-0.5 transition-all ${
+                          isListed ? "bg-emerald-500/60" : "bg-slate-700"
+                        }`}
+                      >
+                        <div
+                          className={`h-4 w-4 rounded-full bg-white transition-all ${
+                            isListed ? "translate-x-4" : "translate-x-0"
+                          }`}
+                        />
+                      </div>
+                    </button>
+
+                    {/* Spectator mode */}
+                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSpectatorMode("view")}
+                        className={`rounded-xl border px-4 py-3 text-left transition-all ${
+                          spectatorMode === "view"
+                            ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10"
+                            : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
+                        }`}
+                        disabled={submitting}
+                        aria-pressed={spectatorMode === "view"}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Eye className="w-4 h-4 text-blue-300" />
+                          <p className="text-sm font-semibold text-white">View-only</p>
+                        </div>
+                        <p className="text-xs text-slate-400">
+                          Spectators can watch updates but can’t post suggestions
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSpectatorMode("suggest")}
+                        className={`rounded-xl border px-4 py-3 text-left transition-all ${
+                          spectatorMode === "suggest"
+                            ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10"
+                            : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
+                        }`}
+                        disabled={submitting}
+                        aria-pressed={spectatorMode === "suggest"}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <MessageSquare className="w-4 h-4 text-purple-300" />
+                          <p className="text-sm font-semibold text-white">Allow suggestions</p>
+                        </div>
+                        <p className="text-xs text-slate-400">
+                          Spectators can post ideas (subject to moderation later)
+                        </p>
+                      </button>
+                    </div>
+
+                    {/* Copy: approval hint */}
+                    {isListed ? (
+                      <p className="mt-3 text-xs text-slate-400">
+                        💡 Listed projects may require approval before appearing in Discover.
+                      </p>
+                    ) : (
+                      <p className="mt-3 text-xs text-slate-400">
+                        🔗 Unlisted public projects can still be shared via direct link.
+                      </p>
+                    )}
+                  </div>
+                ) : null}
               </section>
 
               {/* Team Members */}
@@ -449,7 +611,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
             </div>
           </form>
 
-          {/* Footer - Fixed */}
+          {/* Footer - Fixed (outside form) */}
           <div className="flex items-center justify-between gap-3 px-6 py-5 border-t border-purple-500/20 bg-slate-900/50 backdrop-blur-sm rounded-b-2xl">
             <div className="text-xs text-slate-400">
               <Zap className="w-3 h-3 inline mr-1 text-purple-400" />
@@ -465,9 +627,10 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 Cancel
               </button>
 
-              {/* ✅ IMPORTANT: no onClick here (avoid double-submit) */}
+              {/* ✅ FIX: bind this button to the form via form= */}
               <button
                 type="submit"
+                form={formId}
                 className={`rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-purple-500/30 transition-all ${
                   submitting ? "opacity-70 cursor-wait" : "hover:scale-105"
                 }`}
