@@ -8,12 +8,8 @@
 
 import mongoose from "mongoose";
 
-// ⚠️ IMPORTANT: Adjust this import to match your actual Project model path/export.
-// Common patterns in your repo might be:
-//   import Project from "../models/Project.model";
-//   import { Project } from "../models/Project.model";
-//   import ProjectModel from "../models/project.model";
-import Project from "../models/Project.model";
+// ✅ FIX: Project.model.ts has NO default export, so use named import.
+import { Project } from "../models/Project.model";
 
 export type ModerationStatus = "draft" | "pending" | "approved" | "rejected";
 export type SpectatorMode = "view" | "suggest";

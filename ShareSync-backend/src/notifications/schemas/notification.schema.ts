@@ -13,13 +13,17 @@ export enum NotificationType {
   TASK_UPDATED = 'task_updated',
   TASK_COMMENT = 'task_comment',
   TASK_MENTION = 'task_mention',
-  TASK_DUE_SOON = 'task_due_soon',
+  TASK_DUE_SOON = 'task_due_soom',
   TASK_OVERDUE = 'task_overdue',
 
   PROJECT_INVITE = 'project_invite',
   PROJECT_UPDATE = 'project_update',
   PROJECT_MEMBER_JOINED = 'project_member_joined',
   PROJECT_MEMBER_LEFT = 'project_member_left',
+
+  // ✅ Phase 3: spectator followers / public loop
+  PROJECT_SHIP_UPDATE = 'project_ship_update',
+  PROJECT_MILESTONE_REACHED = 'project_milestone_reached',
 
   MESSAGE_NEW = 'message_new',
   MESSAGE_MENTION = 'message_mention',
@@ -106,6 +110,13 @@ export class NotificationData {
 
   @Prop()
   streakCount?: number;
+
+  // ✅ Phase 3: follower updates
+  @Prop()
+  shipTitle?: string;
+
+  @Prop()
+  milestoneName?: string;
 
   @Prop({ type: Object })
   extra?: Record<string, any>;

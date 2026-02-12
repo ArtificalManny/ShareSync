@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { fetchPublicProjectStatus } from "../api/public";
 import { ArrowLeft } from "lucide-react";
 import GradientText from "../components/ui/GradientText.jsx";
 import { labelledTimestamp, formatLongDateTime } from "../utils/formatters.js";
+
+// ✅ Frontend-only follow UI (no backend changes)
+import FollowButton from "../components/follow/FollowButton.jsx";
 
 /** Simple KPI card */
 function Kpi({ label, value, hint }) {
@@ -34,6 +37,19 @@ function ActivityRow({ a }) {
   );
 }
 
+function getTokenAny() {
+  try {
+    return (
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("token") ||
+      ""
+    );
+  } catch {
+    return "";
+  }
+}
+
 export default function PublicProjectStatus() {
   const { token } = useParams();
   const [data, setData] = useState(null);
@@ -57,13 +73,27 @@ export default function PublicProjectStatus() {
     return () => { ignore = true; };
   }, [token]);
 
-  const title = data?.title || "Project";
+  const title = data?.title || data?.name || "Project";
   const updated = data?.lastUpdatedAt ? labelledTimestamp(data.lastUpdatedAt, "Updated") : null;
 
   const onTimePct =
     typeof data?.kpis?.onTime30d === "number"
       ? `${Math.round(data.kpis.onTime30d * 100)}%`
       : "—";
+
+  // ✅ Defensive: try to find an actual project id in several plausible places
+  const projectId = useMemo(() => {
+    return (
+      data?.projectId ||
+      data?.project?.id ||
+      data?.project?._id ||
+      data?.id ||
+      data?._id ||
+      null
+    );
+  }, [data]);
+
+  const signedIn = Boolean(getTokenAny());
 
   return (
     <main id="main" role="main" tabIndex={-1}>
@@ -115,6 +145,37 @@ export default function PublicProjectStatus() {
           </div>
         ) : (
           <>
+            {/* ✅ Follow updates (frontend-only, safe) */}
+            <section className="mb-4 rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Follow updates
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    Get notified when this project ships progress (requires sign-in).
+                  </div>
+                </div>
+
+                {projectId && signedIn ? (
+                  <FollowButton
+                    projectId={projectId}
+                    projectName={title}
+                    size="md"
+                    variant="emerald"
+                  />
+                ) : (
+                  <div className="text-xs text-slate-500 text-right">
+                    {signedIn ? (
+                      <span>Follow not available for this link.</span>
+                    ) : (
+                      <span>Sign in to follow.</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+
             {/* KPIs */}
             <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Kpi label="On-time (30d)" value={onTimePct} hint="Share of work finished on schedule" />

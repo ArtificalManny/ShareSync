@@ -10,6 +10,9 @@ import { useIsMobile } from '../hooks/useMobile';
 import { toast } from '../components/ui/toast';
 import { getDiscoverySections } from '../api/discovery';
 
+// ✅ NEW: real follow system
+import FollowButton from '../components/follow/FollowButton';
+
 // ──────────────────────────────────────────────────────────────
 // Phase 2 Moderation Gate (frontend-safe)
 // - If VITE_MODERATION_GATE_V1 !== "true": allow everything (current behavior)
@@ -47,10 +50,6 @@ const HotStreaksSection = ({ isMobile, items }) => {
 
   const handleStartCowork = (project) => {
     toast({ title: `Starting co-work session with ${project.teamName}`, variant: 'success' });
-  };
-
-  const handleFollowUpdates = (project) => {
-    toast({ title: `Now following ${project.projectName}`, variant: 'success' });
   };
 
   return (
@@ -108,26 +107,29 @@ const HotStreaksSection = ({ isMobile, items }) => {
             {/* Actions */}
             <div className="grid grid-cols-3 gap-2">
               <button
-                onClick={() => handleRequestJoin(project)}
+                onClick={(e) => { e.stopPropagation(); handleRequestJoin(project); }}
                 className="px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all active:scale-95 flex flex-col items-center gap-1"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Join</span>
               </button>
               <button
-                onClick={() => handleStartCowork(project)}
+                onClick={(e) => { e.stopPropagation(); handleStartCowork(project); }}
                 className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-xs font-semibold transition-all active:scale-95 flex flex-col items-center gap-1"
               >
                 <Users className="w-4 h-4" />
                 <span>Co-work</span>
               </button>
-              <button
-                onClick={() => handleFollowUpdates(project)}
-                className="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-lg text-xs font-semibold transition-all active:scale-95 flex flex-col items-center gap-1"
-              >
-                <Bell className="w-4 h-4" />
-                <span>Follow</span>
-              </button>
+
+              {/* ✅ Real follow */}
+              <div className="flex justify-center">
+                <FollowButton
+                  projectId={project.id}
+                  projectName={project.projectName}
+                  variant="emerald"
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
         ))}
@@ -146,10 +148,6 @@ const QuietButPromisingSection = ({ isMobile, items }) => {
 
   const handleSendEncouragement = (project) => {
     toast({ title: `Encouragement sent to ${project.projectName}!`, variant: 'success' });
-  };
-
-  const handleFollowProgress = (project) => {
-    toast({ title: `Now following ${project.projectName}`, variant: 'success' });
   };
 
   return (
@@ -231,13 +229,16 @@ const QuietButPromisingSection = ({ isMobile, items }) => {
                 <Heart className="w-4 h-4" />
                 <span>Cheer</span>
               </button>
-              <button
-                onClick={() => handleFollowProgress(project)}
-                className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-xs font-semibold transition-all active:scale-95 flex flex-col items-center gap-1"
-              >
-                <Bell className="w-4 h-4" />
-                <span>Follow</span>
-              </button>
+
+              {/* ✅ Real follow */}
+              <div className="flex justify-center">
+                <FollowButton
+                  projectId={project.id}
+                  projectName={project.projectName}
+                  variant="blue"
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
         ))}

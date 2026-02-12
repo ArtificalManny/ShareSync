@@ -24,6 +24,9 @@ import { UpdateUserDto } from './dto/update-user.dto';
 // ⚠️ If your UploadService lives somewhere else, update this import path.
 import { UploadsService } from '../uploads/uploads.service';
 
+// ✅ Phase 3: follows
+import { ProjectFollowService } from '../follows/project-follow.service';
+
 @Controller('users')
 export class UserController {
   constructor(
@@ -33,6 +36,9 @@ export class UserController {
 
     // ✅ OPTIONAL so the app boots even if uploads module isn't wired yet
     @Optional() private readonly uploadService?: UploadsService,
+
+    // ✅ OPTIONAL so the app boots even if follows module isn't wired yet
+    @Optional() private readonly follows?: ProjectFollowService,
   ) {}
 
   @UseGuards(JwtAuthGuard)
@@ -73,6 +79,48 @@ export class UserController {
     });
 
     return updated;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ✅ PHASE 3: MY FOLLOWS
+  // GET /users/me/follows
+  // NOTE:
+  // - We intentionally do NOT hard-code a service method name.
+  // - This prevents TS/runtime pitfalls if your follow service uses a different name.
+  // - Backend remains unchanged aside from this safe call site.
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/follows')
+  async myFollows(@Req() req: any) {
+    if (!this.follows) {
+      throw new BadRequestException(
+        'ProjectFollowService not configured. Import ProjectFollowModule into AppModule to enable this endpoint.',
+      );
+    }
+
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+
+    // ✅ Defensive: support multiple service method names without forcing refactors
+    const svc: any = this.follows as any;
+
+    const fn =
+      svc.listMyFollows ||
+      svc.listForUser ||
+      svc.listByUser ||
+      svc.listUserFollows ||
+      svc.getMyFollows ||
+      svc.getFollowsForUser ||
+      svc.list ||
+      null;
+
+    if (typeof fn !== 'function') {
+      throw new BadRequestException(
+        'ProjectFollowService is missing a list method. Expected one of: listMyFollows, listForUser, listByUser, listUserFollows, getMyFollows, getFollowsForUser, list.',
+      );
+    }
+
+    return fn.call(svc, userId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

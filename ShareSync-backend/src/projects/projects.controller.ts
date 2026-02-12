@@ -1,6 +1,7 @@
 // src/projects/projects.controller.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECTS CONTROLLER: REST API Endpoints
+// + Phase 3: spectator follows (/projects/:id/follow)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -37,6 +38,11 @@ import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
 import { ProjectStatus } from './schemas/project.schema';
 import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
 
+// ✅ Phase 3: follows
+import { ProjectFollowService } from '../follows/project-follow.service';
+import { FollowProjectDto } from '../follows/dto/follow-project.dto';
+import { UpdateFollowPrefsDto } from '../follows/dto/update-follow-prefs.dto';
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONTROLLER
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -48,7 +54,10 @@ import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
 export class ProjectsController {
   private readonly logger = new Logger(ProjectsController.name);
 
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly projectFollowService: ProjectFollowService,
+  ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // DEBUG (TEMPORARY) — MUST BE BEFORE ANY :id ROUTES
@@ -186,6 +195,63 @@ export class ProjectsController {
       success: true,
       data: pulseData,
     };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PHASE 3: FOLLOW ENDPOINTS (spectator subscriptions)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post(':id/follow')
+  @ApiOperation({ summary: 'Follow project updates (spectator subscription)' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  async followProject(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: FollowProjectDto,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const follow = await this.projectFollowService.followProject(id, userId, dto);
+    return { success: true, data: follow };
+  }
+
+  @Patch(':id/follow')
+  @ApiOperation({ summary: 'Update follow preferences' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  async updateFollowPrefs(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdateFollowPrefsDto,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+
+    // Reuse followProject upsert behavior (safe + idempotent)
+    const updated = await this.projectFollowService.followProject(id, userId, dto as any);
+    return { success: true, data: updated };
+  }
+
+  @Delete(':id/follow')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Unfollow project updates' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  async unfollowProject(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const result = await this.projectFollowService.unfollowProject(id, userId);
+    return { success: true, data: result };
+  }
+
+  @Get(':id/follow-status')
+  @ApiOperation({ summary: 'Get follow status for current user' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  async followStatus(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const status = await this.projectFollowService.getFollowStatus(id, userId);
+    return { success: true, data: status };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

@@ -3,6 +3,8 @@
 // PROJECTS SERVICE: Business Logic for Project Management
 // - SAFE PATCH: updateMetrics() now merges instead of overwriting metrics object
 // - SAFE PATCH: create() normalizes emoji/icon + ensures settings/goals defaults
+// - PHASE 3: helper triggers for follower notifications (ship updates / milestones)
+//   (optional NotificationsService injection to avoid boot-time quagmires)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -11,6 +13,7 @@ import {
   ForbiddenException,
   BadRequestException,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -25,6 +28,9 @@ import {
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
+
+// ✅ Phase 3: follower notifications (optional injection)
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface ProjectQueryOptions {
   status?: ProjectStatus;
@@ -60,6 +66,9 @@ export class ProjectsService {
     @InjectModel(Project.name)
     private readonly projectModel: Model<ProjectDocument>,
     private readonly eventEmitter: EventEmitter2,
+
+    // ✅ Optional so we don't create circular/module boot traps
+    @Optional() private readonly notifications?: NotificationsService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -201,6 +210,9 @@ export class ProjectsService {
         momentumTrend: 0,
         activeSprintId: null,
       },
+
+      // Phase 3: safe default
+      followersCount: 0,
     });
 
     const saved = await project.save();
@@ -372,6 +384,97 @@ export class ProjectsService {
         $set: { 'metrics.lastActivityAt': new Date() },
       },
     );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PHASE 3: SHIP + MILESTONE TRIGGERS (safe helpers)
+  // These can be called from Threads/Milestones/Ships modules later.
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async recordShipUpdate(args: {
+    projectId: string;
+    userId: string;
+    shipTitle: string;
+    projectNameOverride?: string;
+  }): Promise<{ success: true }> {
+    const project = await this.findByIdWithAccess(args.projectId, args.userId);
+
+    // Only members/admins/owner can post ships (spectators can't)
+    if (!this.canEdit(project, args.userId)) {
+      throw new ForbiddenException('You do not have permission to post updates for this project');
+    }
+
+    // Increment weeklyShips + bump lastActivityAt
+    await this.projectModel.updateOne(
+      { _id: new Types.ObjectId(args.projectId) },
+      {
+        $inc: { 'metrics.weeklyShips': 1 },
+        $set: { 'metrics.lastActivityAt': new Date() },
+      },
+    );
+
+    const projectName = args.projectNameOverride || project.name;
+
+    // Emit event for future event-driven wiring
+    this.eventEmitter.emit('project.ship.posted', {
+      projectId: args.projectId,
+      projectName,
+      shipTitle: args.shipTitle,
+      triggeredBy: args.userId,
+    });
+
+    // Optional direct notify (keeps us moving even before event listener wiring)
+    if (this.notifications?.notifyFollowersShipUpdate) {
+      await this.notifications.notifyFollowersShipUpdate({
+        projectId: args.projectId,
+        projectName,
+        shipTitle: args.shipTitle,
+        triggeredBy: args.userId,
+      });
+    }
+
+    return { success: true };
+  }
+
+  async recordMilestoneReached(args: {
+    projectId: string;
+    userId: string;
+    milestoneName: string;
+    projectNameOverride?: string;
+  }): Promise<{ success: true }> {
+    const project = await this.findByIdWithAccess(args.projectId, args.userId);
+
+    if (!this.canEdit(project, args.userId)) {
+      throw new ForbiddenException('You do not have permission to post milestones for this project');
+    }
+
+    // Bump activity timestamp
+    await this.projectModel.updateOne(
+      { _id: new Types.ObjectId(args.projectId) },
+      {
+        $set: { 'metrics.lastActivityAt': new Date() },
+      },
+    );
+
+    const projectName = args.projectNameOverride || project.name;
+
+    this.eventEmitter.emit('project.milestone.reached', {
+      projectId: args.projectId,
+      projectName,
+      milestoneName: args.milestoneName,
+      triggeredBy: args.userId,
+    });
+
+    if (this.notifications?.notifyFollowersMilestoneReached) {
+      await this.notifications.notifyFollowersMilestoneReached({
+        projectId: args.projectId,
+        projectName,
+        milestoneName: args.milestoneName,
+        triggeredBy: args.userId,
+      });
+    }
+
+    return { success: true };
   }
 
   async archive(projectId: string, userId: string): Promise<ProjectDocument> {

@@ -13,6 +13,9 @@
 //   • moderationStatus (draft | pending | approved | rejected)
 //   • moderationReason
 //   • publicSlug (optional later)
+//
+// PHASE 3 ADDITION (SAFE):
+//   • followersCount (stored counter, default 0)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
@@ -249,7 +252,6 @@ export class Project {
   iconObj?: ProjectIconObject | null;
 
   // ✅ Legacy icon string (many parts of app already use this)
-  // Keep it so existing UI doesn’t break.
   @ApiProperty({ description: 'Legacy project icon (emoji)', example: '🚀' })
   @Prop({ default: '📁' })
   icon: string;
@@ -273,15 +275,6 @@ export class Project {
 
   /**
    * ✅ Phase 0/2: Public listing + spectator + moderation (SAFE defaults)
-   *
-   * - isListed controls whether it appears in Discover/Search.
-   * - spectatorMode controls whether non-members can suggest or only view.
-   * - moderationStatus is used later when admin approval gating is implemented.
-   *
-   * SAFETY:
-   * - default isListed=false so nothing accidentally becomes discoverable.
-   * - default moderationStatus=approved so you don't "hide" listed items later
-   *   if you enable listing before building moderation UI.
    */
   @Prop({ type: Boolean, default: false, index: true })
   isListed: boolean;
@@ -297,6 +290,10 @@ export class Project {
 
   @Prop({ type: String, default: null, index: true, sparse: true })
   publicSlug?: string | null;
+
+  // ✅ Phase 3: stored follower count (safe default)
+  @Prop({ type: Number, default: 0, index: true })
+  followersCount: number;
 
   // Ownership (dual fields for compatibility)
   @ApiProperty({ description: 'Project owner user ID' })
@@ -375,6 +372,9 @@ ProjectSchema.index({ 'invites.email': 1 }, { sparse: true });
 // ✅ Phase 0/2 indexes (Discover/Search + moderation queries)
 ProjectSchema.index({ visibility: 1, isListed: 1, moderationStatus: 1 });
 ProjectSchema.index({ isListed: 1, 'metrics.lastActivityAt': -1 });
+
+// ✅ Phase 3 index (optional)
+ProjectSchema.index({ followersCount: -1 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIRTUALS

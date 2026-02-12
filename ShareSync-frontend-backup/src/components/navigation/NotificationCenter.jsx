@@ -5,8 +5,17 @@ import { Bell, Check } from "lucide-react";
 import { getAccessToken } from "../../utils/tokenUtils";
 
 // OPTIONAL: If socket.io-client exists in your project already, this will work.
-// If you DON'T have it installed, comment out these lines and the socket section below.
 import { io } from "socket.io-client";
+
+// ✅ API wrapper (frontend-only)
+import {
+  listNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from "../../api/notifications";
+
+// ✅ Optional split components
+import NotificationList from "../notifications/NotificationList.jsx";
 
 /**
  * NotificationCenter (Phase N)
@@ -31,6 +40,18 @@ function formatTime(ts) {
   } catch {
     return "";
   }
+}
+
+function normalizeNotification(n) {
+  return {
+    id: n?.id || n?._id || crypto.randomUUID(),
+    title: n?.title || n?.subject || "Notification",
+    body: n?.body || n?.message || "",
+    ts: n?.ts || n?.createdAt || Date.now(),
+    read: Boolean(n?.read),
+    type: n?.type || n?.kind || "generic",
+    meta: n?.meta || {},
+  };
 }
 
 export default function NotificationCenter() {
@@ -63,46 +84,25 @@ export default function NotificationCenter() {
     return items;
   }, [items, tab]);
 
-  // ✅ Try to fetch notifications for the current user (if your backend already supports it)
-  // This will fail safely (stays empty) if the endpoint isn't ready.
+  // ✅ Fetch notifications (safe empty on failure)
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       setLoading(true);
       try {
-        const token = typeof getAccessToken === "function" ? getAccessToken() : null;
+        const data = await listNotifications({ limit: 25, unreadOnly: false });
 
-        const res = await fetch(`${API_BASE}/api/notifications?limit=25`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          credentials: "include",
-        });
-
-        if (!res.ok) throw new Error(`GET /api/notifications failed: ${res.status}`);
-
-        const data = await res.json();
-
-        // Accept either { items: [...] } or [...] to be tolerant
-        const list = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+            ? data.items
+            : [];
 
         if (!cancelled) {
-          setItems(
-            list.map((n) => ({
-              id: n.id || n._id || crypto.randomUUID(),
-              title: n.title || n.subject || "Notification",
-              body: n.body || n.message || "",
-              ts: n.ts || n.createdAt || Date.now(),
-              read: Boolean(n.read),
-              meta: n.meta || {},
-            }))
-          );
+          setItems(list.map(normalizeNotification));
         }
       } catch {
-        // Stay empty. No mock data.
         if (!cancelled) setItems([]);
       } finally {
         if (!cancelled) setLoading(false);
@@ -117,7 +117,6 @@ export default function NotificationCenter() {
 
   // ✅ Realtime: listen for server pushes (if gateway is already emitting)
   useEffect(() => {
-    // If socket.io-client isn't installed, comment out this whole effect.
     const token = typeof getAccessToken === "function" ? getAccessToken() : null;
 
     const socket = io(API_BASE, {
@@ -128,20 +127,10 @@ export default function NotificationCenter() {
 
     const onNew = (payload) => {
       if (!payload) return;
-
-      const n = {
-        id: payload.id || payload._id || crypto.randomUUID(),
-        title: payload.title || payload.subject || "Notification",
-        body: payload.body || payload.message || "",
-        ts: payload.ts || payload.createdAt || Date.now(),
-        read: Boolean(payload.read),
-        meta: payload.meta || {},
-      };
-
+      const n = normalizeNotification(payload);
       setItems((prev) => [n, ...prev]);
     };
 
-    // Try several common event names to match whatever your backend emits.
     socket.on("notification:new", onNew);
     socket.on("notifications:new", onNew);
     socket.on("notification", onNew);
@@ -154,15 +143,33 @@ export default function NotificationCenter() {
     };
   }, []);
 
-  const markAllRead = () => {
-    // frontend-only mark read (safe). Later you can POST to backend if you want.
+  const markAllRead = async () => {
+    // Optimistic UI
     setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+
+    try {
+      await markAllNotificationsAsRead();
+    } catch {
+      // If backend isn't ready, keep UI state. No quagmire.
+    }
   };
 
-  const toggleRead = (id) => {
+  const toggleRead = async (id) => {
     setItems((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
     );
+
+    // Best-effort backend mark read when turning to read
+    const next = items.find((x) => x.id === id);
+    const willBeRead = next ? !next.read : true;
+
+    if (willBeRead) {
+      try {
+        await markNotificationAsRead(id);
+      } catch {
+        // ignore
+      }
+    }
   };
 
   return (
@@ -251,37 +258,14 @@ export default function NotificationCenter() {
               </div>
             )}
 
-            {visible.map((n) => (
-              <button
-                key={n.id}
-                onClick={() => toggleRead(n.id)}
-                className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-surface-2 transition-colors border-t border-white/[0.04] ${
-                  !n.read ? "bg-surface-0/40" : ""
-                }`}
-                title="Click to toggle read"
-              >
-                <div
-                  className={`mt-1 w-2 h-2 rounded-full ${
-                    !n.read ? "bg-energy-500" : "bg-white/10"
-                  }`}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-medium text-text-primary truncate">
-                      {n.title}
-                    </div>
-                    <div className="text-[10px] text-text-tertiary shrink-0">
-                      {formatTime(n.ts)}
-                    </div>
-                  </div>
-                  {n.body && (
-                    <div className="text-xs text-text-tertiary mt-1 line-clamp-2">
-                      {n.body}
-                    </div>
-                  )}
-                </div>
-              </button>
-            ))}
+            <NotificationList
+              items={visible.map((n) => ({
+                ...n,
+                // Provide a formatted date the list can show
+                _displayTime: formatTime(n.ts),
+              }))}
+              onToggleRead={(id) => toggleRead(id)}
+            />
           </div>
 
           {/* Footer */}

@@ -3,6 +3,10 @@ import { Document, Types } from 'mongoose';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
+// ✅ Phase 4: notification channel + digest types (non-breaking)
+export type DigestFrequency = 'daily' | 'weekly' | 'off';
+export type NotificationChannel = 'email' | 'sms' | 'inApp';
+
 @Schema({ timestamps: true })
 export class User extends Document {
   // ============================================
@@ -156,6 +160,56 @@ export class User extends Document {
       showActivity?: boolean;
       publicProfile?: boolean;
     };
+  };
+
+  // ============================================
+  // ✅ PHASE 4: CHANNEL VERIFICATION + OPT-IN (NEW, SAFE)
+  // - Does NOT replace existing settings/preferences
+  // - Defaults to OFF/UNVERIFIED to enforce your rule:
+  //   "No email/SMS until verified + opted-in"
+  // ============================================
+
+  @Prop({
+    type: {
+      email: {
+        email: { type: String, default: undefined },
+        verified: { type: Boolean, default: false },
+        optIn: { type: Boolean, default: false },
+        verifiedAt: { type: Date, default: undefined },
+      },
+      sms: {
+        phoneNumber: { type: String, default: undefined },
+        verified: { type: Boolean, default: false },
+        optIn: { type: Boolean, default: false },
+        verifiedAt: { type: Date, default: undefined },
+      },
+    },
+    default: undefined,
+  })
+  notificationChannels?: {
+    email?: { email?: string; verified?: boolean; optIn?: boolean; verifiedAt?: Date };
+    sms?: { phoneNumber?: string; verified?: boolean; optIn?: boolean; verifiedAt?: Date };
+  };
+
+  @Prop({
+    type: {
+      channels: {
+        inApp: { type: Boolean, default: true }, // keep in-app first
+        email: { type: Boolean, default: false }, // strict default off
+        sms: { type: Boolean, default: false },   // strict default off
+      },
+      digest: {
+        // safest MVP: digest only, default weekly
+        email: { type: String, enum: ['daily', 'weekly', 'off'], default: 'weekly' },
+        // SMS digest is optional later — keep default off
+        sms: { type: String, enum: ['daily', 'weekly', 'off'], default: 'off' },
+      },
+    },
+    default: undefined,
+  })
+  notificationPrefs?: {
+    channels?: { inApp?: boolean; email?: boolean; sms?: boolean };
+    digest?: { email?: DigestFrequency; sms?: DigestFrequency };
   };
 
   // ============================================

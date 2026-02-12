@@ -1,41 +1,203 @@
-
 import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+
+type TransporterLike = {
+  sendMail: (args: {
+    from: string;
+    to: string;
+    subject: string;
+    html?: string;
+    text?: string;
+  }) => Promise<any>;
+};
+
+type EmailChannelState = {
+  verified?: boolean;
+  optIn?: boolean;
+  email?: string;
+};
+
+type UserLike = {
+  email?: string;
+  notificationChannels?: {
+    email?: EmailChannelState;
+  };
+  notificationPrefs?: {
+    channels?: {
+      email?: boolean;
+    };
+  };
+};
 
 @Injectable()
 export class EmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter?: TransporterLike;
+  private readonly fromAddress: string;
 
   constructor() {
+    this.fromAddress = process.env.EMAIL_FROM || (process.env.SMTP_USER ? `"ShareSync" <${process.env.SMTP_USER}>` : `"ShareSync" <no-reply@sharesync.local>`);
+
+    // Optional dependency: do not break build if nodemailer isn't installed
+    let nodemailer: any;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      nodemailer = require('nodemailer');
+    } catch (_err) {
+      console.warn('Nodemailer not installed - Email notifications disabled');
+      this.transporter = undefined;
+      return;
+    }
+
+    // If SMTP isn't configured, keep email disabled (SAFE)
+    const host = process.env.SMTP_HOST;
+    const portRaw = process.env.SMTP_PORT;
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+
+    if (!host || !portRaw || !user || !pass) {
+      console.warn('SMTP env not configured - Email notifications disabled');
+      this.transporter = undefined;
+      return;
+    }
+
+    const port = Number(portRaw);
+    if (!Number.isFinite(port)) {
+      console.warn('SMTP_PORT invalid - Email notifications disabled');
+      this.transporter = undefined;
+      return;
+    }
+
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
+      host,
+      port,
+      secure: port === 465, // common convention
+      auth: { user, pass },
     });
   }
 
-  async sendNotification(user: any, notification: any): Promise<void> {
+  /**
+   * PHASE 4 RULE:
+   * - No email until user has verified + opted in
+   * - Keep in-app as primary; email is best-effort + gated
+   */
+  async sendNotification(user: UserLike, notification: any): Promise<void> {
+    const to = this.resolveEmail(user);
+
+    // Gating: no verified+opt-in => do nothing (SAFE)
+    if (!to || !this.isEmailAllowed(user)) return;
+
+    if (!this.transporter) {
+      console.warn('Email transporter not configured - Email notification skipped');
+      return;
+    }
+
     const emailHtml = this.buildEmailTemplate(notification);
 
-    await this.transporter.sendMail({
-      from: `"ShareSync" <${process.env.SMTP_USER}>`,
-      to: user.email,
-      subject: notification.title,
-      html: emailHtml,
-    });
+    try {
+      await this.transporter.sendMail({
+        from: this.fromAddress,
+        to,
+        subject: notification?.title || 'ShareSync Update',
+        html: emailHtml,
+        text: notification?.message || '',
+      });
+    } catch (error) {
+      console.error('Failed to send Email:', error);
+    }
+  }
+
+  /**
+   * Digest sending is safest for MVP — still must be verified + opt-in.
+   */
+  async sendDailyDigest(user: UserLike, notifications: any[]): Promise<void> {
+    const to = this.resolveEmail(user);
+    if (!to || !this.isEmailAllowed(user)) return;
+
+    if (!this.transporter) {
+      console.warn('Email transporter not configured - Daily digest skipped');
+      return;
+    }
+
+    const byProject = (notifications || []).reduce((acc: any, n: any) => {
+      const key = n?.projectId?.toString?.() || 'general';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(n);
+      return acc;
+    }, {});
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <h1>Your Daily Digest — ${new Date().toLocaleDateString()}</h1>
+          <p>${notifications?.length || 0} updates</p>
+          ${Object.entries(byProject)
+            .map(([projectId, notifs]: [string, any]) => `
+              <h2 style="margin-top: 18px;">${projectId === 'general' ? 'General' : 'Project Updates'}</h2>
+              <ul>
+                ${(notifs || []).map((n: any) => `<li>${this.escapeHtml(n?.title || 'Update')}: ${this.escapeHtml(n?.message || '')}</li>`).join('')}
+              </ul>
+            `)
+            .join('')}
+          <p style="margin-top: 24px; color: #64748b; font-size: 12px;">
+            Manage preferences in ShareSync settings.
+          </p>
+        </body>
+      </html>
+    `;
+
+    try {
+      await this.transporter.sendMail({
+        from: this.fromAddress,
+        to,
+        subject: `Daily Digest — ${notifications?.length || 0} updates`,
+        html,
+      });
+    } catch (error) {
+      console.error('Failed to send Daily Digest Email:', error);
+    }
+  }
+
+  private resolveEmail(user: UserLike): string | null {
+    const e =
+      user?.notificationChannels?.email?.email ||
+      user?.email ||
+      null;
+
+    if (!e) return null;
+    return String(e).trim().toLowerCase();
+  }
+
+  private isEmailAllowed(user: UserLike): boolean {
+    const verified = Boolean(user?.notificationChannels?.email?.verified);
+    const optIn = Boolean(user?.notificationChannels?.email?.optIn);
+
+    // Optional global/channel prefs (default true if undefined; gating already strict)
+    const channelEnabled = user?.notificationPrefs?.channels?.email;
+    const channelOk = channelEnabled === undefined ? true : Boolean(channelEnabled);
+
+    return verified && optIn && channelOk;
   }
 
   private buildEmailTemplate(notification: any): string {
-    const emoji = this.getEmojiForType(notification.type);
-    
+    const emoji = this.getEmojiForType(notification?.type);
+
+    const title = this.escapeHtml(notification?.title || 'ShareSync Update');
+    const msg = this.escapeHtml(notification?.message || '');
+
+    const actionUrl = notification?.actionData?.url ? String(notification.actionData.url) : '';
+    const button = actionUrl
+      ? `<a href="${this.escapeAttr(actionUrl)}" class="button">View in ShareSync</a>`
+      : '';
+
+    const settingsUrl = process.env.FRONTEND_URL
+      ? `${process.env.FRONTEND_URL}/settings`
+      : '#';
+
     return `
       <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="utf-8" />
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -50,17 +212,15 @@ export class EmailService {
         <body>
           <div class="container">
             <div class="header">
-              <h1 class="title">${emoji} ${notification.title}</h1>
+              <h1 class="title">${emoji} ${title}</h1>
             </div>
             <div class="content">
-              <p class="message">${notification.message}</p>
-              ${notification.actionData?.url ? `
-                <a href="${notification.actionData.url}" class="button">View in ShareSync</a>
-              ` : ''}
+              <p class="message">${msg}</p>
+              ${button}
             </div>
             <div class="footer">
-              <p>You're receiving this because of your notification settings in ShareSync.</p>
-              <p><a href="${process.env.FRONTEND_URL}/settings">Manage preferences</a></p>
+              <p>You're receiving this because you opted in to email updates in ShareSync.</p>
+              <p><a href="${this.escapeAttr(settingsUrl)}">Manage preferences</a></p>
             </div>
           </div>
         </body>
@@ -70,46 +230,29 @@ export class EmailService {
 
   private getEmojiForType(type: string): string {
     const emojiMap: Record<string, string> = {
-      'announcement_created': '📢',
-      'mention': '@',
-      'task_assigned': '📋',
-      'file_uploaded': '📎',
-      'deadline_reminder': '⏰',
-      'project_invite': '👋',
-      'comment_added': '💬',
+      announcement_created: '📢',
+      mention: '@',
+      task_assigned: '📋',
+      file_uploaded: '📎',
+      deadline_reminder: '⏰',
+      project_invite: '👋',
+      comment_added: '💬',
+      follow_created: '⭐',
     };
     return emojiMap[type] || '🔔';
   }
 
-  async sendDailyDigest(user: any, notifications: any[]): Promise<void> {
-    // Group by project
-    const byProject = notifications.reduce((acc: any, n: any) => {
-      const key = n.projectId?.toString() || 'general';
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(n);
-      return acc;
-    }, {});
+  private escapeHtml(s: string): string {
+    return String(s)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <body>
-          <h1>Your Daily Digest - ${new Date().toLocaleDateString()}</h1>
-          ${Object.entries(byProject).map(([projectId, notifs]: [string, any]) => `
-            <h2>Project Updates</h2>
-            <ul>
-              ${notifs.map((n: any) => `<li>${n.title}: ${n.message}</li>`).join('')}
-            </ul>
-          `).join('')}
-        </body>
-      </html>
-    `;
-
-    await this.transporter.sendMail({
-      from: `"ShareSync" <${process.env.SMTP_USER}>`,
-      to: user.email,
-      subject: `Daily Digest - ${notifications.length} updates`,
-      html,
-    });
+  private escapeAttr(s: string): string {
+    // Enough for URLs
+    return this.escapeHtml(s);
   }
 }

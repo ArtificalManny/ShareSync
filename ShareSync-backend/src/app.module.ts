@@ -48,6 +48,9 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 import { GamificationModule } from './gamification/gamification.module';
 
+// ✅ Phase 3: spectator follows
+import { ProjectFollowModule } from './follows/project-follow.module';
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 4: ADVANCED MODULES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -171,6 +174,9 @@ import { DiscoveryModule } from './discovery/discovery.module';
     // ─────────────────────────────────────────────────────────────────────────
     MessagesModule,
     NotificationsModule,
+
+    // ✅ Phase 3: spectator follows
+    ProjectFollowModule,
 
     // ─────────────────────────────────────────────────────────────────────────
     // GAMIFICATION

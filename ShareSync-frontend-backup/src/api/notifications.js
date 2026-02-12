@@ -1,7 +1,23 @@
 import axios from 'axios';
 
-// Expect VITE_API_URL like: http://localhost:5050/api
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
+// ──────────────────────────────────────────────────────────────
+// Notifications API (frontend-safe)
+// - Keeps your existing exports (no breaking changes)
+// - Adds: listNotifications({limit, unreadOnly})
+// - Makes baseURL tolerant if VITE_API_URL already includes "/api"
+// ──────────────────────────────────────────────────────────────
+
+function normalizeBaseURL(raw) {
+  const base = (raw || '').replace(/\/$/, '');
+  if (!base) return 'http://localhost:5050/api';
+
+  // If env already ends with /api, keep it; otherwise append /api
+  if (base.endsWith('/api')) return base;
+  return `${base}/api`;
+}
+
+// Expect VITE_API_URL like: http://localhost:5050 OR http://localhost:5050/api
+const API_URL = normalizeBaseURL(import.meta.env.VITE_API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
@@ -22,6 +38,20 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// ──────────────────────────────────────────────────────────────
+// NEW: tolerant list function used by NotificationCenter
+// ──────────────────────────────────────────────────────────────
+export const listNotifications = async ({ limit = 25, unreadOnly = false } = {}) => {
+  const response = await api.get(`/notifications`, {
+    params: { limit, unreadOnly },
+  });
+  return response.data;
+};
+
+// ──────────────────────────────────────────────────────────────
+// Existing exports (kept)
+// ──────────────────────────────────────────────────────────────
 
 export const getNotifications = async (unreadOnly = false) => {
   const response = await api.get(`/notifications`, {
