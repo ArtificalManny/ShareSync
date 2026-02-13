@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECT HOME: Mission Control with Premium View Navigation
 // Integrates existing hooks/context with new Pulse/Stack/Flow/etc. views
+// ⭐ FIX: Added validation for project ID to prevent /projects/undefined issue
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -886,6 +887,26 @@ export default function ProjectHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ⭐ FIX: VALIDATION - Redirect if project ID is missing or invalid
+  // ═══════════════════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!id || id === 'undefined' || id === 'null') {
+      console.error('[ProjectHome] Invalid project ID detected:', id);
+      toast({ 
+        title: "Project not found", 
+        description: "The project ID is missing or invalid. Redirecting to projects list.",
+        variant: "error" 
+      });
+      navigate('/projects', { replace: true });
+    }
+  }, [id, navigate]);
+
+  // Early return while redirecting (show loading state briefly)
+  if (!id || id === 'undefined' || id === 'null') {
+    return <LoadingState />;
+  }
   
   // View state
   const [activeView, setActiveView] = useState('pulse');

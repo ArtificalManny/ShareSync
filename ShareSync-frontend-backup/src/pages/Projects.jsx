@@ -7,6 +7,7 @@
 // - ⭐ PHASE D: EmptySearch when search returns no results
 // - Progress bars use purple intensity (not traffic lights)
 // - Consistent with design token system
+// - ⭐ FIX: Added _id || id fallback to prevent /projects/undefined
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
@@ -26,6 +27,17 @@ import EmptySearch from '../components/empty-states/EmptySearch';
 
 // ✅ Use API helpers that already unwrap backend shapes correctly
 import { getProjects } from '../api/projects';
+
+/* ─────────────────────────────────────────────────────────────────────────
+   HELPER: Safely get project ID (handles both _id and id)
+───────────────────────────────────────────────────────────────────────── */
+const getProjectId = (project) => {
+  const id = project?._id || project?.id;
+  if (!id) {
+    console.error('[Projects] Project missing ID:', project);
+  }
+  return id;
+};
 
 /* ─────────────────────────────────────────────────────────────────────────
    PROGRESS COLOR - Phase 7: Purple intensity, not traffic lights
@@ -55,9 +67,25 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const isImpressiveStreak = streak >= 7;
   const hasNextStep = Boolean(project.nextMicroStep);
 
+  // ⭐ FIX: Safe ID extraction
+  const projectId = getProjectId(project);
+
+  const handleClick = () => {
+    if (!projectId) {
+      console.error('[Projects] Cannot navigate - ProjectCard missing ID:', project);
+      return;
+    }
+    onProjectClick(projectId);
+  };
+
+  const handleStartSprint = (e) => {
+    e.stopPropagation();
+    onStartSprint(project);
+  };
+
   return (
     <div
-      onClick={() => onProjectClick(project._id)}
+      onClick={handleClick}
       className={`
         group p-5 rounded-xl cursor-pointer
         bg-surface-1 border border-white/[0.06]
@@ -142,7 +170,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
         </div>
 
         <button
-          onClick={(e) => { e.stopPropagation(); onStartSprint(project); }}
+          onClick={handleStartSprint}
           className="
             px-3 py-1.5 rounded-lg text-xs font-medium
             bg-brand text-white
@@ -173,9 +201,25 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
   const streak = project.streak?.value || 0;
   const isImpressiveStreak = streak >= 7;
 
+  // ⭐ FIX: Safe ID extraction
+  const projectId = getProjectId(project);
+
+  const handleClick = () => {
+    if (!projectId) {
+      console.error('[Projects] Cannot navigate - ProjectRow missing ID:', project);
+      return;
+    }
+    onProjectClick(projectId);
+  };
+
+  const handleStartSprint = (e) => {
+    e.stopPropagation();
+    onStartSprint(project);
+  };
+
   return (
     <div
-      onClick={() => onProjectClick(project._id)}
+      onClick={handleClick}
       className="
         group flex items-center justify-between p-4 rounded-xl cursor-pointer
         bg-surface-1 border border-white/[0.06]
@@ -210,7 +254,7 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
         )}
 
         <button
-          onClick={(e) => { e.stopPropagation(); onStartSprint(project); }}
+          onClick={handleStartSprint}
           className="
             px-3 py-1.5 rounded-lg text-xs font-medium
             bg-surface-2 text-text-secondary
@@ -271,7 +315,16 @@ const Projects = () => {
   };
 
   const handleProjectCreated = (newProject) => setProjects(prev => [newProject, ...prev]);
-  const handleProjectClick = (projectId) => navigate(`/projects/${projectId}`);
+  
+  // ⭐ FIX: Navigation handler with validation
+  const handleProjectClick = (projectId) => {
+    if (!projectId) {
+      console.error('[Projects] handleProjectClick called with invalid ID:', projectId);
+      return;
+    }
+    navigate(`/projects/${projectId}`);
+  };
+  
   const handleStartSprint = (project) => setSelectedProject(project);
 
   // ⭐ PHASE D: Search handlers
@@ -485,7 +538,7 @@ const Projects = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map(project => (
               <ProjectCard
-                key={project._id}
+                key={getProjectId(project) || `project-${project.name}`}
                 project={project}
                 onProjectClick={handleProjectClick}
                 onStartSprint={handleStartSprint}
@@ -496,7 +549,7 @@ const Projects = () => {
           <div className="space-y-3">
             {filteredProjects.map(project => (
               <ProjectRow
-                key={project._id}
+                key={getProjectId(project) || `project-${project.name}`}
                 project={project}
                 onProjectClick={handleProjectClick}
                 onStartSprint={handleStartSprint}

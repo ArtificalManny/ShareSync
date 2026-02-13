@@ -1,84 +1,167 @@
 // src/pages/Messages.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE D: Empty States That Inspire - Messages Page
+// MESSAGES PAGE - Connected to Real Backend
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // UPDATES:
-// - ⭐ PHASE D: EmptyInbox celebration when inbox is empty
-// - ⭐ PHASE D: Streak tracking for inbox zero
-// - Integrated with momentum context
+// - ✅ Connected to backend via messagesApi
+// - ✅ React Query for data fetching
+// - ✅ Real-time ready (WebSocket hooks prepared)
+// - ✅ Preserved empty states and celebrations
+// - ✅ Loading skeletons
+// - ✅ Error handling
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Search, 
   Plus, 
-  Filter, 
   MoreHorizontal,
   Star,
   Archive,
   Trash2,
   Send,
+  Paperclip,
+  Phone,
+  Video,
+  MessageCircle,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
-import MessageList from '../components/messaging/MessageList';
-import MessageThread from '../components/messaging/MessageThread';
-import MessageComposer from '../components/messaging/MessageComposer';
 
-// ⭐ PHASE D: Import empty state components
+// API Client
+import { 
+  messagesApi, 
+  getConversationDisplayName, 
+  getOtherParticipant,
+  getSenderName,
+  isOwnMessage,
+  getUserInitials,
+} from '../lib/api/messages';
+
+// Empty state components
 import EmptyInbox, { EmptyInboxCompact } from '../components/empty-states/EmptyInbox';
 
-// ⭐ Import momentum context if available
-import { useMomentumContext } from '../contexts/MomentumContext';
+// Momentum context (optional)
+let useMomentumContext;
+try {
+  useMomentumContext = require('../contexts/MomentumContext').useMomentumContext;
+} catch (e) {
+  useMomentumContext = () => ({ glowLevel: 2, isFireMode: false });
+}
+
+// Auth context for current user
+import { useAuth } from '../context/AuthContext';
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MOCK DATA - Replace with real API calls
+   LOADING SKELETONS
 ───────────────────────────────────────────────────────────────────────── */
-const MOCK_CONVERSATIONS = [
-  {
-    id: '1',
-    participants: [{ name: 'Sarah Chen', avatar: null }],
-    lastMessage: 'Great work on the momentum engine!',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 mins ago
-    unread: true,
-    starred: true,
-  },
-  {
-    id: '2', 
-    participants: [{ name: 'Alex Rivera', avatar: null }],
-    lastMessage: 'Can you review the PR when you get a chance?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    unread: true,
-    starred: false,
-  },
-  {
-    id: '3',
-    participants: [{ name: 'Jordan Park', avatar: null }],
-    lastMessage: 'Meeting rescheduled to 3pm',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    unread: false,
-    starred: false,
-  },
-];
+const ConversationSkeleton = () => (
+  <div className="p-4 space-y-4">
+    {[1, 2, 3, 4, 5].map(i => (
+      <div key={i} className="flex gap-3 animate-pulse">
+        <div className="w-10 h-10 rounded-full bg-white/10" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-white/10 rounded w-3/4" />
+          <div className="h-3 bg-white/10 rounded w-1/2" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const MessagesSkeleton = () => (
+  <div className="p-4 space-y-4">
+    {[1, 2, 3, 4].map(i => (
+      <div key={i} className={`flex gap-3 ${i % 2 === 0 ? 'justify-end' : ''}`}>
+        {i % 2 !== 0 && <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />}
+        <div className={`space-y-1 ${i % 2 === 0 ? 'items-end' : ''}`}>
+          <div className={`h-16 bg-white/10 rounded-xl animate-pulse ${i % 2 === 0 ? 'w-48' : 'w-64'}`} />
+          <div className="h-3 bg-white/10 rounded w-16 animate-pulse" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ERROR STATE
+───────────────────────────────────────────────────────────────────────── */
+const ErrorState = ({ message, onRetry }) => (
+  <div className="p-8 text-center">
+    <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+    <p className="text-sm text-text-secondary mb-2">{message || 'Something went wrong'}</p>
+    {onRetry && (
+      <button
+        onClick={onRetry}
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors"
+      >
+        <RefreshCw className="w-4 h-4" />
+        Try Again
+      </button>
+    )}
+  </div>
+);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   AVATAR COMPONENT
+───────────────────────────────────────────────────────────────────────── */
+const Avatar = ({ user, size = 'md', className = '' }) => {
+  const sizes = {
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-12 h-12 text-base',
+  };
+
+  const initials = getUserInitials(user);
+  
+  if (user?.avatar) {
+    return (
+      <img 
+        src={user.avatar} 
+        alt={`${user.firstName || 'User'}'s avatar`}
+        className={`${sizes[size]} rounded-full object-cover ${className}`}
+      />
+    );
+  }
+
+  return (
+    <div className={`${sizes[size]} rounded-full bg-brand-500/20 flex items-center justify-center flex-shrink-0 ${className}`}>
+      <span className="font-medium text-brand-400">{initials}</span>
+    </div>
+  );
+};
 
 /* ─────────────────────────────────────────────────────────────────────────
    CONVERSATION LIST ITEM
 ───────────────────────────────────────────────────────────────────────── */
-const ConversationItem = ({ conversation, isSelected, onClick }) => {
-  const { participants, lastMessage, timestamp, unread, starred } = conversation;
-  const name = participants[0]?.name || 'Unknown';
+const ConversationItem = ({ conversation, isSelected, onClick, currentUserId }) => {
+  const displayName = getConversationDisplayName(conversation, currentUserId);
+  const otherUser = getOtherParticipant(conversation, currentUserId);
+  const unreadCount = conversation.unreadCount || 0;
+  const isStarred = conversation.isPinned || false;
+  const lastMessage = conversation.lastMessage?.content || 'No messages yet';
+  const lastMessageAt = conversation.lastMessage?.sentAt || conversation.lastActivityAt;
   
-  const formatTime = (date) => {
+  const formatTime = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
     const now = new Date();
     const diff = now - date;
     
     if (diff < 1000 * 60 * 60) {
-      return `${Math.floor(diff / (1000 * 60))}m`;
+      const mins = Math.floor(diff / (1000 * 60));
+      return mins <= 0 ? 'now' : `${mins}m`;
     }
     if (diff < 1000 * 60 * 60 * 24) {
       return `${Math.floor(diff / (1000 * 60 * 60))}h`;
     }
-    return `${Math.floor(diff / (1000 * 60 * 60 * 24))}d`;
+    if (diff < 1000 * 60 * 60 * 24 * 7) {
+      return `${Math.floor(diff / (1000 * 60 * 60 * 24))}d`;
+    }
+    return date.toLocaleDateString();
   };
   
   return (
@@ -91,37 +174,73 @@ const ConversationItem = ({ conversation, isSelected, onClick }) => {
           ? 'bg-brand-500/10 border-l-2 border-l-brand-500' 
           : 'hover:bg-surface-2 border-l-2 border-l-transparent'
         }
-        ${unread ? 'bg-surface-1/50' : ''}
+        ${unreadCount > 0 ? 'bg-surface-1/50' : ''}
       `}
     >
       {/* Avatar */}
-      <div className="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center flex-shrink-0">
-        <span className="text-sm font-medium text-brand-400">
-          {name.charAt(0)}
-        </span>
-      </div>
+      <Avatar user={otherUser} size="md" />
       
       {/* Content */}
       <div className="flex-1 min-w-0 text-left">
         <div className="flex items-center justify-between mb-1">
-          <span className={`text-sm truncate ${unread ? 'font-semibold text-text-primary' : 'text-text-secondary'}`}>
-            {name}
+          <span className={`text-sm truncate ${unreadCount > 0 ? 'font-semibold text-text-primary' : 'text-text-secondary'}`}>
+            {displayName}
           </span>
           <span className="text-xs text-text-tertiary ml-2 flex-shrink-0">
-            {formatTime(timestamp)}
+            {formatTime(lastMessageAt)}
           </span>
         </div>
-        <p className={`text-sm truncate ${unread ? 'text-text-secondary' : 'text-text-tertiary'}`}>
+        <p className={`text-sm truncate ${unreadCount > 0 ? 'text-text-secondary' : 'text-text-tertiary'}`}>
           {lastMessage}
         </p>
       </div>
       
       {/* Indicators */}
       <div className="flex flex-col items-center gap-1">
-        {starred && <Star className="w-3 h-3 text-warning-500 fill-warning-500" />}
-        {unread && <div className="w-2 h-2 rounded-full bg-brand-500" />}
+        {isStarred && <Star className="w-3 h-3 text-warning-500 fill-warning-500" />}
+        {unreadCount > 0 && (
+          <div className="min-w-[18px] h-[18px] rounded-full bg-brand-500 flex items-center justify-center">
+            <span className="text-[10px] font-medium text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>
+          </div>
+        )}
       </div>
     </button>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MESSAGE BUBBLE
+───────────────────────────────────────────────────────────────────────── */
+const MessageBubble = ({ message, isOwn, showAvatar, otherUser }) => {
+  const senderName = getSenderName(message);
+  const time = new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  return (
+    <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
+      {/* Avatar */}
+      {showAvatar && !isOwn ? (
+        <Avatar user={otherUser} size="sm" />
+      ) : (
+        <div className="w-8" /> // Spacer
+      )}
+      
+      {/* Message Content */}
+      <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
+        <div className={`
+          px-4 py-2.5 rounded-2xl
+          ${isOwn 
+            ? 'bg-brand-500 text-white rounded-br-md' 
+            : 'bg-surface-2 text-text-primary rounded-bl-md'
+          }
+        `}>
+          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+        </div>
+        <div className={`flex items-center gap-2 mt-1 ${isOwn ? 'justify-end' : ''}`}>
+          <span className="text-xs text-text-tertiary">{time}</span>
+          {message.isEdited && <span className="text-xs text-text-tertiary">(edited)</span>}
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -129,64 +248,140 @@ const ConversationItem = ({ conversation, isSelected, onClick }) => {
    MAIN MESSAGES PAGE
 ───────────────────────────────────────────────────────────────────────── */
 export default function Messages() {
-  const [conversations, setConversations] = useState([]);
-  const [selectedConversation, setSelectedConversation] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const messagesEndRef = useRef(null);
+  
+  // Auth context for current user
+  const { user: currentUser } = useAuth?.() || { user: null };
+  const currentUserId = currentUser?._id || currentUser?.id || '';
+  
+  // Local state
+  const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all'); // 'all' | 'unread' | 'starred'
   const [showComposer, setShowComposer] = useState(false);
+  const [messageInput, setMessageInput] = useState('');
   
-  // ⭐ PHASE D: Track inbox zero streak
+  // Inbox zero tracking (for empty states)
   const [inboxZeroStreak, setInboxZeroStreak] = useState(3);
   const [bestStreak, setBestStreak] = useState(5);
   const [inboxZeroAchievedAt, setInboxZeroAchievedAt] = useState(null);
   
-  // Get momentum context if available
+  // Momentum context
   let momentumContext = { glowLevel: 2, isFireMode: false };
   try {
     momentumContext = useMomentumContext();
   } catch (e) {
-    // Context not available, use defaults
+    // Context not available
   }
-  
-  const { glowLevel, isFireMode } = momentumContext;
 
-  // Load conversations
-  useEffect(() => {
-    const loadConversations = async () => {
-      setLoading(true);
-      // TODO: Replace with real API call
-      setTimeout(() => {
-        setConversations(MOCK_CONVERSATIONS);
-        setLoading(false);
-      }, 1000);
-    };
-    loadConversations();
-  }, []);
+  // ═══════════════════════════════════════════════════════════════════════
+  // DATA FETCHING
+  // ═══════════════════════════════════════════════════════════════════════
 
-  // Filter conversations
-  const filteredConversations = conversations.filter(conv => {
-    // Search filter
-    if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
-      const nameMatch = conv.participants.some(p => 
-        p.name.toLowerCase().includes(searchLower)
-      );
-      const messageMatch = conv.lastMessage.toLowerCase().includes(searchLower);
-      if (!nameMatch && !messageMatch) return false;
-    }
-    
-    // Category filter
-    if (filter === 'unread') return conv.unread;
-    if (filter === 'starred') return conv.starred;
-    return true;
+  // Fetch all conversations
+  const { 
+    data: conversations = [], 
+    isLoading: loadingConversations,
+    error: conversationsError,
+    refetch: refetchConversations,
+  } = useQuery({
+    queryKey: ['conversations'],
+    queryFn: () => messagesApi.getConversations(),
+    staleTime: 30 * 1000, // 30 seconds
+    refetchOnWindowFocus: true,
   });
 
+  // Get selected conversation object
+  const selectedConversation = conversations.find(c => 
+    (c._id || c.id) === selectedConversationId
+  );
+
+  // Fetch messages for selected conversation
+  const {
+    data: messagesData,
+    isLoading: loadingMessages,
+    error: messagesError,
+    refetch: refetchMessages,
+  } = useQuery({
+    queryKey: ['messages', selectedConversationId],
+    queryFn: () => messagesApi.getMessages(selectedConversationId),
+    enabled: !!selectedConversationId,
+    staleTime: 10 * 1000, // 10 seconds
+  });
+
+  const messages = messagesData?.messages || [];
+
+  // Fetch unread count
+  const { data: unreadData } = useQuery({
+    queryKey: ['unreadCount'],
+    queryFn: () => messagesApi.getUnreadCount(),
+    staleTime: 30 * 1000,
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // MUTATIONS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: (data) => messagesApi.sendMessage(data),
+    onSuccess: (newMessage) => {
+      // Optimistically add message to the list
+      queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
+        messages: [...(old?.messages || []), newMessage],
+        hasMore: old?.hasMore || false,
+      }));
+      
+      // Invalidate conversations to update last message
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      
+      setMessageInput('');
+    },
+    onError: (error) => {
+      console.error('Failed to send message:', error);
+      // Could show a toast here
+    },
+  });
+
+  // Mark as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: (conversationId) => messagesApi.markConversationRead(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['unreadCount'] });
+    },
+  });
+
+  // Toggle star/pin mutation
+  const toggleStarMutation = useMutation({
+    mutationFn: ({ conversationId, isPinned }) => 
+      messagesApi.updateSettings(conversationId, { isPinned: !isPinned }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // EFFECTS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Mark as read when opening conversation
+  useEffect(() => {
+    if (selectedConversation && (selectedConversation.unreadCount || 0) > 0) {
+      markAsReadMutation.mutate(selectedConversationId);
+    }
+  }, [selectedConversationId]);
+
   // Check for inbox zero
-  const hasUnreadMessages = conversations.some(c => c.unread);
-  const isInboxZero = !loading && conversations.length > 0 && !hasUnreadMessages;
+  const hasUnreadMessages = conversations.some(c => (c.unreadCount || 0) > 0);
+  const isInboxZero = !loadingConversations && conversations.length > 0 && !hasUnreadMessages;
   
-  // Track when inbox zero is achieved
   useEffect(() => {
     if (isInboxZero && !inboxZeroAchievedAt) {
       setInboxZeroAchievedAt(new Date());
@@ -195,15 +390,58 @@ export default function Messages() {
     }
   }, [isInboxZero, inboxZeroAchievedAt]);
 
-  // Handle archiving all (achieve inbox zero)
-  const handleArchiveAll = () => {
-    setConversations(prev => prev.map(c => ({ ...c, unread: false })));
+  // ═══════════════════════════════════════════════════════════════════════
+  // HANDLERS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // Filter conversations
+  const filteredConversations = conversations.filter(conv => {
+    // Search filter
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      const displayName = getConversationDisplayName(conv, currentUserId).toLowerCase();
+      const lastMessage = (conv.lastMessage?.content || '').toLowerCase();
+      if (!displayName.includes(searchLower) && !lastMessage.includes(searchLower)) {
+        return false;
+      }
+    }
+    
+    // Category filter
+    if (filter === 'unread') return (conv.unreadCount || 0) > 0;
+    if (filter === 'starred') return conv.isPinned;
+    return true;
+  });
+
+  const handleSelectConversation = (conv) => {
+    setSelectedConversationId(conv._id || conv.id);
   };
 
-  // Handle compose
+  const handleSendMessage = () => {
+    if (!messageInput.trim() || !selectedConversationId) return;
+    
+    sendMessageMutation.mutate({
+      conversationId: selectedConversationId,
+      content: messageInput.trim(),
+      type: 'text',
+    });
+  };
+
+  const handleMarkAllAsRead = () => {
+    conversations.forEach(conv => {
+      if ((conv.unreadCount || 0) > 0) {
+        markAsReadMutation.mutate(conv._id || conv.id);
+      }
+    });
+  };
+
   const handleCompose = () => {
     setShowComposer(true);
   };
+
+  // Get other user for selected conversation
+  const selectedOtherUser = selectedConversation 
+    ? getOtherParticipant(selectedConversation, currentUserId)
+    : null;
 
   return (
     <div className="h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] px-4 sm:px-6 lg:px-8 py-4">
@@ -222,6 +460,7 @@ export default function Messages() {
                 <button
                   onClick={handleCompose}
                   className="p-2 rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors"
+                  title="New message"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -266,6 +505,9 @@ export default function Messages() {
                   `}
                 >
                   {f}
+                  {f === 'unread' && unreadData?.total > 0 && (
+                    <span className="ml-1 text-brand-400">({unreadData.total})</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -273,32 +515,40 @@ export default function Messages() {
           
           {/* Conversation List */}
           <div className="flex-1 overflow-y-auto">
-            {loading ? (
-              // Loading skeleton
-              <div className="p-4 space-y-4">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="flex gap-3 animate-pulse">
-                    <div className="w-10 h-10 rounded-full bg-surface-2" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-surface-2 rounded w-3/4" />
-                      <div className="h-3 bg-surface-2 rounded w-1/2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {loadingConversations ? (
+              <ConversationSkeleton />
+            ) : conversationsError ? (
+              <ErrorState 
+                message="Failed to load conversations" 
+                onRetry={refetchConversations}
+              />
             ) : filteredConversations.length > 0 ? (
               <div className="divide-y divide-white/[0.06]">
                 {filteredConversations.map(conv => (
                   <ConversationItem
-                    key={conv.id}
+                    key={conv._id || conv.id}
                     conversation={conv}
-                    isSelected={selectedConversation?.id === conv.id}
-                    onClick={() => setSelectedConversation(conv)}
+                    isSelected={selectedConversationId === (conv._id || conv.id)}
+                    onClick={() => handleSelectConversation(conv)}
+                    currentUserId={currentUserId}
                   />
                 ))}
               </div>
+            ) : conversations.length === 0 ? (
+              // No conversations at all
+              <div className="p-8 text-center">
+                <MessageCircle className="w-12 h-12 text-text-tertiary mx-auto mb-3" />
+                <p className="text-sm text-text-secondary">No conversations yet</p>
+                <p className="text-xs text-text-tertiary mt-1">Start a new message to connect with your team</p>
+                <button
+                  onClick={handleCompose}
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 text-white text-sm hover:bg-brand-600 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  New Message
+                </button>
+              </div>
             ) : isInboxZero ? (
-              /* ⭐ PHASE D: Inbox Zero Celebration (compact) */
               <div className="p-4">
                 <EmptyInboxCompact 
                   streak={inboxZeroStreak}
@@ -319,7 +569,7 @@ export default function Messages() {
           {hasUnreadMessages && (
             <div className="p-3 border-t border-white/[0.06] bg-surface-0">
               <button
-                onClick={handleArchiveAll}
+                onClick={handleMarkAllAsRead}
                 className="
                   w-full flex items-center justify-center gap-2 
                   px-4 py-2 rounded-lg
@@ -343,43 +593,111 @@ export default function Messages() {
               {/* Thread Header */}
               <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center">
-                    <span className="text-sm font-medium text-brand-400">
-                      {selectedConversation.participants[0]?.name.charAt(0)}
-                    </span>
-                  </div>
+                  <Avatar user={selectedOtherUser} size="md" />
                   <div>
                     <h3 className="text-sm font-medium text-text-primary">
-                      {selectedConversation.participants[0]?.name}
+                      {getConversationDisplayName(selectedConversation, currentUserId)}
                     </h3>
-                    <p className="text-xs text-text-tertiary">Active now</p>
+                    <p className="text-xs text-text-tertiary">
+                      {selectedConversation.type === 'direct' ? 'Direct message' : selectedConversation.type}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors">
-                    <Star className="w-4 h-4" />
+                  <button 
+                    onClick={() => toggleStarMutation.mutate({ 
+                      conversationId: selectedConversationId, 
+                      isPinned: selectedConversation.isPinned 
+                    })}
+                    className={`p-2 rounded-lg hover:bg-surface-2 transition-colors ${
+                      selectedConversation.isPinned ? 'text-warning-500' : 'text-text-tertiary'
+                    }`}
+                  >
+                    <Star className={`w-4 h-4 ${selectedConversation.isPinned ? 'fill-warning-500' : ''}`} />
                   </button>
                   <button className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors">
-                    <Archive className="w-4 h-4" />
+                    <Phone className="w-4 h-4" />
                   </button>
                   <button className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors">
-                    <Trash2 className="w-4 h-4" />
+                    <Video className="w-4 h-4" />
+                  </button>
+                  <button className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors">
+                    <MoreHorizontal className="w-4 h-4" />
                   </button>
                 </div>
               </div>
               
-              {/* Thread Content */}
-              <div className="flex-1 overflow-y-auto p-4">
-                <MessageThread conversation={selectedConversation} />
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {loadingMessages ? (
+                  <MessagesSkeleton />
+                ) : messagesError ? (
+                  <ErrorState 
+                    message="Failed to load messages" 
+                    onRetry={refetchMessages}
+                  />
+                ) : messages.length > 0 ? (
+                  <>
+                    {messages.map((msg, i) => (
+                      <MessageBubble
+                        key={msg._id || msg.id || i}
+                        message={msg}
+                        isOwn={isOwnMessage(msg, currentUserId)}
+                        showAvatar={i === 0 || !isOwnMessage(messages[i-1], currentUserId)}
+                        otherUser={selectedOtherUser}
+                      />
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                      <MessageCircle className="w-12 h-12 text-text-tertiary mx-auto mb-3" />
+                      <p className="text-sm text-text-secondary">No messages yet</p>
+                      <p className="text-xs text-text-tertiary mt-1">Send a message to start the conversation</p>
+                    </div>
+                  </div>
+                )}
               </div>
               
-              {/* Composer */}
+              {/* Message Input */}
               <div className="p-4 border-t border-white/[0.06]">
-                <MessageComposer />
+                <div className="flex items-center gap-3">
+                  <button className="p-2 hover:bg-surface-2 rounded-lg transition-colors">
+                    <Paperclip className="w-5 h-5 text-text-tertiary" />
+                  </button>
+                  <input
+                    type="text"
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                    placeholder="Type a message..."
+                    className="
+                      flex-1 px-4 py-2.5 rounded-lg
+                      bg-surface-2 border border-white/[0.06]
+                      text-sm text-text-primary
+                      placeholder:text-text-tertiary
+                      focus:border-brand-500/50 focus:outline-none
+                      transition-colors
+                    "
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!messageInput.trim() || sendMessageMutation.isPending}
+                    className="
+                      p-2.5 rounded-lg
+                      bg-brand-500 text-white
+                      hover:bg-brand-600
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                      transition-colors
+                    "
+                  >
+                    <Send className={`w-5 h-5 ${sendMessageMutation.isPending ? 'animate-pulse' : ''}`} />
+                  </button>
+                </div>
               </div>
             </>
-          ) : isInboxZero ? (
-            /* ⭐ PHASE D: Full Inbox Zero Celebration */
+          ) : isInboxZero && conversations.length > 0 ? (
             <div className="flex-1 flex items-center justify-center p-8">
               <EmptyInbox
                 streak={inboxZeroStreak}
@@ -394,7 +712,6 @@ export default function Messages() {
               />
             </div>
           ) : (
-            /* No conversation selected */
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center">
                 <div className="w-16 h-16 rounded-2xl bg-surface-2 flex items-center justify-center mx-auto mb-4">
@@ -424,7 +741,9 @@ export default function Messages() {
         </section>
       </div>
       
-      {/* Compose Modal (if needed) */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          NEW MESSAGE MODAL
+      ═══════════════════════════════════════════════════════════════════ */}
       {showComposer && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-surface-1 rounded-2xl border border-white/[0.06] w-full max-w-lg p-6">

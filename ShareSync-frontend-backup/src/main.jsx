@@ -2,6 +2,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
+import ReactQueryProvider from "./context/ReactQueryProvider";
 import "./index.css";
 import "./theme.css";
 import "./styles/gradients.css";
@@ -103,7 +104,12 @@ function renderApp() {
 
   console.log("[MAIN] Rendering React app...");
   const root = ReactDOM.createRoot(rootElement);
-  root.render(<App />);
+
+  root.render(
+    <ReactQueryProvider>
+      <App />
+    </ReactQueryProvider>
+  );
   
   // Mark as rendered
   rootElement._reactRootContainer = true;
