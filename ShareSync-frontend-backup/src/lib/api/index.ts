@@ -1,2 +1,2 @@
+// src/lib/api/index.ts
 export * from './messages';
-export { default } from './messages';

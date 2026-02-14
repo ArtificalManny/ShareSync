@@ -3,6 +3,7 @@
 // PROJECT HOME: Mission Control with Premium View Navigation
 // Integrates existing hooks/context with new Pulse/Stack/Flow/etc. views
 // ⭐ FIX: Added validation for project ID to prevent /projects/undefined issue
+// ⭐ FIX: RoadmapView now receives projectId for API integration
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -1063,6 +1064,7 @@ export default function ProjectHome() {
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RENDER VIEW CONTENT - All views connected!
+  // ⭐ FIX: RoadmapView now receives projectId for API integration
   // ═══════════════════════════════════════════════════════════════════════════
   const renderViewContent = () => {
     switch (activeView) {
@@ -1104,6 +1106,7 @@ export default function ProjectHome() {
       case 'roadmap':
         return (
           <RoadmapView
+            projectId={id}
             milestones={milestones || objectives || []}
             onMilestoneClick={handleMilestoneClick}
             onAddMilestone={handleAddMilestone}

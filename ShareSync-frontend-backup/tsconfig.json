@@ -1,21 +1,38 @@
 {
-    "compilerOptions": {
-      "target": "ESNext",
-      "useDefineForClassFields": true,
-      "lib": ["DOM", "DOM.Iterable", "ESNext"],
-      "allowJs": false,
-      "skipLibCheck": true,
-      "esModuleInterop": false,
-      "allowSyntheticDefaultImports": true,
-      "strict": true,
-      "forceConsistentCasingInFileNames": true,
-      "module": "ESNext",
-      "moduleResolution": "Node",
-      "resolveJsonModule": true,
-      "isolatedModules": true,
-      "noEmit": true,
-      "jsx": "react-jsx",
-      "types": ["vite/client"]
-    },
-    "include": ["src", "../ShareSync-backend/src/utils/logUserActivity.ts", "../ShareSync-backend/src/models/streakFeedItem.model.ts"]
-  }
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "noEmit": true,
+
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+
+    "esModuleInterop": true,
+
+    "types": ["vite/client"],
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "src/types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "../ShareSync-backend/**"
+  ]
+}

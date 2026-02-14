@@ -1,28 +1,13 @@
 // src/components/projects/ProjectCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE B: Living Cards - Project Card Component
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// A living card specifically designed for projects. Automatically calculates
-// its visual state based on project properties.
-//
-// CHANGES FROM v2.0:
-// - Integrated with Living Card system
-// - Progress bars shimmer when near completion
-// - Card lifts and glows on hover
-// - State-specific left accent bars
-// - Stale projects get "nudge" treatment
-//
-// 3-ZONE PATTERN:
-// ┌─────────────────────────────────────────────────────────────────────────────┐
-// │ ZONE 1: Identity      │ ZONE 2: Status              │ ZONE 3: Action        │
-// │ Icon + Title + Meta   │ Progress bar + %            │ Status + Chevron      │
-// └─────────────────────────────────────────────────────────────────────────────┘
+// ⭐ FIX: Now handles both MongoDB _id and normalized id fields
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from 'react';
 import { Calendar, ChevronRight, Folder, CheckCircle2, AlertTriangle, Clock, XCircle } from 'lucide-react';
 import { useLivingCard } from '../../hooks/useLivingCard';
+import { getProjectId } from '../../utils/projectHelpers';
 
 /**
  * ProjectCard - A living card for projects
@@ -33,8 +18,10 @@ const ProjectCard = ({
   showProgress = true,
   className = '',
 }) => {
+  // ⭐ FIX: Safely extract ID handling both _id and id
+  const projectId = getProjectId(project);
+  
   const { 
-    id,
     name, 
     client, 
     progress = 0, 
@@ -46,7 +33,7 @@ const ProjectCard = ({
     isBlocked = false,
     blockers = [],
     priority = 'normal',
-  } = project;
+  } = project || {};
   
   // Calculate living state from project data
   const livingState = useLivingCard({
@@ -92,18 +79,28 @@ const ProjectCard = ({
     if (isNearComplete) return 'text-cyan-500';
     return 'text-text-tertiary';
   };
+
+  // ⭐ FIX: Safe click handler with validation
+  const handleClick = () => {
+    if (!projectId) {
+      console.error('[ProjectCard] Cannot click - project has no valid ID:', project);
+      return;
+    }
+    onClick?.(project);
+  };
   
   return (
     <div 
-      onClick={() => onClick?.(project)}
+      onClick={handleClick}
       className={`
         group living-card ${livingState.className}
         flex items-center gap-4 p-4 rounded-xl cursor-pointer
         transition-all duration-200
+        ${!projectId ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}
       `}
       data-living-state={livingState.state}
-      data-project-id={id}
+      data-project-id={projectId || 'invalid'}
     >
       {/* ═══════════════════════════════════════════════════════════════════
           ZONE 1: Identity (What is this?)
@@ -148,7 +145,7 @@ const ProjectCard = ({
                 : 'text-text-primary group-hover:text-brand'
               }
             `}>
-              {name}
+              {name || 'Untitled Project'}
             </h4>
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 text-xs text-text-tertiary">

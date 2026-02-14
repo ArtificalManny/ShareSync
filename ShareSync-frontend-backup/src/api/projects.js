@@ -1,5 +1,10 @@
 // src/api/projects.js - Hardened create + consistent unwrapping + better errors
+// ⭐ FIX: Added ID normalization to ensure all projects have valid id/_id fields
 import api from './client';
+
+// ============================================
+// HELPERS
+// ============================================
 
 // If backend returns { success: true, data: ... }, unwrap it.
 // If backend returns raw data directly, keep as-is.
@@ -54,6 +59,49 @@ function normalizeError(err, fallback = "Request failed") {
   return enriched;
 }
 
+/**
+ * ⭐ FIX: Normalize a single project to ensure id/_id exists
+ * @param {Object} project - Raw project from API
+ * @returns {Object|null} - Normalized project or null if invalid
+ */
+function normalizeProjectId(project) {
+  if (!project || typeof project !== 'object') return null;
+  
+  // Extract ID from various possible fields
+  const id = project._id || project.id || project.projectId;
+  
+  // Validate ID
+  if (!id || id === 'undefined' || id === 'null') {
+    console.warn('[projects.js] Project missing valid ID:', project);
+    return null;
+  }
+  
+  // Convert ObjectId to string if needed
+  const idString = typeof id === 'object' && id.toString ? id.toString() : String(id);
+  
+  // Ensure both name/title exist for UI compatibility
+  const name = project.name || project.title;
+  const title = project.title || project.name;
+  
+  return {
+    ...project,
+    id: idString,
+    _id: idString,
+    ...(name ? { name } : {}),
+    ...(title ? { title } : {}),
+  };
+}
+
+/**
+ * ⭐ FIX: Normalize array of projects
+ * @param {Array} projects - Array of raw projects
+ * @returns {Array} - Array of normalized projects (invalid ones filtered out)
+ */
+function normalizeProjectsArray(projects) {
+  if (!Array.isArray(projects)) return [];
+  return projects.map(normalizeProjectId).filter(Boolean);
+}
+
 // ============================================
 // PROJECTS
 // ============================================
@@ -62,7 +110,8 @@ export const getProjects = async () => {
   try {
     const response = await api.get('/projects');
     const data = unwrap(response);
-    return Array.isArray(data) ? data : [];
+    // ⭐ FIX: Normalize all projects to ensure IDs exist
+    return normalizeProjectsArray(data);
   } catch (err) {
     throw normalizeError(err, "Failed to load projects");
   }
@@ -72,7 +121,8 @@ export const getProjectsQuick = async () => {
   try {
     const response = await api.get('/projects/quick');
     const data = unwrap(response);
-    return Array.isArray(data) ? data : [];
+    // ⭐ FIX: Normalize all projects to ensure IDs exist
+    return normalizeProjectsArray(data);
   } catch (err) {
     throw normalizeError(err, "Failed to load projects (quick)");
   }
@@ -81,7 +131,9 @@ export const getProjectsQuick = async () => {
 export const getProject = async (projectId) => {
   try {
     const response = await api.get(`/projects/${projectId}`);
-    return unwrap(response);
+    const data = unwrap(response);
+    // ⭐ FIX: Normalize single project
+    return normalizeProjectId(data);
   } catch (err) {
     throw normalizeError(err, "Failed to load project");
   }
@@ -152,7 +204,7 @@ function normalizeCreatedProject(p) {
 
   return {
     ...candidate,
-    ...(id ? { _id: id } : {}),
+    ...(id ? { _id: id, id } : {}),
     ...(name ? { name } : {}),
     ...(title ? { title } : {}),
   };
@@ -182,7 +234,9 @@ export const createProject = async (projectData) => {
 export const updateProject = async (projectId, updates) => {
   try {
     const response = await api.put(`/projects/${projectId}`, updates);
-    return unwrap(response);
+    const data = unwrap(response);
+    // ⭐ FIX: Normalize updated project
+    return normalizeProjectId(data);
   } catch (err) {
     throw normalizeError(err, "Failed to update project");
   }
@@ -278,3 +332,9 @@ export const deleteShip = async (projectId, shipId) => {
     throw normalizeError(err, "Failed to delete ship");
   }
 };
+
+// ============================================
+// EXPORTS FOR HELPERS (for use in other files)
+// ============================================
+
+export { normalizeProjectId, normalizeProjectsArray };

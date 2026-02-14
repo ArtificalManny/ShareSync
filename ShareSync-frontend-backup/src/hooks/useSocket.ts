@@ -1,7 +1,17 @@
-import { useEffect, useMemo, useRef } from "react";
+// src/hooks/useSocket.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEBSOCKET HOOK - Enhanced for ShareSync real-time features
+// ⭐ PHASE 2A: Added emit capability and connection state tracking
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 
 const WS_URL = import.meta.env.VITE_WS_URL || "/";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export type SocketEventHandler<T = any> = (payload: T) => void;
 export type SocketEventMap = Record<string, SocketEventHandler<any>>;
@@ -11,18 +21,44 @@ export type UseSocketOptions = {
   onAny?: (eventName: string, ...args: any[]) => void;
   poller?: () => void;
   userId?: string | null;
+  enabled?: boolean; // ⭐ NEW: Allow disabling
+};
+
+export type SocketState = {
+  isConnected: boolean;
+  isConnecting: boolean;
+  error: Error | null;
+};
+
+export type UseSocketReturn = {
+  socket: Socket | null;
+  state: SocketState;
+  emit: (event: string, payload: any) => void;
+  joinRoom: (room: string) => void;
+  leaveRoom: (room: string) => void;
 };
 
 type AnyWrapper = ((event: string, ...args: any[]) => void) | null;
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// HOOK
+// ═══════════════════════════════════════════════════════════════════════════════
+
 export default function useSocket(
   roomsInput: string | string[] | null | undefined,
-  { onEvents = {}, onAny, poller, userId }: UseSocketOptions = {}
-) {
+  { onEvents = {}, onAny, poller, userId, enabled = true }: UseSocketOptions = {}
+): UseSocketReturn {
   const socketRef = useRef<Socket | null>(null);
   const handlersRef = useRef<SocketEventMap>(onEvents);
   const onAnyRef = useRef<UseSocketOptions["onAny"]>(onAny);
   const anyWrapperRef = useRef<AnyWrapper>(null);
+
+  // ⭐ NEW: Track connection state
+  const [state, setState] = useState<SocketState>({
+    isConnected: false,
+    isConnecting: false,
+    error: null,
+  });
 
   handlersRef.current = onEvents;
   onAnyRef.current = onAny;
@@ -40,7 +76,38 @@ export default function useSocket(
     return rooms.slice().sort().join("|");
   }, [roomsInput, userId]);
 
+  // ⭐ NEW: Emit function
+  const emit = useCallback((event: string, payload: any) => {
+    const socket = socketRef.current;
+    if (socket && socket.connected) {
+      socket.emit(event, payload);
+    } else {
+      console.warn('[useSocket] Cannot emit, socket not connected');
+    }
+  }, []);
+
+  // ⭐ NEW: Join room function
+  const joinRoom = useCallback((room: string) => {
+    const socket = socketRef.current;
+    if (socket && socket.connected) {
+      socket.emit('join', { room });
+    }
+  }, []);
+
+  // ⭐ NEW: Leave room function
+  const leaveRoom = useCallback((room: string) => {
+    const socket = socketRef.current;
+    if (socket && socket.connected) {
+      socket.emit('leave', { room });
+    }
+  }, []);
+
   useEffect(() => {
+    // ⭐ NEW: Skip if disabled
+    if (!enabled) {
+      return;
+    }
+
     const baseRooms = Array.isArray(roomsInput)
       ? Array.from(new Set(roomsInput.filter(Boolean).map(String)))
       : roomsInput
@@ -58,11 +125,17 @@ export default function useSocket(
 
     const token = localStorage.getItem("ss.jwt") || undefined;
 
+    setState(prev => ({ ...prev, isConnecting: true, error: null }));
+
     const socket = io(WS_URL, {
       path: "/socket.io",
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       withCredentials: true,
       auth: token ? { token } : undefined,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
     socketRef.current = socket;
@@ -73,8 +146,31 @@ export default function useSocket(
       } catch {}
     };
 
-    socket.on("connect", joinAll);
-    socket.io.on("reconnect", joinAll);
+    // ⭐ Connection state handlers
+    socket.on("connect", () => {
+      setState({ isConnected: true, isConnecting: false, error: null });
+      joinAll();
+    });
+
+    socket.on("disconnect", (reason) => {
+      setState(prev => ({ ...prev, isConnected: false }));
+      console.debug('[useSocket] Disconnected:', reason);
+    });
+
+    socket.on("connect_error", (error) => {
+      setState({ isConnected: false, isConnecting: false, error });
+      console.warn('[useSocket] Connection error:', error.message);
+    });
+
+    socket.io.on("reconnect", () => {
+      setState({ isConnected: true, isConnecting: false, error: null });
+      joinAll();
+    });
+
+    socket.io.on("reconnect_attempt", (attempt) => {
+      setState(prev => ({ ...prev, isConnecting: true }));
+      console.debug('[useSocket] Reconnect attempt:', attempt);
+    });
 
     // Catch-all
     if (typeof onAnyRef.current === "function") {
@@ -112,8 +208,11 @@ export default function useSocket(
 
       try { socket.disconnect(); } catch {}
       if (pollTimer) window.clearInterval(pollTimer);
+
+      socketRef.current = null;
+      setState({ isConnected: false, isConnecting: false, error: null });
     };
-  }, [roomsKey, roomsInput, poller, userId]);
+  }, [roomsKey, roomsInput, poller, userId, enabled]);
 
   // Rebind when onEvents changes identity
   useEffect(() => {
@@ -150,4 +249,32 @@ export default function useSocket(
 
     onAnyRef.current = onAny;
   }, [onAny]);
+
+  return {
+    socket: socketRef.current,
+    state,
+    emit,
+    joinRoom,
+    leaveRoom,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SIMPLE HOOK FOR COMPONENTS THAT JUST NEED SOCKET ACCESS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function useSocketEmit() {
+  const socketRef = useRef<Socket | null>(null);
+
+  const emit = useCallback((event: string, payload: any) => {
+    // Try to get socket from context if available
+    const socket = socketRef.current;
+    if (socket && socket.connected) {
+      socket.emit(event, payload);
+      return true;
+    }
+    return false;
+  }, []);
+
+  return { emit, setSocket: (s: Socket | null) => { socketRef.current = s; } };
 }

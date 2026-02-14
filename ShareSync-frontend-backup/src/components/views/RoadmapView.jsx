@@ -1,368 +1,850 @@
 // src/components/views/RoadmapView.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// ROADMAP VIEW: Timeline with confidence visualization
-// See the big picture, track milestones, understand dependencies
+// Roadmap View Component - Main view for displaying project milestones
+// ⭐ FIX: Now fetches milestones directly when projectId is provided
+// ⭐ Backward compatible: still accepts milestones as props
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  Plus, Filter, ChevronLeft, ChevronRight, Calendar,
-  Target, AlertTriangle, CheckCircle2, Clock, Users,
-  ArrowRight, Milestone, Flag, Zap, Eye
+  Flag,
+  Grid,
+  List,
+  Calendar,
+  Plus,
+  Filter,
+  ChevronDown,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  MoreHorizontal,
+  Target,
 } from 'lucide-react';
+import client from '../../api/client';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// TIMELINE HEADER
-// ═══════════════════════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────────────────
+   API FUNCTIONS
+───────────────────────────────────────────────────────────────────────── */
 
-function TimelineHeader({ startDate, months, viewMode, onViewModeChange }) {
-  return (
-    <div className="flex border-b border-white/[0.06]">
-      {/* Row labels column */}
-      <div className="w-72 flex-shrink-0 px-4 py-3 bg-surface-1 border-r border-white/[0.06]">
-        <span className="text-sm font-medium text-text-secondary">Milestones</span>
-      </div>
-      
-      {/* Timeline months */}
-      <div className="flex-1 flex">
-        {months.map((month, idx) => (
-          <div 
-            key={idx}
-            className="flex-1 min-w-[120px] px-4 py-3 border-r border-white/[0.06] last:border-r-0"
-          >
-            <span className="text-sm font-medium text-text-secondary">{month.label}</span>
-            <div className="text-xs text-text-tertiary mt-0.5">{month.year}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MILESTONE ROW
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function MilestoneRow({ milestone, timelineStart, timelineEnd, totalDays, onMilestoneClick }) {
-  const getConfidenceColor = (confidence) => {
-    if (confidence >= 80) return { bg: 'bg-success-500', text: 'text-success-400', light: 'bg-success-500/20' };
-    if (confidence >= 60) return { bg: 'bg-warning-500', text: 'text-warning-400', light: 'bg-warning-500/20' };
-    return { bg: 'bg-error-500', text: 'text-error-400', light: 'bg-error-500/20' };
-  };
+/**
+ * Fetch milestones for a project
+ * Tries multiple endpoint patterns to ensure compatibility
+ */
+async function fetchMilestones(projectId) {
+  if (!projectId) return [];
   
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'completed': return { label: 'Completed', color: 'bg-success-500/15 text-success-400' };
-      case 'on_track': return { label: 'On Track', color: 'bg-success-500/15 text-success-400' };
-      case 'at_risk': return { label: 'At Risk', color: 'bg-warning-500/15 text-warning-400' };
-      case 'behind': return { label: 'Behind', color: 'bg-error-500/15 text-error-400' };
-      default: return { label: 'Planned', color: 'bg-surface-2 text-text-tertiary' };
+  // Try different endpoint patterns
+  const endpoints = [
+    `/milestones?projectId=${projectId}`,
+    `/projects/${projectId}/milestones`,
+    `/milestones/project/${projectId}`,
+  ];
+  
+  for (const endpoint of endpoints) {
+    try {
+      const response = await client.get(endpoint);
+      const data = response?.data;
+      
+      // Handle different response shapes
+      if (Array.isArray(data)) return data;
+      if (data?.milestones && Array.isArray(data.milestones)) return data.milestones;
+      if (data?.data && Array.isArray(data.data)) return data.data;
+      if (data?.items && Array.isArray(data.items)) return data.items;
+      
+      // If we got here with a 200, but no array, try next endpoint
+      console.log(`[RoadmapView] Endpoint ${endpoint} returned non-array:`, data);
+    } catch (err) {
+      // 404 is expected for some endpoints, try next
+      if (err?.response?.status === 404) {
+        console.log(`[RoadmapView] Endpoint ${endpoint} not found, trying next...`);
+        continue;
+      }
+      // Other errors, log but try next
+      console.warn(`[RoadmapView] Error fetching from ${endpoint}:`, err?.message);
     }
-  };
+  }
   
-  // Calculate position and width
-  const startDate = new Date(milestone.startDate);
-  const endDate = new Date(milestone.endDate);
-  const startOffset = Math.max(0, (startDate - timelineStart) / (1000 * 60 * 60 * 24));
-  const duration = (endDate - startDate) / (1000 * 60 * 60 * 24);
-  
-  const leftPercent = (startOffset / totalDays) * 100;
-  const widthPercent = (duration / totalDays) * 100;
-  
-  const confidence = milestone.confidence || 75;
-  const colors = getConfidenceColor(confidence);
-  const status = getStatusBadge(milestone.status);
-  
-  return (
-    <div className="flex border-b border-white/[0.06] hover:bg-surface-1/50 transition-colors">
-      {/* Milestone Info */}
-      <div 
-        className="w-72 flex-shrink-0 px-4 py-4 border-r border-white/[0.06] cursor-pointer"
-        onClick={() => onMilestoneClick?.(milestone)}
-      >
-        <div className="flex items-start gap-3">
-          <div className={`w-8 h-8 rounded-lg ${colors.light} flex items-center justify-center flex-shrink-0`}>
-            {milestone.icon || <Milestone className={`w-4 h-4 ${colors.text}`} />}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-text-primary truncate">{milestone.title}</div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${status.color}`}>
-                {status.label}
-              </span>
-              <span className="text-xs text-text-tertiary">
-                {milestone.tasksComplete}/{milestone.tasksTotal} tasks
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Timeline Bar */}
-      <div className="flex-1 relative py-4 px-4">
-        {/* Grid lines would go here */}
-        
-        {/* Milestone bar */}
-        <div 
-          className="absolute top-1/2 -translate-y-1/2 h-10 rounded-lg overflow-hidden cursor-pointer group"
-          style={{ left: `${leftPercent}%`, width: `${Math.max(widthPercent, 5)}%` }}
-          onClick={() => onMilestoneClick?.(milestone)}
-        >
-          {/* Background bar (uncertainty range) */}
-          <div className={`absolute inset-0 ${colors.light} rounded-lg`} />
-          
-          {/* Progress bar */}
-          <div 
-            className={`absolute inset-y-0 left-0 ${colors.bg} rounded-l-lg transition-all duration-500`}
-            style={{ width: `${milestone.progress || 0}%` }}
-          />
-          
-          {/* Content */}
-          <div className="absolute inset-0 flex items-center justify-between px-3">
-            <span className="text-xs font-medium text-white truncate">
-              {milestone.title}
-            </span>
-            <span className={`text-xs font-bold ${colors.text}`}>
-              {confidence}%
-            </span>
-          </div>
-          
-          {/* Hover tooltip */}
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg bg-surface-1 border border-white/[0.08] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-            <div className="text-xs text-text-secondary">
-              {new Date(milestone.startDate).toLocaleDateString()} — {new Date(milestone.endDate).toLocaleDateString()}
-            </div>
-            <div className="text-xs text-text-tertiary mt-1">
-              {confidence}% confidence · {milestone.progress}% complete
-            </div>
-          </div>
-        </div>
-        
-        {/* Dependencies would render as arrows here */}
-      </div>
-    </div>
-  );
+  console.warn('[RoadmapView] All milestone endpoints failed for project:', projectId);
+  return [];
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// TODAY LINE
-// ═══════════════════════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────────────────
+   SKELETON COMPONENTS
+───────────────────────────────────────────────────────────────────────── */
+const SkeletonCard = () => (
+  <div className="p-5 rounded-xl bg-surface-1 border border-white/[0.06] animate-pulse">
+    <div className="flex items-center justify-between mb-4">
+      <div className="h-6 w-24 bg-surface-3 rounded-md" />
+      <div className="h-6 w-6 bg-surface-3 rounded" />
+    </div>
+    <div className="h-5 w-3/4 bg-surface-3 rounded mb-2" />
+    <div className="h-4 w-full bg-surface-3 rounded mb-4" />
+    <div className="h-3 w-1/2 bg-surface-3 rounded mb-4" />
+    <div className="h-2 w-full bg-surface-3 rounded mb-3" />
+    <div className="flex justify-between pt-3 border-t border-white/[0.06]">
+      <div className="h-4 w-16 bg-surface-3 rounded" />
+      <div className="h-4 w-4 bg-surface-3 rounded" />
+    </div>
+  </div>
+);
 
-function TodayLine({ timelineStart, totalDays }) {
-  const today = new Date();
-  const daysFromStart = (today - timelineStart) / (1000 * 60 * 60 * 24);
-  const leftPercent = (daysFromStart / totalDays) * 100;
+const SkeletonRow = () => (
+  <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-1 border border-white/[0.06] animate-pulse">
+    <div className="h-7 w-24 bg-surface-3 rounded-md" />
+    <div className="flex-1 h-4 bg-surface-3 rounded" />
+    <div className="w-32 h-2 bg-surface-3 rounded-full" />
+    <div className="w-16 h-4 bg-surface-3 rounded" />
+    <div className="w-16 h-4 bg-surface-3 rounded" />
+  </div>
+);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   EMPTY STATE
+───────────────────────────────────────────────────────────────────────── */
+const EmptyState = ({ onCreateMilestone }) => (
+  <div className="flex flex-col items-center justify-center py-16 text-center">
+    <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center mb-6">
+      <Flag className="w-8 h-8 text-brand" />
+    </div>
+    <h3 className="text-lg font-semibold text-text-primary mb-2">
+      No milestones yet
+    </h3>
+    <p className="text-sm text-text-secondary max-w-sm mb-6">
+      Create your first milestone to start tracking progress on your project roadmap.
+    </p>
+    {onCreateMilestone && (
+      <button
+        onClick={onCreateMilestone}
+        className="
+          flex items-center gap-2 px-4 py-2.5 rounded-lg
+          bg-brand text-white text-sm font-medium
+          hover:bg-brand-600 hover:shadow-glow-brand
+          transition-all duration-200
+        "
+      >
+        <Plus className="w-4 h-4" />
+        Create Milestone
+      </button>
+    )}
+  </div>
+);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ERROR STATE
+───────────────────────────────────────────────────────────────────────── */
+const ErrorState = ({ error, onRetry }) => (
+  <div className="flex flex-col items-center justify-center py-16 text-center">
+    <div className="w-16 h-16 rounded-2xl bg-error-500/10 flex items-center justify-center mb-6">
+      <AlertCircle className="w-8 h-8 text-error-500" />
+    </div>
+    <h3 className="text-lg font-semibold text-text-primary mb-2">
+      Failed to load milestones
+    </h3>
+    <p className="text-sm text-text-secondary max-w-sm mb-6">
+      {error?.message || 'Something went wrong while fetching milestones.'}
+    </p>
+    {onRetry && (
+      <button
+        onClick={onRetry}
+        className="
+          flex items-center gap-2 px-4 py-2.5 rounded-lg
+          bg-surface-2 text-text-primary text-sm font-medium
+          hover:bg-surface-3 border border-white/[0.06]
+          transition-all duration-200
+        "
+      >
+        <RefreshCw className="w-4 h-4" />
+        Try Again
+      </button>
+    )}
+  </div>
+);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   VIEW MODES
+───────────────────────────────────────────────────────────────────────── */
+const VIEW_MODES = {
+  grid: { icon: Grid, label: 'Grid' },
+  list: { icon: List, label: 'List' },
+  timeline: { icon: Calendar, label: 'Timeline' },
+};
+
+const STATUS_FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'planned', label: 'Planned' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'at_risk', label: 'At Risk' },
+];
+
+/* ─────────────────────────────────────────────────────────────────────────
+   STATUS HELPERS
+───────────────────────────────────────────────────────────────────────── */
+const STATUS_CONFIG = {
+  planned: {
+    label: 'Planned',
+    color: 'text-text-tertiary',
+    bg: 'bg-surface-3',
+    icon: Clock,
+  },
+  'in-progress': {
+    label: 'In Progress',
+    color: 'text-brand',
+    bg: 'bg-brand/10',
+    icon: Target,
+  },
+  'in_progress': {
+    label: 'In Progress',
+    color: 'text-brand',
+    bg: 'bg-brand/10',
+    icon: Target,
+  },
+  completed: {
+    label: 'Completed',
+    color: 'text-success',
+    bg: 'bg-success/10',
+    icon: CheckCircle2,
+  },
+  'at-risk': {
+    label: 'At Risk',
+    color: 'text-error-500',
+    bg: 'bg-error-500/10',
+    icon: AlertTriangle,
+  },
+  'at_risk': {
+    label: 'At Risk',
+    color: 'text-error-500',
+    bg: 'bg-error-500/10',
+    icon: AlertTriangle,
+  },
+};
+
+const getStatusConfig = (status) => {
+  const normalized = status?.toLowerCase?.()?.replace('-', '_') || 'planned';
+  return STATUS_CONFIG[normalized] || STATUS_CONFIG.planned;
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   NORMALIZE MILESTONE - Handle different API response formats
+───────────────────────────────────────────────────────────────────────── */
+const normalizeMilestone = (milestone) => {
+  if (!milestone) return null;
   
-  if (leftPercent < 0 || leftPercent > 100) return null;
+  // Extract ID
+  const id = milestone._id || milestone.id || milestone.milestoneId;
+  if (!id) {
+    console.warn('[RoadmapView] Milestone missing ID:', milestone);
+    return null;
+  }
+  
+  // Normalize status (backend uses 'in_progress', frontend might use 'in-progress')
+  const rawStatus = milestone?.status || 'planned';
+  const status = rawStatus.replace('_', '-');
+  
+  // Extract title from various possible fields
+  const title = 
+    milestone?.title || 
+    milestone?.name || 
+    milestone?.label ||
+    milestone?.milestone?.title ||
+    'Untitled Milestone';
+  
+  // Extract description
+  const description = 
+    milestone?.description || 
+    milestone?.summary ||
+    milestone?.details ||
+    '';
+  
+  // Extract dates
+  const dueDate = milestone?.dueDate || milestone?.targetDate || milestone?.endDate;
+  const startDate = milestone?.startDate || milestone?.createdAt;
+  
+  // Extract task counts
+  const completedTasks = milestone?.completedTasks || milestone?.tasksCompleted || 0;
+  const totalTasks = milestone?.totalTasks || milestone?.taskCount || 0;
+  
+  // Calculate progress
+  const progress = totalTasks > 0 
+    ? Math.round((completedTasks / totalTasks) * 100) 
+    : (milestone?.progress || 0);
+  
+  return {
+    ...milestone,
+    id,
+    _id: id,
+    status,
+    title,
+    description,
+    dueDate,
+    startDate,
+    completedTasks,
+    totalTasks,
+    progress,
+  };
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MILESTONE CARD COMPONENT
+───────────────────────────────────────────────────────────────────────── */
+const MilestoneCard = ({ milestone, onClick, onEdit, onDelete }) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const statusConfig = getStatusConfig(milestone.status);
+  const StatusIcon = statusConfig.icon;
+  
+  const progress = milestone.progress || 0;
+  const isOverdue = milestone.dueDate && new Date(milestone.dueDate) < new Date() && milestone.status !== 'completed';
   
   return (
     <div 
-      className="absolute top-0 bottom-0 w-px bg-brand-500 z-10"
-      style={{ left: `calc(288px + ${leftPercent}% * (100% - 288px) / 100)` }}
+      className="
+        group p-5 rounded-xl bg-surface-1 border border-white/[0.06]
+        hover:bg-surface-2 hover:border-white/[0.1]
+        transition-all duration-200 cursor-pointer
+      "
+      onClick={() => onClick?.(milestone)}
     >
-      <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-brand-500 text-white text-[10px] font-bold">
-        TODAY
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export default function RoadmapView({ 
-  milestones = [], 
-  onMilestoneClick,
-  onAddMilestone 
-}) {
-  const [viewMode, setViewMode] = useState('quarters'); // months, quarters
-  const [showDependencies, setShowDependencies] = useState(true);
-  
-  // Calculate timeline range
-  const timelineConfig = useMemo(() => {
-    const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 5, 0);
-    
-    const months = [];
-    let current = new Date(startDate);
-    while (current <= endDate) {
-      months.push({
-        label: current.toLocaleDateString('en-US', { month: 'short' }),
-        year: current.getFullYear(),
-        date: new Date(current)
-      });
-      current.setMonth(current.getMonth() + 1);
-    }
-    
-    const totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
-    
-    return { startDate, endDate, months, totalDays };
-  }, [viewMode]);
-  
-  // Mock milestones if none provided
-  const displayMilestones = milestones.length > 0 ? milestones : [
-    {
-      id: '1',
-      title: 'Beta Launch',
-      startDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-      endDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
-      progress: 65,
-      confidence: 85,
-      status: 'on_track',
-      tasksComplete: 12,
-      tasksTotal: 18
-    },
-    {
-      id: '2',
-      title: 'API v2 Migration',
-      startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      endDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
-      progress: 30,
-      confidence: 62,
-      status: 'at_risk',
-      tasksComplete: 5,
-      tasksTotal: 15
-    },
-    {
-      id: '3',
-      title: 'Mobile App Launch',
-      startDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      endDate: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000),
-      progress: 15,
-      confidence: 45,
-      status: 'behind',
-      tasksComplete: 3,
-      tasksTotal: 20
-    }
-  ];
-  
-  return (
-    <div className="p-10 max-w-full mx-auto">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onAddMilestone}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Milestone</span>
-          </button>
-          
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-1 border border-white/[0.08] text-text-secondary text-sm hover:bg-surface-2 transition-colors">
-            <Filter className="w-4 h-4" />
-            <span>Filter</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowDependencies(!showDependencies)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm transition-colors
-              ${showDependencies 
-                ? 'bg-brand-500/10 border-brand-500/30 text-brand-400' 
-                : 'bg-surface-1 border-white/[0.08] text-text-secondary hover:bg-surface-2'
-              }
-            `}
-          >
-            <ArrowRight className="w-4 h-4" />
-            <span>Dependencies</span>
-          </button>
-        </div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <span className={`
+          inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium
+          ${statusConfig.bg} ${statusConfig.color}
+        `}>
+          <StatusIcon className="w-3 h-3" />
+          {statusConfig.label}
+        </span>
         
-        <div className="flex items-center gap-2">
-          <button className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          
-          <div className="flex items-center gap-1 px-3 py-2 rounded-xl bg-surface-1 border border-white/[0.08]">
-            <Calendar className="w-4 h-4 text-text-tertiary" />
-            <span className="text-sm text-text-secondary">Q1 — Q2 2026</span>
-          </div>
-          
-          <button className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors">
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-      
-      {/* Legend */}
-      <div className="flex items-center gap-6 mb-6 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-success-500" />
-          <span className="text-text-tertiary">On Track (80%+)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-warning-500" />
-          <span className="text-text-tertiary">Monitor (60-80%)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-error-500" />
-          <span className="text-text-tertiary">At Risk (&lt;60%)</span>
-        </div>
-      </div>
-      
-      {/* Timeline */}
-      <div className="relative rounded-xl border border-white/[0.06] bg-surface-0 overflow-hidden">
-        {/* Today line */}
-        <TodayLine 
-          timelineStart={timelineConfig.startDate} 
-          totalDays={timelineConfig.totalDays}
-        />
-        
-        {/* Header */}
-        <TimelineHeader 
-          months={timelineConfig.months}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-        />
-        
-        {/* Milestone rows */}
-        <div>
-          {displayMilestones.map(milestone => (
-            <MilestoneRow
-              key={milestone.id}
-              milestone={milestone}
-              timelineStart={timelineConfig.startDate}
-              timelineEnd={timelineConfig.endDate}
-              totalDays={timelineConfig.totalDays}
-              onMilestoneClick={onMilestoneClick}
-            />
-          ))}
-        </div>
-        
-        {/* Empty state */}
-        {displayMilestones.length === 0 && (
-          <div className="py-20 text-center">
-            <Target className="w-12 h-12 text-text-tertiary mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-text-primary mb-2">No milestones yet</h3>
-            <p className="text-sm text-text-tertiary mb-6">Create your first milestone to start planning</p>
+        {(onEdit || onDelete) && (
+          <div className="relative">
             <button
-              onClick={onAddMilestone}
-              className="px-4 py-2 rounded-lg bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-colors"
+              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-surface-3 transition-all"
             >
-              Add Milestone
+              <MoreHorizontal className="w-4 h-4 text-text-tertiary" />
             </button>
+            
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
+                <div className="absolute right-0 top-full mt-1 z-20 w-32 py-1 rounded-lg bg-surface-2 border border-white/[0.08] shadow-lg">
+                  {onEdit && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onEdit(milestone); setShowMenu(false); }}
+                      className="w-full px-3 py-2 text-sm text-left text-text-secondary hover:text-text-primary hover:bg-surface-3"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDelete(milestone); setShowMenu(false); }}
+                      className="w-full px-3 py-2 text-sm text-left text-error-500 hover:bg-error-500/10"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
       
-      {/* Scenario Runner */}
-      <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-brand-500/10 border border-purple-500/20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Eye className="w-5 h-5 text-purple-400" />
-            <div>
-              <div className="text-sm font-medium text-text-primary">What-If Simulator</div>
-              <div className="text-xs text-text-tertiary">See how changes affect your timeline</div>
-            </div>
-          </div>
-          <button className="px-4 py-2 rounded-lg bg-purple-500/20 text-purple-400 text-sm font-medium hover:bg-purple-500/30 transition-colors">
-            Run Scenario
-          </button>
+      {/* Title & Description */}
+      <h3 className="text-base font-medium text-text-primary mb-1 line-clamp-2">
+        {milestone.title}
+      </h3>
+      {milestone.description && (
+        <p className="text-sm text-text-tertiary mb-4 line-clamp-2">
+          {milestone.description}
+        </p>
+      )}
+      
+      {/* Due Date */}
+      {milestone.dueDate && (
+        <div className={`flex items-center gap-1.5 text-xs mb-4 ${isOverdue ? 'text-error-500' : 'text-text-tertiary'}`}>
+          <Clock className="w-3 h-3" />
+          <span>
+            {isOverdue ? 'Overdue: ' : 'Due: '}
+            {new Date(milestone.dueDate).toLocaleDateString()}
+          </span>
         </div>
+      )}
+      
+      {/* Progress Bar */}
+      <div className="mb-3">
+        <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+          <div 
+            className={`h-full rounded-full transition-all duration-500 ${
+              milestone.status === 'completed' ? 'bg-success' :
+              isOverdue ? 'bg-error-500' : 'bg-brand'
+            }`}
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          />
+        </div>
+      </div>
+      
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+        <span className="text-xs text-text-tertiary">
+          {milestone.completedTasks}/{milestone.totalTasks} tasks
+        </span>
+        <span className={`text-xs font-medium ${
+          progress >= 100 ? 'text-success' : 
+          progress >= 50 ? 'text-brand' : 'text-text-tertiary'
+        }`}>
+          {progress}%
+        </span>
       </div>
     </div>
   );
-}
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MILESTONE ROW COMPONENT
+───────────────────────────────────────────────────────────────────────── */
+const MilestoneRow = ({ milestone, onClick }) => {
+  const statusConfig = getStatusConfig(milestone.status);
+  const StatusIcon = statusConfig.icon;
+  const progress = milestone.progress || 0;
+  const isOverdue = milestone.dueDate && new Date(milestone.dueDate) < new Date() && milestone.status !== 'completed';
+  
+  return (
+    <div 
+      className="
+        flex items-center gap-4 p-4 rounded-xl bg-surface-1 border border-white/[0.06]
+        hover:bg-surface-2 hover:border-white/[0.1]
+        transition-all duration-200 cursor-pointer
+      "
+      onClick={() => onClick?.(milestone)}
+    >
+      {/* Status Badge */}
+      <span className={`
+        inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium min-w-[100px]
+        ${statusConfig.bg} ${statusConfig.color}
+      `}>
+        <StatusIcon className="w-3 h-3" />
+        {statusConfig.label}
+      </span>
+      
+      {/* Title */}
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-medium text-text-primary truncate">
+          {milestone.title}
+        </h3>
+      </div>
+      
+      {/* Progress Bar */}
+      <div className="w-32 flex items-center gap-2">
+        <div className="flex-1 h-1.5 bg-surface-3 rounded-full overflow-hidden">
+          <div 
+            className={`h-full rounded-full transition-all duration-500 ${
+              milestone.status === 'completed' ? 'bg-success' :
+              isOverdue ? 'bg-error-500' : 'bg-brand'
+            }`}
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          />
+        </div>
+        <span className="text-xs text-text-tertiary w-8 text-right">{progress}%</span>
+      </div>
+      
+      {/* Tasks */}
+      <span className="text-xs text-text-tertiary w-20 text-right">
+        {milestone.completedTasks}/{milestone.totalTasks} tasks
+      </span>
+      
+      {/* Due Date */}
+      <span className={`text-xs w-24 text-right ${isOverdue ? 'text-error-500' : 'text-text-tertiary'}`}>
+        {milestone.dueDate ? new Date(milestone.dueDate).toLocaleDateString() : '—'}
+      </span>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MILESTONE TIMELINE COMPONENT
+───────────────────────────────────────────────────────────────────────── */
+const MilestoneTimeline = ({ milestones, onMilestoneClick }) => {
+  // Sort by due date
+  const sorted = [...milestones].sort((a, b) => {
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return new Date(a.dueDate) - new Date(b.dueDate);
+  });
+  
+  return (
+    <div className="relative pl-8">
+      {/* Timeline line */}
+      <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-surface-3" />
+      
+      {sorted.map((milestone, index) => {
+        const statusConfig = getStatusConfig(milestone.status);
+        const isOverdue = milestone.dueDate && new Date(milestone.dueDate) < new Date() && milestone.status !== 'completed';
+        
+        return (
+          <div 
+            key={milestone.id || milestone._id} 
+            className="relative pb-8 last:pb-0"
+          >
+            {/* Timeline dot */}
+            <div className={`
+              absolute left-[-20px] w-6 h-6 rounded-full border-2 flex items-center justify-center
+              ${milestone.status === 'completed' 
+                ? 'bg-success border-success' 
+                : isOverdue 
+                  ? 'bg-error-500 border-error-500'
+                  : 'bg-surface-1 border-surface-3'
+              }
+            `}>
+              {milestone.status === 'completed' && (
+                <CheckCircle2 className="w-3 h-3 text-white" />
+              )}
+            </div>
+            
+            {/* Content */}
+            <div 
+              className="
+                p-4 rounded-xl bg-surface-1 border border-white/[0.06]
+                hover:bg-surface-2 hover:border-white/[0.1]
+                transition-all duration-200 cursor-pointer
+              "
+              onClick={() => onMilestoneClick?.(milestone)}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className={`
+                  inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium
+                  ${statusConfig.bg} ${statusConfig.color}
+                `}>
+                  {statusConfig.label}
+                </span>
+                {milestone.dueDate && (
+                  <span className={`text-xs ${isOverdue ? 'text-error-500' : 'text-text-tertiary'}`}>
+                    {new Date(milestone.dueDate).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-sm font-medium text-text-primary mb-1">
+                {milestone.title}
+              </h3>
+              <div className="flex items-center gap-4 text-xs text-text-tertiary">
+                <span>{milestone.completedTasks}/{milestone.totalTasks} tasks</span>
+                <span>{milestone.progress}% complete</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────────────────────────────────────── */
+const RoadmapView = ({
+  // ⭐ projectId - if provided, will fetch milestones automatically
+  projectId,
+  
+  // Data props (can come from parent OR be fetched)
+  milestones: propMilestones,
+  isLoading: propIsLoading,
+  error: propError,
+  
+  // Callbacks
+  onMilestoneClick,
+  onCreateMilestone,
+  onEditMilestone,
+  onDeleteMilestone,
+  onAddMilestone, // Alias for onCreateMilestone
+  onRefresh: propOnRefresh,
+}) => {
+  const [viewMode, setViewMode] = useState('grid');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  
+  // ⭐ Internal state for self-fetching
+  const [fetchedMilestones, setFetchedMilestones] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Determine if we should fetch ourselves
+  const shouldFetch = projectId && (!propMilestones || propMilestones.length === 0);
+  
+  // Fetch function
+  const loadMilestones = useCallback(async () => {
+    if (!projectId) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const data = await fetchMilestones(projectId);
+      console.log('[RoadmapView] Fetched milestones:', data);
+      setFetchedMilestones(data);
+    } catch (err) {
+      console.error('[RoadmapView] Failed to fetch milestones:', err);
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [projectId]);
+  
+  // Fetch on mount if needed
+  useEffect(() => {
+    if (shouldFetch) {
+      loadMilestones();
+    }
+  }, [shouldFetch, loadMilestones]);
+  
+  // Combine refresh handlers
+  const handleRefresh = useCallback(() => {
+    if (propOnRefresh) {
+      propOnRefresh();
+    }
+    if (shouldFetch) {
+      loadMilestones();
+    }
+  }, [propOnRefresh, shouldFetch, loadMilestones]);
+  
+  // Use prop data OR fetched data
+  const rawMilestones = propMilestones?.length > 0 ? propMilestones : fetchedMilestones;
+  const loading = propIsLoading ?? isLoading;
+  const err = propError ?? error;
+
+  // Normalize milestones for consistent display
+  const normalizedMilestones = useMemo(() => {
+    return rawMilestones.map(normalizeMilestone).filter(Boolean);
+  }, [rawMilestones]);
+
+  // Filter milestones
+  const filteredMilestones = useMemo(() => {
+    if (statusFilter === 'all') return normalizedMilestones;
+    const filterValue = statusFilter.replace('-', '_');
+    return normalizedMilestones.filter((m) => {
+      const milestoneStatus = m.status?.replace('-', '_');
+      return milestoneStatus === filterValue;
+    });
+  }, [normalizedMilestones, statusFilter]);
+
+  // Stats
+  const stats = useMemo(() => {
+    const total = normalizedMilestones.length;
+    const completed = normalizedMilestones.filter((m) => m.status === 'completed').length;
+    const inProgress = normalizedMilestones.filter((m) => 
+      m.status === 'in-progress' || m.status === 'in_progress'
+    ).length;
+    const atRisk = normalizedMilestones.filter((m) => 
+      m.status === 'at-risk' || m.status === 'at_risk'
+    ).length;
+    return { total, completed, inProgress, atRisk };
+  }, [normalizedMilestones]);
+
+  // Use onAddMilestone if onCreateMilestone not provided
+  const createHandler = onCreateMilestone || onAddMilestone;
+
+  // Render content based on state
+  const renderContent = () => {
+    if (loading) {
+      return viewMode === 'list' ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => <SkeletonRow key={i} />)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+        </div>
+      );
+    }
+
+    if (err) {
+      return <ErrorState error={err} onRetry={handleRefresh} />;
+    }
+
+    if (!filteredMilestones.length) {
+      return <EmptyState onCreateMilestone={createHandler} />;
+    }
+
+    switch (viewMode) {
+      case 'timeline':
+        return (
+          <MilestoneTimeline
+            milestones={filteredMilestones}
+            onMilestoneClick={onMilestoneClick}
+          />
+        );
+
+      case 'list':
+        return (
+          <div className="space-y-3">
+            {filteredMilestones.map((milestone) => (
+              <MilestoneRow
+                key={milestone._id || milestone.id}
+                milestone={milestone}
+                onClick={onMilestoneClick}
+              />
+            ))}
+          </div>
+        );
+
+      case 'grid':
+      default:
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMilestones.map((milestone) => (
+              <MilestoneCard
+                key={milestone._id || milestone.id}
+                milestone={milestone}
+                onClick={onMilestoneClick}
+                onEdit={onEditMilestone}
+                onDelete={onDeleteMilestone}
+              />
+            ))}
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="p-6 lg:p-10 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-text-primary">Roadmap</h1>
+          <p className="text-sm text-text-tertiary mt-1">
+            Track project milestones and deliverables
+          </p>
+        </div>
+        
+        {handleRefresh && (
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-colors disabled:opacity-50"
+            title="Refresh"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        )}
+      </div>
+      
+      {/* Stats Bar */}
+      <div className="flex items-center gap-6 p-4 rounded-xl bg-surface-1 border border-white/[0.06]">
+        <div className="flex items-center gap-2">
+          <Flag className="w-4 h-4 text-brand" />
+          <span className="text-sm font-medium text-text-primary">{stats.total}</span>
+          <span className="text-xs text-text-tertiary">Total</span>
+        </div>
+        <div className="h-4 w-px bg-white/[0.1]" />
+        <div className="flex items-center gap-4 text-xs">
+          <span className="text-success">{stats.completed} completed</span>
+          <span className="text-brand">{stats.inProgress} in progress</span>
+          {stats.atRisk > 0 && (
+            <span className="text-error-500">{stats.atRisk} at risk</span>
+          )}
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between">
+        {/* Left: Filter */}
+        <div className="relative">
+          <button
+            onClick={() => setShowFilterMenu(!showFilterMenu)}
+            className="
+              flex items-center gap-2 px-3 py-2 rounded-lg
+              bg-surface-1 border border-white/[0.06] text-sm
+              text-text-secondary hover:text-text-primary hover:bg-surface-2
+              transition-all duration-200
+            "
+          >
+            <Filter className="w-4 h-4" />
+            <span>{STATUS_FILTERS.find((f) => f.value === statusFilter)?.label || 'All'}</span>
+            <ChevronDown className="w-3 h-3" />
+          </button>
+
+          {showFilterMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowFilterMenu(false)} />
+              <div className="
+                absolute left-0 top-full mt-1 z-20
+                w-40 py-1 rounded-lg
+                bg-surface-2 border border-white/[0.08]
+                shadow-lg shadow-black/20
+              ">
+                {STATUS_FILTERS.map((filter) => (
+                  <button
+                    key={filter.value}
+                    onClick={() => {
+                      setStatusFilter(filter.value);
+                      setShowFilterMenu(false);
+                    }}
+                    className={`
+                      w-full px-3 py-2 text-sm text-left
+                      ${statusFilter === filter.value
+                        ? 'text-brand bg-brand/10'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-3'
+                      }
+                      transition-colors
+                    `}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Right: View Toggle + Create */}
+        <div className="flex items-center gap-3">
+          {/* View Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-surface-1 rounded-lg border border-white/[0.06]">
+            {Object.entries(VIEW_MODES).map(([mode, config]) => {
+              const Icon = config.icon;
+              return (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`
+                    p-2 rounded-md transition-all
+                    ${viewMode === mode
+                      ? 'bg-surface-2 text-text-primary'
+                      : 'text-text-tertiary hover:text-text-secondary'
+                    }
+                  `}
+                  title={config.label}
+                >
+                  <Icon className="w-4 h-4" />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Create Button */}
+          {createHandler && (
+            <button
+              onClick={createHandler}
+              className="
+                flex items-center gap-2 px-4 py-2 rounded-lg
+                bg-brand text-white text-sm font-medium
+                hover:bg-brand-600 hover:shadow-glow-brand
+                transition-all duration-200
+              "
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add Milestone</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      {renderContent()}
+    </div>
+  );
+};
+
+export default RoadmapView;
