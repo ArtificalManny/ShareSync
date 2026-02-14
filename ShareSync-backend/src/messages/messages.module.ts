@@ -1,6 +1,7 @@
 // src/messages/messages.module.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // MESSAGES MODULE
+// ⭐ PHASE 2A: Removed MessagesGateway (using global AppGateway instead)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Module } from '@nestjs/common';
@@ -11,7 +12,14 @@ import { Message, MessageSchema } from './schemas/message.schema';
 import { Conversation, ConversationSchema } from './schemas/conversation.schema';
 import { MessagesController } from './messages.controller';
 import { MessagesService } from './messages.service';
-import { MessagesGateway } from './messages.gateway';
+
+// Note: We no longer need MessagesGateway here because:
+// 1. GatewayModule is global and provides AppGateway everywhere
+// 2. MessagesService injects AppGateway directly for real-time emissions
+// If you have a separate MessagesGateway for message-specific socket events,
+// you can uncomment the import and add it back to providers/exports
+
+// import { MessagesGateway } from './messages.gateway';
 
 @Module({
   imports: [
@@ -31,7 +39,13 @@ import { MessagesGateway } from './messages.gateway';
     }),
   ],
   controllers: [MessagesController],
-  providers: [MessagesService, MessagesGateway],
-  exports: [MessagesService, MessagesGateway],
+  providers: [
+    MessagesService,
+    // MessagesGateway, // ⭐ Commented out - using global AppGateway instead
+  ],
+  exports: [
+    MessagesService,
+    // MessagesGateway, // ⭐ Commented out - using global AppGateway instead
+  ],
 })
 export class MessagesModule {}

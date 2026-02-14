@@ -1,9 +1,16 @@
+// src/messages/messages.service.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// MESSAGES SERVICE
+// ⭐ PHASE 2A: Added AppGateway integration for real-time WebSocket emissions
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import {
   Injectable,
   NotFoundException,
   ForbiddenException,
   BadRequestException,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -26,6 +33,9 @@ import {
   ConversationSettingsDto,
 } from './dto/message.dto';
 
+// ⭐ PHASE 2A: Import AppGateway for real-time emissions
+import { AppGateway } from '../gateway/app.gateway';
+
 export interface MessagesQueryOptions {
   limit?: number;
   before?: string;
@@ -42,7 +52,31 @@ export class MessagesService {
     @InjectModel(Conversation.name)
     private readonly conversationModel: Model<ConversationDocument>,
     private readonly eventEmitter: EventEmitter2,
+    // ⭐ PHASE 2A: Inject AppGateway (optional to prevent circular dependency issues)
+    @Optional() private readonly appGateway?: AppGateway,
   ) {}
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ⭐ PHASE 2A: REAL-TIME EMISSION HELPERS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  private emitToConversation(conversationId: string, event: string, payload: any): void {
+    if (this.appGateway) {
+      this.appGateway.emitToRoom(`conversation:${conversationId}`, event, payload);
+    }
+  }
+
+  private emitToUser(userId: string, event: string, payload: any): void {
+    if (this.appGateway) {
+      this.appGateway.emitToUser(userId, event, payload);
+    }
+  }
+
+  private emitNewMessage(conversationId: string, message: any): void {
+    if (this.appGateway) {
+      this.appGateway.emitNewMessage(conversationId, message);
+    }
+  }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // INTERNAL HELPERS (safe fallbacks instead of schema methods)
@@ -212,6 +246,18 @@ export class MessagesService {
     return true;
   }
 
+  // ⭐ PHASE 2A: Get participant IDs for notifications
+  private getParticipantIds(conversation: any, excludeUserId?: string): string[] {
+    const participants = (conversation as any)?.participants || [];
+    return participants
+      .map((p: any) => {
+        const pid = p?.userId;
+        const id = pid?._id ? pid._id : pid;
+        return this.normalizeId(id);
+      })
+      .filter((id: string) => id && id !== excludeUserId);
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // CONVERSATIONS
   // ─────────────────────────────────────────────────────────────────────────────
@@ -261,6 +307,14 @@ export class MessagesService {
       participantIds: dto.participantIds,
     });
 
+    // ⭐ PHASE 2A: Notify participants of new conversation
+    for (const participantId of dto.participantIds) {
+      this.emitToUser(participantId, 'conversation:new', {
+        conversation: saved,
+        createdBy: userId,
+      });
+    }
+
     return saved;
   }
 
@@ -284,7 +338,6 @@ export class MessagesService {
     });
   }
 
-  // ✅ FIXED: returns hydrated docs; attaches view fields safely (kills TS2352)
   async getUserConversations(
     userId: string,
     includeArchived: boolean = false,
@@ -377,7 +430,22 @@ export class MessagesService {
 
     await this.sendSystemMessage(conversationId, `User was added to the conversation`);
 
-    return conversation.save();
+    const saved = await conversation.save();
+
+    // ⭐ PHASE 2A: Notify new participant
+    this.emitToUser(newParticipantId, 'conversation:joined', {
+      conversation: saved,
+      addedBy: userId,
+    });
+
+    // ⭐ PHASE 2A: Notify existing participants
+    this.emitToConversation(conversationId, 'participant:added', {
+      conversationId,
+      userId: newParticipantId,
+      addedBy: userId,
+    });
+
+    return saved;
   }
 
   async removeParticipant(
@@ -396,7 +464,22 @@ export class MessagesService {
 
     await this.sendSystemMessage(conversationId, `User left the conversation`);
 
-    return conversation.save();
+    const saved = await conversation.save();
+
+    // ⭐ PHASE 2A: Notify removed participant
+    this.emitToUser(participantToRemove, 'conversation:removed', {
+      conversationId,
+      removedBy: userId,
+    });
+
+    // ⭐ PHASE 2A: Notify remaining participants
+    this.emitToConversation(conversationId, 'participant:removed', {
+      conversationId,
+      userId: participantToRemove,
+      removedBy: userId,
+    });
+
+    return saved;
   }
 
   async leaveConversation(conversationId: string, userId: string): Promise<void> {
@@ -461,6 +544,20 @@ export class MessagesService {
       mentions: dto.mentions,
     });
 
+    // ⭐ PHASE 2A: Emit real-time message to conversation participants
+    this.emitNewMessage(dto.conversationId, saved.toObject());
+
+    // ⭐ PHASE 2A: Notify mentioned users
+    if (dto.mentions?.length) {
+      for (const mentionedUserId of dto.mentions) {
+        this.emitToUser(mentionedUserId, 'message:mentioned', {
+          conversationId: dto.conversationId,
+          message: saved.toObject(),
+          mentionedBy: userId,
+        });
+      }
+    }
+
     this.logger.log(`Message sent in conversation ${dto.conversationId}`);
 
     return saved;
@@ -476,7 +573,15 @@ export class MessagesService {
       energyCost: 0,
     });
 
-    return message.save();
+    const saved = await message.save();
+
+    // ⭐ PHASE 2A: Emit system message to conversation
+    this.emitToConversation(conversationId, 'message:system', {
+      conversationId,
+      message: saved.toObject(),
+    });
+
+    return saved;
   }
 
   async getMessages(
@@ -549,6 +654,14 @@ export class MessagesService {
       newContent: dto.content,
     });
 
+    // ⭐ PHASE 2A: Emit edit to conversation participants
+    this.emitToConversation((message as any).conversationId.toString(), 'message:edited', {
+      messageId,
+      conversationId: (message as any).conversationId,
+      content: dto.content,
+      editedAt: (message as any).editedAt,
+    });
+
     return updated;
   }
 
@@ -560,6 +673,8 @@ export class MessagesService {
       throw new ForbiddenException('You can only delete your own messages');
     }
 
+    const conversationId = (message as any).conversationId.toString();
+
     (message as any).isDeleted = true;
     (message as any).deletedAt = new Date();
     (message as any).content = '[Message deleted]';
@@ -567,7 +682,13 @@ export class MessagesService {
 
     this.eventEmitter.emit('message.deleted', {
       messageId,
-      conversationId: (message as any).conversationId,
+      conversationId,
+    });
+
+    // ⭐ PHASE 2A: Emit deletion to conversation participants
+    this.emitToConversation(conversationId, 'message:deleted', {
+      messageId,
+      conversationId,
     });
   }
 
@@ -579,18 +700,27 @@ export class MessagesService {
     const message = await this.messageModel.findById(messageId);
     if (!message) throw new NotFoundException('Message not found');
 
-    await this.getConversationById((message as any).conversationId.toString(), userId);
+    const conversationId = (message as any).conversationId.toString();
+    await this.getConversationById(conversationId, userId);
 
-    // ✅ FIX: do not call message.addReaction (typing); use helper
     this.addReactionToMessage(message, emoji, userId);
 
     const updated = await message.save();
 
     this.eventEmitter.emit('message.reaction.added', {
       messageId,
-      conversationId: (message as any).conversationId,
+      conversationId,
       emoji,
       userId,
+    });
+
+    // ⭐ PHASE 2A: Emit reaction to conversation participants
+    this.emitToConversation(conversationId, 'message:reaction', {
+      messageId,
+      conversationId,
+      emoji,
+      userId,
+      action: 'added',
     });
 
     return updated;
@@ -600,16 +730,26 @@ export class MessagesService {
     const message = await this.messageModel.findById(messageId);
     if (!message) throw new NotFoundException('Message not found');
 
-    // ✅ FIX: do not call message.removeReaction (typing); use helper
+    const conversationId = (message as any).conversationId.toString();
+
     this.removeReactionFromMessage(message, emoji, userId);
 
     const updated = await message.save();
 
     this.eventEmitter.emit('message.reaction.removed', {
       messageId,
-      conversationId: (message as any).conversationId,
+      conversationId,
       emoji,
       userId,
+    });
+
+    // ⭐ PHASE 2A: Emit reaction removal to conversation participants
+    this.emitToConversation(conversationId, 'message:reaction', {
+      messageId,
+      conversationId,
+      emoji,
+      userId,
+      action: 'removed',
     });
 
     return updated;
@@ -623,16 +763,29 @@ export class MessagesService {
     const message = await this.messageModel.findById(messageId);
     if (!message) throw new NotFoundException('Message not found');
 
-    // ✅ FIX: do not call message.markAsRead (typing); use helper
     const marked = this.markMessageRead(message, userId);
 
     if (marked) {
       await message.save();
+
+      const conversationId = (message as any).conversationId.toString();
+
       this.eventEmitter.emit('message.read', {
         messageId,
-        conversationId: (message as any).conversationId,
+        conversationId,
         readBy: userId,
       });
+
+      // ⭐ PHASE 2A: Emit read receipt to sender
+      const senderId = (message as any).senderId.toString();
+      if (senderId !== userId) {
+        this.emitToUser(senderId, 'message:read', {
+          messageId,
+          conversationId,
+          readBy: userId,
+          readAt: new Date(),
+        });
+      }
     }
 
     return message;
@@ -652,6 +805,13 @@ export class MessagesService {
 
     this.markConversationRead(conversation, userId);
     await conversation.save();
+
+    // ⭐ PHASE 2A: Emit conversation read event
+    this.emitToConversation(conversationId, 'conversation:read', {
+      conversationId,
+      userId,
+      readAt: new Date(),
+    });
   }
 
   async getUnreadCount(userId: string): Promise<{ total: number; byConversation: Record<string, number> }> {
