@@ -1,18 +1,25 @@
 // src/auth/auth.controller.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUTH CONTROLLER — Complete authentication endpoints
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import {
   Controller,
   Post,
   Get,
   Body,
+  Query,
+  Param,
   UseGuards,
   Req,
+  HttpCode,
+  HttpStatus,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../user/schemas/user.schema';
-import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
@@ -24,49 +31,50 @@ export class AuthController {
     private readonly jwtService: JwtService,
   ) {}
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // POST /auth/login
+  // Standard email/password login
+  // Returns needsVerification: true if user exists but not verified
+  // ═══════════════════════════════════════════════════════════════════════════
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Body() body: { email: string; password: string }) {
-    console.log('🔵 CONTROLLER RECEIVED:', body);
-    console.log(
-      '🔵 Calling service with:',
-      body.email,
-      body.password?.length,
-      'chars',
-    );
+    console.log('🔵 CONTROLLER: LOGIN');
 
     const result: any = await this.authService.login(body.email, body.password);
 
-    // ✅ Normalize ALL possible shapes into what the frontend expects:
-    // { access_token, user }
-    const payload =
-      result?.data && typeof result?.data === 'object' ? result.data : result;
+    // Handle unverified user case
+    if (result.needsVerification) {
+      return {
+        success: false,
+        needsVerification: true,
+        userId: result.userId,
+        message: result.message,
+      };
+    }
 
-    const access_token =
-      payload?.access_token ||
-      payload?.accessToken ||
-      payload?.token ||
-      payload?.jwt ||
-      payload?.data?.access_token ||
-      payload?.data?.token;
-
-    const user =
-      payload?.user ||
-      payload?.data?.user ||
-      payload?.profile ||
-      payload?.data?.profile;
+    // Normal login success
+    const access_token = result.access_token;
+    const user = result.user;
 
     if (!access_token || !user) {
-      // This tells you EXACTLY what the backend returned when it failed
       console.error('❌ LOGIN RESPONSE MISSING TOKEN OR USER:', result);
       throw new UnauthorizedException('Invalid login response format');
     }
 
-    return { access_token, user };
+    return { success: true, access_token, user };
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // POST /auth/register
+  // Creates user with isVerified: false, sends verification code
+  // ⚠️ MODIFIED: Now returns { userId } instead of { access_token, user }
+  // ═══════════════════════════════════════════════════════════════════════════
   @Post('register')
+  @HttpCode(HttpStatus.CREATED)
   async register(
-    @Body() body: {
+    @Body()
+    body: {
       email: string;
       username: string;
       password: string;
@@ -74,44 +82,120 @@ export class AuthController {
       lastName: string;
     },
   ) {
-    const hashedPassword = await bcrypt.hash(body.password, 10);
+    console.log('🔵 CONTROLLER: REGISTER');
 
-    const user = await this.userModel.create({
-      email: body.email,
-      username: body.username,
-      password: hashedPassword,
-      firstName: body.firstName,
-      lastName: body.lastName,
-      verified: true,
-    });
+    const result = await this.authService.register(body);
 
-    // ✅ Generate JWT token like login does
-    const payload = {
-      sub: String(user._id),
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      username: user.username,
-    };
-
-    const access_token = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_SECRET || 'dev_secret_change_me',
-      expiresIn: '7d',
-    });
-
-    // ✅ Return same format as login
     return {
-      access_token,
-      user: {
-        _id: user._id,
-        email: user.email,
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        username: user.username || '',
-        roles: [],
-      },
+      success: true,
+      userId: result.userId,
+      message: 'Verification code sent to your email',
     };
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // POST /auth/verify-email
+  // Verifies OTP code, returns JWT immediately (no re-login required)
+  // ═══════════════════════════════════════════════════════════════════════════
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() body: { userId: string; code: string }) {
+    console.log('🔵 CONTROLLER: VERIFY EMAIL');
+
+    const result = await this.authService.verifyEmail(body.userId, body.code);
+
+    return {
+      success: true,
+      user: result.user,
+      token: result.token,
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // POST /auth/resend-verification
+  // Resends verification code
+  // ═══════════════════════════════════════════════════════════════════════════
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(@Body() body: { userId: string }) {
+    console.log('�� CONTROLLER: RESEND VERIFICATION');
+
+    await this.authService.resendVerificationCode(body.userId);
+
+    return {
+      success: true,
+      message: 'New verification code sent',
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // POST /auth/forgot-password
+  // Sends password reset email
+  // ALWAYS returns success (security: don't reveal if email exists)
+  // ═══════════════════════════════════════════════════════════════════════════
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() body: { email: string }) {
+    console.log('🔵 CONTROLLER: FORGOT PASSWORD');
+
+    await this.authService.forgotPassword(body.email);
+
+    // ALWAYS return success (security)
+    return {
+      success: true,
+      message: 'If an account exists, a reset link has been sent',
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GET /auth/validate-reset-token/:token
+  // Validates reset token without consuming it
+  // ═══════════════════════════════════════════════════════════════════════════
+  @Get('validate-reset-token/:token')
+  async validateResetToken(@Param('token') token: string) {
+    console.log('🔵 CONTROLLER: VALIDATE RESET TOKEN');
+
+    const result = await this.authService.validateResetToken(token);
+
+    return {
+      valid: result.valid,
+      email: result.email, // Partially masked
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // POST /auth/reset-password
+  // Resets password, invalidates all existing sessions
+  // ═══════════════════════════════════════════════════════════════════════════
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() body: { token: string; newPassword: string }) {
+    console.log('🔵 CONTROLLER: RESET PASSWORD');
+
+    await this.authService.resetPassword(body.token, body.newPassword);
+
+    return {
+      success: true,
+      message: 'Password updated successfully',
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GET /auth/check-username
+  // Check if username is available
+  // ═══════════════════════════════════════════════════════════════════════════
+  @Get('check-username')
+  async checkUsername(@Query('username') username: string) {
+    console.log('🔵 CONTROLLER: CHECK USERNAME');
+
+    const available = await this.authService.isUsernameAvailable(username);
+
+    return { available };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EXISTING ENDPOINTS — PRESERVED
+  // ═══════════════════════════════════════════════════════════════════════════
 
   @Post('verify')
   verify(@Body() body: { token: string }) {

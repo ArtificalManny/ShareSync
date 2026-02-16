@@ -1,26 +1,43 @@
 // src/pages/Login.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// GLASS FORTRESS - Login Page
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, KeyRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { Mail, Lock, ArrowRight, UserPlus, KeyRound } from "lucide-react";
+import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
 
 export default function Login() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  
+  // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const { login } = useAuth();
-  const navigate = useNavigate();
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // LOGIN SUBMIT
+  // ⚠️ PRESERVING EXISTING useAuth().login() CALL - DO NOT MODIFY
+  // ─────────────────────────────────────────────────────────────────────────────
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    
     if (!email || !password) {
       setError("Enter your email and password.");
       return;
     }
+    
     setSubmitting(true);
     try {
+      // ⚠️ EXISTING AUTH CALL - PRESERVED
       const result = await login({ email, password });
       
       if (result.success) {
@@ -41,135 +58,130 @@ export default function Login() {
   };
 
   return (
-    <main className="ml-0 md:ml-24 px-4 sm:px-6 lg:px-8 py-8 min-h-screen grid place-items-center">
-      <div className="w-full max-w-md">
-        {/* Logo/Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent mb-2">
-            OpenShare
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">
-            Ship outcomes that matter
-          </p>
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Sign in to continue shipping"
+    >
+      <form onSubmit={onSubmit} className="space-y-4">
+        <AuthError>{error}</AuthError>
+
+        {/* Email */}
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            Email
+          </label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <input
+              type="email"
+              name="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="
+                w-full pl-10 pr-4 py-2.5 rounded-lg
+                bg-white/[0.04] border border-white/[0.08]
+                text-white placeholder:text-slate-500
+                focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20
+                transition-all duration-200
+              "
+            />
+          </div>
         </div>
 
-        {/* Login Form Card */}
-        <form
-          onSubmit={onSubmit}
-          className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 rounded-2xl p-8 shadow-lg"
-        >
-          <h2 className="text-2xl font-semibold mb-6 text-slate-900 dark:text-slate-100">
-            Welcome back
-          </h2>
-
-          {error && (
-            <div className="mb-4 rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 text-rose-800 dark:text-rose-400 text-sm px-4 py-3">
-              {error}
-            </div>
-          )}
-
-          {/* Email Field */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Email
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="email"
-                name="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-10 pr-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Password Field */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+        {/* Password */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-sm font-medium text-slate-300">
               Password
             </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 pl-10 pr-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Forgot Password Link */}
-          <div className="flex justify-end mb-6">
             <Link
               to="/forgot-password"
-              className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors flex items-center gap-1 group"
+              className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
             >
-              <KeyRound className="w-4 h-4" />
+              <KeyRound className="w-3 h-3" />
               Forgot password?
             </Link>
           </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white py-3 font-semibold disabled:opacity-70 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
-          >
-            {submitting ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              <>
-                Log In
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </>
-            )}
-          </button>
-
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-300 dark:border-slate-700"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400">
-                New to OpenShare?
-              </span>
-            </div>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="
+                w-full pl-10 pr-10 py-2.5 rounded-lg
+                bg-white/[0.04] border border-white/[0.08]
+                text-white placeholder:text-slate-500
+                focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20
+                transition-all duration-200
+              "
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
           </div>
+        </div>
 
-          {/* Create Account Link */}
-          <Link
-            to="/create-account"
-            className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 py-3 font-medium transition-all group"
-          >
-            <UserPlus className="w-5 h-5" />
-            Create an account
-          </Link>
-        </form>
+        {/* Remember me */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="remember"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="
+              w-4 h-4 rounded 
+              border-white/20 bg-white/[0.04]
+              text-purple-500 
+              focus:ring-purple-500 focus:ring-offset-0
+            "
+          />
+          <label htmlFor="remember" className="text-sm text-slate-400">
+            Remember me for 30 days
+          </label>
+        </div>
+
+        {/* Submit */}
+        <AuthButton type="submit" loading={submitting}>
+          Sign In
+          <ArrowRight className="w-5 h-5" />
+        </AuthButton>
+
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-white/[0.08]"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-[#0f0f1a] text-slate-500">
+              New to ShareSync?
+            </span>
+          </div>
+        </div>
+
+        {/* Create Account */}
+        <AuthButton variant="secondary" onClick={() => navigate('/create-account')}>
+          <UserPlus className="w-5 h-5" />
+          Create an account
+        </AuthButton>
 
         {/* Terms */}
-        <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-          By continuing, you agree to OpenShare's{" "}
-          <Link to="#" className="underline hover:text-slate-700 dark:hover:text-slate-200">
-            Terms of Service
-          </Link>{" "}
-          and{" "}
-          <Link to="#" className="underline hover:text-slate-700 dark:hover:text-slate-200">
-            Privacy Policy
-          </Link>
+        <p className="text-center text-xs text-slate-500">
+          By continuing, you agree to ShareSync's{' '}
+          <Link to="#" className="text-purple-400 hover:underline">Terms</Link>
+          {' '}and{' '}
+          <Link to="#" className="text-purple-400 hover:underline">Privacy Policy</Link>
         </p>
-      </div>
-    </main>
+      </form>
+    </AuthLayout>
   );
 }

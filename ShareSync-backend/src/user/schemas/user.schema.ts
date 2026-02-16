@@ -307,7 +307,7 @@ export class User extends Document {
   lastEnergyUpdate?: Date;
 
   // ============================================
-  // AUTH & SECURITY (existing)
+  // AUTH & SECURITY (existing + NEW fields)
   // ============================================
   @Prop()
   refreshToken?: string;
@@ -315,6 +315,7 @@ export class User extends Document {
   @Prop({ default: true })
   isActive: boolean;
 
+  // ⭐ EXISTING: Keep for backward compatibility
   @Prop({ default: false })
   isEmailVerified: boolean;
 
@@ -326,6 +327,17 @@ export class User extends Document {
 
   @Prop()
   passwordResetExpires?: Date;
+
+  // ⭐ NEW: OTP-based verification (6-digit codes)
+  @Prop({ select: false })
+  verificationCode?: string;
+
+  @Prop()
+  verificationCodeExpiry?: Date;
+
+  // ⭐ NEW: Token versioning for session invalidation
+  @Prop({ default: 0 })
+  tokenVersion: number;
 
   // ============================================
   // TRACKING (existing)

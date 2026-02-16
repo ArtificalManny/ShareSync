@@ -41,6 +41,7 @@ import { RealtimeModule } from './realtime/realtime.module';
 
 import { MessagesModule } from './messages/messages.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PresenceModule } from './presence/presence.module';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 3: GAMIFICATION MODULE
@@ -72,6 +73,13 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { ReportsModule } from './reports/reports.module';
 import { AIModule } from './ai/ai.module';
 import { DiscoveryModule } from './discovery/discovery.module';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TRUST & SAFETY MODULES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { ModerationModule } from './moderation/moderation.module';
+import { ContentReportsModule } from './content-reports/content-reports.module';
 
 @Module({
   imports: [
@@ -204,6 +212,12 @@ import { DiscoveryModule } from './discovery/discovery.module';
     IntegrationsModule,
     ReportsModule,
     AIModule,
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TRUST & SAFETY
+    // ─────────────────────────────────────────────────────────────────────────
+    ModerationModule,
+    ContentReportsModule,
   ],
 
   providers: [

@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * SHARESYNC DESIGN SYSTEM v4.0 - Phase 1: Emotional Color System
+ * SHARESYNC DESIGN SYSTEM v4.1 - Phase 1: Emotional Color System + Blueprint
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * COLOR PHILOSOPHY:
@@ -13,6 +13,13 @@
  * • Red = Errors ONLY
  * 
  * SIGNATURE FEATURE: Momentum Glow - interface brightens with productivity
+ * 
+ * v4.1 CHANGELOG (Blueprint Additions):
+ * - Added: Momentum STATE colors (fire/building/warming/starting/attention)
+ * - Added: XP & Gamification colors (gold, legendary)
+ * - Added: New box shadows (glow-xp, glow-legendary)
+ * - Added: New animations (glow, float, shake, confetti, xpPop, streakFire, breathe)
+ * - Added: New gradients (legendary, fire, aurora)
  * 
  * ═══════════════════════════════════════════════════════════════════════════════
  */
@@ -176,6 +183,53 @@ export default {
           900: "var(--info-900, #1E3A8A)",
         },
 
+        /* ═══════════════════════════════════════════════════════════════════
+           MOMENTUM STATE COLORS — NEW in v4.1
+           For dynamic UI based on user productivity levels
+           ═══════════════════════════════════════════════════════════════════ */
+        momentum: {
+          /* 🔥 FIRE MODE (80-100%) */
+          fire: "var(--momentum-fire, #EF4444)",
+          "fire-glow": "var(--momentum-fire-glow, rgba(239, 68, 68, 0.4))",
+          "fire-subtle": "var(--momentum-fire-subtle, rgba(239, 68, 68, 0.15))",
+          
+          /* ⚡ BUILDING (60-79%) */
+          building: "var(--momentum-building, #F59E0B)",
+          "building-glow": "var(--momentum-building-glow, rgba(245, 158, 11, 0.4))",
+          "building-subtle": "var(--momentum-building-subtle, rgba(245, 158, 11, 0.15))",
+          
+          /* 💜 WARMING UP (40-59%) */
+          warming: "var(--momentum-warming, #8B5CF6)",
+          "warming-glow": "var(--momentum-warming-glow, rgba(139, 92, 246, 0.4))",
+          "warming-subtle": "var(--momentum-warming-subtle, rgba(139, 92, 246, 0.15))",
+          
+          /* 💙 GETTING STARTED (20-39%) */
+          starting: "var(--momentum-starting, #3B82F6)",
+          "starting-glow": "var(--momentum-starting-glow, rgba(59, 130, 246, 0.4))",
+          "starting-subtle": "var(--momentum-starting-subtle, rgba(59, 130, 246, 0.15))",
+          
+          /* 🩶 NEEDS ATTENTION (0-19%) */
+          attention: "var(--momentum-attention, #6B7280)",
+          "attention-glow": "var(--momentum-attention-glow, rgba(107, 114, 128, 0.4))",
+          "attention-subtle": "var(--momentum-attention-subtle, rgba(107, 114, 128, 0.15))",
+        },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           XP & GAMIFICATION — NEW in v4.1
+           For XP rewards, achievements, legendary moments
+           ═══════════════════════════════════════════════════════════════════ */
+        xp: {
+          gold: "var(--xp-gold, #FFD700)",
+          "gold-glow": "var(--xp-gold-glow, rgba(255, 215, 0, 0.5))",
+          "gold-subtle": "var(--xp-gold-subtle, rgba(255, 215, 0, 0.15))",
+        },
+
+        legendary: {
+          start: "var(--legendary-start, #FFD700)",
+          mid: "var(--legendary-mid, #EF4444)",
+          end: "var(--legendary-end, #8B5CF6)",
+        },
+
         /* Progress (Purple-based) */
         progress: {
           track: "var(--progress-track, rgba(124, 58, 237, 0.15))",
@@ -267,12 +321,16 @@ export default {
         'glow-error':   'var(--glow-error, 0 0 20px rgba(239, 68, 68, 0.35))',
         'glow-energy':  'var(--glow-energy, 0 0 20px rgba(244, 63, 94, 0.35))',
         
-        /* Momentum Glow Levels */
+        /* Momentum Glow Levels (existing) */
         'momentum-1': 'var(--momentum-glow-1, 0 0 30px rgba(124, 58, 237, 0.08))',
         'momentum-2': 'var(--momentum-glow-2, 0 0 45px rgba(124, 58, 237, 0.14))',
         'momentum-3': 'var(--momentum-glow-3, 0 0 60px rgba(124, 58, 237, 0.22))',
         'momentum-4': 'var(--momentum-glow-4, 0 0 80px rgba(124, 58, 237, 0.32))',
         'momentum-5': 'var(--momentum-glow-5, 0 0 100px rgba(139, 92, 246, 0.45))',
+        
+        /* XP & Achievement Glows — NEW in v4.1 */
+        'glow-xp': 'var(--glow-xp, 0 0 20px #FFD700, 0 0 40px rgba(255, 215, 0, 0.3))',
+        'glow-legendary': 'var(--glow-legendary, 0 0 30px #FFD700, 0 0 60px #EF4444)',
         
         'inner-brand': 'inset 0 0 0 1px var(--border-brand)',
       },
@@ -283,6 +341,7 @@ export default {
        * ─────────────────────────────────────────────────────────────────────────
        */
       animation: {
+        /* Existing animations */
         'fade-in':     'fadeIn 0.2s ease-out',
         'fade-up':     'fadeUp 0.3s ease-out',
         'scale-in':    'scaleIn 0.2s ease-out',
@@ -292,8 +351,18 @@ export default {
         'progress':    'progressPulse 2s ease-in-out infinite',
         'momentum-breathe': 'momentumBreathe 2s ease-in-out infinite',
         'glow-pulse':  'glowPulse 2s ease-in-out infinite',
+        
+        /* NEW animations in v4.1 */
+        'glow':        'glow 2s ease-in-out infinite alternate',
+        'float':       'float 3s ease-in-out infinite',
+        'shake':       'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+        'confetti':    'confetti 1s ease-out forwards',
+        'xp-pop':      'xpPop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+        'streak-fire': 'streakFire 1.5s ease-in-out infinite',
+        'breathe':     'breathe 3s ease-in-out infinite',
       },
       keyframes: {
+        /* Existing keyframes */
         fadeIn: {
           '0%':   { opacity: '0' },
           '100%': { opacity: '1' },
@@ -326,6 +395,40 @@ export default {
           '0%, 100%': { filter: 'brightness(1)' },
           '50%':      { filter: 'brightness(1.08)' },
         },
+        
+        /* NEW keyframes in v4.1 */
+        glow: {
+          '0%': { boxShadow: '0 0 5px var(--brand-500, #8B5CF6)' },
+          '100%': { boxShadow: '0 0 20px var(--brand-500, #8B5CF6), 0 0 40px var(--brand-400, #A78BFA)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        shake: {
+          '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+          '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+          '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+          '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
+        },
+        confetti: {
+          '0%': { transform: 'scale(0) rotate(0deg)', opacity: '1' },
+          '50%': { transform: 'scale(1.2) rotate(180deg)', opacity: '1' },
+          '100%': { transform: 'scale(0) rotate(360deg)', opacity: '0' },
+        },
+        xpPop: {
+          '0%': { transform: 'scale(0)', opacity: '0' },
+          '50%': { transform: 'scale(1.3)' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        streakFire: {
+          '0%, 100%': { filter: 'brightness(1) hue-rotate(0deg)' },
+          '50%': { filter: 'brightness(1.2) hue-rotate(10deg)' },
+        },
+        breathe: {
+          '0%, 100%': { transform: 'scale(1)', opacity: '1' },
+          '50%': { transform: 'scale(1.02)', opacity: '0.9' },
+        },
       },
 
       /**
@@ -356,11 +459,17 @@ export default {
        * ─────────────────────────────────────────────────────────────────────────
        */
       backgroundImage: {
+        /* Existing gradients */
         'gradient-brand': 'var(--gradient-brand, linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%))',
         'gradient-signature': 'var(--gradient-signature, linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%))',
         'gradient-energy': 'var(--gradient-energy, linear-gradient(135deg, #F43F5E 0%, #F59E0B 100%))',
         'gradient-success': 'var(--gradient-success, linear-gradient(135deg, #10B981 0%, #06B6D4 100%))',
         'gradient-flow': 'var(--gradient-flow, linear-gradient(135deg, #6D28D9 0%, #4C1D95 100%))',
+        
+        /* NEW gradients in v4.1 */
+        'gradient-legendary': 'var(--gradient-legendary, linear-gradient(135deg, #FFD700 0%, #EF4444 50%, #8B5CF6 100%))',
+        'gradient-fire': 'var(--gradient-fire, linear-gradient(135deg, #FF6B6B 0%, #EF4444 50%, #DC2626 100%))',
+        'aurora': 'var(--gradient-aurora, radial-gradient(ellipse at bottom left, rgba(139, 92, 246, 0.15) 0%, transparent 50%))',
       },
     },
   },

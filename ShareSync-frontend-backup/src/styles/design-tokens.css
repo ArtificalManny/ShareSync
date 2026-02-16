@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SHARESYNC DESIGN TOKENS v3.0 - Phase 7: Visual Cohesion
+   SHARESYNC DESIGN TOKENS v3.1 - Phase 7: Visual Cohesion + Blueprint Additions
    ═══════════════════════════════════════════════════════════════════════════════
    
    SINGLE SOURCE OF TRUTH for all colors, spacing, and visual properties.
@@ -14,6 +14,13 @@
    - Use purple fill on neutral track
    - NOT red/green (those have emotional baggage)
    - 100% complete = teal celebration
+   
+   v3.1 CHANGELOG (Blueprint Additions):
+   - Added: Momentum STATE colors (fire/building/warming/starting/attention)
+   - Added: XP & Gamification colors (gold, legendary)
+   - Added: New gradients (legendary, fire, aurora)
+   - Added: XP/Legendary glow shadows
+   - Added: Momentum & XP utility classes
    
    ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -127,6 +134,57 @@
   --info-900: #1E3A8A;
 
   /* ═══════════════════════════════════════════════════════════════════════════
+     MOMENTUM STATE COLORS — NEW in v3.1
+     ═══════════════════════════════════════════════════════════════════════════
+     
+     For DYNAMIC UI that responds to user productivity levels.
+     Usage: Background colors, borders, and text based on momentum percentage.
+     
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  /* 🔥 FIRE MODE (80-100% momentum) - User is ON FIRE */
+  --momentum-fire: #EF4444;
+  --momentum-fire-glow: rgba(239, 68, 68, 0.4);
+  --momentum-fire-subtle: rgba(239, 68, 68, 0.15);
+  
+  /* ⚡ BUILDING (60-79% momentum) - Strong progress */
+  --momentum-building: #F59E0B;
+  --momentum-building-glow: rgba(245, 158, 11, 0.4);
+  --momentum-building-subtle: rgba(245, 158, 11, 0.15);
+  
+  /* 💜 WARMING UP (40-59% momentum) - Getting into flow */
+  --momentum-warming: #8B5CF6;
+  --momentum-warming-glow: rgba(139, 92, 246, 0.4);
+  --momentum-warming-subtle: rgba(139, 92, 246, 0.15);
+  
+  /* 💙 GETTING STARTED (20-39% momentum) - Beginning work */
+  --momentum-starting: #3B82F6;
+  --momentum-starting-glow: rgba(59, 130, 246, 0.4);
+  --momentum-starting-subtle: rgba(59, 130, 246, 0.15);
+  
+  /* 🩶 NEEDS ATTENTION (0-19% momentum) - Inactive/stalled */
+  --momentum-attention: #6B7280;
+  --momentum-attention-glow: rgba(107, 114, 128, 0.4);
+  --momentum-attention-subtle: rgba(107, 114, 128, 0.15);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     XP & GAMIFICATION — NEW in v3.1
+     ═══════════════════════════════════════════════════════════════════════════
+     
+     Used for: XP rewards, achievements, legendary moments, celebrations
+     
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  --xp-gold: #FFD700;
+  --xp-gold-glow: rgba(255, 215, 0, 0.5);
+  --xp-gold-subtle: rgba(255, 215, 0, 0.15);
+  
+  /* Legendary achievement colors (for 3-color gradient) */
+  --legendary-start: #FFD700;     /* Gold */
+  --legendary-mid: #EF4444;       /* Red */
+  --legendary-end: #8B5CF6;       /* Purple */
+
+  /* ═══════════════════════════════════════════════════════════════════════════
      PROGRESS (Purple-based) - NO RED/GREEN EMOTIONAL SIGNALS
      Progress is NEUTRAL - it's just "how far along", not "good/bad"
      ═══════════════════════════════════════════════════════════════════════════ */
@@ -174,12 +232,29 @@
   --glow-warning: 0 0 16px rgba(245, 158, 11, 0.25);
   --glow-error: 0 0 16px rgba(239, 68, 68, 0.25);
   
+  /* XP & Achievement glows — NEW in v3.1 */
+  --glow-xp: 0 0 20px var(--xp-gold), 0 0 40px rgba(255, 215, 0, 0.3);
+  --glow-legendary: 0 0 30px var(--legendary-start), 0 0 60px var(--legendary-mid);
+  
   /* Focus ring */
   --ring-focus: 0 0 0 3px rgba(168, 85, 247, 0.25);
   
   /* Inner glow */
   --inner-glow: inset 0 1px 0 0 rgba(255, 255, 255, 0.02);
   --inner-glow-bright: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     GRADIENTS — NEW in v3.1
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  /* Legendary gradient (for rare achievements, ~5% chance XP jackpots) */
+  --gradient-legendary: linear-gradient(135deg, var(--legendary-start) 0%, var(--legendary-mid) 50%, var(--legendary-end) 100%);
+  
+  /* Fire gradient (for streaks, high momentum UI elements) */
+  --gradient-fire: linear-gradient(135deg, #FF6B6B 0%, #EF4444 50%, #DC2626 100%);
+  
+  /* Aurora effect (for auth pages background glow) */
+  --gradient-aurora: radial-gradient(ellipse at bottom left, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      BORDER RADIUS
@@ -225,6 +300,22 @@
   background-clip: text;
 }
 
+/* XP text gradient — NEW in v3.1 */
+.text-gradient-xp {
+  background: linear-gradient(135deg, var(--xp-gold) 0%, #FFA500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Legendary text gradient — NEW in v3.1 */
+.text-gradient-legendary {
+  background: var(--gradient-legendary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Progress bar base styles */
 .progress-track {
   background-color: var(--progress-track);
@@ -248,3 +339,13 @@
 .bg-error-subtle { background-color: rgba(239, 68, 68, 0.1); }
 .bg-info-subtle { background-color: rgba(59, 130, 246, 0.1); }
 .bg-brand-subtle { background-color: rgba(168, 85, 247, 0.1); }
+
+/* Momentum state backgrounds — NEW in v3.1 */
+.bg-momentum-fire { background-color: var(--momentum-fire-subtle); }
+.bg-momentum-building { background-color: var(--momentum-building-subtle); }
+.bg-momentum-warming { background-color: var(--momentum-warming-subtle); }
+.bg-momentum-starting { background-color: var(--momentum-starting-subtle); }
+.bg-momentum-attention { background-color: var(--momentum-attention-subtle); }
+
+/* XP background — NEW in v3.1 */
+.bg-xp-subtle { background-color: var(--xp-gold-subtle); }
