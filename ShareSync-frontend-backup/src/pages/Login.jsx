@@ -1,11 +1,14 @@
 // src/pages/Login.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // GLASS FORTRESS - Login Page
+// Frontend-only polish:
+// - ShareSync → OpenShare copy
+// - Divider bg made transparent (less "boxed")
+// - NO auth logic changed
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, KeyRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
@@ -13,7 +16,7 @@ import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  
+
   // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,17 +32,17 @@ export default function Login() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    
+
     if (!email || !password) {
       setError("Enter your email and password.");
       return;
     }
-    
+
     setSubmitting(true);
     try {
       // ⚠️ EXISTING AUTH CALL - PRESERVED
       const result = await login({ email, password });
-      
+
       if (result.success) {
         navigate("/home", { replace: true });
       } else {
@@ -58,10 +61,7 @@ export default function Login() {
   };
 
   return (
-    <AuthLayout
-      title="Welcome back"
-      subtitle="Sign in to continue shipping"
-    >
+    <AuthLayout title="Welcome back" subtitle="Sign in to continue shipping">
       <form onSubmit={onSubmit} className="space-y-4">
         <AuthError>{error}</AuthError>
 
@@ -80,10 +80,10 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="
-                w-full pl-10 pr-4 py-2.5 rounded-lg
-                bg-white/[0.04] border border-white/[0.08]
+                w-full pl-10 pr-4 py-2.5 rounded-xl
+                bg-white/[0.035] ring-1 ring-white/[0.08]
                 text-white placeholder:text-slate-500
-                focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20
+                focus:outline-none focus:ring-2 focus:ring-purple-500/25
                 transition-all duration-200
               "
             />
@@ -114,10 +114,10 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="
-                w-full pl-10 pr-10 py-2.5 rounded-lg
-                bg-white/[0.04] border border-white/[0.08]
+                w-full pl-10 pr-10 py-2.5 rounded-xl
+                bg-white/[0.035] ring-1 ring-white/[0.08]
                 text-white placeholder:text-slate-500
-                focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20
+                focus:outline-none focus:ring-2 focus:ring-purple-500/25
                 transition-all duration-200
               "
             />
@@ -139,10 +139,11 @@ export default function Login() {
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
             className="
-              w-4 h-4 rounded 
-              border-white/20 bg-white/[0.04]
-              text-purple-500 
-              focus:ring-purple-500 focus:ring-offset-0
+              w-4 h-4 rounded
+              ring-1 ring-white/[0.15]
+              bg-white/[0.04]
+              text-purple-500
+              focus:ring-purple-500/25 focus:ring-offset-0
             "
           />
           <label htmlFor="remember" className="text-sm text-slate-400">
@@ -159,29 +160,34 @@ export default function Login() {
         {/* Divider */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/[0.08]"></div>
+            <div className="w-full border-t border-white/[0.10]" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-[#0f0f1a] text-slate-500">
-              New to ShareSync?
+            <span className="px-4 bg-transparent text-slate-500">
+              New to OpenShare?
             </span>
           </div>
         </div>
 
         {/* Create Account */}
-        <AuthButton variant="secondary" onClick={() => navigate('/create-account')}>
+        <AuthButton variant="secondary" type="button" onClick={() => navigate("/create-account")}>
           <UserPlus className="w-5 h-5" />
           Create an account
         </AuthButton>
 
         {/* Terms */}
         <p className="text-center text-xs text-slate-500">
-          By continuing, you agree to ShareSync's{' '}
-          <Link to="#" className="text-purple-400 hover:underline">Terms</Link>
-          {' '}and{' '}
-          <Link to="#" className="text-purple-400 hover:underline">Privacy Policy</Link>
+          By continuing, you agree to OpenShare&apos;s{" "}
+          <Link to="#" className="text-purple-400 hover:underline">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link to="#" className="text-purple-400 hover:underline">
+            Privacy Policy
+          </Link>
         </p>
       </form>
     </AuthLayout>
   );
 }
+

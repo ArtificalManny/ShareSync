@@ -2,16 +2,21 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // GLASS FORTRESS - Create Account Page
 // Two-step flow: Data Collection → OTP Verification
+// Frontend-only polish:
+// - Fix alignment (Last name now matches First name icon/padding)
+// - Inputs less "boxed" (rounded-xl + ring)
+// - ShareSync → OpenShare copy (Terms)
+// - NO backend endpoints or auth logic modified
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  User, Mail, Lock, Eye, EyeOff, ArrowRight, Check, X, 
+import {
+  User, Mail, Lock, Eye, EyeOff, ArrowRight, Check, X,
   AtSign, ArrowLeft
 } from "lucide-react";
-import { AuthLayout, AuthInput, AuthButton, AuthError } from "../layouts/AuthLayout";
+import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PASSWORD STRENGTH METER
@@ -31,7 +36,6 @@ function PasswordStrengthMeter({ password }) {
 
   return (
     <div className="space-y-2">
-      {/* Strength bars */}
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((i) => (
           <div
@@ -60,13 +64,12 @@ function OTPInput({ value, onChange, length = 6 }) {
 
   const handleChange = (index, digit) => {
     if (!/^\d*$/.test(digit)) return;
-    
+
     const newValue = value.split('');
     newValue[index] = digit;
     const joined = newValue.join('').slice(0, length);
     onChange(joined);
 
-    // Auto-focus next
     if (digit && index < length - 1) {
       inputRefs[index + 1].current?.focus();
     }
@@ -82,7 +85,6 @@ function OTPInput({ value, onChange, length = 6 }) {
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, length);
     onChange(pasted);
-    // Focus the appropriate input after paste
     if (pasted.length < length) {
       inputRefs[pasted.length].current?.focus();
     }
@@ -104,9 +106,9 @@ function OTPInput({ value, onChange, length = 6 }) {
           autoFocus={i === 0}
           className="
             w-12 h-14 text-center text-2xl font-semibold
-            bg-white/[0.04] border border-white/[0.08] rounded-lg
+            bg-white/[0.035] ring-1 ring-white/[0.10] rounded-xl
             text-white
-            focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20
+            focus:ring-2 focus:ring-purple-500/25
             focus:outline-none transition-all duration-200
           "
         />
@@ -144,9 +146,8 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Email indicator */}
       <div className="text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 ring-1 ring-purple-500/20 flex items-center justify-center">
           <Mail className="w-8 h-8 text-purple-400" />
         </div>
         <p className="text-sm text-slate-400">
@@ -157,18 +158,15 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
 
       <AuthError>{error}</AuthError>
 
-      {/* OTP Input */}
       <OTPInput value={code} onChange={setCode} />
 
-      {/* Submit */}
       <AuthButton type="submit" loading={submitting} disabled={code.length !== 6}>
         <Check className="w-5 h-5" />
         Verify Email
       </AuthButton>
 
-      {/* Resend */}
       <p className="text-center text-sm text-slate-500">
-        Didn't receive the code?{' '}
+        Didn&apos;t receive the code?{" "}
         <button
           type="button"
           onClick={handleResend}
@@ -179,7 +177,6 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
         </button>
       </p>
 
-      {/* Back button */}
       <button
         type="button"
         onClick={onBack}
@@ -192,12 +189,9 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN CREATE ACCOUNT COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 export default function CreateAccount() {
   const navigate = useNavigate();
-  
+
   // Form state
   const [formData, setFormData] = useState({
     firstName: "",
@@ -212,14 +206,11 @@ export default function CreateAccount() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
-  
+
   // Verification step state
   const [step, setStep] = useState('data'); // 'data' | 'verify'
   const [userId, setUserId] = useState(null);
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // VALIDATION
-  // ─────────────────────────────────────────────────────────────────────────────
   const validateField = (name, value) => {
     switch (name) {
       case "firstName":
@@ -245,7 +236,7 @@ export default function CreateAccount() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
+
     if (fieldErrors[name]) {
       setFieldErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -253,9 +244,9 @@ export default function CreateAccount() {
 
   const handleBlur = (e) => {
     const { name, value } = e.target;
-    const error = validateField(name, value);
-    if (error) {
-      setFieldErrors((prev) => ({ ...prev, [name]: error }));
+    const err = validateField(name, value);
+    if (err) {
+      setFieldErrors((prev) => ({ ...prev, [name]: err }));
     }
   };
 
@@ -268,11 +259,10 @@ export default function CreateAccount() {
     setError("");
     setFieldErrors({});
 
-    // Validate all fields
     const errors = {};
     Object.keys(formData).forEach((key) => {
-      const error = validateField(key, formData[key]);
-      if (error) errors[key] = error;
+      const err = validateField(key, formData[key]);
+      if (err) errors[key] = err;
     });
 
     if (Object.keys(errors).length > 0) {
@@ -302,13 +292,11 @@ export default function CreateAccount() {
       }
 
       const data = await response.json();
-      console.log('🔍 BACKEND RESPONSE:', data);
+      console.log("🔍 BACKEND RESPONSE:", data);
 
-      // Store userId and show verification UI
       setUserId(data.userId);
-      setStep('verify');
+      setStep("verify");
       setSubmitting(false);
-
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
@@ -327,7 +315,7 @@ export default function CreateAccount() {
   const handleVerification = async (code) => {
     setSubmitting(true);
     setError("");
-    
+
     try {
       // ⚠️ EXISTING API CALL - PRESERVED
       const response = await fetch("http://localhost:3000/api/auth/verify-email", {
@@ -342,30 +330,24 @@ export default function CreateAccount() {
       }
 
       const data = await response.json();
-      
-      // Save token and user to localStorage
+
       localStorage.setItem("ss.jwt", data.token);
       localStorage.setItem("ss.user", JSON.stringify(data.user));
-      
-      // Redirect to home
+
       navigate("/home", { replace: true });
-      
     } catch (err) {
       setError(err.message);
       setSubmitting(false);
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <AuthLayout
-      title={step === 'data' ? 'Create your account' : 'Verify your email'}
-      subtitle={step === 'data' ? 'Start shipping with momentum' : undefined}
+      title={step === "data" ? "Create your account" : "Verify your email"}
+      subtitle={step === "data" ? "Start shipping with momentum" : undefined}
     >
       <AnimatePresence mode="wait">
-        {step === 'data' ? (
+        {step === "data" ? (
           <motion.form
             key="data-form"
             initial={{ opacity: 0, x: 20 }}
@@ -376,8 +358,8 @@ export default function CreateAccount() {
           >
             <AuthError>{error}</AuthError>
 
-            {/* Name fields - side by side */}
             <div className="grid grid-cols-2 gap-3">
+              {/* First name */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
                   First name
@@ -392,10 +374,10 @@ export default function CreateAccount() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={`
-                      w-full pl-10 pr-4 py-2.5 rounded-lg
-                      bg-white/[0.04] border text-white placeholder:text-slate-500
-                      focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all
-                      ${fieldErrors.firstName ? 'border-red-500/50' : 'border-white/[0.08] focus:border-purple-500/50'}
+                      w-full pl-10 pr-4 py-2.5 rounded-xl
+                      bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                      focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                      ${fieldErrors.firstName ? 'ring-red-500/30' : 'ring-white/[0.08]'}
                     `}
                   />
                 </div>
@@ -407,24 +389,28 @@ export default function CreateAccount() {
                 )}
               </div>
 
+              {/* Last name (ALIGNMENT FIX: icon + pl-10 to match) */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
                   Last name
                 </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`
-                    w-full px-4 py-2.5 rounded-lg
-                    bg-white/[0.04] border text-white placeholder:text-slate-500
-                    focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all
-                    ${fieldErrors.lastName ? 'border-red-500/50' : 'border-white/[0.08] focus:border-purple-500/50'}
-                  `}
-                />
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input
+                    type="text"
+                    name="lastName"
+                    placeholder="Doe"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    className={`
+                      w-full pl-10 pr-4 py-2.5 rounded-xl
+                      bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                      focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                      ${fieldErrors.lastName ? 'ring-red-500/30' : 'ring-white/[0.08]'}
+                    `}
+                  />
+                </div>
                 {fieldErrors.lastName && (
                   <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
                     <X className="w-3 h-3" />
@@ -449,10 +435,10 @@ export default function CreateAccount() {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   className={`
-                    w-full pl-10 pr-4 py-2.5 rounded-lg
-                    bg-white/[0.04] border text-white placeholder:text-slate-500
-                    focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all
-                    ${fieldErrors.username ? 'border-red-500/50' : 'border-white/[0.08] focus:border-purple-500/50'}
+                    w-full pl-10 pr-4 py-2.5 rounded-xl
+                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                    ${fieldErrors.username ? 'ring-red-500/30' : 'ring-white/[0.08]'}
                   `}
                 />
               </div>
@@ -483,10 +469,10 @@ export default function CreateAccount() {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   className={`
-                    w-full pl-10 pr-4 py-2.5 rounded-lg
-                    bg-white/[0.04] border text-white placeholder:text-slate-500
-                    focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all
-                    ${fieldErrors.email ? 'border-red-500/50' : 'border-white/[0.08] focus:border-purple-500/50'}
+                    w-full pl-10 pr-4 py-2.5 rounded-xl
+                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                    ${fieldErrors.email ? 'ring-red-500/30' : 'ring-white/[0.08]'}
                   `}
                 />
               </div>
@@ -513,10 +499,10 @@ export default function CreateAccount() {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   className={`
-                    w-full pl-10 pr-10 py-2.5 rounded-lg
-                    bg-white/[0.04] border text-white placeholder:text-slate-500
-                    focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all
-                    ${fieldErrors.password ? 'border-red-500/50' : 'border-white/[0.08] focus:border-purple-500/50'}
+                    w-full pl-10 pr-10 py-2.5 rounded-xl
+                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                    ${fieldErrors.password ? 'ring-red-500/30' : 'ring-white/[0.08]'}
                   `}
                 />
                 <button
@@ -527,6 +513,7 @@ export default function CreateAccount() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+
               {fieldErrors.password ? (
                 <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
                   <X className="w-3 h-3" />
@@ -554,14 +541,14 @@ export default function CreateAccount() {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   className={`
-                    w-full pl-10 pr-10 py-2.5 rounded-lg
-                    bg-white/[0.04] border text-white placeholder:text-slate-500
-                    focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all
-                    ${fieldErrors.confirmPassword 
-                      ? 'border-red-500/50' 
+                    w-full pl-10 pr-10 py-2.5 rounded-xl
+                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                    ${fieldErrors.confirmPassword
+                      ? 'ring-red-500/30'
                       : formData.confirmPassword && formData.confirmPassword === formData.password
-                        ? 'border-green-500/50'
-                        : 'border-white/[0.08] focus:border-purple-500/50'
+                        ? 'ring-green-500/30'
+                        : 'ring-white/[0.08]'
                     }
                   `}
                 />
@@ -573,6 +560,7 @@ export default function CreateAccount() {
                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+
               {fieldErrors.confirmPassword ? (
                 <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
                   <X className="w-3 h-3" />
@@ -586,25 +574,22 @@ export default function CreateAccount() {
               ) : null}
             </div>
 
-            {/* Submit */}
             <AuthButton type="submit" loading={submitting}>
               Create Account
               <ArrowRight className="w-5 h-5" />
             </AuthButton>
 
-            {/* Login link */}
             <p className="text-center text-sm text-slate-400">
-              Already have an account?{' '}
+              Already have an account?{" "}
               <Link to="/login" className="text-purple-400 hover:text-purple-300">
                 Sign in
               </Link>
             </p>
 
-            {/* Terms */}
             <p className="text-center text-xs text-slate-500">
-              By creating an account, you agree to ShareSync's{' '}
-              <a href="#" className="text-purple-400 hover:underline">Terms</a>
-              {' '}and{' '}
+              By creating an account, you agree to OpenShare&apos;s{" "}
+              <a href="#" className="text-purple-400 hover:underline">Terms</a>{" "}
+              and{" "}
               <a href="#" className="text-purple-400 hover:underline">Privacy Policy</a>
             </p>
           </motion.form>
@@ -619,7 +604,7 @@ export default function CreateAccount() {
               email={formData.email}
               userId={userId}
               onVerify={handleVerification}
-              onBack={() => setStep('data')}
+              onBack={() => setStep("data")}
               error={error}
               submitting={submitting}
             />
@@ -629,3 +614,4 @@ export default function CreateAccount() {
     </AuthLayout>
   );
 }
+
