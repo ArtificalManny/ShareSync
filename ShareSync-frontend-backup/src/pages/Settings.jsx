@@ -4,9 +4,9 @@ import { getMe, updateProfile, updateNotifications } from '../api/user';
 import { toast } from '../components/ui/Toaster.jsx';
 import { trackMentorSettings, trackProfileDiscoverToggle } from '../utils/telemetry';
 import { DISCOVERABILITY } from '../config/flags.js';
-import { 
+import {
   Beaker,
-  Target, Brain, Users as UsersIcon, Shield, Heart, Sparkles, 
+  Target, Brain, Users as UsersIcon, Shield, Heart, Sparkles,
   Play, Zap, Clock, Film, Star, Moon, Sun, Eye
 } from 'lucide-react';
 import PresenceSettings from '../components/settings/PresenceSettings';
@@ -29,7 +29,7 @@ function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Ic
           {value}{unit}
         </span>
       </div>
-      
+
       <div className="relative">
         <div className="h-3 rounded-full bg-slate-700/50 overflow-hidden">
           <div
@@ -46,7 +46,7 @@ function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Ic
           className="absolute inset-0 w-full opacity-0 cursor-pointer"
         />
       </div>
-      
+
       <div className="flex justify-between text-xs text-slate-500">
         <span>{min}{unit}</span>
         <span>{max}{unit}</span>
@@ -89,7 +89,7 @@ function RadioGroup({ label, options, value, onChange, icon: Icon }) {
         {Icon && <Icon className="w-5 h-5 text-purple-400" />}
         <label className="text-sm font-medium text-white">{label}</label>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {options.map((option) => (
           <button
@@ -159,42 +159,37 @@ export default function Settings() {
 
   const mqlRef = useRef(null);
 
-  const applyTheme = (mode) => {
-    const root = document.documentElement;
-    const setDark = (isDark) => {
-      root.classList.toggle('dark', isDark);
-      root.dataset.theme = isDark ? 'dark' : 'light';
-    };
+ const applyTheme = (mode) => {
+  const root = document.documentElement;
 
-    if (mqlRef.current?.removeEventListener) {
-      mqlRef.current.removeEventListener('change', mqlRef.current._handler);
-      mqlRef.current = null;
-    }
-
-    if (mode === 'dark') {
-      setDark(true);
-      localStorage.setItem('ss.theme', 'dark');
-      return;
-    }
-    if (mode === 'light') {
-      setDark(false);
-      localStorage.setItem('ss.theme', 'light');
-      return;
-    }
-
-    const mql = window.matchMedia?.('(prefers-color-scheme: dark)');
-    const sync = () => setDark(Boolean(mql?.matches));
-    if (mql) {
-      sync();
-      const handler = () => sync();
-      mql.addEventListener?.('change', handler);
-      mql._handler = handler;
-      mqlRef.current = mql;
-    } else {
-      setDark(false);
-    }
-    localStorage.setItem('ss.theme', 'system');
+  const setDark = (isDark) => {
+    root.classList.toggle('dark', isDark);
+    root.dataset.theme = isDark ? 'dark' : 'light';
   };
+
+  // Cleanup any previous matchMedia listener (old system mode logic)
+  if (mqlRef.current?.removeEventListener && mqlRef.current?._handler) {
+    mqlRef.current.removeEventListener('change', mqlRef.current._handler);
+    mqlRef.current = null;
+  }
+
+  if (mode === 'dark') {
+    setDark(true);
+    localStorage.setItem('ss.theme', 'dark');
+    return;
+  }
+
+  // TEMP: until we truly support light UI everywhere, treat "light" as dark
+  if (mode === 'light') {
+    setDark(true);
+    localStorage.setItem('ss.theme', 'light');
+    return;
+  }
+
+  // TEMP: until we truly support light UI everywhere, treat "system" as dark
+  setDark(true);
+  localStorage.setItem('ss.theme', 'system');
+};
 
   useEffect(() => {
     let ignore = false;
@@ -202,10 +197,13 @@ export default function Settings() {
     getMe()
       .then((me) => {
         if (ignore) return;
-        
+
         setPublicProfile(Boolean(me?.publicProfile ?? true));
         setDiscoverable(Boolean(me?.discoverable ?? false));
-        const initialTheme = me?.appearance?.theme ?? localStorage.getItem('ss.theme') ?? 'system';
+
+        // Optional safety: default fallback theme to dark (instead of system)
+        const initialTheme = me?.appearance?.theme ?? localStorage.getItem('ss.theme') ?? 'dark';
+
         setTheme(initialTheme);
         applyTheme(initialTheme);
 
@@ -249,7 +247,7 @@ export default function Settings() {
     setErrorMsg('');
     setOk('');
     setSaving(true);
-    
+
     try {
       await updateProfile({
         publicProfile,
@@ -302,9 +300,9 @@ export default function Settings() {
   };
 
   const handleGenerateYearMontage = () => {
-    toast({ 
-      title: 'Year in Ships video coming soon!', 
-      description: 'This will generate a cinematic montage of everything you shipped this year.' 
+    toast({
+      title: 'Year in Ships video coming soon!',
+      description: 'This will generate a cinematic montage of everything you shipped this year.'
     });
   };
 
@@ -319,7 +317,7 @@ export default function Settings() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-6 py-12">
       <div className="max-w-4xl mx-auto space-y-8">
-        
+
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent mb-3">
             Design Your Momentum
@@ -339,14 +337,14 @@ export default function Settings() {
         )}
 
         <form onSubmit={handleSave} className="space-y-6">
-          
+
           {/* LAYER 1: Momentum Engine */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
             <div className="flex items-center gap-3 mb-6">
               <Target className="w-6 h-6 text-purple-400" />
               <h2 className="text-xl font-bold text-white">Momentum Engine</h2>
             </div>
-            
+
             <div className="space-y-6">
               <Slider
                 label="Daily Ships Goal"
@@ -356,14 +354,14 @@ export default function Settings() {
                 max={10}
                 icon={Zap}
               />
-              
+
               <Toggle
                 label="Weekend ships count toward streak"
                 checked={weekendShipsCount}
                 onChange={setWeekendShipsCount}
                 description="Keep your streak alive on Saturdays and Sundays"
               />
-              
+
               <Toggle
                 label="Allow 1 Streak Freeze per month"
                 checked={allowStreakFreeze}
@@ -379,7 +377,7 @@ export default function Settings() {
               <Brain className="w-6 h-6 text-purple-400" />
               <h2 className="text-xl font-bold text-white">Focus DNA</h2>
             </div>
-            
+
             <div className="space-y-6">
               <Slider
                 label="Deep Work Target"
@@ -390,7 +388,7 @@ export default function Settings() {
                 unit="h"
                 icon={Clock}
               />
-              
+
               <Toggle
                 label="Auto-start Focus Mode at 9:00 AM weekdays"
                 checked={autoStartFocus}
@@ -406,7 +404,7 @@ export default function Settings() {
               <UsersIcon className="w-6 h-6 text-purple-400" />
               <h2 className="text-xl font-bold text-white">Social Proof</h2>
             </div>
-            
+
             <div className="space-y-6">
               <RadioGroup
                 label="Show my streak to"
@@ -418,14 +416,14 @@ export default function Settings() {
                 value={showStreakTo}
                 onChange={setShowStreakTo}
               />
-              
+
               <Toggle
                 label="Celebrate my ships publicly"
                 checked={celebratePublicly}
                 onChange={setCelebratePublicly}
                 description="Let others see when you ship something great"
               />
-              
+
               <Toggle
                 label="Public Profile"
                 checked={publicProfile}
@@ -441,7 +439,7 @@ export default function Settings() {
               <Sparkles className="w-6 h-6 text-purple-400" />
               <h2 className="text-xl font-bold text-white">AI Mentor Personality</h2>
             </div>
-            
+
             <div className="space-y-6">
               <Toggle
                 label="Enable AI Mentor"
@@ -449,7 +447,7 @@ export default function Settings() {
                 onChange={setMentorEnabled}
                 description="Get real-time coaching and insights"
               />
-              
+
               {mentorEnabled && (
                 <>
                   <RadioGroup
@@ -462,7 +460,7 @@ export default function Settings() {
                     value={mentorTone}
                     onChange={setMentorTone}
                   />
-                  
+
                   <Slider
                     label="Intensity"
                     value={mentorIntensity}
@@ -490,7 +488,7 @@ export default function Settings() {
               <Heart className="w-6 h-6 text-purple-400" />
               <h2 className="text-xl font-bold text-white">Legacy Mode</h2>
             </div>
-            
+
             <div className="space-y-6">
               <Toggle
                 label="Show Legacy Counter everywhere"
@@ -498,14 +496,14 @@ export default function Settings() {
                 onChange={setShowLegacyEverywhere}
                 description="See your lifetime ship count on every page"
               />
-              
+
               <Toggle
                 label="Send me a yearly 'Year in Ships' video"
                 checked={yearlyMontage}
                 onChange={setYearlyMontage}
                 description="Cinematic montage of everything you shipped this year"
               />
-              
+
               <button
                 type="button"
                 onClick={handleGenerateYearMontage}
@@ -523,7 +521,7 @@ export default function Settings() {
               <Star className="w-6 h-6 text-purple-400" />
               <h2 className="text-xl font-bold text-white">Experience Mode</h2>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
@@ -540,7 +538,7 @@ export default function Settings() {
                   Bigger rings, confetti, private data
                 </div>
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => setUserMode('pro')}

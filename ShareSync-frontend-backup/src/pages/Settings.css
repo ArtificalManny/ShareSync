@@ -1,5 +1,7 @@
+/* Keep this file harmless.
+   Settings.jsx already paints its own background via Tailwind. */
 .settings-container {
   padding: 0;
   min-height: 100vh;
-  background: #3C2F5D;
+  background: transparent;
 }
