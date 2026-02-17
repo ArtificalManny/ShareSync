@@ -5,6 +5,8 @@
 
 import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+
+import { ModerationService } from './moderation.service';
 import { TextModerationService } from './text-moderation.service';
 import { ImageModerationService } from './image-moderation.service';
 import { TextModerationInterceptor } from './moderation.interceptor';
@@ -13,11 +15,17 @@ import { TextModerationInterceptor } from './moderation.interceptor';
 @Module({
   imports: [ConfigModule],
   providers: [
+    // ✅ IMPORTANT: UploadsController injects ModerationService
+    ModerationService,
+
     TextModerationService,
     ImageModerationService,
     TextModerationInterceptor,
   ],
   exports: [
+    // ✅ IMPORTANT: Export it so other modules/controllers can inject it
+    ModerationService,
+
     TextModerationService,
     ImageModerationService,
     TextModerationInterceptor,

@@ -1,10 +1,13 @@
 // src/tasks/project-tasks.controller.ts
 // ═══════════════════════════════════════════════════════════════════════════════
-// PROJECT TASKS CONTROLLER
+// PROJECT TASKS CONTROLLER (3.6)
 // Owns project-scoped task routes:
-//   GET  /api/projects/:projectId/tasks
-//   POST /api/projects/:projectId/tasks
-// Enforces: projectId is derived ONLY from URL param (cannot be spoofed via body).
+//   GET  /api/projects/:projectId/tasks   (read)
+//   POST /api/projects/:projectId/tasks  (write)
+// Enforces:
+//   • private/team → members only
+//   • public → read allowed (non-members), write still members
+//   • projectId is derived ONLY from URL param (cannot be spoofed via body)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -25,14 +28,16 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
+
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TasksService } from './tasks.service';
 import { CreateProjectTaskDto } from './dto/create-project-task.dto';
 import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
 
+import { ProjectAccessGuard, ProjectAccess } from '../common/guards/project-access.guard';
+
 @ApiTags('Project Tasks')
 @Controller('projects/:projectId/tasks')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ProjectTasksController {
   constructor(private readonly tasksService: TasksService) {}
@@ -40,13 +45,16 @@ export class ProjectTasksController {
   @Get()
   @ApiOperation({ summary: 'Get tasks for a project' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
+  @ProjectAccess({ param: 'projectId', intent: 'read', allowPublicRead: true })
+  @UseGuards(JwtAuthGuard, ProjectAccessGuard)
   async listByProject(
     @Req() req: any,
     @Param('projectId', ParseObjectIdPipe) projectId: string,
   ) {
-    const userId = req.user?.sub || req.user?.userId;
+    const userId = req.user?.sub || req.user?.userId || req.user?.id;
 
-    // Reuse existing service method (ensures access control via ProjectsService)
+    // Keep existing flow (TasksService may already enforce access)
+    // Guard enforces Step 3.6 at the edge.
     const result = await this.tasksService.find(userId, { projectId });
 
     return {
@@ -64,18 +72,21 @@ export class ProjectTasksController {
   @ApiOperation({ summary: 'Create a task in a project' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Task created' })
+  @ProjectAccess({
+    param: 'projectId',
+    intent: 'write',
+    // Optional role gate if you want it:
+    // roles: ['owner', 'admin', 'member'],
+  })
+  @UseGuards(JwtAuthGuard, ProjectAccessGuard)
   async createInProject(
     @Req() req: any,
     @Param('projectId', ParseObjectIdPipe) projectId: string,
     @Body() dto: CreateProjectTaskDto,
   ) {
-    const userId = req.user?.sub || req.user?.userId;
+    const userId = req.user?.sub || req.user?.userId || req.user?.id;
 
-    // ──────────────────────────────────────────────────────────────────────────
     // 3.2 ENFORCEMENT: projectId cannot be spoofed in body
-    // Even if global ValidationPipe isn't forbidding non-whitelisted fields,
-    // we hard-reject any attempt to include projectId in request body.
-    // ──────────────────────────────────────────────────────────────────────────
     const rawBody = (req as any)?.body as any;
     if (rawBody && typeof rawBody === 'object' && rawBody.projectId !== undefined) {
       throw new BadRequestException(
@@ -83,7 +94,6 @@ export class ProjectTasksController {
       );
     }
 
-    // Convert to CreateTaskDto shape expected by tasksService.create
     const task = await this.tasksService.create(userId, {
       ...(dto as any),
       projectId,

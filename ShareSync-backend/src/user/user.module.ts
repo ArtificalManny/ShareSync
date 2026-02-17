@@ -2,26 +2,38 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
-import { User, UserSchema } from './schemas/user.schema'; // keep your existing path
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
+import { User, UserSchema } from './schemas/user.schema';
 
 import { ProjectsModule } from '../projects/projects.module';
 import { ActivitiesModule } from '../activities/activities.module';
+
+// ✅ Needed because UserController injects RealtimeGateway
 import { RealtimeModule } from '../realtime/realtime.module';
+
+// ✅ Likely needed because UserController injects UploadsService + ProjectFollowService
+// (If either of these modules does not exist in your repo, delete that import line and we’ll adapt.)
+import { UploadsModule } from '../uploads/uploads.module';
+import { ProjectFollowModule } from '../follows/project-follow.module';
 
 @Module({
   imports: [
-    // Registers the User model in this module’s scope
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    // If UserService references ProjectService, keep forwardRef
+
+    // Keep existing dependencies
     forwardRef(() => ProjectsModule),
-    ActivitiesModule,
-    RealtimeModule,
+    forwardRef(() => ActivitiesModule),
+
+    // ✅ Add realtime so RealtimeGateway is available
+    forwardRef(() => RealtimeModule),
+
+    // ✅ Add these so UploadsService + ProjectFollowService are available
+    forwardRef(() => UploadsModule),
+    forwardRef(() => ProjectFollowModule),
   ],
   controllers: [UserController],
   providers: [UserService],
-  // ⬅️ Export MongooseModule so other modules (like NotificationsModule) can inject UserModel
-  exports: [UserService, MongooseModule],
+  exports: [UserService],
 })
 export class UserModule {}

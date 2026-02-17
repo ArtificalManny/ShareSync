@@ -1,4 +1,14 @@
 // src/activities/activities.controller.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACTIVITIES CONTROLLER (3.6)
+// Routes:
+//   GET  /api/projects/:projectId/activity      (read)
+//   POST /api/projects/:projectId/activity/test (write - dev smoke test)
+// Enforces:
+//   • private/team → members only
+//   • public → read allowed (non-members), write still members
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import {
   Controller,
   Get,
@@ -15,12 +25,15 @@ import { Types } from 'mongoose';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ActivitiesService } from './activities.service';
 
+import { ProjectAccessGuard, ProjectAccess } from '../common/guards/project-access.guard';
+
 @Controller('projects/:projectId/activity')
 export class ActivitiesController {
   constructor(private readonly activities: ActivitiesService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get()
+  @ProjectAccess({ param: 'projectId', intent: 'read', allowPublicRead: true })
+  @UseGuards(JwtAuthGuard, ProjectAccessGuard)
   async listProjectActivity(
     @Req() req: any,
     @Param('projectId') projectId: string,
@@ -58,8 +71,9 @@ export class ActivitiesController {
   }
 
   // ✅ Dev-only smoke test: proves writes hit Mongo and show up in GET + mongosh.
-  @UseGuards(JwtAuthGuard)
   @Post('test')
+  @ProjectAccess({ param: 'projectId', intent: 'write' })
+  @UseGuards(JwtAuthGuard, ProjectAccessGuard)
   async createTestActivity(@Req() req: any, @Param('projectId') projectId: string) {
     if (!projectId || !Types.ObjectId.isValid(projectId)) {
       throw new BadRequestException('Invalid projectId');
@@ -77,7 +91,7 @@ export class ActivitiesController {
         type: 'debug.test',
         entityType: 'PROJECT',
         entityId: projectId,
-        action: 'comment_added', // keep it inside enum to avoid schema enum rejects
+        action: 'comment_added',
         details: { message: 'Activity write smoke test' },
         metadata: { via: 'POST /projects/:projectId/activity/test' },
         payload: {},
@@ -85,7 +99,6 @@ export class ActivitiesController {
 
       return { success: true, data: saved };
     } catch (err: any) {
-      // Surface the real reason (dev only)
       const msg = err?.message || String(err);
       throw new InternalServerErrorException(`Activity test failed: ${msg}`);
     }
