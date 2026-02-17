@@ -238,10 +238,15 @@ export const generateClientMessageId = () => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DEFAULT EXPORT (for compatibility with existing imports)
+// EXPORTS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const messagesApi = {
+// IMPORTANT:
+// Some parts of the app import { messagesApi } as a NAMED export.
+// Others import default.
+// To avoid breaking either, we export BOTH.
+
+export const messagesApi = {
   // Conversations
   getConversations,
   getConversation,
