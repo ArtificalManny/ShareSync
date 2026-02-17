@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // TASKS SERVICE: Business Logic with Gamification Integration
 // + Normalized Task Mutation Events (3.3)
+// + Realtime Socket Emits (Step 4)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -34,6 +35,7 @@ import {
 
 import { TaskEventType } from './events/task-events';
 import { buildTaskSnapshot, emitTaskEvent } from './events/task-event.utils';
+import { RealtimeService } from '../realtime/realtime.service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // INTERFACES
@@ -83,6 +85,9 @@ export class TasksService {
     private readonly taskModel: Model<TaskDocument>,
     private readonly projectsService: ProjectsService,
     private readonly eventEmitter: EventEmitter2,
+
+    // ✅ Realtime socket wrapper (does NOT replace EventEmitter flow)
+    private readonly realtime: RealtimeService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -139,6 +144,9 @@ export class TasksService {
         assigneeId: dto.assigneeId,
       },
     });
+
+    // ✅ SOCKET EMIT (project room)
+    this.realtime.projectEmit(dto.projectId, 'taskUpdated', buildTaskSnapshot(saved));
 
     this.logger.log(`Task created: ${saved._id}`);
     return saved;
@@ -368,6 +376,9 @@ export class TasksService {
       changes: dto as any,
     });
 
+    // ✅ SOCKET EMIT
+    this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
+
     return updated;
   }
 
@@ -407,6 +418,9 @@ export class TasksService {
         sprintId: dto.sprintId,
       },
     });
+
+    // ✅ SOCKET EMIT
+    this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
 
     return updated;
   }
@@ -484,6 +498,9 @@ export class TasksService {
       },
     });
 
+    // ✅ SOCKET EMIT
+    this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(task));
+
     const completedAt = task.completedAt || new Date();
 
     const wasOnTime = task.dueDate
@@ -549,6 +566,13 @@ export class TasksService {
       actorId: userId,
       taskId: task._id.toString(),
       snapshot: buildTaskSnapshot(task),
+    });
+
+    // ✅ SOCKET EMIT (tombstone)
+    this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', {
+      id: task._id.toString(),
+      projectId: task.projectId.toString(),
+      deleted: true,
     });
 
     this.logger.log(`Task deleted: ${taskId}`);

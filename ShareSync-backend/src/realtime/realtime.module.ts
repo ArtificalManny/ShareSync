@@ -36,6 +36,7 @@ import { PresenceService } from './presence.service';
 import { FocusService } from './focus.service';
 import { FocusGateway } from './focus.gateway';
 import { RealtimeGateway } from './realtime.gateway';
+import { RealtimeService } from './realtime.service';
 
 // ============================================
 // GUARDS (local realtime folder)
@@ -71,6 +72,7 @@ import { WsJwtGuard } from './ws-jwt.guard';
     CursorService,
     PresenceService,
     FocusService,
+    RealtimeService,
     WsJwtGuard,
   ],
 
@@ -79,6 +81,7 @@ import { WsJwtGuard } from './ws-jwt.guard';
     CursorService,
     PresenceService,
     FocusService,
+    RealtimeService,
     RealtimeGateway,
     FocusGateway,
     MongooseModule,

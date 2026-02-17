@@ -15,6 +15,9 @@ import { ProjectsModule } from '../projects/projects.module';
 import { Project, ProjectSchema } from '../projects/schemas/project.schema';
 import { ProjectAccessGuard } from '../common/guards/project-access.guard';
 
+// ✅ Realtime (Socket emit layer)
+import { RealtimeModule } from '../realtime/realtime.module';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -24,6 +27,9 @@ import { ProjectAccessGuard } from '../common/guards/project-access.guard';
       { name: Project.name, schema: ProjectSchema },
     ]),
     ProjectsModule,
+
+    // ✅ Allows TasksService to inject RealtimeService safely
+    RealtimeModule,
   ],
   controllers: [ProjectTasksController],
   providers: [TasksService, ProjectAccessGuard],
