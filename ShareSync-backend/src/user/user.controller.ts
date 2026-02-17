@@ -34,12 +34,24 @@ export class UserController {
     private readonly activities: ActivitiesService,
     private readonly realtime: RealtimeGateway,
 
-    // ✅ OPTIONAL so the app boots even if uploads module isn't wired yet
     @Optional() private readonly uploadService?: UploadsService,
-
-    // ✅ OPTIONAL so the app boots even if follows module isn't wired yet
     @Optional() private readonly follows?: ProjectFollowService,
   ) {}
+
+  // ✅ Never let activity logging break the real endpoint.
+  private async safeRecord(payload: any) {
+    try {
+      // record() should exist after our ActivitiesService patch
+      await this.activities.record(payload);
+    } catch (err: any) {
+      // Keep this loud for now so we can see WHY it fails in the backend terminal.
+      // This is the key to diagnosing schema/casting/validation issues.
+      // eslint-disable-next-line no-console
+      console.error('❌ activities.record failed (non-blocking):', err?.message || err);
+      // eslint-disable-next-line no-console
+      if (err?.stack) console.error(err.stack);
+    }
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
@@ -72,7 +84,8 @@ export class UserController {
       });
     }
 
-    await this.activities.record({
+    // 🔥 NON-BLOCKING activity logging
+    await this.safeRecord({
       userId: id,
       type: 'user.updated',
       payload: { fields: Object.keys(patch || {}) },
@@ -80,15 +93,6 @@ export class UserController {
 
     return updated;
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ✅ PHASE 3: MY FOLLOWS
-  // GET /users/me/follows
-  // NOTE:
-  // - We intentionally do NOT hard-code a service method name.
-  // - This prevents TS/runtime pitfalls if your follow service uses a different name.
-  // - Backend remains unchanged aside from this safe call site.
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Get('me/follows')
@@ -101,9 +105,7 @@ export class UserController {
 
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
 
-    // ✅ Defensive: support multiple service method names without forcing refactors
     const svc: any = this.follows as any;
-
     const fn =
       svc.listMyFollows ||
       svc.listForUser ||
@@ -122,10 +124,6 @@ export class UserController {
 
     return fn.call(svc, userId);
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ✅ PREFERENCES + AVATAR ENDPOINTS
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Patch('me/preferences')
@@ -166,7 +164,8 @@ export class UserController {
       ts: new Date().toISOString(),
     });
 
-    await this.activities.record({
+    // 🔥 NON-BLOCKING activity logging
+    await this.safeRecord({
       userId,
       type: 'user.avatar.updated',
       payload: { avatarUrl },
@@ -220,7 +219,4 @@ export class UserController {
       cursor: null,
     });
   }
-
-  // Existing momentum/narrative endpoints omitted here for brevity in this patch.
-  // Keep your existing ones below this point if you had them previously.
 }

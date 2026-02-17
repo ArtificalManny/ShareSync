@@ -4,7 +4,7 @@
 // Owns project-scoped task routes:
 //   GET  /api/projects/:projectId/tasks
 //   POST /api/projects/:projectId/tasks
-// Uses existing TasksService to avoid refactors.
+// Enforces: projectId is derived ONLY from URL param (cannot be spoofed via body).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -16,6 +16,7 @@ import {
   UseGuards,
   Req,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -69,6 +70,18 @@ export class ProjectTasksController {
     @Body() dto: CreateProjectTaskDto,
   ) {
     const userId = req.user?.sub || req.user?.userId;
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 3.2 ENFORCEMENT: projectId cannot be spoofed in body
+    // Even if global ValidationPipe isn't forbidding non-whitelisted fields,
+    // we hard-reject any attempt to include projectId in request body.
+    // ──────────────────────────────────────────────────────────────────────────
+    const rawBody = (req as any)?.body as any;
+    if (rawBody && typeof rawBody === 'object' && rawBody.projectId !== undefined) {
+      throw new BadRequestException(
+        'Do not send projectId in body. Use the /projects/:projectId/tasks route.',
+      );
+    }
 
     // Convert to CreateTaskDto shape expected by tasksService.create
     const task = await this.tasksService.create(userId, {

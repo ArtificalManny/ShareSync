@@ -35,6 +35,9 @@ import { TasksModule } from './tasks/tasks.module';
 import { UserContextModule } from './user-context/user-context.module';
 import { RealtimeModule } from './realtime/realtime.module';
 
+// ✅ Activity persistence layer (3.4)
+import { ActivitiesModule } from './activities/activities.module';
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 2: COLLABORATION MODULES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -176,6 +179,9 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     TasksModule,
     UserContextModule,
     RealtimeModule,
+
+    // ✅ 3.4 Activity persistence
+    ActivitiesModule,
 
     // ─────────────────────────────────────────────────────────────────────────
     // COLLABORATION

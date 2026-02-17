@@ -1,32 +1,38 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+
 import { AuthController } from './auth.controller';
+import { DevAuthController } from './dev-auth.controller';
 import { AuthService } from './auth.service';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
+
 import { User, UserSchema } from '../user/schemas/user.schema';
+
+// IMPORTANT: use the REAL strategy file, not the barrel
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
     ConfigModule,
-    PassportModule.register({ defaultStrategy: 'jwt' }),
+    PassportModule,
+
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'dev_secret_change_me',
-        signOptions: { 
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '7d' 
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET', 'dev_secret_change_me'),
+        signOptions: {
+          expiresIn: config.get<string>('JWT_EXPIRES_IN', '7d'),
         },
       }),
     }),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtRefreshStrategy],
-  exports: [JwtModule, PassportModule, AuthService],
+  controllers: [AuthController, DevAuthController],
+  providers: [AuthService, JwtStrategy],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

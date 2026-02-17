@@ -1,6 +1,7 @@
 // src/tasks/tasks.service.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // TASKS SERVICE: Business Logic with Gamification Integration
+// + Normalized Task Mutation Events (3.3)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -30,6 +31,9 @@ import {
   AddCommentDto,
   LogTimeDto,
 } from './dto/update-task.dto';
+
+import { TaskEventType } from './events/task-events';
+import { buildTaskSnapshot, emitTaskEvent } from './events/task-event.utils';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // INTERFACES
@@ -104,9 +108,7 @@ export class TasksService {
       // Reporter is the user creating the task (current behavior)
       reporterId: new Types.ObjectId(userId),
 
-      // ✅ IMPORTANT PITFALL FIX:
-      // TaskSchema requires createdBy. If we don’t set it, you’ll eventually hit
-      // validation errors or inconsistent data.
+      // TaskSchema requires createdBy
       createdBy: new Types.ObjectId(userId),
 
       assigneeId: dto.assigneeId ? new Types.ObjectId(dto.assigneeId) : undefined,
@@ -125,11 +127,17 @@ export class TasksService {
       await this.updateBlockingRelationships(saved);
     }
 
-    this.eventEmitter.emit('task.created', {
-      taskId: saved._id,
+    // ✅ NORMALIZED EVENT
+    emitTaskEvent({
+      eventEmitter: this.eventEmitter,
+      type: TaskEventType.TASK_CREATED,
       projectId: dto.projectId,
-      userId,
-      assigneeId: dto.assigneeId,
+      actorId: userId,
+      taskId: saved._id.toString(),
+      snapshot: buildTaskSnapshot(saved),
+      meta: {
+        assigneeId: dto.assigneeId,
+      },
     });
 
     this.logger.log(`Task created: ${saved._id}`);
@@ -285,7 +293,6 @@ export class TasksService {
   // PRIORITIES ENDPOINT SUPPORT
   // ─────────────────────────────────────────────────────────────────────────────
 
-  // ✅ REQUIRED: Used by GET /tasks/priorities
   async getMyPriorityTasks(userId: string, limit: number = 3): Promise<TaskDocument[]> {
     this.logger.log(`getMyPriorityTasks called for user: ${userId}`);
 
@@ -301,9 +308,9 @@ export class TasksService {
         completedAt: null,
       })
       .sort({
-        priority: -1,     // critical first
-        isBlocking: -1,   // blocking tasks first
-        dueDate: 1,       // earliest due date first
+        priority: -1,
+        isBlocking: -1,
+        dueDate: 1,
         createdAt: -1,
       })
       .limit(limit)
@@ -350,11 +357,15 @@ export class TasksService {
     Object.assign(task, dto);
     const updated = await task.save();
 
-    this.eventEmitter.emit('task.updated', {
-      taskId: updated._id,
-      projectId: task.projectId,
-      userId,
-      changes: dto,
+    // ✅ NORMALIZED EVENT
+    emitTaskEvent({
+      eventEmitter: this.eventEmitter,
+      type: TaskEventType.TASK_UPDATED,
+      projectId: task.projectId.toString(),
+      actorId: userId,
+      taskId: updated._id.toString(),
+      snapshot: buildTaskSnapshot(updated),
+      changes: dto as any,
     });
 
     return updated;
@@ -381,12 +392,20 @@ export class TasksService {
 
     const updated = await task.save();
 
-    this.eventEmitter.emit('task.moved', {
-      taskId: updated._id,
-      projectId: task.projectId,
-      userId,
-      previousStatus,
-      newStatus: updated.status,
+    // ✅ NORMALIZED EVENT
+    emitTaskEvent({
+      eventEmitter: this.eventEmitter,
+      type: TaskEventType.TASK_MOVED,
+      projectId: task.projectId.toString(),
+      actorId: userId,
+      taskId: updated._id.toString(),
+      snapshot: buildTaskSnapshot(updated),
+      changes: {
+        previousStatus,
+        newStatus: updated.status,
+        order: dto.order,
+        sprintId: dto.sprintId,
+      },
     });
 
     return updated;
@@ -447,15 +466,22 @@ export class TasksService {
 
     const unblocked = await this.unblockDependentTasks(task);
 
-    this.eventEmitter.emit('task.completed', {
-      taskId: task._id,
-      projectId: task.projectId,
-      userId,
-      xpAwarded: totalXP,
-      bonusXP: variableRewards.bonusXP,
-      isLegendary: variableRewards.isLegendary,
-      ceremonyTier,
-      unblocked: unblocked.map((t) => t._id),
+    // ✅ NORMALIZED EVENT
+    emitTaskEvent({
+      eventEmitter: this.eventEmitter,
+      type: TaskEventType.TASK_COMPLETED,
+      projectId: task.projectId.toString(),
+      actorId: userId,
+      taskId: task._id.toString(),
+      snapshot: buildTaskSnapshot(task),
+      meta: {
+        xpAwarded: totalXP,
+        bonusXP: variableRewards.bonusXP,
+        isLegendary: variableRewards.isLegendary,
+        ceremonyTier,
+        unblockedTaskIds: unblocked.map((t) => t._id.toString()),
+        inFocusMode: !!(dto as any)?.inFocusMode,
+      },
     });
 
     const completedAt = task.completedAt || new Date();
@@ -482,6 +508,7 @@ export class TasksService {
       inFocusMode: !!(dto as any)?.inFocusMode,
     };
 
+    // Keep your existing gamification bus event (separate concern)
     this.eventEmitter.emit(EVENTS.TASK_COMPLETED, gamificationEvent);
 
     this.logger.log(
@@ -514,10 +541,14 @@ export class TasksService {
 
     await this.projectsService.decrementTaskCount(task.projectId.toString(), wasCompleted);
 
-    this.eventEmitter.emit('task.deleted', {
-      taskId: task._id,
-      projectId: task.projectId,
-      userId,
+    // ✅ NORMALIZED EVENT
+    emitTaskEvent({
+      eventEmitter: this.eventEmitter,
+      type: TaskEventType.TASK_DELETED,
+      projectId: task.projectId.toString(),
+      actorId: userId,
+      taskId: task._id.toString(),
+      snapshot: buildTaskSnapshot(task),
     });
 
     this.logger.log(`Task deleted: ${taskId}`);
@@ -541,6 +572,7 @@ export class TasksService {
 
     const updated = await task.save();
 
+    // Comments can stay separate (not part of canonical mutation set)
     this.eventEmitter.emit('task.comment.added', {
       taskId: task._id,
       projectId: task.projectId,
