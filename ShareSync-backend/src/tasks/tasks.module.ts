@@ -7,6 +7,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Task, TaskSchema } from './schemas/task.schema';
 import { TasksController } from './tasks.controller';
+import { ProjectTasksController } from './project-tasks.controller';
 import { TasksService } from './tasks.service';
 import { ProjectsModule } from '../projects/projects.module';
 
@@ -17,7 +18,7 @@ import { ProjectsModule } from '../projects/projects.module';
     ]),
     forwardRef(() => ProjectsModule),
   ],
-  controllers: [TasksController],
+  controllers: [TasksController, ProjectTasksController],
   providers: [TasksService],
   exports: [TasksService],
 })

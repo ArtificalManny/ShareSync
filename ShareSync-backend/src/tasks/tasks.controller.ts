@@ -214,6 +214,21 @@ export class TasksController {
       data: subtasks,
     };
   }
+    @Patch(':id')
+  @ApiOperation({ summary: 'Patch a task (partial update)' })
+  @ApiParam({ name: 'id', description: 'Task ID' })
+  async patch(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdateTaskDto,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const task = await this.tasksService.update(id, userId, dto);
+    return {
+      success: true,
+      data: task,
+    };
+  }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // UPDATE
