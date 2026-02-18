@@ -1,3 +1,31 @@
+// src/components/navigation/NotificationCenter.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// NOTIFICATION CENTER (NAVBAR SLOT)
+// SAFE SWAP: delegates to the new NotificationsBell dropdown (Option A).
+//
+// Why this is safe:
+// - Keeps the same default export name used by Navbar.jsx
+// - Removes socket + token complexity from the navbar layer (avoids quagmires)
+// - The new bell handles unread polling + dropdown rendering
+//
+// If you ever need the older socket-driven version back, it’s preserved below
+// (commented out) for fast rollback.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React from "react";
+import NotificationsBell from "../notifications/NotificationsBell";
+
+export default function NotificationCenter() {
+  return <NotificationsBell />;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LEGACY VERSION (Rollback Copy)
+   If you hit a weird regression, you can restore this quickly by:
+   1) Deleting the delegate version above
+   2) Uncommenting everything below
+───────────────────────────────────────────────────────────────────────────────
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, Check } from "lucide-react";
 
@@ -16,16 +44,6 @@ import {
 
 // ✅ Optional split components
 import NotificationList from "../notifications/NotificationList.jsx";
-
-/**
- * NotificationCenter (Phase N)
- * Goals:
- * - EMPTY on initial creation (no mock seed)
- * - user-specific fetch (if endpoint exists)
- * - realtime updates via socket (if gateway emits)
- *
- * Backend is NOT modified by this file.
- */
 
 const API_BASE =
   import.meta?.env?.VITE_API_URL ||
@@ -174,7 +192,6 @@ export default function NotificationCenter() {
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* Bell button */}
       <button
         onClick={() => setOpen((s) => !s)}
         className="relative p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-all duration-200"
@@ -189,10 +206,8 @@ export default function NotificationCenter() {
         )}
       </button>
 
-      {/* Panel */}
       {open && (
         <div className="absolute right-0 top-full mt-2 w-[380px] bg-surface-1 border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-          {/* Header */}
           <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
               <div className="text-sm font-semibold text-text-primary">
@@ -215,7 +230,6 @@ export default function NotificationCenter() {
             </button>
           </div>
 
-          {/* Tabs */}
           <div className="px-4 py-2 flex items-center gap-2">
             <button
               onClick={() => setTab("all")}
@@ -239,7 +253,6 @@ export default function NotificationCenter() {
             </button>
           </div>
 
-          {/* Body */}
           <div className="max-h-[420px] overflow-y-auto">
             {loading && items.length === 0 && (
               <div className="px-4 py-8 text-center text-sm text-text-tertiary">
@@ -261,14 +274,12 @@ export default function NotificationCenter() {
             <NotificationList
               items={visible.map((n) => ({
                 ...n,
-                // Provide a formatted date the list can show
                 _displayTime: formatTime(n.ts),
               }))}
               onToggleRead={(id) => toggleRead(id)}
             />
           </div>
 
-          {/* Footer */}
           <div className="px-4 py-3 border-t border-white/[0.06]">
             <button className="w-full text-xs text-text-tertiary hover:text-text-primary transition-colors">
               View all notifications
@@ -279,3 +290,5 @@ export default function NotificationCenter() {
     </div>
   );
 }
+
+──────────────────────────────────────────────────────────────────────────── */

@@ -1,36 +1,53 @@
-// src/utils/api.js
-// Legacy helper still used in parts of the app.
-// Updated to use Vite env (VITE_API_URL) instead of hardcoding localhost:3000.
+/**
+ * src/utils/api.js
+ * Thin API client used across the app.
+ *
+ * Exports:
+ *  - apiRequest (named) ✅
+ *  - default export apiRequest ✅
+ */
 
-const RAW_BASE = import.meta.env.VITE_API_URL || "http://localhost:5050";
-const API_BASE = RAW_BASE.replace(/\/$/, "") + "/api";
+const DEFAULT_BASE_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
+  'http://localhost:5050/api';
 
 function getToken() {
-  return localStorage.getItem("ss.token") || localStorage.getItem("ss.jwt") || "";
+  try {
+    return localStorage.getItem('authToken') || localStorage.getItem('accessToken') || null;
+  } catch {
+    return null;
+  }
 }
 
-export async function apiFetch(path, options = {}) {
-  const url = path.startsWith("http") ? path : `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+export async function apiRequest(path, method = 'GET', body) {
+  const url = path.startsWith('http')
+    ? path
+    : `${DEFAULT_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
 
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-  };
-
+  const headers = { 'Content-Type': 'application/json' };
   const token = getToken();
-  if (token && !headers.Authorization) {
-    headers.Authorization = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(url, {
+    method,
+    headers,
+    credentials: 'include',
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+  const text = await res.text();
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text || null;
   }
 
-  const res = await fetch(url, { ...options, headers });
-
-  // Let callers decide how to handle non-2xx, but give useful text
-  const text = await res.text();
-  let data;
-  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-
   if (!res.ok) {
-    const err = new Error(`API ${res.status} ${res.statusText}`);
+    const msg =
+      (data && (data.message || data.error)) ||
+      `Request failed (${res.status})`;
+    const err = new Error(msg);
     err.status = res.status;
     err.data = data;
     throw err;
@@ -39,10 +56,4 @@ export async function apiFetch(path, options = {}) {
   return data;
 }
 
-// Convenience wrappers
-export const apiGet = (p) => apiFetch(p, { method: "GET" });
-export const apiPost = (p, body) => apiFetch(p, { method: "POST", body: JSON.stringify(body) });
-export const apiPut = (p, body) => apiFetch(p, { method: "PUT", body: JSON.stringify(body) });
-export const apiPatch = (p, body) => apiFetch(p, { method: "PATCH", body: JSON.stringify(body) });
-export const apiDelete = (p) => apiFetch(p, { method: "DELETE" });
-
+export default apiRequest;

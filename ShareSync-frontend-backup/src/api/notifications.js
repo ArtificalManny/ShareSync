@@ -3,6 +3,8 @@ import axios from 'axios';
 // ──────────────────────────────────────────────────────────────
 // Notifications API (frontend-safe)
 // - Keeps your existing exports (no breaking changes)
+// - Adds Step 5 aliases:
+//   fetchNotifications(), markNotificationRead(), markAllRead(), fetchUnreadCount()
 // - Adds: listNotifications({limit, unreadOnly})
 // - Makes baseURL tolerant if VITE_API_URL already includes "/api"
 // ──────────────────────────────────────────────────────────────
@@ -40,12 +42,22 @@ api.interceptors.request.use((config) => {
 });
 
 // ──────────────────────────────────────────────────────────────
-// NEW: tolerant list function used by NotificationCenter
+// NEW: tolerant list function used by NotificationCenter / Dropdown
 // ──────────────────────────────────────────────────────────────
 export const listNotifications = async ({ limit = 25, unreadOnly = false } = {}) => {
   const response = await api.get(`/notifications`, {
     params: { limit, unreadOnly },
   });
+  return response.data;
+};
+
+// ──────────────────────────────────────────────────────────────
+// NEW: unread count helper (if your backend supports it)
+// If the route doesn't exist yet, this will throw and caller can fall back.
+// Typical route: GET /notifications/unread-count
+// ──────────────────────────────────────────────────────────────
+export const getUnreadCount = async () => {
+  const response = await api.get(`/notifications/unread-count`);
   return response.data;
 };
 
@@ -83,4 +95,41 @@ export const updateNotificationSettings = async (settings) => {
 export const updatePhoneNumber = async (phoneNumber) => {
   const response = await api.patch(`/users/me/phone`, { phoneNumber });
   return response.data;
+};
+
+// ──────────────────────────────────────────────────────────────
+// Step 5 — New helper names (aliases)
+// These are intentionally thin wrappers around your existing exports.
+// No breaking changes for any current imports.
+// ──────────────────────────────────────────────────────────────
+
+/**
+ * fetchNotifications({ limit, unreadOnly })
+ * Returns whatever the backend returns (commonly: { notifications, total, unread }).
+ */
+export const fetchNotifications = async ({ limit = 25, unreadOnly = false } = {}) => {
+  return listNotifications({ limit, unreadOnly });
+};
+
+/**
+ * markNotificationRead(id)
+ */
+export const markNotificationRead = async (id) => {
+  return markNotificationAsRead(id);
+};
+
+/**
+ * markAllRead()
+ */
+export const markAllRead = async () => {
+  return markAllNotificationsAsRead();
+};
+
+/**
+ * fetchUnreadCount()
+ * Uses /notifications/unread-count when available.
+ * If your backend returns { unread: number } or { count: number }, caller handles it.
+ */
+export const fetchUnreadCount = async () => {
+  return getUnreadCount();
 };
