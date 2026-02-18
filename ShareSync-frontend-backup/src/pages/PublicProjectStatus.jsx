@@ -8,6 +8,10 @@ import { labelledTimestamp, formatLongDateTime } from "../utils/formatters.js";
 // ✅ Frontend-only follow UI (no backend changes)
 import FollowButton from "../components/follow/FollowButton.jsx";
 
+// ✅ Step 6: join public project room + live feed
+import { useSocketContext } from "../context/SocketContext.jsx";
+import PublicProjectLiveFeed from "../components/public/PublicProjectLiveFeed.jsx";
+
 /** Simple KPI card */
 function Kpi({ label, value, hint }) {
   return (
@@ -56,6 +60,8 @@ export default function PublicProjectStatus() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
+  const { joinPublicProjectRoom } = useSocketContext();
+
   useEffect(() => {
     let ignore = false;
     (async () => {
@@ -92,6 +98,12 @@ export default function PublicProjectStatus() {
       null
     );
   }, [data]);
+
+  // ✅ Step 6: Join public room once we have a projectId
+  useEffect(() => {
+    if (!projectId) return;
+    joinPublicProjectRoom(projectId);
+  }, [projectId, joinPublicProjectRoom]);
 
   const signedIn = Boolean(getTokenAny());
 
@@ -184,7 +196,14 @@ export default function PublicProjectStatus() {
               <Kpi label="Cadence (14d)" value={data.kpis?.cadence14d ?? "—"} />
             </section>
 
-            {/* Activity */}
+            {/* ✅ STEP 6: Live public spectator feed */}
+            {projectId ? (
+              <section className="mt-6">
+                <PublicProjectLiveFeed projectId={projectId} />
+              </section>
+            ) : null}
+
+            {/* Activity (snapshot from API) */}
             {Array.isArray(data.activity) && data.activity.length > 0 ? (
               <section className="mt-6 rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
                 <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">

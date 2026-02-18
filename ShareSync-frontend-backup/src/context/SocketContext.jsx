@@ -4,6 +4,7 @@
 // ⭐ PHASE 2A: Global socket provider for real-time features
 // + PHASE N: User room auto-join (user:{userId})
 // + Notifications event relay preserved (notification:new)
+// + STEP 6: Public project spectator rooms (public:project:{projectId})
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, {
@@ -79,6 +80,11 @@ export function SocketProvider({ children }) {
       // Handle milestone updates
       'milestone:update': (data) => {
         eventHandlers['milestone:update']?.forEach((handler) => handler(data));
+      },
+
+      // ✅ STEP 6: Public spectator stream updates
+      'public:project:update': (data) => {
+        eventHandlers['public:project:update']?.forEach((handler) => handler(data));
       },
     }),
     [eventHandlers],
@@ -159,6 +165,20 @@ export function SocketProvider({ children }) {
       leaveRoom(room);
     },
     [leaveRoom],
+  );
+
+  // ✅ STEP 6: Public project spectator rooms (public:project:{projectId})
+  const joinPublicProjectRoom = useCallback(
+    (projectId) => {
+      if (!projectId) return;
+      const room = `public:project:${projectId}`;
+      setActiveRooms((prev) => {
+        if (prev.includes(room)) return prev;
+        return [...prev, room];
+      });
+      joinRoom(room);
+    },
+    [joinRoom],
   );
 
   const joinConversationRoom = useCallback(
@@ -284,6 +304,7 @@ export function SocketProvider({ children }) {
       leaveUserRoom,
       joinProjectRoom,
       leaveProjectRoom,
+      joinPublicProjectRoom,
       joinConversationRoom,
       leaveConversationRoom,
       activeRooms,
@@ -305,6 +326,7 @@ export function SocketProvider({ children }) {
       leaveUserRoom,
       joinProjectRoom,
       leaveProjectRoom,
+      joinPublicProjectRoom,
       joinConversationRoom,
       leaveConversationRoom,
       activeRooms,
@@ -339,6 +361,7 @@ export function useSocketContext() {
       leaveUserRoom: () => {},
       joinProjectRoom: () => {},
       leaveProjectRoom: () => {},
+      joinPublicProjectRoom: () => {},
       joinConversationRoom: () => {},
       leaveConversationRoom: () => {},
       activeRooms: [],

@@ -20,6 +20,19 @@ function getSocketBaseUrl() {
   return socketUrl || apiUrl || window.location.origin;
 }
 
+function getTokenAny() {
+  try {
+    return (
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("token") ||
+      ""
+    );
+  } catch {
+    return "";
+  }
+}
+
 export default function useSocket(
   initialRooms: string[] = [],
   options: UseSocketOptions = {}
@@ -51,10 +64,7 @@ export default function useSocket(
 
     // If socket already exists, don’t recreate
     if (!socketRef.current) {
-      const token =
-        localStorage.getItem("authToken") ||
-        localStorage.getItem("accessToken") ||
-        "";
+      const token = getTokenAny();
 
       socketRef.current = io(baseUrl, {
         // Don’t connect until we decide below
@@ -103,14 +113,25 @@ export default function useSocket(
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", onConnectError);
 
-    // Attach event listeners from context
+    // Attach event listeners from context (can change over time)
     const handlers = onEventsRef.current || {};
     Object.entries(handlers).forEach(([event, handler]) => {
       socket.on(event, handler);
     });
 
-    // Connect/Disconnect based on enabled + userId
-    if (enabled && userId) {
+    // ✅ IMPORTANT:
+    // Connect if enabled AND (userId exists OR we have rooms to join).
+    // This allows public spectator pages to connect even when not signed in.
+    const hasRoomsToJoin = (roomsRef.current || []).length > 0;
+    const shouldConnect = Boolean(enabled && (userId || hasRoomsToJoin));
+
+    // Always refresh auth payload before connecting (no backend change required)
+    socket.auth = {
+      token: getTokenAny(),
+      userId,
+    };
+
+    if (shouldConnect) {
       if (!socket.connected) {
         setState((prev) => ({ ...prev, isConnecting: true, error: null }));
         socket.connect();
@@ -130,7 +151,7 @@ export default function useSocket(
         socket.off(event, handler);
       });
     };
-  }, [enabled, userId]);
+  }, [enabled, userId, onEvents, initialRooms]);
 
   const emit = useCallback((event: string, payload?: any) => {
     const socket = socketRef.current;
@@ -151,8 +172,18 @@ export default function useSocket(
       socket.emit("room:join", { room });
       socket.emit("joinRoom", room);
       socket.emit("join", room);
+    } else {
+      // Best effort: if we are enabled, try connecting now (public pages)
+      // NOTE: this does not force auth; it simply allows the connection so rooms can be joined.
+      // The main effect will also connect on the next render cycle.
+      try {
+        socket.auth = { token: getTokenAny(), userId };
+        socket.connect();
+      } catch {
+        // no-op
+      }
     }
-  }, []);
+  }, [userId]);
 
   const leaveRoom = useCallback((room: string) => {
     const socket = socketRef.current;
