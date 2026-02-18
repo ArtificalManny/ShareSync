@@ -1,18 +1,23 @@
-// src/realtime/realtime.service.ts
-import { Injectable } from '@nestjs/common';
-import { RealtimeGateway } from './realtime.gateway';
+import { Injectable, Logger } from '@nestjs/common';
+import type { Server } from 'socket.io';
 
 @Injectable()
 export class RealtimeService {
-  constructor(private gw: RealtimeGateway) {}
+  private readonly logger = new Logger(RealtimeService.name);
+  private server?: Server;
+
+  setServer(server: Server) {
+    this.server = server;
+    this.logger.log('Realtime server attached ✅');
+  }
 
   projectEmit(projectId: string, event: string, payload: any) {
-    if (!projectId) return;
-    this.gw.emitToProject(projectId, event, payload);
+    if (!projectId || !this.server) return;
+    this.server.to(`project:${projectId}`).emit(event, payload);
   }
 
   userEmit(userId: string, event: string, payload: any) {
-    if (!userId) return;
-    this.gw.emitToUser(userId, event, payload);
+    if (!userId || !this.server) return;
+    this.server.to(`user:${userId}`).emit(event, payload);
   }
 }

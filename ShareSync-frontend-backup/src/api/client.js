@@ -1,35 +1,39 @@
 import axios from "axios";
 
-const isDev = import.meta.env.DEV;
+// Supports either:
+// VITE_API_URL=http://localhost:5050
+// OR leaving it blank and defaulting to 5050
+const RAW_API_URL = import.meta.env.VITE_API_URL || "http://localhost:5050";
 
-function ensureApiSuffix(url) {
-  if (!url) return null;
-  let out = String(url).trim().replace(/\/+$/, "");
-  if (!out.endsWith("/api")) out = `${out}/api`;
-  return out;
+// IMPORTANT:
+// Your backend uses global prefix "api", so your real base is:
+// http://localhost:5050/api
+const API_BASE = RAW_API_URL.replace(/\/$/, "") + "/api";
+
+// Token keys (support both, since your app has used both historically)
+function getLocalToken() {
+  return (
+    localStorage.getItem("ss.token") ||
+    localStorage.getItem("ss.jwt") ||
+    ""
+  );
 }
 
-const envRaw = import.meta.env.VITE_API_URL; // e.g. http://localhost:5050 or http://localhost:5050/api
-const envBase = ensureApiSuffix(envRaw);
-
-// Default dev fallback (correct for your backend)
-const baseURL = envBase || (isDev ? "http://localhost:5050/api" : "/api");
-
-console.log("[API Client] 🔵 BaseURL:", baseURL);
-
-const api = axios.create({
-  baseURL,
-  withCredentials: true,
-  headers: { "Content-Type": "application/json" },
+const client = axios.create({
+  baseURL: API_BASE,
+  withCredentials: false,
 });
 
-api.interceptors.request.use(
+client.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("ss.jwt");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    const token = getLocalToken();
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-export default api;
+export default client;

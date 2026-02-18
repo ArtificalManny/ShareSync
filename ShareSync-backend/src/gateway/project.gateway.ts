@@ -1,53 +1,64 @@
-//Users/artificalmanny/Portfolio/ShareSync/ShareSync-backend/src/gateway/project.gateway.ts
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import type { Request } from 'express';
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
 
-function fromCookie(name: string) {
-  return (req: Request) => {
-    try {
-      // @ts-ignore
-      const v = req?.cookies?.[name];
-      return typeof v === 'string' && v.length > 0 ? v : null;
-    } catch {
-      return null;
-    }
-  };
-}
+// If you already have a gateway, keep your existing decorators/ports.
+// This will work with your existing IoAdapter in main.ts.
+@WebSocketGateway({
+  cors: {
+    origin: true, // dev-friendly; your main.ts already has CORS for HTTP
+    credentials: true,
+  },
+})
+export class ProjectGateway {
+  @WebSocketServer()
+  server!: Server;
 
-function fromAuthHeader(req: Request) {
-  const h = req?.headers?.authorization;
-  if (!h) return null;
-  const [scheme, token] = String(h).split(' ');
-  if (/^bearer$/i.test(scheme) && token) return token;
-  return null;
-}
+  // Client calls: socket.emit("joinProject", { projectId })
+  @SubscribeMessage('joinProject')
+  async onJoinProject(
+    @MessageBody() body: { projectId: string },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const projectId = body?.projectId;
+    if (!projectId) return;
 
-@Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
-    super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        fromAuthHeader,
-        ExtractJwt.fromAuthHeaderAsBearerToken(), // fallback
-        fromCookie('accessToken'),
-        fromCookie('token'),
-      ]),
-      ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'dev_secret_change_me',
-    });
+    const room = `project:${projectId}`;
+    await socket.join(room);
+
+    // optional ack
+    socket.emit('joinedProject', { room });
   }
 
-  async validate(payload: any) {
-    // Normalize to a consistent shape the rest of the app can rely on
-    // Many JWTs use `sub` for user id. Keep `id` and `_id` mirrors too.
-    return {
-      sub: payload.sub || payload.id || payload._id,
-      id: payload.sub || payload.id || payload._id,
-      _id: payload.sub || payload.id || payload._id,
-      email: payload.email,
-      roles: payload.roles || [],
-    };
+  // Client calls: socket.emit("leaveProject", { projectId })
+  @SubscribeMessage('leaveProject')
+  async onLeaveProject(
+    @MessageBody() body: { projectId: string },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const projectId = body?.projectId;
+    if (!projectId) return;
+
+    const room = `project:${projectId}`;
+    await socket.leave(room);
+
+    socket.emit('leftProject', { room });
+  }
+
+  // ✅ This is what your services/controllers call after task changes.
+  emitTaskUpdated(projectId: string, task: any) {
+    if (!projectId) return;
+    this.server.to(`project:${projectId}`).emit('taskUpdated', task);
+  }
+
+  // Optional: if you also want delete events
+  emitTaskDeleted(projectId: string, taskId: string) {
+    if (!projectId || !taskId) return;
+    this.server.to(`project:${projectId}`).emit('taskDeleted', { taskId });
   }
 }
