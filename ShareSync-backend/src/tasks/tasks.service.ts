@@ -346,12 +346,28 @@ export class TasksService {
   // ─────────────────────────────────────────────────────────────────────────────
   // PRIORITIES ENDPOINT SUPPORT
   // ─────────────────────────────────────────────────────────────────────────────
+  // ✅ Safe add: optional projectId filter (no breaking change)
+  // - If projectId is provided, we validate it and enforce access.
+  // - Then we constrain the priorities query to that project.
+  // ─────────────────────────────────────────────────────────────────────────────
 
-  async getMyPriorityTasks(userId: string, limit: number = 3): Promise<TaskDocument[]> {
+  async getMyPriorityTasks(
+    userId: string,
+    limit: number = 3,
+    projectId?: string,
+  ): Promise<TaskDocument[]> {
     this.logger.log(`getMyPriorityTasks called for user: ${userId}`);
+
+    if (projectId) {
+      if (!Types.ObjectId.isValid(projectId)) {
+        throw new BadRequestException('Invalid projectId');
+      }
+      await this.projectsService.findByIdWithAccess(projectId, userId);
+    }
 
     const tasks = await this.taskModel
       .find({
+        ...(projectId ? { projectId: new Types.ObjectId(projectId) } : {}),
         $or: [
           { assigneeId: new Types.ObjectId(userId) },
           { assignee: new Types.ObjectId(userId) },
@@ -504,7 +520,10 @@ export class TasksService {
         projectName: project?.name || '',
         movedBy: userId,
         assigneeId: updated.assigneeId?.toString?.() || null,
-        reporterId: (updated as any).reporterId?.toString?.() || (updated as any).createdBy?.toString?.() || null,
+        reporterId:
+          (updated as any).reporterId?.toString?.() ||
+          (updated as any).createdBy?.toString?.() ||
+          null,
       });
     }
 

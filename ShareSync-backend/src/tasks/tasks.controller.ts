@@ -62,9 +62,12 @@ export class TasksController {
   @Get('priorities')
   @ApiOperation({ summary: 'Get my priority tasks (top N)' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  // ✅ Safe add: optional projectId filter (no breaking change)
+  @ApiQuery({ name: 'projectId', required: false, type: String })
   async getPriorityTasks(
     @Request() req: any,
     @Query('limit') limit?: string,
+    @Query('projectId') projectId?: string,
   ) {
     const userId = req.user?.sub || req.user?.userId;
     this.logger.log(`Getting priority tasks for user: ${userId}`);
@@ -72,6 +75,7 @@ export class TasksController {
     const tasks = await this.tasksService.getMyPriorityTasks(
       userId,
       limit ? parseInt(limit, 10) : 3,
+      projectId,
     );
 
     return { success: true, data: tasks };
@@ -214,7 +218,7 @@ export class TasksController {
       data: subtasks,
     };
   }
-    @Patch(':id')
+  @Patch(':id')
   @ApiOperation({ summary: 'Patch a task (partial update)' })
   @ApiParam({ name: 'id', description: 'Task ID' })
   async patch(
