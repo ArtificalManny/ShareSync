@@ -2,6 +2,8 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ProjectsService } from '../projects/projects.service';
 import { Milestone, MilestoneDocument } from './schemas/milestone.schema';
 import { CreateMilestoneDto, UpdateMilestoneDto } from './dto';
 
@@ -9,6 +11,8 @@ import { CreateMilestoneDto, UpdateMilestoneDto } from './dto';
 export class MilestonesService {
   constructor(
     @InjectModel(Milestone.name) private milestoneModel: Model<MilestoneDocument>,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly projectsService: ProjectsService,
   ) {}
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -20,7 +24,7 @@ export class MilestonesService {
       ...dto,
       projectId: new Types.ObjectId(dto.projectId),
       createdBy: new Types.ObjectId(userId),
-      status: 'planned',
+      status: dto.status || 'planned',
       progress: 0,
       totalTasks: 0,
       completedTasks: 0,
@@ -38,6 +42,10 @@ export class MilestonesService {
   }
 
   async findByProject(projectId: string): Promise<MilestoneDocument[]> {
+    if (!projectId) {
+      return [];
+    }
+
     return this.milestoneModel
       .find({ projectId: new Types.ObjectId(projectId) })
       .sort({ targetDate: 1 })
@@ -46,21 +54,46 @@ export class MilestonesService {
 
   async update(id: string, userId: string, dto: UpdateMilestoneDto): Promise<MilestoneDocument> {
     const milestone = await this.findById(id);
-    
+
     // Update fields
     Object.assign(milestone, dto);
-    
+
     // Auto-update status based on progress
     if (dto.progress !== undefined) {
       if (dto.progress >= 100) {
         milestone.status = 'completed';
         milestone.completedAt = new Date();
-      } else if (dto.progress >= 60) {
+      } else if (dto.progress >= 1 && milestone.status === 'planned') {
         milestone.status = 'in_progress';
       }
     }
 
-    return milestone.save();
+    const saved = await milestone.save();
+
+    // 👀 Step 6: Public Spectator Stream (milestone updated)
+    const projectId = saved.projectId?.toString?.();
+    if (projectId) {
+      const project = await this.projectsService.findById(projectId);
+      if ((project as any)?.public === true) {
+        this.eventEmitter.emit('public.project.update', {
+          projectId,
+          type: 'milestone.updated',
+          data: {
+            id: saved._id.toString(),
+            projectId,
+            title: (saved as any).title,
+            status: (saved as any).status,
+            progress: (saved as any).progress,
+            targetDate: (saved as any).targetDate,
+            completedAt: (saved as any).completedAt,
+            updatedAt: (saved as any).updatedAt || new Date(),
+          },
+          createdAt: new Date(),
+        });
+      }
+    }
+
+    return saved;
   }
 
   async delete(id: string, userId: string): Promise<void> {
@@ -74,9 +107,9 @@ export class MilestonesService {
 
   async linkTask(milestoneId: string, taskId: string): Promise<MilestoneDocument> {
     const milestone = await this.findById(milestoneId);
-    
+
     const taskObjectId = new Types.ObjectId(taskId);
-    
+
     // Check if already linked
     if (milestone.taskIds.some(id => id.equals(taskObjectId))) {
       return milestone;
@@ -84,20 +117,20 @@ export class MilestonesService {
 
     milestone.taskIds.push(taskObjectId);
     milestone.totalTasks = milestone.taskIds.length;
-    
+
     return milestone.save();
   }
 
   async unlinkTask(milestoneId: string, taskId: string): Promise<MilestoneDocument> {
     const milestone = await this.findById(milestoneId);
-    
+
     const taskObjectId = new Types.ObjectId(taskId);
     milestone.taskIds = milestone.taskIds.filter(id => !id.equals(taskObjectId));
     milestone.totalTasks = milestone.taskIds.length;
-    
+
     // Recalculate progress
     await this.recalculateProgress(milestoneId);
-    
+
     return milestone.save();
   }
 
@@ -107,7 +140,7 @@ export class MilestonesService {
 
   async recalculateProgress(milestoneId: string): Promise<MilestoneDocument> {
     const milestone = await this.findById(milestoneId);
-    
+
     if (milestone.totalTasks === 0) {
       milestone.progress = 0;
     } else {
@@ -117,16 +150,16 @@ export class MilestonesService {
     // Update status based on progress and date
     const now = new Date();
     const targetDate = new Date(milestone.targetDate);
-    
+
     if (milestone.progress >= 100) {
       milestone.status = 'completed';
       milestone.completedAt = new Date();
     } else if (milestone.progress > 0) {
-      // Check if at risk (less than 80% progress and target date is within 7 days)
+      // Check if at risk (less than expected progress)
       const daysUntilTarget = Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      const expectedProgress = Math.max(0, 100 - (daysUntilTarget * 5)); // Rough estimate
-      
-      if (milestone.progress < expectedProgress * 0.8) {
+      const expectedProgress = Math.max(0, 100 - (daysUntilTarget * 5));
+
+      if (milestone.progress < expectedProgress * 0.8 && daysUntilTarget <= 14) {
         milestone.status = 'at_risk';
       } else {
         milestone.status = 'in_progress';

@@ -4,11 +4,13 @@
 // Rooms:
 //   user:{userId}
 //   project:{projectId}
+//   public:project:{projectId}         ✅ NEW (spectator stream)
 // Emits:
 //   notification:new
 //   notification:read
 //   notification:count
 //   notification:deleted
+//   public:project:update              ✅ NEW (spectator stream)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -34,7 +36,11 @@ interface AuthenticatedSocket extends Socket {
 @WebSocketGateway({
   namespace: '/notifications',
   cors: {
-    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173'],
+    origin:
+      process.env.CORS_ORIGINS?.split(',') || [
+        'http://localhost:3000',
+        'http://localhost:5173',
+      ],
     credentials: true,
   },
 })
@@ -59,6 +65,8 @@ export class NotificationsGateway
         client.handshake.auth?.token ||
         client.handshake.headers?.authorization?.replace('Bearer ', '');
 
+      // NOTE: For now we keep auth required (existing behavior).
+      // If you later want true anonymous spectators, we can add a separate public namespace.
       if (!token) {
         client.disconnect();
         return;
@@ -81,7 +89,9 @@ export class NotificationsGateway
       // Join user's room
       client.join(`user:${client.userId}`);
 
-      this.logger.log(`Client connected to notifications: ${client.id} (user:${client.userId})`);
+      this.logger.log(
+        `Client connected to notifications: ${client.id} (user:${client.userId})`,
+      );
     } catch (_error) {
       client.disconnect();
     }
@@ -123,6 +133,44 @@ export class NotificationsGateway
 
     client.leave(`project:${projectId}`);
     this.logger.log(`user:${client.userId} left project:${projectId}`);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ✅ NEW: PUBLIC SPECTATOR ROOM JOIN / LEAVE (public:project:{projectId})
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @SubscribeMessage('public:project:join')
+  handlePublicProjectJoin(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() body: { projectId?: string },
+  ) {
+    const projectId = body?.projectId;
+    if (!projectId) return;
+
+    client.join(`public:project:${projectId}`);
+    if (client.userId) {
+      this.logger.log(
+        `user:${client.userId} joined public:project:${projectId}`,
+      );
+    } else {
+      this.logger.log(`anonymous joined public:project:${projectId}`);
+    }
+  }
+
+  @SubscribeMessage('public:project:leave')
+  handlePublicProjectLeave(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() body: { projectId?: string },
+  ) {
+    const projectId = body?.projectId;
+    if (!projectId) return;
+
+    client.leave(`public:project:${projectId}`);
+    if (client.userId) {
+      this.logger.log(`user:${client.userId} left public:project:${projectId}`);
+    } else {
+      this.logger.log(`anonymous left public:project:${projectId}`);
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -194,6 +242,11 @@ export class NotificationsGateway
 
   sendToProject(projectId: string, event: string, data: any) {
     this.server.to(`project:${projectId}`).emit(event, data);
+  }
+
+  // ✅ NEW helper
+  sendToPublicProject(projectId: string, event: string, data: any) {
+    this.server.to(`public:project:${projectId}`).emit(event, data);
   }
 
   broadcast(event: string, data: any) {

@@ -16,6 +16,9 @@
 //
 // PHASE 3 ADDITION (SAFE):
 //   • followersCount (stored counter, default 0)
+//
+// ✅ REQUIRED (SAFE):
+//   • public: boolean (default false)  ← used for spectator stream gating
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
@@ -272,6 +275,10 @@ export class Project {
   @ApiProperty({ enum: ProjectVisibility, description: 'Project visibility' })
   @Prop({ type: String, enum: ProjectVisibility, default: ProjectVisibility.PRIVATE })
   visibility: ProjectVisibility;
+
+  // ✅ REQUIRED: explicit boolean gate for spectator/public stream (safe default)
+  @Prop({ type: Boolean, default: false, index: true })
+  public: boolean;
 
   /**
    * ✅ Phase 0/2: Public listing + spectator + moderation (SAFE defaults)

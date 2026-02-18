@@ -21,6 +21,12 @@ export class RealtimeService {
     this.server.to(`user:${userId}`).emit(event, payload);
   }
 
+  // ✅ NEW: Generic room emit (used for public spectator stream)
+  roomEmit(room: string, event: string, payload: any) {
+    if (!room || !this.server) return;
+    this.server.to(room).emit(event, payload);
+  }
+
   // ✅ Step 5 naming aliases (no breaking changes)
   emitToProjectRoom(projectId: string, event: string, payload: any) {
     return this.projectEmit(projectId, event, payload);

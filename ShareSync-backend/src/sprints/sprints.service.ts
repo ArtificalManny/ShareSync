@@ -9,6 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { ProjectsService } from '../projects/projects.service';
 import {
   Sprint,
   SprintDocument,
@@ -31,6 +32,7 @@ export class SprintsService {
     @InjectModel(Sprint.name)
     private readonly sprintModel: Model<SprintDocument>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly projectsService: ProjectsService,
   ) {}
 
   async create(userId: string, dto: CreateSprintDto): Promise<SprintDocument> {
@@ -118,7 +120,7 @@ export class SprintsService {
 
   async findCurrentOrUpcoming(projectId: string): Promise<SprintDocument | null> {
     let sprint = await this.findActiveSprint(projectId);
-    
+
     if (!sprint) {
       sprint = await this.sprintModel
         .findOne({
@@ -250,6 +252,29 @@ export class SprintsService {
       goalAchieved: goalsAchieved,
       velocity: completedPoints,
     });
+
+    // 👀 Step 6: Public Spectator Stream (sprint completed)
+    const projectId = saved.projectId?.toString?.();
+    if (projectId) {
+      const project = await this.projectsService.findById(projectId);
+      if ((project as any)?.public === true) {
+        this.eventEmitter.emit('public.project.update', {
+          projectId,
+          type: 'sprint.completed',
+          data: {
+            sprintId: saved._id.toString(),
+            projectId,
+            name: saved.name,
+            sprintNumber: saved.sprintNumber,
+            velocity: completedPoints,
+            completedTasks,
+            goalAchieved: goalsAchieved,
+            completedAt: saved.actualEndDate || new Date(),
+          },
+          createdAt: new Date(),
+        });
+      }
+    }
 
     this.logger.log(`Sprint completed: ${saved.name} (velocity: ${completedPoints})`);
 
@@ -447,7 +472,7 @@ export class SprintsService {
       const older = sprintVelocities.slice(-2);
       const recentAvg = (recent[0].velocity + recent[1].velocity) / 2;
       const olderAvg = (older[0].velocity + older[1].velocity) / 2;
-      
+
       if (recentAvg > olderAvg * 1.1) trend = 'improving';
       else if (recentAvg < olderAvg * 0.9) trend = 'declining';
     }

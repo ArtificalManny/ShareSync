@@ -4,6 +4,7 @@
 // + Normalized Task Mutation Events (3.3)
 // + Realtime Socket Emits (Step 4)
 // + Step 5 Notification Touchpoints (task.assigned / task.completed / task.moved_to_review)
+// + ✅ Public Spectator Stream (public:project:{projectId}) (Step 6)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -92,6 +93,26 @@ export class TasksService {
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // ✅ PUBLIC STREAM HELPERS (minimal + safe)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  private async emitPublicProjectUpdate(projectId: string, payload: any): Promise<void> {
+    // VERY intentional: do not break existing emits; only add a second stream conditionally.
+    try {
+      const project = await this.projectsService.findById(projectId);
+      if ((project as any)?.public === true) {
+        // Requires your gateway to support: public:project:{projectId}
+        this.realtime.roomEmit?.(`public:project:${projectId}`, 'public:project:update', payload);
+
+        // If your RealtimeService does NOT have roomEmit yet, you will add it there.
+        // (We avoid guessing your internal RealtimeService shape in this file.)
+      }
+    } catch (_err) {
+      // Swallow: spectator stream should never block core task ops
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // CREATE
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -159,8 +180,19 @@ export class TasksService {
       });
     }
 
-    // ✅ SOCKET EMIT (project room)
+    // ✅ SOCKET EMIT (project room) — KEEP EXISTING
     this.realtime.projectEmit(dto.projectId, 'taskUpdated', buildTaskSnapshot(saved));
+
+    // ✅ PUBLIC SPECTATOR STREAM (only if project.public === true)
+    if ((project as any)?.public === true) {
+      // same payload, different room + different event
+      await this.emitPublicProjectUpdate(dto.projectId, {
+        type: 'task.created',
+        projectId: dto.projectId,
+        data: buildTaskSnapshot(saved),
+        createdAt: new Date(),
+      });
+    }
 
     this.logger.log(`Task created: ${saved._id}`);
     return saved;
@@ -410,8 +442,16 @@ export class TasksService {
       });
     }
 
-    // ✅ SOCKET EMIT
+    // ✅ SOCKET EMIT — KEEP EXISTING
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
+
+    // ✅ PUBLIC SPECTATOR STREAM (conditional)
+    await this.emitPublicProjectUpdate(task.projectId.toString(), {
+      type: 'task.updated',
+      projectId: task.projectId.toString(),
+      data: buildTaskSnapshot(updated),
+      createdAt: new Date(),
+    });
 
     return updated;
   }
@@ -468,8 +508,16 @@ export class TasksService {
       });
     }
 
-    // ✅ SOCKET EMIT
+    // ✅ SOCKET EMIT — KEEP EXISTING
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
+
+    // ✅ PUBLIC SPECTATOR STREAM (conditional)
+    await this.emitPublicProjectUpdate(task.projectId.toString(), {
+      type: 'task.moved',
+      projectId: task.projectId.toString(),
+      data: buildTaskSnapshot(updated),
+      createdAt: new Date(),
+    });
 
     return updated;
   }
@@ -557,14 +605,20 @@ export class TasksService {
       ceremonyTier: ceremonyTier as any,
     });
 
-    // ✅ SOCKET EMIT
+    // ✅ SOCKET EMIT — KEEP EXISTING
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(task));
+
+    // ✅ PUBLIC SPECTATOR STREAM (conditional)
+    await this.emitPublicProjectUpdate(task.projectId.toString(), {
+      type: 'task.completed',
+      projectId: task.projectId.toString(),
+      data: buildTaskSnapshot(task),
+      createdAt: new Date(),
+    });
 
     const completedAt = task.completedAt || new Date();
 
-    const wasOnTime = task.dueDate
-      ? completedAt <= new Date(task.dueDate)
-      : true;
+    const wasOnTime = task.dueDate ? completedAt <= new Date(task.dueDate) : true;
 
     const hour = completedAt.getHours();
     const isEarlyBird = hour < 9;
@@ -627,11 +681,23 @@ export class TasksService {
       snapshot: buildTaskSnapshot(task),
     });
 
-    // ✅ SOCKET EMIT (tombstone)
+    // ✅ SOCKET EMIT (tombstone) — KEEP EXISTING
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', {
       id: task._id.toString(),
       projectId: task.projectId.toString(),
       deleted: true,
+    });
+
+    // ✅ PUBLIC SPECTATOR STREAM (conditional)
+    await this.emitPublicProjectUpdate(task.projectId.toString(), {
+      type: 'task.deleted',
+      projectId: task.projectId.toString(),
+      data: {
+        id: task._id.toString(),
+        projectId: task.projectId.toString(),
+        deleted: true,
+      },
+      createdAt: new Date(),
     });
 
     this.logger.log(`Task deleted: ${taskId}`);
