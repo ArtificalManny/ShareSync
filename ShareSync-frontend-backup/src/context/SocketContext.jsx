@@ -34,32 +34,38 @@ export function SocketProvider({ children }) {
     'message:new': (data) => {
       eventHandlers['message:new']?.forEach(handler => handler(data));
     },
-    
+
     // Handle typing indicators
     'typing:user': (data) => {
       eventHandlers['typing:user']?.forEach(handler => handler(data));
     },
-    
+
     // Handle presence changes
     'presence:change': (data) => {
       eventHandlers['presence:change']?.forEach(handler => handler(data));
     },
-    
+
     // Handle notifications
     'notification:new': (data) => {
       eventHandlers['notification:new']?.forEach(handler => handler(data));
     },
-    
+
     // Handle activity feed updates
     'activity:new': (data) => {
       eventHandlers['activity:new']?.forEach(handler => handler(data));
     },
-    
-    // Handle task updates
+
+    // Handle task updates (legacy name)
     'task:update': (data) => {
       eventHandlers['task:update']?.forEach(handler => handler(data));
     },
-    
+
+    // ✅ Backend emits this event name (new)
+    taskUpdated: (data) => {
+      eventHandlers.taskUpdated?.forEach(handler => handler(data));
+      eventHandlers['task:update']?.forEach(handler => handler(data)); // back-compat
+    },
+
     // Handle milestone updates
     'milestone:update': (data) => {
       eventHandlers['milestone:update']?.forEach(handler => handler(data));
@@ -239,7 +245,7 @@ export function SocketProvider({ children }) {
 
 export function useSocketContext() {
   const context = useContext(SocketContext);
-  
+
   if (!context) {
     // Return a safe fallback instead of throwing
     // This allows components to work even if socket isn't available
@@ -261,7 +267,7 @@ export function useSocketContext() {
       getPresence: async () => ({ users: {} }),
     };
   }
-  
+
   return context;
 }
 

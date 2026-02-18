@@ -40,6 +40,9 @@ import KeyboardShortcuts from '../components/quick-actions/KeyboardShortcuts';
 // Suggestions
 import * as SuggestionsPanelModule from "../components/suggestions/SuggestionsPanel";
 
+import { useSocketContext } from "../context/SocketContext";
+import { applyTaskUpdated } from "../utils/taskRealtime";
+
 const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
 
@@ -194,7 +197,7 @@ function ProjectHeader({ project, metrics, activeUsers, onShipUpdate, onSettings
         {/* Right: Actions */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <button
-            onClick={onShipUpdate}
+            onClick={() => onShipUpdate?.("Shipped an update")}
             className="
               flex items-center gap-2.5 px-5 py-2.5 rounded-xl
               bg-gradient-to-r from-brand-500 to-purple-600
@@ -918,6 +921,12 @@ export default function ProjectHome() {
   const { projectStats } = usePresence({ autoDetectIdle: true });
   const { triggerPulse } = useGlobalPulse();
 
+    // Realtime
+  const { joinProjectRoom, leaveProjectRoom, subscribe } = useSocketContext();
+
+  // Local "live" tasks patched by socket events (keeps hook untouched)
+  const [liveTasks, setLiveTasks] = useState([]);
+
   // Project data from your existing hook
   const {
     project,
@@ -942,10 +951,44 @@ export default function ProjectHome() {
     files,
   } = useProjectOverview(id);
 
+    const baseTasks = useMemo(() => {
+    if (Array.isArray(tasks)) return tasks;
+    if (Array.isArray(tasks?.items)) return tasks.items;
+    return [];
+  }, [tasks]);
+
+  useEffect(() => {
+    setLiveTasks(baseTasks);
+  }, [baseTasks]);
+
+  // Join project room + listen for realtime task updates
+useEffect(() => {
+  if (!id) return;
+
+  console.log("[ProjectHome.jsx] joining room (APP):", id);
+  joinProjectRoom(id);
+
+  const handler = (payload) => {
+    const payloadProjectId = payload?.projectId?.toString?.() || payload?.projectId;
+    if (payloadProjectId && payloadProjectId !== id) return;
+
+    setLiveTasks((prev) => applyTaskUpdated(prev, payload));
+  };
+
+  const unsubA = subscribe("taskUpdated", handler);
+  const unsubB = subscribe("task:update", handler);
+
+  return () => {
+    unsubA?.();
+    unsubB?.();
+    leaveProjectRoom(id);
+  };
+}, [id, joinProjectRoom, leaveProjectRoom, subscribe]);
+
   // Join/leave project presence
   useEffect(() => {
     if (id) joinProject(id);
-    return () => leaveProject();
+    return () => leaveProject(id);
   }, [id, joinProject, leaveProject]);
 
   // Handle ship update
@@ -1085,7 +1128,7 @@ export default function ProjectHome() {
       case 'stack':
         return (
           <StackView
-            tasks={tasks || criticalMoves || []}
+            tasks={liveTasks.length ? liveTasks : (baseTasks.length ? baseTasks : (criticalMoves || []))}
             objectives={objectives || []}
             onTaskComplete={handleTaskComplete}
             onTaskSelect={handleTaskSelect}
@@ -1096,7 +1139,7 @@ export default function ProjectHome() {
       case 'flow':
         return (
           <FlowView
-            tasks={tasks || []}
+            tasks={liveTasks.length ? liveTasks : baseTasks}
             onAddTask={handleAddTask}
             onMoveTask={handleMoveTask}
             onTaskClick={handleTaskClick}

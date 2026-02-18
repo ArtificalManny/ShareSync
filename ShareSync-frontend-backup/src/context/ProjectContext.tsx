@@ -17,7 +17,7 @@ export const ProjectContext = createContext<ProjectContextValue | null>(null);
  */
 function safeGetProjectId(id: string | null | undefined): string | null {
   if (!id) return null;
-  if (id === 'undefined' || id === 'null') return null;
+  if (id === "undefined" || id === "null") return null;
   return String(id);
 }
 
@@ -33,14 +33,14 @@ export function ProjectProvider({
   // ⭐ FIX: Validate projectId before using
   const projectId = safeGetProjectId(rawProjectId);
   const hasValidId = projectId !== null;
-  
+
   const [project, setProject] = useState<any>(() => {
     if (!initialProject) return null;
-    
+
     // Normalize initial project to ensure id exists
     const id = initialProject._id || initialProject.id;
     if (!id) return initialProject;
-    
+
     return {
       ...initialProject,
       id: String(id),
@@ -48,8 +48,15 @@ export function ProjectProvider({
     };
   });
 
+  // ✅ IMPORTANT: useSocket expects string[] (not string|null)
+  const initialRooms = useMemo(() => {
+    if (!hasValidId || !projectId) return [];
+    return [`project:${projectId}`];
+  }, [hasValidId, projectId]);
+
   // Only connect to socket if we have a valid project ID
-  useSocket(hasValidId ? `project:${projectId}` : null, {
+  useSocket(initialRooms, {
+    enabled: hasValidId,
     onEvents: {
       "project:membersUpdated": (payload: any) => {
         if (!hasValidId) return;
@@ -72,17 +79,18 @@ export function ProjectProvider({
   });
 
   // Memoize context value
-  const value = useMemo(() => ({
-    project,
-    setProject,
-    projectId,
-    hasValidId,
-  }), [project, projectId, hasValidId]);
+  const value = useMemo(
+    () => ({
+      project,
+      setProject,
+      projectId,
+      hasValidId,
+    }),
+    [project, projectId, hasValidId]
+  );
 
   return (
-    <ProjectContext.Provider value={value}>
-      {children}
-    </ProjectContext.Provider>
+    <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>
   );
 }
 
@@ -91,7 +99,7 @@ export function useProject(): ProjectContextValue {
   if (!ctx) {
     // ⭐ FIX: Return safe fallback instead of throwing
     // This allows components to check hasValidId
-    console.warn('[useProject] Used outside of ProjectProvider - returning fallback');
+    console.warn("[useProject] Used outside of ProjectProvider - returning fallback");
     return {
       project: null,
       setProject: () => {},

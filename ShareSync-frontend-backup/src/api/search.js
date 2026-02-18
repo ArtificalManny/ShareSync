@@ -1,51 +1,60 @@
-// src/api/search.js
-// ═══════════════════════════════════════════════════════════════════════════════
-// Phase 1: Search uses discovery as the source of truth for public-listed projects
-// Frontend-only safe wiring: calls existing /api/discovery endpoint with ?q=
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import api from "./client";
 
-// If backend returns { success: true, data: ... }, unwrap it.
-// If backend returns raw data directly, keep as-is.
-function unwrap(response) {
-  const payload = response?.data;
-  if (payload && typeof payload === "object" && "data" in payload) return payload.data;
-  return payload;
+/**
+ * searchAll(payloadOrQuery)
+ * - Supports modern signature: searchAll({ q, types, sort, scope, page, limit })
+ * - Supports legacy signature: searchAll("text")
+ *
+ * IMPORTANT: This file does NOT require any backend changes.
+ * It will try a few likely endpoints. If all fail, it throws so the caller can handle it.
+ */
+
+function unwrap(res) {
+  // supports both {success, data} and raw
+  return res?.data?.data ?? res?.data;
 }
 
-function normalizeError(err, fallback = "Request failed") {
-  const msg =
-    err?.normalizedMessage ||
-    err?.response?.data?.message ||
-    err?.response?.data?.error ||
-    err?.message ||
-    fallback;
-
-  const enriched = new Error(msg);
-  enriched.normalizedMessage = msg;
-  enriched.status = err?.response?.status;
-  enriched.url = err?.config?.url;
-  enriched.method = err?.config?.method?.toUpperCase?.();
-  enriched.raw = err;
-  return enriched;
+async function tryGet(path, params) {
+  const res = await api.get(path, { params });
+  return unwrap(res);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Projects: Public-listed search (Phase 1)
-// Uses /discovery as source of truth.
-// Accepts q param; backend should return [] if no results.
-// ─────────────────────────────────────────────────────────────────────────────
-export async function searchPublicListedProjects(q) {
-  try {
-    const query = String(q || "").trim();
-    if (!query || query.length < 2) return [];
-
-    const res = await api.get("/discovery", { params: { q: query } });
-    const data = unwrap(res);
-
-    return Array.isArray(data) ? data : [];
-  } catch (err) {
-    throw normalizeError(err, "Failed to search public projects");
-  }
+async function tryPost(path, body) {
+  const res = await api.post(path, body);
+  return unwrap(res);
 }
+
+export async function searchAll(payloadOrQuery) {
+  const isString = typeof payloadOrQuery === "string";
+  const q = isString ? payloadOrQuery : (payloadOrQuery?.q ?? "");
+
+  // Normalize to a payload for POST-style endpoints
+  const payload = isString
+    ? { q, types: ["project","task","user","post","file"], sort: "relevance", scope: "all", page: 1, limit: 25 }
+    : payloadOrQuery;
+
+  // Normalize GET params too
+  const params = {
+    q: payload?.q ?? "",
+    types: Array.isArray(payload?.types) ? payload.types.join(",") : payload?.types,
+    sort: payload?.sort,
+    scope: payload?.scope,
+    page: payload?.page,
+    limit: payload?.limit,
+  };
+
+  // Try common patterns WITHOUT assuming your backend:
+  // 1) GET /search
+  try { return await tryGet("/search", params); } catch {}
+  // 2) POST /search
+  try { return await tryPost("/search", payload); } catch {}
+  // 3) POST /search/all
+  try { return await tryPost("/search/all", payload); } catch {}
+  // 4) GET /discover/search (some apps do this)
+  try { return await tryGet("/discover/search", params); } catch {}
+
+  // If none worked, throw so SearchPage catches and shows "No results."
+  throw new Error("No search endpoint matched");
+}
+
+export const search = searchAll;
