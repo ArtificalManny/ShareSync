@@ -21,48 +21,51 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider as OldToastProvider } from "./context/ToastContext";
 import ToastProvider, { ToastHost } from "./components/ui/toast.jsx";
 // ⭐ NEW TOAST SYSTEM (MetaLab Design Sprint - Day 5)
-import { ToastProvider as NewToastProvider } from './components/common/Toast';
+import { ToastProvider as NewToastProvider } from "./components/common/Toast";
 import ErrorBoundary from "./ErrorBoundary";
 
 // ⭐ PHASE 2A: Socket Provider for real-time features
-import { SocketProvider } from './context/SocketContext';
+import { SocketProvider } from "./context/SocketContext";
+
+// ⭐ PHASE N: Notifications shared state (global unread + realtime)
+import { NotificationsProvider } from "./context/NotificationsContext";
 
 // ⭐ DAY 7: Context Tracking Hook
-import { useContextTracking } from './hooks/useContextTracking';
+import { useContextTracking } from "./hooks/useContextTracking";
 
 // ⭐ PHASE 6: Flow State Provider
-import { FlowStateProvider } from './contexts/FlowStateContext';
+import { FlowStateProvider } from "./contexts/FlowStateContext";
 
 // ⭐ PHASE 6: Context Preservation Provider
-import { ContextPreservationProvider } from './contexts/ContextPreservationContext';
+import { ContextPreservationProvider } from "./contexts/ContextPreservationContext";
 
 // ⭐ PHASE 6: Momentum Visualization Provider
-import { MomentumProvider } from './contexts/MomentumContext';
+import { MomentumProvider } from "./contexts/MomentumContext";
 
 // ⭐ PHASE 10.3: Focus Session Provider
-import { FocusSessionProvider } from './contexts/FocusSessionContext';
+import { FocusSessionProvider } from "./contexts/FocusSessionContext";
 
 // ⭐ PHASE A: Entrance Animation + Momentum Heartbeat
-import AppEntrance from './components/onboarding/AppEntrance';
-import useMomentumHeartbeat from './hooks/useMomentumHeartbeat';
+import AppEntrance from "./components/onboarding/AppEntrance";
+import useMomentumHeartbeat from "./hooks/useMomentumHeartbeat";
 
 // ⭐ PHASE F: Sound System
-import { SoundProvider } from './contexts/SoundContext';
+import { SoundProvider } from "./contexts/SoundContext";
 
 // ⭐ PHASE N: Keyboard Shortcuts Hook (non-lazy, needed globally)
-import { useKeyboardShortcut } from './hooks/useKeyboardShortcuts';
+import { useKeyboardShortcut } from "./hooks/useKeyboardShortcuts";
 
 // ⭐ PWA Components
 import InstallPrompt from "./components/pwa/InstallPrompt";
 
-import PrivacyManifesto from './pages/PrivacyManifesto';
+import PrivacyManifesto from "./pages/PrivacyManifesto";
 
 // ⭐ PHASE H: Focus Engine Provider
-import { FocusEngineProvider } from './contexts/FocusEngineContext';
+import { FocusEngineProvider } from "./contexts/FocusEngineContext";
 
 // ⭐ ALIVE AWARE: Adaptive Density System
-import { AdaptiveDensityProvider } from './components/adaptive';
-import { BreakReminder } from './components/adaptive';
+import { AdaptiveDensityProvider } from "./components/adaptive";
+import { BreakReminder } from "./components/adaptive";
 
 // CSS imports
 import "./index.css";
@@ -122,7 +125,9 @@ const PublicProjectStatus = lazy(() => import("./pages/PublicProjectStatus"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const AcceptInvite = lazy(() => import("./components/AcceptInvite.jsx"));
 const Discover = lazy(() => import("./pages/Discover.jsx"));
-const AdminModerationProjects = lazy(() => import("./pages/admin/AdminModerationProjects.jsx"));
+const AdminModerationProjects = lazy(() =>
+  import("./pages/admin/AdminModerationProjects.jsx")
+);
 const PulseAdmin = lazy(() => import("./pages/admin/PulseAdmin.jsx"));
 const Analytics = lazy(() => import("./pages/Analytics.jsx"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
@@ -142,7 +147,6 @@ const ProjectSettings = lazy(() => import("./pages/project/ProjectSettings"));
 
 // ⭐ PHASE 9: Onboarding
 const Onboarding = lazy(() => import("./pages/Onboarding"));
-
 
 // ⭐ Lazy load heavy components
 const Sidebar = lazy(() => import("./components/Sidebar"));
@@ -166,26 +170,56 @@ const WelcomeBack = lazy(() => import("./components/context/WelcomeBack"));
 const ContextIndicator = lazy(() => import("./components/context/ContextIndicator"));
 
 // ⭐ PHASE 6: Flow State Indicator
-const FlowIndicator = lazy(() => import("./components/flow/FlowIndicator").then(m => ({ default: m.default })));
+const FlowIndicator = lazy(() =>
+  import("./components/flow/FlowIndicator").then((m) => ({ default: m.default }))
+);
 
 // ⭐ PHASE 6: Momentum Aura (subtle background)
-const MomentumAura = lazy(() => import("./components/momentum/MomentumAura").then(m => ({ default: m.default })));
+const MomentumAura = lazy(() =>
+  import("./components/momentum/MomentumAura").then((m) => ({
+    default: m.default,
+  }))
+);
 
 // ⭐ PHASE N: Command & Control Components (lazy loaded)
-const CommandPaletteWrapper = lazy(() => import("./components/navigation/CommandPalette").then(m => ({ default: m.CommandPaletteProvider })));
-const KeyboardShortcutsModal = lazy(() => import("./components/navigation/KeyboardShortcuts"));
-const NotificationCenter = lazy(() => import("./components/navigation/NotificationCenter"));
+const CommandPaletteWrapper = lazy(() =>
+  import("./components/navigation/CommandPalette").then((m) => ({
+    default: m.CommandPaletteProvider,
+  }))
+);
+const KeyboardShortcutsModal = lazy(() =>
+  import("./components/navigation/KeyboardShortcuts")
+);
+const NotificationCenter = lazy(() =>
+  import("./components/navigation/NotificationCenter")
+);
 const GlobalPulseBar = lazy(() => import("./components/ui/GlobalPulseBar"));
-const QuickActionsButton = lazy(() => import("./components/navigation/QuickActions"));
+const QuickActionsButton = lazy(() =>
+  import("./components/navigation/QuickActions")
+);
 
 // ⭐ Lazy load context providers
-const UserProvider = lazy(() => import("./context/UserContext").then(m => ({ default: m.default })));
-const SprintProvider = lazy(() => import("./context/SprintContext").then(m => ({ default: m.SprintProvider })));
-const ChatProvider = lazy(() => import("./context/ChatContext.jsx").then(m => ({ default: m.ChatProvider })));
-const FocusProvider = lazy(() => import("./context/FocusContext.jsx").then(m => ({ default: m.FocusProvider })));
+const UserProvider = lazy(() =>
+  import("./context/UserContext").then((m) => ({ default: m.default }))
+);
+const SprintProvider = lazy(() =>
+  import("./context/SprintContext").then((m) => ({ default: m.SprintProvider }))
+);
+const ChatProvider = lazy(() =>
+  import("./context/ChatContext.jsx").then((m) => ({ default: m.ChatProvider }))
+);
+const FocusProvider = lazy(() =>
+  import("./context/FocusContext.jsx").then((m) => ({
+    default: m.FocusProvider,
+  }))
+);
 // ⭐ PHASE N: Using new CommandPaletteProvider instead of old one
 // const CommandPaletteProvider = lazy(() => import("./hooks/useCommandPalette").then(m => ({ default: m.CommandPaletteProvider })));
-const MessageProvider = lazy(() => import("./context/MessageContext.jsx").then(m => ({ default: m.MessageProvider })));
+const MessageProvider = lazy(() =>
+  import("./context/MessageContext.jsx").then((m) => ({
+    default: m.MessageProvider,
+  }))
+);
 
 import { UserContext } from "./context/UserContext";
 import FeatureGate from "./utils/FeatureGate.jsx";
@@ -213,29 +247,29 @@ function LoadingSpinner() {
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return <LoadingSpinner />;
   }
-  
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  
+
   return children;
 }
 
 function PublicOnlyRoute({ children }) {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return <LoadingSpinner />;
   }
-  
+
   if (user) {
     return <Navigate to="/home" replace />;
   }
-  
+
   return children;
 }
 
@@ -252,7 +286,12 @@ function SidebarToggle({ sidebarOpen, setSidebarOpen }) {
 }
 
 function SidebarOverlay({ show, onClick }) {
-  return <div className={`sidebar-overlay ${show ? 'active' : ''}`} onClick={onClick} />;
+  return (
+    <div
+      className={`sidebar-overlay ${show ? "active" : ""}`}
+      onClick={onClick}
+    />
+  );
 }
 
 /**
@@ -270,28 +309,26 @@ function ContextTracker() {
  * Activates the 30-second heartbeat that makes the interface breathe
  */
 function HeartbeatProvider({ children }) {
-  const { 
-    currentLevel, 
-    levelName, 
-    isTransitioning,
-    isOnFire,
-  } = useMomentumHeartbeat({
-    enabled: true,
-    onLevelChange: ({ previousName, newName, direction }) => {
-      // Log level changes for debugging (remove in production)
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Momentum Heartbeat] ${previousName} → ${newName} (${direction})`);
-      }
-    },
-  });
+  const { currentLevel, levelName, isTransitioning, isOnFire } =
+    useMomentumHeartbeat({
+      enabled: true,
+      onLevelChange: ({ previousName, newName, direction }) => {
+        // Log level changes for debugging (remove in production)
+        if (process.env.NODE_ENV === "development") {
+          console.log(
+            `[Momentum Heartbeat] ${previousName} → ${newName} (${direction})`
+          );
+        }
+      },
+    });
 
   // Add debug mode in development
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      document.body.setAttribute('data-momentum-debug', 'true');
+    if (process.env.NODE_ENV === "development") {
+      document.body.setAttribute("data-momentum-debug", "true");
     }
     return () => {
-      document.body.removeAttribute('data-momentum-debug');
+      document.body.removeAttribute("data-momentum-debug");
     };
   }, []);
 
@@ -307,49 +344,49 @@ function CommandControlLayer({ children, projects = [] }) {
   const { logout } = useAuth();
 
   // ⭐ PHASE N: Global keyboard shortcut for shortcuts modal
-  useKeyboardShortcut('cmd+/', () => setShortcutsOpen(true), {
-    id: 'show-shortcuts',
-    description: 'Show keyboard shortcuts',
-    category: 'General',
+  useKeyboardShortcut("cmd+/", () => setShortcutsOpen(true), {
+    id: "show-shortcuts",
+    description: "Show keyboard shortcuts",
+    category: "General",
   });
 
   // ⭐ PHASE N: Handle command palette actions
   const handleCommandAction = (action) => {
     if (!action) return;
-    
+
     switch (action.type) {
-      case 'modal':
-        if (action.modal === 'shortcuts') setShortcutsOpen(true);
+      case "modal":
+        if (action.modal === "shortcuts") setShortcutsOpen(true);
         // Add other modal handlers here as needed
         // if (action.modal === 'ship') openShipModal();
         // if (action.modal === 'task') openTaskModal();
         break;
-      case 'callback':
-        if (action.callback === 'logout') logout();
+      case "callback":
+        if (action.callback === "logout") logout();
         // Add other callback handlers here
         // if (action.callback === 'toggleFireMode') toggleFireMode();
         // if (action.callback === 'startFocus') startFocusSession();
         break;
       default:
-        console.log('[CommandControl] Unknown action:', action);
+        console.log("[CommandControl] Unknown action:", action);
     }
   };
 
   // ⭐ PHASE N: Handle quick action button clicks
   const handleQuickAction = (actionId) => {
-    console.log('[QuickActions] Action triggered:', actionId);
+    console.log("[QuickActions] Action triggered:", actionId);
     // Route to appropriate handler
     switch (actionId) {
-      case 'ship':
+      case "ship":
         // Open ship modal
         break;
-      case 'task':
+      case "task":
         // Open task modal
         break;
-      case 'objective':
+      case "objective":
         // Open objective modal
         break;
-      case 'note':
+      case "note":
         // Open quick note
         break;
       default:
@@ -359,21 +396,18 @@ function CommandControlLayer({ children, projects = [] }) {
 
   return (
     <Suspense fallback={null}>
-      <CommandPaletteWrapper 
-        projects={projects} 
-        onAction={handleCommandAction}
-      >
+      <CommandPaletteWrapper projects={projects} onAction={handleCommandAction}>
         {children}
-        
+
         {/* ⭐ PHASE N: Keyboard Shortcuts Modal */}
-        <KeyboardShortcutsModal 
-          isOpen={shortcutsOpen} 
-          onClose={() => setShortcutsOpen(false)} 
+        <KeyboardShortcutsModal
+          isOpen={shortcutsOpen}
+          onClose={() => setShortcutsOpen(false)}
         />
-        
+
         {/* ⭐ PHASE N: Global Pulse Bar (bottom of screen) */}
         <GlobalPulseBar />
-        
+
         {/* ⭐ PHASE N: Quick Actions FAB */}
         <QuickActionsButton onAction={handleQuickAction} />
       </CommandPaletteWrapper>
@@ -386,90 +420,95 @@ function AuthenticatedApp({ children, userData }) {
     <Suspense fallback={<LoadingSpinner />}>
       {/* ⭐ PHASE 2A: Socket Provider wraps authenticated content for real-time */}
       <SocketProvider>
-        <UserProvider>
-          <MessageProvider>
-            <SprintProvider>
-              {/* ⭐ PHASE N: Command & Control wraps everything for global shortcuts */}
-              <CommandControlLayer projects={[]}>
-                {/* ⭐ PHASE 6: Flow State Provider wraps authenticated content */}
-                <FlowStateProvider>
-                  {/* ⭐ PHASE 6: Context Preservation Provider */}
-                  <ContextPreservationProvider>
-                    {/* ⭐ PHASE 6: Momentum Visualization Provider */}
-                    <MomentumProvider>
-                      {/* ⭐ ALIVE AWARE: Adaptive Density Provider */}
-                      <AdaptiveDensityProvider userName={userData?.firstName || 'there'}>
-                        {/* ⭐ PHASE H: Focus Engine Provider */}
-                        <FocusEngineProvider>
-                          {/* ⭐ PHASE 10.3: Focus Session Provider */}
-                          <FocusSessionProvider>
-                            {/* ⭐ PHASE A: App Entrance Animation */}
-                            <AppEntrance
-                              userName={userData?.firstName || 'there'}
-                              streakDays={userData?.streakDays || 0}
-                              enabled={true}
-                              showWelcomeToast={true}
-                            >
-                              {/* ⭐ PHASE A: Momentum Heartbeat */}
-                              <HeartbeatProvider>
-                                {/* ⭐ PHASE 6: Momentum Aura (subtle background overlay) */}
-                                <Suspense fallback={null}>
-                                  <MomentumAura />
-                                </Suspense>
-                                {FOCUS_DOCK_V1 ? (
-                                  <FocusProvider>
-                                    {/* ⭐ DAY 7: Context tracking for authenticated users */}
-                                    <ContextTracker />
-                                    {/* ⭐ DAY 8: Welcome Back modal for returning users */}
-                                    <Suspense fallback={null}>
-                                      <WelcomeBack />
-                                    </Suspense>
-                                    {/* ⭐ DAY 9: Context save indicator */}
-                                    <Suspense fallback={null}>
-                                      <ContextIndicator />
-                                    </Suspense>
-                                    {/* ⭐ PHASE 6: Flow state indicator */}
-                                    <Suspense fallback={null}>
-                                      <FlowIndicator position="bottom-left" />
-                                    </Suspense>
-                                    {children}
-                                  </FocusProvider>
-                                ) : (
-                                  <>
-                                    {/* ⭐ DAY 7: Context tracking for authenticated users */}
-                                    <ContextTracker />
-                                    {/* ⭐ DAY 8: Welcome Back modal for returning users */}
-                                    <Suspense fallback={null}>
-                                      <WelcomeBack />
-                                    </Suspense>
-                                    {/* ⭐ DAY 9: Context save indicator */}
-                                    <Suspense fallback={null}>
-                                      <ContextIndicator />
-                                    </Suspense>
-                                    {/* ⭐ PHASE 6: Flow state indicator */}
-                                    <Suspense fallback={null}>
-                                      <FlowIndicator position="bottom-left" />
-                                    </Suspense>
-                                    {children}
-                                  </>
-                                )}
-                              </HeartbeatProvider>
-                            </AppEntrance>
-                          </FocusSessionProvider>
-                        </FocusEngineProvider>
-                        
-                        {/* ⭐ ALIVE AWARE: Break Reminder (positioned bottom-right) */}
-                        <Suspense fallback={null}>
-                          <BreakReminder position="bottom-right" />
-                        </Suspense>
-                      </AdaptiveDensityProvider>
-                    </MomentumProvider>
-                  </ContextPreservationProvider>
-                </FlowStateProvider>
-              </CommandControlLayer>
-            </SprintProvider>
-          </MessageProvider>
-        </UserProvider>
+        {/* ⭐ PHASE N: Notifications provider must be INSIDE SocketProvider */}
+        <NotificationsProvider>
+          <UserProvider>
+            <MessageProvider>
+              <SprintProvider>
+                {/* ⭐ PHASE N: Command & Control wraps everything for global shortcuts */}
+                <CommandControlLayer projects={[]}>
+                  {/* ⭐ PHASE 6: Flow State Provider wraps authenticated content */}
+                  <FlowStateProvider>
+                    {/* ⭐ PHASE 6: Context Preservation Provider */}
+                    <ContextPreservationProvider>
+                      {/* ⭐ PHASE 6: Momentum Visualization Provider */}
+                      <MomentumProvider>
+                        {/* ⭐ ALIVE AWARE: Adaptive Density Provider */}
+                        <AdaptiveDensityProvider
+                          userName={userData?.firstName || "there"}
+                        >
+                          {/* ⭐ PHASE H: Focus Engine Provider */}
+                          <FocusEngineProvider>
+                            {/* ⭐ PHASE 10.3: Focus Session Provider */}
+                            <FocusSessionProvider>
+                              {/* ⭐ PHASE A: App Entrance Animation */}
+                              <AppEntrance
+                                userName={userData?.firstName || "there"}
+                                streakDays={userData?.streakDays || 0}
+                                enabled={true}
+                                showWelcomeToast={true}
+                              >
+                                {/* ⭐ PHASE A: Momentum Heartbeat */}
+                                <HeartbeatProvider>
+                                  {/* ⭐ PHASE 6: Momentum Aura (subtle background overlay) */}
+                                  <Suspense fallback={null}>
+                                    <MomentumAura />
+                                  </Suspense>
+                                  {FOCUS_DOCK_V1 ? (
+                                    <FocusProvider>
+                                      {/* ⭐ DAY 7: Context tracking for authenticated users */}
+                                      <ContextTracker />
+                                      {/* ⭐ DAY 8: Welcome Back modal for returning users */}
+                                      <Suspense fallback={null}>
+                                        <WelcomeBack />
+                                      </Suspense>
+                                      {/* ⭐ DAY 9: Context save indicator */}
+                                      <Suspense fallback={null}>
+                                        <ContextIndicator />
+                                      </Suspense>
+                                      {/* ⭐ PHASE 6: Flow state indicator */}
+                                      <Suspense fallback={null}>
+                                        <FlowIndicator position="bottom-left" />
+                                      </Suspense>
+                                      {children}
+                                    </FocusProvider>
+                                  ) : (
+                                    <>
+                                      {/* ⭐ DAY 7: Context tracking for authenticated users */}
+                                      <ContextTracker />
+                                      {/* ⭐ DAY 8: Welcome Back modal for returning users */}
+                                      <Suspense fallback={null}>
+                                        <WelcomeBack />
+                                      </Suspense>
+                                      {/* ⭐ DAY 9: Context save indicator */}
+                                      <Suspense fallback={null}>
+                                        <ContextIndicator />
+                                      </Suspense>
+                                      {/* ⭐ PHASE 6: Flow state indicator */}
+                                      <Suspense fallback={null}>
+                                        <FlowIndicator position="bottom-left" />
+                                      </Suspense>
+                                      {children}
+                                    </>
+                                  )}
+                                </HeartbeatProvider>
+                              </AppEntrance>
+                            </FocusSessionProvider>
+                          </FocusEngineProvider>
+
+                          {/* ⭐ ALIVE AWARE: Break Reminder (positioned bottom-right) */}
+                          <Suspense fallback={null}>
+                            <BreakReminder position="bottom-right" />
+                          </Suspense>
+                        </AdaptiveDensityProvider>
+                      </MomentumProvider>
+                    </ContextPreservationProvider>
+                  </FlowStateProvider>
+                </CommandControlLayer>
+              </SprintProvider>
+            </MessageProvider>
+          </UserProvider>
+        </NotificationsProvider>
       </SocketProvider>
     </Suspense>
   );
@@ -480,7 +519,13 @@ function AppRoutes() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
- const isAuthPage = ['/login', '/create-account', '/forgot-password', '/landing', '/onboarding'].includes(location.pathname);
+  const isAuthPage = [
+    "/login",
+    "/create-account",
+    "/forgot-password",
+    "/landing",
+    "/onboarding",
+  ].includes(location.pathname);
   const showAppChrome = authUser && !isAuthPage;
 
   if (loading) {
@@ -491,15 +536,21 @@ function AppRoutes() {
     <>
       {showAppChrome && (
         <>
-          <SidebarToggle sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-          <SidebarOverlay show={sidebarOpen} onClick={() => setSidebarOpen(false)} />
-          
+          <SidebarToggle
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
+          <SidebarOverlay
+            show={sidebarOpen}
+            onClick={() => setSidebarOpen(false)}
+          />
+
           <Suspense fallback={null}>
-            <div className={`sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
+            <div className={`sidebar ${sidebarOpen ? "mobile-open" : ""}`}>
               <Sidebar />
             </div>
           </Suspense>
-          
+
           <div className="navbar">
             <Navbar user={authUser} onLogout={logout} />
           </div>
@@ -508,95 +559,261 @@ function AppRoutes() {
 
       <div className="main-content">
         <div className="content-wrapper">
-          <Suspense fallback={<div className="px-6 py-10 text-center text-slate-500">Loading...</div>}>
+          <Suspense
+            fallback={
+              <div className="px-6 py-10 text-center text-slate-500">
+                Loading...
+              </div>
+            }
+          >
             <ScrollToHash />
             <Routes>
-              <Route 
-                path="/" 
-                element={<Landing />}
+              <Route path="/" element={<Landing />} />
+
+              <Route
+                path="/login"
+                element={
+                  <PublicOnlyRoute>
+                    <Login />
+                  </PublicOnlyRoute>
+                }
               />
-              
-              <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-              <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
-              <Route path="/create-account" element={<PublicOnlyRoute><CreateAccount /></PublicOnlyRoute>} />
-              <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+              <Route
+                path="/register"
+                element={
+                  <PublicOnlyRoute>
+                    <Register />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route
+                path="/create-account"
+                element={
+                  <PublicOnlyRoute>
+                    <CreateAccount />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route
+                path="/forgot-password"
+                element={
+                  <PublicOnlyRoute>
+                    <ForgotPassword />
+                  </PublicOnlyRoute>
+                }
+              />
               {/* ⭐ PHASE 9: Onboarding Flow */}
-              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+              <Route
+                path="/onboarding"
+                element={
+                  <ProtectedRoute>
+                    <Onboarding />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/landing" element={<Landing />} />
               <Route path="/invite/accept" element={<AcceptInvite />} />
               {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
               <Route path="/status/:token" element={<PublicProjectStatus />} />
 
-              <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-              <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-              <Route path="/projects/:id" element={<ProtectedRoute><ProjectHome /></ProtectedRoute>} />
-              
+              <Route
+                path="/home"
+                element={
+                  <ProtectedRoute>
+                    <Home />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/projects"
+                element={
+                  <ProtectedRoute>
+                    <Projects />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/projects/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProjectHome />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* ⭐ PROJECT SETTINGS ROUTE */}
-              <Route path="/projects/:id/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
-              <Route path="/projects/:id/roadmap" element={<ProtectedRoute><Roadmap /></ProtectedRoute>} />
-              
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
-              <Route path="/settings/app" element={<ProtectedRoute><PWASettings /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              
+              <Route
+                path="/projects/:id/settings"
+                element={
+                  <ProtectedRoute>
+                    <ProjectSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/projects/:id/roadmap"
+                element={
+                  <ProtectedRoute>
+                    <Roadmap />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings/notifications"
+                element={
+                  <ProtectedRoute>
+                    <NotificationSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings/app"
+                element={
+                  <ProtectedRoute>
+                    <PWASettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* ⭐ WEEK 9 DAY 3-4: PUBLIC PROFILE ROUTE */}
               <Route path="/profile/:username" element={<PublicProfile />} />
-              
-              <Route path="/me" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-              <Route path="/projects/:projectId/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+
+              <Route
+                path="/me"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/search"
+                element={
+                  <ProtectedRoute>
+                    <SearchPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Analytics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/projects/:projectId/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Analytics />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/privacy-manifesto" element={<PrivacyManifesto />} />
 
               {/* ⭐ WEEK 9 DAY 1-2: COMMUNITY ROUTE */}
-              <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+              <Route
+                path="/community"
+                element={
+                  <ProtectedRoute>
+                    <Community />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* ⭐ WEEK 9 DAY 5-6: HALL OF FAME ROUTE */}
-              <Route path="/hall-of-fame" element={<ProtectedRoute><HallOfFame /></ProtectedRoute>} />
+              <Route
+                path="/hall-of-fame"
+                element={
+                  <ProtectedRoute>
+                    <HallOfFame />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* ⭐ MESSAGES ROUTES - Uses MessageProvider from AuthenticatedApp */}
-              <Route 
-                path="/messages" 
+              <Route
+                path="/messages"
                 element={
                   <ProtectedRoute>
                     <Messages />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/messages/:id" 
+              <Route
+                path="/messages/:id"
                 element={
                   <ProtectedRoute>
                     <Messages />
                   </ProtectedRoute>
-                } 
+                }
               />
-              
-              <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
-              {ADMIN_CONSOLE_V1 && <Route path="/admin/console" element={<ProtectedRoute><AdminConsole /></ProtectedRoute>} />}
-              {PULSE_ADMIN_V1 && <Route path="/admin/pulse" element={<ProtectedRoute><PulseAdmin /></ProtectedRoute>} />}
+
+              <Route
+                path="/discover"
+                element={
+                  <ProtectedRoute>
+                    <Discover />
+                  </ProtectedRoute>
+                }
+              />
 
               {ADMIN_CONSOLE_V1 && (
-  <Route
-    path="/admin/moderation/projects"
-    element={
-      <ProtectedRoute>
-        <AdminModerationProjects />
-      </ProtectedRoute>
-    }
-  />
-)}
+                <Route
+                  path="/admin/console"
+                  element={
+                    <ProtectedRoute>
+                      <AdminConsole />
+                    </ProtectedRoute>
+                  }
+                />
+              )}
+              {PULSE_ADMIN_V1 && (
+                <Route
+                  path="/admin/pulse"
+                  element={
+                    <ProtectedRoute>
+                      <PulseAdmin />
+                    </ProtectedRoute>
+                  }
+                />
+              )}
 
-              <Route 
-                path="*" 
-                element={<Navigate to="/" replace />}
-              />
+              {ADMIN_CONSOLE_V1 && (
+                <Route
+                  path="/admin/moderation/projects"
+                  element={
+                    <ProtectedRoute>
+                      <AdminModerationProjects />
+                    </ProtectedRoute>
+                  }
+                />
+              )}
+
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
         </div>
       </div>
-      
+
       {showAppChrome && (
         <Suspense fallback={null}>
           {MESSENGER_V1 && <MessengerPanel />}
@@ -655,18 +872,20 @@ const App = () => {
 
 function AuthCheck() {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return <LoadingSpinner />;
   }
-  
+
   // ⭐ PHASE A: Prepare user data for entrance animation
-  const userData = user ? {
-    firstName: user.firstName || 'there',
-    streakDays: user.streakDays || 7, // TODO: Get from actual user data
-    shipsToday: user.shipsToday || 2,  // TODO: Get from actual user data
-  } : null;
-  
+  const userData = user
+    ? {
+        firstName: user.firstName || "there",
+        streakDays: user.streakDays || 7, // TODO: Get from actual user data
+        shipsToday: user.shipsToday || 2, // TODO: Get from actual user data
+      }
+    : null;
+
   if (user) {
     return (
       <AuthenticatedApp userData={userData}>
@@ -674,7 +893,7 @@ function AuthCheck() {
       </AuthenticatedApp>
     );
   }
-  
+
   return <AppRoutes />;
 }
 

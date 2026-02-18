@@ -2,9 +2,18 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // SOCKET CONTEXT - Provides WebSocket connection to the entire app
 // ⭐ PHASE 2A: Global socket provider for real-time features
+// + PHASE N: User room auto-join (user:{userId})
+// + Notifications event relay preserved (notification:new)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { createContext, useContext, useMemo, useCallback, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useMemo,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import useSocket from '../hooks/useSocket';
 import { useAuth } from './AuthContext';
 
@@ -29,112 +38,167 @@ export function SocketProvider({ children }) {
   const [eventHandlers, setEventHandlers] = useState({});
 
   // Merge all handlers
-  const onEvents = useMemo(() => ({
-    // Handle new messages globally
-    'message:new': (data) => {
-      eventHandlers['message:new']?.forEach(handler => handler(data));
-    },
+  const onEvents = useMemo(
+    () => ({
+      // Handle new messages globally
+      'message:new': (data) => {
+        eventHandlers['message:new']?.forEach((handler) => handler(data));
+      },
 
-    // Handle typing indicators
-    'typing:user': (data) => {
-      eventHandlers['typing:user']?.forEach(handler => handler(data));
-    },
+      // Handle typing indicators
+      'typing:user': (data) => {
+        eventHandlers['typing:user']?.forEach((handler) => handler(data));
+      },
 
-    // Handle presence changes
-    'presence:change': (data) => {
-      eventHandlers['presence:change']?.forEach(handler => handler(data));
-    },
+      // Handle presence changes
+      'presence:change': (data) => {
+        eventHandlers['presence:change']?.forEach((handler) => handler(data));
+      },
 
-    // Handle notifications
-    'notification:new': (data) => {
-      eventHandlers['notification:new']?.forEach(handler => handler(data));
-    },
+      // Handle notifications
+      'notification:new': (data) => {
+        eventHandlers['notification:new']?.forEach((handler) => handler(data));
+      },
 
-    // Handle activity feed updates
-    'activity:new': (data) => {
-      eventHandlers['activity:new']?.forEach(handler => handler(data));
-    },
+      // Handle activity feed updates
+      'activity:new': (data) => {
+        eventHandlers['activity:new']?.forEach((handler) => handler(data));
+      },
 
-    // Handle task updates (legacy name)
-    'task:update': (data) => {
-      eventHandlers['task:update']?.forEach(handler => handler(data));
-    },
+      // Handle task updates (legacy name)
+      'task:update': (data) => {
+        eventHandlers['task:update']?.forEach((handler) => handler(data));
+      },
 
-    // ✅ Backend emits this event name (new)
-    taskUpdated: (data) => {
-      eventHandlers.taskUpdated?.forEach(handler => handler(data));
-      eventHandlers['task:update']?.forEach(handler => handler(data)); // back-compat
-    },
+      // ✅ Backend emits this event name (new)
+      taskUpdated: (data) => {
+        eventHandlers.taskUpdated?.forEach((handler) => handler(data));
+        eventHandlers['task:update']?.forEach((handler) => handler(data)); // back-compat
+      },
 
-    // Handle milestone updates
-    'milestone:update': (data) => {
-      eventHandlers['milestone:update']?.forEach(handler => handler(data));
-    },
-  }), [eventHandlers]);
+      // Handle milestone updates
+      'milestone:update': (data) => {
+        eventHandlers['milestone:update']?.forEach((handler) => handler(data));
+      },
+    }),
+    [eventHandlers],
+  );
 
   // Initialize socket with user rooms
-  const { socket, state, emit, joinRoom, leaveRoom } = useSocket(
-    activeRooms,
-    {
-      userId,
-      onEvents,
-      enabled: !!userId, // Only connect when user is authenticated
-    }
-  );
+  const { socket, state, emit, joinRoom, leaveRoom } = useSocket(activeRooms, {
+    userId,
+    onEvents,
+    enabled: !!userId, // Only connect when user is authenticated
+  });
 
   // ─────────────────────────────────────────────────────────────────────────────
   // ROOM MANAGEMENT
   // ─────────────────────────────────────────────────────────────────────────────
 
-  const joinProjectRoom = useCallback((projectId) => {
-    if (!projectId) return;
-    const room = `project:${projectId}`;
-    setActiveRooms(prev => {
-      if (prev.includes(room)) return prev;
-      return [...prev, room];
-    });
-    joinRoom(room);
-  }, [joinRoom]);
+  const joinUserRoom = useCallback(
+    (uid) => {
+      const id = uid || userId;
+      if (!id) return;
 
-  const leaveProjectRoom = useCallback((projectId) => {
-    if (!projectId) return;
-    const room = `project:${projectId}`;
-    setActiveRooms(prev => prev.filter(r => r !== room));
-    leaveRoom(room);
-  }, [leaveRoom]);
+      const room = `user:${id}`;
+      setActiveRooms((prev) => {
+        if (prev.includes(room)) return prev;
+        return [...prev, room];
+      });
 
-  const joinConversationRoom = useCallback((conversationId) => {
-    if (!conversationId) return;
-    const room = `conversation:${conversationId}`;
-    setActiveRooms(prev => {
-      if (prev.includes(room)) return prev;
-      return [...prev, room];
-    });
-    joinRoom(room);
-  }, [joinRoom]);
+      // Best effort. If socket isn't ready yet, useSocket will rejoin from activeRooms.
+      joinRoom(room);
+    },
+    [joinRoom, userId],
+  );
 
-  const leaveConversationRoom = useCallback((conversationId) => {
-    if (!conversationId) return;
-    const room = `conversation:${conversationId}`;
-    setActiveRooms(prev => prev.filter(r => r !== room));
-    leaveRoom(room);
-  }, [leaveRoom]);
+  const leaveUserRoom = useCallback(
+    (uid) => {
+      const id = uid || userId;
+      if (!id) return;
+
+      const room = `user:${id}`;
+      setActiveRooms((prev) => prev.filter((r) => r !== room));
+      leaveRoom(room);
+    },
+    [leaveRoom, userId],
+  );
+
+  // Auto-join user room once authenticated
+  useEffect(() => {
+    if (!userId) return;
+
+    // Join user:{userId} for personal notifications, etc.
+    joinUserRoom(userId);
+
+    // Optional cleanup on logout (userId changes to null)
+    return () => {
+      // We only leave on unmount/teardown; if userId changes, effect re-runs anyway.
+      // leaveUserRoom(userId);
+    };
+  }, [userId, joinUserRoom]);
+
+  const joinProjectRoom = useCallback(
+    (projectId) => {
+      if (!projectId) return;
+      const room = `project:${projectId}`;
+      setActiveRooms((prev) => {
+        if (prev.includes(room)) return prev;
+        return [...prev, room];
+      });
+      joinRoom(room);
+    },
+    [joinRoom],
+  );
+
+  const leaveProjectRoom = useCallback(
+    (projectId) => {
+      if (!projectId) return;
+      const room = `project:${projectId}`;
+      setActiveRooms((prev) => prev.filter((r) => r !== room));
+      leaveRoom(room);
+    },
+    [leaveRoom],
+  );
+
+  const joinConversationRoom = useCallback(
+    (conversationId) => {
+      if (!conversationId) return;
+      const room = `conversation:${conversationId}`;
+      setActiveRooms((prev) => {
+        if (prev.includes(room)) return prev;
+        return [...prev, room];
+      });
+      joinRoom(room);
+    },
+    [joinRoom],
+  );
+
+  const leaveConversationRoom = useCallback(
+    (conversationId) => {
+      if (!conversationId) return;
+      const room = `conversation:${conversationId}`;
+      setActiveRooms((prev) => prev.filter((r) => r !== room));
+      leaveRoom(room);
+    },
+    [leaveRoom],
+  );
 
   // ─────────────────────────────────────────────────────────────────────────────
   // EVENT SUBSCRIPTION
   // ─────────────────────────────────────────────────────────────────────────────
 
   const subscribe = useCallback((event, handler) => {
-    setEventHandlers(prev => ({
+    setEventHandlers((prev) => ({
       ...prev,
       [event]: [...(prev[event] || []), handler],
     }));
 
     // Return unsubscribe function
     return () => {
-      setEventHandlers(prev => ({
+      setEventHandlers((prev) => ({
         ...prev,
-        [event]: (prev[event] || []).filter(h => h !== handler),
+        [event]: (prev[event] || []).filter((h) => h !== handler),
       }));
     };
   }, []);
@@ -143,33 +207,45 @@ export function SocketProvider({ children }) {
   // TYPING INDICATORS
   // ─────────────────────────────────────────────────────────────────────────────
 
-  const sendTypingStart = useCallback((conversationId) => {
-    emit('typing:start', { conversationId });
-  }, [emit]);
+  const sendTypingStart = useCallback(
+    (conversationId) => {
+      emit('typing:start', { conversationId });
+    },
+    [emit],
+  );
 
-  const sendTypingStop = useCallback((conversationId) => {
-    emit('typing:stop', { conversationId });
-  }, [emit]);
+  const sendTypingStop = useCallback(
+    (conversationId) => {
+      emit('typing:stop', { conversationId });
+    },
+    [emit],
+  );
 
   // ─────────────────────────────────────────────────────────────────────────────
   // PRESENCE
   // ─────────────────────────────────────────────────────────────────────────────
 
-  const updatePresence = useCallback((status) => {
-    emit('presence:update', { status });
-  }, [emit]);
+  const updatePresence = useCallback(
+    (status) => {
+      emit('presence:update', { status });
+    },
+    [emit],
+  );
 
-  const getPresence = useCallback((userIds) => {
-    return new Promise((resolve) => {
-      if (!socket || !socket.connected) {
-        resolve({ users: {} });
-        return;
-      }
-      socket.emit('presence:get', { userIds }, (response) => {
-        resolve(response);
+  const getPresence = useCallback(
+    (userIds) => {
+      return new Promise((resolve) => {
+        if (!socket || !socket.connected) {
+          resolve({ users: {} });
+          return;
+        }
+        socket.emit('presence:get', { userIds }, (response) => {
+          resolve(response);
+        });
       });
-    });
-  }, [socket]);
+    },
+    [socket],
+  );
 
   // ─────────────────────────────────────────────────────────────────────────────
   // DEBUG LOGGING
@@ -191,52 +267,55 @@ export function SocketProvider({ children }) {
   // CONTEXT VALUE
   // ─────────────────────────────────────────────────────────────────────────────
 
-  const value = useMemo(() => ({
-    // Connection state
-    socket,
-    isConnected: state.isConnected,
-    isConnecting: state.isConnecting,
-    connectionError: state.error,
+  const value = useMemo(
+    () => ({
+      // Connection state
+      socket,
+      isConnected: state.isConnected,
+      isConnecting: state.isConnecting,
+      connectionError: state.error,
 
-    // Generic methods
-    emit,
-    subscribe,
+      // Generic methods
+      emit,
+      subscribe,
 
-    // Room management
-    joinProjectRoom,
-    leaveProjectRoom,
-    joinConversationRoom,
-    leaveConversationRoom,
-    activeRooms,
+      // Room management
+      joinUserRoom,
+      leaveUserRoom,
+      joinProjectRoom,
+      leaveProjectRoom,
+      joinConversationRoom,
+      leaveConversationRoom,
+      activeRooms,
 
-    // Typing
-    sendTypingStart,
-    sendTypingStop,
+      // Typing
+      sendTypingStart,
+      sendTypingStop,
 
-    // Presence
-    updatePresence,
-    getPresence,
-  }), [
-    socket,
-    state,
-    emit,
-    subscribe,
-    joinProjectRoom,
-    leaveProjectRoom,
-    joinConversationRoom,
-    leaveConversationRoom,
-    activeRooms,
-    sendTypingStart,
-    sendTypingStop,
-    updatePresence,
-    getPresence,
-  ]);
-
-  return (
-    <SocketContext.Provider value={value}>
-      {children}
-    </SocketContext.Provider>
+      // Presence
+      updatePresence,
+      getPresence,
+    }),
+    [
+      socket,
+      state,
+      emit,
+      subscribe,
+      joinUserRoom,
+      leaveUserRoom,
+      joinProjectRoom,
+      leaveProjectRoom,
+      joinConversationRoom,
+      leaveConversationRoom,
+      activeRooms,
+      sendTypingStart,
+      sendTypingStop,
+      updatePresence,
+      getPresence,
+    ],
   );
+
+  return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -256,6 +335,8 @@ export function useSocketContext() {
       connectionError: null,
       emit: () => {},
       subscribe: () => () => {},
+      joinUserRoom: () => {},
+      leaveUserRoom: () => {},
       joinProjectRoom: () => {},
       leaveProjectRoom: () => {},
       joinConversationRoom: () => {},
@@ -313,8 +394,8 @@ export function useTypingIndicator(conversationId) {
 
       if (data.isTyping) {
         // Add user to typing list
-        setTypingUsers(prev => {
-          if (prev.some(u => u.userId === data.userId)) return prev;
+        setTypingUsers((prev) => {
+          if (prev.some((u) => u.userId === data.userId)) return prev;
           return [...prev, { userId: data.userId, username: data.username }];
         });
 
@@ -325,11 +406,11 @@ export function useTypingIndicator(conversationId) {
 
         // Auto-remove after 3 seconds of no typing
         timeoutsRef.current[data.userId] = setTimeout(() => {
-          setTypingUsers(prev => prev.filter(u => u.userId !== data.userId));
+          setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
         }, 3000);
       } else {
         // Remove user from typing list
-        setTypingUsers(prev => prev.filter(u => u.userId !== data.userId));
+        setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
         if (timeoutsRef.current[data.userId]) {
           clearTimeout(timeoutsRef.current[data.userId]);
         }
