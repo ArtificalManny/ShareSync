@@ -5,8 +5,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { TasksService } from './tasks.service';
 import { Task, TaskSchema } from './schemas/task.schema';
 
-// Controllers (adjust if yours differs)
+// ✅ Controllers
 import { ProjectTasksController } from './project-tasks.controller';
+import { TasksController } from './tasks.controller';
 
 // Existing deps
 import { ProjectsModule } from '../projects/projects.module';
@@ -31,7 +32,10 @@ import { RealtimeModule } from '../realtime/realtime.module';
     // ✅ Allows TasksService to inject RealtimeService safely
     RealtimeModule,
   ],
-  controllers: [ProjectTasksController],
+  controllers: [
+    ProjectTasksController,
+    TasksController, // ✅ THIS is what enables /api/tasks/*
+  ],
   providers: [TasksService, ProjectAccessGuard],
   exports: [TasksService],
 })
