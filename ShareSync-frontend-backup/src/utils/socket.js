@@ -1,64 +1,111 @@
+// src/utils/socket.js
 import { io } from 'socket.io-client';
 
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  process.env.VITE_API_URL ||
-  'http://localhost:3000';
+class SocketService {
+  constructor() {
+    this.socket = null;
+    this.connected = false;
+    this.currentProjectId = null;
+  }
 
-const socket = io(API_BASE, {
-  withCredentials: true,
-  autoConnect: true,
-});
+  /**
+   * Initialize socket connection
+   */
+  connect() {
+    if (this.socket?.connected) {
+      console.log('[Socket] Already connected');
+      return;
+    }
 
-/**
- * Light event hub so views/stores can subscribe without importing socket.io everywhere.
- * Usage:
- *   import socket, { onProjectPublicChanged, onProjectMembersUpdated } from "../utils/socket";
- *   const off = onProjectMembersUpdated(({ projectId, members, invites }) => { ... });
- *   // later: off();
- */
-const hub = new EventTarget();
+    // ✅ match AuthContext storage key
+    const token = localStorage.getItem('ss.jwt');
 
-// Relay: public status changes
-socket.on('project:publicChanged', (payload) => {
-  try {
-    const evt = new CustomEvent('project:publicChanged', { detail: payload });
-    hub.dispatchEvent(evt);
-  } catch (_) {}
-});
+    // ✅ match your .env (VITE_WS_URL=http://localhost:5050)
+    const wsUrl = import.meta?.env?.VITE_WS_URL || 'http://localhost:5050';
 
-// Relay: members updated (accept/revoke/role changes)
-socket.on('project:membersUpdated', (payload) => {
-  try {
-    const evt = new CustomEvent('project:membersUpdated', { detail: payload });
-    hub.dispatchEvent(evt);
-  } catch (_) {}
-});
+    this.socket = io(wsUrl, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+    });
 
-// (Optional) files added relay if other parts want it
-socket.on('project:filesAdded', (payload) => {
-  try {
-    const evt = new CustomEvent('project:filesAdded', { detail: payload });
-    hub.dispatchEvent(evt);
-  } catch (_) {}
-});
+    this.socket.on('connect', () => {
+      console.log('[Socket] Connected:', this.socket.id);
+      this.connected = true;
+    });
 
-export function onProjectPublicChanged(handler) {
-  const wrapped = (e) => handler(e.detail);
-  hub.addEventListener('project:publicChanged', wrapped);
-  return () => hub.removeEventListener('project:publicChanged', wrapped);
+    this.socket.on('disconnect', () => {
+      console.log('[Socket] Disconnected');
+      this.connected = false;
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('[Socket] Connect error:', error?.message || error);
+    });
+
+    this.socket.on('error', (error) => {
+      console.error('[Socket] Error:', error);
+    });
+  }
+
+  /**
+   * Disconnect socket
+   */
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+      this.connected = false;
+      this.currentProjectId = null;
+    }
+  }
+
+  /**
+   * Join a project room (Gateway expects: 'join' + { room })
+   */
+  joinProject(projectId) {
+    if (!this.socket) {
+      console.error('[Socket] Not connected');
+      return;
+    }
+    if (!projectId) return;
+
+    const room = `project:${projectId}`;
+    console.log(`[Socket] Joining room: ${room}`);
+
+    this.currentProjectId = projectId;
+    this.socket.emit('join', { room });
+  }
+
+  /**
+   * Leave a project room (Gateway expects: 'leave' + { room })
+   */
+  leaveProject(projectId) {
+    if (!this.socket) return;
+    if (!projectId) return;
+
+    const room = `project:${projectId}`;
+    console.log(`[Socket] Leaving room: ${room}`);
+
+    this.socket.emit('leave', { room });
+    this.currentProjectId = null;
+  }
+
+  /**
+   * Subscribe to task updates (Gateway emits: 'taskUpdated')
+   */
+  onTaskUpdated(callback) {
+    if (!this.socket) return;
+    this.socket.on('taskUpdated', callback);
+  }
+
+  /**
+   * Remove all listeners
+   */
+  removeAllListeners() {
+    if (!this.socket) return;
+    this.socket.removeAllListeners();
+  }
 }
 
-export function onProjectMembersUpdated(handler) {
-  const wrapped = (e) => handler(e.detail);
-  hub.addEventListener('project:membersUpdated', wrapped);
-  return () => hub.removeEventListener('project:membersUpdated', wrapped);
-}
-
-export function onProjectFilesAdded(handler) {
-  const wrapped = (e) => handler(e.detail);
-  hub.addEventListener('project:filesAdded', wrapped);
-  return () => hub.removeEventListener('project:filesAdded', wrapped);
-}
-
-export default socket;
+export default new SocketService();
