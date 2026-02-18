@@ -11,17 +11,20 @@ export class RealtimeService {
     this.logger.log('Realtime server attached ✅');
   }
 
+  // Emit to canonical project room: project:{projectId}
   projectEmit(projectId: string, event: string, payload: any) {
     if (!projectId || !this.server) return;
     this.server.to(`project:${projectId}`).emit(event, payload);
   }
 
+  // Emit to canonical user room: user:{userId}
   userEmit(userId: string, event: string, payload: any) {
     if (!userId || !this.server) return;
     this.server.to(`user:${userId}`).emit(event, payload);
   }
 
-  // ✅ NEW: Generic room emit (used for public spectator stream)
+  // ✅ NEW: emit to ANY explicit room string (e.g. public:project:{projectId})
+  // This fixes TS error: "Property 'roomEmit' does not exist on type 'RealtimeService'."
   roomEmit(room: string, event: string, payload: any) {
     if (!room || !this.server) return;
     this.server.to(room).emit(event, payload);
