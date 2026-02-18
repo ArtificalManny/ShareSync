@@ -1,6 +1,14 @@
 // src/notifications/notifications.gateway.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // NOTIFICATIONS GATEWAY: Real-time WebSocket push
+// Rooms:
+//   user:{userId}
+//   project:{projectId}
+// Emits:
+//   notification:new
+//   notification:read
+//   notification:count
+//   notification:deleted
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -9,6 +17,9 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
@@ -38,7 +49,7 @@ export class NotificationsGateway
 
   constructor(private readonly jwtService: JwtService) {}
 
-  afterInit(server: Server) {
+  afterInit(_server: Server) {
     this.logger.log('Notifications WebSocket Gateway initialized');
   }
 
@@ -56,6 +67,11 @@ export class NotificationsGateway
       const payload = this.jwtService.verify(token);
       client.userId = payload.sub || payload.userId;
 
+      if (!client.userId) {
+        client.disconnect();
+        return;
+      }
+
       // Track socket
       if (!this.userSockets.has(client.userId)) {
         this.userSockets.set(client.userId, new Set());
@@ -65,8 +81,8 @@ export class NotificationsGateway
       // Join user's room
       client.join(`user:${client.userId}`);
 
-      this.logger.log(`Client connected to notifications: ${client.id}`);
-    } catch (error) {
+      this.logger.log(`Client connected to notifications: ${client.id} (user:${client.userId})`);
+    } catch (_error) {
       client.disconnect();
     }
   }
@@ -81,12 +97,45 @@ export class NotificationsGateway
     this.logger.log(`Client disconnected from notifications: ${client.id}`);
   }
 
-  // Listen for notification creation events
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ROOM JOIN / LEAVE (project:{projectId})
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @SubscribeMessage('project:join')
+  handleProjectJoin(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() body: { projectId?: string },
+  ) {
+    const projectId = body?.projectId;
+    if (!client.userId || !projectId) return;
+
+    client.join(`project:${projectId}`);
+    this.logger.log(`user:${client.userId} joined project:${projectId}`);
+  }
+
+  @SubscribeMessage('project:leave')
+  handleProjectLeave(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() body: { projectId?: string },
+  ) {
+    const projectId = body?.projectId;
+    if (!client.userId || !projectId) return;
+
+    client.leave(`project:${projectId}`);
+    this.logger.log(`user:${client.userId} left project:${projectId}`);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // EVENTS → SOCKET EMITS
+  // ─────────────────────────────────────────────────────────────────────────────
+
   @OnEvent('notification.created')
   handleNotificationCreated(notification: NotificationDocument) {
     const userId = notification.userId.toString();
+
+    // Push new notification to recipient user room
     this.server.to(`user:${userId}`).emit('notification:new', {
-      id: notification._id,
+      id: (notification as any)._id,
       type: notification.type,
       title: notification.title,
       body: notification.body,
@@ -98,12 +147,55 @@ export class NotificationsGateway
     });
   }
 
-  // Helper to send to specific user
+  @OnEvent('notification.read')
+  handleNotificationRead(payload: { userId: string; notificationId: string }) {
+    if (!payload?.userId || !payload?.notificationId) return;
+
+    this.server.to(`user:${payload.userId}`).emit('notification:read', {
+      id: payload.notificationId,
+    });
+  }
+
+  @OnEvent('notification.read_all')
+  handleNotificationReadAll(payload: { userId: string; markedCount: number }) {
+    if (!payload?.userId) return;
+
+    this.server.to(`user:${payload.userId}`).emit('notification:read', {
+      all: true,
+      markedCount: payload.markedCount ?? 0,
+    });
+  }
+
+  @OnEvent('notification.deleted')
+  handleNotificationDeleted(payload: { userId: string; notificationId: string }) {
+    if (!payload?.userId || !payload?.notificationId) return;
+
+    this.server.to(`user:${payload.userId}`).emit('notification:deleted', {
+      id: payload.notificationId,
+    });
+  }
+
+  @OnEvent('notification.count')
+  handleNotificationCount(payload: { userId: string; unread: number }) {
+    if (!payload?.userId) return;
+
+    this.server.to(`user:${payload.userId}`).emit('notification:count', {
+      unread: payload.unread ?? 0,
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // OPTIONAL HELPERS
+  // ─────────────────────────────────────────────────────────────────────────────
+
   sendToUser(userId: string, event: string, data: any) {
     this.server.to(`user:${userId}`).emit(event, data);
   }
 
-  // Broadcast to all connected users
+  sendToProject(projectId: string, event: string, data: any) {
+    this.server.to(`project:${projectId}`).emit(event, data);
+  }
+
   broadcast(event: string, data: any) {
     this.server.emit(event, data);
   }

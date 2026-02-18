@@ -20,4 +20,13 @@ export class RealtimeService {
     if (!userId || !this.server) return;
     this.server.to(`user:${userId}`).emit(event, payload);
   }
+
+  // ✅ Step 5 naming aliases (no breaking changes)
+  emitToProjectRoom(projectId: string, event: string, payload: any) {
+    return this.projectEmit(projectId, event, payload);
+  }
+
+  emitToUserRoom(userId: string, event: string, payload: any) {
+    return this.userEmit(userId, event, payload);
+  }
 }

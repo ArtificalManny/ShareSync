@@ -3,6 +3,7 @@
 // NOTIFICATIONS SERVICE: Real-time alerts and activity tracking
 // + Phase 3 helpers: notify followers (spectator subscriptions)
 // + Phase 4 helpers: digests (get unread for digest + mark digested)
+// + Step 5 touchpoints: task.assigned / task.completed / task.moved_to_review
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Injectable, Logger, Optional } from '@nestjs/common';
@@ -421,6 +422,45 @@ export class NotificationsService {
       priority: payload.isLegendary ? NotificationPriority.HIGH : NotificationPriority.NORMAL,
       data: { xpAmount: payload.xpAwarded, taskId: payload.taskId, projectId: payload.projectId },
       groupKey: `xp-${payload.userId}-${new Date().toDateString()}`,
+    });
+  }
+
+  // ✅ Step 5: task moved to review (status change)
+  @OnEvent('task.moved_to_review')
+  async handleTaskMovedToReview(payload: {
+    taskId: string;
+    taskTitle: string;
+    projectId: string;
+    projectName: string;
+    movedBy: string;
+    assigneeId?: string | null;
+    reporterId?: string | null;
+  }) {
+    const recipient = payload.reporterId || null;
+
+    // If we don't know who to notify, do nothing (safe default)
+    if (!recipient) return;
+
+    // Don't notify actor about their own action
+    if (recipient === payload.movedBy) return;
+
+    await this.notify({
+      userId: recipient,
+      type: NotificationType.TASK_UPDATED,
+      title: '🔎 Ready for Review',
+      body: `Task moved to Review: ${payload.taskTitle}`,
+      icon: '🔎',
+      priority: NotificationPriority.NORMAL,
+      triggeredBy: payload.movedBy,
+      data: {
+        taskId: payload.taskId,
+        taskTitle: payload.taskTitle,
+        projectId: payload.projectId,
+        projectName: payload.projectName,
+        extra: { assigneeId: payload.assigneeId || null },
+      },
+      actions: [{ label: 'View Task', url: `/projects/${payload.projectId}/tasks/${payload.taskId}` }],
+      groupKey: `review-${recipient}-${payload.taskId}-${new Date().toDateString()}`,
     });
   }
 

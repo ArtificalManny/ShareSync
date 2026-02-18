@@ -3,6 +3,7 @@
 // TASKS SERVICE: Business Logic with Gamification Integration
 // + Normalized Task Mutation Events (3.3)
 // + Realtime Socket Emits (Step 4)
+// + Step 5 Notification Touchpoints (task.assigned / task.completed / task.moved_to_review)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -95,7 +96,8 @@ export class TasksService {
   // ─────────────────────────────────────────────────────────────────────────────
 
   async create(userId: string, dto: CreateTaskDto): Promise<TaskDocument> {
-    await this.projectsService.findByIdWithAccess(dto.projectId, userId);
+    // IMPORTANT: store project so we can emit projectName for notifications
+    const project = await this.projectsService.findByIdWithAccess(dto.projectId, userId);
 
     if (dto.parentId) {
       const parent = await this.taskModel.findById(dto.parentId);
@@ -144,6 +146,18 @@ export class TasksService {
         assigneeId: dto.assigneeId,
       },
     });
+
+    // ✅ Step 5: if created WITH an assignee, emit assignment event
+    if (dto.assigneeId && dto.assigneeId !== userId) {
+      this.eventEmitter.emit('task.assigned', {
+        taskId: saved._id.toString(),
+        taskTitle: saved.title,
+        assigneeId: dto.assigneeId,
+        assignedBy: userId,
+        projectId: dto.projectId,
+        projectName: project?.name || '',
+      });
+    }
 
     // ✅ SOCKET EMIT (project room)
     this.realtime.projectEmit(dto.projectId, 'taskUpdated', buildTaskSnapshot(saved));
@@ -335,6 +349,8 @@ export class TasksService {
   async update(taskId: string, userId: string, dto: UpdateTaskDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
 
+    const previousAssigneeId = task.assigneeId?.toString?.() || null;
+
     if (dto.status && dto.status !== task.status) {
       if (dto.status === TaskStatus.DONE) {
         throw new BadRequestException('Use the complete endpoint to mark tasks as done');
@@ -375,6 +391,24 @@ export class TasksService {
       snapshot: buildTaskSnapshot(updated),
       changes: dto as any,
     });
+
+    // ✅ Step 5: detect assignee change and emit assignment event
+    const newAssigneeId = updated.assigneeId?.toString?.() || null;
+    const assigneeChanged = newAssigneeId !== previousAssigneeId;
+
+    if (assigneeChanged && newAssigneeId && newAssigneeId !== userId) {
+      // project name for notifications
+      const project = await this.projectsService.findById(updated.projectId.toString());
+
+      this.eventEmitter.emit('task.assigned', {
+        taskId: updated._id.toString(),
+        taskTitle: updated.title,
+        assigneeId: newAssigneeId,
+        assignedBy: userId,
+        projectId: updated.projectId.toString(),
+        projectName: project?.name || '',
+      });
+    }
 
     // ✅ SOCKET EMIT
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
@@ -418,6 +452,21 @@ export class TasksService {
         sprintId: dto.sprintId,
       },
     });
+
+    // ✅ Step 5: moved to REVIEW => emit event for notification
+    if (previousStatus !== updated.status && updated.status === TaskStatus.REVIEW) {
+      const project = await this.projectsService.findById(updated.projectId.toString());
+
+      this.eventEmitter.emit('task.moved_to_review', {
+        taskId: updated._id.toString(),
+        taskTitle: updated.title,
+        projectId: updated.projectId.toString(),
+        projectName: project?.name || '',
+        movedBy: userId,
+        assigneeId: updated.assigneeId?.toString?.() || null,
+        reporterId: (updated as any).reporterId?.toString?.() || (updated as any).createdBy?.toString?.() || null,
+      });
+    }
 
     // ✅ SOCKET EMIT
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
@@ -496,6 +545,16 @@ export class TasksService {
         unblockedTaskIds: unblocked.map((t) => t._id.toString()),
         inFocusMode: !!(dto as any)?.inFocusMode,
       },
+    });
+
+    // ✅ Step 5: emit the event your NotificationsService already listens to
+    this.eventEmitter.emit('task.completed', {
+      taskId: task._id.toString(),
+      projectId: task.projectId.toString(),
+      userId,
+      xpAwarded: totalXP,
+      isLegendary: variableRewards.isLegendary,
+      ceremonyTier: ceremonyTier as any,
     });
 
     // ✅ SOCKET EMIT
