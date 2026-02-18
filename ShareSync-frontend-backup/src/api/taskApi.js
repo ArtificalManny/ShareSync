@@ -1,18 +1,8 @@
 // src/api/taskApi.js
 // ═══════════════════════════════════════════════════════════════════════════════
-// TASK API (Flow / Kanban / Stack)
+// TASK API (Flow / Kanban / Stack / Pulse)
 // Minimal, low-risk wrapper around your existing backend routes.
 // Uses fetch directly (no dependency on client.js to avoid breaking changes).
-//
-// Existing endpoints preserved:
-// - GET   /tasks/board?projectId=... (&sprintId optional)
-// - PATCH /tasks/:id/move   { status, order, sprintId? }
-//
-// New (Stack) endpoint added:
-// - GET   /tasks/stack?projectId=... (&assigneeId optional, &limit optional)
-//
-// "Complete task" is implemented safely using moveTask(..., { status: "done" })
-// to avoid guessing backend endpoints.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function getApiBaseUrl() {
@@ -94,26 +84,39 @@ export async function moveTask(taskId, { status, order, sprintId } = {}) {
 }
 
 /**
- * GET /tasks/stack?projectId=... (&assigneeId optional, &limit optional)
- * Backend is expected to filter to "stack" statuses (todo/in_progress) or return a broader set.
- * Frontend hook will filter+sort safely either way.
+ * GET /tasks/stack?projectId=...&limit=... (&assigneeId optional)
  */
-export async function fetchStackTasks({ projectId, assigneeId, limit } = {}) {
+export async function fetchStackTasks({ projectId, limit = 10, assigneeId } = {}) {
   if (!projectId) throw new Error("projectId is required");
-  const qs = new URLSearchParams({ projectId });
-
+  const qs = new URLSearchParams();
+  qs.set("projectId", projectId);
+  if (limit) qs.set("limit", String(limit));
   if (assigneeId) qs.set("assigneeId", assigneeId);
-  if (typeof limit === "number" && Number.isFinite(limit)) qs.set("limit", String(limit));
-
   return request(`/tasks/stack?${qs.toString()}`, { method: "GET" });
 }
 
 /**
- * COMPLETE TASK (safe implementation)
- * We do NOT assume a /complete endpoint exists.
- * We reuse your known-good moveTask endpoint and mark as "done".
+ * PATCH /tasks/:id/complete
+ * Safe fallback: if endpoint doesn't exist, mark as done via moveTask().
  */
 export async function completeTask(taskId) {
   if (!taskId) throw new Error("taskId is required");
-  return moveTask(taskId, { status: "done" });
+  try {
+    return await request(`/tasks/${taskId}/complete`, { method: "PATCH", body: {} });
+  } catch (e) {
+    if (e?.status === 404) {
+      return moveTask(taskId, { status: "done" });
+    }
+    throw e;
+  }
+}
+
+/**
+ * GET /tasks/pulse?projectId=...
+ * Phase 2: timestamp-based metrics
+ */
+export async function fetchPulseMetrics({ projectId } = {}) {
+  if (!projectId) throw new Error("projectId is required");
+  const qs = new URLSearchParams({ projectId });
+  return request(`/tasks/pulse?${qs.toString()}`, { method: "GET" });
 }

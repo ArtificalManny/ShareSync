@@ -1,9 +1,10 @@
 // src/features/stack/useStackTasks.js
 // ═══════════════════════════════════════════════════════════════════════════════
 // useStackTasks
-// - Fetches top "stack" tasks for a project (GET /tasks/stack)
+// - Fetches priority stack tasks for a project
+// - Uses fetchStackTasks (GET /tasks/stack)
 // - Optional realtime patching if a socket with .on/.off is provided
-// - Returns { tasks, loading, error, refresh, setTasks }
+// - Safe defaults, minimal assumptions
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -13,28 +14,20 @@ function getTaskId(task) {
   return task?.id || task?._id || "";
 }
 
-function normalizeStatus(status) {
-  const s = String(status || "").toLowerCase();
-  // handle common variants
-  if (s === "inprogress") return "in_progress";
-  if (s === "in-progress") return "in_progress";
-  return s;
-}
-
-function priRank(p) {
+function normalizePriority(p) {
   const v = (p || "").toString().toLowerCase();
   if (v === "critical") return 4;
   if (v === "high") return 3;
   if (v === "medium") return 2;
   if (v === "low") return 1;
-  if (typeof p === "number") return p;
-  return 0;
+  const n = Number(p);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function sortLikeBackend(list) {
   return [...(list || [])].sort((a, b) => {
-    const pa = priRank(a?.priority);
-    const pb = priRank(b?.priority);
+    const pa = normalizePriority(a?.priority);
+    const pb = normalizePriority(b?.priority);
     if (pb !== pa) return pb - pa;
 
     const ba = a?.isBlocking ? 1 : 0;
@@ -51,9 +44,18 @@ function sortLikeBackend(list) {
   });
 }
 
-function isInStack(task) {
-  const s = normalizeStatus(task?.status);
-  return s === "todo" || s === "in_progress";
+function applyTaskPatch(prev, patch) {
+  const id = getTaskId(patch);
+  if (!id) return prev;
+
+  const idx = prev.findIndex((t) => getTaskId(t) === id);
+  if (idx === -1) {
+    // If it's a new/updated task and looks stack-eligible, let it join.
+    return sortLikeBackend([patch, ...prev]);
+  }
+  const next = [...prev];
+  next[idx] = { ...next[idx], ...patch };
+  return sortLikeBackend(next);
 }
 
 export function useStackTasks({
@@ -67,95 +69,68 @@ export function useStackTasks({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const mountedRef = useRef(true);
+  const inFlightRef = useRef(false);
 
-  const paramsKey = useMemo(() => {
-    return JSON.stringify({
-      projectId: projectId || "",
-      assigneeId: assigneeId || "",
-      limit: Number(limit) || 10,
-      enabled: !!enabled,
-    });
-  }, [projectId, assigneeId, limit, enabled]);
+  const canRun = useMemo(() => {
+    return Boolean(enabled && projectId);
+  }, [enabled, projectId]);
 
-  const refresh = useCallback(async () => {
-    if (!enabled) return;
-    if (!projectId) {
-      setTasks([]);
-      setError(null);
-      return;
-    }
+  const load = useCallback(async () => {
+    if (!canRun) return;
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
 
     setLoading(true);
     setError(null);
 
     try {
-      const data = await fetchStackTasks({ projectId, assigneeId, limit });
-
-      const list = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
-      const filtered = list.filter(isInStack);
-      const sorted = sortLikeBackend(filtered);
-
-      if (mountedRef.current) setTasks(sorted);
+      const data = await fetchStackTasks({ projectId, limit, assigneeId });
+      const list = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []);
+      setTasks(sortLikeBackend(list));
     } catch (e) {
-      if (mountedRef.current) setError(e);
+      setError(e);
     } finally {
-      if (mountedRef.current) setLoading(false);
+      setLoading(false);
+      inFlightRef.current = false;
     }
-  }, [enabled, projectId, assigneeId, limit]);
+  }, [canRun, projectId, limit, assigneeId]);
 
-  // Initial fetch (and when params change)
+  // initial + param changes
   useEffect(() => {
-    mountedRef.current = true;
-    refresh();
-    return () => {
-      mountedRef.current = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paramsKey]);
+    if (!canRun) {
+      setTasks([]);
+      return;
+    }
+    load();
+  }, [canRun, load]);
 
-  // Optional socket patching: expects socket.on / socket.off
+  // optional realtime
   useEffect(() => {
-    if (!socket || !socket.on || !socket.off) return;
-    if (!enabled) return;
+    if (!socket || !canRun) return;
+    if (typeof socket.on !== "function" || typeof socket.off !== "function") return;
 
-    const onTaskUpdated = (payload) => {
-      // If payload includes projectId, ignore other projects
+    const handler = (payload) => {
       const payloadProjectId = payload?.projectId?.toString?.() || payload?.projectId;
-      if (payloadProjectId && projectId && payloadProjectId !== projectId) return;
+      if (payloadProjectId && payloadProjectId !== projectId) return;
 
-      const incoming = payload?.task || payload?.data || payload;
-      const incomingId = getTaskId(incoming);
-      if (!incomingId) return;
-
-      setTasks((prev) => {
-        const list = Array.isArray(prev) ? [...prev] : [];
-        const idx = list.findIndex((t) => getTaskId(t) === incomingId);
-
-        // If task no longer in stack -> remove if exists
-        if (!isInStack(incoming)) {
-          if (idx >= 0) list.splice(idx, 1);
-          return sortLikeBackend(list);
-        }
-
-        // If in stack -> upsert
-        if (idx >= 0) {
-          list[idx] = { ...list[idx], ...incoming };
-        } else {
-          list.push(incoming);
-        }
-        return sortLikeBackend(list);
-      });
+      setTasks((prev) => applyTaskPatch(Array.isArray(prev) ? prev : [], payload));
     };
 
-    socket.on("taskUpdated", onTaskUpdated);
-    socket.on("task:update", onTaskUpdated);
+    socket.on("taskUpdated", handler);
+    socket.on("task:update", handler);
 
     return () => {
-      socket.off("taskUpdated", onTaskUpdated);
-      socket.off("task:update", onTaskUpdated);
+      socket.off("taskUpdated", handler);
+      socket.off("task:update", handler);
     };
-  }, [socket, enabled, projectId]);
+  }, [socket, canRun, projectId]);
 
-  return { tasks, loading, error, refresh, setTasks };
+  return {
+    tasks,
+    setTasks,
+    loading,
+    error,
+    refresh: load,
+  };
 }
+
