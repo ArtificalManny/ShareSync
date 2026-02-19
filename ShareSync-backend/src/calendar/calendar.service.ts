@@ -25,6 +25,10 @@ import {
   CalendarQueryDto,
 } from './dto/calendar.dto';
 
+// ✅ NEW: Import Task and Sprint schemas for the unified Rhythm query
+import { Task, TaskDocument } from '../tasks/schemas/task.schema';
+import { Sprint, SprintDocument } from '../sprints/schemas/sprint.schema';
+
 @Injectable()
 export class CalendarService {
   private readonly logger = new Logger(CalendarService.name);
@@ -32,15 +36,79 @@ export class CalendarService {
   constructor(
     @InjectModel(CalendarEvent.name)
     private readonly eventModel: Model<CalendarEventDocument>,
+    // ✅ NEW: Injecting the required models for Rhythm aggregation
+    @InjectModel(Task.name)
+    private readonly taskModel: Model<TaskDocument>,
+    @InjectModel(Sprint.name)
+    private readonly sprintModel: Model<SprintDocument>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // NEW: RHYTHM AGGREGATOR
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async getProjectRhythm(projectId: string, startDate?: Date, endDate?: Date): Promise<any[]> {
+    const pId = new Types.ObjectId(projectId);
+    const rhythmItems = [];
+
+    // 1. Get Scheduled Events (Work sessions, meetings)
+    const eventFilter: any = { projectId: pId, status: { $ne: EventStatus.CANCELLED } };
+    if (startDate) eventFilter.startTime = { $gte: startDate };
+    if (endDate) eventFilter.endTime = { ...eventFilter.endTime, $lte: endDate };
+
+    const events = await this.eventModel.find(eventFilter).lean();
+    events.forEach(e => rhythmItems.push({
+      id: e._id,
+      title: e.title,
+      type: 'event',
+      startAt: e.startTime,
+      endAt: e.endTime,
+      status: e.status,
+      originalData: e
+    }));
+
+    // 2. Get Tasks with Due Dates
+    const taskFilter: any = { projectId: pId, dueDate: { $exists: true, $ne: null } };
+    if (startDate) taskFilter.dueDate = { $gte: startDate };
+    if (endDate) taskFilter.dueDate = { ...taskFilter.dueDate, $lte: endDate };
+
+    const tasks = await this.taskModel.find(taskFilter).lean();
+    tasks.forEach(t => rhythmItems.push({
+      id: t._id,
+      title: t.title,
+      type: 'task',
+      startAt: t.dueDate,
+      endAt: t.dueDate,
+      status: t.status,
+      originalData: t
+    }));
+
+    // 3. Get Active/Upcoming Sprints
+    const sprintFilter: any = { projectId: pId };
+    if (startDate) sprintFilter.endDate = { $gte: startDate };
+    if (endDate) sprintFilter.startDate = { $lte: endDate };
+
+    const sprints = await this.sprintModel.find(sprintFilter).lean();
+    sprints.forEach(s => rhythmItems.push({
+      id: s._id,
+      title: s.name,
+      type: 'sprint',
+      startAt: s.startDate,
+      endAt: s.endDate,
+      status: s.status,
+      originalData: s
+    }));
+
+    // Sort everything chronologically by start date
+    return rhythmItems.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // CREATE
   // ─────────────────────────────────────────────────────────────────────────────
 
   async create(userId: string, dto: CreateEventDto): Promise<CalendarEventDocument> {
-    // Validate times
     if (new Date(dto.startTime) >= new Date(dto.endTime)) {
       throw new BadRequestException('End time must be after start time');
     }
@@ -52,7 +120,6 @@ export class CalendarService {
       isOrganizer: a.userId === userId,
     })) || [];
 
-    // Add creator as organizer if not in attendees
     if (!attendees.some((a) => a.userId.toString() === userId)) {
       attendees.unshift({
         userId: new Types.ObjectId(userId),
@@ -73,7 +140,6 @@ export class CalendarService {
 
     const saved = await event.save();
 
-    // Emit event for notifications
     this.eventEmitter.emit('calendar.event.created', {
       eventId: saved._id,
       title: saved.title,
@@ -82,7 +148,6 @@ export class CalendarService {
       attendees: attendees.map((a) => a.userId.toString()),
     });
 
-    // Create recurring instances if needed
     if (dto.isRecurring && dto.recurrence) {
       await this.generateRecurringInstances(saved);
     }
@@ -177,7 +242,6 @@ export class CalendarService {
 
     const events = await this.findUserEvents(userId, { startDate, endDate });
 
-    // Group by date
     const calendar = new Map<string, CalendarEventDocument[]>();
     
     for (const event of events) {
@@ -250,7 +314,6 @@ export class CalendarService {
   ): Promise<CalendarEventDocument> {
     const event = await this.findById(eventId);
 
-    // Check permission
     if (event.createdBy.toString() !== userId) {
       const isAttendee = event.attendees.some(
         (a) => a.userId.toString() === userId && a.isOrganizer,
@@ -263,7 +326,6 @@ export class CalendarService {
     Object.assign(event, dto);
     const saved = await event.save();
 
-    // Notify attendees of changes
     this.eventEmitter.emit('calendar.event.updated', {
       eventId: saved._id,
       title: saved.title,
@@ -361,7 +423,6 @@ export class CalendarService {
     event.status = EventStatus.CANCELLED;
     const saved = await event.save();
 
-    // Cancel recurring instances
     if (event.isRecurring) {
       await this.eventModel.updateMany(
         { parentEventId: event._id },
@@ -386,7 +447,6 @@ export class CalendarService {
       throw new BadRequestException('Only creator can delete event');
     }
 
-    // Delete recurring instances
     if (event.isRecurring) {
       await this.eventModel.deleteMany({ parentEventId: event._id });
     }
@@ -400,7 +460,7 @@ export class CalendarService {
 
   private async generateRecurringInstances(
     event: CalendarEventDocument,
-    count: number = 52, // Default to 1 year of weekly events
+    count: number = 52,
   ): Promise<void> {
     if (!event.recurrence) return;
 
@@ -413,7 +473,6 @@ export class CalendarService {
     let occurrenceCount = 0;
 
     while (currentDate <= maxDate && occurrenceCount < maxOccurrences) {
-      // Skip the first occurrence (it's the parent event)
       if (occurrenceCount > 0) {
         const instanceStart = new Date(currentDate);
         const instanceEnd = new Date(instanceStart.getTime() + duration);
@@ -424,7 +483,7 @@ export class CalendarService {
           type: event.type,
           startTime: instanceStart,
           endTime: instanceEnd,
-          isAllDay: event.isAllDay,
+          isAllDay: event.isAllDay, // ✅ FIXED: Removed the slash here
           timezone: event.timezone,
           projectId: event.projectId,
           createdBy: event.createdBy,
@@ -438,7 +497,6 @@ export class CalendarService {
         });
       }
 
-      // Calculate next occurrence
       currentDate = this.getNextOccurrence(currentDate, event.recurrence.frequency, event.recurrence.interval || 1);
       occurrenceCount++;
     }
@@ -486,11 +544,8 @@ export class CalendarService {
   @Cron(CronExpression.EVERY_MINUTE)
   async sendEventReminders(): Promise<void> {
     const now = new Date();
-    const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
-    const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
     const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
-    // Find events starting in the next hour
     const upcomingEvents = await this.eventModel.find({
       startTime: { $gte: now, $lte: oneHourFromNow },
       status: EventStatus.SCHEDULED,
@@ -506,7 +561,6 @@ export class CalendarService {
         );
 
         if (reminderTime <= now) {
-          // Send reminder
           this.eventEmitter.emit('calendar.reminder', {
             eventId: event._id,
             title: event.title,

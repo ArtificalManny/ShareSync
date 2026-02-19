@@ -83,6 +83,25 @@ export class CalendarController {
     return { success: true, data: events };
   }
 
+  // ✅ NEW: The unified Rhythm timeline endpoint
+  @Get('project/:projectId/rhythm')
+  @ApiOperation({ summary: 'Get unified rhythm timeline (Events + Tasks + Sprints)' })
+  @ApiParam({ name: 'projectId', description: 'Project ID' })
+  @ApiQuery({ name: 'startDate', required: false })
+  @ApiQuery({ name: 'endDate', required: false })
+  async getProjectRhythm(
+    @Param('projectId') projectId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const rhythm = await this.calendarService.getProjectRhythm(
+      projectId,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined
+    );
+    return { success: true, data: rhythm };
+  }
+
   @Get('view/:year/:month')
   @ApiOperation({ summary: 'Get calendar view for a month' })
   @ApiParam({ name: 'year', description: 'Year' })
