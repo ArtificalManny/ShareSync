@@ -10,22 +10,22 @@ function todayISO() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function normalizeMsg(m) {
-  if (Array.isArray(m)) return m.join(" · ");
-  if (typeof m === "string") return m;
+function normalizeErrMessage(msg) {
+  // Nest/validation sometimes returns message: string | string[]
+  if (Array.isArray(msg)) return msg.join(" • ");
+  if (typeof msg === "string") return msg;
   return "";
 }
 
 export default function AddMilestoneModal({ projectId, onClose }) {
   const [title, setTitle] = useState("");
-  const [dueDate, setDueDate] = useState(""); // UI-only for now (backend currently rejects dueDate)
+  const [targetDate, setTargetDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
-  const canSave = useMemo(
-    () => title.trim().length >= 2 && !!projectId && !saving,
-    [title, projectId, saving]
-  );
+  const canSave = useMemo(() => {
+    return title.trim().length >= 2 && !!projectId && !saving;
+  }, [title, projectId, saving]);
 
   const handleSubmit = async (e) => {
     e?.preventDefault?.();
@@ -35,18 +35,23 @@ export default function AddMilestoneModal({ projectId, onClose }) {
     setErr("");
 
     try {
-      // ✅ SAFE payload: only send what backend currently accepts.
-      // (Backend rejects dueDate/order/status right now.)
+      // ✅ Only send fields that exist in CreateMilestoneDto
+      // - title (required)
+      // - projectId (added by createMilestone helper)
+      // - targetDate (optional, must be IsDateString => YYYY-MM-DD is safest)
+      // - status (optional enum)
       await createMilestone(projectId, {
         title: title.trim(),
+        targetDate: targetDate || undefined,
+        status: "planned",
       });
 
-      // Tell RoadmapPanel to refetch
       window.dispatchEvent(new CustomEvent("milestones:refresh"));
       onClose?.();
     } catch (error) {
       const msg =
-        normalizeMsg(error?.response?.data?.message) ||
+        normalizeErrMessage(error?.response?.data?.message) ||
+        error?.response?.data?.error ||
         error?.message ||
         "Failed to create milestone";
       setErr(msg);
@@ -69,7 +74,9 @@ export default function AddMilestoneModal({ projectId, onClose }) {
         <div className="px-5 py-4 border-b border-white/[0.08] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flag className="w-4 h-4 text-brand-300" />
-            <h3 className="text-base font-semibold text-text-primary">Create Milestone</h3>
+            <h3 className="text-base font-semibold text-text-primary">
+              Create Milestone
+            </h3>
           </div>
 
           <button
@@ -102,14 +109,13 @@ export default function AddMilestoneModal({ projectId, onClose }) {
 
           <div>
             <label className="text-xs uppercase tracking-wider text-text-tertiary flex items-center gap-2">
-              <Calendar className="w-4 h-4" /> Due date (optional)
-              <span className="text-[10px] opacity-60">(backend wiring later)</span>
+              <Calendar className="w-4 h-4" /> Target date (optional)
             </label>
             <input
               type="date"
-              value={dueDate}
+              value={targetDate}
               min={todayISO()}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={(e) => setTargetDate(e.target.value)}
               className="
                 mt-2 w-full px-3 py-2 rounded-xl
                 bg-surface-2 border border-white/[0.10]

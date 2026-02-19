@@ -9,11 +9,6 @@
 import client from "./client";
 
 function extractList(payload) {
-  // Accept common shapes:
-  // 1) { success: true, data: [...] }
-  // 2) [...]
-  // 3) { milestones: [...] }
-  // 4) { data: [...] }
   if (payload?.success && Array.isArray(payload?.data)) return payload.data;
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.milestones)) return payload.milestones;
@@ -22,8 +17,6 @@ function extractList(payload) {
 }
 
 function shouldSoftFail(status) {
-  // Roadmap should quietly show empty state when the route doesn't exist yet.
-  // Keep auth errors loud.
   return status === 404;
 }
 
@@ -33,21 +26,42 @@ function normalizeMsg(m) {
   return "";
 }
 
-// Keep create payload minimal to avoid backend DTO "whitelist" failures.
-// If you later add fields to the backend DTO, you can expand this safely.
+// Keep create payload minimal AND whitelist-safe.
+// Your backend CreateMilestoneDto allows:
+// - title (required)
+// - projectId (required)
+// - description? (optional string)
+// - targetDate? (optional ISO date string)
+// - status? (optional enum)
 function sanitizeCreatePayload(projectId, milestoneData) {
   const title = typeof milestoneData?.title === "string" ? milestoneData.title.trim() : "";
-  return {
+
+  const payload = {
     projectId,
     title,
   };
+
+  if (typeof milestoneData?.description === "string") {
+    const d = milestoneData.description.trim();
+    if (d) payload.description = d;
+  }
+
+  // HTML <input type="date"> yields "YYYY-MM-DD" which is valid IsDateString
+  if (typeof milestoneData?.targetDate === "string" && milestoneData.targetDate.trim()) {
+    payload.targetDate = milestoneData.targetDate.trim();
+  }
+
+  if (typeof milestoneData?.status === "string" && milestoneData.status.trim()) {
+    payload.status = milestoneData.status.trim();
+  }
+
+  return payload;
 }
 
 function isWhitelistError(error) {
   const status = error?.response?.status;
   if (status !== 400) return false;
   const msg = normalizeMsg(error?.response?.data?.message);
-  // Typical class-validator whitelist error includes "should not exist"
   return msg.includes("should not exist");
 }
 
@@ -61,7 +75,6 @@ export const getMilestones = async (projectId, options = {}) => {
   try {
     const params = new URLSearchParams({ projectId });
 
-    // Optional; safe if backend ignores them.
     if (options.status) params.append("status", options.status);
     if (options.sort) params.append("sort", options.sort);
     if (options.limit != null) params.append("limit", String(options.limit));
@@ -108,10 +121,6 @@ export const getMilestone = async (milestoneId) => {
 /**
  * Create a new milestone
  * Backend: POST /milestones
- *
- * IMPORTANT:
- * Your backend currently rejects extra props (whitelist validation),
- * so we send only { projectId, title }.
  */
 export const createMilestone = async (projectId, milestoneData) => {
   try {
