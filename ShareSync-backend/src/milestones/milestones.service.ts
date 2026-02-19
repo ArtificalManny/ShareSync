@@ -1,5 +1,5 @@
 // src/milestones/milestones.service.ts
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -7,10 +7,14 @@ import { ProjectsService } from '../projects/projects.service';
 import { Milestone, MilestoneDocument } from './schemas/milestone.schema';
 import { CreateMilestoneDto, UpdateMilestoneDto } from './dto';
 
+// ✅ NEW: Task model for progress calculation
+import { Task, TaskDocument, TaskStatus } from '../tasks/schemas/task.schema';
+
 @Injectable()
 export class MilestonesService {
   constructor(
     @InjectModel(Milestone.name) private milestoneModel: Model<MilestoneDocument>,
+    @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     private readonly eventEmitter: EventEmitter2,
     private readonly projectsService: ProjectsService,
   ) {}
@@ -42,14 +46,88 @@ export class MilestonesService {
   }
 
   async findByProject(projectId: string): Promise<MilestoneDocument[]> {
-    if (!projectId) {
-      return [];
-    }
+    if (!projectId) return [];
 
     return this.milestoneModel
       .find({ projectId: new Types.ObjectId(projectId) })
       .sort({ targetDate: 1 })
       .exec();
+  }
+
+  /**
+   * ✅ Roadmap Phase 1:
+   * Return milestones + computed progress from tasks where task.milestoneId matches.
+   *
+   * NOTE: This does NOT persist progress back to Milestone docs (safe + non-invasive).
+   */
+  async findByProjectWithProgress(projectId: string): Promise<any[]> {
+    if (!projectId) return [];
+
+    const projectObjectId = new Types.ObjectId(projectId);
+
+    // 1) Load milestones for project
+    const milestones = await this.milestoneModel
+      .find({ projectId: projectObjectId })
+      .sort({ targetDate: 1 })
+      .lean()
+      .exec();
+
+    if (!milestones.length) return [];
+
+    // 2) Aggregate task counts grouped by milestoneId
+    const stats = await this.taskModel
+      .aggregate([
+        {
+          $match: {
+            projectId: projectObjectId,
+            milestoneId: { $exists: true, $ne: null },
+          },
+        },
+        {
+          $group: {
+            _id: '$milestoneId',
+            totalTasks: { $sum: 1 },
+            completedTasks: {
+              $sum: {
+                $cond: [{ $eq: ['$status', TaskStatus.DONE] }, 1, 0],
+              },
+            },
+          },
+        },
+      ])
+      .exec();
+
+    const statsMap = new Map<string, { totalTasks: number; completedTasks: number }>();
+    for (const row of stats) {
+      const key = row._id?.toString?.();
+      if (!key) continue;
+      statsMap.set(key, {
+        totalTasks: row.totalTasks || 0,
+        completedTasks: row.completedTasks || 0,
+      });
+    }
+
+    // 3) Merge computed stats onto milestones
+    return milestones.map((m: any) => {
+      const id = m._id?.toString?.() || m.id?.toString?.();
+      const taskStats = id ? statsMap.get(id) : undefined;
+
+      const totalTasks = taskStats?.totalTasks ?? 0;
+      const completedTasks = taskStats?.completedTasks ?? 0;
+      const tasksLeft = Math.max(totalTasks - completedTasks, 0);
+
+      const progress =
+        totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+
+      return {
+        ...m,
+        id: id || m.id,
+        totalTasks,
+        completedTasks,
+        tasksLeft,
+        progress,
+      };
+    });
   }
 
   async update(id: string, userId: string, dto: UpdateMilestoneDto): Promise<MilestoneDocument> {
@@ -102,7 +180,8 @@ export class MilestonesService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // TASK LINKING
+  // TASK LINKING (kept for backwards compatibility)
+  // NOTE: Roadmap uses task.milestoneId primarily.
   // ═══════════════════════════════════════════════════════════════════════════════
 
   async linkTask(milestoneId: string, taskId: string): Promise<MilestoneDocument> {
@@ -128,14 +207,14 @@ export class MilestonesService {
     milestone.taskIds = milestone.taskIds.filter(id => !id.equals(taskObjectId));
     milestone.totalTasks = milestone.taskIds.length;
 
-    // Recalculate progress
+    // Recalculate progress (legacy mode)
     await this.recalculateProgress(milestoneId);
 
     return milestone.save();
   }
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // PROGRESS TRACKING
+  // PROGRESS TRACKING (legacy, kept)
   // ═══════════════════════════════════════════════════════════════════════════════
 
   async recalculateProgress(milestoneId: string): Promise<MilestoneDocument> {
@@ -188,7 +267,7 @@ export class MilestonesService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // QUERIES
+  // QUERIES (kept)
   // ═══════════════════════════════════════════════════════════════════════════════
 
   async findUpcoming(projectId: string, days: number = 30): Promise<MilestoneDocument[]> {

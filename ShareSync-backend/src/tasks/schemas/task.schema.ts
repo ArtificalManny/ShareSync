@@ -393,6 +393,7 @@ TaskSchema.index({ sprintId: 1, status: 1 });
 TaskSchema.index({ dueDate: 1, status: 1 });
 TaskSchema.index({ projectId: 1, priority: -1, isBlocking: -1, dueDate: 1 });
 TaskSchema.index({ title: 'text', description: 'text' });
+TaskSchema.index({ projectId: 1, milestoneId: 1, status: 1 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIRTUALS

@@ -6,14 +6,21 @@ import { MilestonesService } from './milestones.service';
 import { MilestonesController } from './milestones.controller';
 import { ProjectsModule } from '../projects/projects.module';
 
+// ✅ NEW: task model access for progress calculation
+import { Task, TaskSchema } from '../tasks/schemas/task.schema';
+
+// ✅ NEW: endpoint GET /api/projects/:projectId/milestones
+import { ProjectMilestonesController } from './project-milestones.controller';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Milestone.name, schema: MilestoneSchema },
+      { name: Task.name, schema: TaskSchema },
     ]),
     forwardRef(() => ProjectsModule),
   ],
-  controllers: [MilestonesController],
+  controllers: [MilestonesController, ProjectMilestonesController],
   providers: [MilestonesService],
   exports: [MilestonesService],
 })
