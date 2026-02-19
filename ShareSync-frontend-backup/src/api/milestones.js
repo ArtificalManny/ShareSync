@@ -27,12 +27,6 @@ function normalizeMsg(m) {
 }
 
 // Keep create payload minimal AND whitelist-safe.
-// Your backend CreateMilestoneDto allows:
-// - title (required)
-// - projectId (required)
-// - description? (optional string)
-// - targetDate? (optional ISO date string)
-// - status? (optional enum)
 function sanitizeCreatePayload(projectId, milestoneData) {
   const title = typeof milestoneData?.title === "string" ? milestoneData.title.trim() : "";
 
@@ -46,7 +40,6 @@ function sanitizeCreatePayload(projectId, milestoneData) {
     if (d) payload.description = d;
   }
 
-  // HTML <input type="date"> yields "YYYY-MM-DD" which is valid IsDateString
   if (typeof milestoneData?.targetDate === "string" && milestoneData.targetDate.trim()) {
     payload.targetDate = milestoneData.targetDate.trim();
   }
@@ -65,10 +58,6 @@ function isWhitelistError(error) {
   return msg.includes("should not exist");
 }
 
-/**
- * Get all milestones for a project
- * Backend (current assumption): GET /milestones?projectId=xxx
- */
 export const getMilestones = async (projectId, options = {}) => {
   if (!projectId) return [];
 
@@ -96,18 +85,11 @@ export const getMilestones = async (projectId, options = {}) => {
       return [];
     }
 
-    console.error(
-      "[milestones.js] getMilestones failed:",
-      error?.response?.data || error?.message
-    );
+    console.error("[milestones.js] getMilestones failed:", error?.response?.data || error?.message);
     throw error;
   }
 };
 
-/**
- * Get a single milestone by ID
- * Backend: GET /milestones/:id
- */
 export const getMilestone = async (milestoneId) => {
   try {
     const response = await client.get(`/milestones/${milestoneId}`);
@@ -118,17 +100,12 @@ export const getMilestone = async (milestoneId) => {
   }
 };
 
-/**
- * Create a new milestone
- * Backend: POST /milestones
- */
 export const createMilestone = async (projectId, milestoneData) => {
   try {
     const payload = sanitizeCreatePayload(projectId, milestoneData);
     const response = await client.post("/milestones", payload);
     return response?.data?.data || response?.data;
   } catch (error) {
-    // If backend yelled about extra props (should not exist), retry ultra-minimal.
     if (isWhitelistError(error)) {
       try {
         const payload = { projectId, title: String(milestoneData?.title || "").trim() };
@@ -139,16 +116,11 @@ export const createMilestone = async (projectId, milestoneData) => {
         throw e2;
       }
     }
-
     console.error("[milestones.js] createMilestone failed:", error?.response?.data || error?.message);
     throw error;
   }
 };
 
-/**
- * Update a milestone
- * Backend: PUT /milestones/:id
- */
 export const updateMilestone = async (milestoneId, updates) => {
   try {
     const response = await client.put(`/milestones/${milestoneId}`, updates);
@@ -159,10 +131,6 @@ export const updateMilestone = async (milestoneId, updates) => {
   }
 };
 
-/**
- * Delete a milestone
- * Backend: DELETE /milestones/:id
- */
 export const deleteMilestone = async (milestoneId) => {
   try {
     await client.delete(`/milestones/${milestoneId}`);
@@ -172,10 +140,6 @@ export const deleteMilestone = async (milestoneId) => {
   }
 };
 
-/**
- * Link a task to a milestone
- * Backend: POST /milestones/:id/tasks
- */
 export const linkTask = async (milestoneId, taskId) => {
   try {
     const response = await client.post(`/milestones/${milestoneId}/tasks`, { taskId });
@@ -186,10 +150,6 @@ export const linkTask = async (milestoneId, taskId) => {
   }
 };
 
-/**
- * Unlink a task from a milestone
- * Backend: DELETE /milestones/:id/tasks/:taskId
- */
 export const unlinkTask = async (milestoneId, taskId) => {
   try {
     const response = await client.delete(`/milestones/${milestoneId}/tasks/${taskId}`);
