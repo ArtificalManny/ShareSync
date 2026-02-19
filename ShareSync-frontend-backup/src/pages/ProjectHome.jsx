@@ -810,10 +810,10 @@ export default function ProjectHome() {
             />
           );
 
+        // ✅ THE FIX: We are now explicitly passing projectId={id} down to RhythmView!
         case "rhythm":
-          return <RhythmView events={events || []} onAddEvent={handleAddEvent} onEventClick={handleEventClick} />;
+          return <RhythmView projectId={id} events={events || []} onAddEvent={handleAddEvent} onEventClick={handleEventClick} />;
 
-        // ✅ FIXED: Now rendering the live InsightsTab instead of the mock InsightsView
         case "insights":
           return (
             <div className={pageWrap}>
