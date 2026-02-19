@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsDateString, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsDateString, IsEnum, IsMongoId } from 'class-validator';
 
 export enum MilestoneStatus {
   PLANNED = 'planned',
@@ -16,7 +16,7 @@ export class CreateMilestoneDto {
   @IsString()
   description?: string;
 
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
   projectId: string;
 

@@ -23,8 +23,9 @@ export class Milestone {
   @Prop()
   description: string;
 
-  @Prop({ required: true })
-  targetDate: Date;
+  // ✅ Optional (UI + DTO treat it as optional)
+  @Prop({ required: false })
+  targetDate?: Date;
 
   @Prop()
   completedAt: Date;
@@ -38,6 +39,10 @@ export class Milestone {
 
   @Prop({ default: 0, min: 0, max: 100 })
   progress: number;
+
+  // ✅ Keep this because milestones.service.ts sets `order: Date.now()`
+  @Prop({ default: 0, index: true })
+  order: number;
 
   @Prop({ type: [Types.ObjectId], ref: 'Task', default: [] })
   taskIds: Types.ObjectId[];

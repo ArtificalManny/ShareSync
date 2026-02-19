@@ -1,5 +1,5 @@
 // src/milestones/milestones.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -19,15 +19,44 @@ export class MilestonesService {
     private readonly projectsService: ProjectsService,
   ) {}
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Helpers (safe ObjectId parsing)
+  // ─────────────────────────────────────────────────────────────────────────────
+  private toObjectIdOrThrow(value: string, fieldName: string): Types.ObjectId {
+    if (!value || !Types.ObjectId.isValid(value)) {
+      throw new BadRequestException(`${fieldName} must be a valid ObjectId`);
+    }
+    return new Types.ObjectId(value);
+  }
+
+  private toObjectIdOrNull(value?: string): Types.ObjectId | null {
+    if (!value || !Types.ObjectId.isValid(value)) return null;
+    return new Types.ObjectId(value);
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════════
   // CRUD OPERATIONS
   // ═══════════════════════════════════════════════════════════════════════════════
 
   async create(userId: string, dto: CreateMilestoneDto): Promise<MilestoneDocument> {
+    // ✅ Prevent 500s: fail fast with clean 400s
+    const projectObjectId = this.toObjectIdOrThrow(dto.projectId, 'projectId');
+
+    // Some JWT strategies use sub=email/uuid. If your schema requires ObjectId,
+    // it's better to throw a clear 400 than crash with a 500.
+    const creatorObjectId = this.toObjectIdOrNull(userId);
+    if (!creatorObjectId) {
+      throw new BadRequestException('userId in token is not a valid ObjectId (cannot set createdBy)');
+    }
+
+    // ✅ If schema requires order, always set it here.
+    // This avoids forcing the frontend to send order (and avoids DTO forbidNonWhitelisted issues).
     const milestone = new this.milestoneModel({
-      ...dto,
-      projectId: new Types.ObjectId(dto.projectId),
-      createdBy: new Types.ObjectId(userId),
+      title: dto.title,
+      description: dto.description,
+      projectId: projectObjectId,
+      createdBy: creatorObjectId,
+      targetDate: dto.targetDate ? new Date(dto.targetDate) : undefined,
       status: dto.status || 'planned',
       progress: 0,
       totalTasks: 0,
@@ -48,6 +77,9 @@ export class MilestonesService {
   async findByProject(projectId: string): Promise<MilestoneDocument[]> {
     if (!projectId) return [];
 
+    // ✅ Prevent 500 if projectId is invalid
+    if (!Types.ObjectId.isValid(projectId)) return [];
+
     return this.milestoneModel
       .find({ projectId: new Types.ObjectId(projectId) })
       .sort({ targetDate: 1 })
@@ -62,6 +94,7 @@ export class MilestonesService {
    */
   async findByProjectWithProgress(projectId: string): Promise<any[]> {
     if (!projectId) return [];
+    if (!Types.ObjectId.isValid(projectId)) return [];
 
     const projectObjectId = new Types.ObjectId(projectId);
 
@@ -271,6 +304,8 @@ export class MilestonesService {
   // ═══════════════════════════════════════════════════════════════════════════════
 
   async findUpcoming(projectId: string, days: number = 30): Promise<MilestoneDocument[]> {
+    if (!Types.ObjectId.isValid(projectId)) return [];
+
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + days);
 
@@ -285,6 +320,8 @@ export class MilestonesService {
   }
 
   async findAtRisk(projectId: string): Promise<MilestoneDocument[]> {
+    if (!Types.ObjectId.isValid(projectId)) return [];
+
     return this.milestoneModel
       .find({
         projectId: new Types.ObjectId(projectId),
@@ -295,6 +332,8 @@ export class MilestonesService {
   }
 
   async findCompleted(projectId: string): Promise<MilestoneDocument[]> {
+    if (!Types.ObjectId.isValid(projectId)) return [];
+
     return this.milestoneModel
       .find({
         projectId: new Types.ObjectId(projectId),
