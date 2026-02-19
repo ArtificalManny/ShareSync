@@ -1,18 +1,11 @@
 // src/tasks/schemas/task.schema.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // TASK SCHEMA: Core work unit with gamification integration
-// - Adds spec-required fields: assignee/reporter dual fields, createdBy, storyPoints,
-//   startDate, subtasks, labels as record, richer attachments, etc.
-// - Preserves backwards compatibility with existing code/methods/statics
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ENUMS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export enum TaskStatus {
   BACKLOG = 'backlog',
@@ -37,69 +30,29 @@ export enum TaskType {
   SUBTASK = 'subtask',
 }
 
-/**
- * CeremonyTier compatibility:
- * - Legacy tiers used in your code: micro/standard/blocking/sprint_goal/project_ship
- * - Spec tiers: none/minor/standard/major/legendary
- *
- * We allow both sets to coexist to avoid migration pain.
- */
 export enum CeremonyTier {
-  // Legacy
   MICRO = 'micro',
   STANDARD = 'standard',
   BLOCKING = 'blocking',
   SPRINT_GOAL = 'sprint_goal',
   PROJECT_SHIP = 'project_ship',
-
-  // Spec-compatible additions
   NONE = 'none',
   MINOR = 'minor',
   MAJOR = 'major',
   LEGENDARY = 'legendary',
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SUB-SCHEMAS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Attachments compatibility:
- * - Legacy fields: fileId/fileName/fileUrl/fileType/fileSize
- * - Spec fields: name/url/type/size
- *
- * We store both. Existing callers keep working.
- */
 @Schema({ _id: false })
 export class TaskAttachment {
-  // Legacy
-  @Prop()
-  fileId?: string;
-
-  @Prop()
-  fileName?: string;
-
-  @Prop()
-  fileUrl?: string;
-
-  @Prop()
-  fileType?: string;
-
-  @Prop()
-  fileSize?: number;
-
-  // Spec
-  @Prop()
-  name?: string;
-
-  @Prop()
-  url?: string;
-
-  @Prop()
-  type?: string;
-
-  @Prop()
-  size?: number;
+  @Prop() fileId?: string;
+  @Prop() fileName?: string;
+  @Prop() fileUrl?: string;
+  @Prop() fileType?: string;
+  @Prop() fileSize?: number;
+  @Prop() name?: string;
+  @Prop() url?: string;
+  @Prop() type?: string;
+  @Prop() size?: number;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
   uploadedBy: Types.ObjectId;
@@ -147,17 +100,11 @@ export class TaskTimeLog {
   loggedAt: Date;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN SCHEMA
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// Tell TS about our instance methods
 export interface TaskMethods {
   calculateXP(): number;
   determineCeremonyTier(): CeremonyTier;
 }
 
-// HydratedDocument includes Mongoose doc + our methods
 export type TaskDocument = HydratedDocument<Task, TaskMethods>;
 
 @Schema({
@@ -172,10 +119,6 @@ export type TaskDocument = HydratedDocument<Task, TaskMethods>;
   },
 })
 export class Task {
-  // ─────────────────────────────────────────────────────────────────────────────
-  // RELATIONSHIPS
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @ApiProperty({ description: 'Project this task belongs to' })
   @Prop({ type: Types.ObjectId, ref: 'Project', required: true, index: true })
   projectId: Types.ObjectId;
@@ -184,13 +127,10 @@ export class Task {
   @Prop({ type: Types.ObjectId, ref: 'Sprint', index: true })
   sprintId?: Types.ObjectId;
 
+  // ✅ Required for Roadmap alignment
   @ApiProperty({ description: 'Milestone/objective this contributes to' })
   @Prop({ type: Types.ObjectId, ref: 'Milestone' })
   milestoneId?: Types.ObjectId;
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // BASIC INFO
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @ApiProperty({ description: 'Task title', example: 'Implement user authentication' })
   @Prop({ required: true, trim: true, maxlength: 500 })
@@ -199,10 +139,6 @@ export class Task {
   @ApiProperty({ description: 'Task description (markdown supported)' })
   @Prop({ trim: true, maxlength: 10000, default: '' })
   description: string;
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // STATUS & CLASSIFICATION
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @ApiProperty({ enum: TaskStatus })
   @Prop({ type: String, enum: TaskStatus, default: TaskStatus.BACKLOG, index: true })
@@ -216,15 +152,10 @@ export class Task {
   @Prop({ type: String, enum: TaskType, default: TaskType.TASK })
   type: TaskType;
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ASSIGNMENT (DUAL FIELDS FOR COMPATIBILITY)
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @ApiProperty({ description: 'Assigned user ID' })
   @Prop({ type: Types.ObjectId, ref: 'User', index: true })
   assigneeId?: Types.ObjectId;
 
-  // Some code/seed uses `assignee` instead of `assigneeId`
   @Prop({ type: Types.ObjectId, ref: 'User' })
   assignee?: Types.ObjectId;
 
@@ -232,17 +163,11 @@ export class Task {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   reporterId: Types.ObjectId;
 
-  // Some code/seed uses `reporter` instead of `reporterId`
   @Prop({ type: Types.ObjectId, ref: 'User' })
   reporter?: Types.ObjectId;
 
-  // Spec-required: createdBy
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // SCHEDULING
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @ApiProperty({ description: 'Due date' })
   @Prop({ type: Date, index: true })
@@ -259,21 +184,12 @@ export class Task {
   @Prop({ type: Number, default: 0, min: 0 })
   actualHours: number;
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // HIERARCHY
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @ApiProperty({ description: 'Parent task ID (for subtasks)' })
   @Prop({ type: Types.ObjectId, ref: 'Task' })
   parentId?: Types.ObjectId;
 
-  // Spec wants subtasks as ObjectId array (even if you also use virtual populate)
   @Prop({ type: [Types.ObjectId], ref: 'Task', default: [] })
   subtasks: Types.ObjectId[];
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // BLOCKING / DEPENDENCIES
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @ApiProperty({ description: 'Is this task blocking others?' })
   @Prop({ type: Boolean, default: false })
@@ -291,10 +207,6 @@ export class Task {
   @Prop({ type: [Types.ObjectId], ref: 'Task', default: [] })
   blocks: Types.ObjectId[];
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GAMIFICATION (SPEC-COMPATIBLE)
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @Prop({ type: Number, default: 1, min: 0 })
   storyPoints: number;
 
@@ -310,10 +222,6 @@ export class Task {
   @Prop({ type: Boolean, default: false })
   isLegendary: boolean;
 
-  /**
-   * We accept both legacy tiers and spec tiers.
-   * Default stays STANDARD.
-   */
   @ApiProperty({ description: 'Ceremony tier when completed' })
   @Prop({
     type: String,
@@ -322,18 +230,10 @@ export class Task {
   })
   ceremonyTier: CeremonyTier;
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // METADATA
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @ApiProperty({ description: 'Tags' })
   @Prop({ type: [String], default: [] })
   tags: string[];
 
-  /**
-   * Spec wants labels: Record<string,string>
-   * Keep Map storage but expose as plain object on JSON (fine for frontend)
-   */
   @ApiProperty({ description: 'Custom labels (color-coded)' })
   @Prop({ type: Map, of: String, default: {} })
   labels: Map<string, string>;
@@ -350,10 +250,6 @@ export class Task {
   @Prop({ type: [TaskTimeLog], default: [] })
   timeLogs: TaskTimeLog[];
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ORDERING
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @ApiProperty({ description: 'Order within status column' })
   @Prop({ type: Number, default: 0 })
   order: number;
@@ -361,10 +257,6 @@ export class Task {
   @ApiProperty({ description: 'Order in priority stack' })
   @Prop({ type: Number, default: 0 })
   stackOrder: number;
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // COMPLETION
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @ApiProperty({ description: 'When task was completed' })
   @Prop({ type: Date, default: null })
@@ -374,18 +266,12 @@ export class Task {
   @Prop({ type: Types.ObjectId, ref: 'User', default: null })
   completedBy?: Types.ObjectId | null;
 
-  // Timestamps
   createdAt: Date;
   updatedAt: Date;
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// INDEXES
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// Compound indexes for common queries
 TaskSchema.index({ projectId: 1, status: 1 });
 TaskSchema.index({ projectId: 1, assigneeId: 1 });
 TaskSchema.index({ assigneeId: 1, status: 1 });
@@ -394,10 +280,6 @@ TaskSchema.index({ dueDate: 1, status: 1 });
 TaskSchema.index({ projectId: 1, priority: -1, isBlocking: -1, dueDate: 1 });
 TaskSchema.index({ title: 'text', description: 'text' });
 TaskSchema.index({ projectId: 1, milestoneId: 1, status: 1 });
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// VIRTUALS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 TaskSchema.virtual('isOverdue').get(function () {
   if (!this.dueDate) return false;
@@ -421,16 +303,11 @@ TaskSchema.virtual('attachmentCount').get(function () {
   return this.attachments?.length || 0;
 });
 
-// Keep your populate-based subtasks pattern too (optional)
 TaskSchema.virtual('subtasksPopulated', {
   ref: 'Task',
   localField: '_id',
   foreignField: 'parentId',
 });
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// INSTANCE METHODS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 TaskSchema.methods.calculateXP = function (): number {
   let xp = this.xpValue || 0;
@@ -451,7 +328,6 @@ TaskSchema.methods.calculateXP = function (): number {
     xp *= 1.1;
   }
 
-  // If storyPoints exist, lightly scale (optional but safe)
   if (typeof this.storyPoints === 'number' && this.storyPoints > 1) {
     xp += (this.storyPoints - 1) * 5;
   }
@@ -460,7 +336,6 @@ TaskSchema.methods.calculateXP = function (): number {
 };
 
 TaskSchema.methods.determineCeremonyTier = function (): CeremonyTier {
-  // Respect explicit tiers if already set to special legacy types
   if (this.ceremonyTier === CeremonyTier.PROJECT_SHIP) return CeremonyTier.PROJECT_SHIP;
   if (this.ceremonyTier === CeremonyTier.SPRINT_GOAL) return CeremonyTier.SPRINT_GOAL
   if (this.ceremonyTier === CeremonyTier.LEGENDARY) return CeremonyTier.LEGENDARY;
@@ -473,10 +348,6 @@ TaskSchema.methods.determineCeremonyTier = function (): CeremonyTier {
 
   return CeremonyTier.STANDARD;
 };
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// STATIC METHODS (kept from your prior file)
-// ═══════════════════════════════════════════════════════════════════════════════
 
 TaskSchema.statics.findPriorityStack = function (
   projectId: string,
@@ -509,21 +380,15 @@ TaskSchema.statics.findBlockingTasks = function (projectId: string) {
   }).sort({ blockingCount: -1 });
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PRE-SAVE HOOKS
-// ═══════════════════════════════════════════════════════════════════════════════
-
 TaskSchema.pre('save', function (next) {
   const doc = this as any;
 
-  // Ensure dual-field assignment compatibility if only one is set
   if (doc.assigneeId && !doc.assignee) doc.assignee = doc.assigneeId;
   if (doc.assignee && !doc.assigneeId) doc.assigneeId = doc.assignee;
 
   if (doc.reporterId && !doc.reporter) doc.reporter = doc.reporterId;
   if (doc.reporter && !doc.reporterId) doc.reporterId = doc.reporter;
 
-  // Keep ceremony tier + XP derived values consistent
   if (doc.isModified('status') || doc.isModified('priority') || doc.isModified('isBlocking') || doc.isModified('blockingCount') || doc.isModified('isLegendary')) {
     doc.ceremonyTier = doc.determineCeremonyTier();
   }
@@ -532,7 +397,6 @@ TaskSchema.pre('save', function (next) {
     doc.xpValue = doc.calculateXP();
   }
 
-  // Auto-complete timestamp when moved to DONE
   if (doc.isModified('status') && doc.status === TaskStatus.DONE && !doc.completedAt) {
     doc.completedAt = new Date();
   }

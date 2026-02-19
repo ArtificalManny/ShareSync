@@ -39,10 +39,6 @@ import { TaskEventType } from './events/task-events';
 import { buildTaskSnapshot, emitTaskEvent } from './events/task-event.utils';
 import { RealtimeService } from '../realtime/realtime.service';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// INTERFACES
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export interface TaskQueryOptions {
   projectId?: string;
   assigneeId?: string;
@@ -59,7 +55,7 @@ export interface TaskQueryOptions {
 }
 
 export interface KanbanBoard {
-  [key: string]: any[]; // lean tasks, not hydrated TaskDocuments
+  [key: string]: any[]; 
 }
 
 export interface CompletionResult {
@@ -71,11 +67,10 @@ export interface CompletionResult {
   unblocked: TaskDocument[];
 }
 
-// Variable reward probabilities
 const VARIABLE_REWARDS = {
-  BONUS_CHANCE: 0.15,       // 15%
-  LEGENDARY_CHANCE: 0.01,   // 1%
-  MULTIPLIER_CHANCE: 0.08,  // 8%
+  BONUS_CHANCE: 0.15,       
+  LEGENDARY_CHANCE: 0.01,   
+  MULTIPLIER_CHANCE: 0.08,  
 };
 
 @Injectable()
@@ -87,37 +82,19 @@ export class TasksService {
     private readonly taskModel: Model<TaskDocument>,
     private readonly projectsService: ProjectsService,
     private readonly eventEmitter: EventEmitter2,
-
-    // ✅ Realtime socket wrapper (does NOT replace EventEmitter flow)
     private readonly realtime: RealtimeService,
   ) {}
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ✅ PUBLIC STREAM HELPERS (minimal + safe)
-  // ─────────────────────────────────────────────────────────────────────────────
-
   private async emitPublicProjectUpdate(projectId: string, payload: any): Promise<void> {
-    // VERY intentional: do not break existing emits; only add a second stream conditionally.
     try {
       const project = await this.projectsService.findById(projectId);
       if ((project as any)?.public === true) {
-        // Requires your gateway to support: public:project:{projectId}
         this.realtime.roomEmit?.(`public:project:${projectId}`, 'public:project:update', payload);
-
-        // If your RealtimeService does NOT have roomEmit yet, you will add it there.
-        // (We avoid guessing your internal RealtimeService shape in this file.)
       }
-    } catch (_err) {
-      // Swallow: spectator stream should never block core task ops
-    }
+    } catch (_err) {}
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // CREATE
-  // ─────────────────────────────────────────────────────────────────────────────
-
   async create(userId: string, dto: CreateTaskDto): Promise<TaskDocument> {
-    // IMPORTANT: store project so we can emit projectName for notifications
     const project = await this.projectsService.findByIdWithAccess(dto.projectId, userId);
 
     if (dto.parentId) {
@@ -132,13 +109,8 @@ export class TasksService {
     const task = new this.taskModel({
       ...dto,
       projectId: new Types.ObjectId(dto.projectId),
-
-      // Reporter is the user creating the task (current behavior)
       reporterId: new Types.ObjectId(userId),
-
-      // TaskSchema requires createdBy
       createdBy: new Types.ObjectId(userId),
-
       assigneeId: dto.assigneeId ? new Types.ObjectId(dto.assigneeId) : undefined,
       parentId: dto.parentId ? new Types.ObjectId(dto.parentId) : undefined,
       sprintId: dto.sprintId ? new Types.ObjectId(dto.sprintId) : undefined,
@@ -155,7 +127,6 @@ export class TasksService {
       await this.updateBlockingRelationships(saved);
     }
 
-    // ✅ NORMALIZED EVENT
     emitTaskEvent({
       eventEmitter: this.eventEmitter,
       type: TaskEventType.TASK_CREATED,
@@ -163,12 +134,9 @@ export class TasksService {
       actorId: userId,
       taskId: saved._id.toString(),
       snapshot: buildTaskSnapshot(saved),
-      meta: {
-        assigneeId: dto.assigneeId,
-      },
+      meta: { assigneeId: dto.assigneeId },
     });
 
-    // ✅ Step 5: if created WITH an assignee, emit assignment event
     if (dto.assigneeId && dto.assigneeId !== userId) {
       this.eventEmitter.emit('task.assigned', {
         taskId: saved._id.toString(),
@@ -180,12 +148,9 @@ export class TasksService {
       });
     }
 
-    // ✅ SOCKET EMIT (project room) — KEEP EXISTING
     this.realtime.projectEmit(dto.projectId, 'taskUpdated', buildTaskSnapshot(saved));
 
-    // ✅ PUBLIC SPECTATOR STREAM (only if project.public === true)
     if ((project as any)?.public === true) {
-      // same payload, different room + different event
       await this.emitPublicProjectUpdate(dto.projectId, {
         type: 'task.created',
         projectId: dto.projectId,
@@ -197,10 +162,6 @@ export class TasksService {
     this.logger.log(`Task created: ${saved._id}`);
     return saved;
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // READ
-  // ─────────────────────────────────────────────────────────────────────────────
 
   async findById(taskId: string): Promise<TaskDocument> {
     const task = await this.taskModel.findById(taskId);
@@ -242,33 +203,13 @@ export class TasksService {
       query.projectId = new Types.ObjectId(projectId);
     }
 
-    if (assigneeId) {
-      query.assigneeId = new Types.ObjectId(assigneeId);
-    }
-
-    if (status) {
-      query.status = Array.isArray(status) ? { $in: status } : status;
-    }
-
-    if (priority) {
-      query.priority = Array.isArray(priority) ? { $in: priority } : priority;
-    }
-
-    if (sprintId) {
-      query.sprintId = new Types.ObjectId(sprintId);
-    }
-
-    if (search) {
-      query.$text = { $search: search };
-    }
-
-    if (tags?.length) {
-      query.tags = { $in: tags };
-    }
-
-    if (typeof isBlocking === 'boolean') {
-      query.isBlocking = isBlocking;
-    }
+    if (assigneeId) query.assigneeId = new Types.ObjectId(assigneeId);
+    if (status) query.status = Array.isArray(status) ? { $in: status } : status;
+    if (priority) query.priority = Array.isArray(priority) ? { $in: priority } : priority;
+    if (sprintId) query.sprintId = new Types.ObjectId(sprintId);
+    if (search) query.$text = { $search: search };
+    if (tags?.length) query.tags = { $in: tags };
+    if (typeof isBlocking === 'boolean') query.isBlocking = isBlocking;
 
     const [tasks, total] = await Promise.all([
       this.taskModel
@@ -283,11 +224,7 @@ export class TasksService {
     return { tasks, total };
   }
 
-  async getKanbanBoard(
-    projectId: string,
-    userId: string,
-    sprintId?: string,
-  ): Promise<KanbanBoard> {
+  async getKanbanBoard(projectId: string, userId: string, sprintId?: string): Promise<KanbanBoard> {
     await this.projectsService.findByIdWithAccess(projectId, userId);
 
     const query: any = { projectId: new Types.ObjectId(projectId) };
@@ -343,14 +280,6 @@ export class TasksService {
     return this.taskModel.find({ parentId: task._id }).sort({ order: 1 });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // PRIORITIES ENDPOINT SUPPORT
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ✅ Safe add: optional projectId filter (no breaking change)
-  // - If projectId is provided, we validate it and enforce access.
-  // - Then we constrain the priorities query to that project.
-  // ─────────────────────────────────────────────────────────────────────────────
-
   async getMyPriorityTasks(
     userId: string,
     limit: number = 3,
@@ -390,13 +319,8 @@ export class TasksService {
     return tasks;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // UPDATE
-  // ─────────────────────────────────────────────────────────────────────────────
-
   async update(taskId: string, userId: string, dto: UpdateTaskDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
-
     const previousAssigneeId = task.assigneeId?.toString?.() || null;
 
     if (dto.status && dto.status !== task.status) {
@@ -429,7 +353,6 @@ export class TasksService {
     Object.assign(task, dto);
     const updated = await task.save();
 
-    // ✅ NORMALIZED EVENT
     emitTaskEvent({
       eventEmitter: this.eventEmitter,
       type: TaskEventType.TASK_UPDATED,
@@ -440,14 +363,11 @@ export class TasksService {
       changes: dto as any,
     });
 
-    // ✅ Step 5: detect assignee change and emit assignment event
     const newAssigneeId = updated.assigneeId?.toString?.() || null;
     const assigneeChanged = newAssigneeId !== previousAssigneeId;
 
     if (assigneeChanged && newAssigneeId && newAssigneeId !== userId) {
-      // project name for notifications
       const project = await this.projectsService.findById(updated.projectId.toString());
-
       this.eventEmitter.emit('task.assigned', {
         taskId: updated._id.toString(),
         taskTitle: updated.title,
@@ -458,10 +378,8 @@ export class TasksService {
       });
     }
 
-    // ✅ SOCKET EMIT — KEEP EXISTING
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
 
-    // ✅ PUBLIC SPECTATOR STREAM (conditional)
     await this.emitPublicProjectUpdate(task.projectId.toString(), {
       type: 'task.updated',
       projectId: task.projectId.toString(),
@@ -493,7 +411,6 @@ export class TasksService {
 
     const updated = await task.save();
 
-    // ✅ NORMALIZED EVENT
     emitTaskEvent({
       eventEmitter: this.eventEmitter,
       type: TaskEventType.TASK_MOVED,
@@ -509,10 +426,8 @@ export class TasksService {
       },
     });
 
-    // ✅ Step 5: moved to REVIEW => emit event for notification
     if (previousStatus !== updated.status && updated.status === TaskStatus.REVIEW) {
       const project = await this.projectsService.findById(updated.projectId.toString());
-
       this.eventEmitter.emit('task.moved_to_review', {
         taskId: updated._id.toString(),
         taskTitle: updated.title,
@@ -527,10 +442,8 @@ export class TasksService {
       });
     }
 
-    // ✅ SOCKET EMIT — KEEP EXISTING
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
 
-    // ✅ PUBLIC SPECTATOR STREAM (conditional)
     await this.emitPublicProjectUpdate(task.projectId.toString(), {
       type: 'task.moved',
       projectId: task.projectId.toString(),
@@ -541,29 +454,19 @@ export class TasksService {
     return updated;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // COMPLETE (with Gamification)
-  // ─────────────────────────────────────────────────────────────────────────────
-
   async completeTask(
     taskId: string,
     userId: string,
     options?: { inFocusMode?: boolean },
   ): Promise<TaskDocument> {
     const result = await this.complete(taskId, userId, {
-      ...(options?.inFocusMode !== undefined
-        ? { inFocusMode: options.inFocusMode }
-        : {}),
+      ...(options?.inFocusMode !== undefined ? { inFocusMode: options.inFocusMode } : {}),
     } as any);
 
     return result.task;
   }
 
-  async complete(
-    taskId: string,
-    userId: string,
-    dto: CompleteTaskDto = {},
-  ): Promise<CompletionResult> {
+  async complete(taskId: string, userId: string, dto: CompleteTaskDto = {}): Promise<CompletionResult> {
     const task = await this.findByIdWithAccess(taskId, userId);
 
     if (task.status === TaskStatus.DONE) {
@@ -583,20 +486,16 @@ export class TasksService {
     }
 
     let ceremonyTier = task.determineCeremonyTier();
-    if (variableRewards.isLegendary) {
-      ceremonyTier = CeremonyTier.PROJECT_SHIP;
-    }
+    if (variableRewards.isLegendary) ceremonyTier = CeremonyTier.PROJECT_SHIP;
     task.ceremonyTier = ceremonyTier;
 
     const totalXP = task.xpValue + variableRewards.bonusXP;
 
     await task.save();
-
     await this.projectsService.markTaskCompleted(task.projectId.toString());
 
     const unblocked = await this.unblockDependentTasks(task);
 
-    // ✅ NORMALIZED EVENT
     emitTaskEvent({
       eventEmitter: this.eventEmitter,
       type: TaskEventType.TASK_COMPLETED,
@@ -614,7 +513,6 @@ export class TasksService {
       },
     });
 
-    // ✅ Step 5: emit the event your NotificationsService already listens to
     this.eventEmitter.emit('task.completed', {
       taskId: task._id.toString(),
       projectId: task.projectId.toString(),
@@ -624,10 +522,8 @@ export class TasksService {
       ceremonyTier: ceremonyTier as any,
     });
 
-    // ✅ SOCKET EMIT — KEEP EXISTING
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(task));
 
-    // ✅ PUBLIC SPECTATOR STREAM (conditional)
     await this.emitPublicProjectUpdate(task.projectId.toString(), {
       type: 'task.completed',
       projectId: task.projectId.toString(),
@@ -636,9 +532,7 @@ export class TasksService {
     });
 
     const completedAt = task.completedAt || new Date();
-
     const wasOnTime = task.dueDate ? completedAt <= new Date(task.dueDate) : true;
-
     const hour = completedAt.getHours();
     const isEarlyBird = hour < 9;
 
@@ -657,12 +551,8 @@ export class TasksService {
       inFocusMode: !!(dto as any)?.inFocusMode,
     };
 
-    // Keep your existing gamification bus event (separate concern)
     this.eventEmitter.emit(EVENTS.TASK_COMPLETED, gamificationEvent);
-
-    this.logger.log(
-      `Task completed: ${taskId}, XP: ${totalXP}, Legendary: ${variableRewards.isLegendary}`,
-    );
+    this.logger.log(`Task completed: ${taskId}, XP: ${totalXP}, Legendary: ${variableRewards.isLegendary}`);
 
     return {
       task,
@@ -674,23 +564,17 @@ export class TasksService {
     };
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // DELETE
-  // ─────────────────────────────────────────────────────────────────────────────
-
   async delete(taskId: string, userId: string): Promise<void> {
     const task = await this.findByIdWithAccess(taskId, userId);
     const wasCompleted = task.status === TaskStatus.DONE;
 
     await this.taskModel.updateMany({ blockedBy: task._id }, { $pull: { blockedBy: task._id } });
     await this.taskModel.updateMany({ blocks: task._id }, { $pull: { blocks: task._id } });
-
     await this.taskModel.deleteMany({ parentId: task._id });
     await this.taskModel.deleteOne({ _id: task._id });
 
     await this.projectsService.decrementTaskCount(task.projectId.toString(), wasCompleted);
 
-    // ✅ NORMALIZED EVENT
     emitTaskEvent({
       eventEmitter: this.eventEmitter,
       type: TaskEventType.TASK_DELETED,
@@ -700,14 +584,12 @@ export class TasksService {
       snapshot: buildTaskSnapshot(task),
     });
 
-    // ✅ SOCKET EMIT (tombstone) — KEEP EXISTING
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', {
       id: task._id.toString(),
       projectId: task.projectId.toString(),
       deleted: true,
     });
 
-    // ✅ PUBLIC SPECTATOR STREAM (conditional)
     await this.emitPublicProjectUpdate(task.projectId.toString(), {
       type: 'task.deleted',
       projectId: task.projectId.toString(),
@@ -721,10 +603,6 @@ export class TasksService {
 
     this.logger.log(`Task deleted: ${taskId}`);
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // COMMENTS
-  // ─────────────────────────────────────────────────────────────────────────────
 
   async addComment(taskId: string, userId: string, dto: AddCommentDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
@@ -740,7 +618,6 @@ export class TasksService {
 
     const updated = await task.save();
 
-    // Comments can stay separate (not part of canonical mutation set)
     this.eventEmitter.emit('task.comment.added', {
       taskId: task._id,
       projectId: task.projectId,
@@ -767,10 +644,6 @@ export class TasksService {
     return task.save();
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // TIME LOGGING
-  // ─────────────────────────────────────────────────────────────────────────────
-
   async logTime(taskId: string, userId: string, dto: LogTimeDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
 
@@ -788,10 +661,6 @@ export class TasksService {
 
     return task.save();
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // HELPERS
-  // ─────────────────────────────────────────────────────────────────────────────
 
   private calculateBaseXP(priority: TaskPriority): number {
     const baseXP: Record<string, number> = {

@@ -40,7 +40,7 @@ export class Milestone {
   @Prop({ default: 0, min: 0, max: 100 })
   progress: number;
 
-  // ✅ Keep this because milestones.service.ts sets `order: Date.now()`
+  // ✅ Ensure order is defined so milestones.service.ts doesn't save blind data
   @Prop({ default: 0, index: true })
   order: number;
 
