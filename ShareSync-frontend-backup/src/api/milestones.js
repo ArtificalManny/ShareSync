@@ -3,7 +3,7 @@
 // Milestones API - CRUD operations for project milestones
 // SAFE MODE:
 // - getMilestones() returns [] on 404 so Roadmap never "breaks" if backend isn't wired yet.
-// - Other errors still throw (auth/500/etc) so real issues surface.
+// - createMilestone() sanitizes payload to avoid backend DTO whitelist failures.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import client from "./client";
@@ -27,13 +27,33 @@ function shouldSoftFail(status) {
   return status === 404;
 }
 
+function normalizeMsg(m) {
+  if (Array.isArray(m)) return m.join(" · ");
+  if (typeof m === "string") return m;
+  return "";
+}
+
+// Keep create payload minimal to avoid backend DTO "whitelist" failures.
+// If you later add fields to the backend DTO, you can expand this safely.
+function sanitizeCreatePayload(projectId, milestoneData) {
+  const title = typeof milestoneData?.title === "string" ? milestoneData.title.trim() : "";
+  return {
+    projectId,
+    title,
+  };
+}
+
+function isWhitelistError(error) {
+  const status = error?.response?.status;
+  if (status !== 400) return false;
+  const msg = normalizeMsg(error?.response?.data?.message);
+  // Typical class-validator whitelist error includes "should not exist"
+  return msg.includes("should not exist");
+}
+
 /**
  * Get all milestones for a project
  * Backend (current assumption): GET /milestones?projectId=xxx
- *
- * @param {string} projectId - Project ID
- * @param {object} options - Query options (status, sort, limit)
- * @returns {Promise<Array>} Array of milestones
  */
 export const getMilestones = async (projectId, options = {}) => {
   if (!projectId) return [];
@@ -41,7 +61,7 @@ export const getMilestones = async (projectId, options = {}) => {
   try {
     const params = new URLSearchParams({ projectId });
 
-    // These are optional; safe if backend ignores them.
+    // Optional; safe if backend ignores them.
     if (options.status) params.append("status", options.status);
     if (options.sort) params.append("sort", options.sort);
     if (options.limit != null) params.append("limit", String(options.limit));
@@ -88,15 +108,29 @@ export const getMilestone = async (milestoneId) => {
 /**
  * Create a new milestone
  * Backend: POST /milestones
+ *
+ * IMPORTANT:
+ * Your backend currently rejects extra props (whitelist validation),
+ * so we send only { projectId, title }.
  */
 export const createMilestone = async (projectId, milestoneData) => {
   try {
-    const response = await client.post("/milestones", {
-      projectId,
-      ...milestoneData,
-    });
+    const payload = sanitizeCreatePayload(projectId, milestoneData);
+    const response = await client.post("/milestones", payload);
     return response?.data?.data || response?.data;
   } catch (error) {
+    // If backend yelled about extra props (should not exist), retry ultra-minimal.
+    if (isWhitelistError(error)) {
+      try {
+        const payload = { projectId, title: String(milestoneData?.title || "").trim() };
+        const response = await client.post("/milestones", payload);
+        return response?.data?.data || response?.data;
+      } catch (e2) {
+        console.error("[milestones.js] createMilestone retry failed:", e2?.response?.data || e2?.message);
+        throw e2;
+      }
+    }
+
     console.error("[milestones.js] createMilestone failed:", error?.response?.data || error?.message);
     throw error;
   }

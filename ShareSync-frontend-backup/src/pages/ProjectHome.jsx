@@ -887,11 +887,11 @@ export default function ProjectHome() {
       <KeyboardShortcuts />
 
        {showAddMilestone && (
-        <AddMilestoneModal
-          projectId={id}
-          onClose={() => setShowAddMilestone(false)}
-        />
-      )}
+  <AddMilestoneModal
+    projectId={id}
+    onClose={() => setShowAddMilestone(false)}
+  />
+)}
 
     </div>
   );

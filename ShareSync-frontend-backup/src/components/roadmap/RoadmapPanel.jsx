@@ -178,11 +178,11 @@ export default function RoadmapPanel({
     };
   }, [projectId, fetchData]);
 
-  // ✅ Allow external refresh (e.g., after creating a milestone in a modal)
+  // ✅ allow AddMilestoneModal to trigger a refetch safely
   useEffect(() => {
-    const handler = () => fetchData();
-    window.addEventListener("milestones:refresh", handler);
-    return () => window.removeEventListener("milestones:refresh", handler);
+    const onRefresh = () => fetchData();
+    window.addEventListener("milestones:refresh", onRefresh);
+    return () => window.removeEventListener("milestones:refresh", onRefresh);
   }, [fetchData]);
 
   const counts = useMemo(() => {
@@ -213,22 +213,22 @@ export default function RoadmapPanel({
 
   // ✅ Compute progress per milestone from liveTasks (frontend-only).
   const progressByMilestoneId = useMemo(() => {
-    const progressMap = new Map(); // <-- native JS Map
+    const map = new Map();
     const tasksArr = Array.isArray(liveTasks) ? liveTasks : [];
 
     for (const t of tasksArr) {
       const mid = normalizeId(t?.milestoneId);
       if (!mid) continue;
 
-      if (!progressMap.has(mid)) {
-        progressMap.set(mid, { total: 0, done: 0 });
+      if (!map.has(mid)) {
+        map.set(mid, { total: 0, done: 0 });
       }
-      const cur = progressMap.get(mid);
+      const cur = map.get(mid);
       cur.total += 1;
       if (isTaskDone(t)) cur.done += 1;
     }
 
-    return progressMap;
+    return map;
   }, [liveTasks]);
 
   const filteredSortedItems = useMemo(() => {

@@ -10,13 +10,22 @@ function todayISO() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function normalizeMsg(m) {
+  if (Array.isArray(m)) return m.join(" · ");
+  if (typeof m === "string") return m;
+  return "";
+}
+
 export default function AddMilestoneModal({ projectId, onClose }) {
   const [title, setTitle] = useState("");
-  const [dueDate, setDueDate] = useState("");
+  const [dueDate, setDueDate] = useState(""); // UI-only for now (backend currently rejects dueDate)
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
-  const canSave = useMemo(() => title.trim().length >= 2 && !!projectId && !saving, [title, projectId, saving]);
+  const canSave = useMemo(
+    () => title.trim().length >= 2 && !!projectId && !saving,
+    [title, projectId, saving]
+  );
 
   const handleSubmit = async (e) => {
     e?.preventDefault?.();
@@ -26,12 +35,10 @@ export default function AddMilestoneModal({ projectId, onClose }) {
     setErr("");
 
     try {
-      // Minimal + safe payload (backend can ignore fields it doesn't use)
+      // ✅ SAFE payload: only send what backend currently accepts.
+      // (Backend rejects dueDate/order/status right now.)
       await createMilestone(projectId, {
         title: title.trim(),
-        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-        status: "planned",
-        order: Date.now(),
       });
 
       // Tell RoadmapPanel to refetch
@@ -39,7 +46,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
       onClose?.();
     } catch (error) {
       const msg =
-        error?.response?.data?.message ||
+        normalizeMsg(error?.response?.data?.message) ||
         error?.message ||
         "Failed to create milestone";
       setErr(msg);
@@ -96,6 +103,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
           <div>
             <label className="text-xs uppercase tracking-wider text-text-tertiary flex items-center gap-2">
               <Calendar className="w-4 h-4" /> Due date (optional)
+              <span className="text-[10px] opacity-60">(backend wiring later)</span>
             </label>
             <input
               type="date"
