@@ -87,7 +87,8 @@ import StackPanel from "../features/stack/StackPanel";
 import FlowBoard from "../features/flow/FlowBoard";
 import RoadmapPanel from "../components/roadmap/RoadmapPanel";
 import RhythmView from "../components/views/RhythmView";
-import InsightsView from "../components/views/InsightsView";
+// ✅ FIXED IMPORT: Now pointing to our newly built live component
+import InsightsTab from "../components/insights/InsightsTab";
 import ThreadsView from "../components/views/ThreadsView";
 import VaultView from "../components/views/VaultView";
 
@@ -201,7 +202,7 @@ function ProjectHeader({
               boxShadow: `0 8px 32px ${project?.color || "#7C3AED"}20`,
             }}
           >
-            {project?.icon || "��"}
+            {project?.icon || "📁"}
           </div>
 
           {/* Project info */}
@@ -532,12 +533,6 @@ function PulseView({
   );
 }
 
-// (… your existing MomentumCard / PriorityStack / SprintCard / ForesightCard / LiveActivityCard / TeamCapacityCard / ActiveGoalsCard stay unchanged …)
-
-// NOTE: To keep this patch safe and focused, we are NOT changing any of your existing card components.
-// They remain exactly as you had them above.
-// ═══════════════════════════════════════════════════════════════════════════════
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -818,8 +813,13 @@ export default function ProjectHome() {
         case "rhythm":
           return <RhythmView events={events || []} onAddEvent={handleAddEvent} onEventClick={handleEventClick} />;
 
+        // ✅ FIXED: Now rendering the live InsightsTab instead of the mock InsightsView
         case "insights":
-          return <InsightsView projectId={id} />;
+          return (
+            <div className={pageWrap}>
+              <InsightsTab projectId={id} />
+            </div>
+          );
 
         case "suggestions":
           return <SuggestionsPanel projectId={id} project={project} />;
