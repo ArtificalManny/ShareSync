@@ -10,7 +10,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { Plus, RefreshCw, Map, Filter, ArrowUpDown } from "lucide-react";
+import { Plus, RefreshCw, Map as MapIcon, Filter, ArrowUpDown } from "lucide-react";
 import MilestoneCard from "./MilestoneCard";
 import { getMilestones } from "../../api/milestones";
 
@@ -206,7 +206,7 @@ export default function RoadmapPanel({
 
   // ✅ Compute progress per milestone from liveTasks (frontend-only).
   const progressByMilestoneId = useMemo(() => {
-    const map = new Map();
+    const map = new globalThis.Map();
     const tasksArr = Array.isArray(liveTasks) ? liveTasks : [];
 
     for (const t of tasksArr) {
@@ -263,7 +263,7 @@ export default function RoadmapPanel({
       <div className="flex items-start justify-between gap-6 mb-6">
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            <Map className="w-5 h-5 text-brand-400" />
+            <MapIcon className="w-5 h-5 text-brand-400" />
             <h2 className="text-xl font-semibold text-text-primary">Roadmap</h2>
             <span className="text-xs px-2 py-0.5 rounded-full bg-white/[0.06] text-text-tertiary">
               {counts.all} milestones
@@ -387,7 +387,7 @@ export default function RoadmapPanel({
       {!loading && !error && (items?.length || 0) === 0 && (
         <div className="p-12 rounded-2xl bg-surface-1 border border-white/[0.06] text-center">
           <div className="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-400 flex items-center justify-center mx-auto mb-4">
-            <Map className="w-6 h-6" />
+            <MapIcon className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-semibold text-text-primary mb-2">No milestones yet</h3>
           <p className="text-sm text-text-tertiary mb-6 max-w-md mx-auto">
