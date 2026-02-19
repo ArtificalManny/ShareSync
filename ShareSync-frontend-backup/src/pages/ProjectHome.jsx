@@ -21,6 +21,8 @@ import {
   TeamCapacityCard,
 } from "../components/project/pulse/card";
 
+import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
+
 // Icons
 import {
   Gauge,
@@ -199,7 +201,7 @@ function ProjectHeader({
               boxShadow: `0 8px 32px ${project?.color || "#7C3AED"}20`,
             }}
           >
-            {project?.icon || "📁"}
+            {project?.icon || "��"}
           </div>
 
           {/* Project info */}
@@ -595,6 +597,8 @@ export default function ProjectHome() {
   const [liveTasks, setLiveTasks] = useState([]);
   const [pulseRefreshKey, setPulseRefreshKey] = useState(0);
 
+  const [showAddMilestone, setShowAddMilestone] = useState(false);
+
   // Project data from your existing hook
   const {
     project,
@@ -723,8 +727,9 @@ export default function ProjectHome() {
   }, []);
 
   const handleAddMilestone = useCallback(() => {
-    console.log("Add milestone");
-  }, []);
+  console.log("Add milestone");
+  setShowAddMilestone(true);
+}, []);
 
   const handleAddEvent = useCallback(() => {
     console.log("Add event");
@@ -880,6 +885,14 @@ export default function ProjectHome() {
       {/* Utilities */}
       <QuickActionsManager />
       <KeyboardShortcuts />
+
+       {showAddMilestone && (
+        <AddMilestoneModal
+          projectId={id}
+          onClose={() => setShowAddMilestone(false)}
+        />
+      )}
+
     </div>
   );
 }
