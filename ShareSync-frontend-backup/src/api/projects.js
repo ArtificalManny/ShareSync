@@ -1,6 +1,7 @@
 // src/api/projects.js - Hardened create + consistent unwrapping + better errors
 // ⭐ FIX: Added ID normalization to ensure all projects have valid id/_id fields
 import api from './client';
+import { withApiPrefix } from "./withApiPrefix";
 
 // ============================================
 // HELPERS
@@ -220,7 +221,7 @@ export const createProject = async (projectData) => {
       throw err;
     }
 
-    const response = await api.post('/projects', payload);
+    const response = await api.post(withApiPrefix("/projects"), payload);
 
     // unwrap tolerant of {data}, {project}, etc.
     const created = unwrap(response);

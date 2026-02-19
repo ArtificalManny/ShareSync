@@ -5,21 +5,47 @@
 // - Drag/drop -> PATCH /tasks/:id/move
 // - Listens to "taskUpdated" via useFlowTasks hook (socket event listener)
 // NOTE: ProjectHome.jsx already joins the project room. We DO NOT join here.
+//
+// ✅ SAFE ADD:
+// - milestoneIdFilter prop (frontend-only). Does NOT affect backend or hooks.
+// - Filters the already-loaded board tasks by task.milestoneId before rendering.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React from "react";
+import React, { useMemo } from "react";
 import FlowColumn from "./FlowColumn";
 import useFlowTasks, { FLOW_STATUSES } from "./useFlowTasks";
+
+function normalizeId(v) {
+  if (!v) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  return v?.toString?.() || "";
+}
 
 export default function FlowBoard({
   projectId,
   sprintId = undefined,
   className = "",
+
+  // ✅ SAFE: frontend-only filter
+  milestoneIdFilter = null,
 }) {
   const { board, loading, error, reload, moveTaskOptimistic } = useFlowTasks({
     projectId,
     sprintId,
   });
+
+  const filteredBoard = useMemo(() => {
+    const mid = normalizeId(milestoneIdFilter);
+    if (!mid) return board;
+
+    const next = {};
+    for (const status of FLOW_STATUSES) {
+      const list = Array.isArray(board?.[status]) ? board[status] : [];
+      next[status] = list.filter((t) => normalizeId(t?.milestoneId) === mid);
+    }
+    return next;
+  }, [board, milestoneIdFilter]);
 
   if (!projectId) {
     return (
@@ -43,6 +69,7 @@ export default function FlowBoard({
           </div>
           <div className="text-xs text-slate-500">
             Drag tasks across stages to reflect real work.
+            {normalizeId(milestoneIdFilter) ? " (filtered by milestone)" : ""}
           </div>
         </div>
 
@@ -91,7 +118,7 @@ export default function FlowBoard({
             <FlowColumn
               key={status}
               status={status}
-              tasks={board?.[status] || []}
+              tasks={filteredBoard?.[status] || []}
               onMoveTask={moveTaskOptimistic}
             />
           ))}

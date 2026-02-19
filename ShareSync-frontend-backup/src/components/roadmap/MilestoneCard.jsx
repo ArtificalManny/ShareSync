@@ -1,9 +1,14 @@
 // src/components/roadmap/MilestoneCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // Individual Milestone Card - Grid view display
+//
+// ✅ SAFE:
+// - Prefers computed fields injected by RoadmapPanel: progress, tasksDone, tasksTotal, tasksLeft
+// - Falls back to backend-ish fields if present
+// - No backend assumptions required
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Flag,
   Calendar,
@@ -57,15 +62,39 @@ const STATUS_CONFIG = {
 const formatDate = (date) => {
   if (!date) return null;
   const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return null;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const getProgressPercentage = (completed, total) => {
-  if (!total || total === 0) return 0;
-  return Math.round((completed / total) * 100);
+const getMilestoneId = (milestone) => milestone?._id || milestone?.id;
+
+const normalizeStatus = (s) => (s || '').toLowerCase().trim();
+
+const normalizeToCardStatus = (rawStatus, dueDate) => {
+  const s = normalizeStatus(rawStatus);
+
+  // Completed synonyms
+  if (s === 'done' || s === 'complete' || s === 'completed') return 'completed';
+
+  // In progress synonyms
+  if (s === 'inprogress' || s === 'in-progress' || s === 'active') return 'in-progress';
+
+  // Overdue (safe heuristic)
+  const d = dueDate ? new Date(dueDate) : null;
+  const overdue =
+    d && !Number.isNaN(d.getTime()) && d.getTime() < Date.now() && s !== 'completed' && s !== 'done' && s !== 'complete';
+
+  if (overdue) return 'overdue';
+
+  // Default planned
+  return 'planned';
 };
 
-const getMilestoneId = (milestone) => milestone?._id || milestone?.id;
+const clampPercent = (n) => {
+  const x = Number(n);
+  if (Number.isNaN(x)) return 0;
+  return Math.max(0, Math.min(100, Math.round(x)));
+};
 
 /* ─────────────────────────────────────────────────────────────────────────
    COMPONENT
@@ -82,39 +111,61 @@ const MilestoneCard = ({
 
   // Extract fields with fallbacks
   const id = getMilestoneId(milestone);
+
   const title = milestone?.title || milestone?.name || 'Untitled Milestone';
   const description = milestone?.description || '';
-  const status = milestone?.status || 'planned';
+
   const dueDate = milestone?.dueDate || milestone?.targetDate || milestone?.endDate;
-  const completedTasks = milestone?.completedTasks || milestone?.tasksCompleted || 0;
-  const totalTasks = milestone?.totalTasks || milestone?.taskCount || 0;
-  const progress = getProgressPercentage(completedTasks, totalTasks);
+
+  // ✅ Prefer RoadmapPanel-computed fields first (frontend-only progress)
+  const completedTasks =
+    milestone?.tasksDone ??
+    milestone?.completedTasks ??
+    milestone?.tasksCompleted ??
+    0;
+
+  const totalTasks =
+    milestone?.tasksTotal ??
+    milestone?.totalTasks ??
+    milestone?.taskCount ??
+    0;
+
+  const computedProgress = useMemo(() => {
+    // If RoadmapPanel already injected a numeric progress, prefer it.
+    if (milestone?.progress !== undefined && milestone?.progress !== null) {
+      return clampPercent(milestone.progress);
+    }
+    // Otherwise compute from counts (safe)
+    const total = Number(totalTasks) || 0;
+    const done = Number(completedTasks) || 0;
+    if (total <= 0) return 0;
+    return clampPercent((done / total) * 100);
+  }, [milestone?.progress, totalTasks, completedTasks]);
+
+  const statusRaw = milestone?.status || 'planned';
+  const status = normalizeToCardStatus(statusRaw, dueDate);
 
   // Status config
   const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.planned;
   const StatusIcon = statusConfig.icon;
 
   const handleClick = () => {
-    if (onClick && id) {
-      onClick(id, milestone);
-    }
+    if (onClick && id) onClick(id, milestone);
   };
 
   const handleEdit = (e) => {
     e.stopPropagation();
     setShowMenu(false);
-    if (onEdit && id) {
-      onEdit(id, milestone);
-    }
+    if (onEdit && id) onEdit(id, milestone);
   };
 
   const handleDelete = (e) => {
     e.stopPropagation();
     setShowMenu(false);
-    if (onDelete && id) {
-      onDelete(id, milestone);
-    }
+    if (onDelete && id) onDelete(id, milestone);
   };
+
+  const dueLabel = formatDate(dueDate);
 
   return (
     <div
@@ -150,6 +201,7 @@ const MilestoneCard = ({
                 text-text-tertiary hover:text-text-primary hover:bg-surface-3
                 transition-all duration-200
               "
+              aria-label="Milestone actions"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -211,10 +263,10 @@ const MilestoneCard = ({
       )}
 
       {/* Due Date */}
-      {dueDate && (
+      {dueLabel && (
         <div className="flex items-center gap-1.5 text-xs text-text-tertiary mb-4">
           <Calendar className="w-3.5 h-3.5" />
-          <span>Due {formatDate(dueDate)}</span>
+          <span>Due {dueLabel}</span>
         </div>
       )}
 
@@ -224,17 +276,18 @@ const MilestoneCard = ({
           <span className="text-[10px] text-text-tertiary uppercase tracking-wider">
             Progress
           </span>
-          <span className={`text-xs font-medium ${progress >= 100 ? 'text-success' : 'text-text-primary'}`}>
-            {progress}%
+          <span className={`text-xs font-medium ${computedProgress >= 100 ? 'text-success' : 'text-text-primary'}`}>
+            {computedProgress}%
           </span>
         </div>
+
         <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
           <div
             className={`
               h-full rounded-full transition-all duration-500
-              ${progress >= 100 ? 'bg-success' : progress >= 50 ? 'bg-brand' : 'bg-brand-700'}
+              ${computedProgress >= 100 ? 'bg-success' : computedProgress >= 50 ? 'bg-brand' : 'bg-brand-700'}
             `}
-            style={{ width: `${Math.min(progress, 100)}%` }}
+            style={{ width: `${Math.min(computedProgress, 100)}%` }}
           />
         </div>
       </div>
@@ -244,7 +297,7 @@ const MilestoneCard = ({
         <div className="flex items-center gap-1.5 text-text-tertiary">
           <Flag className="w-3.5 h-3.5" />
           <span className="text-xs">
-            {completedTasks}/{totalTasks} tasks
+            {Number(completedTasks) || 0}/{Number(totalTasks) || 0} tasks
           </span>
         </div>
 

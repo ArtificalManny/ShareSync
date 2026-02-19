@@ -1,56 +1,77 @@
 /**
- * src/utils/api.js
- * Thin API client used across the app.
- *
- * Exports:
- *  - apiRequest (named) ✅
- *  - default export apiRequest ✅
+ * Fetch helper used by some legacy modules (WelcomeBack / Context, etc.)
+ * Makes sure requests always hit the correct backend route whether:
+ * - VITE_API_URL = "http://localhost:5050"
+ * - VITE_API_URL = "http://localhost:5050/api"
  */
 
-const DEFAULT_BASE_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
-  'http://localhost:5050/api';
+function getApiBase() {
+  const envUrl = import.meta.env.VITE_API_URL;
+  const base = (envUrl && typeof envUrl === "string" ? envUrl : "").replace(/\/+$/, "");
+  return base || window.location.origin;
+}
+
+function baseHasApiSuffix(base) {
+  return /\/api$/.test(String(base || ""));
+}
+
+function withApiPrefix(path) {
+  const base = getApiBase();
+  const needsApi = !baseHasApiSuffix(base);
+  if (!path.startsWith("/")) path = `/${path}`;
+
+  // If base is missing /api, add it.
+  if (needsApi) {
+    return path.startsWith("/api") ? path : `/api${path}`;
+  }
+
+  // If base already has /api, avoid "/api/api"
+  return path.replace(/^\/api/, "");
+}
 
 function getToken() {
   try {
-    return localStorage.getItem('authToken') || localStorage.getItem('accessToken') || null;
+    return (
+      localStorage.getItem("ss.jwt") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("accessToken") ||
+      ""
+    );
   } catch {
-    return null;
+    return "";
   }
 }
 
-export async function apiRequest(path, method = 'GET', body) {
-  const url = path.startsWith('http')
-    ? path
-    : `${DEFAULT_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+export async function apiRequest(path, options = {}) {
+  const base = getApiBase();
+  const url = `${base}${withApiPrefix(path)}`;
 
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = new Headers(options.headers || {});
   const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  if (!headers.has("Content-Type") && options.body && !(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    credentials: 'include',
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  const res = await fetch(url, { ...options, headers });
 
+  // Try to parse JSON, fall back to text
   const text = await res.text();
-  let data = null;
+  let data;
   try {
     data = text ? JSON.parse(text) : null;
   } catch {
-    data = text || null;
+    data = text;
   }
 
   if (!res.ok) {
     const msg =
       (data && (data.message || data.error)) ||
       `Request failed (${res.status})`;
-    const err = new Error(msg);
-    err.status = res.status;
-    err.data = data;
-    throw err;
+    throw new Error(msg);
   }
 
   return data;

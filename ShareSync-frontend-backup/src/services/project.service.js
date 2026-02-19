@@ -1,8 +1,9 @@
 import api from './api';
+import { withApiPrefix } from "../api/withApiPrefix";
 
 export const createProject = async (projectData) => {
   try {
-    const response = await api.post('/projects', projectData);
+    const response = await api.post(withApiPrefix("/projects"), projectData);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Failed to create project');

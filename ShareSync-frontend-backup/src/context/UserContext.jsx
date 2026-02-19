@@ -18,7 +18,8 @@ export const UserContext = createContext({
   refresh: () => Promise.resolve(),
 });
 
-const API = import.meta.env.VITE_API_URL || "";
+const API_RAW = import.meta.env.VITE_API_URL || "";
+const API = String(API_RAW).replace(/\/+$/, ""); // trim trailing slashes
 const USER_STORAGE_KEY = "sharesync.user.v1";
 const USER_POKE_KEY = `${USER_STORAGE_KEY}:poke`;
 
@@ -84,10 +85,33 @@ function mergeUser(prev, next) {
   return minimalUser(merged);
 }
 
+function getTokenAny() {
+  try {
+    return (
+      localStorage.getItem("ss.jwt") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("accessToken") ||
+      ""
+    );
+  } catch {
+    return "";
+  }
+}
+
+function buildMeUrl() {
+  // Supports either:
+  // API="http://localhost:5050"      -> "http://localhost:5050/api/users/me"
+  // API="http://localhost:5050/api"  -> "http://localhost:5050/api/users/me"
+  if (!API) return "/api/users/me";
+  const endsWithApi = /\/api$/.test(API);
+  return endsWithApi ? `${API}/users/me` : `${API}/api/users/me`;
+}
+
 export const UserProvider = ({ children }) => {
   const [user, setUserState] = useState(() => readUserCache());
   const [loading, setLoading] = useState(true);
-  const tokenRef = useRef(localStorage.getItem("ss.jwt") || "");
+  const tokenRef = useRef(getTokenAny());
 
   const broadcast = useCallback((nextUser) => {
     window.dispatchEvent(
@@ -127,24 +151,31 @@ export const UserProvider = ({ children }) => {
   );
 
   const refresh = useCallback(async () => {
-    const token = tokenRef.current || localStorage.getItem("ss.jwt") || "";
+    const token = tokenRef.current || getTokenAny();
     if (!token) {
       setUser(null);
       setLoading(false);
       return;
     }
+
     setLoading(true);
     try {
-      const res = await fetch(`${API}/users/me`, {
+      const res = await fetch(buildMeUrl(), {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Failed to fetch user");
+      if (!res.ok) throw new Error(`Failed to fetch user (${res.status})`);
       const data = await res.json();
-      setUser(data);
+
+      // Some backends wrap responses: { success, data }
+      const payload = data?.data ?? data;
+      setUser(payload);
     } catch (err) {
       console.error("[UserContext] refresh failed:", err);
       try {
         localStorage.removeItem("ss.jwt");
+        localStorage.removeItem("token");
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("accessToken");
       } catch {}
       tokenRef.current = "";
       setUser(null);
@@ -154,7 +185,7 @@ export const UserProvider = ({ children }) => {
   }, [setUser]);
 
   useEffect(() => {
-    const token = localStorage.getItem("ss.jwt");
+    const token = getTokenAny();
     tokenRef.current = token || "";
     if (!token) {
       setLoading(false);
@@ -205,14 +236,21 @@ export const UserProvider = ({ children }) => {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const userRoom = user?._id ? `user:${user._id}` : null;
+  const userRooms = useMemo(() => {
+    return user?._id ? [`user:${user._id}`] : [];
+  }, [user?._id]);
 
-  useSocket(userRoom, {
-    onEvents: {
-      "user:updated": (payload) => {
-        updateUser(payload || {});
-      },
-    },
+  const socketEvents = useMemo(
+    () => ({
+      "user:updated": (payload) => updateUser(payload || {}),
+    }),
+    [updateUser]
+  );
+
+  useSocket(userRooms, {
+    onEvents: socketEvents,
+    enabled: true,
+    userId: user?._id || null,
   });
 
   const value = useMemo(

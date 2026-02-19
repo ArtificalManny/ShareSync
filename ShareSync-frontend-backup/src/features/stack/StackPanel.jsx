@@ -5,6 +5,9 @@
 // - Quick actions: Start, Move to review, Complete
 // - Optional realtime updates via socket taskUpdated
 // - Safe defaults + minimal assumptions
+//
+// ✅ SAFE ADD:
+// - milestoneIdFilter prop (frontend-only filter). Does NOT affect backend.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useCallback, useMemo, useState } from "react";
@@ -26,8 +29,14 @@ function isInStack(task) {
   return s === "todo" || s === "in_progress";
 }
 
+function normalizeId(v) {
+  if (!v) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  return v?.toString?.() || "";
+}
+
 function sortLikeBackend(list) {
-  // Keep consistent with hook sorting, but local utility here too
   const priRank = (p) => {
     const v = (p || "").toLowerCase();
     if (v === "critical") return 4;
@@ -63,6 +72,9 @@ export default function StackPanel({
   limit = 10,
   socket = null,
   title = "Top tasks to do next",
+
+  // ✅ SAFE: frontend-only filter
+  milestoneIdFilter = null,
 } = {}) {
   const { tasks, loading, error, refresh, setTasks } = useStackTasks({
     projectId,
@@ -75,77 +87,93 @@ export default function StackPanel({
   const [actionError, setActionError] = useState(null);
   const [actionBusyId, setActionBusyId] = useState(null);
 
-  const safeTasks = useMemo(() => Array.isArray(tasks) ? tasks : [], [tasks]);
+  const safeTasks = useMemo(() => (Array.isArray(tasks) ? tasks : []), [tasks]);
 
-  const optimisticUpdate = useCallback((updater) => {
-    setTasks((prev) => sortLikeBackend(updater(Array.isArray(prev) ? prev : [])));
-  }, [setTasks]);
+  // ✅ Apply milestone filter locally (only if filter is set)
+  const filteredTasks = useMemo(() => {
+    const mid = normalizeId(milestoneIdFilter);
+    if (!mid) return safeTasks;
 
-  const handleStart = useCallback(async (task) => {
-    setActionError(null);
-    const id = getTaskId(task);
-    if (!id) return;
+    return safeTasks.filter((t) => normalizeId(t?.milestoneId) === mid);
+  }, [safeTasks, milestoneIdFilter]);
 
-    setActionBusyId(id);
+  const optimisticUpdate = useCallback(
+    (updater) => {
+      setTasks((prev) => sortLikeBackend(updater(Array.isArray(prev) ? prev : [])));
+    },
+    [setTasks]
+  );
 
-    // optimistic: move status => in_progress (keep in list)
-    optimisticUpdate((prev) =>
-      prev.map((t) => (getTaskId(t) === id ? { ...t, status: "in_progress" } : t))
-    );
+  const handleStart = useCallback(
+    async (task) => {
+      setActionError(null);
+      const id = getTaskId(task);
+      if (!id) return;
 
-    try {
-      await moveTask(id, { status: "in_progress" });
-      // no hard refresh needed; socket may patch; but safe to keep state
-    } catch (e) {
-      setActionError(e);
-      // rollback by refetch to be safe
-      await refresh();
-    } finally {
-      setActionBusyId(null);
-    }
-  }, [optimisticUpdate, refresh]);
+      setActionBusyId(id);
 
-  const handleMoveToReview = useCallback(async (task) => {
-    setActionError(null);
-    const id = getTaskId(task);
-    if (!id) return;
+      optimisticUpdate((prev) =>
+        prev.map((t) => (getTaskId(t) === id ? { ...t, status: "in_progress" } : t))
+      );
 
-    setActionBusyId(id);
+      try {
+        await moveTask(id, { status: "in_progress" });
+      } catch (e) {
+        setActionError(e);
+        await refresh();
+      } finally {
+        setActionBusyId(null);
+      }
+    },
+    [optimisticUpdate, refresh]
+  );
 
-    // optimistic: review is NOT in stack => remove immediately
-    optimisticUpdate((prev) => prev.filter((t) => getTaskId(t) !== id));
+  const handleMoveToReview = useCallback(
+    async (task) => {
+      setActionError(null);
+      const id = getTaskId(task);
+      if (!id) return;
 
-    try {
-      await moveTask(id, { status: "review" });
-    } catch (e) {
-      setActionError(e);
-      await refresh();
-    } finally {
-      setActionBusyId(null);
-    }
-  }, [optimisticUpdate, refresh]);
+      setActionBusyId(id);
 
-  const handleComplete = useCallback(async (task) => {
-    setActionError(null);
-    const id = getTaskId(task);
-    if (!id) return;
+      optimisticUpdate((prev) => prev.filter((t) => getTaskId(t) !== id));
 
-    setActionBusyId(id);
+      try {
+        await moveTask(id, { status: "review" });
+      } catch (e) {
+        setActionError(e);
+        await refresh();
+      } finally {
+        setActionBusyId(null);
+      }
+    },
+    [optimisticUpdate, refresh]
+  );
 
-    // optimistic: done is NOT in stack => remove immediately
-    optimisticUpdate((prev) => prev.filter((t) => getTaskId(t) !== id));
+  const handleComplete = useCallback(
+    async (task) => {
+      setActionError(null);
+      const id = getTaskId(task);
+      if (!id) return;
 
-    try {
-      await completeTask(id, {});
-    } catch (e) {
-      setActionError(e);
-      await refresh();
-    } finally {
-      setActionBusyId(null);
-    }
-  }, [optimisticUpdate, refresh]);
+      setActionBusyId(id);
 
-  const visibleCount = safeTasks.filter(isInStack).length;
+      optimisticUpdate((prev) => prev.filter((t) => getTaskId(t) !== id));
+
+      try {
+        await completeTask(id, {});
+      } catch (e) {
+        setActionError(e);
+        await refresh();
+      } finally {
+        setActionBusyId(null);
+      }
+    },
+    [optimisticUpdate, refresh]
+  );
+
+  const visibleCount = filteredTasks.filter(isInStack).length;
+  const hasFilter = !!normalizeId(milestoneIdFilter);
 
   return (
     <div className="w-full rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-sm p-4">
@@ -157,7 +185,9 @@ export default function StackPanel({
           <div>
             <div className="text-sm font-semibold">{title}</div>
             <div className="text-xs opacity-70">
-              {projectId ? `${visibleCount} in stack` : "Select a project"}
+              {projectId
+                ? `${visibleCount} in stack${hasFilter ? " (filtered)" : ""}`
+                : "Select a project"}
             </div>
           </div>
         </div>
@@ -189,21 +219,29 @@ export default function StackPanel({
       ) : null}
 
       <div className="mt-4 space-y-2">
-        {loading && safeTasks.length === 0 ? (
+        {loading && filteredTasks.length === 0 ? (
           <div className="text-xs opacity-70 p-3">Loading stack…</div>
         ) : null}
 
-        {!loading && safeTasks.length === 0 ? (
+        {!loading && filteredTasks.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
-            <div className="font-semibold">No tasks in your stack</div>
+            <div className="font-semibold">
+              {hasFilter ? "No tasks in this milestone" : "No tasks in your stack"}
+            </div>
             <div className="text-xs opacity-70 mt-1">
-              Add a task or set it to <span className="font-semibold">TODO</span> /{" "}
-              <span className="font-semibold">IN PROGRESS</span>.
+              {hasFilter
+                ? "Try another milestone, or assign tasks to this milestone."
+                : (
+                  <>
+                    Add a task or set it to <span className="font-semibold">TODO</span> /{" "}
+                    <span className="font-semibold">IN PROGRESS</span>.
+                  </>
+                )}
             </div>
           </div>
         ) : null}
 
-        {safeTasks.map((t) => {
+        {filteredTasks.map((t) => {
           const id = getTaskId(t);
           const rowDisabled = !projectId || actionBusyId === id;
 

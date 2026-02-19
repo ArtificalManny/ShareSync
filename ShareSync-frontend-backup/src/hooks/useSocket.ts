@@ -14,15 +14,15 @@ type UseSocketOptions = {
 };
 
 function getSocketBaseUrl() {
-  // Prefer explicit socket URL, otherwise fall back to API URL, otherwise fall back to current origin
   const socketUrl = import.meta.env.VITE_SOCKET_URL as string | undefined;
   const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
-  return socketUrl || apiUrl || window.location.origin;
+  return (socketUrl || apiUrl || window.location.origin).replace(/\/+$/, "");
 }
 
 function getTokenAny() {
   try {
     return (
+      localStorage.getItem("ss.jwt") ||
       localStorage.getItem("authToken") ||
       localStorage.getItem("accessToken") ||
       localStorage.getItem("token") ||
@@ -49,38 +49,27 @@ export default function useSocket(
     error: null,
   });
 
-  // Keep refs updated
+  // Keep refs updated WITHOUT forcing the main socket effect to restart.
   useEffect(() => {
-    roomsRef.current = initialRooms;
+    roomsRef.current = initialRooms || [];
   }, [initialRooms]);
 
   useEffect(() => {
-    onEventsRef.current = onEvents;
+    onEventsRef.current = onEvents || {};
   }, [onEvents]);
 
-  // Create socket once (but connect only when enabled)
+  // Create socket ONCE
   useEffect(() => {
     const baseUrl = getSocketBaseUrl();
 
-    // If socket already exists, don’t recreate
     if (!socketRef.current) {
-      const token = getTokenAny();
-
       socketRef.current = io(baseUrl, {
-        // Don’t connect until we decide below
         autoConnect: false,
-
-        // Helpful when dev server is different origin than backend
         withCredentials: true,
-
-        // Allow fallback if WS blocked
         transports: ["websocket", "polling"],
-
-        // If your backend uses a custom path, change this
         path: "/socket.io",
-
         auth: {
-          token,
+          token: getTokenAny(),
           userId,
         },
       });
@@ -93,7 +82,6 @@ export default function useSocket(
 
       // Join any rooms we already know about
       for (const room of roomsRef.current || []) {
-        // Back-compat: try multiple common join patterns
         socket.emit("room:join", { room });
         socket.emit("joinRoom", room);
         socket.emit("join", room);
@@ -113,19 +101,40 @@ export default function useSocket(
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", onConnectError);
 
-    // Attach event listeners from context (can change over time)
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onConnectError);
+    };
+    // IMPORTANT: do NOT depend on onEvents/initialRooms objects here.
+    // We manage them via refs above to avoid infinite render loops.
+  }, [userId]);
+
+  // Attach/detach dynamic event listeners (safe + isolated)
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
     const handlers = onEventsRef.current || {};
     Object.entries(handlers).forEach(([event, handler]) => {
       socket.on(event, handler);
     });
 
-    // ✅ IMPORTANT:
-    // Connect if enabled AND (userId exists OR we have rooms to join).
-    // This allows public spectator pages to connect even when not signed in.
+    return () => {
+      Object.entries(handlers).forEach(([event, handler]) => {
+        socket.off(event, handler);
+      });
+    };
+  }, [onEvents]);
+
+  // Connect/disconnect logic (stable)
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
     const hasRoomsToJoin = (roomsRef.current || []).length > 0;
     const shouldConnect = Boolean(enabled && (userId || hasRoomsToJoin));
 
-    // Always refresh auth payload before connecting (no backend change required)
     socket.auth = {
       token: getTokenAny(),
       userId,
@@ -140,18 +149,7 @@ export default function useSocket(
       if (socket.connected) socket.disconnect();
       setState((prev) => ({ ...prev, isConnected: false, isConnecting: false }));
     }
-
-    return () => {
-      // Remove event listeners
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      socket.off("connect_error", onConnectError);
-
-      Object.entries(handlers).forEach(([event, handler]) => {
-        socket.off(event, handler);
-      });
-    };
-  }, [enabled, userId, onEvents, initialRooms]);
+  }, [enabled, userId, initialRooms]);
 
   const emit = useCallback((event: string, payload?: any) => {
     const socket = socketRef.current;
@@ -159,31 +157,30 @@ export default function useSocket(
     socket.emit(event, payload);
   }, []);
 
-  const joinRoom = useCallback((room: string) => {
-    const socket = socketRef.current;
-    if (!socket || !room) return;
+  const joinRoom = useCallback(
+    (room: string) => {
+      const socket = socketRef.current;
+      if (!socket || !room) return;
 
-    // If not connected yet, the room will be joined on connect via roomsRef
-    if (!roomsRef.current.includes(room)) {
-      roomsRef.current = [...roomsRef.current, room];
-    }
-
-    if (socket.connected) {
-      socket.emit("room:join", { room });
-      socket.emit("joinRoom", room);
-      socket.emit("join", room);
-    } else {
-      // Best effort: if we are enabled, try connecting now (public pages)
-      // NOTE: this does not force auth; it simply allows the connection so rooms can be joined.
-      // The main effect will also connect on the next render cycle.
-      try {
-        socket.auth = { token: getTokenAny(), userId };
-        socket.connect();
-      } catch {
-        // no-op
+      if (!roomsRef.current.includes(room)) {
+        roomsRef.current = [...roomsRef.current, room];
       }
-    }
-  }, [userId]);
+
+      if (socket.connected) {
+        socket.emit("room:join", { room });
+        socket.emit("joinRoom", room);
+        socket.emit("join", room);
+      } else if (enabled) {
+        try {
+          socket.auth = { token: getTokenAny(), userId };
+          socket.connect();
+        } catch {
+          // no-op
+        }
+      }
+    },
+    [enabled, userId]
+  );
 
   const leaveRoom = useCallback((room: string) => {
     const socket = socketRef.current;
