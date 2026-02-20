@@ -1,74 +1,11 @@
 // src/components/views/ThreadsView.jsx
-// ═══════════════════════════════════════════════════════════════════════════════
-// THREADS VIEW: Project conversations with task linking
-// Connects to existing Messages.jsx, provides project-scoped view
-// ═══════════════════════════════════════════════════════════════════════════════
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   MessageCircle, Pin, Link2, Search, Plus, Filter,
   ChevronRight, Clock, Users, Paperclip, MoreHorizontal,
   Star, Bell, BellOff, Archive, ExternalLink, Hash
 } from 'lucide-react';
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MOCK DATA (Replace with actual data from props/hooks)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const MOCK_THREADS = [
-  {
-    id: '1',
-    title: 'Sprint 5 Planning Discussion',
-    isPinned: true,
-    lastMessage: "Let's prioritize the API fixes first",
-    lastAuthor: { name: 'Sarah Chen', avatar: '👩‍💻' },
-    participants: ['Sarah', 'Alex', 'You'],
-    replyCount: 12,
-    unreadCount: 3,
-    linkedTask: { id: 't1', title: 'API Bug Fixes' },
-    updatedAt: '2h ago',
-    channel: 'planning'
-  },
-  {
-    id: '2',
-    title: 'Design Review - New Dashboard',
-    isPinned: false,
-    lastMessage: "The new charts look great! Just need to fix the legend",
-    lastAuthor: { name: 'Mike Rivera', avatar: '🎨' },
-    participants: ['Mike', 'You'],
-    replyCount: 8,
-    unreadCount: 0,
-    linkedTask: { id: 't2', title: 'Dashboard Redesign' },
-    updatedAt: '4h ago',
-    channel: 'design'
-  },
-  {
-    id: '3',
-    title: 'Production Deployment',
-    isPinned: false,
-    lastMessage: "All green on staging, ready for prod push",
-    lastAuthor: { name: 'Alex Kim', avatar: '🚀' },
-    participants: ['Alex', 'Sarah', 'You', 'DevOps'],
-    replyCount: 24,
-    unreadCount: 1,
-    linkedTask: null,
-    updatedAt: '30m ago',
-    channel: 'ops'
-  },
-  {
-    id: '4',
-    title: 'General Discussion',
-    isPinned: false,
-    lastMessage: "Anyone free for coffee at 3?",
-    lastAuthor: { name: 'Team', avatar: '☕' },
-    participants: ['Team'],
-    replyCount: 5,
-    unreadCount: 0,
-    linkedTask: null,
-    updatedAt: 'Yesterday',
-    channel: 'general'
-  },
-];
+import { getProjectThreads } from '../../api/threads';
 
 const CHANNELS = [
   { id: 'all', label: 'All Threads', icon: MessageCircle },
@@ -77,10 +14,6 @@ const CHANNELS = [
   { id: 'ops', label: 'Ops', icon: Hash },
   { id: 'general', label: 'General', icon: Hash },
 ];
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// THREAD CARD COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function ThreadCard({ thread, onThreadClick }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -99,12 +32,9 @@ function ThreadCard({ thread, onThreadClick }) {
         hover:shadow-lg hover:shadow-brand-500/5
       `}
     >
-      {/* Top row: Title + Meta */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {thread.isPinned && (
-            <Pin className="w-3.5 h-3.5 text-warning-400 flex-shrink-0" />
-          )}
+          {thread.isPinned && <Pin className="w-3.5 h-3.5 text-warning-400 flex-shrink-0" />}
           <h4 className={`font-medium truncate ${thread.unreadCount > 0 ? 'text-text-primary' : 'text-text-secondary'} group-hover:text-brand-400 transition-colors`}>
             {thread.title}
           </h4>
@@ -120,17 +50,15 @@ function ThreadCard({ thread, onThreadClick }) {
         </div>
       </div>
       
-      {/* Last message preview */}
       <div className="flex items-start gap-3 mb-3">
         <div className="w-6 h-6 rounded-full bg-surface-2 flex items-center justify-center text-sm flex-shrink-0">
-          {thread.lastAuthor.avatar}
+          {thread.lastAuthor.avatar || '👤'}
         </div>
         <p className="text-sm text-text-tertiary line-clamp-2">
           <span className="text-text-secondary font-medium">{thread.lastAuthor.name}:</span> {thread.lastMessage}
         </p>
       </div>
       
-      {/* Footer: Linked task + Reply count */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {thread.linkedTask && (
@@ -142,7 +70,7 @@ function ThreadCard({ thread, onThreadClick }) {
           
           <div className="flex items-center gap-1 text-xs text-text-tertiary">
             <Users className="w-3 h-3" />
-            <span>{thread.participants.length}</span>
+            <span>{thread.participants?.length || 0}</span>
           </div>
         </div>
         
@@ -151,60 +79,76 @@ function ThreadCard({ thread, onThreadClick }) {
           <span>{thread.replyCount} replies</span>
         </div>
       </div>
-      
-      {/* Hover actions */}
-      {isHovered && (
-        <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button className="p-1.5 rounded-lg bg-surface-2 text-text-tertiary hover:text-text-secondary transition-colors">
-            <Star className="w-3.5 h-3.5" />
-          </button>
-          <button className="p-1.5 rounded-lg bg-surface-2 text-text-tertiary hover:text-text-secondary transition-colors">
-            <Bell className="w-3.5 h-3.5" />
-          </button>
-          <button className="p-1.5 rounded-lg bg-surface-2 text-text-tertiary hover:text-text-secondary transition-colors">
-            <MoreHorizontal className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN THREADS VIEW COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export default function ThreadsView({ 
-  projectId, 
-  threads: propThreads, 
-  onOpenFullChat 
-}) {
+export default function ThreadsView({ projectId, onOpenFullChat }) {
   const [activeChannel, setActiveChannel] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showPinnedOnly, setShowPinnedOnly] = useState(false);
+  const [threads, setThreads] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchThreads = async () => {
+      if (!projectId) return;
+      setLoading(true);
+      try {
+        const rawThreads = await getProjectThreads(projectId);
+        
+        // Map backend ThreadDocument to the UI's expected format
+        const mappedThreads = rawThreads.map(t => {
+          // Fallback logic for names and avatars
+          const author = t.lastReplyBy || t.createdBy;
+          const authorName = author?.firstName ? `${author.firstName} ${author.lastName || ''}`.trim() : 'Team Member';
+          const authorAvatar = author?.avatar || '👤';
+
+          // Format Date intelligently
+          const dateObj = new Date(t.lastReplyAt || t.createdAt);
+          const isToday = new Date().toDateString() === dateObj.toDateString();
+          const timeString = isToday 
+            ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+            : dateObj.toLocaleDateString();
+
+          return {
+            id: t._id,
+            title: t.title,
+            isPinned: t.isPinned || false,
+            lastMessage: t.replyCount > 0 ? 'New activity in thread' : 'Thread started. Be the first to reply!',
+            lastAuthor: { name: authorName, avatar: authorAvatar },
+            participants: t.participants || [],
+            replyCount: t.replyCount || 0,
+            unreadCount: 0, // Placeholder until unread API is wired
+            linkedTask: t.linkedTasks?.length ? { id: t.linkedTasks[0], title: 'Linked Task' } : null,
+            updatedAt: timeString,
+            channel: t.category || 'general'
+          };
+        });
+
+        setThreads(mappedThreads);
+      } catch (err) {
+        console.error("Failed to load threads:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchThreads();
+  }, [projectId]);
   
-  // Use prop threads if provided, otherwise use mock data
-  const threads = propThreads?.length > 0 ? propThreads : MOCK_THREADS;
-  
-  // Filter threads
   const filteredThreads = useMemo(() => {
     return threads.filter(thread => {
-      // Channel filter
       if (activeChannel !== 'all' && thread.channel !== activeChannel) return false;
-      
-      // Pinned filter
       if (showPinnedOnly && !thread.isPinned) return false;
       
-      // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
           thread.title.toLowerCase().includes(query) ||
-          thread.lastMessage.toLowerCase().includes(query) ||
           thread.lastAuthor.name.toLowerCase().includes(query)
         );
       }
-      
       return true;
     });
   }, [threads, activeChannel, showPinnedOnly, searchQuery]);
@@ -213,19 +157,22 @@ export default function ThreadsView({
   const regularThreads = filteredThreads.filter(t => !t.isPinned);
   
   const handleThreadClick = (thread) => {
-    console.log('Thread clicked:', thread.id);
-    // TODO: Navigate to thread detail or open in Messages.jsx
+    // Jump straight to the full messages view, potentially passing thread ID in state later
     onOpenFullChat?.();
   };
   
   const handleNewThread = () => {
-    console.log('Create new thread');
-    // TODO: Open new thread modal
+    onOpenFullChat?.(); // Currently routes to the main messages hub to create
   };
 
   return (
-    <div className="p-10 max-w-[1200px] mx-auto">
-      {/* Header */}
+    <div className="p-10 max-w-[1200px] mx-auto relative">
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-surface-0/50 backdrop-blur-sm">
+           <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+
       <div className="flex items-start justify-between mb-8">
         <div>
           <h2 className="text-2xl font-semibold text-text-primary mb-2">Project Threads</h2>
@@ -251,9 +198,7 @@ export default function ThreadsView({
         </div>
       </div>
       
-      {/* Filters row */}
       <div className="flex items-center gap-4 mb-6">
-        {/* Channel tabs */}
         <div className="flex items-center gap-1 p-1 rounded-xl bg-surface-1 border border-white/[0.06]">
           {CHANNELS.map(channel => {
             const Icon = channel.icon;
@@ -263,13 +208,7 @@ export default function ThreadsView({
               <button
                 key={channel.id}
                 onClick={() => setActiveChannel(channel.id)}
-                className={`
-                  flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
-                  ${isActive 
-                    ? 'bg-brand-500/15 text-brand-400' 
-                    : 'text-text-tertiary hover:text-text-secondary hover:bg-white/[0.04]'
-                  }
-                `}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isActive ? 'bg-brand-500/15 text-brand-400' : 'text-text-tertiary hover:text-text-secondary hover:bg-white/[0.04]'}`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{channel.label}</span>
@@ -278,7 +217,6 @@ export default function ThreadsView({
           })}
         </div>
         
-        {/* Search */}
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
           <input
@@ -290,58 +228,23 @@ export default function ThreadsView({
           />
         </div>
         
-        {/* Pinned filter */}
         <button
           onClick={() => setShowPinnedOnly(!showPinnedOnly)}
-          className={`
-            flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all
-            ${showPinnedOnly 
-              ? 'bg-warning-500/10 border-warning-500/30 text-warning-400' 
-              : 'bg-surface-1 border-white/[0.06] text-text-tertiary hover:text-text-secondary'
-            }
-          `}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${showPinnedOnly ? 'bg-warning-500/10 border-warning-500/30 text-warning-400' : 'bg-surface-1 border-white/[0.06] text-text-tertiary hover:text-text-secondary'}`}
         >
           <Pin className="w-4 h-4" />
           <span>Pinned</span>
         </button>
       </div>
       
-      {/* Stats bar */}
-      <div className="flex items-center gap-6 px-4 py-3 rounded-xl bg-surface-1/50 border border-white/[0.04] mb-6">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="w-4 h-4 text-brand-400" />
-          <span className="text-sm text-text-secondary">{threads.length} total threads</span>
-        </div>
-        <div className="w-px h-4 bg-white/[0.08]" />
-        <div className="flex items-center gap-2">
-          <Pin className="w-4 h-4 text-warning-400" />
-          <span className="text-sm text-text-secondary">{pinnedThreads.length} pinned</span>
-        </div>
-        <div className="w-px h-4 bg-white/[0.08]" />
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
-          <span className="text-sm text-text-secondary">
-            {threads.filter(t => t.unreadCount > 0).length} with unread
-          </span>
-        </div>
-      </div>
-      
-      {/* Threads list */}
       <div className="space-y-3">
-        {/* Pinned section */}
         {pinnedThreads.length > 0 && !showPinnedOnly && (
           <>
             <div className="flex items-center gap-2 mb-3">
               <Pin className="w-4 h-4 text-warning-400" />
               <span className="text-sm font-medium text-text-secondary">Pinned</span>
             </div>
-            {pinnedThreads.map(thread => (
-              <ThreadCard
-                key={thread.id}
-                thread={thread}
-                onThreadClick={handleThreadClick}
-              />
-            ))}
+            {pinnedThreads.map(thread => <ThreadCard key={thread.id} thread={thread} onThreadClick={handleThreadClick} />)}
             {regularThreads.length > 0 && (
               <div className="flex items-center gap-2 mt-6 mb-3">
                 <Clock className="w-4 h-4 text-text-tertiary" />
@@ -351,55 +254,21 @@ export default function ThreadsView({
           </>
         )}
         
-        {/* Regular threads */}
         {showPinnedOnly ? (
-          filteredThreads.map(thread => (
-            <ThreadCard
-              key={thread.id}
-              thread={thread}
-              onThreadClick={handleThreadClick}
-            />
-          ))
+          filteredThreads.map(thread => <ThreadCard key={thread.id} thread={thread} onThreadClick={handleThreadClick} />)
         ) : (
-          regularThreads.map(thread => (
-            <ThreadCard
-              key={thread.id}
-              thread={thread}
-              onThreadClick={handleThreadClick}
-            />
-          ))
+          regularThreads.map(thread => <ThreadCard key={thread.id} thread={thread} onThreadClick={handleThreadClick} />)
         )}
         
-        {/* Empty state */}
-        {filteredThreads.length === 0 && (
-          <div className="py-16 text-center">
+        {filteredThreads.length === 0 && !loading && (
+          <div className="py-16 text-center border border-dashed border-white/[0.1] rounded-2xl bg-surface-1/30">
             <MessageCircle className="w-12 h-12 text-text-tertiary mx-auto mb-4" />
             <h3 className="text-lg font-medium text-text-primary mb-2">No threads found</h3>
             <p className="text-sm text-text-tertiary mb-6">
-              {searchQuery ? 'Try a different search term' : 'Start a conversation to collaborate with your team'}
+              {searchQuery ? 'Try a different search term' : 'The General thread should have loaded automatically. Check the console if it failed.'}
             </p>
-            <button
-              onClick={handleNewThread}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Start a Thread</span>
-            </button>
           </div>
         )}
-      </div>
-      
-      {/* Pro tip */}
-      <div className="mt-8 p-4 rounded-xl bg-surface-1 border border-white/[0.06]">
-        <div className="flex items-start gap-3">
-          <span className="text-lg">💡</span>
-          <div>
-            <p className="text-sm text-text-secondary">
-              <strong className="text-text-primary">Pro tip:</strong> Link threads to tasks to keep conversations in context. 
-              Use the link icon when composing a message.
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );

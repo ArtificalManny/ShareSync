@@ -810,7 +810,6 @@ export default function ProjectHome() {
             />
           );
 
-        // ✅ THE FIX: We are now explicitly passing projectId={id} down to RhythmView!
         case "rhythm":
           return <RhythmView projectId={id} events={events || []} onAddEvent={handleAddEvent} onEventClick={handleEventClick} />;
 
@@ -833,8 +832,9 @@ export default function ProjectHome() {
             />
           );
 
+        // ✅ THE FIX: We are now explicitly passing projectId={id} down to VaultView!
         case "vault":
-          return <VaultView files={files || []} onUpload={handleUpload} onFileClick={handleFileClick} onNewFolder={handleNewFolder} />;
+          return <VaultView projectId={id} files={files || []} onUpload={handleUpload} onFileClick={handleFileClick} onNewFolder={handleNewFolder} />;
 
         default:
           return <div className="p-10 text-center text-text-tertiary">View not found</div>;
