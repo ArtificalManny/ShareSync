@@ -119,6 +119,27 @@ export class ProjectMember {
   // Legacy/optional field still used in some flows
   @Prop({ type: Types.ObjectId, ref: 'User' })
   invitedBy?: Types.ObjectId;
+
+  // ✅ ADDED: User-specific preferences (Notifications)
+  @Prop({
+    type: Object,
+    default: {
+      taskAssigned: true,
+      taskCompleted: true,
+      announcements: true,
+      mentions: true,
+      deadlines: true,
+      weeklyDigest: false
+    }
+  })
+  preferences?: {
+    taskAssigned: boolean;
+    taskCompleted: boolean;
+    announcements: boolean;
+    mentions: boolean;
+    deadlines: boolean;
+    weeklyDigest: boolean;
+  };
 }
 
 @Schema({ _id: false })

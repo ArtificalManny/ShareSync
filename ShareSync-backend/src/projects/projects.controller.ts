@@ -398,6 +398,23 @@ export class ProjectsController {
     };
   }
 
+  // ✅ ADDED: Update User-Specific Notification Preferences
+  @Patch(':id/preferences')
+  @ApiOperation({ summary: 'Update user-specific notification preferences for a project' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  async updatePreferences(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() preferences: any,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const project = await this.projectsService.updateMemberPreferences(id, userId, preferences);
+    return {
+      success: true,
+      data: project,
+    };
+  }
+
   @Post(':id/leave')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Leave a project' })

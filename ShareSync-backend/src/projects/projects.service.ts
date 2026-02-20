@@ -585,6 +585,34 @@ export class ProjectsService {
     return project.save();
   }
 
+  // ✅ ADDED: Update user-specific notification preferences
+  async updateMemberPreferences(projectId: string, userId: string, preferences: any): Promise<ProjectDocument> {
+    const project = await this.findByIdWithAccess(projectId, userId);
+
+    let memberIndex = project.members.findIndex((m) => m.userId.toString() === userId);
+    
+    // If the user is the Owner but isn't in the members array yet, add them so we can store preferences
+    if (memberIndex === -1 && project.ownerId.toString() === userId) {
+      project.members.push({
+        userId: new Types.ObjectId(userId),
+        role: MemberRole.OWNER,
+        joinedAt: new Date(),
+        preferences: {}
+      } as any);
+      memberIndex = project.members.length - 1;
+    } else if (memberIndex === -1) {
+      throw new BadRequestException('You are not a member of this project');
+    }
+
+    project.members[memberIndex].preferences = {
+      ...project.members[memberIndex].preferences,
+      ...preferences
+    };
+
+    project.markModified(`members.${memberIndex}.preferences`);
+    return project.save();
+  }
+
   async leaveProject(projectId: string, userId: string): Promise<void> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
