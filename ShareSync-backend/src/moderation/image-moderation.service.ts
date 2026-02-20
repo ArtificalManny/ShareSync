@@ -58,6 +58,17 @@ export class ImageModerationService {
   // Call this before saving ANY user-uploaded image
   // ═══════════════════════════════════════════════════════════════════════════
   async moderateImage(imageBuffer: Buffer): Promise<ImageModerationResult> {
+    // SAFEGUARD: Ensure we actually received a valid buffer before attempting to hash
+    if (!Buffer.isBuffer(imageBuffer)) {
+      this.logger.error('Invalid image buffer provided to moderation service');
+      return {
+        safe: false,
+        action: 'block',
+        labels: [{ name: 'Invalid File', confidence: 100 }],
+        hash: '',
+      };
+    }
+
     // Step 1: Generate hash for deduplication/blocking
     const hash = this.generateImageHash(imageBuffer);
 

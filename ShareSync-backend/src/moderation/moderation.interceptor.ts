@@ -50,6 +50,10 @@ export class TextModerationInterceptor implements NestInterceptor {
     next: CallHandler,
   ): Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest();
+    
+    // SAFEGUARD: Ensure request exists before accessing properties
+    if (!request) return next.handle();
+    
     const body = request.body;
 
     // Skip if no body or not an object
