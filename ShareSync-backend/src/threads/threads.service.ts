@@ -5,15 +5,11 @@ import { Model, Types } from 'mongoose';
 import { Thread, ThreadDocument } from './schemas/thread.schema';
 import { ThreadMessage, ThreadMessageDocument } from './schemas/thread-message.schema';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// INTERFACES
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export interface CreateThreadDto {
   projectId: string;
   title: string;
   category?: 'planning' | 'design' | 'ops' | 'general';
-  content?: string; // Initial message content
+  content?: string;
 }
 
 export interface CreateMessageDto {
@@ -38,10 +34,6 @@ export class ThreadsService {
     @InjectModel(ThreadMessage.name) private messageModel: Model<ThreadMessageDocument>,
   ) {}
 
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // THREAD CRUD
-  // ═══════════════════════════════════════════════════════════════════════════════
-
   async create(userId: string, dto: CreateThreadDto): Promise<ThreadDocument> {
     const userObjectId = new Types.ObjectId(userId);
 
@@ -58,7 +50,6 @@ export class ThreadsService {
 
     const savedThread = await thread.save();
 
-    // If initial content provided, create the first message
     if (dto.content) {
       await this.addMessage(savedThread._id.toString(), userId, {
         content: dto.content,
@@ -82,7 +73,7 @@ export class ThreadsService {
     return thread;
   }
 
-  async findByProject(projectId: string, options: FindThreadsOptions = {}): Promise<ThreadDocument[]> {
+  async findByProject(projectId: string, options: FindThreadsOptions = {}, userId?: string): Promise<ThreadDocument[]> {
     const query: any = { projectId: new Types.ObjectId(projectId) };
 
     if (options.category) {
@@ -93,37 +84,39 @@ export class ThreadsService {
       query.isPinned = options.isPinned;
     }
 
-    return this.threadModel
+    let threads = await this.threadModel
       .find(query)
       .populate('createdBy', 'firstName lastName username avatar')
       .populate('lastReplyBy', 'firstName lastName username avatar')
       .sort({ isPinned: -1, lastReplyAt: -1, createdAt: -1 })
       .exec();
+
+    if (threads.length === 0 && !options.category && userId) {
+      const generalThread = await this.create(userId, {
+        projectId,
+        title: 'General',
+        category: 'general',
+        content: "Welcome to the project! This is the general discussion thread. Feel free to start chatting."
+      });
+      
+      // ✅ FIX: Added `as any` to bypass Mongoose strict typings
+      threads = [await this.findById(generalThread._id.toString())] as any;
+    }
+
+    return threads;
   }
 
   async update(id: string, userId: string, updates: Partial<Thread>): Promise<ThreadDocument> {
     const thread = await this.findById(id);
-
-    // Only allow creator or admin to update
-    // For now, we'll just allow the update
     Object.assign(thread, updates);
-
     return thread.save();
   }
 
   async delete(id: string, userId: string): Promise<void> {
     const thread = await this.findById(id);
-
-    // Delete all messages in the thread
     await this.messageModel.deleteMany({ threadId: thread._id });
-
-    // Delete the thread
     await this.threadModel.deleteOne({ _id: thread._id });
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // MESSAGE OPERATIONS
-  // ═══════════════════════════════════════════════════════════════════════════════
 
   async addMessage(threadId: string, userId: string, dto: CreateMessageDto): Promise<ThreadMessageDocument> {
     const thread = await this.findById(threadId);
@@ -141,7 +134,6 @@ export class ThreadsService {
 
     const savedMessage = await message.save();
 
-    // Update thread stats
     await this.threadModel.updateOne(
       { _id: thread._id },
       {
@@ -205,13 +197,8 @@ export class ThreadsService {
     const threadId = message.threadId;
     await this.messageModel.deleteOne({ _id: message._id });
 
-    // Update thread reply count
     await this.threadModel.updateOne({ _id: threadId }, { $inc: { replyCount: -1 } });
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // REACTIONS
-  // ═══════════════════════════════════════════════════════════════════════════════
 
   async addReaction(messageId: string, userId: string, emoji: string): Promise<ThreadMessageDocument> {
     const message = await this.messageModel.findById(messageId);
@@ -221,17 +208,13 @@ export class ThreadsService {
     }
 
     const userObjectId = new Types.ObjectId(userId);
-
-    // Check if reaction exists
     const existingReaction = message.reactions.find((r: any) => r.emoji === emoji);
 
     if (existingReaction) {
-      // Add user to existing reaction if not already there
       if (!existingReaction.users.some((u: Types.ObjectId) => u.equals(userObjectId))) {
         existingReaction.users.push(userObjectId);
       }
     } else {
-      // Create new reaction
       message.reactions.push({
         emoji,
         users: [userObjectId],
@@ -249,12 +232,10 @@ export class ThreadsService {
     }
 
     const userObjectId = new Types.ObjectId(userId);
-
     const reaction = message.reactions.find((r: any) => r.emoji === emoji);
+    
     if (reaction) {
       reaction.users = reaction.users.filter((u: Types.ObjectId) => !u.equals(userObjectId));
-
-      // Remove reaction if no users left
       if (reaction.users.length === 0) {
         message.reactions = message.reactions.filter((r: any) => r.emoji !== emoji);
       }
@@ -262,10 +243,6 @@ export class ThreadsService {
 
     return message.save();
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // THREAD MANAGEMENT
-  // ═══════════════════════════════════════════════════════════════════════════════
 
   async togglePin(threadId: string, userId: string): Promise<ThreadDocument> {
     const thread = await this.findById(threadId);
@@ -297,7 +274,6 @@ export class ThreadsService {
       },
     );
 
-    // Also update existing read status
     await this.threadModel.updateOne(
       {
         _id: new Types.ObjectId(threadId),
@@ -313,7 +289,6 @@ export class ThreadsService {
 
   async getUnreadCount(projectId: string, userId: string): Promise<number> {
     const userObjectId = new Types.ObjectId(userId);
-
     const threads = await this.threadModel.find({
       projectId: new Types.ObjectId(projectId),
       participants: userObjectId,
@@ -325,14 +300,12 @@ export class ThreadsService {
       const readStatus = thread.readStatus.find((rs: any) => rs.userId.equals(userObjectId));
 
       if (!readStatus) {
-        // Never read this thread
         unreadCount += thread.replyCount;
       } else if (thread.lastReplyAt && thread.lastReplyAt > readStatus.lastReadAt) {
-        // Has new messages since last read
         const newMessages = await this.messageModel.countDocuments({
           threadId: thread._id,
           createdAt: { $gt: readStatus.lastReadAt },
-          userId: { $ne: userObjectId }, // Don't count own messages
+          userId: { $ne: userObjectId },
         });
         unreadCount += newMessages;
       }
@@ -340,10 +313,6 @@ export class ThreadsService {
 
     return unreadCount;
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // TASK LINKING
-  // ═══════════════════════════════════════════════════════════════════════════════
 
   async linkTask(threadId: string, taskId: string): Promise<ThreadDocument> {
     const thread = await this.findById(threadId);
@@ -365,12 +334,7 @@ export class ThreadsService {
     return thread.save();
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // SEARCH
-  // ═══════════════════════════════════════════════════════════════════════════════
-
   async search(projectId: string, query: string): Promise<ThreadMessageDocument[]> {
-    // Get all thread IDs for this project
     const threads = await this.threadModel
       .find({ projectId: new Types.ObjectId(projectId) })
       .select('_id');

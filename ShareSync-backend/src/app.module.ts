@@ -67,6 +67,7 @@ import { FilesModule } from './files/files.module';
 import { MilestonesModule } from './milestones/milestones.module';
 import { ThreadsModule } from './threads/threads.module';
 import { InsightsModule } from './insights/insights.module';
+import { VaultModule } from './vault/vault.module';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 5: POLISH & SCALE MODULES
@@ -209,6 +210,7 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     MilestonesModule,
     ThreadsModule,
     InsightsModule,
+    VaultModule,
 
     // ✅ DISCOVERY (Public project feed)
     DiscoveryModule,
