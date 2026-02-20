@@ -8,7 +8,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { getProjectOverview, getProjectPulse } from "../api/projectOverview";
+import { getProjectPulse } from "../api/projectOverview";
+import { apiRequest } from "../utils/api"; // ✅ ADDED: Direct API access
 
 export function useProjectOverview(projectId, options = {}) {
   const {
@@ -28,8 +29,11 @@ export function useProjectOverview(projectId, options = {}) {
 
     try {
       setError(null);
-      const overview = await getProjectOverview(projectId);
-      setData(overview);
+      // ✅ FIX: Replaced the broken `getProjectOverview` wrapper with a direct
+      // call to the correct `/pulse` endpoint that actually exists on the backend.
+      const res = await apiRequest(`/projects/${projectId}/pulse`);
+      const payload = res?.data ?? res;
+      setData(payload);
     } catch (err) {
       setError(err?.message || "Failed to load project overview");
     } finally {

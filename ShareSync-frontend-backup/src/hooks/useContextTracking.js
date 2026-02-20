@@ -5,11 +5,9 @@ import { apiRequest } from '../utils/api';
 
 /**
  * useContextTracking Hook
- * 
- * Comprehensive context tracking for the "Welcome Back" feature.
+ * * Comprehensive context tracking for the "Welcome Back" feature.
  * Automatically tracks and persists user activity state.
- * 
- * Features:
+ * * Features:
  * - Route/view tracking with project/task detection
  * - Scroll position persistence
  * - Session duration tracking with heartbeat
@@ -17,8 +15,7 @@ import { apiRequest } from '../utils/api';
  * - Focus mode state preservation
  * - Device info capture
  * - Intelligent debouncing (prevents API spam)
- * 
- * @returns {Object} Context tracking utilities
+ * * @returns {Object} Context tracking utilities
  */
 export const useContextTracking = () => {
   const location = useLocation();
@@ -159,7 +156,11 @@ export const useContextTracking = () => {
       window.dispatchEvent(new CustomEvent('context-saving'));
       
       try {
-        await apiRequest('/user-context/save', 'POST', context);
+        await apiRequest('/user-context/save', { 
+          method: 'POST', 
+          body: JSON.stringify(context) 
+        });
+        
         lastSavedRef.current = context;
         setLastContext(context);
         console.debug('[Context] Saved:', context.lastActiveView, context.lastActiveRoute);
@@ -193,7 +194,11 @@ export const useContextTracking = () => {
     window.dispatchEvent(new CustomEvent('context-saving'));
     
     try {
-      await apiRequest('/user-context/save', 'POST', context);
+      await apiRequest('/user-context/save', { 
+        method: 'POST', 
+        body: JSON.stringify(context) 
+      });
+      
       lastSavedRef.current = context;
       console.debug('[Context] Force saved');
       window.dispatchEvent(new CustomEvent('context-saved'));
@@ -214,7 +219,7 @@ export const useContextTracking = () => {
     if (!user) return;
     
     try {
-      await apiRequest('/user-context/heartbeat', 'POST');
+      await apiRequest('/user-context/heartbeat', { method: 'POST' });
     } catch (error) {
       // Silently fail heartbeats - not critical
       console.debug('[Context] Heartbeat failed');
@@ -233,12 +238,15 @@ export const useContextTracking = () => {
     if (!user) return;
     
     try {
-      await apiRequest('/user-context/unfinished-action', 'POST', {
-        action,
-        context,
-        contextId: options.contextId,
-        priority: options.priority || 'medium',
-        estimatedCompletion: options.estimatedMinutes,
+      await apiRequest('/user-context/unfinished-action', {
+        method: 'POST',
+        body: JSON.stringify({
+          action,
+          context,
+          contextId: options.contextId,
+          priority: options.priority || 'medium',
+          estimatedCompletion: options.estimatedMinutes,
+        })
       });
       console.debug('[Context] Tracked unfinished:', action);
     } catch (error) {
@@ -254,7 +262,10 @@ export const useContextTracking = () => {
     if (!user) return;
     
     try {
-      await apiRequest('/user-context/action-complete', 'POST', { action });
+      await apiRequest('/user-context/action-complete', {
+        method: 'POST',
+        body: JSON.stringify({ action })
+      });
       console.debug('[Context] Completed action:', action);
     } catch (error) {
       console.error('[Context] Complete action failed:', error.message);
@@ -272,10 +283,13 @@ export const useContextTracking = () => {
     if (!user) return;
     
     try {
-      const result = await apiRequest('/user-context/focus/start', 'POST', {
-        taskId: options.taskId,
-        projectId: options.projectId,
-        plannedDuration: options.plannedMinutes,
+      const result = await apiRequest('/user-context/focus/start', {
+        method: 'POST',
+        body: JSON.stringify({
+          taskId: options.taskId,
+          projectId: options.projectId,
+          plannedDuration: options.plannedMinutes,
+        })
       });
       console.debug('[Context] Focus session started');
       return result;
@@ -292,9 +306,12 @@ export const useContextTracking = () => {
     if (!user) return;
     
     try {
-      const result = await apiRequest('/user-context/focus/end', 'POST', {
-        completed,
-        interruptions,
+      const result = await apiRequest('/user-context/focus/end', {
+        method: 'POST',
+        body: JSON.stringify({
+          completed,
+          interruptions,
+        })
       });
       console.debug('[Context] Focus session ended');
       return result;
@@ -315,7 +332,7 @@ export const useContextTracking = () => {
     if (!user) return null;
     
     try {
-      const data = await apiRequest('/user-context/summary', 'GET');
+      const data = await apiRequest('/user-context/summary');
       return data;
     } catch (error) {
       console.error('[Context] Get summary failed:', error.message);
@@ -330,7 +347,7 @@ export const useContextTracking = () => {
     if (!user) return false;
     
     try {
-      const context = await apiRequest('/user-context', 'GET');
+      const context = await apiRequest('/user-context');
       
       if (context?.lastActiveRoute && context.lastActiveRoute !== location.pathname) {
         navigate(context.lastActiveRoute);
