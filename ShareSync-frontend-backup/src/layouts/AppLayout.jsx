@@ -1,18 +1,25 @@
 // src/layouts/AppLayout.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// AUTHENTICATED APP LAYOUT
-// 
+// AUTHENTICATED APP LAYOUT v4.0 - "The Gallery Walk"
+// ═══════════════════════════════════════════════════════════════════════════════
+//
 // This layout wraps all authenticated pages and provides:
 // - The MainLayout with light backgrounds
 // - Integration with existing Sidebar and Navbar components
 // - Proper context providers integration
+// - Light theme loading skeletons
 //
 // NO BACKEND CHANGES - This is purely a layout wrapper.
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import MainLayout from "./MainLayout";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOADING SKELETONS - Light Theme
+// ═══════════════════════════════════════════════════════════════════════════════
 
 // Loading fallback for lazy-loaded content
 function PageLoader() {
@@ -42,6 +49,12 @@ function SidebarSkeleton() {
             <div key={i} className="h-10 bg-slate-100 rounded-lg animate-pulse" />
           ))}
         </div>
+        
+        {/* Bottom section skeleton */}
+        <div className="absolute bottom-4 left-4 right-4 space-y-2">
+          <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
+          <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
+        </div>
       </div>
     </div>
   );
@@ -51,7 +64,10 @@ function SidebarSkeleton() {
 function NavbarSkeleton() {
   return (
     <div className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between">
+      {/* Left: breadcrumb/title skeleton */}
       <div className="h-8 w-48 bg-slate-100 rounded-lg animate-pulse" />
+      
+      {/* Right: actions skeleton */}
       <div className="flex items-center gap-3">
         <div className="h-8 w-8 bg-slate-100 rounded-full animate-pulse" />
         <div className="h-8 w-8 bg-slate-100 rounded-full animate-pulse" />
@@ -60,6 +76,10 @@ function NavbarSkeleton() {
     </div>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// APP LAYOUT COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export default function AppLayout({ 
   sidebar: SidebarComponent,
@@ -99,5 +119,62 @@ export {
   PageContainer, 
   PageHeader, 
   PageSection, 
-  ContentCard 
+  ContentCard,
+  StatCard
 } from "./MainLayout";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONTENT SKELETONS
+// Reusable skeleton components for loading states
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function CardSkeleton({ className = "" }) {
+  return (
+    <div className={`bg-white rounded-xl border border-slate-200 p-6 ${className}`}>
+      <div className="space-y-4">
+        <div className="h-4 bg-slate-100 rounded w-1/3 animate-pulse" />
+        <div className="h-8 bg-slate-100 rounded w-1/2 animate-pulse" />
+        <div className="h-4 bg-slate-100 rounded w-full animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+export function ListSkeleton({ rows = 5, className = "" }) {
+  return (
+    <div className={`space-y-3 ${className}`}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex items-center gap-4 p-4 bg-white rounded-lg border border-slate-200">
+          <div className="w-10 h-10 bg-slate-100 rounded-full animate-pulse" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 bg-slate-100 rounded w-1/4 animate-pulse" />
+            <div className="h-3 bg-slate-100 rounded w-1/2 animate-pulse" />
+          </div>
+          <div className="h-8 w-20 bg-slate-100 rounded animate-pulse" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function TableSkeleton({ rows = 5, cols = 4, className = "" }) {
+  return (
+    <div className={`bg-white rounded-xl border border-slate-200 overflow-hidden ${className}`}>
+      {/* Header */}
+      <div className="flex gap-4 p-4 border-b border-slate-200 bg-slate-50">
+        {Array.from({ length: cols }).map((_, i) => (
+          <div key={i} className="flex-1 h-4 bg-slate-200 rounded animate-pulse" />
+        ))}
+      </div>
+      
+      {/* Rows */}
+      {Array.from({ length: rows }).map((_, rowIndex) => (
+        <div key={rowIndex} className="flex gap-4 p-4 border-b border-slate-100 last:border-b-0">
+          {Array.from({ length: cols }).map((_, colIndex) => (
+            <div key={colIndex} className="flex-1 h-4 bg-slate-100 rounded animate-pulse" />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}

@@ -1,15 +1,15 @@
 // src/layouts/MainLayout.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // THE GALLERY - Main App Layout (Light Mode)
-// 
-// This is the primary layout wrapper for all authenticated app pages.
-// It provides:
-// - Light background with subtle violet/teal atmospheric glows
-// - Sidebar slot (left)
-// - Main content area (right)
-// - Top navigation slot
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// v4.0 "The Gallery Walk" - THE LIGHT GALLERY
+// After passing through the grand entrance (auth), users enter this light,
+// airy gallery space. The subtle violet/teal atmospheric glows echo the
+// entrance but in a much more subdued way.
 //
 // NO BACKEND CHANGES - This is purely a visual wrapper.
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from "react";
@@ -27,11 +27,11 @@ export default function MainLayout({
           These are purely decorative and don't affect functionality
           ═══════════════════════════════════════════════════════════════════════ */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Base gradient */}
+        {/* Base gradient - soft with violet hint */}
         <div 
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)'
+            background: 'linear-gradient(180deg, var(--palette-slate-50, #F8FAFC) 0%, #EEF2FF 50%, var(--palette-slate-100, #F1F5F9) 100%)'
           }}
         />
         
@@ -151,20 +151,63 @@ export function PageSection({
   );
 }
 
-export function ContentCard({ children, className = "", ...props }) {
+export function ContentCard({ 
+  children, 
+  className = "", 
+  hover = true,
+  padding = true,
+  ...props 
+}) {
   return (
     <div 
       className={`
         bg-white rounded-xl border border-slate-200
-        shadow-sm shadow-violet-500/[0.02]
-        hover:shadow-md hover:shadow-violet-500/[0.04]
-        hover:border-violet-200/50
-        transition-all duration-200
+        shadow-sm
+        ${hover ? 'hover:shadow-lg hover:shadow-violet-500/[0.06] hover:border-violet-200/60 transition-all duration-200' : ''}
+        ${padding ? 'p-6' : ''}
         ${className}
       `}
       {...props}
     >
       {children}
     </div>
+  );
+}
+
+// Stat card for dashboards
+export function StatCard({ 
+  label, 
+  value, 
+  trend, 
+  trendDirection = 'up',
+  icon: Icon,
+  className = "" 
+}) {
+  const trendColors = {
+    up: 'text-emerald-600',
+    down: 'text-red-500',
+    neutral: 'text-slate-500',
+  };
+
+  return (
+    <ContentCard className={className}>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm text-slate-500">{label}</p>
+          <p className="text-2xl font-semibold text-slate-800 mt-1">{value}</p>
+          {trend && (
+            <p className={`text-sm mt-1 ${trendColors[trendDirection]}`}>
+              {trendDirection === 'up' ? '↑' : trendDirection === 'down' ? '↓' : ''}
+              {trend}
+            </p>
+          )}
+        </div>
+        {Icon && (
+          <div className="w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center">
+            <Icon className="w-5 h-5 text-violet-500" />
+          </div>
+        )}
+      </div>
+    </ContentCard>
   );
 }

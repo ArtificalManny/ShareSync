@@ -1,7 +1,14 @@
 // src/layouts/AuthLayout.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // GLASS FORTRESS - Auth Layout + Shared UI Primitives
-// - Centralizes: brand header/footer, card styling, button styling, error styling
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// v4.0 "The Gallery Walk" - THE GRAND ENTRANCE
+// This layout is INTENTIONALLY dark and atmospheric. It creates the dramatic
+// entrance to ShareSync before users step into the light gallery (app pages).
+//
+// DO NOT CHANGE THE VISUAL STYLE - It's perfect!
+//
 // - Frontend-only changes (NO backend/auth logic touched)
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -34,20 +41,22 @@ export const AUTH_INPUT_WITH_ICON =
   "transition-all duration-200";
 
 // Layout shell
-// ✅ CHANGE: Added "auth-layout" class for CSS variable scoping
+// ✅ "auth-layout" class enables dark theme CSS variable scoping from tokens.css
 export function AuthLayout({ title, subtitle, children }) {
   return (
     <div className="auth-layout fixed inset-0 w-screen h-screen overflow-hidden bg-[#070712]">
-      {/* Ambient background */}
+      {/* Ambient background - THE GRAND ENTRANCE atmospheric effect */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Base */}
         <div className="absolute inset-0 bg-[#070712]" />
 
-        {/* KEY: full-screen purple wash that fades out (prevents the "boxed slab" look) */}
+        {/* Full-screen purple wash that fades out (prevents the "boxed slab" look) */}
         <div className="absolute inset-0 bg-gradient-to-r from-purple-700/30 via-purple-700/12 to-transparent" />
 
-        {/* Existing blobs */}
+        {/* Purple blob - top left */}
         <div className="absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full bg-purple-600/20 blur-[110px]" />
+        
+        {/* Fuchsia blob - bottom right */}
         <div className="absolute -bottom-48 -right-48 w-[620px] h-[620px] rounded-full bg-fuchsia-500/12 blur-[120px]" />
 
         {/* Soft center bloom */}
@@ -137,7 +146,17 @@ export function AuthError({ children }) {
   );
 }
 
-// Optional input wrapper (not forced; kept for future use)
+// Success message
+export function AuthSuccess({ children }) {
+  if (!children) return null;
+  return (
+    <div className="rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/20 px-4 py-3 text-sm text-emerald-200">
+      {children}
+    </div>
+  );
+}
+
+// Optional input wrapper
 export function AuthInput({ label, icon: Icon, error, className = "", ...props }) {
   return (
     <div>
@@ -162,3 +181,6 @@ export function AuthInput({ label, icon: Icon, error, className = "", ...props }
     </div>
   );
 }
+
+// Default export for easier imports
+export default AuthLayout;
