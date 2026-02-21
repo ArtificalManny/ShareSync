@@ -3,7 +3,7 @@
 // THE GALLERY - Main App Layout (Light Mode)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// v4.0 "The Gallery Walk" - THE LIGHT GALLERY
+// v5.0 "The Gallery Walk" - THE LIGHT GALLERY
 // After passing through the grand entrance (auth), users enter this light,
 // airy gallery space. The subtle violet/teal atmospheric glows echo the
 // entrance but in a much more subdued way.
@@ -31,7 +31,7 @@ export default function MainLayout({
         <div 
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(180deg, var(--palette-slate-50, #F8FAFC) 0%, #EEF2FF 50%, var(--palette-slate-100, #F1F5F9) 100%)'
+            background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)'
           }}
         />
         
@@ -55,7 +55,7 @@ export default function MainLayout({
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          LAYOUT STRUCTURE
+          LAYOUT STRUCTURE - No dark borders
           ═══════════════════════════════════════════════════════════════════════ */}
       <div className="relative z-10 flex min-h-screen">
         {/* Sidebar slot */}
@@ -167,6 +167,7 @@ export function ContentCard({
         ${padding ? 'p-6' : ''}
         ${className}
       `}
+      style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
       {...props}
     >
       {children}
