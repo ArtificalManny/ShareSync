@@ -1,417 +1,48 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
    SHARESYNC CARD SYSTEM v4.0 - Light Mode First
-   ═══════════════════════════════════════════════════════════════════════════════
-   
-   Cards for the "Gallery Walk" - clean white surfaces on light backgrounds
-   with subtle violet-tinted shadows for brand connection.
-   
-   Card States:
-   • Idle: Clean, minimal presence
-   • Hover: Gentle lift, violet shadow appears
-   • Focus: Brand ring
-   • Active: Strong presence
-   • Momentum: Glow intensifies with productivity
-   
+   UPDATED: Phase 3 Variable Mapping
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   BASE CARD - Light Mode (Default)
-   ═══════════════════════════════════════════════════════════════════════════════ */
 .card {
   position: relative;
-  
-  /* Clean white surface */
-  background: #FFFFFF;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  
-  /* Subtle shadow with violet tint */
-  box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.02),
-    0 4px 12px rgba(139, 92, 246, 0.04);
-  
-  /* Smooth transitions */
-  transition: 
-    transform var(--motion-fast) var(--easing-standard),
-    box-shadow var(--motion-normal) var(--easing-standard),
-    border-color var(--motion-fast) var(--easing-standard);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl, 16px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(var(--brand-500-rgb), 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CARD HOVER - Gentle Lift with Violet Shadow
-   ═══════════════════════════════════════════════════════════════════════════════ */
 .card:hover {
   transform: translateY(-2px);
-  border-color: var(--violet-200);
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.03),
-    0 8px 24px rgba(139, 92, 246, 0.08);
+  border-color: var(--brand-300);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02), 0 8px 24px rgba(var(--brand-500-rgb), 0.08);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CARD FOCUS - Brand Ring
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.card:focus-within,
-.card.is-focused {
-  border-color: var(--violet-300);
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.03),
-    0 8px 24px rgba(139, 92, 246, 0.08),
-    var(--ring-focus);
+.card:focus-within, .card.is-focused {
+  border-color: var(--brand-300);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(var(--brand-500-rgb), 0.08), 0 0 0 3px rgba(var(--brand-500-rgb), 0.2);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CARD ACTIVE/SELECTED
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.card.is-active,
-.card[data-active="true"] {
-  border-color: var(--violet-400);
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.04),
-    0 10px 30px rgba(139, 92, 246, 0.12);
+.card.is-active, .card[data-active="true"] {
+  border-color: var(--brand-400);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(var(--brand-500-rgb), 0.12);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CARD VARIANTS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* Elevated card - higher prominence */
-.card-elevated {
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.04),
-    0 8px 24px rgba(139, 92, 246, 0.06);
-}
-
-.card-elevated:hover {
-  box-shadow: 
-    0 8px 24px rgba(0, 0, 0, 0.06),
-    0 16px 40px rgba(139, 92, 246, 0.1);
-}
-
-/* Subtle card - minimal presence */
-.card-subtle {
-  background: var(--slate-50);
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.card-subtle:hover {
-  background: #FFFFFF;
-  border-color: var(--border-subtle);
-  box-shadow: var(--shadow-sm);
-  transform: none;
-}
-
-/* Interactive/Clickable card */
-.card-interactive {
-  cursor: pointer;
-}
-
-.card-interactive:active {
-  transform: translateY(0) scale(0.995);
-}
-
-/* Glass card (for overlays) */
-.card-glass {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   MOMENTUM-RESPONSIVE CARDS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.card[data-momentum="1"] {
-  box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.02),
-    0 4px 12px rgba(139, 92, 246, 0.03);
-}
-
-.card[data-momentum="2"] {
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.02),
-    0 6px 16px rgba(139, 92, 246, 0.05);
-}
-
-.card[data-momentum="3"] {
-  border-color: var(--violet-100);
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.02),
-    0 8px 20px rgba(139, 92, 246, 0.08);
-}
-
-.card[data-momentum="4"] {
-  border-color: var(--violet-200);
-  box-shadow: 
-    0 4px 8px rgba(0, 0, 0, 0.03),
-    0 12px 28px rgba(139, 92, 246, 0.12);
-}
-
-.card[data-momentum="5"] {
-  border-color: var(--violet-300);
-  box-shadow: 
-    0 4px 8px rgba(0, 0, 0, 0.04),
-    0 16px 36px rgba(139, 92, 246, 0.18);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   ACCENT BARS - Left Edge Indicators (Aurora Gradient)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.card.accent-bar {
-  position: relative;
-  padding-left: calc(var(--card-pad, 16px) + 4px);
-}
-
-.card .accent-bar__left {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  border-top-left-radius: var(--radius-lg);
-  border-bottom-left-radius: var(--radius-lg);
-  background: linear-gradient(180deg, var(--violet-500), var(--blue-500), var(--teal-400));
-  opacity: 0.9;
-  transition: width var(--motion-fast) ease, opacity var(--motion-fast) ease;
-}
-
-.card:hover .accent-bar__left {
-  width: 6px;
-  opacity: 1;
-}
-
-/* Accent bar color variants */
-.card.accent-bar--brand .accent-bar__left { 
-  background: linear-gradient(180deg, var(--violet-500), var(--violet-600)); 
-}
-.card.accent-bar--blue .accent-bar__left { 
-  background: linear-gradient(180deg, var(--blue-400), var(--blue-600)); 
-}
-.card.accent-bar--success .accent-bar__left { 
-  background: linear-gradient(180deg, var(--teal-400), var(--teal-600)); 
-}
-.card.accent-bar--warning .accent-bar__left { 
-  background: linear-gradient(180deg, var(--amber-400), var(--orange-500)); 
-}
-.card.accent-bar--error .accent-bar__left { 
-  background: linear-gradient(180deg, var(--rose-400), var(--red-600)); 
-}
-.card.accent-bar--live .accent-bar__left { 
-  background: linear-gradient(180deg, var(--cyan-400), var(--cyan-600)); 
-}
-.card.accent-bar--energy .accent-bar__left { 
-  background: linear-gradient(180deg, var(--orange-400), var(--rose-500)); 
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   TOP ACCENT BARS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.card.accent-brand { border-top: 3px solid var(--violet-500); }
-.card.accent-blue { border-top: 3px solid var(--blue-500); }
-.card.accent-success { border-top: 3px solid var(--teal-500); }
-.card.accent-warning { border-top: 3px solid var(--amber-500); }
-.card.accent-error { border-top: 3px solid var(--red-500); }
-.card.accent-live { border-top: 3px solid var(--cyan-500); }
-.card.accent-energy { border-top: 3px solid var(--orange-500); }
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CARD SECTIONS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: var(--card-pad, 16px) var(--card-pad, 16px) 0;
-  font-weight: var(--fw-semibold);
-  font-size: var(--fs-sm);
-  color: var(--text-primary);
-}
-
-.card-header-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  background: var(--tint-brand);
-  color: var(--brand-500);
-}
-
-.card-body {
-  padding: var(--card-pad, 16px);
-}
-
-.card-footer {
-  padding: 0 var(--card-pad, 16px) var(--card-pad, 16px);
-}
-
-.card-divider {
-  height: 1px;
-  background: var(--border-subtle);
-  margin: 0 var(--card-pad, 16px);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   LIVING CARD STATES
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* Priority state */
-.card[data-living-state="priority"] {
-  border-color: var(--amber-200);
-}
-
-.card[data-living-state="priority"] .accent-bar__left {
-  background: linear-gradient(180deg, var(--amber-400), var(--orange-500));
-}
-
-/* Completing state */
-.card[data-living-state="completing"] {
-  border-color: var(--cyan-200);
-}
-
-.card[data-living-state="completing"] .accent-bar__left {
-  background: linear-gradient(180deg, var(--cyan-400), var(--teal-500));
-}
-
-/* Blocked state */
-.card[data-living-state="blocked"] {
-  border-color: var(--red-200);
-}
-
-.card[data-living-state="blocked"] .accent-bar__left {
-  background: var(--red-500);
-}
-
-/* Stale state */
-.card[data-living-state="stale"] {
-  opacity: 0.7;
-  filter: saturate(0.8);
-}
-
-.card[data-living-state="stale"]:hover {
-  opacity: 0.9;
-  filter: saturate(0.9);
-}
-
-/* Live state */
-.card[data-living-state="live"] {
-  border-color: var(--cyan-300);
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.03),
-    0 0 20px rgba(6, 182, 212, 0.1);
-}
-
-/* Done state */
-.card[data-living-state="done"] {
-  opacity: 0.75;
-  border-color: var(--teal-200);
-}
-
-/* Overdue state */
-.card[data-living-state="overdue"] {
-  border-color: var(--red-300);
-}
-
-.card[data-living-state="overdue"] .accent-bar__left {
-  background: linear-gradient(180deg, var(--red-400), var(--orange-500));
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   DARK MODE CARDS (Auth Pages & Dark Contexts)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.auth-layout .card,
-.dark .card,
-[data-theme="dark"] .card {
+/* Auth Pages Fallback (Keep Dark) */
+.auth-layout .card, .dark .card, [data-theme="dark"] .card {
   background: rgba(30, 41, 59, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 
-    0 4px 24px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.auth-layout .card:hover,
-.dark .card:hover {
-  border-color: rgba(139, 92, 246, 0.3);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(139, 92, 246, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+.auth-layout .card:hover, .dark .card:hover {
+  border-color: rgba(var(--brand-500-rgb), 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(var(--brand-500-rgb), 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CARD HELPERS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.card-subtle-text {
-  font-size: var(--fs-sm);
-  color: var(--text-secondary);
-}
-
-.card-label {
-  font-size: 10px;
-  font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-tertiary);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   SHINE EFFECT (Opt-in)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.card.shine {
-  position: relative;
-  overflow: hidden;
-}
-
-.card.shine::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 80px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(139, 92, 246, 0.08),
-    transparent
-  );
-  transform: translateX(-150%);
-  opacity: 0;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  @keyframes card-shine-sweep {
-    from { transform: translateX(-150%); }
-    to { transform: translateX(350%); }
-  }
-
-  .card.shine:hover::after {
-    animation: card-shine-sweep 800ms var(--easing-standard) 1;
-    opacity: 1;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   REDUCED MOTION
-   ═══════════════════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
-  .card {
-    transition: none;
-  }
-  
-  .card:hover {
-    transform: none;
-  }
-  
-  .card.shine::after {
-    display: none;
-  }
-  
-  .card:hover .accent-bar__left {
-    width: 4px;
-  }
+  .card { transition: none; }
+  .card:hover { transform: none; }
 }

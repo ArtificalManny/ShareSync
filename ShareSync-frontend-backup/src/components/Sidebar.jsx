@@ -1,13 +1,22 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v4.0 - "The Gallery Walk" Light Theme
-// Phase C: Momentum Engine + Phase E: Social Proof + Phase N: Auto-Hide
+// SHARESYNC SIDEBAR v5.0 - "The Gallery Walk" UNIFIED LIGHT THEME
 // ═══════════════════════════════════════════════════════════════════════════════
-// 
-// CHANGES IN v4.0:
-// - Updated to light theme (white/slate backgrounds)
-// - Preserved ALL existing functionality
-// - NO BACKEND CHANGES
+//
+// THE DESIGN DECISION:
+// The sidebar is now a "Gallery Wall" - clean white with subtle violet accents.
+// This creates visual unity with the Light Gallery content area.
+//
+// Color Palette:
+// - Background: #FFFFFF (white)
+// - Border: #E2E8F0 (slate-200)
+// - Text Primary: #1E293B (slate-800)
+// - Text Secondary: #64748B (slate-500)
+// - Text Muted: #94A3B8 (slate-400)
+// - Accent: #8B5CF6 (violet-500)
+// - Success: #10B981 (emerald-500)
+//
+// NO BACKEND CHANGES
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -36,7 +45,6 @@ import { useMomentumContext } from "../contexts/MomentumContext";
 import { useEntrance } from "./onboarding/AppEntrance";
 import useAnimatedNumber from "../hooks/useAnimatedNumber";
 
-// ⭐ PHASE E: Import social proof components
 import { MiniLeaderboard } from "./social/Leaderboard";
 import OnlineIndicator from "./social/OnlineIndicator";
 import { MiniLeagueIndicator } from "./social/MomentumLeague";
@@ -44,15 +52,8 @@ import { MiniLeagueIndicator } from "./social/MomentumLeague";
 const LS_KEY = "ss.sidebar.collapsed";
 const LS_AUTOHIDE_KEY = "ss.sidebar.autohide";
 
-/* ─────────────────────────────────────────────────────────────────────────
-   SAFE USER DISPLAY HELPERS (frontend only)
-───────────────────────────────────────────────────────────────────────── */
 function safeParseJSON(v) {
-  try {
-    return JSON.parse(v);
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(v); } catch { return null; }
 }
 
 function buildDisplayName(u) {
@@ -60,19 +61,15 @@ function buildDisplayName(u) {
   const last = (u?.lastName || "").trim();
   const full = [first, last].filter(Boolean).join(" ").trim();
   if (full) return full;
-
   const username = (u?.username || "").trim();
   if (username) return username;
-
   const email = (u?.email || "").trim();
   if (email) return email;
-
   return "User";
 }
 
 function getUserFromLocalStorage() {
   const candidates = ["ss.user", "sharesync.user", "user", "auth.user", "currentUser"];
-
   for (const k of candidates) {
     try {
       const raw = localStorage.getItem(k);
@@ -85,38 +82,23 @@ function getUserFromLocalStorage() {
 }
 
 function getAvatarOverride() {
-  try {
-    return localStorage.getItem("ss.avatarOverride") || null;
-  } catch {
-    return null;
-  }
+  try { return localStorage.getItem("ss.avatarOverride") || null; } catch { return null; }
 }
 
 function resolveAvatarUrl(u) {
   const override = getAvatarOverride();
   if (override) return override;
-
-  return (
-    u?.avatarUrl ||
-    u?.profilePicture ||
-    u?.avatar ||
-    u?.photoUrl ||
-    u?.profile?.avatarUrl ||
-    u?.profile?.photoUrl ||
-    null
-  );
+  return u?.avatarUrl || u?.profilePicture || u?.avatar || u?.photoUrl || u?.profile?.avatarUrl || u?.profile?.photoUrl || null;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MOMENTUM LEVEL INDICATOR - Shows current momentum state
-   ✅ UPDATED: Light theme colors
+   MOMENTUM LEVEL INDICATOR - Light Theme
 ───────────────────────────────────────────────────────────────────────── */
 function MomentumLevelIndicator({ collapsed = false }) {
-  const { glowLevel, glowState, isFireMode, message } = useMomentumContext();
+  const { glowLevel, isFireMode } = useMomentumContext();
 
-  // ✅ UPDATED: Light theme color configs
   const levelConfig = {
-    0: { icon: null, color: "text-slate-400", bg: "bg-slate-100", label: "Idle" },
+    0: { icon: null, color: "text-slate-400", bg: "bg-slate-50", label: "Idle" },
     1: { icon: Zap, color: "text-violet-500", bg: "bg-violet-50", label: "Warming" },
     2: { icon: Zap, color: "text-violet-600", bg: "bg-violet-100", label: "Building" },
     3: { icon: TrendingUp, color: "text-violet-600", bg: "bg-violet-100", label: "Flowing" },
@@ -130,42 +112,23 @@ function MomentumLevelIndicator({ collapsed = false }) {
   if (collapsed) {
     if (!Icon) return null;
     return (
-      <div
-        className={`
-          mx-auto w-8 h-8 rounded-lg flex items-center justify-center
-          ${config.bg}
-          ${isFireMode ? "animate-pulse" : ""}
-        `}
-      >
+      <div className={`mx-auto w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-300 ${config.bg} ${isFireMode ? "animate-pulse" : ""}`}>
         <Icon className={`w-4 h-4 ${config.color}`} />
       </div>
     );
   }
 
   return (
-    <div
-      className={`
-        mx-3 px-3 py-2 rounded-xl
-        ${config.bg} border border-slate-200
-        transition-all duration-500
-        ${isFireMode ? "border-orange-300" : ""}
-      `}
-    >
+    <div className={`mx-3 px-3 py-2 rounded-xl transition-all duration-500 ${config.bg} border border-slate-200 ${isFireMode ? "border-orange-300" : ""}`}>
       <div className="flex items-center gap-2">
         {Icon && (
-          <div
-            className={`
-              w-6 h-6 rounded-lg flex items-center justify-center
-              ${glowLevel >= 3 ? "bg-white/80" : "bg-white"}
-              ${isFireMode ? "animate-bounce" : ""}
-            `}
-          >
+          <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors duration-300 ${glowLevel >= 3 ? "bg-white/80" : "bg-white"} ${isFireMode ? "animate-bounce" : ""}`}>
             <Icon className={`w-3.5 h-3.5 ${config.color}`} />
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className={`text-xs font-medium ${config.color}`}>{config.label}</div>
-          <div className="text-[10px] text-slate-500 truncate">Level {glowLevel}</div>
+          <div className={`text-xs font-semibold ${config.color} transition-colors duration-300`}>{config.label}</div>
+          <div className="text-[10px] text-slate-500 truncate font-medium transition-colors duration-300">Level {glowLevel}</div>
         </div>
       </div>
     </div>
@@ -173,73 +136,44 @@ function MomentumLevelIndicator({ collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS RING - With entrance animation, momentum glow, and breathing
-   ✅ UPDATED: Light theme adjustments
+   PROGRESS RING - Light Theme with Violet Glow
 ───────────────────────────────────────────────────────────────────────── */
-function ProgressRing({
-  progress: actualProgress = 0.75,
-  level = 1,
-  streak = 7,
-  collapsed = false,
-  currentXP,
-  maxXP,
-}) {
+function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, collapsed = false }) {
   const { glowLevel, isFireMode } = useMomentumContext();
-
   const entrance = useEntrance();
-  const { progress: entranceProgress, isAnimatingRing, isComplete } = entrance || {
-    progress: 100,
-    isAnimatingRing: false,
-    isComplete: true,
-  };
-
+  const { progress: entranceProgress, isAnimatingRing, isComplete } = entrance || { progress: 100, isAnimatingRing: false, isComplete: true };
   const displayProgress = isComplete ? actualProgress : (entranceProgress / 100) * actualProgress;
-
   const size = collapsed ? 40 : 56;
   const strokeWidth = collapsed ? 3 : 4;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - displayProgress * circumference;
-
   const showStreak = streak >= 3;
   const isImpressiveStreak = streak >= 7;
 
   const prevProgressRef = useRef(actualProgress);
   const prevLevelRef = useRef(level);
-
   const [isPulsing, setIsPulsing] = useState(false);
   const [isLevelingUp, setIsLevelingUp] = useState(false);
   const [pulseIntensity, setPulseIntensity] = useState("normal");
 
   const displayValue = isComplete ? Math.round(actualProgress * 100) : Math.round(displayProgress * 100);
-
-  const { value: animatedPercent, isAnimating: isCountAnimating } = useAnimatedNumber(displayValue, {
-    duration: 500,
-    enabled: !collapsed && isComplete,
-  });
+  const { value: animatedPercent, isAnimating: isCountAnimating } = useAnimatedNumber(displayValue, { duration: 500, enabled: !collapsed && isComplete });
 
   useEffect(() => {
     if (!isComplete) return;
-
     const prevProgress = prevProgressRef.current;
     const currentProgress = actualProgress;
-
     const THRESHOLDS = [0.25, 0.5, 0.75, 1.0];
     const crossedThreshold = THRESHOLDS.some((t) => prevProgress < t && currentProgress >= t);
 
     if (currentProgress > prevProgress) {
       setIsPulsing(true);
       setPulseIntensity(crossedThreshold ? "strong" : "normal");
-
-      const timer = setTimeout(() => {
-        setIsPulsing(false);
-        setPulseIntensity("normal");
-      }, 600);
-
+      const timer = setTimeout(() => { setIsPulsing(false); setPulseIntensity("normal"); }, 600);
       prevProgressRef.current = currentProgress;
       return () => clearTimeout(timer);
     }
-
     prevProgressRef.current = currentProgress;
   }, [actualProgress, isComplete]);
 
@@ -254,18 +188,10 @@ function ProgressRing({
   }, [level]);
 
   const glowStyle = useMemo(() => {
-    if (isAnimatingRing) {
-      return { filter: `drop-shadow(0 0 12px rgb(139 92 246 / 0.4))` };
-    }
-    if (isFireMode) {
-      return {
-        filter: `drop-shadow(0 0 16px rgb(139 92 246 / 0.5)) drop-shadow(0 0 30px rgb(249 115 22 / 0.3))`,
-      };
-    }
+    if (isAnimatingRing) return { filter: `drop-shadow(0 0 12px rgb(139 92 246 / 0.4))` };
+    if (isFireMode) return { filter: `drop-shadow(0 0 16px rgb(139 92 246 / 0.5)) drop-shadow(0 0 30px rgb(249 115 22 / 0.3))` };
     if (glowLevel === 0) return {};
-    const intensity = glowLevel * 0.12;
-    const blur = 6 + glowLevel * 3;
-    return { filter: `drop-shadow(0 0 ${blur}px rgb(139 92 246 / ${intensity}))` };
+    return { filter: `drop-shadow(0 0 ${6 + glowLevel * 3}px rgb(139 92 246 / ${glowLevel * 0.12}))` };
   }, [glowLevel, isAnimatingRing, isFireMode]);
 
   const breathingClass = useMemo(() => {
@@ -277,95 +203,28 @@ function ProgressRing({
 
   return (
     <div className="flex flex-col items-center py-6">
-      <div
-        className={`
-          relative 
-          ${isPulsing ? "animate-bounce-subtle" : ""}
-          ${isLevelingUp ? "scale-110" : "scale-100"}
-          ${isAnimatingRing ? "progress-ring-entrance" : ""}
-          transition-transform duration-300
-        `}
-        data-momentum={glowLevel}
-      >
-        {isPulsing && (
-          <div
-            className={`absolute inset-0 rounded-full ${pulseIntensity === "strong" ? "ring-pulse-strong" : "ring-pulse"}`}
-            style={{ width: size, height: size }}
-          />
-        )}
+      <div className={`relative ${isPulsing ? "animate-bounce-subtle" : ""} ${isLevelingUp ? "scale-110" : "scale-100"} ${isAnimatingRing ? "progress-ring-entrance" : ""} transition-transform duration-300`} data-momentum={glowLevel}>
+        {isPulsing && <div className={`absolute inset-0 rounded-full ${pulseIntensity === "strong" ? "ring-pulse-strong" : "ring-pulse"}`} style={{ width: size, height: size }} />}
+        {isLevelingUp && <div className="absolute inset-0 rounded-full level-up-flash" style={{ width: size, height: size, background: "radial-gradient(circle, rgb(167 139 250) 0%, transparent 70%)" }} />}
+        {isFireMode && <div className="absolute inset-0 rounded-full animate-fire-ring" style={{ width: size + 8, height: size + 8, top: -4, left: -4, border: "2px solid rgb(249 115 22 / 0.4)" }} />}
 
-        {isLevelingUp && (
-          <div
-            className="absolute inset-0 rounded-full level-up-flash"
-            style={{
-              width: size,
-              height: size,
-              background: "radial-gradient(circle, rgb(167 139 250) 0%, transparent 70%)",
-            }}
-          />
-        )}
-
-        {isFireMode && (
-          <div
-            className="absolute inset-0 rounded-full animate-fire-ring"
-            style={{
-              width: size + 8,
-              height: size + 8,
-              top: -4,
-              left: -4,
-              border: "2px solid rgb(249 115 22 / 0.4)",
-            }}
-          />
-        )}
-
-        <svg
-          width={size}
-          height={size}
-          className={`xp-ring-progress transform -rotate-90 ${isPulsing ? "scale-105" : "scale-100"} ${breathingClass} transition-transform duration-200`}
-          style={glowStyle}
-        >
-          {/* ✅ UPDATED: Light theme track color */}
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#E2E8F0" strokeWidth={strokeWidth} />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={
-              isLevelingUp
-                ? "#10B981"
-                : isFireMode
-                ? "#F97316"
-                : "#8B5CF6"
-            }
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            className={isPulsing ? "stroke-violet-400" : ""}
-            style={{
-              transition: isAnimatingRing
-                ? "stroke-dashoffset 50ms linear"
-                : "stroke-dashoffset 700ms ease-out, stroke 300ms ease",
-            }}
-          />
+        <svg width={size} height={size} className={`xp-ring-progress transform -rotate-90 ${isPulsing ? "scale-105" : "scale-100"} ${breathingClass} transition-transform duration-200`} style={glowStyle}>
+          {/* Track - Light gray */}
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="stroke-slate-200" strokeWidth={strokeWidth} />
+          {/* Progress - Violet */}
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={isLevelingUp ? "#10B981" : isFireMode ? "#F97316" : "#8B5CF6"} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className={isPulsing ? "stroke-violet-400" : ""} style={{ transition: isAnimatingRing ? "stroke-dashoffset 50ms linear" : "stroke-dashoffset 700ms ease-out, stroke 300ms ease" }} />
         </svg>
 
         <div className="absolute inset-0 flex items-center justify-center">
           {isLevelingUp ? (
             <div className="text-center level-up-number">
-              <div className="text-[8px] text-violet-500 uppercase tracking-wider">Level Up!</div>
+              <div className="text-[8px] text-violet-500 uppercase tracking-wider font-bold">Level Up!</div>
               <span className="text-lg font-bold text-violet-600">{level}</span>
             </div>
           ) : isFireMode ? (
             <span className="text-lg animate-pulse">🔥</span>
           ) : (
-            // ✅ UPDATED: Dark text for light theme
-            <span
-              className={`font-semibold text-slate-700 tabular-nums ${collapsed ? "text-xs" : "text-lg"} ${
-                isPulsing || isCountAnimating ? "scale-110 text-violet-600" : "scale-100"
-              } ${isAnimatingRing ? "text-violet-500" : ""} transition-all duration-200`}
-            >
+            <span className={`font-bold text-slate-800 tabular-nums ${collapsed ? "text-xs" : "text-lg"} ${isPulsing || isCountAnimating ? "scale-110 text-violet-600" : "scale-100"} ${isAnimatingRing ? "text-violet-500" : ""} transition-all duration-200`}>
               {isComplete ? animatedPercent : Math.round(displayProgress * 100)}
             </span>
           )}
@@ -373,13 +232,7 @@ function ProgressRing({
       </div>
 
       {!collapsed && showStreak && (
-        <div
-          className={`mt-3 px-2 py-1 rounded-full text-[10px] font-medium flex items-center gap-1 transition-all duration-300 ${
-            isImpressiveStreak
-              ? "bg-amber-50 text-amber-600 border border-amber-200"
-              : "bg-slate-100 text-slate-500 border border-transparent"
-          }`}
-        >
+        <div className={`mt-3 px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${isImpressiveStreak ? "bg-amber-50 text-amber-600 border border-amber-200" : "bg-slate-100 text-slate-500 border border-transparent"}`}>
           <Flame className={`w-3 h-3 ${isImpressiveStreak ? "text-amber-500" : "text-slate-400"}`} />
           <span>{streak}d</span>
         </div>
@@ -412,25 +265,19 @@ function ProgressRing({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   SHIP COUNTER
-   ✅ UPDATED: Light theme colors
+   SHIP COUNTER - Light Theme
 ───────────────────────────────────────────────────────────────────────── */
 function ShipCounter({ current = 2, target = 5, collapsed = false }) {
-  const { glowLevel } = useMomentumContext();
   const prevCurrentRef = useRef(current);
   const [isAnimating, setIsAnimating] = useState(false);
   const [justFilledIndex, setJustFilledIndex] = useState(-1);
-
   const { value: displayCurrent } = useAnimatedNumber(current, { duration: 400 });
 
   useEffect(() => {
     if (current > prevCurrentRef.current) {
       setIsAnimating(true);
       setJustFilledIndex(current - 1);
-      const timer = setTimeout(() => {
-        setIsAnimating(false);
-        setJustFilledIndex(-1);
-      }, 500);
+      const timer = setTimeout(() => { setIsAnimating(false); setJustFilledIndex(-1); }, 500);
       prevCurrentRef.current = current;
       return () => clearTimeout(timer);
     }
@@ -447,26 +294,16 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   }
 
   return (
-    <div
-      className={`mx-3 px-4 py-3 rounded-xl bg-white border border-slate-200 transition-all duration-200 ${
-        isAnimating ? "ring-2 ring-violet-200" : ""
-      }`}
-    >
+    <div className={`mx-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 transition-all duration-200 ${isAnimating ? "ring-2 ring-violet-200" : ""}`}>
       <div className="flex justify-between items-center mb-2">
-        <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Ships today</span>
-        <span className={`text-xs font-semibold tabular-nums ${isAnimating ? "text-violet-600 scale-110" : "text-slate-700 scale-100"} transition-all duration-200`}>
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ships today</span>
+        <span className={`text-xs font-bold tabular-nums ${isAnimating ? "text-violet-600 scale-110" : "text-slate-700 scale-100"} transition-all duration-200`}>
           {displayCurrent}/{target}
         </span>
       </div>
       <div className="flex gap-1">
         {[...Array(target)].map((_, i) => (
-          <div
-            key={i}
-            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-              i < current ? "bg-violet-500" : "bg-slate-200"
-            } ${i === justFilledIndex ? "scale-y-150 bg-violet-400" : "scale-y-100"}`}
-            style={{ transitionDelay: i === justFilledIndex ? "0ms" : `${i * 50}ms` }}
-          />
+          <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i < current ? "bg-violet-500" : "bg-slate-200"} ${i === justFilledIndex ? "scale-y-150 bg-violet-400" : "scale-y-100"}`} style={{ transitionDelay: i === justFilledIndex ? "0ms" : `${i * 50}ms` }} />
         ))}
       </div>
     </div>
@@ -474,45 +311,35 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   COLLAPSIBLE SECTION
-   ✅ UPDATED: Light theme colors
+   COLLAPSIBLE SECTION - Light Theme
 ───────────────────────────────────────────────────────────────────────── */
 function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, collapsed: sidebarCollapsed = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-
   if (sidebarCollapsed) return null;
 
   return (
     <div className="mx-3">
-      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-slate-100 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-1">
         <div className="flex items-center gap-2">
           {Icon && <Icon className="w-3.5 h-3.5 text-slate-400" />}
-          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{title}</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{title}</span>
         </div>
         {isOpen ? <ChevronUp className="w-3 h-3 text-slate-400" /> : <ChevronDown className="w-3 h-3 text-slate-400" />}
       </button>
-      {isOpen && <div className="mt-2">{children}</div>}
+      {isOpen && <div className="mt-2 animate-in fade-in slide-in-from-top-2 duration-200">{children}</div>}
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   HOVER TRIGGER ZONE - Instagram-style reveal (UNCHANGED)
+   HOVER TRIGGER ZONE (for auto-hide)
 ───────────────────────────────────────────────────────────────────────── */
 function HoverTriggerZone({ onHover, onLeave }) {
-  return (
-    <div
-      className="fixed left-0 top-0 w-4 h-screen z-[60] cursor-pointer"
-      onMouseEnter={onHover}
-      onMouseLeave={onLeave}
-      style={{ background: "transparent" }}
-    />
-  );
+  return <div className="fixed left-0 top-0 w-4 h-screen z-[60] cursor-pointer" onMouseEnter={onHover} onMouseLeave={onLeave} style={{ background: "transparent" }} />;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN SIDEBAR
-   ✅ UPDATED: Light theme - white background, slate borders
+   MAIN SIDEBAR - The Gallery Wall (Light Theme)
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar({ user }) {
   const navigate = useNavigate();
@@ -520,39 +347,26 @@ export default function Sidebar({ user }) {
   const { glowLevel, isFireMode } = useMomentumContext();
   const sidebarRef = useRef(null);
 
-  // Auto-hide state (UNCHANGED)
   const [autoHideEnabled, setAutoHideEnabled] = useState(() => {
-    try {
-      return localStorage.getItem(LS_AUTOHIDE_KEY) === "1";
-    } catch {
-      return false;
-    }
+    try { return localStorage.getItem(LS_AUTOHIDE_KEY) === "1"; } catch { return false; }
   });
 
   const [userCollapsed, setUserCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem(LS_KEY) === "1";
-    } catch {
-      return false;
-    }
+    try { return localStorage.getItem(LS_KEY) === "1"; } catch { return false; }
   });
 
-  // Hover state for Instagram-style behavior (UNCHANGED)
   const [isHovering, setIsHovering] = useState(false);
   const [isMouseInSidebar, setIsMouseInSidebar] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
-  // Calculate actual collapsed state
   const collapsed = autoHideEnabled ? !isHovering && !isMouseInSidebar : shouldCollapseSidebar || userCollapsed;
 
-  // Persist settings
   useEffect(() => {
     localStorage.setItem(LS_KEY, userCollapsed ? "1" : "0");
     localStorage.setItem(LS_AUTOHIDE_KEY, autoHideEnabled ? "1" : "0");
     document.body.classList.toggle("sidebar-collapsed", collapsed);
   }, [userCollapsed, autoHideEnabled, collapsed]);
 
-  // Handle hover trigger zone (UNCHANGED)
   const handleTriggerHover = () => {
     if (!autoHideEnabled) return;
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -566,7 +380,6 @@ export default function Sidebar({ user }) {
     }, 100);
   };
 
-  // Handle sidebar mouse events (UNCHANGED)
   const handleSidebarEnter = () => {
     if (!autoHideEnabled) return;
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -577,16 +390,11 @@ export default function Sidebar({ user }) {
   const handleSidebarLeave = () => {
     if (!autoHideEnabled) return;
     setIsMouseInSidebar(false);
-    hoverTimeoutRef.current = setTimeout(() => {
-      setIsHovering(false);
-    }, 300);
+    hoverTimeoutRef.current = setTimeout(() => { setIsHovering(false); }, 300);
   };
 
-  // Cleanup timeout on unmount
   useEffect(() => {
-    return () => {
-      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    };
+    return () => { if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current); };
   }, []);
 
   const handleToggle = () => {
@@ -603,7 +411,6 @@ export default function Sidebar({ user }) {
     if (!autoHideEnabled) setUserCollapsed(false);
   };
 
-  // REAL USER (props first, then localStorage fallback) - UNCHANGED
   const localUser = useMemo(() => getUserFromLocalStorage(), []);
   const effectiveUser = user || localUser;
 
@@ -618,7 +425,6 @@ export default function Sidebar({ user }) {
   return (
     <>
       {autoHideEnabled && collapsed && <HoverTriggerZone onHover={handleTriggerHover} onLeave={handleTriggerLeave} />}
-
       {autoHideEnabled && <div className="w-[72px] h-screen shrink-0" aria-hidden="true" />}
 
       <aside
@@ -627,8 +433,7 @@ export default function Sidebar({ user }) {
         onMouseEnter={handleSidebarEnter}
         onMouseLeave={handleSidebarLeave}
         className={`
-          sidebar-item
-          h-screen flex flex-col
+          sidebar-item h-screen flex flex-col 
           bg-white border-r border-slate-200
           transition-all duration-300 ease-out
           ${collapsed ? "w-[72px]" : "w-[260px]"}
@@ -636,95 +441,76 @@ export default function Sidebar({ user }) {
           ${autoHideEnabled ? "fixed left-0 top-0 z-50 shadow-xl" : ""}
           translate-x-0
         `}
+        style={{
+          boxShadow: autoHideEnabled ? '4px 0 24px rgba(139, 92, 246, 0.08)' : '0 0 0 rgba(0,0,0,0)'
+        }}
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4">
+        {/* ═══════════════════════════════════════════════════════════════════
+            HEADER - Logo & Controls
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-100">
           {!collapsed && (
             <div className="flex items-center gap-2.5">
-              <div
-                className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 ${
-                  isFireMode ? "shadow-lg shadow-orange-200" : "shadow-md shadow-violet-200"
-                }`}
-              >
+              <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 shadow-md shadow-violet-200 ${isFireMode ? "shadow-orange-200" : ""}`}>
                 <span className="text-xs font-bold text-white">S</span>
               </div>
-              <span className="text-sm font-semibold text-slate-800">ShareSync</span>
+              <span className="text-sm font-bold text-slate-800">ShareSync</span>
             </div>
           )}
           <div className="flex items-center gap-1">
             {!collapsed && (
-              <button
-                onClick={handleToggleAutoHide}
-                className={`
-                  p-2 rounded-lg text-slate-400 
-                  hover:bg-slate-100 hover:text-slate-600 
-                  transition-all duration-200
-                  ${autoHideEnabled ? "bg-violet-50 text-violet-500" : ""}
-                `}
-                title={autoHideEnabled ? "Disable auto-hide (Instagram mode)" : "Enable auto-hide (Instagram mode)"}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                </svg>
+              <button onClick={handleToggleAutoHide} className={`p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${autoHideEnabled ? "bg-violet-50 text-violet-500" : ""}`} title={autoHideEnabled ? "Disable auto-hide" : "Enable auto-hide"}>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
               </button>
             )}
-            <button
-              onClick={handleToggle}
-              className={`p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all duration-200 ${
-                collapsed ? "mx-auto" : ""
-              }`}
-              title={autoHideEnabled ? "Disable auto-hide" : collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
+            <button onClick={handleToggle} className={`p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${collapsed ? "mx-auto" : ""}`} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
               <ChevronsLeft className={`w-4 h-4 transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`} />
             </button>
           </div>
         </div>
 
-        {/* Progress Ring */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            PROGRESS RING
+        ═══════════════════════════════════════════════════════════════════ */}
         <ProgressRing collapsed={collapsed} />
 
-        {/* Momentum Level Indicator */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            MOMENTUM INDICATOR
+        ═══════════════════════════════════════════════════════════════════ */}
         <div className="mb-4">
           <MomentumLevelIndicator collapsed={collapsed} />
         </div>
 
-        {/* League Badge */}
+        {/* League indicator */}
         {!collapsed && (
           <div className="mx-3 mb-4">
             <MiniLeagueIndicator currentXP={1250} onClick={() => navigate("/leaderboard")} />
           </div>
         )}
 
-        {/* Navigation - ✅ UPDATED: Light theme for nav items */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            NAVIGATION
+        ═══════════════════════════════════════════════════════════════════ */}
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
           <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
           <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
           <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
-
-          <div className="py-4">
-            <div className="h-px bg-slate-200" />
-          </div>
-
+          
+          <div className="py-4"><div className="h-px bg-slate-200" /></div>
+          
           <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
           <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
-
-          <div className="pt-4">
-            <ShipCounter collapsed={collapsed} />
-          </div>
-
-          {/* Social Proof Section */}
+          
+          <div className="pt-4"><ShipCounter collapsed={collapsed} /></div>
+          
           {!collapsed && (
             <>
-              <div className="pt-4">
-                <div className="h-px bg-slate-200" />
-              </div>
-
+              <div className="pt-4"><div className="h-px bg-slate-200" /></div>
               <CollapsibleSection title="Team" icon={Users} defaultOpen={true} collapsed={collapsed}>
                 <OnlineIndicator variant="compact" showAvatars={true} showCount={true} maxAvatars={3} expandable={true} defaultExpanded={false} />
               </CollapsibleSection>
-
               <div className="mt-4">
                 <CollapsibleSection title="Leaderboard" icon={Trophy} defaultOpen={false} collapsed={collapsed}>
                   <MiniLeaderboard maxVisible={5} onViewAll={() => navigate("/leaderboard")} />
@@ -734,23 +520,29 @@ export default function Sidebar({ user }) {
           )}
         </nav>
 
-        {/* User Card - ✅ UPDATED: Light theme */}
-        <div className="p-3">
-          <div
-            onClick={() => navigate("/profile")}
-            className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-violet-200 transition-all duration-200 ${
-              collapsed ? "justify-center" : ""
-            }`}
+        {/* ═══════════════════════════════════════════════════════════════════
+            USER PROFILE CARD
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="p-3 border-t border-slate-100">
+          <div 
+            onClick={() => navigate("/profile")} 
+            className={`
+              flex items-center gap-3 p-2.5 rounded-xl cursor-pointer 
+              bg-slate-50 border border-slate-200 
+              hover:bg-white hover:border-violet-200 hover:shadow-sm 
+              transition-all duration-200 
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 
+              ${collapsed ? "justify-center" : ""}
+            `}
           >
             <div className="relative">
               <UserAvatar size={32} name={me.name} avatarUrl={me.avatarUrl} />
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
             </div>
-
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium text-slate-800 truncate">{me.name}</div>
-                <div className="text-[10px] text-emerald-600 flex items-center gap-1">
+                <div className="text-sm font-bold text-slate-800 truncate transition-colors">{me.name}</div>
+                <div className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 transition-colors">
                   <ShieldCheck className="w-3 h-3" />
                   <span>Online</span>
                 </div>
@@ -759,11 +551,18 @@ export default function Sidebar({ user }) {
           </div>
         </div>
 
-        {autoHideEnabled && collapsed && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-16 bg-violet-400 rounded-l-full" />}
+        {/* Auto-hide indicator pill */}
+        {autoHideEnabled && collapsed && (
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-16 bg-violet-400 rounded-l-full" />
+        )}
       </aside>
 
+      {/* Backdrop when auto-hide is expanded */}
       {autoHideEnabled && !collapsed && (
-        <div className="fixed inset-0 bg-black/10 z-40 transition-opacity duration-300" onClick={() => setIsHovering(false)} />
+        <div 
+          className="fixed inset-0 bg-slate-900/10 z-40 transition-opacity duration-300" 
+          onClick={() => setIsHovering(false)} 
+        />
       )}
     </>
   );

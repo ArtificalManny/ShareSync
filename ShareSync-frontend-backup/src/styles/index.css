@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SHARESYNC - Main Stylesheet v4.0 "The Gallery Walk"
+   SHARESYNC - Main Stylesheet v4.0 "The Gallery Walk" (Adaptive)
    ═══════════════════════════════════════════════════════════════════════════════
    
    Import order matters! Organized for proper cascade:
@@ -101,8 +101,8 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
-  /* Added for Phase 2: Ensures native browser UI elements match the light theme */
-  color-scheme: light;
+  /* Added for Phase 2: Ensures native browser UI elements match the active theme */
+  color-scheme: light dark;
 }
 
 /* Body defaults with momentum support */
@@ -112,55 +112,28 @@ body {
   min-height: 100vh;
   line-height: 1.5;
   
-  /* Smooth transitions for momentum changes */
-  transition: background 1s ease-out;
+  /* Smooth transitions for momentum changes and theme toggles */
+  transition: background 0.3s ease-out, color 0.3s ease-out;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    SEMANTIC COLOR UTILITIES
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-.text-brand {
-  color: var(--brand-600);
-}
-
-.text-brand-light {
-  color: var(--brand-400);
-}
-
-.bg-brand {
-  background-color: var(--brand-600);
-}
-
-.border-brand {
-  border-color: var(--brand-600);
-}
+.text-brand { color: var(--brand-600); }
+.text-brand-light { color: var(--brand-400); }
+.bg-brand { background-color: var(--brand-600); }
+.border-brand { border-color: var(--brand-600); }
 
 /* Success/Error/Warning utilities */
-.text-success {
-  color: var(--success-500);
-}
-
-.text-error {
-  color: var(--error-500);
-}
-
-.text-warning {
-  color: var(--warning-500);
-}
+.text-success { color: var(--success-500); }
+.text-error { color: var(--error-500); }
+.text-warning { color: var(--warning-500); }
 
 /* Energy (fire mode) utilities */
-.text-energy {
-  color: var(--energy-500);
-}
-
-.bg-energy {
-  background-color: var(--energy-500);
-}
-
-.border-energy {
-  border-color: var(--energy-500);
-}
+.text-energy { color: var(--energy-500); }
+.bg-energy { background-color: var(--energy-500); }
+.border-energy { border-color: var(--energy-500); }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    GLASS SIDEBAR EFFECT
@@ -180,7 +153,8 @@ body {
   transition: 
     transform 200ms ease,
     box-shadow 300ms ease,
-    border-color 200ms ease;
+    border-color 200ms ease,
+    background-color 200ms ease;
 }
 
 .bento-card:hover {
@@ -190,7 +164,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SCROLLBAR STYLING
+   SCROLLBAR STYLING (Adaptive)
    ═══════════════════════════════════════════════════════════════════════════════ */
 ::-webkit-scrollbar {
   width: 8px;
@@ -206,14 +180,23 @@ body {
   border-radius: 4px;
 }
 
+.dark ::-webkit-scrollbar-thumb,
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #27272a; /* zinc-800 */
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--slate-400);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover,
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46; /* zinc-700 */
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--slate-300) transparent;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -221,7 +204,7 @@ body {
    ═══════════════════════════════════════════════════════════════════════════════ */
 ::selection {
   background: var(--brand-500);
-  color: var(--palette-white);
+  color: #ffffff;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -275,32 +258,4 @@ body[data-momentum-fire="true"] .text-glow {
   body {
     transition: none !important;
   }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   FORCE LIGHT MODE - "The Gallery Walk"
-   Remove any dark mode triggers to maintain visual unity
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* Override any dark mode that might be triggered by system preferences */
-:root {
-  color-scheme: light;
-}
-
-/* Ensure the html element doesn't have dark class */
-html {
-  background-color: #F8FAFC;
-}
-
-/* Force light backgrounds on key elements */
-body {
-  background-color: #F8FAFC;
-  color: #1E293B;
-}
-
-/* Remove any lingering dark borders */
-.app-layout,
-.main-layout,
-#root {
-  border-color: transparent;
 }

@@ -1,104 +1,97 @@
-/* Reusable button styles (primary / outline / ghost)
-   Works nicely with your tokens + focus.css
-   Usage:
-     <button class="ui-btn ui-btn--primary is-md">Continue</button>
-     <button class="ui-btn ui-btn--outline is-sm">Cancel</button>
-     <button class="ui-btn ui-btn--ghost is-lg">Learn more</button>
-*/
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC BUTTONS v4.0 - The Luminous Journey
+   Merged legacy .ui-btn support with new Blueprint classes
+   UPDATED: Phase 3 Variable Mapping
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-.ui-btn {
-    --btn-radius: var(--radius-md, var(--r-md, 14px));
-    --btn-shadow: var(--elev-1, 0 4px 12px hsl(220 40% 20% / .06));
-    --btn-shadow-hover: var(--glow, 0 0 0 1px hsl(244 85% 56% / .15), 0 12px 40px hsl(244 85% 56% / .25));
-    --btn-text: rgb(var(--text, 18 24 38));
-    --btn-border: rgb(var(--border, 226 232 240));
-  
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: .5rem;
-    font-weight: 600;
-    border-radius: var(--btn-radius);
-    transition: transform .15s var(--easing-standard, cubic-bezier(.2,.8,.2,1)),
-                box-shadow .2s var(--easing-standard),
-                background .2s var(--easing-standard),
-                border-color .2s var(--easing-standard),
-                color .2s var(--easing-standard);
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-  
-  .ui-btn:disabled {
-    opacity: .6;
-    cursor: not-allowed;
-  }
-  
-  /* Sizes */
-  .ui-btn.is-sm { height: 2rem;  padding: 0 .75rem; font-size: .875rem; }
-  .ui-btn.is-md { height: 2.5rem; padding: 0 1rem;   font-size: .875rem; }
-  .ui-btn.is-lg { height: 3rem;  padding: 0 1.25rem; font-size: 1rem;    }
-  .ui-btn.is-icon { width: 2.25rem; height: 2.25rem; padding: 0; }
-  
-  /* Primary — neon gradient */
-  .ui-btn--primary {
-    color: #fff;
-    border: 1px solid transparent;
-    box-shadow: var(--btn-shadow);
-    background:
-      var(--grad-accent,
-        linear-gradient(
-          90deg,
-          rgb(var(--brand-v2-accent, 59 130 246)),
-          rgb(var(--grad-cnbc-b, 34 197 94))
-        )
-      );
-  }
-  .ui-btn--primary:hover { transform: translateY(-1px); box-shadow: var(--btn-shadow-hover); }
-  .ui-btn--primary:active { transform: translateY(0); }
-  
-  /* Outline — quiet stroke, adaptive text */
-  .ui-btn--outline {
-    background: transparent;
-    color: var(--btn-text);
-    border: 1px solid var(--btn-border);
-  }
-  .ui-btn--outline:hover {
-    background: color-mix(in oklab, var(--btn-text) 2%, transparent);
-    border-color: color-mix(in oklab, var(--btn-border) 70%, white);
-  }
-  
-  /* Ghost — minimal, for tertiary actions */
-  .ui-btn--ghost {
-    background: transparent;
-    color: var(--btn-text);
-    border: 1px solid transparent;
-  }
-  .ui-btn--ghost:hover {
-    background: color-mix(in oklab, var(--btn-text) 4%, transparent);
-  }
-  
-  /* Icon slot helper (optional) */
-  .ui-btn > .icon { display: inline-grid; place-items: center; line-height: 0; }
+.ui-btn, .btn {
+  --btn-radius: var(--radius-md, 14px);
+  --btn-text: var(--text-primary);
+  --btn-border: var(--border-default);
 
-  /* ——— Proton / Soft variants (Metalab × ProtonMail vibe) ——— */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  font-weight: 600;
+  border-radius: var(--btn-radius);
+  transition: transform .15s cubic-bezier(.2,.8,.2,1),
+              box-shadow .2s ease,
+              background .2s ease,
+              border-color .2s ease,
+              color .2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
 
-/* Proton pill */
-.btn--proton {
-    background: var(--grad-signature);
-    color: #fff;
-    border: 0;
-    border-radius: 14px;
-    box-shadow:
-      0 1px 0 rgba(255,255,255,.25) inset,
-      0 14px 32px color-mix(in oklab, var(--proton-iris-hex) 28%, #000 72%),
-      0 0 0 1px rgba(255,255,255,.08) inset;
-    transition: transform .15s var(--easing-standard, cubic-bezier(.2,.8,.2,1));
-  }
-  .btn--proton:hover { transform: translateY(-1px); }
-  
-  /* Soft button (quiet surface, keeps neon system) */
-  .btn--soft {
-    background: color-mix(in oklab, rgb(var(--card)) 86%, #000 14%);
-    border: 1px solid color-mix(in oklab, rgb(var(--border)) 80%, white 10%);
-    color: rgb(var(--fg, var(--text)));
-  }  
+.ui-btn:disabled, .btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Sizes */
+.is-sm { height: 2rem;  padding: 0 .75rem; font-size: .875rem; }
+.is-md { height: 2.5rem; padding: 0 1rem;   font-size: .875rem; }
+.is-lg { height: 3rem;  padding: 0 1.25rem; font-size: 1rem;    }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BLUEPRINT: Primary Button (Electric Violet)
+───────────────────────────────────────────────────────────────────────────── */
+.btn-primary, .ui-btn--primary {
+  background: linear-gradient(135deg, var(--brand-500) 0%, var(--brand-600) 100%);
+  color: var(--text-inverse, #FFFFFF);
+  border: none;
+  box-shadow: 0 4px 14px rgba(var(--brand-500-rgb), 0.3);
+}
+
+.btn-primary:hover:not(:disabled), .ui-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-700) 100%);
+  box-shadow: 0 6px 20px rgba(var(--brand-500-rgb), 0.4);
+  transform: translateY(-1px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BLUEPRINT: Blue Action Button (Ocean Blue)
+───────────────────────────────────────────────────────────────────────────── */
+.btn-blue {
+  background: linear-gradient(135deg, var(--blue-500) 0%, var(--blue-600) 100%);
+  color: var(--text-inverse, #FFFFFF);
+  border: none;
+  box-shadow: 0 4px 14px rgba(var(--blue-500-rgb), 0.3);
+}
+
+.btn-blue:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--blue-600) 0%, var(--blue-700) 100%);
+  box-shadow: 0 6px 20px rgba(var(--blue-500-rgb), 0.4);
+  transform: translateY(-1px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BLUEPRINT: Secondary / Outline Button
+───────────────────────────────────────────────────────────────────────────── */
+.btn-outline, .ui-btn--outline {
+  background: transparent;
+  color: var(--brand-500);
+  border: 1.5px solid var(--brand-500);
+  box-shadow: none;
+}
+
+.btn-outline:hover:not(:disabled), .ui-btn--outline:hover:not(:disabled) {
+  background: var(--tint-brand);
+  border-color: var(--brand-600);
+  color: var(--brand-600);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LEGACY: Ghost Button (Tertiary)
+───────────────────────────────────────────────────────────────────────────── */
+.ui-btn--ghost {
+  background: transparent;
+  color: var(--btn-text);
+  border: 1px solid transparent;
+}
+.ui-btn--ghost:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+}

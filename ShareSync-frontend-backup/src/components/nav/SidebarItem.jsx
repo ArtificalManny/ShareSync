@@ -1,41 +1,89 @@
 // src/components/nav/SidebarItem.jsx
-import React, { useEffect, useRef, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+// ═══════════════════════════════════════════════════════════════════════════════
+// SIDEBAR NAV ITEM v5.0 - "The Gallery Walk" Light Theme
+// ═══════════════════════════════════════════════════════════════════════════════
 
-export default function SidebarItem({ to, icon: Icon, label, count, collapsed, ...rest }) {
-  const location = useLocation();
+import React from "react";
+import { NavLink } from "react-router-dom";
 
-  const active =
-    location.pathname === to ||
-    location.pathname.startsWith(to + "/");
-
-  const [spin, setSpin] = useState(false);
-  const prevActive = useRef(false);
-
-  useEffect(() => {
-    if (active && !prevActive.current) {
-      setSpin(true);
-      const t = setTimeout(() => setSpin(false), 1600);
-      return () => clearTimeout(t);
-    }
-    prevActive.current = active;
-  }, [active]);
-
+export default function SidebarItem({ 
+  to, 
+  label, 
+  icon: Icon, 
+  count, 
+  collapsed = false,
+  onClick,
+}) {
   return (
     <NavLink
       to={to}
-      {...rest}
-      className={({ isActive }) => ["sb-item", isActive ? "is-active" : ""].join(" ")}
+      onClick={onClick}
+      className={({ isActive }) => `
+        sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl
+        transition-all duration-200 group relative
+        ${collapsed ? "justify-center" : ""}
+        ${isActive 
+          ? "bg-violet-50 text-violet-700 font-medium border border-violet-200" 
+          : "text-slate-600 hover:bg-slate-100 hover:text-slate-800 border border-transparent"
+        }
+      `}
     >
-      <span
-        className={`sb-icon story-ring ${spin ? "ring-spin-once" : ""}`}
-        aria-hidden="true"
-      >
-        {Icon ? <Icon className="w-4 h-4" /> : null}
-      </span>
-      {!collapsed && <span className="sb-label">{label}</span>}
-      {!collapsed && typeof count !== "undefined" && (
-        <span className="sb-count">{count}</span>
+      {({ isActive }) => (
+        <>
+          {/* Active indicator line */}
+          {isActive && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-violet-500 rounded-r-full" />
+          )}
+          
+          {/* Icon */}
+          {Icon && (
+            <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${
+              isActive ? "text-violet-600" : "text-slate-400 group-hover:text-slate-600"
+            }`} />
+          )}
+          
+          {/* Label */}
+          {!collapsed && (
+            <span className="flex-1 truncate text-sm">{label}</span>
+          )}
+          
+          {/* Count badge */}
+          {count !== undefined && count > 0 && !collapsed && (
+            <span className={`
+              min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium 
+              flex items-center justify-center
+              ${isActive 
+                ? "bg-violet-200 text-violet-700" 
+                : "bg-slate-200 text-slate-600"
+              }
+            `}>
+              {count > 99 ? "99+" : count}
+            </span>
+          )}
+          
+          {/* Collapsed count badge */}
+          {count !== undefined && count > 0 && collapsed && (
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-violet-500 text-white text-[10px] font-bold flex items-center justify-center">
+              {count > 9 ? "9+" : count}
+            </span>
+          )}
+          
+          {/* Tooltip for collapsed state */}
+          {collapsed && (
+            <div className="
+              absolute left-full ml-2 px-2 py-1 
+              bg-slate-800 text-white text-xs rounded-md
+              opacity-0 group-hover:opacity-100 
+              pointer-events-none transition-opacity duration-200
+              whitespace-nowrap z-50
+            ">
+              {label}
+              {count !== undefined && count > 0 && (
+                <span className="ml-1 text-violet-300">({count})</span>
+              )}
+            </div>
+          )}
+        </>
       )}
     </NavLink>
   );

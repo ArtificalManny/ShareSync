@@ -2,11 +2,7 @@
    SHARESYNC THEME v4.0 - "The Gallery Walk" Theme Application
    ═══════════════════════════════════════════════════════════════════════════════
    
-   This file applies the color tokens to the actual UI.
-   
-   LIGHT MODE (Default): App pages - clean, bright gallery feel
-   DARK MODE: Auth pages - dramatic entrance atmosphere
-   
+   This file applies the color tokens to the actual UI components.
    NO BACKEND CHANGES - Pure CSS
    
    ═══════════════════════════════════════════════════════════════════════════════ */
@@ -15,8 +11,9 @@
    LIGHT MODE - THE MAIN GALLERY (App Pages)
    ═══════════════════════════════════════════════════════════════════════════════ */
 html, body {
-  background: var(--bg-primary);
+  background: linear-gradient(180deg, var(--slate-50) 0%, #EEF2FF 50%, var(--slate-100) 100%);
   color: var(--text-primary);
+  min-height: 100vh;
 }
 
 /* Subtle atmospheric glow - echoes the auth pages but much lighter */
@@ -27,7 +24,7 @@ body::before {
   left: -15%;
   width: 50vw;
   height: 50vw;
-  background: radial-gradient(circle, rgba(var(--palette-violet-500-rgb), 0.04) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--violet-500-rgb), 0.08) 0%, transparent 70%);
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
@@ -40,7 +37,7 @@ body::after {
   right: -15%;
   width: 45vw;
   height: 45vw;
-  background: radial-gradient(circle, rgba(var(--palette-teal-400-rgb), 0.03) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--teal-500-rgb), 0.06) 0%, transparent 70%);
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
@@ -48,17 +45,16 @@ body::after {
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    DARK MODE - THE GRAND ENTRANCE (Auth Pages)
-   Applied via .auth-layout class on auth page wrappers
    ═══════════════════════════════════════════════════════════════════════════════ */
 .auth-layout {
-  background: var(--palette-slate-950);
+  background: var(--slate-900);
   color: var(--slate-50);
   min-height: 100vh;
   position: relative;
   isolation: isolate;
 }
 
-/* Dramatic purple glow - top left */
+/* Dramatic purple glow */
 .auth-layout::before {
   content: "";
   position: fixed;
@@ -66,409 +62,167 @@ body::after {
   left: -10%;
   width: 70vw;
   height: 70vw;
-  background: radial-gradient(circle, rgba(var(--palette-violet-500-rgb), 0.15) 0%, transparent 70%);
-  border-radius: 50%;
-  z-index: -1;
-  pointer-events: none;
-}
-
-/* Teal glow - bottom right */
-.auth-layout::after {
-  content: "";
-  position: fixed;
-  bottom: -20%;
-  right: -10%;
-  width: 60vw;
-  height: 60vw;
-  background: radial-gradient(circle, rgba(var(--palette-teal-400-rgb), 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--violet-500-rgb), 0.15) 0%, transparent 70%);
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   BUTTONS - Light Mode (Default)
+   BUTTONS (Strict adherence to hierarchy)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* Primary button - Violet gradient */
-button,
-.btn,
+/* Primary CTA Button (Creation, Main Actions) */
 .btn-primary {
-  background: var(--gradient-brand);
-  color: var(--palette-white);
+  background: var(--gradient-sunset);
+  color: #FFFFFF;
   border: none;
   padding: 0.625rem 1.25rem;
-  cursor: pointer;
-  border-radius: var(--radius-md);
-  font-weight: var(--fw-semibold);
-  font-size: var(--fs-sm);
-  transition: all var(--motion-fast) var(--easing-standard);
+  border-radius: 8px;
+  font-weight: 600;
   box-shadow: var(--shadow-brand);
+  transition: all 0.2s ease;
 }
 
-button:hover,
-.btn:hover,
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--violet-600) 0%, var(--violet-700) 100%);
+  background: linear-gradient(135deg, var(--violet-600) 0%, var(--rose-500) 100%);
   box-shadow: var(--shadow-brand-lg);
   transform: translateY(-1px);
 }
 
-button:active,
-.btn:active {
-  transform: translateY(0);
-}
-
-/* Blue action button (Save, Start Sprint, etc.) */
-.btn-blue,
-.btn-action {
-  background: var(--palette-gradient-blue);
-  color: var(--palette-white);
+/* Action Button (Saves, Settings, Updates) */
+.btn-blue {
+  background: linear-gradient(135deg, var(--blue-500) 0%, var(--blue-600) 100%);
+  color: #FFFFFF;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
   box-shadow: var(--shadow-blue);
+  transition: all 0.2s ease;
 }
 
-.btn-blue:hover,
-.btn-action:hover {
+.btn-blue:hover {
   background: linear-gradient(135deg, var(--blue-600) 0%, var(--blue-700) 100%);
   box-shadow: var(--shadow-blue-lg);
+  transform: translateY(-1px);
 }
 
-/* Secondary/Outline button */
-.btn-secondary,
+/* Secondary / Outline */
 .btn-outline {
-  background: transparent;
-  color: var(--brand-600);
-  border: 1.5px solid var(--brand-300);
-  box-shadow: none;
+  background: #FFFFFF;
+  color: var(--violet-500);
+  border: 1.5px solid var(--violet-500);
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
-.btn-secondary:hover,
 .btn-outline:hover {
-  background: var(--tint-brand);
-  border-color: var(--brand-400);
-  box-shadow: none;
-  transform: none;
-}
-
-/* Ghost button */
-.btn-ghost {
-  background: transparent;
-  color: var(--text-secondary);
-  border: none;
-  box-shadow: none;
-}
-
-.btn-ghost:hover {
-  background: var(--slate-100);
-  color: var(--text-primary);
-  box-shadow: none;
-  transform: none;
+  background: var(--violet-50);
+  border-color: var(--violet-600);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   INPUTS - Light Mode
+   CARDS (Gallery Feel)
    ═══════════════════════════════════════════════════════════════════════════════ */
-input,
-select,
-textarea {
-  background: var(--palette-white);
-  color: var(--text-primary);
-  border: 1.5px solid var(--border-default);
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-md);
-  font-size: var(--fs-sm);
-  width: 100%;
-  box-sizing: border-box;
-  transition: 
-    border-color var(--motion-fast) var(--easing-standard),
-    box-shadow var(--motion-fast) var(--easing-standard);
+.card, .bento-card {
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-input:hover,
-select:hover,
-textarea:hover {
-  border-color: var(--border-strong);
+.card:hover, .bento-card:hover {
+  border-color: var(--violet-200);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
-input:focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--brand-500);
-  box-shadow: var(--ring-focus);
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: var(--text-muted);
+/* Dark mode / Auth Card glassmorphism */
+.auth-layout .card, .auth-card {
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   AUTH PAGE INPUTS (Dark Mode)
+   INPUTS
    ═══════════════════════════════════════════════════════════════════════════════ */
-.auth-layout input,
-.auth-layout select,
-.auth-layout textarea {
-  background: rgba(15, 23, 42, 0.6);
-  color: var(--slate-50);
-  border: 1px solid var(--palette-white-10);
+.input {
+  background: #FFFFFF;
+  color: var(--slate-800);
+  border: 1.5px solid var(--slate-200);
+  border-radius: 10px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
 }
 
-.auth-layout input:focus,
-.auth-layout select:focus,
-.auth-layout textarea:focus {
+.input:focus {
   border-color: var(--violet-500);
-  box-shadow: 0 0 0 3px rgba(var(--palette-violet-500-rgb), 0.2);
+  box-shadow: var(--ring-focus);
+  outline: none;
 }
 
-.auth-layout input::placeholder {
+.input::placeholder {
   color: var(--slate-400);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   TOGGLES - Blue when active (as requested!)
+   TOGGLES (Blue Action)
    ═══════════════════════════════════════════════════════════════════════════════ */
-.toggle,
-[role="switch"] {
-  position: relative;
+.toggle-track {
+  background: var(--slate-300);
   width: 44px;
   height: 24px;
-  background: var(--slate-300);
-  border-radius: var(--radius-full);
+  border-radius: 12px;
+  transition: background 0.2s ease;
+  position: relative;
   cursor: pointer;
-  transition: background var(--motion-fast) var(--easing-standard);
 }
 
-.toggle.active,
-.toggle[data-state="checked"],
-[role="switch"][aria-checked="true"] {
-  background: var(--palette-gradient-blue);
+.toggle-track.active {
+  background: linear-gradient(135deg, var(--blue-500) 0%, var(--blue-600) 100%);
 }
 
 .toggle-thumb {
+  background: #FFFFFF;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 20px;
-  height: 20px;
-  background: var(--palette-white);
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform var(--motion-fast) var(--easing-standard);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
 }
 
-.toggle.active .toggle-thumb,
-.toggle[data-state="checked"] .toggle-thumb {
+.toggle-track.active .toggle-thumb {
   transform: translateX(20px);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FORMS - Light Mode
+   BADGES & PROGRESS BARS
    ═══════════════════════════════════════════════════════════════════════════════ */
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+.badge-violet { background: var(--violet-100); color: var(--violet-700); border: 1px solid var(--violet-200); }
+.badge-blue { background: var(--blue-100); color: var(--blue-700); border: 1px solid var(--blue-200); }
+.badge-teal { background: var(--teal-100); color: var(--teal-700); border: 1px solid var(--teal-200); }
+.badge-amber { background: var(--amber-100); color: var(--amber-700); border: 1px solid var(--amber-200); }
+.badge-red { background: var(--palette-red-100); color: var(--palette-red-700); border: 1px solid var(--palette-red-200); }
 
-label {
-  color: var(--text-secondary);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
-  margin-bottom: 0.25rem;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   AUTH PAGE FORMS (Dark Mode - Glassmorphic)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.auth-layout form,
-.auth-card {
-  background: rgba(30, 41, 59, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--palette-white-8);
-  border-radius: var(--radius-xl);
-  padding: 2.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-}
-
-.auth-layout label {
-  color: var(--slate-300);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   BADGES - Light Mode with Fluorescent Colors
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.625rem;
-  font-size: 0.75rem;
-  font-weight: var(--fw-medium);
-  border-radius: var(--radius-full);
-  border: 1px solid transparent;
-}
-
-.badge-brand,
-.badge-violet {
-  background: var(--violet-100);
-  color: var(--violet-700);
-  border-color: var(--violet-200);
-}
-
-.badge-blue {
-  background: var(--blue-100);
-  color: var(--blue-700);
-  border-color: var(--blue-200);
-}
-
-.badge-teal,
-.badge-success {
-  background: var(--teal-100);
-  color: var(--teal-700);
-  border-color: var(--teal-200);
-}
-
-.badge-amber,
-.badge-warning {
-  background: var(--palette-amber-100);
-  color: var(--palette-amber-700);
-  border-color: var(--palette-amber-200);
-}
-
-.badge-rose,
-.badge-error {
-  background: var(--palette-red-100);
-  color: var(--palette-red-700);
-  border-color: var(--palette-red-200);
-}
-
-.badge-slate,
-.badge-neutral {
-  background: var(--slate-100);
-  color: var(--slate-600);
-  border-color: var(--slate-200);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   PROGRESS BARS - Ocean Gradient
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.progress-bar,
 .progress-track {
   background: var(--slate-200);
   height: 8px;
-  border-radius: var(--radius-full);
+  border-radius: 4px;
   overflow: hidden;
 }
 
-.progress-fill,
-.progress-bar-fill {
-  height: 100%;
+.progress-fill {
   background: var(--gradient-ocean);
-  border-radius: var(--radius-full);
-  transition: width var(--motion-slow) var(--easing-decelerate);
-}
-
-/* Variant: Brand/Violet */
-.progress-fill.brand,
-.progress-bar.brand .progress-fill {
-  background: var(--gradient-brand);
-}
-
-/* Variant: Success/Teal */
-.progress-fill.success,
-.progress-bar.success .progress-fill {
-  background: var(--gradient-success);
-}
-
-/* Variant: Energy/Orange */
-.progress-fill.energy,
-.progress-bar.energy .progress-fill {
-  background: var(--gradient-energy);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   LINKS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-a {
-  color: var(--brand-600);
-  text-decoration: none;
-  transition: color var(--motion-fast) var(--easing-standard);
-}
-
-a:hover {
-  color: var(--brand-700);
-  text-decoration: underline;
-}
-
-.auth-layout a {
-  color: var(--violet-400);
-}
-
-.auth-layout a:hover {
-  color: var(--violet-300);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   DIVIDERS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-hr,
-.divider {
-  border: none;
-  height: 1px;
-  background: var(--border-subtle);
-  margin: 1rem 0;
-}
-
-.auth-layout hr,
-.auth-layout .divider {
-  background: var(--palette-white-8);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   SCROLLBAR STYLING
-   ═══════════════════════════════════════════════════════════════════════════════ */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--slate-100);
-  border-radius: var(--radius-full);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--slate-300);
-  border-radius: var(--radius-full);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--slate-400);
-}
-
-/* Dark mode scrollbar */
-.auth-layout ::-webkit-scrollbar-track,
-.dark ::-webkit-scrollbar-track {
-  background: var(--palette-white-5);
-}
-
-.auth-layout ::-webkit-scrollbar-thumb,
-.dark ::-webkit-scrollbar-thumb {
-  background: var(--palette-white-15);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   SELECTION
-   ═══════════════════════════════════════════════════════════════════════════════ */
-::selection {
-  background: var(--violet-200);
-  color: var(--violet-900);
-}
-
-.auth-layout ::selection,
-.dark ::selection {
-  background: var(--violet-600);
-  color: var(--palette-white);
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
 }

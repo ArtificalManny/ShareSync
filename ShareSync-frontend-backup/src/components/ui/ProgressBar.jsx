@@ -1,21 +1,6 @@
 // src/components/ui/ProgressBar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC PROGRESS BAR v4.0 - "The Gallery Walk" + Signature Gradients
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// CHANGES IN v4.0:
-// - Added Ocean gradient as default fill (blue → cyan → teal)
-// - Added variant prop for different gradient fills
-// - All Phase 8 micro-interactions preserved
-// - NO BACKEND CHANGES
-//
-// VARIANTS:
-// - ocean: Blue → Cyan → Teal (default)
-// - brand: Violet gradient
-// - aurora: Full spectrum
-// - success: Teal gradient
-// - energy: Orange → Rose
-//
+// SHARESYNC PROGRESS BAR v4.0 - Light Theme & Dark Mode Adapted
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -151,10 +136,10 @@ export default function ProgressBar({
     <div className={cn('space-y-1', className)}>
       {showLabel && (
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500">Progress</span>
+          <span className="text-slate-500 dark:text-zinc-400">Progress</span>
           <span className={cn(
             'font-semibold tabular-nums',
-            isComplete ? 'text-emerald-600' : 'text-slate-700',
+            isComplete ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-zinc-200',
             isPulsing && 'animate-bounce-subtle'
           )}>
             {Math.round(displayValue)}%
@@ -165,7 +150,7 @@ export default function ProgressBar({
       {/* Track */}
       <div 
         className={cn(
-          'relative rounded-full overflow-hidden bg-slate-200',
+          'relative rounded-full overflow-hidden bg-slate-200 dark:bg-[#1f1f23]',
           sizeClasses[size] || sizeClasses.md,
           isPulsing && 'progress-pulse'
         )}
@@ -194,7 +179,7 @@ export default function ProgressBar({
               <div 
                 key={threshold}
                 className={cn(
-                  'absolute top-0 bottom-0 w-px transition-opacity duration-300 bg-slate-400',
+                  'absolute top-0 bottom-0 w-px transition-opacity duration-300 bg-slate-400 dark:bg-[#27272a]',
                   percentage >= threshold ? 'opacity-0' : 'opacity-30'
                 )}
                 style={{ left: `${threshold}%` }}
@@ -349,7 +334,7 @@ export function ProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#E2E8F0"
+          stroke="var(--border-default, #E2E8F0)"
           strokeWidth={strokeWidth}
         />
         {/* Fill with gradient */}
@@ -370,7 +355,7 @@ export function ProgressRing({
       {showValue && (
         <span className={cn(
           'absolute text-xs font-semibold tabular-nums transition-transform duration-200',
-          isComplete ? 'text-emerald-600' : 'text-slate-700',
+          isComplete ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-zinc-200',
           isPulsing ? 'scale-110' : 'scale-100'
         )}>
           {Math.round(percentage)}
@@ -412,8 +397,8 @@ export function ProgressSteps({
                 className={cn(
                   'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300',
                   isCompleted && 'text-white',
-                  isCurrent && 'text-white ring-4 ring-blue-100',
-                  !isCompleted && !isCurrent && 'bg-slate-200 text-slate-500'
+                  isCurrent && 'text-white ring-4 ring-blue-100 dark:ring-blue-500/20',
+                  !isCompleted && !isCurrent && 'bg-slate-200 dark:bg-[#1f1f23] text-slate-500 dark:text-zinc-500'
                 )}
                 style={isCompleted || isCurrent ? { background: gradientLine } : {}}
               >
@@ -422,7 +407,7 @@ export function ProgressSteps({
               {step.label && (
                 <span className={cn(
                   'mt-2 text-xs',
-                  isCurrent ? 'text-slate-800 font-medium' : 'text-slate-500'
+                  isCurrent ? 'text-slate-800 dark:text-white font-medium' : 'text-slate-500 dark:text-zinc-500'
                 )}>
                   {step.label}
                 </span>
@@ -434,7 +419,7 @@ export function ProgressSteps({
               <div 
                 className={cn(
                   'flex-1 h-0.5 mx-2 transition-all duration-300',
-                  isCompleted ? '' : 'bg-slate-200'
+                  isCompleted ? '' : 'bg-slate-200 dark:bg-[#1f1f23]'
                 )}
                 style={isCompleted ? { background: gradientLine } : {}}
               />

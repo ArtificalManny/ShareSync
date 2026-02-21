@@ -3,22 +3,22 @@ import React from "react";
 import { cn } from "./cn";
 
 /**
- * Basic skeleton primitives.
+ * Basic skeleton primitives. (Adaptive Light/Dark Mode)
  *
  * <Skeleton className="h-32 rounded-xl" />                // block
- * <SkeletonLine width="60%" />                             // single line
- * <SkeletonText lines={3} lastWidth="70%" gap={10} />      // paragraph
- * <SkeletonCircle size={40} />                             // avatar
+ * <SkeletonLine width="60%" />                            // single line
+ * <SkeletonText lines={3} lastWidth="70%" gap={10} />     // paragraph
+ * <SkeletonCircle size={40} />                            // avatar
  */
 
 export function Skeleton({ className, style, ...rest }) {
-  return <div className={cn("sk sk-block", className)} style={style} {...rest} />;
+  return <div className={cn("sk sk-block animate-pulse bg-slate-200 dark:bg-[#1f1f23] rounded-md", className)} style={style} {...rest} />;
 }
 
 export function SkeletonLine({ width = "100%", className, style, height = 12, radius }) {
   return (
     <div
-      className={cn("sk sk-line", className)}
+      className={cn("sk sk-line animate-pulse bg-slate-200 dark:bg-[#1f1f23]", className)}
       style={{
         width,
         height,
@@ -32,10 +32,11 @@ export function SkeletonLine({ width = "100%", className, style, height = 12, ra
 export function SkeletonCircle({ size = 40, className, style }) {
   return (
     <div
-      className={cn("sk sk-circle", className)}
+      className={cn("sk sk-circle animate-pulse bg-slate-200 dark:bg-[#1f1f23]", className)}
       style={{
         width: size,
         height: size,
+        borderRadius: "50%",
         ...style,
       }}
     />

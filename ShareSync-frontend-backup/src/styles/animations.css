@@ -1,0 +1,68 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC ANIMATIONS v2.0 - Phase 1: Emotional Color System
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Fade Ins */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Glow Pulses (Brand Colors) */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0px 0px rgba(124, 58, 237, 0.2); }
+  50% { box-shadow: 0 0 15px 2px rgba(124, 58, 237, 0.5); }
+}
+
+.animate-glow {
+  animation: glowPulse 2s infinite ease-in-out;
+}
+
+@keyframes textGlow {
+  0%, 100% { text-shadow: 0 0 8px rgba(124, 58, 237, 0.4); }
+  50% { text-shadow: 0 0 16px rgba(124, 58, 237, 0.8); }
+}
+
+.animate-text-glow {
+  animation: textGlow 2.5s infinite alternate;
+}
+
+/* Skeleton Loading Pulse - Dark Mode Optimized */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.sk-block, .sk-line, .sk-circle {
+  animation: skeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Floating Elements */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}

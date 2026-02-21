@@ -1,6 +1,6 @@
 /* src/styles/global.css */
 /* ═══════════════════════════════════════════════════════════════════════════════
-   DESIGN SYSTEM v2.0 - PHASE 5: Quiet Confidence
+   DESIGN SYSTEM v2.0 - PHASE 5: Quiet Confidence (Adaptive Light/Dark Base)
    ═══════════════════════════════════════════════════════════════════════════════
    FIXED: Removed resting glows (box-shadow with colored rgba)
    FIXED: Removed gradients → Solid colors using design tokens
@@ -17,24 +17,27 @@
 
 /* ============================================
    BODY - Minimal styles, layout-system.css handles layout
-   ============================================ */
+   =========================================== */
 body {
   margin: 0;
   font-family: var(--font-body, 'Inter', 'Roboto', sans-serif);
-  background-color: var(--surface-0, #0a0a0f);
-  color: var(--text-primary, #f8fafc);
+  /* Updated for Adaptive Light/Dark Background System */
+  background-color: var(--surface-0, #f8fafc);
+  color: var(--text-primary, #0f172a);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ============================================
    LEGACY HEADER (backward compatibility)
-   ============================================ */
+   =========================================== */
 header {
   background-color: var(--surface-1, #0f1419);
   padding: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 header img {
@@ -52,6 +55,7 @@ header .top-right .bell {
   margin-right: 1rem;
   cursor: pointer;
   color: var(--brand, #8b5cf6);
+  transition: color 0.2s ease;
 }
 
 header .top-right img {
@@ -62,7 +66,7 @@ header .top-right img {
 
 /* ============================================
    LEGACY NAV & SIDEBAR
-   ============================================ */
+   =========================================== */
 nav {
   background-color: var(--surface-1, #0f1419);
   padding: 1rem;
@@ -72,6 +76,7 @@ nav {
 sidebar {
   background-color: var(--surface-1, #0f1419);
   padding: 1rem;
+  transition: background-color 0.3s ease;
 }
 
 sidebar .profile-section {
@@ -109,7 +114,7 @@ sidebar ul li a:hover {
 
 /* ============================================
    MAIN CONTENT
-   ============================================ */
+   =========================================== */
 main {
   padding: 2rem;
 }
@@ -121,10 +126,11 @@ main.full-screen {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(10, 10, 15, 0.95);
+  background: var(--surface-0-alpha, rgba(10, 10, 15, 0.95));
   z-index: 1000;
   padding: 0;
   overflow-y: auto;
+  backdrop-filter: blur(8px);
 }
 
 main.full-screen form {
@@ -134,10 +140,11 @@ main.full-screen form {
   background: var(--surface-1, #0f1419);
   padding: 2rem;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
   /* No glow - quiet confidence */
   min-height: 0;
   overflow-y: auto;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 main.full-screen h2 {
@@ -147,6 +154,7 @@ main.full-screen h2 {
   color: var(--text-primary, #f8fafc);
   text-align: center;
   margin-bottom: 0.5rem;
+  transition: color 0.3s ease;
 }
 
 main.full-screen .subtitle {
@@ -157,6 +165,7 @@ main.full-screen .subtitle {
   white-space: normal;
   overflow-wrap: break-word;
   max-width: 100%;
+  transition: color 0.3s ease;
 }
 
 main.full-screen .error-message {
@@ -195,11 +204,12 @@ main.full-screen .birthday-container select {
 
 /* ============================================
    FOOTER
-   ============================================ */
+   =========================================== */
 footer {
   background-color: var(--surface-1, #0f1419);
   padding: 1rem;
   text-align: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
   color: var(--text-tertiary, #64748b);
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }

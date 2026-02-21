@@ -1,6 +1,6 @@
 // src/pages/Arena.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 10.1: Live Arena - Page
+// PHASE 10.1: Live Arena - Light Theme & Dark Mode Adapted
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from 'react';
@@ -23,7 +23,7 @@ export default function Arena() {
 
   return (
     <PresenceProvider enabled={true}>
-      <div className="min-h-screen bg-surface-0 p-6 lg:p-10">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#09090B] p-6 lg:p-10 transition-colors duration-300">
         <div className="max-w-6xl mx-auto">
           <LiveArena 
             onCoworkRequest={handleCoworkRequest}

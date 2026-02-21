@@ -557,8 +557,8 @@ function AppRoutes() {
         </>
       )}
 
-      <div className="main-content">
-        <div className="content-wrapper">
+      <div className="main-content border-none outline-none ring-0">
+  <div className="content-wrapper border-none shadow-none">
           <Suspense
             fallback={
               <div className="px-6 py-10 text-center text-slate-500">

@@ -294,23 +294,3 @@ input[type="radio"]:focus-visible {
     transition: none;
   }
 }
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   LIGHT MODE ADJUSTMENTS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-[data-theme="light"] :where(
-  a, button, input, select, textarea, 
-  [role="button"], .btn, .card-interactive
-):focus-visible {
-  box-shadow:
-    0 0 0 2px #FFFFFF,
-    0 0 0 4px rgb(var(--brand-600-rgb, 124 58 237) / 0.5) !important;
-}
-
-[data-theme="light"] .skip-link {
-  background: #FFFFFF;
-  color: var(--text-primary, #0F172A);
-  box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(0, 0, 0, 0.05);
-}

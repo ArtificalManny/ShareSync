@@ -6,144 +6,62 @@
    - Auth pages = Dark atmospheric entrance (dramatic purple/teal glow)
    - App pages = Light airy gallery (white/slate with fluorescent accents)
    
-   The user enters through the grand entrance (Login) then walks into the 
-   light-filled main gallery (the app).
-   
-   IMPORTS: This file references palette.css for raw color values
-   NO BACKEND CHANGES - Pure CSS
-   
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ═══════════════════════════════════════════════════════════════════════════
-     TYPOGRAPHY SCALE
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-
-  --fs-xs: 0.75rem;
-  --fs-sm: 0.875rem;
-  --fs-md: 1rem;
-  --fs-lg: 1.125rem;
-  --fs-xl: 1.25rem;
-  --fs-2xl: 1.5rem;
-  --fs-3xl: 2rem;
-  --fs-4xl: 2.5rem;
-
-  --fw-normal: 400;
-  --fw-medium: 500;
-  --fw-semibold: 600;
-  --fw-bold: 700;
-
-  --lh-tight: 1.2;
-  --lh-snug: 1.35;
-  --lh-normal: 1.5;
-  --lh-relaxed: 1.65;
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     SPACING & RADIUS
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 24px;
-  --radius-full: 9999px;
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     MOTION
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --motion-fast: 150ms;
-  --motion-normal: 200ms;
-  --motion-slow: 300ms;
-  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
-  --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     COLOR SCALE ALIASES (Reference palette.css)
-     These create shorter aliases for common usage
+     MASTER COLOR SCALES (Hardcoded to Blueprint)
      ═══════════════════════════════════════════════════════════════════════════ */
   
-  /* Violet */
-  --violet-50:  var(--palette-violet-50);
-  --violet-100: var(--palette-violet-100);
-  --violet-200: var(--palette-violet-200);
-  --violet-300: var(--palette-violet-300);
-  --violet-400: var(--palette-violet-400);
-  --violet-500: var(--palette-violet-500);
-  --violet-600: var(--palette-violet-600);
-  --violet-700: var(--palette-violet-700);
-  --violet-800: var(--palette-violet-800);
-  --violet-900: var(--palette-violet-900);
+  /* Electric Violet (Primary) */
+  --violet-50:  #F5F3FF;
+  --violet-100: #EDE9FE;
+  --violet-200: #DDD6FE;
+  --violet-300: #C4B5FD;
+  --violet-400: #A78BFA;
+  --violet-500: #8B5CF6; --violet-500-rgb: 139, 92, 246;
+  --violet-600: #7C3AED;
+  --violet-700: #6D28D9;
 
-  /* Blue */
-  --blue-50:  var(--palette-blue-50);
-  --blue-100: var(--palette-blue-100);
-  --blue-200: var(--palette-blue-200);
-  --blue-300: var(--palette-blue-300);
-  --blue-400: var(--palette-blue-400);
-  --blue-500: var(--palette-blue-500);
-  --blue-600: var(--palette-blue-600);
-  --blue-700: var(--palette-blue-700);
-  --blue-800: var(--palette-blue-800);
-  --blue-900: var(--palette-blue-900);
+  /* Ocean Blue (Actions) */
+  --blue-50:  #EFF6FF;
+  --blue-100: #DBEAFE;
+  --blue-200: #BFDBFE;
+  --blue-300: #93C5FD;
+  --blue-400: #60A5FA;
+  --blue-500: #3B82F6; --blue-500-rgb: 59, 130, 246;
+  --blue-600: #2563EB;
+  --blue-700: #1D4ED8;
 
-  /* Teal */
-  --teal-50:  var(--palette-teal-50);
-  --teal-100: var(--palette-teal-100);
-  --teal-200: var(--palette-teal-200);
-  --teal-300: var(--palette-teal-300);
-  --teal-400: var(--palette-teal-400);
-  --teal-500: var(--palette-teal-500);
-  --teal-600: var(--palette-teal-600);
-  --teal-700: var(--palette-teal-700);
-  --teal-800: var(--palette-teal-800);
-  --teal-900: var(--palette-teal-900);
+  /* Aurora Teal (Success/Progress) */
+  --teal-50:  #F0FDFA;
+  --teal-100: #CCFBF1;
+  --teal-200: #99F6E4;
+  --teal-300: #5EEAD4;
+  --teal-400: #2DD4BF;
+  --teal-500: #14B8A6; --teal-500-rgb: 20, 184, 166;
+  --teal-600: #0D9488;
 
-  /* Slate */
-  --slate-50:  var(--palette-slate-50);
-  --slate-100: var(--palette-slate-100);
-  --slate-200: var(--palette-slate-200);
-  --slate-300: var(--palette-slate-300);
-  --slate-400: var(--palette-slate-400);
-  --slate-500: var(--palette-slate-500);
-  --slate-600: var(--palette-slate-600);
-  --slate-700: var(--palette-slate-700);
-  --slate-800: var(--palette-slate-800);
-  --slate-900: var(--palette-slate-900);
+  /* Soft Slate (Neutrals) */
+  --slate-50:  #F8FAFC;
+  --slate-100: #F1F5F9;
+  --slate-200: #E2E8F0;
+  --slate-300: #CBD5E1;
+  --slate-400: #94A3B8;
+  --slate-500: #64748B;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1E293B;
+  --slate-900: #0F172A;
 
-  /* Accents */
-  --amber-400: var(--palette-amber-400);
-  --amber-500: var(--palette-amber-500);
-  --orange-400: var(--palette-orange-400);
-  --orange-500: var(--palette-orange-500);
-  --rose-400: var(--palette-rose-400);
-  --rose-500: var(--palette-rose-500);
-  --red-500: var(--palette-red-500);
-  --red-600: var(--palette-red-600);
-  --lime-400: var(--palette-lime-400);
-  --cyan-400: var(--palette-cyan-400);
-  --cyan-500: var(--palette-cyan-500);
-  --emerald-500: var(--palette-emerald-500);
-  --emerald-600: var(--palette-emerald-600);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     RGB VALUES (for rgba() usage)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --violet-500-rgb: var(--palette-violet-500-rgb);
-  --violet-600-rgb: var(--palette-violet-600-rgb);
-  --blue-500-rgb: var(--palette-blue-500-rgb);
-  --blue-600-rgb: var(--palette-blue-600-rgb);
-  --teal-400-rgb: var(--palette-teal-400-rgb);
-  --teal-500-rgb: var(--palette-teal-500-rgb);
-  --cyan-500-rgb: var(--palette-cyan-500-rgb);
-  --amber-500-rgb: var(--palette-amber-500-rgb);
-  --orange-500-rgb: var(--palette-orange-500-rgb);
-  --rose-500-rgb: var(--palette-rose-500-rgb);
-  --red-500-rgb: var(--palette-red-500-rgb);
-  --emerald-500-rgb: var(--palette-emerald-500-rgb);
+  /* Fluorescent Sparks */
+  --orange-400: #FB923C;
+  --orange-500: #F97316; --orange-500-rgb: 249, 115, 22;
+  --rose-400:   #FB7185;
+  --rose-500:   #F43F5E;
+  --amber-100:  #FEF3C7;
+  --amber-500:  #F59E0B;
+  --amber-700:  #D97706;
 
   /* ═══════════════════════════════════════════════════════════════════════════
      SEMANTIC: LIGHT MODE (App Pages Default)
@@ -152,275 +70,85 @@
   /* Backgrounds */
   --bg-primary: var(--slate-50);
   --bg-secondary: var(--slate-100);
-  --bg-tertiary: var(--slate-200);
-  --bg-elevated: var(--palette-white);
-  --bg-page: var(--palette-gradient-page);
+  --bg-elevated: #FFFFFF;
 
-  /* Surfaces (Cards, Panels) */
+  /* Surfaces */
   --surface-0: var(--slate-50);
-  --surface-1: var(--palette-white);
+  --surface-1: #FFFFFF;
   --surface-2: var(--slate-50);
-  --surface-3: var(--slate-100);
 
-  /* Text */
+  /* Text (Accessibility Adjusted) */
   --text-primary: var(--slate-800);
   --text-secondary: var(--slate-600);
   --text-tertiary: var(--slate-500);
-  --text-muted: var(--slate-400);
-  --text-inverse: var(--palette-white);
+  --text-muted: var(--slate-500); /* Adjusted from 400 for contrast */
+  --text-inverse: #FFFFFF;
 
   /* Borders */
   --border-subtle: var(--slate-200);
   --border-default: var(--slate-300);
-  --border-strong: var(--slate-400);
   --border-brand: var(--violet-300);
 
   /* Brand Colors */
-  --brand-50: var(--violet-50);
-  --brand-100: var(--violet-100);
-  --brand-200: var(--violet-200);
-  --brand-300: var(--violet-300);
-  --brand-400: var(--violet-400);
   --brand-500: var(--violet-500);
   --brand-600: var(--violet-600);
-  --brand-700: var(--violet-700);
   --brand-500-rgb: var(--violet-500-rgb);
-  --brand-600-rgb: var(--violet-600-rgb);
 
   /* Action Colors (Blue for Save/Start buttons) */
   --action-primary: var(--blue-500);
   --action-primary-hover: var(--blue-600);
-  --action-secondary: var(--violet-500);
-  --action-secondary-hover: var(--violet-600);
 
   /* Status Colors */
-  --success-50: var(--teal-50);
-  --success-100: var(--teal-100);
   --success-500: var(--teal-500);
-  --success-600: var(--teal-600);
-  --warning-50: var(--palette-amber-50);
-  --warning-100: var(--palette-amber-100);
-  --warning-400: var(--amber-400);
   --warning-500: var(--amber-500);
-  --warning-600: var(--palette-amber-600);
-  --error-50: var(--palette-red-50);
-  --error-100: var(--palette-red-100);
-  --error-500: var(--red-500);
-  --error-600: var(--red-600);
+  --error-500: var(--rose-500);
   --info-500: var(--blue-500);
-  --info-500-rgb: var(--blue-500-rgb);
 
   /* Energy (Momentum/Fire Mode) */
-  --energy-400: var(--orange-400);
   --energy-500: var(--orange-500);
-  --energy-600: var(--palette-orange-600);
   --energy-500-rgb: var(--orange-500-rgb);
 
-  /* Tints (Soft backgrounds for badges/highlights) */
-  --tint-brand: var(--violet-50);
-  --tint-blue: var(--blue-50);
-  --tint-success: var(--teal-50);
-  --tint-warning: var(--palette-amber-50);
-  --tint-error: var(--palette-red-50);
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SHADOWS & GLOWS (Tinted Violet)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(139, 92, 246, 0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.02), 0 8px 24px rgba(139, 92, 246, 0.08);
+  --shadow-brand: 0 4px 14px rgba(139, 92, 246, 0.3);
+  --shadow-brand-lg: 0 6px 20px rgba(139, 92, 246, 0.4);
+  --shadow-blue: 0 4px 14px rgba(59, 130, 246, 0.3);
+  --shadow-blue-lg: 0 6px 20px rgba(59, 130, 246, 0.4);
+
+  --ring-focus: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  --ring-focus-blue: 0 0 0 3px rgba(59, 130, 246, 0.15);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     SHADOWS (Light Mode)
+     SIGNATURE GRADIENTS
      ═══════════════════════════════════════════════════════════════════════════ */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.02);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.04), 0 4px 6px rgba(0, 0, 0, 0.02);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.05), 0 10px 10px rgba(0, 0, 0, 0.02);
-  
-  /* Colored shadows */
-  --shadow-brand: 0 4px 14px rgba(var(--palette-violet-500-rgb), 0.15);
-  --shadow-brand-lg: 0 8px 24px rgba(var(--palette-violet-500-rgb), 0.2);
-  --shadow-blue: 0 4px 14px rgba(var(--palette-blue-500-rgb), 0.15);
-  --shadow-blue-lg: 0 8px 24px rgba(var(--palette-blue-500-rgb), 0.2);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     FOCUS & GLOW RINGS
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --ring-focus: 0 0 0 3px rgba(var(--palette-violet-500-rgb), 0.15);
-  --ring-focus-blue: 0 0 0 3px rgba(var(--palette-blue-500-rgb), 0.15);
-  --glow-brand: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.15);
-  --glow-blue: 0 0 20px rgba(var(--palette-blue-500-rgb), 0.15);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     MOMENTUM GLOWS (Light Mode - Subtle)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --momentum-glow-1: 0 0 10px rgba(var(--palette-violet-500-rgb), 0.03);
-  --momentum-glow-2: 0 0 15px rgba(var(--palette-violet-500-rgb), 0.05);
-  --momentum-glow-3: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.08);
-  --momentum-glow-4: 0 0 25px rgba(var(--palette-violet-500-rgb), 0.12);
-  --momentum-glow-5: 0 0 30px rgba(var(--palette-violet-500-rgb), 0.18);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     GRADIENTS (Reference palette)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --gradient-brand: var(--palette-gradient-brand);
-  --gradient-brand-soft: linear-gradient(135deg, var(--violet-400) 0%, var(--violet-500) 100%);
-  --gradient-sunset: var(--palette-gradient-sunset);
-  --gradient-ocean: var(--palette-gradient-ocean);
-  --gradient-aurora: var(--palette-gradient-aurora);
-  --gradient-energy: var(--palette-gradient-energy);
-  --gradient-success: var(--palette-gradient-success);
-  --gradient-page: var(--palette-gradient-page);
-  --gradient-card-hover: linear-gradient(180deg, var(--palette-white) 0%, var(--slate-50) 100%);
-  
-  /* Legacy mappings */
-  --grad-pandora: var(--gradient-aurora);
-  --grad-cnbc: var(--gradient-ocean);
-  --grad-primary: var(--gradient-brand);
-  --gradient-signature: var(--gradient-aurora);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     LEGACY MAPPINGS (Backward Compatibility)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --surface: var(--surface-1);
-  --ink: var(--text-primary);
-  --border-color: var(--border-default);
-  --os-primary: var(--violet-500);
-  --os-primary-2: var(--violet-600);
-  --os-bg-0: var(--bg-primary);
-  --os-bg-1: var(--bg-secondary);
-  --os-surface-1: var(--surface-1);
-  --os-surface-2: var(--surface-2);
-  --os-text: var(--text-primary);
-  --os-muted: var(--text-tertiary);
-  --os-muted-2: var(--text-muted);
-  --os-border: var(--border-default);
-  --os-success: var(--success-500);
-  --os-warning: var(--warning-500);
-  --os-danger: var(--error-500);
-  --os-info: var(--info-500);
+  --gradient-sunset: linear-gradient(135deg, var(--violet-500) 0%, #A855F7 50%, var(--rose-500) 100%);
+  --gradient-aurora: linear-gradient(135deg, var(--violet-500) 0%, #6366F1 25%, var(--blue-500) 50%, #06B6D4 75%, var(--teal-400) 100%);
+  --gradient-ocean: linear-gradient(135deg, var(--blue-500) 0%, #06B6D4 50%, var(--teal-400) 100%);
+  --gradient-brand: linear-gradient(135deg, var(--violet-500) 0%, var(--violet-600) 100%);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   DARK MODE SEMANTIC OVERRIDES (For Auth Pages & Dark Contexts)
-   Applied via .dark class, data-theme="dark", or .auth-layout
+   DARK MODE OVERRIDES (The Grand Entrance)
    ═══════════════════════════════════════════════════════════════════════════════ */
-.dark,
-[data-theme="dark"],
-.auth-layout {
-  /* Backgrounds */
+.dark, [data-theme="dark"], .auth-layout {
   --bg-primary: var(--slate-900);
-  --bg-secondary: var(--palette-slate-950);
-  --bg-tertiary: var(--slate-800);
-  --bg-elevated: rgba(30, 41, 59, 0.8);
-
-  /* Surfaces */
   --surface-0: var(--slate-900);
-  --surface-1: rgba(30, 41, 59, 0.6);
-  --surface-2: rgba(51, 65, 85, 0.4);
-  --surface-3: rgba(71, 85, 105, 0.3);
+  --surface-1: rgba(30, 41, 59, 0.8);
+  --surface-2: rgba(51, 65, 85, 0.6);
 
-  /* Text */
   --text-primary: var(--slate-50);
-  --text-secondary: var(--slate-200);
+  --text-secondary: var(--slate-300);
   --text-tertiary: var(--slate-400);
   --text-muted: var(--slate-500);
 
-  /* Borders */
-  --border-subtle: var(--palette-white-8);
-  --border-default: var(--palette-white-10);
-  --border-strong: var(--palette-white-15);
-  --border-brand: rgba(var(--palette-violet-500-rgb), 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-brand: rgba(139, 92, 246, 0.4);
 
-  /* Shadows (darker for dark mode) */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
-  --shadow-brand: 0 4px 14px rgba(var(--palette-violet-500-rgb), 0.25);
-  --shadow-brand-lg: 0 8px 24px rgba(var(--palette-violet-500-rgb), 0.35);
-
-  /* Focus rings */
-  --ring-focus: 0 0 0 3px rgba(var(--palette-violet-500-rgb), 0.3);
-  --glow-brand: 0 0 30px rgba(var(--palette-violet-500-rgb), 0.25);
-
-  /* Momentum glows (stronger in dark mode) */
-  --momentum-glow-1: 0 0 15px rgba(var(--palette-violet-500-rgb), 0.08);
-  --momentum-glow-2: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.12);
-  --momentum-glow-3: 0 0 25px rgba(var(--palette-violet-500-rgb), 0.18);
-  --momentum-glow-4: 0 0 35px rgba(var(--palette-violet-500-rgb), 0.25);
-  --momentum-glow-5: 0 0 45px rgba(var(--palette-violet-500-rgb), 0.35);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   BASE TYPOGRAPHY APPLICATION
-   ═══════════════════════════════════════════════════════════════════════════════ */
-html, body {
-  font-family: var(--font-body);
-  font-size: var(--fs-md);
-  line-height: var(--lh-normal);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  min-height: 100vh;
-}
-
-h1, h2, h3, h4, h5, h6,
-.heading, .display {
-  font-family: var(--font-display);
-  line-height: var(--lh-tight);
-  letter-spacing: -0.01em;
-  margin: 0;
-  color: var(--text-primary);
-}
-
-h1, .h1 { font-size: var(--fs-3xl); font-weight: var(--fw-bold); }
-h2, .h2 { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); line-height: var(--lh-snug); }
-h3, .h3 { font-size: var(--fs-xl);  font-weight: var(--fw-semibold); }
-h4, .h4 { font-size: var(--fs-lg);  font-weight: var(--fw-medium); }
-h5, .h5 { font-size: var(--fs-md);  font-weight: var(--fw-medium); }
-h6, .h6 { font-size: var(--fs-sm);  font-weight: var(--fw-medium); }
-
-.small { font-size: var(--fs-sm); line-height: var(--lh-normal); }
-.muted { color: var(--text-muted); }
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   UTILITY CLASSES
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.text-primary { color: var(--text-primary); }
-.text-secondary { color: var(--text-secondary); }
-.text-tertiary { color: var(--text-tertiary); }
-.text-muted { color: var(--text-muted); }
-.text-brand { color: var(--brand-500); }
-.text-success { color: var(--success-500); }
-.text-warning { color: var(--warning-500); }
-.text-error { color: var(--error-500); }
-
-.bg-brand { background-color: var(--brand-500); }
-.bg-brand-soft { background-color: var(--tint-brand); }
-.bg-surface { background-color: var(--surface-1); }
-.bg-elevated { background-color: var(--bg-elevated); }
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   FOCUS & ACCESSIBILITY
-   ═══════════════════════════════════════════════════════════════════════════════ */
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--brand-500);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   NEON THEME COMPATIBILITY (Preserved)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.layout-stage[data-theme="neon"] {
-  --surface: var(--surface-1);
-  --text: var(--text-primary);
-  --muted: var(--text-muted);
-  --border: var(--border-default);
-}
-
-.text-neon {
-  background: var(--gradient-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  --shadow-sm: 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.6);
+  --shadow-brand: 0 4px 14px rgba(139, 92, 246, 0.25);
 }

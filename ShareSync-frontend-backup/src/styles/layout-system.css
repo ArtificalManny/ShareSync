@@ -60,7 +60,7 @@ footer {
   height: 64px !important;
   background: rgba(15, 23, 42, 0.95) !important;
   backdrop-filter: blur(10px) !important; /* ⭐ Better glass effect */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03) !important;
   z-index: 110 !important; /* ⭐ FIXED: Higher than sidebar (was 90) */
   display: flex !important;
   align-items: center !important;
@@ -97,6 +97,9 @@ body.sidebar-collapsed .navbar {
   height: auto !important; /* ⭐ NATURAL HEIGHT - no forcing */
   display: block !important;
   transition: margin-left 220ms ease !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 body.sidebar-collapsed .main-content {
@@ -109,6 +112,10 @@ body.sidebar-collapsed .main-content {
   margin: 0 auto !important;
   padding: 24px !important;
   width: 100%;
+  /* ADD THESE LINES TO KILL ANY INHERITED BORDERS */
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
 }
 
 .content-wrapper.wide {

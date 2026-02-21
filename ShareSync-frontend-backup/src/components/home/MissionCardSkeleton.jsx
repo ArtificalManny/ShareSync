@@ -1,6 +1,6 @@
 // src/components/home/MissionCardSkeleton.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - "Quiet Confidence"
+// DESIGN SYSTEM v2.0 - "Quiet Confidence" (Adaptive Light/Dark)
 // ═══════════════════════════════════════════════════════════════════════════════
 // Skeleton that EXACTLY matches MissionCard layout to prevent layout shift.
 // Uses the same surface hierarchy and spacing.
@@ -13,12 +13,12 @@ const Shimmer = ({ className = '', width, height }) => (
   <div 
     className={`
       relative overflow-hidden rounded
-      bg-surface-2
+      bg-slate-200 dark:bg-white/5
       ${className}
     `}
     style={{ width, height }}
   >
-    <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />
+    <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-slate-300/40 dark:via-white/[0.05] to-transparent" />
   </div>
 );
 
@@ -28,7 +28,7 @@ const MissionCardSkeleton = ({ count = 3 }) => {
       {Array.from({ length: count }).map((_, index) => (
         <div 
           key={index}
-          className="p-5 rounded-xl bg-surface-1 border border-white/[0.06]"
+          className="p-5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] shadow-sm dark:shadow-none"
         >
           {/* Match exact layout of MissionCard */}
           <div className="flex items-center justify-between gap-6">
@@ -43,7 +43,7 @@ const MissionCardSkeleton = ({ count = 3 }) => {
                 <Shimmer width="160px" height="16px" />
                 <div className="flex items-center gap-2">
                   <Shimmer width="60px" height="12px" />
-                  <div className="w-1 h-1 rounded-full bg-surface-3" />
+                  <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-white/10" />
                   <Shimmer width="70px" height="12px" />
                 </div>
               </div>

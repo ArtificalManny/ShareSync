@@ -1,0 +1,86 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC FORM CONTROLS v4.0 - The Luminous Journey
+   Includes Inputs, Toggles, and Progress Bars
+   UPDATED: Phase 3 Variable Mapping
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   INPUT FIELDS
+───────────────────────────────────────────────────────────────────────────── */
+.input {
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md, 10px);
+  color: var(--text-primary);
+  padding: 12px 16px;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.input:focus {
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px rgba(var(--brand-500-rgb), 0.1);
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.input:disabled {
+  background: var(--bg-surface-active); /* Fallback to a slightly darker disabled state */
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TOGGLES (Ocean Blue when active)
+───────────────────────────────────────────────────────────────────────────── */
+.toggle-track {
+  background: var(--slate-300); /* Off state - soft slate */
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  display: inline-block;
+}
+
+.toggle-track.active {
+  background: linear-gradient(135deg, var(--blue-500) 0%, var(--blue-600) 100%); /* ON = BLUE */
+}
+
+.toggle-thumb {
+  background: var(--palette-white, #FFFFFF);
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.toggle-track.active .toggle-thumb {
+  transform: translateX(20px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PROGRESS BARS (Aurora / Ocean Gradient)
+───────────────────────────────────────────────────────────────────────────── */
+.progress-track {
+  background: var(--border-default);
+  height: 8px;
+  border-radius: 4px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, var(--blue-500) 0%, var(--cyan-500) 50%, var(--teal-400) 100%);
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
